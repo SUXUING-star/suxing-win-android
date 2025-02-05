@@ -7,6 +7,8 @@ import '../../providers/auth_provider.dart';
 import 'image_preview_screen.dart';
 import '../../widgets/game/comments_section.dart';
 import '../../widgets/common/toaster.dart';
+import 'package:url_launcher/url_launcher.dart'; // 引入 url_launcher
+import 'package:flutter/services.dart'; // 引入 Clipboard
 
 class GameDetailScreen extends StatelessWidget {
   final Game game;
@@ -28,7 +30,7 @@ class GameDetailScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _buildHeader(context),
-                _buildDescription(),
+                _buildDescription(context),
                 _buildImages(),
                 const Divider(height: 32),
                 CommentsSection(gameId: game.id), // 添加评论区组件
@@ -159,7 +161,7 @@ class GameDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDescription() {
+  Widget _buildDescription(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(16),
       child: Column(
@@ -194,13 +196,22 @@ class GameDetailScreen extends StatelessWidget {
               child: ListTile(
                 title: Text(link['title'] ?? ''),
                 subtitle: Text(link['description'] ?? ''),
-                trailing: IconButton(
-                  icon: Icon(Icons.download),
-                  onPressed: () {
-                    // 处理下载链接点击
-                    // 可以使用 url_launcher 包来打开链接
-                    // launchUrl(Uri.parse(link['url']));
-                  },
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.open_in_browser),
+                      onPressed: () {
+                        _launchURL(link['url']);
+                      },
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.copy),
+                      onPressed: () {
+                        _copyToClipboard(context, link['url']); // Pass the context
+                      },
+                    ),
+                  ],
                 ),
               ),
             )).toList(),
@@ -252,7 +263,6 @@ class GameDetailScreen extends StatelessWidget {
       ],
     );
   }
-
 
   Widget _buildFavoriteButton(BuildContext context) {
     return Consumer<AuthProvider>(
@@ -330,5 +340,24 @@ class GameDetailScreen extends StatelessWidget {
 
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+  }
+
+  // 打开浏览器
+  _launchURL(String? url) async {
+    if (url != null && await canLaunchUrl(Uri.parse(url))) {
+      await launchUrl(Uri.parse(url));
+    } else {
+      throw 'Could not launch $url';
+    }
+  }
+
+  // 复制到剪贴板
+  void _copyToClipboard(BuildContext context, String? text) {
+    if (text != null) {
+      Clipboard.setData(ClipboardData(text: text));
+      Toaster.show(context, message: '链接已复制到剪贴板');
+    } else {
+      Toaster.show(context, message: '复制失败，链接为空', isError: true);
+    }
   }
 }

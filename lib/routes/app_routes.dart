@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import '../screens/home/home_screen.dart';
+import '../screens/common/notfound_screen.dart';
+import '../screens/common/about_screen.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
 import '../screens/game/game_detail_screen.dart';
+import '../screens/home/hot_games_screen.dart';
+import '../screens/home/latest_games_screen.dart';
 import '../screens/game/games_list_screen.dart';
 import '../screens/linkstools_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -24,6 +28,7 @@ import '../screens/profile/settings_screen.dart';
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)
   static const String home = '/';
+  static const String about = '/about';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -51,6 +56,8 @@ class AppRoutes {
     switch (routeName) {
       case '/':
         return MaterialPageRoute(builder: (_) => HomeScreen());
+      case '/about':
+        return MaterialPageRoute(builder: (_) => AboutScreen());
       case '/login':
         return MaterialPageRoute(builder: (_) => LoginScreen());
       case '/register':
@@ -74,6 +81,10 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => GameDetailScreen(game: game));
       case '/games':
         return MaterialPageRoute(builder: (_) => GamesListScreen());
+      case '/hot-games':
+        return MaterialPageRoute(builder: (_) => HotGamesScreen());
+      case '/latest-games':
+        return MaterialPageRoute(builder: (_) => LatestGamesScreen());
       case '/links':
         return MaterialPageRoute(builder: (_) => LinksToolsScreen());
       case '/profile':
@@ -126,9 +137,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => EditPostScreen(post: post));
       default:
         return MaterialPageRoute(
-          builder: (_) => Scaffold(
-            body: Center(child: Text('页面不存在')),
-          ),
+          builder: (_) => const NotFoundScreen(),
         );
     }
   }

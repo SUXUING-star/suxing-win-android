@@ -1,20 +1,20 @@
-// lib/screens/latest_games_screen.dart
+// lib/screens/hot_games_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/game.dart';
 import '../../services/game_service.dart';
 import '../../widgets/game/game_card.dart';
 
-class LatestGamesScreen extends StatelessWidget {
+class HotGamesScreen extends StatelessWidget {
   final GameService _gameService = GameService();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('最新发布'),
+        title: Text('热门游戏'),
       ),
       body: StreamBuilder<List<Game>>(
-        stream: _gameService.getLatestGames(),
+        stream: _gameService.getHotGames(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
             return Center(child: Text('加载失败：${snapshot.error}'));
@@ -23,7 +23,7 @@ class LatestGamesScreen extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('暂无最新游戏'));
+            return Center(child: Text('暂无热门游戏'));
           }
 
           return GridView.builder(

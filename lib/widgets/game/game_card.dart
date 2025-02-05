@@ -43,21 +43,31 @@ class GameCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 固定高度的封面图
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: CachedNetworkImage(
-                imageUrl: game.coverImage,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Center(
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-                errorWidget: (context, url, error) => Icon(
-                  Icons.image_not_supported,
-                  size: 36,
-                  color: Colors.grey,
-                ),
-              ),
+            // 自适应高度的封面图
+            LayoutBuilder(
+              builder: (BuildContext context, BoxConstraints constraints) {
+                return FutureBuilder<double>(
+                  future: _getImageAspectRatio(game.coverImage),
+                  builder: (context, snapshot) {
+                    double aspectRatio = snapshot.data ?? 16 / 9; // 默认比例
+                    return AspectRatio(
+                      aspectRatio: aspectRatio,
+                      child: CachedNetworkImage(
+                        imageUrl: game.coverImage,
+                        fit: BoxFit.cover,
+                        placeholder: (context, url) => Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (context, url, error) => Icon(
+                          Icons.image_not_supported,
+                          size: 36,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
             // 使用 Padding 代替 Expanded
             Padding(

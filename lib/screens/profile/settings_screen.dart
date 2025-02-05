@@ -1,7 +1,7 @@
 // lib/screens/profile/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
+import '../../routes/app_routes.dart';
 import '../../services/history_service.dart';
 import '../../services/user_service.dart';
 
@@ -181,7 +181,7 @@ class SettingsScreen extends StatelessWidget {
                       title: Text('关于'),
                       trailing: Icon(Icons.arrow_forward_ios),
                       onTap: () {
-                        // TODO: 跳转到关于页面
+                        Navigator.pushNamed(context, AppRoutes.about);
                       },
                     ),
                     // ... 其他设置项

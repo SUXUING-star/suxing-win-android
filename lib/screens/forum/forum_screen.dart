@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../services/forum_service.dart';
+import '../../services/user_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/loading_indicator.dart';
@@ -19,6 +20,7 @@ class ForumScreen extends StatefulWidget {
 
 class _ForumScreenState extends State<ForumScreen> {
   final ForumService _forumService = ForumService();
+  final UserService _userService = UserService();  // 添加 UserService
   final List<String> _tags = ['全部', '讨论', '攻略', '分享', '求助'];
   String _selectedTag = '全部';
 
@@ -130,11 +132,7 @@ class _ForumScreenState extends State<ForumScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(
-            context,
-            AppRoutes.postDetail,
-            arguments: post.id,
-          );
+          Navigator.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -178,12 +176,20 @@ class _ForumScreenState extends State<ForumScreen> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  CircleAvatar(
-                    radius: 12,
-                    child: Text(
-                      post.authorName[0].toUpperCase(),
-                      style: const TextStyle(fontSize: 12),
-                    ),
+                  FutureBuilder<String?>(
+                    future: _userService.getAvatarFromId(post.authorId),
+                    builder: (context, snapshot) {
+                      return CircleAvatar(
+                        radius: 12,
+                        backgroundImage: snapshot.data != null
+                            ? NetworkImage(snapshot.data!)
+                            : null,
+                        child: snapshot.data == null
+                            ? Text(post.authorName[0].toUpperCase(),
+                            style: const TextStyle(fontSize: 12))
+                            : null,
+                      );
+                    },
                   ),
                   const SizedBox(width: 8),
                   Text(post.authorName),

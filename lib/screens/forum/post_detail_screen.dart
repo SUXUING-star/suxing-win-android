@@ -4,9 +4,9 @@ import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../services/forum_service.dart';
 import '../../providers/auth_provider.dart';
-import '../../widgets/loading_indicator.dart';
-import '../../widgets/error_message.dart';
 import '../../routes/app_routes.dart';
+import '../../widgets/forum/post_content.dart';
+import '../../widgets/forum/reply_list.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -30,6 +30,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     _loadPost();
   }
 
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
+  }
+
   Future<void> _loadPost() async {
     try {
       setState(() {
@@ -38,9 +44,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       });
 
       final post = await _forumService.getPost(widget.postId);
-      if (post == null) {
-        throw Exception('帖子不存在');
-      }
+      if (post == null) throw Exception('帖子不存在');
 
       setState(() {
         _post = post;
@@ -70,11 +74,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return const LoadingIndicator();
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_error != null) {
-      return ErrorMessage(message: _error!);
+      return Center(child: Text(_error!));
     }
 
     if (_post == null) {
@@ -83,153 +87,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     return Column(
       children: [
-        _buildPostContent(),
+        PostContent(post: _post!),
         const Divider(height: 1),
-        Expanded(child: _buildReplies()),
-      ],
-    );
-  }
-
-  Widget _buildPostContent() {
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _post!.title,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: 8),
-          Row(
-            children: [
-              CircleAvatar(
-                radius: 16,
-                child: Text(_post!.authorName[0].toUpperCase()),
-              ),
-              const SizedBox(width: 8),
-              Text(_post!.authorName),
-              const Spacer(),
-              Text(_post!.createTime.toString().substring(0, 16)),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(_post!.content),
-          if (_post!.tags.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: _post!.tags.map((tag) => Chip(label: Text(tag))).toList(),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildReplies() {
-    return StreamBuilder<List<Reply>>(
-      stream: _forumService.getReplies(widget.postId),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return ErrorMessage(message: snapshot.error.toString());
-        }
-
-        if (!snapshot.hasData) {
-          return const LoadingIndicator();
-        }
-
-        final replies = snapshot.data!;
-        if (replies.isEmpty) {
-          return const Center(child: Text('暂无回复'));
-        }
-
-        return ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: replies.length,
-          separatorBuilder: (_, __) => const Divider(height: 32),
-          itemBuilder: (context, index) => _buildReplyItem(replies[index]),
-        );
-      },
-    );
-  }
-
-  Widget _buildReplyItem(Reply reply) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            CircleAvatar(
-              radius: 14,
-              child: Text(reply.authorName[0].toUpperCase()),
-            ),
-            const SizedBox(width: 8),
-            Text(reply.authorName),
-            const Spacer(),
-            Text(reply.createTime.toString().substring(0, 16)),
-            Consumer<AuthProvider>(
-              builder: (context, auth, _) {
-                if (auth.currentUser?.id == reply.authorId ||
-                    auth.currentUser?.isAdmin == true) {
-                  return PopupMenuButton<String>(
-                    itemBuilder: (context) => [
-                      if (auth.currentUser?.id == reply.authorId)
-                        const PopupMenuItem(
-                          value: 'edit',
-                          child: Text('编辑'),
-                        ),
-                      const PopupMenuItem(
-                        value: 'delete',
-                        child: Text('删除'),
-                      ),
-                    ],
-                    onSelected: (value) async {
-                      if (value == 'edit') {
-                        // 显示编辑对话框
-                        final content = await showDialog<String>(
-                          context: context,
-                          builder: (context) => _EditReplyDialog(
-                            initialContent: reply.content,
-                          ),
-                        );
-                        if (content != null) {
-                          await _forumService.updateReply(reply.id, content);
-                        }
-                      } else if (value == 'delete') {
-                        // 显示确认对话框
-                        final confirm = await showDialog<bool>(
-                          context: context,
-                          builder: (context) => AlertDialog(
-                            title: const Text('确认删除'),
-                            content: const Text('确定要删除这条回复吗？'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, false),
-                                child: const Text('取消'),
-                              ),
-                              TextButton(
-                                onPressed: () => Navigator.pop(context, true),
-                                child: const Text('删除'),
-                              ),
-                            ],
-                          ),
-                        );
-                        if (confirm == true) {
-                          await _forumService.deleteReply(reply.id);
-                        }
-                      }
-                    },
-                  );
-                }
-                return const SizedBox.shrink();
-              },
-            ),
-          ],
+        Expanded(
+          child: ReplyList(postId: widget.postId),
         ),
-        const SizedBox(height: 8),
-        Text(reply.content),
       ],
     );
   }
@@ -238,7 +100,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     return Consumer<AuthProvider>(
       builder: (context, auth, child) {
         if (!auth.isLoggedIn) {
-          return const SizedBox.shrink();
+          return Container(
+            padding: const EdgeInsets.all(16),
+            child: ElevatedButton(
+              onPressed: () => Navigator.pushNamed(context, '/login'),
+              child: const Text('登录后回复'),
+            ),
+          );
         }
 
         if (_post?.status == PostStatus.locked) {
@@ -277,19 +145,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.send),
-                    onPressed: () async {
-                      final content = _replyController.text.trim();
-                      if (content.isEmpty) return;
-
-                      try {
-                        await _forumService.addReply(widget.postId, content);
-                        _replyController.clear();
-                      } catch (e) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text(e.toString())),
-                        );
-                      }
-                    },
+                    onPressed: () => _submitReply(context),
                   ),
                 ],
               ),
@@ -300,139 +156,108 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  Future<void> _submitReply(BuildContext context) async {
+    final content = _replyController.text.trim();
+    if (content.isEmpty) return;
+
+    try {
+      await _forumService.addReply(widget.postId, content);
+      _replyController.clear();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
+  }
+
   Widget _buildMoreMenu() {
     return Consumer<AuthProvider>(
-        builder: (context, auth, _) {
-      if (!auth.isLoggedIn) return const SizedBox.shrink();
+      builder: (context, auth, _) {
+        if (!auth.isLoggedIn) return const SizedBox.shrink();
 
-      return PopupMenuButton<String>(
+        return PopupMenuButton<String>(
           itemBuilder: (context) => [
-        if (auth.currentUser?.id == _post?.authorId)
-          const PopupMenuItem(
-            value: 'edit',
-            child: Text('编辑'),
-          ),
-        if (auth.currentUser?.id == _post?.authorId ||
-            auth.currentUser?.isAdmin == true)
-          const PopupMenuItem(
-            value: 'delete',
-            child: Text('删除'),
-          ),
-        if (auth.currentUser?.isAdmin == true)
-          PopupMenuItem(
-            value: 'toggle_lock',
-            child: Text(
-              _post?.status == PostStatus.locked ? '解锁帖子' : '锁定帖子',
-            ),
-          ),
-      ],
-        onSelected: (value) async {
-          switch (value) {
-            case 'edit':
-              Navigator.pushNamed(
-                context,
-                AppRoutes.editPost,
-                arguments: _post,
-              );
-              break;
-            case 'delete':
-              final confirm = await showDialog<bool>(
-                context: context,
-                builder: (context) => AlertDialog(
-                  title: const Text('确认删除'),
-                  content: const Text('确定要删除这个帖子吗？'),
-                  actions: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, false),
-                      child: const Text('取消'),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(context, true),
-                      child: const Text('删除'),
-                    ),
-                  ],
+            if (auth.currentUser?.id == _post?.authorId)
+              const PopupMenuItem(
+                value: 'edit',
+                child: Text('编辑'),
+              ),
+            if (auth.currentUser?.id == _post?.authorId ||
+                auth.currentUser?.isAdmin == true)
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('删除'),
+              ),
+            if (auth.currentUser?.isAdmin == true)
+              PopupMenuItem(
+                value: 'toggle_lock',
+                child: Text(
+                  _post?.status == PostStatus.locked ? '解锁帖子' : '锁定帖子',
                 ),
-              );
-
-              if (confirm == true) {
-                try {
-                  await _forumService.deletePost(widget.postId);
-                  Navigator.pop(context);
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(e.toString())),
-                  );
-                }
-              }
-              break;
-            case 'toggle_lock':
-              try {
-                await _forumService.togglePostLock(widget.postId);
-                await _loadPost(); // Reload post to update status
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text(e.toString())),
+              ),
+          ],
+          onSelected: (value) async {
+            switch (value) {
+              case 'edit':
+                Navigator.pushNamed(
+                  context,
+                  AppRoutes.editPost,
+                  arguments: _post,
                 );
-              }
-              break;
-          }
-        },
-      );
-        });
-  }
-}
-
-class _EditReplyDialog extends StatefulWidget {
-  final String initialContent;
-
-  const _EditReplyDialog({required this.initialContent});
-
-  @override
-  _EditReplyDialogState createState() => _EditReplyDialogState();
-}
-
-class _EditReplyDialogState extends State<_EditReplyDialog> {
-  late TextEditingController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = TextEditingController(text: widget.initialContent);
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('编辑回复'),
-      content: TextField(
-        controller: _controller,
-        maxLines: 5,
-        decoration: const InputDecoration(
-          hintText: '请输入回复内容',
-          border: OutlineInputBorder(),
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () {
-            final content = _controller.text.trim();
-            if (content.isNotEmpty) {
-              Navigator.pop(context, content);
+                break;
+              case 'delete':
+                await _handleDeletePost(context);
+                break;
+              case 'toggle_lock':
+                await _handleToggleLock(context);
+                break;
             }
           },
-          child: const Text('保存'),
-        ),
-      ],
+        );
+      },
     );
+  }
+
+  Future<void> _handleDeletePost(BuildContext context) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除这个帖子吗？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('删除'),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _forumService.deletePost(widget.postId);
+        Navigator.pop(context);
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(e.toString())),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleToggleLock(BuildContext context) async {
+    try {
+      await _forumService.togglePostLock(widget.postId);
+      await _loadPost();
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    }
   }
 }
