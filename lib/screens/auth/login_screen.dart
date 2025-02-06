@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../utils/loading_route_observer.dart';
+import '../../widgets/common/toaster.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -13,14 +15,28 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
   bool _rememberMe = false;
   late Box<String> _box;
+  String? _error;
 
   @override
   void initState() {
     super.initState();
     _initHive();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      // 不需要初始加载动画
+    });
   }
 
   Future<void> _initHive() async {
@@ -53,7 +69,13 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
+
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signIn(
@@ -62,13 +84,18 @@ class _LoginScreenState extends State<LoginScreen> {
       );
 
       await _saveCredentials();
+      Toaster.success(context, '登录成功');
       Navigator.pushReplacementNamed(context, '/');
     } catch (e) {
+      setState(() {
+        _error = '登录失败: ${e.toString()}';
+      });
+      Toaster.error(context, '登录失败');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('登录失败: ${e.toString()}')),
+        SnackBar(content: Text(_error!)),
       );
     } finally {
-      setState(() => _isLoading = false);
+      loadingObserver.hideLoading();
     }
   }
 
@@ -83,6 +110,15 @@ class _LoginScreenState extends State<LoginScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
               TextFormField(
                 controller: _emailController,
                 decoration: InputDecoration(
@@ -141,19 +177,8 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isLoading
-                    ? null
-                    : () => _handleLogin(context), // 修改这里，使用箭头函数包装
-                child: _isLoading
-                    ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                    : Text('登录'),
+                onPressed: () => _handleLogin(context),
+                child: Text('登录'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
                 ),
@@ -173,6 +198,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 }

@@ -1,60 +1,162 @@
-// lib/screens/game_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/screens/game/add_game_screen.dart';
 import '../../models/game.dart';
-import '../../services/game_service.dart'; // 引入 GameService
+import '../../services/game_service.dart';
 import '../../providers/auth_provider.dart';
-import 'image_preview_screen.dart';
-import '../../widgets/game/comments_section.dart';
 import '../../widgets/common/toaster.dart';
-import 'package:url_launcher/url_launcher.dart'; // 引入 url_launcher
-import 'package:flutter/services.dart'; // 引入 Clipboard
+import '../../widgets/game/game_detail_content.dart';
+import 'edit_game_screen.dart';
 
-class GameDetailScreen extends StatelessWidget {
+class GameDetailScreen extends StatefulWidget {
   final Game game;
-  final GameService _gameService = GameService(); // 使用 GameService
 
-  GameDetailScreen({required this.game});
+  const GameDetailScreen({
+    Key? key,
+    required this.game,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
-    // 每次进入详情页增加浏览量
-    _incrementViewCount();
+  _GameDetailScreenState createState() => _GameDetailScreenState();
+}
 
-    return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          _buildAppBar(context),
-          SliverToBoxAdapter(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildHeader(context),
-                _buildDescription(context),
-                _buildImages(),
-                const Divider(height: 32),
-                CommentsSection(gameId: game.id), // 添加评论区组件
-              ],
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: _buildFavoriteButton(context),
-    );
+class _GameDetailScreenState extends State<GameDetailScreen> {
+  final GameService _gameService = GameService();
+  Game? _game;
+  String? _error;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGameDetails();
+    _incrementViewCount();
+    _addToHistory();
+  }
+
+  void _addToHistory() {
+    _gameService.addToGameHistory(widget.game.id);
+  }
+
+  Future<void> _loadGameDetails() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+
+      final game = await _gameService.getGameById(widget.game.id);
+      if (game == null) throw Exception('游戏不存在');
+
+      setState(() {
+        _game = game;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshGameDetails() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      await _loadGameDetails();
+      _incrementViewCount();
+      _addToHistory();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
   }
 
   void _incrementViewCount() {
-    _gameService.incrementGameView(game.id);
+    _gameService.incrementGameView(widget.game.id);
   }
 
-  Widget _buildAppBar(BuildContext context) {
+  void _toggleLike(BuildContext context, bool isLiked) async {
+    final game = _game ?? widget.game;
+    try {
+      await _gameService.toggleLike(game.id);
+      Toaster.show(
+        context,
+        message: isLiked ? '已取消点赞' : '点赞成功',
+      );
+    } catch (e) {
+      Toaster.show(
+        context,
+        message: '操作失败，请稍后重试',
+        isError: true,
+      );
+    }
+  }
+
+  Widget _buildFavoriteButton(BuildContext context) {
+    // 确保在构建FAB之前已经完成了必要的初始化
+    if (_isLoading) {
+      return const SizedBox.shrink(); // 加载时不显示FAB
+    }
+
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        if (!authProvider.isLoggedIn) {
+          return FloatingActionButton(
+            onPressed: () {
+              Toaster.show(
+                context,
+                message: '请先登录后再操作',
+                isError: true,
+              );
+              Navigator.pushNamed(context, '/login');
+            },
+            child: const Icon(Icons.favorite_border),
+            backgroundColor: Theme
+                .of(context)
+                .primaryColor,
+          );
+        }
+
+        return StreamBuilder<List<String>>(
+          stream: _gameService.getUserFavorites(),
+          initialData: const [], // 添加初始数据
+          builder: (context, snapshot) {
+            if (!snapshot.hasData) {
+              return const SizedBox.shrink(); // 数据加载时不显示FAB
+            }
+
+            final game = _game ?? widget.game;
+            final isFavorite = snapshot.data!.contains(game.id);
+
+            return FloatingActionButton(
+              onPressed: () => _toggleLike(context, isFavorite),
+              child: Icon(
+                isFavorite ? Icons.favorite : Icons.favorite_border,
+                color: Colors.white,
+              ),
+              backgroundColor: isFavorite ? Colors.red : Theme
+                  .of(context)
+                  .primaryColor,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildSliverAppBar(Game game) {
     return SliverAppBar(
       expandedHeight: 300,
       pinned: true,
       flexibleSpace: FlexibleSpaceBar(
         title: Text(
           game.title,
-          style: TextStyle(
+          style: const TextStyle(
             color: Colors.white,
             shadows: [
               Shadow(
@@ -72,8 +174,7 @@ class GameDetailScreen extends StatelessWidget {
               game.coverImage,
               fit: BoxFit.cover,
             ),
-            // 添加渐变效果使标题更清晰
-            DecoratedBox(
+            const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
@@ -90,274 +191,78 @@ class GameDetailScreen extends StatelessWidget {
       ),
       actions: [
         IconButton(
-          icon: Icon(Icons.share),
+          icon: const Icon(Icons.share),
           onPressed: () {
             // 实现分享功能
           },
         ),
-      ],
-    );
-  }
-
-  Widget _buildHeader(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  game.category,
-                  style: TextStyle(color: Colors.white),
-                ),
-              ),
-              Spacer(),
-              Icon(Icons.star, color: Colors.amber),
-              SizedBox(width: 4),
-              Text(
-                game.rating.toString(),
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 16),
-          Text(
-            game.summary,
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 8),
-          Row(
-            children: [
-              Icon(Icons.remove_red_eye_outlined, size: 16),
-              SizedBox(width: 4),
-              Text(
-                '${game.viewCount} 次浏览',
-                style: TextStyle(color: Colors.grey),
-              ),
-              SizedBox(width: 16),
-              Icon(Icons.access_time, size: 16),
-              SizedBox(width: 4),
-              Text(
-                '发布于 ${_formatDate(game.createTime)}',
-                style: TextStyle(color: Colors.grey),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDescription(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '详细描述',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            game.description,
-            style: TextStyle(
-              fontSize: 16,
-              height: 1.5,
-            ),
-          ),
-          if (game.downloadLinks.isNotEmpty) ...[
-            SizedBox(height: 16),
-            Text(
-              '下载链接',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            SizedBox(height: 8),
-            ...game.downloadLinks.map((link) => Card(
-              child: ListTile(
-                title: Text(link['title'] ?? ''),
-                subtitle: Text(link['description'] ?? ''),
-                trailing: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.open_in_browser),
-                      onPressed: () {
-                        _launchURL(link['url']);
-                      },
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.copy),
-                      onPressed: () {
-                        _copyToClipboard(context, link['url']); // Pass the context
-                      },
-                    ),
-                  ],
-                ),
-              ),
-            )).toList(),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildImages() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: Text(
-            '游戏截图',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-        Container(
-          height: 150,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: EdgeInsets.symmetric(horizontal: 12),
-            itemCount: game.images.length,
-            itemBuilder: (context, index) {
-              return Padding(
-                padding: EdgeInsets.symmetric(horizontal: 4),
-                child: GestureDetector(
-                  onTap: () => _showImagePreview(context, index),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      game.images[index],
-                      width: 250,
-                      height: 150,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFavoriteButton(BuildContext context) {
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (!authProvider.isLoggedIn) {
-          return FloatingActionButton(
-            onPressed: () {
-              Toaster.show(
-                context,
-                message: '请先登录后再操作',
-                isError: true,
-              );
-              Navigator.pushNamed(context, '/login');
-            },
-            child: Icon(Icons.favorite_border),
-            backgroundColor: Theme.of(context).primaryColor,
-          );
-        }
-
-        return StreamBuilder<List<String>>(
-          stream: _gameService.getUserFavorites(),
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return FloatingActionButton(
-                onPressed: null,
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-                backgroundColor: Theme.of(context).primaryColor,
+        Consumer<AuthProvider>(
+          builder: (context, authProvider, _) {
+            if (authProvider.isAdmin) {
+              return IconButton(
+                icon: const Icon(Icons.edit),
+                onPressed: () {
+                   Navigator.push(
+                     context,
+                     MaterialPageRoute(
+                       builder: (context) => EditGameScreen(game: game),
+                     ),
+                   ).then((_) => _refreshGameDetails());
+                },
               );
             }
-
-            final isFavorite = snapshot.data!.contains(game.id);
-            return FloatingActionButton(
-              onPressed: () => _toggleLike(context, isFavorite),
-              child: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: Colors.white,
-              ),
-              backgroundColor: isFavorite ? Colors.red : Theme.of(context).primaryColor,
-            );
+            return const SizedBox.shrink();
           },
-        );
-      },
+        ),
+      ],
     );
   }
 
-  void _toggleLike(BuildContext context, bool isLiked) async {
-    try {
-      await _gameService.toggleLike(game.id);
-      Toaster.show(
-        context,
-        message: isLiked ? '已取消点赞' : '点赞成功',
-      );
-    } catch (e) {
-      Toaster.show(
-        context,
-        message: '操作失败，请稍后重试',
-        isError: true,
+  @override
+  Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
       );
     }
-  }
 
-  void _showImagePreview(BuildContext context, int initialIndex) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ImagePreviewScreen(
-          images: game.images,
-          initialIndex: initialIndex,
+    if (_error != null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, color: Colors.red, size: 48),
+              const SizedBox(height: 16),
+              Text(_error!),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadGameDetails,
+                child: const Text('重新加载'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    final game = _game ?? widget.game;
+
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: _refreshGameDetails,
+        child: CustomScrollView(
+          // 添加key以帮助Flutter正确重建widget
+          key: PageStorageKey('game_detail'),
+          slivers: [
+            _buildSliverAppBar(game),
+            SliverToBoxAdapter(
+              child: GameDetailContent(game: game),
+            ),
+          ],
         ),
       ),
+      floatingActionButton: _buildFavoriteButton(context),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-
-  // 打开浏览器
-  _launchURL(String? url) async {
-    if (url != null && await canLaunchUrl(Uri.parse(url))) {
-      await launchUrl(Uri.parse(url));
-    } else {
-      throw 'Could not launch $url';
-    }
-  }
-
-  // 复制到剪贴板
-  void _copyToClipboard(BuildContext context, String? text) {
-    if (text != null) {
-      Clipboard.setData(ClipboardData(text: text));
-      Toaster.show(context, message: '链接已复制到剪贴板');
-    } else {
-      Toaster.show(context, message: '复制失败，链接为空', isError: true);
-    }
   }
 }

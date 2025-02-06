@@ -1,7 +1,10 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/email_service.dart';
-import '../../services/user_service.dart';  // 引入 AuthService
+import '../../services/user_service.dart';
+import '../../utils/loading_route_observer.dart';
+import 'dart:async';
+import '../../widgets/common/toaster.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -12,51 +15,97 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
-  final UserService _authService = UserService(); // 使用 AuthService
-  bool _isLoading = false;
+  final UserService _authService = UserService();
+  String? _error;
   bool _codeSent = false;
   String? _verificationCode;
+  int _countDown = 0;
+  Timer? _timer;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      // 不需要初始加载动画
+    });
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _codeController.dispose();
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startTimer() {
+    _countDown = 60;
+    _timer?.cancel();
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+      setState(() {
+        if (_countDown > 0) {
+          _countDown--;
+        } else {
+          _timer?.cancel();
+        }
+      });
+    });
+  }
 
   Future<void> _sendVerificationCode() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => _isLoading = true);
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
+
     try {
       // 1. 验证邮箱是否存在
-      //    如果用户存在，则发送验证码
-      //    如果用户不存在，则提示用户
-      try {
-        await _authService.resetPassword(_emailController.text, "123456"); // 发送验证码前确保邮箱存在
-        _verificationCode = EmailService.generateVerificationCode();
-        await EmailService.sendVerificationCode(
-            _emailController.text,
-            _verificationCode!
-        );
+      await _authService.resetPassword(_emailController.text, "123456");
 
-        setState(() => _codeSent = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('验证码已发送到您的邮箱')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('用户不存在：$e')),
-        );
-      }
+      _verificationCode = EmailService.generateVerificationCode();
+      await EmailService.sendVerificationCode(
+          _emailController.text,
+          _verificationCode!
+      );
 
+      _startTimer();
+      setState(() {
+        _codeSent = true;
+        _error = null;
+      });
+
+      Toaster.success(context, "已经成功发送验证码到邮箱，请去查看！");
     } catch (e) {
+      setState(() {
+        _error = '用户不存在：$e';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发送验证码失败：$e')),
+        SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
     } finally {
-      setState(() => _isLoading = false);
+      loadingObserver.hideLoading();
     }
   }
 
   void _verifyCode() {
     if (!_formKey.currentState!.validate()) return;
+
     if (_codeController.text != _verificationCode) {
+      setState(() {
+        _error = '验证码错误';
+      });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('验证码错误')),
+        SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
       return;
     }
@@ -71,76 +120,89 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('找回密码')),
-      body: Padding(
-        padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: '邮箱',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入邮箱';
-                  }
-                  if (!value.contains('@')) {
-                    return '请输入有效的邮箱地址';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              if (_codeSent) ...[
-                TextFormField(
-                  controller: _codeController,
-                  decoration: InputDecoration(
-                    labelText: '验证码',
-                    border: OutlineInputBorder(),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '请输入验证码';
-                    }
-                    return null;
-                  },
-                ),
-                SizedBox(height: 16),
-              ],
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton(
-                      onPressed: _isLoading ? null : _sendVerificationCode,
-                      child: Text(_codeSent ? '重新发送' : '发送验证码'),
-                      style: ElevatedButton.styleFrom(
-                        minimumSize: Size(double.infinity, 48),
-                      ),
-                    ),
-                  ),
-                  if (_codeSent) ...[
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _verifyCode,
-                        child: Text('验证'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 48),
-                        ),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ],
+        appBar: AppBar(title: Text('找回密码')),
+        body: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Form(
+              key: _formKey,
+              child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                  // 显示错误信息
+                  if (_error != null)
+              Padding(
+          padding: const EdgeInsets.only(bottom: 16.0),
+          child: Text(
+            _error!,
+            style: TextStyle(color: Colors.red),
+            textAlign: TextAlign.center,
           ),
         ),
+
+        TextFormField(
+          controller: _emailController,
+          decoration: InputDecoration(
+            labelText: '邮箱',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return '请输入邮箱';
+            }
+            if (!value.contains('@')) {
+              return '请输入有效的邮箱地址';
+            }
+            return null;
+          },
+        ),
+        SizedBox(height: 16),
+        if (_codeSent) ...[
+    TextFormField(
+    controller: _codeController,
+    decoration: InputDecoration(
+    labelText: '验证码',
+    border: OutlineInputBorder(),
+    ),
+    validator: (value) {
+    if (value == null || value.isEmpty) {
+    return '请输入验证码';
+    }
+    return null;
+    },
+    ),
+    SizedBox(height: 16),
+    ],
+    Row(
+    children: [
+    Expanded(
+    child: ElevatedButton(
+    onPressed: _countDown > 0 ? null : _sendVerificationCode,
+    child: Text(_codeSent
+    ? (_countDown > 0? '重新发送(${_countDown}s)' : '重新发送')
+        : '发送验证码'),
+      style: ElevatedButton.styleFrom(
+        minimumSize: Size(double.infinity, 48),
       ),
+    ),
+    ),
+      if (_codeSent) ...[
+        SizedBox(width: 16),
+        Expanded(
+          child: ElevatedButton(
+            onPressed: _verifyCode,
+            child: Text('验证'),
+            style: ElevatedButton.styleFrom(
+              minimumSize: Size(double.infinity, 48),
+            ),
+          ),
+        ),
+      ],
+    ],
+    ),
+                  ],
+              ),
+          ),
+        ),
     );
   }
 }

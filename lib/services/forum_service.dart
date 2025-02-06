@@ -3,6 +3,7 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../models/post.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
+import './history/post_history_service.dart';
 
 class ForumService {
   static final ForumService _instance = ForumService._internal();
@@ -10,8 +11,39 @@ class ForumService {
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService();
+  final PostHistoryService _postHistoryService = PostHistoryService();
 
   ForumService._internal();
+
+  bool _isValidObjectId(String? id) {
+    if (id == null) return false;
+    try {
+      ObjectId.fromHexString(id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  Future<void> addToPostHistory(String postId) async {
+    try {
+      if (!_isValidObjectId(postId)) {
+        print('Invalid postId format: $postId');
+        return;
+      }
+
+      final userId = await _userService.currentUserId;
+      if (userId == null) {
+        print('Cannot add to history: User not logged in');
+        return;
+      }
+
+      await _postHistoryService.addPostHistory(postId);
+      print('Post history added successfully: $postId');
+    } catch (e) {
+      print('Add to post history error: $e');
+    }
+  }
 
   // 获取帖子列表
   Stream<List<Post>> getPosts({String? tag}) async* {
@@ -61,6 +93,7 @@ class ForumService {
   }
 
   // 获取帖子详情
+  // 修改 getPost 方法以添加历史记录
   Future<Post?> getPost(String postId) async {
     try {
       final postDoc = await _dbConnectionService.posts.findOne(
@@ -74,6 +107,9 @@ class ForumService {
         where.eq('_id', ObjectId.fromHexString(postId)),
         {r'$inc': {'viewCount': 1}},
       );
+
+      // 添加到浏览历史
+      await addToPostHistory(postId);
 
       return Post.fromJson(_dbConnectionService.convertDocument(postDoc));
     } catch (e) {

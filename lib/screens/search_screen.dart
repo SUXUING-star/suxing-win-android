@@ -1,10 +1,11 @@
 // lib/screens/search_screen.dart
 import 'package:flutter/material.dart';
 import '../models/game.dart';
-import '../services/game_service.dart'; // 引入 GameService
-import '../services/user_service.dart'; // 引入 UserService
+import '../services/game_service.dart';
+import '../services/user_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import '../utils/loading_route_observer.dart';
 import 'dart:async';
 
 class SearchScreen extends StatefulWidget {
@@ -13,18 +14,27 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  final GameService _gameService = GameService(); // 使用 GameService
-  final UserService _userService = UserService(); // 使用 UserService
+  final GameService _gameService = GameService();
+  final UserService _userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   List<String> _searchHistory = [];
   List<Game> _searchResults = [];
-  bool _isLoading = false;
+  String? _error;
   Timer? _debounceTimer;
 
   @override
-  void initState() {
-    super.initState();
-    _loadSearchHistory();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      // 初始加载搜索历史
+      _loadSearchHistory();
+    });
   }
 
   @override
@@ -36,16 +46,18 @@ class _SearchScreenState extends State<SearchScreen> {
 
   Future<void> _loadSearchHistory() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) return;  // 使用 isLoggedIn 检查登录状态
+    if (!authProvider.isLoggedIn) return;
 
     try {
-      final history = await _userService.getSearchHistory();  // 移除参数
+      final history = await _userService.getSearchHistory();
 
       setState(() {
-        _searchHistory = history;  // history 已经是 List<String> 类型，不需要转换
+        _searchHistory = history;
       });
     } catch (e) {
-      print('Error loading search history: $e');
+      setState(() {
+        _error = '加载搜索历史失败: $e';
+      });
     }
   }
 
@@ -56,9 +68,12 @@ class _SearchScreenState extends State<SearchScreen> {
     try {
       await _userService.saveSearchHistory(_searchHistory);
     } catch (e) {
-      print('Error saving search history: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('保存搜索历史失败: $e')),
+      );
     }
   }
+
   void _addToHistory(String query) {
     if (query.trim().isEmpty) return;
 
@@ -93,28 +108,30 @@ class _SearchScreenState extends State<SearchScreen> {
       if (query.trim().isEmpty) {
         setState(() {
           _searchResults.clear();
-          _isLoading = false;
+          _error = null;
         });
         return;
       }
 
-      setState(() {
-        _isLoading = true;
-      });
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      loadingObserver.showLoading();
 
       try {
         final results = await _gameService.searchGames(query);
         setState(() {
           _searchResults = results;
+          _error = null;
         });
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('搜索失败：$e')),
-        );
-      } finally {
         setState(() {
-          _isLoading = false;
+          _error = '搜索失败：$e';
         });
+      } finally {
+        loadingObserver.hideLoading();
       }
     });
   }
@@ -154,8 +171,22 @@ class _SearchScreenState extends State<SearchScreen> {
   }
 
   Widget _buildBody() {
-    if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+    if (_error != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red),
+            SizedBox(height: 16),
+            Text(_error!),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadSearchHistory,
+              child: Text('重新加载'),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_searchController.text.isEmpty) {

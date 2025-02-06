@@ -25,8 +25,8 @@ class AppBackground extends StatelessWidget {
         // 毛玻璃效果层
         BackdropFilter(
           filter: ImageFilter.blur(
-            sigmaX: 10.0,
-            sigmaY: 10.0,
+            sigmaX: 7.0,
+            sigmaY: 7.0,
           ),
           child: Container(
             decoration: BoxDecoration(

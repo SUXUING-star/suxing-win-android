@@ -1,8 +1,9 @@
-// lib/screens/forum/post_detail_screen.dart
+// lib/screens/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../services/forum_service.dart';
+import '../../services/history/post_history_service.dart';  // 更新import
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../widgets/forum/post_content.dart';
@@ -19,21 +20,16 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final ForumService _forumService = ForumService();
+  final PostHistoryService _postHistoryService = PostHistoryService(); // 更新service
   final TextEditingController _replyController = TextEditingController();
   Post? _post;
-  bool _isLoading = true;
   String? _error;
+  bool _isLoading = true;
 
   @override
   void initState() {
     super.initState();
     _loadPost();
-  }
-
-  @override
-  void dispose() {
-    _replyController.dispose();
-    super.dispose();
   }
 
   Future<void> _loadPost() async {
@@ -44,15 +40,41 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       });
 
       final post = await _forumService.getPost(widget.postId);
-      if (post == null) throw Exception('帖子不存在');
+      if (post == null) {
+        throw Exception('帖子不存在');
+      }
 
       setState(() {
         _post = post;
         _isLoading = false;
       });
+
+      // 使用新的 PostHistoryService 添加历史记录
+      await _postHistoryService.addPostHistory(widget.postId);
+
     } catch (e) {
       setState(() {
         _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _replyController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _refreshPost() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      await _loadPost();
+    } finally {
+      setState(() {
         _isLoading = false;
       });
     }
@@ -67,7 +89,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           if (_post != null) _buildMoreMenu(),
         ],
       ),
-      body: _buildBody(),
+      body: RefreshIndicator(
+        onRefresh: _refreshPost,
+        child: _buildBody(),
+      ),
       bottomNavigationBar: _buildReplyInput(),
     );
   }
@@ -78,7 +103,21 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
 
     if (_error != null) {
-      return Center(child: Text(_error!));
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, color: Colors.red, size: 48),
+            const SizedBox(height: 16),
+            Text(_error!),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadPost,
+              child: const Text('重新加载'),
+            ),
+          ],
+        ),
+      );
     }
 
     if (_post == null) {

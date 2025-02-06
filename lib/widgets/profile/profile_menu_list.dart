@@ -61,6 +61,7 @@ class ProfileMenuList extends StatelessWidget {
             onPressed: () {
               Navigator.of(context).pop();
               onLogout();
+              Navigator.pushReplacementNamed(context, AppRoutes.home);
             },
             child: Text('确定'),
           ),

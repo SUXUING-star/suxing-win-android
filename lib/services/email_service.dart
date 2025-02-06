@@ -40,9 +40,72 @@ class EmailService {
     final message = Message()
       ..from = Address(AppConfig.emailFrom, '宿星茶会')
       ..recipients.add(toEmail)
-      ..subject = '验证码 - 宿星茶会'
-      ..text = '您的验证码是：$code\n\n验证码有效期为5分钟，请尽快使用。';
+      ..subject = '【宿星茶会】验证码'  // 更清晰的主题
+      ..html = _buildVerificationEmailBody(code); // 使用HTML模板
 
-    await send(message, smtpServer);
+    try {
+      final sendReport = await send(message, smtpServer);
+      print('Message sent: ${sendReport.toString()}'); // 打印发送报告
+    } catch (e) {
+      print('Error sending email: $e');
+      rethrow; // 重新抛出异常，让上层处理
+    }
+  }
+
+  // 构建HTML邮件内容
+  static String _buildVerificationEmailBody(String code) {
+    return '''
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>宿星茶会 - 验证码</title>
+      <style>
+        body {
+          font-family: Arial, sans-serif;
+          line-height: 1.6;
+          color: #333;
+        }
+        .container {
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          border: 1px solid #ddd;
+        }
+        .header {
+          text-align: center;
+          margin-bottom: 20px;
+        }
+        .code {
+          font-size: 24px;
+          font-weight: bold;
+          color: #007bff;
+        }
+        .footer {
+          margin-top: 20px;
+          text-align: center;
+          font-size: 12px;
+          color: #777;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>宿星茶会</h1>
+          <p>感谢您使用宿星茶会！</p>
+        </div>
+        <p>您的验证码是：</p>
+        <p class="code">$code</p>
+        <p>此验证码将在 5 分钟内有效，请尽快使用。</p>
+        <p>如果您没有进行此操作，请忽略此邮件。</p>
+        <div class="footer">
+          <p>此邮件由系统自动发送，请勿回复。</p>
+          <p>© 2024 宿星茶会</p>
+        </div>
+      </div>
+    </body>
+    </html>
+    ''';
   }
 }

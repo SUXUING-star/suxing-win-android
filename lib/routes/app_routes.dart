@@ -10,10 +10,9 @@ import '../screens/game/game_detail_screen.dart';
 import '../screens/home/hot_games_screen.dart';
 import '../screens/home/latest_games_screen.dart';
 import '../screens/game/games_list_screen.dart';
-import '../screens/linkstools_screen.dart';
+import '../screens/linkstools/linkstools_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/game/add_game_screen.dart';
-import '../screens/game/edit_game_screen.dart';
 import '../models/game.dart';
 import '../models/post.dart';
 import '../screens/forum/forum_screen.dart';
@@ -91,16 +90,6 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => ProfileScreen());
       case '/game/add':
         return MaterialPageRoute(builder: (_) => AddGameScreen());
-      case '/game/edit':
-        if (settings.arguments is! Game) {
-          return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: Center(child: Text('无效的游戏数据')),
-            ),
-          );
-        }
-        final Game game = settings.arguments as Game;
-        return MaterialPageRoute(builder: (_) => EditGameScreen(game: game));
       case '/favorites':
         return MaterialPageRoute(builder: (_) => FavoritesScreen());
       case '/history':

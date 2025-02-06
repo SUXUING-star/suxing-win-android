@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../models/game.dart';
 import '../../services/game_service.dart'; // 引入 GameService
-import '../../widgets/form/game_form.dart';
+import '../../widgets/form/gameform/game_form.dart';
 import '../../utils/admin_check.dart';
 
 class EditGameScreen extends StatelessWidget {

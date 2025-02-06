@@ -5,6 +5,7 @@ import '../../models/comment.dart';
 import '../../services/comment_service.dart';
 import '../../services/user_service.dart';
 import '../../providers/auth_provider.dart';
+import '../../widgets/common/toaster.dart';
 
 class CommentsSection extends StatelessWidget {
   final String gameId;
@@ -66,11 +67,10 @@ class CommentsSection extends StatelessWidget {
 
               try {
                 await _commentService.addComment(gameId, controller.text.trim());
+                Toaster.success(context, "成功发表评论");
                 controller.clear();
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('发表评论失败：$e')),
-                );
+                Toaster.error(context, "成功发表评论");
               }
             },
             child: const Text('发表'),

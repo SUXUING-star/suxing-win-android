@@ -1,6 +1,7 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/forum_service.dart';
+import '../../widgets/common/toaster.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({Key? key}) : super(key: key);
@@ -115,6 +116,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       setState(() => _isSubmitting = true);
       await _forumService.createPost(title, content, _selectedTags);
+      Toaster.success(context, "发布帖子成功！");
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

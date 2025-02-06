@@ -1,13 +1,16 @@
 // lib/services/game_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-
 import '../models/game.dart';
 import 'db_connection_service.dart';
-import 'user_service.dart'; // 引入 UserService
+import 'user_service.dart';
+import './history/game_history_service.dart';
+import './cache/game_cache_service.dart';
 
 class GameService {
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService(); // 引入 UserService
+  final GameCacheService _cacheService = GameCacheService();
+  final GameHistoryService _gameHistoryService = GameHistoryService();
 
   Stream<List<Game>> getGames() async* {
     try {
@@ -27,42 +30,61 @@ class GameService {
   }
 
   Stream<List<Game>> getHotGames() async* {
-    try {
-      while (true) {
-        final cursor = _dbConnectionService.games.find(
-            where.sortBy('viewCount', descending: true).limit(10));
+    while (true) {
+      try {
+        // 尝试从缓存获取数据
+        final cachedGames = await _cacheService.getCachedGames('hot_games');
+        if (cachedGames != null) {
+          yield cachedGames;
+        } else {
+          // 如果缓存不存在或过期，从数据库获取
+          final cursor = _dbConnectionService.games.find(
+              where.sortBy('viewCount', descending: true).limit(10));
 
-        final games = await cursor
-            .map((game) =>
-            Game.fromJson(_dbConnectionService.convertDocument(game)))
-            .toList();
-        yield games;
+          final games = await cursor
+              .map((game) => Game.fromJson(_dbConnectionService.convertDocument(game)))
+              .toList();
+
+          // 更新缓存
+          await _cacheService.cacheGames('hot_games', games);
+          yield games;
+        }
         await Future.delayed(const Duration(seconds: 1));
+      } catch (e) {
+        print('Get hot games error: $e');
+        yield [];
       }
-    } catch (e) {
-      print('Get hot games error: $e');
-      yield [];
     }
   }
 
   Stream<List<Game>> getLatestGames() async* {
-    try {
-      while (true) {
-        final cursor = _dbConnectionService.games.find(
-            where.sortBy('createTime', descending: true).limit(10));
+    while (true) {
+      try {
+        // 尝试从缓存获取数据
+        final cachedGames = await _cacheService.getCachedGames('latest_games');
+        if (cachedGames != null) {
+          yield cachedGames;
+        } else {
+          // 如果缓存不存在或过期，从数据库获取
+          final cursor = _dbConnectionService.games.find(
+              where.sortBy('createTime', descending: true).limit(10));
 
-        final games = await cursor
-            .map((game) =>
-            Game.fromJson(_dbConnectionService.convertDocument(game)))
-            .toList();
-        yield games;
+          final games = await cursor
+              .map((game) => Game.fromJson(_dbConnectionService.convertDocument(game)))
+              .toList();
+
+          // 更新缓存
+          await _cacheService.cacheGames('latest_games', games);
+          yield games;
+        }
         await Future.delayed(const Duration(seconds: 1));
+      } catch (e) {
+        print('Get latest games error: $e');
+        yield [];
       }
-    } catch (e) {
-      print('Get latest games error: $e');
-      yield [];
     }
   }
+
 
   Stream<List<Game>> getGamesSortedByViews() async* {
     try {
@@ -102,14 +124,17 @@ class GameService {
     }
   }
 
+  // 修改会影响缓存的方法
   Future<void> addGame(Game game) async {
     try {
       final gameDoc = game.toJson();
+      gameDoc['_id'] = ObjectId.fromHexString(game.id);
       gameDoc['createTime'] = DateTime.now();
       gameDoc['updateTime'] = DateTime.now();
       gameDoc['viewCount'] = 0;
       gameDoc['likeCount'] = 0;
       await _dbConnectionService.games.insertOne(gameDoc);
+      await _cacheService.clearCache();
     } catch (e) {
       print('Add game error: $e');
       rethrow;
@@ -119,23 +144,35 @@ class GameService {
   Future<void> updateGame(Game game) async {
     try {
       final gameDoc = game.toJson();
+      // 移除 _id，因为它不应该被更新
+      gameDoc.remove('_id');
       gameDoc['updateTime'] = DateTime.now();
-      await _dbConnectionService.games.replaceOne(
-        where.eq('_id', ObjectId.fromHexString(game.id)),
-        gameDoc,
+
+      final objectId = ObjectId.fromHexString(game.id);
+      final result = await _dbConnectionService.games.updateOne(
+        where.eq('_id', objectId),
+        {
+          r'$set': gameDoc,
+        },
       );
-    } catch (e) {
+
+      if (result.nModified == 0) {
+        throw Exception('游戏更新失败：没有找到匹配的文档');
+      }
+
+      await _cacheService.clearCache();
+    } catch (e, stackTrace) {
       print('Update game error: $e');
+      print('Stack trace: $stackTrace');
       rethrow;
     }
   }
-
   Future<void> deleteGame(String id) async {
     try {
       await _dbConnectionService.games
           .deleteOne(where.eq('_id', ObjectId.fromHexString(id)));
-      // 删除相关的收藏记录
       await _dbConnectionService.favorites.deleteMany(where.eq('gameId', id));
+      await _cacheService.clearCache(); // 清除所有缓存
     } catch (e) {
       print('Delete game error: $e');
       rethrow;
@@ -256,8 +293,66 @@ class GameService {
       return null;
     }
   }
+  bool _isValidObjectId(String? id) {
+    if (id == null) return false;
+    try {
+      ObjectId.fromHexString(id);
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
 
-  // 添加分页查询方法
+  Future<void> addToGameHistory(String gameId) async {
+    try {
+      if (!_isValidObjectId(gameId)) {
+        print('Invalid gameId format: $gameId');
+        return;
+      }
+
+      final userId = await _userService.currentUserId;
+      if (userId == null) {
+        print('Cannot add to history: User not logged in');
+        return;
+      }
+
+      // 验证游戏是否存在
+      final gameObjectId = ObjectId.fromHexString(gameId);
+      final gameExists = await _dbConnectionService.games.findOne(
+          where.eq('_id', gameObjectId)
+      );
+
+      if (gameExists == null) {
+        print('Game not found in database: $gameId');
+        return;
+      }
+
+      // 使用 gameExists['_id'].toHexString() 获取正确格式的 ID
+      final normalizedGameId = gameExists['_id'].toHexString();
+      print('Normalized gameId: $normalizedGameId');
+
+      await _gameHistoryService.addGameHistory(normalizedGameId);
+
+      // 使用新的 gameHistory 集合进行验证
+      final verifyHistory = await _dbConnectionService.gameHistory.findOne({
+        'userId': ObjectId.fromHexString(userId),
+        'gameId': normalizedGameId,  // 注意这里改成 gameId 而不是 itemId
+      });
+
+      if (verifyHistory != null) {
+        print('Successfully added game to history');
+      } else {
+        print('Failed to verify game history record');
+        print('Verification query: userId=${userId}, gameId=${normalizedGameId}');
+      }
+
+    } catch (e, stackTrace) {
+      print('Add to game history error: $e');
+      print('Stack trace: $stackTrace');
+    }
+  }
+
+  // 更新分页查询方法以支持缓存
   Future<List<Game>> getGamesPaginated({
     int page = 1,
     int pageSize = 10,
@@ -265,8 +360,15 @@ class GameService {
     bool descending = true
   }) async {
     try {
-      final skip = (page - 1) * pageSize;
+      final cacheKey = 'paginated_games_${page}_${pageSize}_${sortBy}_${descending}';
 
+      // 尝试从缓存获取数据
+      final cachedGames = await _cacheService.getCachedGames(cacheKey);
+      if (cachedGames != null) {
+        return cachedGames;
+      }
+
+      final skip = (page - 1) * pageSize;
       final cursor = _dbConnectionService.games.find(
           where.sortBy(sortBy, descending: descending)
               .skip(skip)
@@ -277,6 +379,8 @@ class GameService {
           .map((game) => Game.fromJson(_dbConnectionService.convertDocument(game)))
           .toList();
 
+      // 更新缓存
+      await _cacheService.cacheGames(cacheKey, games);
       return games;
     } catch (e) {
       print('Get paginated games error: $e');

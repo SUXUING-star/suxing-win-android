@@ -1,4 +1,3 @@
-// lib/screens/profile/profile_screen.dart
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -11,6 +10,9 @@ import '../../routes/app_routes.dart';
 import '../../services/user_service.dart';
 import '../../widgets/profile/profile_header.dart';
 import '../../widgets/profile/profile_menu_list.dart';
+import '../../utils/loading_route_observer.dart'; // 确保这个导入存在
+import '../../utils/oss_upload.dart';
+
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -20,23 +22,98 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final UserService _userService = UserService();
   final ImagePicker _picker = ImagePicker();
+  User? _user;
+  String? _error;
+  bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      final user = await _userService.getCurrentUserProfile().first;
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e.toString();
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _refreshProfile() async {
+    try {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
+      await _loadUserProfile();
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   Future<void> _pickAndUploadAvatar() async {
     try {
       final XFile? pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1800,
-        maxHeight: 1800,
-        imageQuality: 80,
+        maxWidth: 800,  // 限制最大宽度
+        maxHeight: 800, // 限制最大高度
+        imageQuality: 85, // 压缩质量
       );
 
       if (pickedFile != null) {
-        await _userService.updateUserProfile(avatar: pickedFile.path);
+        // 显示加载指示器
+        setState(() {
+          _isLoading = true;
+        });
+
+        // 上传到 OSS
+        final avatarUrl = await OSSUpload.uploadImage(
+          File(pickedFile.path),
+          folder: 'avatars',
+          maxWidth: 800,
+          maxHeight: 800,
+          quality: 85,
+        );
+
+        // 更新用户资料
+        await _userService.updateUserProfile(avatar: avatarUrl);
+
+        // 重新加载用户资料
+        await _loadUserProfile();
+
+        // 显示成功提示
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('头像更新成功')),
+          );
+        }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('上传头像失败：$e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('上传头像失败：$e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -65,6 +142,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 await _userService.updateUserProfile(
                   username: usernameController.text,
                 );
+                await _loadUserProfile();
                 Navigator.of(context).pop();
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('个人资料更新成功')),
@@ -83,7 +161,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showHelpAndFeedback() async {
-    const String feedbackUrl = 'https://suxing.site'; // 替换为实际的反馈页面
+    const String feedbackUrl = 'https://suxing.site';
     try {
       if (await canLaunchUrl(Uri.parse(feedbackUrl))) {
         await launchUrl(Uri.parse(feedbackUrl));
@@ -149,39 +227,40 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-      body: StreamBuilder<User?>(
-        stream: _userService.getCurrentUserProfile(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _buildError(context, '加载失败：${snapshot.error}');
-          }
+      body: RefreshIndicator(
+        onRefresh: _refreshProfile,
+        child: _buildContent(context, authProvider),
+      ),
+    );
+  }
 
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoading();
-          }
+  Widget _buildContent(BuildContext context, AuthProvider authProvider) {
+    if (_isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
 
-          final user = snapshot.data;
-          if (user == null && !authProvider.isLoggedIn) {
-            return _buildLoginPrompt(context);
-          }
+    if (_error != null) {
+      return _buildError(context, _error!);
+    }
 
-          return SingleChildScrollView(
-            child: Column(
-              children: [
-                ProfileHeader(
-                  user: user!,
-                  onEditProfile: () => _showEditProfileDialog(user),
-                  onAvatarTap: _pickAndUploadAvatar,
-                ),
-                Divider(),
-                ProfileMenuList(
-                  menuItems: _getMenuItems(),
-                  onLogout: () => authProvider.signOut(),
-                ),
-              ],
-            ),
-          );
-        },
+    if (_user == null && !authProvider.isLoggedIn) {
+      return _buildLoginPrompt(context);
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          ProfileHeader(
+            user: _user!,
+            onEditProfile: () => _showEditProfileDialog(_user!),
+            onAvatarTap: _pickAndUploadAvatar,
+          ),
+          Divider(),
+          ProfileMenuList(
+            menuItems: _getMenuItems(),
+            onLogout: () => authProvider.signOut(),
+          ),
+        ],
       ),
     );
   }
@@ -196,19 +275,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Text(message),
           SizedBox(height: 24),
           ElevatedButton(
-            onPressed: () {
-              // 重试或返回
-              Navigator.pop(context);
-            },
-            child: Text('返回'),
+            onPressed: _refreshProfile,
+            child: Text('重新加载'),
           ),
         ],
       ),
     );
-  }
-
-  Widget _buildLoading() {
-    return Center(child: CircularProgressIndicator());
   }
 
   Widget _buildLoginPrompt(BuildContext context) {

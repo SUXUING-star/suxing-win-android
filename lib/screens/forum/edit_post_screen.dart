@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../models/post.dart';
 import '../../services/forum_service.dart';
+import '../../widgets/common/toaster.dart';
 
 class EditPostScreen extends StatefulWidget {
   final Post post;
@@ -126,6 +127,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
     try {
       setState(() => _isSubmitting = true);
       await _forumService.updatePost(widget.post.id, title, content, _selectedTags);
+      Toaster.success(context, "编辑帖子成功！");
       Navigator.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(

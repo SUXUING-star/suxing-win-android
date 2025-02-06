@@ -1,6 +1,6 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application
-        android:label="galshare"
+        android:label="宿星茶会(安卓版)"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

@@ -44,10 +44,22 @@ class LinkToolService {
   Future<void> updateLink(Link link) async {
     try {
       final linkDoc = link.toJson();
+      // 移除 _id 字段，因为 MongoDB 更新操作中不能包含 _id
+      linkDoc.remove('_id');
+
+      // 保存更新时间
+      linkDoc['updateTime'] = DateTime.now();
+
+      // 确保不覆盖原始的创建时间
+      linkDoc.remove('createTime');
+
       await _dbConnectionService.links.updateOne(
         where.eq('_id', ObjectId.fromHexString(link.id)),
         {r'$set': linkDoc},
       );
+
+      // 打印更新操作的结果，用于调试
+      print('Update link document: $linkDoc');
     } catch (e) {
       print('Update link error: $e');
       rethrow;
@@ -97,6 +109,19 @@ class LinkToolService {
   Future<void> updateTool(Tool tool) async {
     try {
       final toolDoc = tool.toJson();
+      // 移除id，不更新
+      toolDoc.remove("_id");
+
+      // 获取原始工具数据，保留 createTime
+      final originalToolDoc = await _dbConnectionService.tools.findOne(
+          where.eq('_id', ObjectId.fromHexString(tool.id))
+      );
+
+      // 如果找到原始数据，保留原始的 createTime
+      if (originalToolDoc != null) {
+        toolDoc['createTime'] = originalToolDoc['createTime'];
+      }
+
       await _dbConnectionService.tools.updateOne(
         where.eq('_id', ObjectId.fromHexString(tool.id)),
         {r'$set': toolDoc},

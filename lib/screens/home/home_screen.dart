@@ -1,34 +1,72 @@
 // lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
-import '../../widgets/home/home_hot.dart'; // 引入 HomeHot
-import '../../widgets/home/home_latest.dart'; // 引入 HomeLatest
+import '../../widgets/home/home_hot.dart';
+import '../../widgets/home/home_latest.dart';
+import '../../utils/loading_route_observer.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
+  @override
+  _HomeScreenState createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 使用 WidgetsBinding.instance.addPostFrameCallback 确保在构建完成后执行
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      // 获取 LoadingRouteObserver 实例
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      // 显示加载动画
+      loadingObserver.showLoading();
+
+      // 模拟数据加载
+      _initializeData().then((_) {
+        // 隐藏加载动画
+        loadingObserver.hideLoading();
+      });
+    });
+  }
+
+  Future<void> _initializeData() async {
+    // 模拟异步数据加载
+    await Future.delayed(Duration(seconds: 2));
+  }
+
+  Future<void> _refreshData() async {
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
+    try {
+      await Future.delayed(Duration(seconds: 2));
+      // 在这里添加实际的数据刷新逻辑
+    } finally {
+      loadingObserver.hideLoading();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('宿星茶会'),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // 实现搜索功能
-            },
-          ),
-        ],
-      ),
+      // 不需要加上appbar太丑了
       body: RefreshIndicator(
-        onRefresh: () async {
-          // 实现下拉刷新
-        },
+        onRefresh: _refreshData,
         child: SingleChildScrollView(
           physics: AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
               _buildBanner(),
-              HomeHot(), // 使用 HomeHot 组件
-              HomeLatest(), // 使用 HomeLatest 组件
+              HomeHot(),
+              HomeLatest(),
             ],
           ),
         ),
@@ -47,8 +85,9 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.all(8.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
-              child: Image.network(
-                'https://galshare.oss-cn-beijing.aliyuncs.com/home/kaev_02l_9.jpg',
+              child: Image.asset(
+                //home顶部图片
+                'images/kaev.jpg',
                 fit: BoxFit.cover,
               ),
             ),

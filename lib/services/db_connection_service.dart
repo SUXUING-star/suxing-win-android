@@ -1,6 +1,7 @@
 // lib/services/db_connection_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
 import '../config/app_config.dart';
+import 'dart:async';
 
 class DBConnectionService {
   static final DBConnectionService _instance = DBConnectionService._internal();
@@ -16,9 +17,20 @@ class DBConnectionService {
   late DbCollection replies;
   late DbCollection links;
   late DbCollection tools;
-  late DbCollection history;
+  late DbCollection gameHistory;  // 新增
+  late DbCollection postHistory;  // 新增
+
+  bool _isConnected = false;
+  int _reconnectAttempts = 0;
+  static const int maxReconnectAttempts = 5;
 
   Future<void> initialize() async {
+    await _connect();
+  }
+
+  Future<void> _connect() async {
+    if (_isConnected) return;
+
     try {
       final uri = AppConfig.mongodbUri;
       final database = AppConfig.mongodbDatabase;
@@ -37,13 +49,31 @@ class DBConnectionService {
       replies = _db.collection('replies');
       links = _db.collection('links');
       tools = _db.collection('tools');
-      history = _db.collection('history');
+      gameHistory = _db.collection('game_history');  // 新增
+      postHistory = _db.collection('post_history');  // 新增
 
       await _ensureIndexes();
+
+      _isConnected = true;
+      _reconnectAttempts = 0;
+      print('MongoDB connected successfully');
     } catch (e) {
       print('MongoDB connection error: $e');
-      rethrow;
+      await _reconnect();
     }
+  }
+
+  Future<void> _reconnect() async {
+    if (_reconnectAttempts >= maxReconnectAttempts) {
+      print('Max reconnection attempts reached. Please check your database connection.');
+      return;
+    }
+
+    _reconnectAttempts++;
+    final waitTime = Duration(seconds: 1 << _reconnectAttempts); // Exponential backoff
+    print('Attempting to reconnect in ${waitTime.inSeconds} seconds...');
+    await Future.delayed(waitTime);
+    await _connect();
   }
 
   Future<void> _ensureIndexes() async {
@@ -86,13 +116,39 @@ class DBConnectionService {
         // 工具相关索引
         tools.createIndex(keys: {'category': 1}),
         tools.createIndex(keys: {'createTime': -1}),
-        // 历史记录相关索引
-        history.createIndex(keys: {'userId': 1, 'gameId': 1}, unique: true),
-        history.createIndex(keys: {'userId': 1, 'lastViewTime': -1}),
+        // 游戏历史记录索引
+        gameHistory.createIndex(
+            keys: {
+              'userId': 1,
+              'gameId': 1,
+            },
+            unique: true
+        ),
+        gameHistory.createIndex(
+            keys: {
+              'userId': 1,
+              'lastViewTime': -1,
+            }
+        ),
+
+        // 帖子历史记录索引
+        postHistory.createIndex(
+            keys: {
+              'userId': 1,
+              'postId': 1,
+            },
+            unique: true
+        ),
+        postHistory.createIndex(
+            keys: {
+              'userId': 1,
+              'lastViewTime': -1,
+            }
+        ),
       ]);
     } catch (e) {
       print('Error creating indexes: $e');
-      rethrow;
+      // 不要在这里抛出异常，而是继续尝试连接
     }
   }
 
@@ -101,7 +157,7 @@ class DBConnectionService {
 
     try {
       return {
-        'id': doc['_id'] != null ? doc['_id'].toHexString() : null,
+        'id': doc['_id'] is ObjectId ? doc['_id'].toHexString() : doc['_id'],
         ...Map.from(doc)..remove('_id'),
       };
     } catch (e) {
@@ -111,6 +167,28 @@ class DBConnectionService {
   }
 
   Future<void> close() async {
-    await _db.close();
+    if (_isConnected) {
+      await _db.close();
+      _isConnected = false;
+    }
   }
+
+  Future<T> runWithErrorHandling<T>(Future<T> Function() operation) async {
+    if (!_isConnected) {
+      await _connect();
+    }
+
+    try {
+      return await operation();
+    } catch (e) {
+      if (e.toString().contains('No master connection')) {
+        _isConnected = false;
+        await _reconnect();
+        // 重试操作
+        return await operation();
+      }
+      rethrow;
+    }
+  }
+
 }

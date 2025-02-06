@@ -4,10 +4,10 @@ import 'package:mongo_dart/mongo_dart.dart';
 class Game {
   final String id;
   final String title;
-  final String summary;     // 摘要
-  final String description; // 详细描述
-  final String coverImage;  // 头图
-  final List<String> images; // 文章内部图片列表
+  final String summary;
+  final String description;
+  final String coverImage;
+  final List<String> images;
   final String category;
   final double rating;
   final DateTime createTime;
@@ -15,8 +15,9 @@ class Game {
   final int viewCount;
   final int likeCount;
   final List<String> likedBy;
-  final List<Map<String, dynamic>> downloadLinks; // [{id: "...", title: "...", description: "...", url: "..."}]
+  final List<DownloadLink> downloadLinks;
   final String? musicUrl;
+  final DateTime? lastViewedAt; // 添加这个字段
 
   Game({
     required this.id,
@@ -34,33 +35,18 @@ class Game {
     required this.likedBy,
     required this.downloadLinks,
     this.musicUrl,
+    this.lastViewedAt, // 添加这个参数
   });
 
   factory Game.fromJson(Map<String, dynamic> json) {
-    // 处理 MongoDB 的 _id 字段
     String gameId = json['_id'] is ObjectId
         ? json['_id'].toHexString()
         : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
 
-    // 处理下载链接数组
-    List<Map<String, dynamic>> parseDownloadLinks(dynamic links) {
+    List<DownloadLink> parseDownloadLinks(dynamic links) {
       if (links == null) return [];
       if (links is List) {
-        return links.map((link) {
-          if (link is Map) {
-            var linkMap = <String, dynamic>{};
-            if (link['_id'] is ObjectId) {
-              linkMap['id'] = link['_id'].toHexString();
-            } else {
-              linkMap['id'] = link['id']?.toString() ?? '';
-            }
-            linkMap['title'] = link['title']?.toString() ?? '';
-            linkMap['description'] = link['description']?.toString() ?? '';
-            linkMap['url'] = link['url']?.toString() ?? '';
-            return linkMap;
-          }
-          return <String, dynamic>{};
-        }).toList();
+        return links.map((link) => DownloadLink.fromJson(link)).toList();
       }
       return [];
     }
@@ -85,6 +71,11 @@ class Game {
       likedBy: (json['likedBy'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       downloadLinks: parseDownloadLinks(json['downloadLinks']),
       musicUrl: json['musicUrl']?.toString(),
+      lastViewedAt: json['lastViewedAt'] != null
+          ? (json['lastViewedAt'] is DateTime
+          ? json['lastViewedAt']
+          : DateTime.parse(json['lastViewedAt']))
+          : null, // 解析 lastViewedAt
     );
   }
 
@@ -103,8 +94,9 @@ class Game {
       'viewCount': viewCount,
       'likeCount': likeCount,
       'likedBy': likedBy,
-      'downloadLinks': downloadLinks,
+      'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl,
+      'lastViewedAt': lastViewedAt?.toIso8601String(), // 添加 lastViewedAt
     };
   }
 
@@ -122,8 +114,9 @@ class Game {
     int? viewCount,
     int? likeCount,
     List<String>? likedBy,
-    List<Map<String, dynamic>>? downloadLinks,
+    List<DownloadLink>? downloadLinks,
     String? musicUrl,
+    DateTime? lastViewedAt, // 添加这个参数
   }) {
     return Game(
       id: id ?? this.id,
@@ -141,6 +134,38 @@ class Game {
       likedBy: likedBy ?? this.likedBy,
       downloadLinks: downloadLinks ?? this.downloadLinks,
       musicUrl: musicUrl ?? this.musicUrl,
+      lastViewedAt: lastViewedAt ?? this.lastViewedAt, // 添加这一行
     );
+  }
+}
+class DownloadLink {
+  final String id;
+  final String title;
+  final String description;
+  final String url;
+
+  DownloadLink({
+    required this.id,
+    required this.title,
+    required this.description,
+    required this.url,
+  });
+
+  factory DownloadLink.fromJson(Map<String, dynamic> json) {
+    return DownloadLink(
+      id: json['id']?.toString() ?? '',
+      title: json['title']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      url: json['url']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'url': url,
+    };
   }
 }

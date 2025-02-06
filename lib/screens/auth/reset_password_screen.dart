@@ -1,219 +1,113 @@
+// lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
-import 'dart:async'; // 导入 Timer
-import '../../services/email_service.dart';
-import '../../services/user_service.dart'; // 引入 AuthService
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
+import '../../services/user_service.dart';
+import '../../utils/loading_route_observer.dart';
+import '../../widgets/common/toaster.dart';
 
-class RegisterScreen extends StatefulWidget {
+class ResetPasswordScreen extends StatefulWidget {
+  final String email;
+
+  const ResetPasswordScreen({Key? key, required this.email}) : super(key: key);
+
   @override
-  _RegisterScreenState createState() => _RegisterScreenState();
+  _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailFormKey = GlobalKey<FormState>();
-  final _usernameController = TextEditingController();
-  final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _verificationCodeController = TextEditingController();
-  final UserService _authService = UserService(); // 使用 AuthService
-
-  bool _isLoading = false;
-  bool _codeSent = false;
-  String? _verificationCode;
-
-  // 添加计时器相关变量
-  Timer? _timer;
-  int _countDown = 0;
+  final UserService _authService = UserService();
+  String? _error;
 
   @override
-  void dispose() {
-    _usernameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    _confirmPasswordController.dispose();
-    _verificationCodeController.dispose();
-    _timer?.cancel();  // 清理计时器
-    super.dispose();
-  }
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-  void _startTimer() {
-    _countDown = 60;
-    _timer?.cancel();
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
-      setState(() {
-        if (_countDown > 0) {
-          _countDown--;
-        } else {
-          _timer?.cancel();
-        }
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      // 不需要初始加载动画
     });
   }
 
-
-// 修改发送验证码方法
-  Future<void> _sendVerificationCode() async {
-    // 只验证邮箱字段
-    if (!_emailFormKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-    try {
-      _verificationCode = EmailService.generateVerificationCode();
-      await EmailService.sendVerificationCode(_emailController.text, _verificationCode!);
-
-      _startTimer(); // 启动计时器
-
-      setState(() => _codeSent = true);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('验证码已发送到您的邮箱')),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('发送验证码失败：${e.toString()}')),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
+  @override
+  void dispose() {
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    super.dispose();
   }
 
-  // 在 build 方法中修改发送验证码按钮
-  Widget _buildSendCodeButton() {
-    final buttonText = _countDown > 0
-        ? '重新发送(${_countDown}s)'
-        : (_codeSent ? '重新发送' : '发送验证码');
-
-    return ElevatedButton(
-      onPressed: (_isLoading || _countDown > 0) ? null : _sendVerificationCode,
-      child: _isLoading
-          ? SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-        ),
-      )
-          : Text(buttonText),
-    );
-  }
-
-
-  // 在 register_screen.dart 的 _handleRegister 方法中修改
-  Future<void> _handleRegister() async {
+  Future<void> _resetPassword() async {
+    // 验证表单
     if (!_formKey.currentState!.validate()) return;
 
-    if (_verificationCodeController.text != _verificationCode) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('验证码错误')),
-      );
-      return;
-    }
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
 
-    setState(() => _isLoading = true);
+    loadingObserver.showLoading();
+
     try {
-      // 使用 AuthService 进行注册
-      await _authService.signUp(
-        _emailController.text,
+      await _authService.resetPassword(
+        widget.email,
         _passwordController.text,
-        _usernameController.text,
       );
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('注册成功，请登录')),
-      );
+      // 清除错误状态
+      setState(() {
+        _error = null;
+      });
 
-      // 注册成功后跳转到登录页面
+      Toaster.success(context, "重置密码成功，用新的密码进行登录吧！");
+
       Navigator.pushReplacementNamed(context, '/login');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      setState(() {
+        _error = '重置密码失败：${e.toString()}';
+      });
+      Toaster.error(context, "重置密码失败");
     } finally {
-      setState(() => _isLoading = false);
+      loadingObserver.hideLoading();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('注册')),
-      body: SingleChildScrollView(
+      appBar: AppBar(title: Text('重置密码')),
+      body: Padding(
         padding: EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              TextFormField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: '用户名',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入用户名';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              // 邮箱和验证码输入
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Expanded(
-                    child: Form(
-                      key: _emailFormKey,  // 使用单独的 form key
-                      child: TextFormField(
-                        controller: _emailController,
-                        decoration: InputDecoration(
-                          labelText: '邮箱',
-                          border: OutlineInputBorder(),
-                        ),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入邮箱';
-                          }
-                          if (!value.contains('@')) {
-                            return '请输入有效的邮箱地址';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
+              // 显示错误信息
+              if (_error != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    _error!,
+                    style: TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
                   ),
-                  SizedBox(width: 16),
-                  _buildSendCodeButton(),
-                ],
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _verificationCodeController,
-                decoration: InputDecoration(
-                  labelText: '验证码',
-                  border: OutlineInputBorder(),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入验证码';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
+
               TextFormField(
                 controller: _passwordController,
                 decoration: InputDecoration(
-                  labelText: '密码',
+                  labelText: '新密码',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return '请输入密码';
+                    return '请输入新密码';
                   }
                   if (value.length < 6) {
                     return '密码长度至少6位';
@@ -225,7 +119,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _confirmPasswordController,
                 decoration: InputDecoration(
-                  labelText: '确认密码',
+                  labelText: '确认新密码',
                   border: OutlineInputBorder(),
                 ),
                 obscureText: true,
@@ -238,19 +132,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
               ),
               SizedBox(height: 24),
               ElevatedButton(
-                onPressed: _isLoading ? null : _handleRegister,
-                child: _isLoading
-                    ? CircularProgressIndicator(color: Colors.white)
-                    : Text('注册'),
+                onPressed: _resetPassword,
+                child: Text('重置密码'),
                 style: ElevatedButton.styleFrom(
                   minimumSize: Size(double.infinity, 48),
                 ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pop(context);
-                },
-                child: Text('已有账号？返回登录'),
               ),
             ],
           ),

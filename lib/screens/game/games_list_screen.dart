@@ -3,6 +3,8 @@ import '../../models/game.dart';
 import '../../services/game_service.dart';
 import '../../utils/admin_check.dart';
 import '../../widgets/game/game_card.dart';
+import '../../utils/loading_route_observer.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class GamesListScreen extends StatefulWidget {
   @override
@@ -16,17 +18,30 @@ class _GamesListScreenState extends State<GamesListScreen> {
   int _pageSize = 10;
   int _totalPages = 1;
   bool _isLoading = false;
-  String _currentSortBy = 'createTime'; // 默认按创建时间排序
-  bool _isDescending = true;  // 默认降序
-  String? _errorMessage; // 用于存储错误信息
+  String _currentSortBy = 'createTime';
+  bool _isDescending = true;
+  String? _errorMessage;
 
   final ScrollController _scrollController = ScrollController();
 
   @override
-  void initState() {
-    super.initState();
-    _loadGames(); // 初始加载第一页数据
-    _scrollController.addListener(_onScroll); // 监听滚动事件
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .first;
+
+      loadingObserver.showLoading();
+
+      _loadGames().then((_) {
+        loadingObserver.hideLoading();
+      });
+    });
+
+    _scrollController.addListener(_onScroll);
   }
 
   @override
@@ -36,8 +51,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
   }
 
   void _onScroll() {
-    // 检查是否滚动到底部且没有在加载中
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 && !_isLoading && _currentPage < _totalPages) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100
+        && !_isLoading
+        && _currentPage < _totalPages) {
       _loadMoreGames();
     }
   }
@@ -45,7 +61,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
   Future<void> _loadGames({bool initialLoad = true}) async {
     setState(() {
       _isLoading = true;
-      _errorMessage = null;  // 清除之前的错误
+      _errorMessage = null;
       if (initialLoad) {
         _currentPage = 1;
       }
@@ -54,7 +70,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
     try {
       if (initialLoad) {
         _totalPages = await _calculateTotalPages();
-        _games.clear(); // 清空之前的游戏列表
+        _games.clear();
       }
 
       final games = await _gameService.getGamesPaginated(
@@ -86,6 +102,20 @@ class _GamesListScreenState extends State<GamesListScreen> {
   Future<int> _calculateTotalPages() async {
     final totalCount = await _gameService.getTotalGamesCount();
     return (totalCount / _pageSize).ceil();
+  }
+
+  Future<void> _refreshData() async {
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
+    try {
+      await _loadGames();
+    } finally {
+      loadingObserver.hideLoading();
+    }
   }
 
   void _showFilterDialog(BuildContext context) {
@@ -145,39 +175,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
           ),
         ],
       ),
-      body: Builder(  // 使用Builder来获得正确的上下文
-        builder: (context) {
-          if (_errorMessage != null) {
-            return _buildError(_errorMessage!); // 显示错误信息
-          }
-
-          if (_isLoading && _games.isEmpty) {
-            return _buildLoading(); // 显示加载指示器
-          }
-
-          if (_games.isEmpty) {
-            return _buildEmptyState(context, '暂无游戏数据'); // 显示空状态
-          }
-
-          return GridView.builder(
-            controller: _scrollController,
-            padding: EdgeInsets.all(8),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 250, // 每个卡片最大宽度
-              childAspectRatio: 0.8,   // 可以根据实际效果微调
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 8,
-            ),
-            itemCount: _games.length + (_isLoading ? 1 : 0),
-            itemBuilder: (context, index) {
-              if (index < _games.length) {
-                return GameCard(game: _games[index]);
-              } else {
-                return Center(child: CircularProgressIndicator());
-              }
-            },
-          );
-        },
+      body: RefreshIndicator(
+        onRefresh: _refreshData,
+        child: _buildContent(),
       ),
       floatingActionButton: AdminCheck(
         child: FloatingActionButton(
@@ -187,6 +187,39 @@ class _GamesListScreenState extends State<GamesListScreen> {
           child: Icon(Icons.add),
         ),
       ),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_errorMessage != null) {
+      return _buildError(_errorMessage!);
+    }
+
+    if (_games.isEmpty && _isLoading) {
+      return _buildLoading();
+    }
+
+    if (_games.isEmpty) {
+      return _buildEmptyState(context, '暂无游戏数据');
+    }
+
+    return GridView.builder(
+      controller: _scrollController,
+      padding: EdgeInsets.all(8),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 250,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 8,
+      ),
+      itemCount: _games.length + (_isLoading ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index < _games.length) {
+          return GameCard(game: _games[index]);
+        } else {
+          return Center(child: CircularProgressIndicator());
+        }
+      },
     );
   }
 
