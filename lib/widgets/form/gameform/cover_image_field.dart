@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../utils/oss_upload.dart';
+import '../../../utils/file_upload.dart';
 
 class CoverImageField extends StatelessWidget {
   final String? coverImageUrl;
@@ -31,7 +31,7 @@ class CoverImageField extends StatelessWidget {
     if (image != null) {
       try {
         onLoadingChanged(true);
-        final coverUrl = await OSSUpload.uploadImage(
+        final coverUrl = await FileUpload.uploadImage(
           File(image.path),
           folder: 'games/covers',
           maxWidth: 1200,

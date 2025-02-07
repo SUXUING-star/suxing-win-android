@@ -11,8 +11,7 @@ import '../../services/user_service.dart';
 import '../../widgets/profile/profile_header.dart';
 import '../../widgets/profile/profile_menu_list.dart';
 import '../../utils/loading_route_observer.dart'; // 确保这个导入存在
-import '../../utils/oss_upload.dart';
-
+import '../../utils/file_upload.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -81,7 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         });
 
         // 上传到 OSS
-        final avatarUrl = await OSSUpload.uploadImage(
+        final avatarUrl = await FileUpload.uploadImage(
           File(pickedFile.path),
           folder: 'avatars',
           maxWidth: 800,

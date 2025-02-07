@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../utils/oss_upload.dart';
+import '../../../utils/file_upload.dart';
 
 class GameImagesField extends StatelessWidget {
   final List<String> gameImages;
@@ -25,7 +25,7 @@ class GameImagesField extends StatelessWidget {
       try {
         onLoadingChanged(true);
         final files = images.map((image) => File(image.path)).toList();
-        final urls = await OSSUpload.uploadFiles(
+        final urls = await FileUpload.uploadFiles(
           files,
           folder: 'games/screenshots',
         );

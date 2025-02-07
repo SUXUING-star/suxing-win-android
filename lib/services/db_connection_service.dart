@@ -4,6 +4,8 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../config/app_config.dart';
 import '../providers/db_state_provider.dart';
 import 'dart:async';
+import 'dart:io';
+import 'ssl_cert_service.dart';
 
 class DBConnectionService {
   static final DBConnectionService _instance = DBConnectionService._internal();
@@ -23,6 +25,7 @@ class DBConnectionService {
   late DbCollection postHistory;
 
   bool _isConnected = false;
+  bool _isInitializing = false;
   int _reconnectAttempts = 0;
   static const int maxReconnectAttempts = 3;
   Timer? _healthCheckTimer;
@@ -35,9 +38,19 @@ class DBConnectionService {
   }
 
   Future<void> initialize() async {
-    await _connect();
-    _startHealthCheck();
-    _startConnectivityCheck();
+    if (_isInitializing) return;
+    _isInitializing = true;
+
+    try {
+      await _connect();
+      _startHealthCheck();
+      _startConnectivityCheck();
+    } catch (e) {
+      print('Database initialization failed: $e');
+      _handleConnectionFailure('数据库连接失败，请检查网络连接。');
+    } finally {
+      _isInitializing = false;
+    }
   }
 
   void _startConnectivityCheck() {
@@ -91,10 +104,28 @@ class DBConnectionService {
       final username = AppConfig.mongodbUsername;
       final password = AppConfig.mongodbPassword;
 
-      final connectionString = 'mongodb://$username:$password@${uri.replaceAll('mongodb://', '')}/$database?authSource=admin';
+      // 设置SSL证书
+      // final sslService = SSLCertService();
+      // final certPath = await sslService.setupClientCertificate();
 
-      // 设置短超时时间以快速检测连接问题
+      // 构建带SSL的连接字符串
+      final connectionString = 'mongodb://$username:$password@${uri.replaceAll('mongodb://', '')}/$database'
+          '?authSource=admin'
+          '&tls=true'
+          '&tlsAllowInvalidCertificates=true';
+
+      // 设置SSL上下文
+      // final context = SecurityContext();
+      // context.useCertificateChain(certPath);
+      // context.usePrivateKey(certPath);
+
+      // 创建数据库连接
       _db = await Db.create(connectionString);
+      await _db.open(
+        //secure: true,
+        //tlsCAFile: certPath,
+      ).timeout(Duration(seconds: 5));
+
       await _db.open().timeout(Duration(seconds: 5));
 
       // 初始化所有集合
@@ -142,12 +173,19 @@ class DBConnectionService {
       await _db.close();
       _isConnected = false;
       _dbStateProvider?.setConnectionState(false);
+      await SSLCertService().cleanup();
     }
   }
 
   Future<T> runWithErrorHandling<T>(Future<T> Function() operation) async {
     if (!_isConnected) {
-      await _connect();
+      // Add timeout to prevent infinite waiting
+      await initialize().timeout(
+        Duration(seconds: 5),
+        onTimeout: () {
+          throw Exception('数据库连接超时');
+        },
+      );
     }
 
     try {

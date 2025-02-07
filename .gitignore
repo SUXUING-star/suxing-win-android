@@ -15,6 +15,7 @@ migrate_working_dir/
 lib/config/
 
 #不需要这些
+mongodb-certs
 pubspec.lock
 pubspec.yaml
 galshare.iml
