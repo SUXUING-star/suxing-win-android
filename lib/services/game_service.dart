@@ -30,14 +30,16 @@ class GameService {
   }
 
   Stream<List<Game>> getHotGames() async* {
-    while (true) {
-      try {
-        // 尝试从缓存获取数据
-        final cachedGames = await _cacheService.getCachedGames('hot_games');
-        if (cachedGames != null) {
-          yield cachedGames;
-        } else {
-          // 如果缓存不存在或过期，从数据库获取
+    try {
+      // 先尝试从缓存获取数据
+      final cachedGames = await _cacheService.getCachedGames('hot_games');
+      if (cachedGames != null) {
+        yield cachedGames;
+      }
+
+      // 设置一个较长的刷新间隔，比如30秒
+      while (true) {
+        try {
           final cursor = _dbConnectionService.games.find(
               where.sortBy('viewCount', descending: true).limit(10));
 
@@ -48,12 +50,18 @@ class GameService {
           // 更新缓存
           await _cacheService.cacheGames('hot_games', games);
           yield games;
+
+          // 增加刷新间隔到30秒
+          await Future.delayed(const Duration(seconds: 30));
+        } catch (e) {
+          print('Get hot games error in loop: $e');
+          // 出错时等待后重试
+          await Future.delayed(const Duration(seconds: 30));
         }
-        await Future.delayed(const Duration(seconds: 1));
-      } catch (e) {
-        print('Get hot games error: $e');
-        yield [];
       }
+    } catch (e) {
+      print('Get hot games initial error: $e');
+      yield [];
     }
   }
 

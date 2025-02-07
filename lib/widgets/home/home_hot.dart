@@ -1,34 +1,199 @@
-
 import 'package:flutter/material.dart';
+import 'dart:async';
 import '../../../models/game.dart';
 import '../../../services/game_service.dart';
 import '../../../routes/app_routes.dart';
-import 'package:flutter/gestures.dart';
+import 'home_game_card.dart';
 
-class HomeHot extends StatelessWidget {
+class HomeHot extends StatefulWidget {
+  @override
+  _HomeHotState createState() => _HomeHotState();
+}
+
+class _HomeHotState extends State<HomeHot> {
   final GameService _gameService = GameService();
+  final PageController _pageController = PageController();
+  Timer? _timer;
+  int _currentPage = 0;
+  static const double cardWidth = 160.0;
+  static const double cardMargin = 16.0;
+
+  @override
+  void initState() {
+    super.initState();
+    _startAutoScroll();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _startAutoScroll() {
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) async {  // 添加 async
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      if (_pageController.hasClients) {
+        // 使用 await 直接获取 page 值
+        final currentPage = (_pageController.page ?? 0).round();
+
+        final builder = context.findAncestorWidgetOfExactType<StreamBuilder<List<Game>>>();
+        if (builder == null) return;
+
+        final snapshot = builder as StreamBuilder<List<Game>>;
+        final games = snapshot.initialData ?? [];
+        final cardsPerPage = _getCardsPerPage(context);
+        final totalPages = _getTotalPages(cardsPerPage, games);
+
+        if (currentPage >= totalPages - 1) {
+          _pageController.animateToPage(
+            0,
+            duration: Duration(milliseconds: 800),
+            curve: Curves.easeInOut,
+          );
+        } else {
+          _pageController.nextPage(
+            duration: Duration(milliseconds: 800),
+            curve: Curves.easeInOut,
+          );
+        }
+      }
+    });
+  }
+
+  int _getCardsPerPage(BuildContext context) {
+    double screenWidth = MediaQuery.of(context).size.width;
+    double availableWidth = screenWidth - 32; // 减去左右padding
+    int cardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
+    return cardsPerPage > 0 ? cardsPerPage : 1;
+  }
+
+  int _getTotalPages(int cardsPerPage, List<Game> games) {
+    if (cardsPerPage == 0) return 0;
+    return (games.length / cardsPerPage).ceil();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return _buildSection(
-      title: '热门游戏',
-      onMorePressed: () {
-        Navigator.pushNamed(context, AppRoutes.hotGames);
+    return StreamBuilder<List<Game>>(
+      stream: _gameService.getHotGames(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _buildError('加载失败：${snapshot.error}');
+        }
+
+        if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return _buildEmptyState('暂无热门游戏');
+        }
+
+        final games = snapshot.data!;
+        final cardsPerPage = _getCardsPerPage(context);
+        final totalPages = _getTotalPages(cardsPerPage, games);
+
+        return _buildSection(
+          title: '热门游戏',
+          onMorePressed: () {
+            Navigator.pushNamed(context, AppRoutes.hotGames);
+          },
+          child: Stack(
+            children: [
+              Container(
+                height: 200,
+                child: PageView.builder(
+                  controller: _pageController,
+                  itemCount: totalPages,
+                  onPageChanged: (int page) {
+                    if (mounted) {
+                      setState(() => _currentPage = page);
+                    }
+                  },
+                  itemBuilder: (context, pageIndex) {
+                    final startIndex = pageIndex * cardsPerPage;
+                    return Container(
+                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(cardsPerPage, (index) {
+                          final gameIndex = startIndex + index;
+                          if (gameIndex >= games.length) {
+                            return SizedBox(width: cardWidth + cardMargin);
+                          }
+
+                          return HomeGameCard(
+                            game: games[gameIndex],
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.gameDetail,
+                              arguments: games[gameIndex],
+                            ),
+                          );
+                        }),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              if (totalPages > 1) _buildNavigationButtons(totalPages),
+            ],
+          ),
+        );
       },
-      child: StreamBuilder<List<Game>>(
-        stream: _gameService.getHotGames(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _buildError('加载失败：${snapshot.error}');
-          }
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return _buildLoading();
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return _buildEmptyState('暂无热门游戏');
-          }
-          return _buildHorizontalGameList(snapshot.data!, context);
-        },
+    );
+  }
+
+  Widget _buildNavigationButtons(int totalPages) {
+    return Positioned(
+      left: 0,
+      right: 0,
+      top: 0,
+      bottom: 0,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          _buildNavigationButton(
+            icon: Icons.arrow_back_ios,
+            onPressed: _currentPage > 0 ? () {
+              _pageController.previousPage(
+                duration: Duration(milliseconds: 800),
+                curve: Curves.easeInOut,
+              );
+            } : null,
+          ),
+          _buildNavigationButton(
+            icon: Icons.arrow_forward_ios,
+            onPressed: _currentPage < totalPages - 1 ? () {
+              _pageController.nextPage(
+                duration: Duration(milliseconds: 800),
+                curve: Curves.easeInOut,
+              );
+            } : null,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required IconData icon,
+    VoidCallback? onPressed,
+  }) {
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: onPressed == null
+            ? Colors.grey.withOpacity(0.3)
+            : Colors.black.withOpacity(0.3),
+        shape: BoxShape.circle,
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: Colors.white),
+        onPressed: onPressed,
+        splashRadius: 24,
+        tooltip: icon == Icons.arrow_back_ios ? '上一页' : '下一页',
       ),
     );
   }
@@ -62,82 +227,6 @@ class HomeHot extends StatelessWidget {
     );
   }
 
-  Widget _buildHorizontalGameList(List<Game> games, BuildContext context) {
-    return Container(
-      height: 200,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: games.length,
-        itemBuilder: (context, index) {
-          final game = games[index];
-          return MouseRegion(
-            cursor: SystemMouseCursors.click,
-            child: GestureDetector(
-              onTap: () {
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.gameDetail,
-                  arguments: game,
-                );
-              },
-              child: Container(
-                width: 160,
-                margin: EdgeInsets.symmetric(horizontal: 8),
-                child: DecoratedBox( // 使用 DecoratedBox 添加背景
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.7), // 白色背景，透明度 0.7
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding( // 添加 Padding，使内容不紧贴背景边缘
-                    padding: const EdgeInsets.all(8.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: Image.network(
-                            game.coverImage,
-                            height: 120,
-                            width: 160,
-                            fit: BoxFit.cover,
-                            errorBuilder: (BuildContext context, Object exception,
-                                StackTrace? stackTrace) {
-                              return Container(
-                                height: 120,
-                                width: 160,
-                                color: Colors.grey[300],
-                                child: Center(
-                                  child: Icon(Icons.error_outline, color: Colors.red),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          game.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        Text(
-                          game.summary,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(fontSize: 12, color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
   Widget _buildError(String message) {
     return Container(
       height: 200,
@@ -150,15 +239,6 @@ class HomeHot extends StatelessWidget {
             Text(message),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildLoading() {
-    return Container(
-      height: 200,
-      child: Center(
-        child: CircularProgressIndicator(),
       ),
     );
   }

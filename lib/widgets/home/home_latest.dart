@@ -62,12 +62,15 @@ class HomeLatest extends StatelessWidget {
   }
 
   Widget _buildVerticalGameList(List<Game> games, BuildContext context) {
+    // 限制只显示最新的3个游戏
+    final displayGames = games.take(3).toList();
+
     return ListView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
-      itemCount: games.length,
+      itemCount: displayGames.length,
       itemBuilder: (context, index) {
-        final game = games[index];
+        final game = displayGames[index];
         return Card(
           margin: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           child: ListTile(
@@ -85,8 +88,7 @@ class HomeLatest extends StatelessWidget {
                 width: 60,
                 height: 60,
                 fit: BoxFit.cover,
-                errorBuilder: (BuildContext context, Object exception,
-                    StackTrace? stackTrace) {
+                errorBuilder: (context, exception, stackTrace) {
                   return Container(
                     width: 60,
                     height: 60,
@@ -101,7 +103,7 @@ class HomeLatest extends StatelessWidget {
             title: Text(game.title),
             subtitle: Text(
               game.summary,
-              maxLines: 2,
+              maxLines: 1, // 减少到1行
               overflow: TextOverflow.ellipsis,
             ),
             trailing: Column(

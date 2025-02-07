@@ -1,7 +1,6 @@
 // lib/widgets/common/loading_screen.dart
 import 'package:flutter/material.dart';
 import '../logo/app_logo.dart';
-import 'package:suxingchahui/widgets/logo/app_logo.dart';
 
 class LoadingScreen extends StatefulWidget {
   final bool isLoading;

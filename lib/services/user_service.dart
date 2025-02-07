@@ -8,12 +8,14 @@ import 'package:hive_flutter/hive_flutter.dart';
 
 import '../models/user.dart';
 import 'db_connection_service.dart';
+import 'cache/avatar_cache_service.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
   factory UserService() => _instance;
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
+  final AvatarCacheService _avatarCache = AvatarCacheService();
   Box<String>? _authBox;
 
   UserService._internal();
@@ -277,6 +279,11 @@ class UserService {
           where.eq('_id', ObjectId.fromHexString(currentId)),
           {r'$set': updates}
       );
+
+      // 如果更新了头像，清除该用户的头像缓存
+      if (avatar != null) {
+        await _avatarCache.removeAvatar(currentId);
+      }
     } catch (e) {
       print('Update profile error: $e');
       rethrow;
@@ -318,20 +325,30 @@ class UserService {
   }
   Future<String> getAvatarFromId(String userId) async {
     try {
+      // 首先尝试从缓存获取
+      final cachedAvatar = await _avatarCache.getAvatar(userId);
+      if (cachedAvatar != null) {
+        return cachedAvatar;
+      }
+
+      // 如果缓存中没有，从数据库获取
       final userDoc = await _dbConnectionService.users.findOne(
         where.eq('_id', ObjectId.fromHexString(userId)),
       );
 
+      String avatarUrl;
       if (userDoc != null && userDoc['avatar'] != null && userDoc['avatar'].isNotEmpty) {
-        return userDoc['avatar'] as String;
+        avatarUrl = userDoc['avatar'] as String;
       } else {
-        // Provide a default avatar URL if no avatar is found for the user.
-        return 'https://example.com/default_avatar.png'; // Replace with your default avatar URL
+        avatarUrl = 'https://example.com/default_avatar.png'; // 默认头像
       }
+
+      // 存入缓存
+      await _avatarCache.setAvatar(userId, avatarUrl);
+      return avatarUrl;
     } catch (e) {
       print('Get avatar from id error: $e');
-      // Return a default avatar URL in case of an error.
-      return 'https://example.com/default_avatar.png'; // Replace with your default avatar URL
+      return 'https://example.com/default_avatar.png';
     }
   }
 }

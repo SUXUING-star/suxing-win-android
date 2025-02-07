@@ -12,6 +12,9 @@ import '../providers/auth_provider.dart';
 import '../screens/search_screen.dart';
 import '../services/user_service.dart';
 import '../widgets/logo/app_logo.dart';
+import '../widgets/update/update_button.dart';
+import '../services/update_service.dart';
+import '../widgets/dialogs/force_update_dialog.dart';
 
 class MainLayout extends StatefulWidget {
   @override
@@ -23,8 +26,6 @@ class _MainLayoutState extends State<MainLayout> {
   final UserService _userService = UserService();
   late List<Widget> _screens;
 
-
-
   @override
   void initState() {
     super.initState();
@@ -35,6 +36,32 @@ class _MainLayoutState extends State<MainLayout> {
       ForumScreen(),
       ProfileScreen(),
     ];
+    // 应用启动时检查更新
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForUpdates();
+    });
+  }
+
+  Future<void> _checkForUpdates() async {
+    if (!mounted) return;
+
+    final updateService = Provider.of<UpdateService>(context, listen: false);
+    await updateService.checkForUpdates();
+
+    // 如果有强制更新并且界面还在挂载状态，显示对话框
+    if (mounted && updateService.updateAvailable && updateService.forceUpdate) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => ForceUpdateDialog(
+          currentVersion: updateService.latestVersion ?? '',
+          latestVersion: updateService.latestVersion ?? '',
+          updateMessage: updateService.updateMessage,
+          changelog: updateService.changelog,
+          updateUrl: updateService.updateUrl ?? '',
+        ),
+      );
+    }
   }
 
   @override
@@ -55,7 +82,13 @@ class _MainLayoutState extends State<MainLayout> {
           ),
         ),
         title: _buildSearchBar(),
-        actions: [_buildProfileAvatar()],
+        titleSpacing: 8.0,  // 给搜索栏适当的间距
+        actions: [
+          UpdateButton(),
+          const SizedBox(width: 8),
+          _buildProfileAvatar(),
+          const SizedBox(width: 16),  // 右边留出更多空间
+        ],
       ),
       body: _screens[_currentIndex],
       bottomNavigationBar: Container(
@@ -122,6 +155,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget _buildSearchBar() {
     return Container(
       height: 40,
+      //constraints: BoxConstraints(maxWidth: 600), // 限制最大宽度
       decoration: BoxDecoration(
         color: Colors.grey[100],
         borderRadius: BorderRadius.circular(20),

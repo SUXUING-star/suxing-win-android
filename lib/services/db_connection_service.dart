@@ -1,6 +1,8 @@
 // lib/services/db_connection_service.dart
+
 import 'package:mongo_dart/mongo_dart.dart';
 import '../config/app_config.dart';
+import '../providers/db_state_provider.dart';
 import 'dart:async';
 
 class DBConnectionService {
@@ -17,15 +19,67 @@ class DBConnectionService {
   late DbCollection replies;
   late DbCollection links;
   late DbCollection tools;
-  late DbCollection gameHistory;  // 新增
-  late DbCollection postHistory;  // 新增
+  late DbCollection gameHistory;
+  late DbCollection postHistory;
 
   bool _isConnected = false;
   int _reconnectAttempts = 0;
-  static const int maxReconnectAttempts = 5;
+  static const int maxReconnectAttempts = 3;
+  Timer? _healthCheckTimer;
+  DBStateProvider? _dbStateProvider;
+  Timer? _connectivityTimer;
+  bool _isCheckingConnectivity = false;
+
+  void setStateProvider(DBStateProvider provider) {
+    _dbStateProvider = provider;
+  }
 
   Future<void> initialize() async {
     await _connect();
+    _startHealthCheck();
+    _startConnectivityCheck();
+  }
+
+  void _startConnectivityCheck() {
+    _connectivityTimer?.cancel();
+    _connectivityTimer = Timer.periodic(Duration(seconds: 5), (_) async {
+      if (!_isCheckingConnectivity && !_isConnected) {
+        _isCheckingConnectivity = true;
+        try {
+          await _connect();
+        } finally {
+          _isCheckingConnectivity = false;
+        }
+      }
+    });
+  }
+
+  void _startHealthCheck() {
+    _healthCheckTimer?.cancel();
+    _healthCheckTimer = Timer.periodic(Duration(seconds: 10), (_) async {
+      if (_isConnected) {
+        try {
+          // 执行一个简单的查询来检查连接状态
+          await users.findOne({
+            '_id': ObjectId.fromHexString('000000000000000000000000')
+          }).timeout(Duration(seconds: 5));
+        } catch (e) {
+          print('Health check failed: $e');
+          _handleConnectionFailure('数据库连接已断开，即将重启应用');
+        }
+      }
+    });
+  }
+
+  void _handleConnectionFailure(String error) {
+    _isConnected = false;
+    _dbStateProvider?.triggerReset(error);
+    _stopHealthCheck();
+  }
+
+  void _stopHealthCheck() {
+    _healthCheckTimer?.cancel();
+    _healthCheckTimer = null;
   }
 
   Future<void> _connect() async {
@@ -38,9 +92,12 @@ class DBConnectionService {
       final password = AppConfig.mongodbPassword;
 
       final connectionString = 'mongodb://$username:$password@${uri.replaceAll('mongodb://', '')}/$database?authSource=admin';
-      _db = await Db.create(connectionString);
-      await _db.open();
 
+      // 设置短超时时间以快速检测连接问题
+      _db = await Db.create(connectionString);
+      await _db.open().timeout(Duration(seconds: 5));
+
+      // 初始化所有集合
       users = _db.collection('users');
       games = _db.collection('games');
       favorites = _db.collection('favorites');
@@ -49,31 +106,63 @@ class DBConnectionService {
       replies = _db.collection('replies');
       links = _db.collection('links');
       tools = _db.collection('tools');
-      gameHistory = _db.collection('game_history');  // 新增
-      postHistory = _db.collection('post_history');  // 新增
+      gameHistory = _db.collection('game_history');
+      postHistory = _db.collection('post_history');
 
       await _ensureIndexes();
 
       _isConnected = true;
       _reconnectAttempts = 0;
+      _dbStateProvider?.setConnectionState(true);
       print('MongoDB connected successfully');
     } catch (e) {
       print('MongoDB connection error: $e');
-      await _reconnect();
+      await _handleReconnect();
     }
   }
 
-  Future<void> _reconnect() async {
+  Future<void> _handleReconnect() async {
     if (_reconnectAttempts >= maxReconnectAttempts) {
-      print('Max reconnection attempts reached. Please check your database connection.');
+      _handleConnectionFailure('无法连接到数据库，请检查网络连接后重启应用。');
       return;
     }
 
     _reconnectAttempts++;
-    final waitTime = Duration(seconds: 1 << _reconnectAttempts); // Exponential backoff
-    print('Attempting to reconnect in ${waitTime.inSeconds} seconds...');
+    _dbStateProvider?.setConnectionState(false,
+        error: '正在尝试重新连接... (${_reconnectAttempts}/$maxReconnectAttempts)'
+    );
+
+    final waitTime = Duration(seconds: 1 << _reconnectAttempts);
     await Future.delayed(waitTime);
-    await _connect();
+  }
+
+  Future<void> close() async {
+    _stopHealthCheck();
+    if (_isConnected) {
+      await _db.close();
+      _isConnected = false;
+      _dbStateProvider?.setConnectionState(false);
+    }
+  }
+
+  Future<T> runWithErrorHandling<T>(Future<T> Function() operation) async {
+    if (!_isConnected) {
+      await _connect();
+    }
+
+    try {
+      return await operation().timeout(Duration(seconds: 10));
+    } catch (e) {
+      if (e is TimeoutException ||
+          e.toString().contains('No master connection') ||
+          e.toString().contains('connection closed') ||
+          e.toString().contains('信号灯超时')) {
+        _isConnected = false;
+        _handleConnectionFailure('数据库连接已断开，需要重启应用。');
+        throw Exception('数据库连接已断开，请重启应用');
+      }
+      rethrow;
+    }
   }
 
   Future<void> _ensureIndexes() async {
@@ -117,34 +206,24 @@ class DBConnectionService {
         tools.createIndex(keys: {'category': 1}),
         tools.createIndex(keys: {'createTime': -1}),
         // 游戏历史记录索引
-        gameHistory.createIndex(
-            keys: {
-              'userId': 1,
-              'gameId': 1,
-            },
-            unique: true
-        ),
-        gameHistory.createIndex(
-            keys: {
-              'userId': 1,
-              'lastViewTime': -1,
-            }
-        ),
+        gameHistory.createIndex(keys: {
+          'userId': 1,
+          'gameId': 1,
+        }, unique: true),
+        gameHistory.createIndex(keys: {
+          'userId': 1,
+          'lastViewTime': -1,
+        }),
 
         // 帖子历史记录索引
-        postHistory.createIndex(
-            keys: {
-              'userId': 1,
-              'postId': 1,
-            },
-            unique: true
-        ),
-        postHistory.createIndex(
-            keys: {
-              'userId': 1,
-              'lastViewTime': -1,
-            }
-        ),
+        postHistory.createIndex(keys: {
+          'userId': 1,
+          'postId': 1,
+        }, unique: true),
+        postHistory.createIndex(keys: {
+          'userId': 1,
+          'lastViewTime': -1,
+        }),
       ]);
     } catch (e) {
       print('Error creating indexes: $e');
@@ -165,30 +244,4 @@ class DBConnectionService {
       return {};
     }
   }
-
-  Future<void> close() async {
-    if (_isConnected) {
-      await _db.close();
-      _isConnected = false;
-    }
-  }
-
-  Future<T> runWithErrorHandling<T>(Future<T> Function() operation) async {
-    if (!_isConnected) {
-      await _connect();
-    }
-
-    try {
-      return await operation();
-    } catch (e) {
-      if (e.toString().contains('No master connection')) {
-        _isConnected = false;
-        await _reconnect();
-        // 重试操作
-        return await operation();
-      }
-      rethrow;
-    }
-  }
-
 }
