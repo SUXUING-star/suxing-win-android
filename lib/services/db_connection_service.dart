@@ -25,6 +25,7 @@ class DBConnectionService {
   late DbCollection postHistory;
 
   bool _isConnected = false;
+  bool get isConnected => _isConnected;
   bool _isInitializing = false;
   int _reconnectAttempts = 0;
   static const int maxReconnectAttempts = 3;
@@ -43,11 +44,16 @@ class DBConnectionService {
 
     try {
       await _connect();
+      if (!_isConnected) {
+        throw Exception('服务器连接失败，请检查网络后重试。');
+      }
       _startHealthCheck();
       _startConnectivityCheck();
     } catch (e) {
-      print('Database initialization failed: $e');
-      _handleConnectionFailure('数据库连接失败，请检查网络连接。');
+      _isConnected = false;
+      print('Database initialization failed: $e'); // 保留原始错误日志供调试
+      _handleConnectionFailure('服务器连接失败，请检查网络连接。');
+      rethrow;
     } finally {
       _isInitializing = false;
     }
@@ -104,28 +110,12 @@ class DBConnectionService {
       final username = AppConfig.mongodbUsername;
       final password = AppConfig.mongodbPassword;
 
-      // 设置SSL证书
-      // final sslService = SSLCertService();
-      // final certPath = await sslService.setupClientCertificate();
-
-      // 构建带SSL的连接字符串
       final connectionString = 'mongodb://$username:$password@${uri.replaceAll('mongodb://', '')}/$database'
           '?authSource=admin'
           '&tls=true'
           '&tlsAllowInvalidCertificates=true';
 
-      // 设置SSL上下文
-      // final context = SecurityContext();
-      // context.useCertificateChain(certPath);
-      // context.usePrivateKey(certPath);
-
-      // 创建数据库连接
       _db = await Db.create(connectionString);
-      await _db.open(
-        //secure: true,
-        //tlsCAFile: certPath,
-      ).timeout(Duration(seconds: 5));
-
       await _db.open().timeout(Duration(seconds: 5));
 
       // 初始化所有集合
@@ -147,8 +137,10 @@ class DBConnectionService {
       _dbStateProvider?.setConnectionState(true);
       print('MongoDB connected successfully');
     } catch (e) {
-      print('MongoDB connection error: $e');
-      await _handleReconnect();
+      _isConnected = false;
+      print('MongoDB connection error: $e'); // 保留原始错误日志供调试
+      _dbStateProvider?.setConnectionState(false);
+      throw Exception(_formatConnectionError(e));
     }
   }
 
@@ -282,4 +274,18 @@ class DBConnectionService {
       return {};
     }
   }
+
+  String _formatConnectionError(dynamic error) {
+    if (error.toString().contains('SocketException')) {
+      return '网络连接异常，请检查网络后重试。';
+    }
+    if (error.toString().contains('timeout')) {
+      return '服务器响应超时，请稍后重试。';
+    }
+    if (error.toString().contains('authentication failed')) {
+      return '服务器连接失败，请重启应用。';
+    }
+    return '数据库连接失败，请检查网络连接。';
+  }
+
 }
