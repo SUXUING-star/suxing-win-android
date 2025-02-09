@@ -6,8 +6,11 @@ import '../providers/db_state_provider.dart';
 import 'dart:async';
 import 'dart:io';
 import 'ssl_cert_service.dart';
+import './limiter/db_rate_limiter_service.dart';
 
 class DBConnectionService {
+  //限流服务
+  final DBRateLimiterService _rateLimiter = DBRateLimiterService();
   static final DBConnectionService _instance = DBConnectionService._internal();
   factory DBConnectionService() => _instance;
   DBConnectionService._internal();
@@ -171,7 +174,6 @@ class DBConnectionService {
 
   Future<T> runWithErrorHandling<T>(Future<T> Function() operation) async {
     if (!_isConnected) {
-      // Add timeout to prevent infinite waiting
       await initialize().timeout(
         Duration(seconds: 5),
         onTimeout: () {
@@ -181,7 +183,17 @@ class DBConnectionService {
     }
 
     try {
-      return await operation().timeout(Duration(seconds: 10));
+      // 获取令牌
+      final hasToken = await _rateLimiter.acquireToken('query');
+      if (!hasToken) {
+        throw Exception('数据库操作繁忙，请稍后重试');
+      }
+
+      final result = await operation().timeout(Duration(seconds: 10));
+
+      // 释放令牌
+      _rateLimiter.releaseToken('query');
+      return result;
     } catch (e) {
       if (e is TimeoutException ||
           e.toString().contains('No master connection') ||

@@ -10,7 +10,6 @@ class Post {
   final String title;
   final String content;
   final String authorId;
-  final String authorName;
   final DateTime createTime;
   final DateTime updateTime;
   final int viewCount;
@@ -23,7 +22,6 @@ class Post {
     required this.title,
     required this.content,
     required this.authorId,
-    required this.authorName,
     required this.createTime,
     required this.updateTime,
     this.viewCount = 0,
@@ -41,7 +39,6 @@ class Post {
       title: json['title'] ?? '',
       content: json['content'] ?? '',
       authorId: json['authorId'] ?? '',
-      authorName: json['authorName'] ?? '',
       createTime: json['createTime'] is DateTime
           ? json['createTime']
           : DateTime.parse(json['createTime']),
@@ -63,7 +60,6 @@ class Post {
       'title': title,
       'content': content,
       'authorId': authorId,
-      'authorName': authorName,
       'createTime': createTime.toIso8601String(),
       'updateTime': updateTime.toIso8601String(),
       'viewCount': viewCount,
@@ -84,7 +80,6 @@ class Reply {
   final String postId;
   final String content;
   final String authorId;
-  final String authorName;
   final String? parentId;
   final DateTime createTime;
   final DateTime updateTime;
@@ -95,7 +90,6 @@ class Reply {
     required this.postId,
     required this.content,
     required this.authorId,
-    required this.authorName,
     this.parentId,
     required this.createTime,
     required this.updateTime,
@@ -111,7 +105,6 @@ class Reply {
       postId: json['postId'] ?? '',
       content: json['content'] ?? '',
       authorId: json['authorId'] ?? '',
-      authorName: json['authorName'] ?? '',
       parentId: json['parentId'],
       createTime: json['createTime'] is DateTime
           ? json['createTime']
@@ -131,7 +124,6 @@ class Reply {
       'postId': postId,
       'content': content,
       'authorId': authorId,
-      'authorName': authorName,
       'parentId': parentId,
       'createTime': createTime.toIso8601String(),
       'updateTime': updateTime.toIso8601String(),

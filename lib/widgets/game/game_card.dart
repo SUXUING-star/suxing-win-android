@@ -3,6 +3,7 @@ import '../../models/game.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'dart:ui' as ui;
 import 'dart:async';
+import '../common/animated_card_container.dart';
 
 class GameCard extends StatelessWidget {
   final Game game;
@@ -34,15 +35,13 @@ class GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(context, '/game/detail', arguments: game);
-        },
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+    return AnimatedCardContainer(
+      onTap: () {
+        Navigator.pushNamed(context, '/game/detail', arguments: game);
+      },
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
             // 自适应高度的封面图
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
@@ -128,7 +127,7 @@ class GameCard extends StatelessWidget {
             ),
           ],
         ),
-      ),
+
     );
   }
 }

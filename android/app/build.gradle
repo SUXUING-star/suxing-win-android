@@ -28,6 +28,15 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        release {
+            keyAlias 'key_alias'
+            keyPassword 'suxing123'
+            storeFile file('keystore/suxing.keystore')
+            storePassword 'suxing123'
+        }
+    }
+
     buildTypes {
         release {
             // TODO: Add your own signing config for the release build.

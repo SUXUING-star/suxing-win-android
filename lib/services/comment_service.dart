@@ -3,6 +3,8 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../models/comment.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
+import './security/input_sanitizer_service.dart';
+import './cache/comment_cache_service.dart';
 
 class CommentService {
   static final CommentService _instance = CommentService._internal();
@@ -10,6 +12,11 @@ class CommentService {
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService();
+  // 输入sql注入转译服务
+  final InputSanitizerService _sanitizer = InputSanitizerService();
+
+  final CommentsCacheService _cacheService = CommentsCacheService();
+
 
   CommentService._internal();
 
@@ -17,30 +24,45 @@ class CommentService {
   Stream<List<Comment>> getGameComments(String gameId) async* {
     try {
       while (true) {
-        // 获取主评论
-        final comments = await _dbConnectionService.comments
-            .find(where
-            .eq('gameId', ObjectId.fromHexString(gameId))
-            .eq('parentId', null)
-            .sortBy('createTime', descending: true)
-        )
-            .map((doc) => Comment.fromJson(_dbConnectionService.convertDocument(doc)))
-            .toList();
-
-        // 获取每个评论的回复
-        for (var comment in comments) {
-          final replies = await _dbConnectionService.comments
-              .find(where
-              .eq('parentId', comment.id)
-              .sortBy('createTime')
-          )
+        // 尝试从缓存获取
+        final cachedComments = await _cacheService.getCachedGameComments(gameId);
+        if (cachedComments != null) {
+          yield cachedComments;
+        } else {
+          // 从数据库获取所有评论
+          final allComments = await _dbConnectionService.comments
+              .find(where.eq('gameId', ObjectId.fromHexString(gameId)))
               .map((doc) => Comment.fromJson(_dbConnectionService.convertDocument(doc)))
               .toList();
 
-          comment.replies.addAll(replies);
-        }
+          // 将评论组织成树形结构
+          final Map<String, Comment> commentMap = {};
+          final List<Comment> topLevelComments = [];
 
-        yield comments;
+          // 建立评论 ID 到评论对象的映射
+          for (var comment in allComments) {
+            commentMap[comment.id] = comment;
+          }
+
+          // 组织评论层级
+          for (var comment in allComments) {
+            if (comment.parentId == null) {
+              topLevelComments.add(comment);
+            } else {
+              final parentComment = commentMap[comment.parentId];
+              if (parentComment != null) {
+                parentComment.replies.add(comment);
+              }
+            }
+          }
+
+          // 按创建时间排序
+          topLevelComments.sort((a, b) => b.createTime.compareTo(a.createTime));
+
+          // 更新缓存
+          await _cacheService.cacheGameComments(gameId, topLevelComments);
+          yield topLevelComments;
+        }
         await Future.delayed(const Duration(seconds: 1));
       }
     } catch (e) {
@@ -49,30 +71,33 @@ class CommentService {
     }
   }
 
-  // 添加评论
+
+  // 添加评论时清除缓存
   Future<void> addComment(String gameId, String content, {String? parentId}) async {
     try {
+      final sanitizedContent = _sanitizer.sanitizeComment(content);
       final currentUser = await _userService.getCurrentUser();
 
       final comment = {
         'gameId': ObjectId.fromHexString(gameId),
         'userId': ObjectId.fromHexString(currentUser.id),
-        'content': content,
+        'content': sanitizedContent,
         'createTime': DateTime.now(),
         'updateTime': DateTime.now(),
         'isEdited': false,
-        'username': currentUser.username,
         'parentId': parentId != null ? ObjectId.fromHexString(parentId) : null,
       };
 
       await _dbConnectionService.comments.insertOne(comment);
+      // 清除该游戏的评论缓存
+      await _cacheService.clearGameCommentsCache(gameId);
     } catch (e) {
       print('Add comment error: $e');
       rethrow;
     }
   }
 
-  // 更新评论
+  // 更新评论时清除缓存
   Future<void> updateComment(String commentId, String content) async {
     try {
       final currentUser = await _userService.getCurrentUser();
@@ -87,12 +112,10 @@ class CommentService {
       }
 
       if (comment['userId'] is ObjectId) {
-        // 如果 userId 是 ObjectId，转换为字符串进行比较
         if (comment['userId'].toHexString() != currentUser.id) {
           throw Exception('无权限修改此评论');
         }
       } else {
-        // 如果 userId 已经是字符串
         if (comment['userId'] != currentUser.id) {
           throw Exception('无权限修改此评论');
         }
@@ -108,13 +131,17 @@ class CommentService {
           }
         },
       );
+
+      // 清除该游戏的评论缓存
+      final gameId = comment['gameId'].toHexString();
+      await _cacheService.clearGameCommentsCache(gameId);
     } catch (e) {
       print('Update comment error: $e');
       rethrow;
     }
   }
 
-  // 删除评论
+  // 删除评论时清除缓存
   Future<void> deleteComment(String commentId) async {
     try {
       final currentUser = await _userService.getCurrentUser();
@@ -143,6 +170,10 @@ class CommentService {
           {'parentId': commentObjId},
         ]
       });
+
+      // 清除该游戏的评论缓存
+      final gameId = comment['gameId'].toHexString();
+      await _cacheService.clearGameCommentsCache(gameId);
     } catch (e) {
       print('Delete comment error: $e');
       rethrow;

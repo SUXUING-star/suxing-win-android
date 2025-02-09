@@ -115,9 +115,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               Navigator.pushNamed(context, '/login');
             },
             child: const Icon(Icons.favorite_border),
-            backgroundColor: Theme
-                .of(context)
-                .primaryColor,
+            backgroundColor: Theme.of(context).primaryColor,
           );
         }
 
@@ -138,9 +136,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 isFavorite ? Icons.favorite : Icons.favorite_border,
                 color: Colors.white,
               ),
-              backgroundColor: isFavorite ? Colors.red : Theme
-                  .of(context)
-                  .primaryColor,
+              backgroundColor: isFavorite ? Colors.red : Theme.of(context).primaryColor,
             );
           },
         );
@@ -201,12 +197,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               return IconButton(
                 icon: const Icon(Icons.edit),
                 onPressed: () {
-                   Navigator.push(
-                     context,
-                     MaterialPageRoute(
-                       builder: (context) => EditGameScreen(game: game),
-                     ),
-                   ).then((_) => _refreshGameDetails());
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => EditGameScreen(game: game),
+                    ),
+                  ).then((_) => _refreshGameDetails());
                 },
               );
             }
@@ -261,7 +257,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           ],
         ),
       ),
-      floatingActionButton: _buildFavoriteButton(context),
+      floatingActionButton: Align(
+        alignment: Alignment.centerRight,
+        child: Padding(
+          padding: EdgeInsets.only(right: 16.0), // 可选：调整与右侧的距离
+          child: _buildFavoriteButton(context),
+        ),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );
   }
 }

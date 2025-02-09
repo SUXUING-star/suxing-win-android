@@ -3,13 +3,18 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../../models/game_history.dart';
 import './../db_connection_service.dart';
 import './../user_service.dart';
+import '../counter/batch_history_service.dart';
+import '../cache/history_cache_service.dart';
 
 class GameHistoryService {
   static final GameHistoryService _instance = GameHistoryService._internal();
   factory GameHistoryService() => _instance;
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
+  final BatchHistoryService _batchHistoryService = BatchHistoryService();
   final UserService _userService = UserService();
+
+  final HistoryCacheService _cacheService = HistoryCacheService();
 
   GameHistoryService._internal();
 
@@ -24,37 +29,7 @@ class GameHistoryService {
   }
 
   Future<void> addGameHistory(String gameId) async {
-    try {
-      final userId = await _userService.currentUserId;
-      if (userId == null) {
-        print('Cannot add game history: User not logged in');
-        return;
-      }
-      print("Save game history - gameId: $gameId, userId: $userId");
-
-      final userObjectId = ObjectId.fromHexString(userId);
-
-      // 先删除已存在的记录
-      await _dbConnectionService.gameHistory.deleteMany({
-        'userId': userObjectId,
-        'gameId': gameId,
-      });
-
-      // 插入新记录
-      final newDoc = {
-        '_id': ObjectId(),
-        'userId': userObjectId,
-        'gameId': gameId,
-        'lastViewTime': DateTime.now()
-      };
-
-      await _dbConnectionService.gameHistory.insertOne(newDoc);
-      print('Game history record inserted successfully');
-
-    } catch (e) {
-      print('Add game history error: $e');
-      rethrow;
-    }
+    await _batchHistoryService.addGameHistory(gameId);
   }
 
   Stream<List<GameHistory>> getUserGameHistory() async* {
@@ -62,28 +37,31 @@ class GameHistoryService {
       try {
         final userId = await _userService.currentUserId;
         if (userId == null || userId.isEmpty) {
-          print('Cannot get game history: User not logged in');
           yield [];
           await Future.delayed(const Duration(seconds: 1));
           continue;
         }
 
-        final userObjectId = ObjectId.fromHexString(userId);
-        print('Fetching game history for user: $userId');
+        // 尝试从缓存获取
+        final cachedHistory = await _cacheService.getCachedGameHistory(userId);
+        if (cachedHistory != null) {
+          yield cachedHistory;
+        } else {
+          // 从数据库获取
+          final userObjectId = ObjectId.fromHexString(userId);
+          final historyDocs = await _dbConnectionService.gameHistory
+              .find(where
+              .eq('userId', userObjectId)
+              .sortBy('lastViewTime', descending: true))
+              .toList();
 
-        final historyDocs = await _dbConnectionService.gameHistory
-            .find(where
-            .eq('userId', userObjectId)
-            .sortBy('lastViewTime', descending: true))
-            .toList();
+          final history = historyDocs.map((doc) => GameHistory.fromJson(doc)).toList();
 
-        print('Found ${historyDocs.length} game history records');
+          // 更新缓存
+          await _cacheService.cacheGameHistory(userId, history);
+          yield history;
+        }
 
-        final history = historyDocs.map((doc) {
-          return GameHistory.fromJson(doc);
-        }).toList();
-
-        yield history;
         await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
         print('Get game history error: $e');

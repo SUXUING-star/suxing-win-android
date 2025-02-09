@@ -3,6 +3,8 @@ import 'package:mongo_dart/mongo_dart.dart';
 import '../../models/post_history.dart';
 import './../db_connection_service.dart';
 import './../user_service.dart';
+import '../counter/batch_history_service.dart';
+import '../cache/history_cache_service.dart';
 
 class PostHistoryService {
   static final PostHistoryService _instance = PostHistoryService._internal();
@@ -10,6 +12,9 @@ class PostHistoryService {
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService();
+  final BatchHistoryService _batchHistoryService = BatchHistoryService();
+
+  final HistoryCacheService _cacheService = HistoryCacheService();
 
   PostHistoryService._internal();
 
@@ -24,37 +29,7 @@ class PostHistoryService {
   }
 
   Future<void> addPostHistory(String postId) async {
-    try {
-      final userId = await _userService.currentUserId;
-      if (userId == null) {
-        print('Cannot add post history: User not logged in');
-        return;
-      }
-
-      final userObjectId = ObjectId.fromHexString(userId);
-      print('Adding post history - userId: $userId, postId: $postId');
-
-      // 先删除已存在的记录
-      await _dbConnectionService.postHistory.deleteMany({
-        'userId': userObjectId,
-        'postId': postId,
-      });
-
-      // 插入新记录
-      final newDoc = {
-        '_id': ObjectId(),
-        'userId': userObjectId,
-        'postId': postId,
-        'lastViewTime': DateTime.now()
-      };
-
-      await _dbConnectionService.postHistory.insertOne(newDoc);
-      print('Post history record inserted successfully');
-
-    } catch (e) {
-      print('Add post history error: $e');
-      rethrow;
-    }
+    await _batchHistoryService.addPostHistory(postId);
   }
 
   Stream<List<PostHistory>> getUserPostHistory() async* {
@@ -62,28 +37,31 @@ class PostHistoryService {
       try {
         final userId = await _userService.currentUserId;
         if (userId == null || userId.isEmpty) {
-          print('Cannot get post history: User not logged in');
           yield [];
           await Future.delayed(const Duration(seconds: 1));
           continue;
         }
 
-        final userObjectId = ObjectId.fromHexString(userId);
-        print('Fetching post history for user: $userId');
+        // 尝试从缓存获取
+        final cachedHistory = await _cacheService.getCachedPostHistory(userId);
+        if (cachedHistory != null) {
+          yield cachedHistory;
+        } else {
+          // 从数据库获取
+          final userObjectId = ObjectId.fromHexString(userId);
+          final historyDocs = await _dbConnectionService.postHistory
+              .find(where
+              .eq('userId', userObjectId)
+              .sortBy('lastViewTime', descending: true))
+              .toList();
 
-        final historyDocs = await _dbConnectionService.postHistory
-            .find(where
-            .eq('userId', userObjectId)
-            .sortBy('lastViewTime', descending: true))
-            .toList();
+          final history = historyDocs.map((doc) => PostHistory.fromJson(doc)).toList();
 
-        print('Found ${historyDocs.length} post history records');
+          // 更新缓存
+          await _cacheService.cachePostHistory(userId, history);
+          yield history;
+        }
 
-        final history = historyDocs.map((doc) {
-          return PostHistory.fromJson(doc);
-        }).toList();
-
-        yield history;
         await Future.delayed(const Duration(seconds: 1));
       } catch (e) {
         print('Get post history error: $e');

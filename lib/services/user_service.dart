@@ -9,6 +9,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 import '../models/user.dart';
 import 'db_connection_service.dart';
 import 'cache/avatar_cache_service.dart';
+import 'cache/history_cache_service.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
@@ -16,6 +17,7 @@ class UserService {
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final AvatarCacheService _avatarCache = AvatarCacheService();
+  final HistoryCacheService _cacheService  = HistoryCacheService();
   Box<String>? _authBox;
 
   UserService._internal();
@@ -121,6 +123,8 @@ class UserService {
 
   Future<void> signOut() async {
     await _setCurrentUserId(null);
+    // 在用户登出时
+    await HistoryCacheService().clearAllCache();
   }
 
   Future<void> resetPassword(String email, String newPassword) async {
@@ -323,32 +327,42 @@ class UserService {
       rethrow;
     }
   }
-  Future<String> getAvatarFromId(String userId) async {
+  Future<Map<String, dynamic>> getUserInfoById(String userId) async {
     try {
-      // 首先尝试从缓存获取
-      final cachedAvatar = await _avatarCache.getAvatar(userId);
-      if (cachedAvatar != null) {
-        return cachedAvatar;
-      }
-
-      // 如果缓存中没有，从数据库获取
       final userDoc = await _dbConnectionService.users.findOne(
         where.eq('_id', ObjectId.fromHexString(userId)),
       );
 
-      String avatarUrl;
-      if (userDoc != null && userDoc['avatar'] != null && userDoc['avatar'].isNotEmpty) {
-        avatarUrl = userDoc['avatar'] as String;
-      } else {
-        avatarUrl = 'https://example.com/default_avatar.png'; // 默认头像
+      if (userDoc != null) {
+        return {
+          'username': userDoc['username'],
+          'avatar': userDoc['avatar'],
+        };
       }
-
-      // 存入缓存
-      await _avatarCache.setAvatar(userId, avatarUrl);
-      return avatarUrl;
+      return {'username': '未知用户', 'avatar': null};
     } catch (e) {
-      print('Get avatar from id error: $e');
-      return 'https://example.com/default_avatar.png';
+      print('Get user info by id error: $e');
+      return {'username': '未知用户', 'avatar': null};
+    }
+  }
+
+  Future<Map<String, dynamic>?> safegetUserById(String userId) async {
+    try {
+      final userDoc = await _dbConnectionService.users.findOne(
+        where.eq('_id', ObjectId.fromHexString(userId)),
+      );
+
+      if (userDoc != null) {
+        // 移除敏感信息
+        userDoc.remove('hash');
+        userDoc.remove('salt');
+        userDoc.remove('email');
+        return _dbConnectionService.convertDocument(userDoc);
+      }
+      return null;
+    } catch (e) {
+      print('Get user by id error: $e');
+      return null;
     }
   }
 }

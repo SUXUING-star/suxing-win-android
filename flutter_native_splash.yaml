@@ -1,0 +1,12 @@
+flutter_native_splash:
+  color: "#ffffff"  # 背景颜色
+  image: assets/logo/splash_logo.png  # 居中显示的 logo 图片
+  android: true
+  ios: false
+  web: false
+
+  # 可选：状态栏和导航栏颜色
+  android_12:
+    color: "#ffffff"
+    icon_background_color: "#ffffff"
+    image: assets/logo/splash_logo.png

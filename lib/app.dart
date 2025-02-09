@@ -4,6 +4,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'services/history/game_history_service.dart';
+import 'services/history/post_history_service.dart';
 import './initialization/initialization_wrapper.dart';
 import './providers/initialization_provider.dart';
 import './providers/theme_provider.dart';
@@ -11,9 +13,11 @@ import './providers/db_state_provider.dart';
 import './utils/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import './layouts/app_background.dart';
-import './widgets/common/loading_screen.dart';
+import 'widgets/loading/loading_screen.dart';
 import './widgets/dialogs/db_reset_dialog.dart';
 import './routes/app_routes.dart';
+import 'services/user_service.dart';
+import 'services/forum_service.dart';
 
 
 class App extends StatelessWidget {
@@ -54,11 +58,27 @@ class MyApp extends StatelessWidget {
     required this.providers,
     required this.loadingRouteObserver,
   }) : super(key: key);
-
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
-      providers: providers,
+      providers: [
+        ...providers,
+        // 添加 ForumService provider
+        Provider<ForumService>(
+          create: (_) => ForumService(),
+        ),
+        // 添加 UserService provider
+        Provider<UserService>(
+          create: (_) => UserService(),
+        ),
+        // 添加 GameHistoryService和PostHistoryService provider
+        Provider<GameHistoryService>(
+          create: (_) => GameHistoryService(),
+        ),
+        Provider<PostHistoryService>(
+          create: (_) => PostHistoryService(),
+        ),
+      ],
       child: MaterialApp(
         title: '宿星茶会（windows版）',
         home: AppContent(loadingRouteObserver: loadingRouteObserver),

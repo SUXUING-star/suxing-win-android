@@ -20,7 +20,6 @@ class LinksToolsCacheService {
   Future<void> init() async {
     _linksBox = await Hive.openBox<Map>(_linksBoxName);
     _toolsBox = await Hive.openBox<Map>(_toolsBoxName);
-    // 定期清理过期缓存
     await _cleanExpiredCache();
   }
 
@@ -30,72 +29,118 @@ class LinksToolsCacheService {
     final now = DateTime.now();
 
     // 清理 links 缓存
-    final linksData = _linksBox!.get('links') as Map?;
+    final linksData = _linksBox!.get('links');
     if (linksData != null) {
-      final timestamp = DateTime.parse(linksData['timestamp'] as String);
+      final timestamp = DateTime.parse(linksData['timestamp'].toString());
       if (now.difference(timestamp) > _cacheExpiry) {
         await _linksBox!.delete('links');
       }
     }
 
     // 清理 tools 缓存
-    final toolsData = _toolsBox!.get('tools') as Map?;
+    final toolsData = _toolsBox!.get('tools');
     if (toolsData != null) {
-      final timestamp = DateTime.parse(toolsData['timestamp'] as String);
+      final timestamp = DateTime.parse(toolsData['timestamp'].toString());
       if (now.difference(timestamp) > _cacheExpiry) {
         await _toolsBox!.delete('tools');
       }
     }
   }
 
+  Map<String, dynamic> _convertToStringKeyMap(Map map) {
+    return map.map((key, value) {
+      if (value is Map) {
+        value = _convertToStringKeyMap(value);
+      } else if (value is List) {
+        value = _convertList(value);
+      }
+      return MapEntry(key.toString(), value);
+    });
+  }
+
+  List _convertList(List list) {
+    return list.map((item) {
+      if (item is Map) {
+        return _convertToStringKeyMap(item);
+      } else if (item is List) {
+        return _convertList(item);
+      }
+      return item;
+    }).toList();
+  }
+
   Future<List<Link>?> getLinks() async {
     if (_linksBox == null) await init();
 
-    final cacheData = _linksBox!.get('links') as Map?;
+    final cacheData = _linksBox!.get('links');
     if (cacheData == null) return null;
 
-    final timestamp = DateTime.parse(cacheData['timestamp'] as String);
+    final timestamp = DateTime.parse(cacheData['timestamp'].toString());
     if (DateTime.now().difference(timestamp) > _cacheExpiry) {
       await _linksBox!.delete('links');
       return null;
     }
 
-    final linksList = (cacheData['data'] as List).cast<Map>();
-    return linksList.map((map) => Link.fromJson(Map<String, dynamic>.from(map))).toList();
+    try {
+      final linksList = (cacheData['data'] as List).map((item) {
+        final convertedMap = _convertToStringKeyMap(item as Map);
+        return Link.fromJson(convertedMap);
+      }).toList();
+
+      return linksList;
+    } catch (e) {
+      print('Error parsing cached links: $e');
+      await _linksBox!.delete('links');
+      return null;
+    }
   }
 
   Future<List<Tool>?> getTools() async {
     if (_toolsBox == null) await init();
 
-    final cacheData = _toolsBox!.get('tools') as Map?;
+    final cacheData = _toolsBox!.get('tools');
     if (cacheData == null) return null;
 
-    final timestamp = DateTime.parse(cacheData['timestamp'] as String);
+    final timestamp = DateTime.parse(cacheData['timestamp'].toString());
     if (DateTime.now().difference(timestamp) > _cacheExpiry) {
       await _toolsBox!.delete('tools');
       return null;
     }
 
-    final toolsList = (cacheData['data'] as List).cast<Map>();
-    return toolsList.map((map) => Tool.fromJson(Map<String, dynamic>.from(map))).toList();
+    try {
+      final toolsList = (cacheData['data'] as List).map((item) {
+        final convertedMap = _convertToStringKeyMap(item as Map);
+        return Tool.fromJson(convertedMap);
+      }).toList();
+
+      return toolsList;
+    } catch (e) {
+      print('Error parsing cached tools: $e');
+      await _toolsBox!.delete('tools');
+      return null;
+    }
   }
 
   Future<void> setLinks(List<Link> links) async {
     if (_linksBox == null) await init();
 
-    await _linksBox!.put('links', {
+    final linksData = {
       'data': links.map((link) => link.toJson()).toList(),
       'timestamp': DateTime.now().toIso8601String(),
-    });
+    };
+
+    await _linksBox!.put('links', linksData);
   }
 
   Future<void> setTools(List<Tool> tools) async {
     if (_toolsBox == null) await init();
 
-    await _toolsBox!.put('tools', {
+    final toolsData = {
       'data': tools.map((tool) => tool.toJson()).toList(),
       'timestamp': DateTime.now().toIso8601String(),
-    });
+    };
+
+    await _toolsBox!.put('tools', toolsData);
   }
 
   Future<void> clearCache() async {

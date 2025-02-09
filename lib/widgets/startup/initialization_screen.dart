@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../logo/app_logo.dart';
+import '../../utils/font_config.dart';
 
 class InitializationScreen extends StatefulWidget {
   final InitializationStatus status;
@@ -32,17 +33,23 @@ class _InitializationScreenState extends State<InitializationScreen>
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(seconds: 2),
+      duration: const Duration(milliseconds: 1500), // 统一动画周期
       vsync: this,
     )..repeat(reverse: true);
 
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.05,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    // 使用相同的优化动画效果
+    _pulseAnimation = TweenSequence<double>([
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.0, end: 1.03)
+            .chain(CurveTween(curve: Curves.easeOutCubic)),
+        weight: 40.0,
+      ),
+      TweenSequenceItem(
+        tween: Tween<double>(begin: 1.03, end: 1.0)
+            .chain(CurveTween(curve: Curves.easeInCubic)),
+        weight: 60.0,
+      ),
+    ]).animate(_controller);
   }
 
   @override
@@ -110,6 +117,8 @@ class _InitializationScreenState extends State<InitializationScreen>
                       widget.message,
                       key: ValueKey<String>(widget.message),
                       style: TextStyle(
+                        fontFamily: FontConfig.defaultFontFamily,
+                        fontFamilyFallback: FontConfig.fontFallback,
                         color: Colors.blue[700],
                         fontSize: 18,
                         fontWeight: FontWeight.w500,
@@ -200,8 +209,10 @@ class _InitializationScreenState extends State<InitializationScreen>
                 const SizedBox(height: 40),
                 // 欢迎文本
                 Text(
-                  '宿星茶会',
+                  '宿星茶会（跨平台版）',
                   style: TextStyle(
+                    fontFamily: FontConfig.defaultFontFamily,
+                    fontFamilyFallback: FontConfig.fontFallback,
                     color: Colors.blue[400],
                     fontSize: 24,
                     fontWeight: FontWeight.bold,

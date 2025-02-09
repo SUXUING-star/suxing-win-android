@@ -4,6 +4,9 @@ import '../models/post.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 import './history/post_history_service.dart';
+import './security/input_sanitizer_service.dart';
+import './counter/batch_view_counter_service.dart';
+import 'cache/comment_cache_service.dart';
 
 class ForumService {
   static final ForumService _instance = ForumService._internal();
@@ -12,6 +15,12 @@ class ForumService {
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService();
   final PostHistoryService _postHistoryService = PostHistoryService();
+  // 防止输入的sql注入
+  final InputSanitizerService _sanitizer = InputSanitizerService();
+  // 延时增加浏览量
+  final BatchViewCounterService _viewCounter = BatchViewCounterService();
+
+  final CommentsCacheService _cacheService = CommentsCacheService();
 
   ForumService._internal();
 
@@ -102,11 +111,8 @@ class ForumService {
 
       if (postDoc == null) return null;
 
-      // 增加浏览量
-      await _dbConnectionService.posts.updateOne(
-        where.eq('_id', ObjectId.fromHexString(postId)),
-        {r'$inc': {'viewCount': 1}},
-      );
+      // 使用批量计数服务
+      _viewCounter.incrementPostView(postId);
 
       // 添加到浏览历史
       await addToPostHistory(postId);
@@ -121,18 +127,20 @@ class ForumService {
   // 创建帖子
   Future<void> createPost(String title, String content, List<String> tags) async {
     try {
+      final sanitizedTitle = _sanitizer.sanitizeTitle(title);
+      final sanitizedContent = _sanitizer.sanitizePostContent(content);
+      final sanitizedTags = _sanitizer.sanitizeTags(tags);
       final currentUser = await _userService.getCurrentUser();
 
       final post = {
-        'title': title,
-        'content': content,
+        'title': sanitizedTitle,
+        'content': sanitizedContent,
         'authorId': currentUser.id,
-        'authorName': currentUser.username,
         'createTime': DateTime.now(),
         'updateTime': DateTime.now(),
         'viewCount': 0,
         'replyCount': 0,
-        'tags': tags,
+        'tags': sanitizedTags,
         'status': PostStatus.active.toString().split('.').last,
       };
 
@@ -261,15 +269,24 @@ class ForumService {
   Stream<List<Reply>> getReplies(String postId) async* {
     try {
       while (true) {
-        final replies = await _dbConnectionService.replies
-            .find(where
-            .eq('postId', postId)
-            .eq('status', ReplyStatus.active.toString().split('.').last)
-            .sortBy('createTime'))
-            .map((doc) => Reply.fromJson(_dbConnectionService.convertDocument(doc)))
-            .toList();
+        // 尝试从缓存获取
+        final cachedReplies = await _cacheService.getCachedPostReplies(postId);
+        if (cachedReplies != null) {
+          yield cachedReplies;
+        } else {
+          // 从数据库获取
+          final replies = await _dbConnectionService.replies
+              .find(where
+              .eq('postId', postId)
+              .eq('status', ReplyStatus.active.toString().split('.').last)
+              .sortBy('createTime'))
+              .map((doc) => Reply.fromJson(_dbConnectionService.convertDocument(doc)))
+              .toList();
 
-        yield replies;
+          // 更新缓存
+          await _cacheService.cachePostReplies(postId, replies);
+          yield replies;
+        }
         await Future.delayed(const Duration(seconds: 1));
       }
     } catch (e) {
@@ -282,6 +299,7 @@ class ForumService {
   Future<void> addReply(String postId, String content, {String? parentId}) async {
     try {
       final currentUser = await _userService.getCurrentUser();
+      final sanitizedContent = _sanitizer.sanitizeComment(content);
 
       final post = await _dbConnectionService.posts.findOne(
           where.eq('_id', ObjectId.fromHexString(postId))
@@ -297,9 +315,8 @@ class ForumService {
 
       final reply = {
         'postId': postId,
-        'content': content,
+        'content': sanitizedContent,
         'authorId': currentUser.id,
-        'authorName': currentUser.username,
         'parentId': parentId,
         'createTime': DateTime.now(),
         'updateTime': DateTime.now(),
@@ -307,6 +324,7 @@ class ForumService {
       };
 
       await _dbConnectionService.replies.insertOne(reply);
+      await _cacheService.clearPostRepliesCache(postId);  // 清除缓存
 
       // 更新帖子回复数
       await _dbConnectionService.posts.updateOne(
@@ -327,6 +345,9 @@ class ForumService {
       final reply = await _dbConnectionService.replies.findOne(
           where.eq('_id', ObjectId.fromHexString(replyId))
       );
+      if (reply != null) {
+        await _cacheService.clearPostRepliesCache(reply['postId']);
+      }
 
       if (reply == null) {
         throw Exception('回复不存在');
@@ -345,6 +366,7 @@ class ForumService {
           }
         },
       );
+
     } catch (e) {
       print('Update reply error: $e');
       rethrow;
@@ -359,6 +381,9 @@ class ForumService {
       final reply = await _dbConnectionService.replies.findOne(
           where.eq('_id', ObjectId.fromHexString(replyId))
       );
+      if (reply != null) {
+        await _cacheService.clearPostRepliesCache(reply['postId']);
+      }
 
       if (reply == null) {
         throw Exception('回复不存在');
@@ -387,6 +412,26 @@ class ForumService {
     } catch (e) {
       print('Delete reply error: $e');
       rethrow;
+    }
+  }
+  Future<List<Post>> getRecentUserPosts(String userId, {int limit = 5}) async {
+    try {
+      final cursor = _dbConnectionService.posts.find(
+          where
+              .eq('authorId', userId)
+              .ne('status', PostStatus.deleted.toString().split('.').last)
+              .sortBy('createTime', descending: true)
+              .limit(limit)
+      );
+
+      final posts = await cursor
+          .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
+          .toList();
+
+      return posts;
+    } catch (e) {
+      print('Get recent user posts error: $e');
+      return [];
     }
   }
 }

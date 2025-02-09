@@ -12,6 +12,7 @@ import '../screens/home/latest_games_screen.dart';
 import '../screens/game/games_list_screen.dart';
 import '../screens/linkstools/linkstools_screen.dart';
 import '../screens/profile/profile_screen.dart';
+import '../screens/profile/open_profile_screen.dart';
 import '../screens/game/add_game_screen.dart';
 import '../models/game.dart';
 import '../models/post.dart';
@@ -38,6 +39,7 @@ class AppRoutes {
   static const String gamesList = '/games';
   static const String externalLinks = '/links';
   static const String profile = '/profile';
+  static const String openProfile = '/open-profile';
   static const String addGame = '/game/add';
   static const String editGame = '/game/edit';
   static const String favorites = '/favorites';
@@ -88,6 +90,17 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => LinksToolsScreen());
       case '/profile':
         return MaterialPageRoute(builder: (_) => ProfileScreen());
+      case '/open-profile':
+        if (settings.arguments is! String) {
+          return MaterialPageRoute(
+            builder: (_) => Scaffold(
+              body: Center(child: Text('无效的用户ID')),
+            ),
+          );
+        }
+        final String userId = settings.arguments as String;
+        return MaterialPageRoute(builder: (_) => OpenProfileScreen(userId: userId));
+
       case '/game/add':
         return MaterialPageRoute(builder: (_) => AddGameScreen());
       case '/favorites':

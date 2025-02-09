@@ -23,8 +23,8 @@ class Comment {
     required this.isEdited,
     required this.username,
     this.parentId,
-    this.replies = const [],
-  });
+    List<Comment>? replies,
+  }) : replies = replies ?? [];
 
   factory Comment.fromJson(Map<String, dynamic> json) {
     String commentId = json['_id'] is ObjectId

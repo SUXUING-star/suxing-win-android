@@ -121,40 +121,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('编辑个人资料'),
-        content: TextField(
-          controller: usernameController,
-          decoration: InputDecoration(
-            labelText: '用户名',
-            hintText: '输入新的用户名',
+      builder: (dialogContext) => Builder(
+        builder: (builderContext) => AlertDialog(
+          title: Text('编辑个人资料'),
+          content: TextField(
+            controller: usernameController,
+            decoration: InputDecoration(
+              labelText: '用户名',
+              hintText: '输入新的用户名',
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: Text('取消'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                try {
+                  await _userService.updateUserProfile(
+                    username: usernameController.text,
+                  );
+                  await _loadUserProfile();
+                  Navigator.of(dialogContext).pop();
+
+                  // Use ScaffoldMessenger of the original context
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('个人资料更新成功')),
+                  );
+                } catch (e) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('更新失败：$e')),
+                  );
+                }
+              },
+              child: Text('保存'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await _userService.updateUserProfile(
-                  username: usernameController.text,
-                );
-                await _loadUserProfile();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('个人资料更新成功')),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('更新失败：$e')),
-                );
-              }
-            },
-            child: Text('保存'),
-          ),
-        ],
       ),
     );
   }

@@ -7,6 +7,7 @@ import '../../services/user_service.dart';
 import '../../providers/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/loading_route_observer.dart';
+import '../../screens/profile/open_profile_screen.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
@@ -174,7 +175,8 @@ class _ForumScreenState extends State<ForumScreen> {
       margin: const EdgeInsets.only(bottom: 16),
       child: InkWell(
         onTap: () {
-          Navigator.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
+          Navigator.pushNamed(
+              context, AppRoutes.postDetail, arguments: post.id);
         },
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -191,7 +193,10 @@ class _ForumScreenState extends State<ForumScreen> {
                   Expanded(
                     child: Text(
                       post.title,
-                      style: Theme.of(context).textTheme.titleMedium,
+                      style: Theme
+                          .of(context)
+                          .textTheme
+                          .titleMedium,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -201,48 +206,103 @@ class _ForumScreenState extends State<ForumScreen> {
               const SizedBox(height: 8),
               Text(
                 post.content,
-                style: Theme.of(context).textTheme.bodyMedium,
+                style: Theme
+                    .of(context)
+                    .textTheme
+                    .bodyMedium,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
               const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: post.tags.map((tag) {
-                  return Chip(
-                    label: Text(tag),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  );
-                }).toList(),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: post.tags.map((tag) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Chip(
+                        label: Text(tag),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                    );
+                  }).toList(),
+                ),
               ),
               const SizedBox(height: 8),
               Row(
                 children: [
-                  FutureBuilder<String?>(
-                    future: _userService.getAvatarFromId(post.authorId),
-                    builder: (context, snapshot) {
-                      return CircleAvatar(
-                        radius: 12,
-                        backgroundImage: snapshot.data != null
-                            ? NetworkImage(snapshot.data!)
-                            : null,
-                        child: snapshot.data == null
-                            ? Text(post.authorName[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 12))
-                            : null,
-                      );
-                    },
+                  // 左侧用户信息
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _userService.getUserInfoById(post.authorId),
+                        builder: (context, snapshot) {
+                          final username = snapshot.data?['username'] ?? '';
+                          final avatarUrl = snapshot.data?['avatar'];
+
+                          return MouseRegion(  // 使用 MouseRegion
+                            cursor: SystemMouseCursors.click, // 设置鼠标指针样式为点击样式
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        OpenProfileScreen(userId: post.authorId),
+                                  ),
+                                );
+                              },
+                              child: CircleAvatar(
+                                radius: 12,
+                                backgroundImage: avatarUrl != null ? NetworkImage(
+                                    avatarUrl) : null,
+                                child: avatarUrl == null && username.isNotEmpty
+                                    ? Text(username[0].toUpperCase(),
+                                    style: const TextStyle(fontSize: 12))
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      FutureBuilder<Map<String, dynamic>>(
+                        future: _userService.getUserInfoById(post.authorId),
+                        builder: (context, snapshot) {
+                          return ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: 120),
+                            child: Text(
+                              snapshot.data?['username'] ?? '',
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        },
+                      ),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  Text(post.authorName),
                   const Spacer(),
-                  Icon(Icons.remove_red_eye, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(post.viewCount.toString()),
-                  const SizedBox(width: 16),
-                  Icon(Icons.comment, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 4),
-                  Text(post.replyCount.toString()),
+                  // 右侧浏览和评论数
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.remove_red_eye_outlined, size: 16,
+                          color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        post.viewCount.toString(),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                      const SizedBox(width: 16),
+                      Icon(Icons.chat_bubble_outline, size: 16,
+                          color: Colors.grey[600]),
+                      const SizedBox(width: 4),
+                      Text(
+                        post.replyCount.toString(),
+                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

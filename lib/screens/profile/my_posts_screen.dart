@@ -1,5 +1,6 @@
 // lib/screens/profile/my_posts_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/my_posts/my_posts_bloc.dart';
 import '../../blocs/my_posts/my_posts_event.dart';
@@ -18,32 +19,46 @@ class MyPostsScreen extends StatefulWidget {
 
 class _MyPostsScreenState extends State<MyPostsScreen> {
   late MyPostsBloc _myPostsBloc;
+  bool _isInitialized = false;
 
+  @override
+  void initState() {
+    super.initState();
+    // 直接初始化 bloc
+    _myPostsBloc = MyPostsBloc(
+      Provider.of<ForumService>(context, listen: false),
+      Provider.of<UserService>(context, listen: false),
+    );
+  }
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    _myPostsBloc = MyPostsBloc(
-      context.read<ForumService>(),
-      context.read<UserService>(),
-    );
+    // 确保只执行一次加载
+    if (!_isInitialized) {
+      _isInitialized = true;
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
-          .whereType<LoadingRouteObserver>()
-          .first;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final loadingObserver = Navigator.of(context)
+            .widget.observers
+            .whereType<LoadingRouteObserver>()
+            .first;
 
-      loadingObserver.showLoading();
+        loadingObserver.showLoading();
 
-      _myPostsBloc.add(LoadMyPostsEvent());
+        // 加载数据
+        _myPostsBloc.add(LoadMyPostsEvent());
 
-      // 延迟隐藏加载动画
-      Future.delayed(Duration(seconds: 1), () {
-        loadingObserver.hideLoading();
+        // 延迟隐藏加载动画
+        Future.delayed(Duration(seconds: 1), () {
+          if (mounted) {
+            loadingObserver.hideLoading();
+          }
+        });
       });
-    });
+    }
   }
+
 
   @override
   void dispose() {

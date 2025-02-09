@@ -5,12 +5,14 @@ import 'db_connection_service.dart';
 import 'user_service.dart';
 import './history/game_history_service.dart';
 import './cache/game_cache_service.dart';
+import './counter/batch_view_counter_service.dart';
 
 class GameService {
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final UserService _userService = UserService(); // 引入 UserService
   final GameCacheService _cacheService = GameCacheService();
   final GameHistoryService _gameHistoryService = GameHistoryService();
+  final BatchViewCounterService _viewCounter = BatchViewCounterService();
 
   Stream<List<Game>> getGames() async* {
     try {
@@ -189,19 +191,9 @@ class GameService {
 
   Future<void> incrementGameView(String gameId) async {
     try {
-      final postDoc = await _dbConnectionService.games.findOne(
-          where.eq('_id', ObjectId.fromHexString(gameId)));
-
-      if (postDoc == null) {
-        throw Exception('游戏不存在');
-      }
-
-      await _dbConnectionService.games.updateOne(
-          where.eq('_id', ObjectId.fromHexString(gameId)),
-          {r'$inc': {'viewCount': 1}});
+      _viewCounter.incrementGameView(gameId);
     } catch (e) {
       print('Increment view error: $e');
-      rethrow;
     }
   }
 
