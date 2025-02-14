@@ -162,7 +162,7 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
                         '宿星茶会（跨平台版）',
                         style: TextStyle(
                           color: Colors.blue[400],
-                          fontSize: 24,
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

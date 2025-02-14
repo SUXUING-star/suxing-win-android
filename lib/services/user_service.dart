@@ -22,6 +22,12 @@ class UserService {
 
   UserService._internal();
 
+  // 添加内存缓存
+  final Map<String, Map<String, dynamic>> _userInfoCache = {};
+  final Duration _cacheExpiration = Duration(minutes: 5);
+  final Map<String, DateTime> _cacheTimestamp = {};
+
+
   Future<Box<String>> _getAuthBox() async {
     if (_authBox == null) {
       _authBox = await Hive.openBox<String>('authBox');
@@ -327,17 +333,57 @@ class UserService {
       rethrow;
     }
   }
+  // 在 UserService 中添加处理 ObjectId 的工具方法
+  ObjectId _parseObjectId(String id) {
+    try {
+      //print('Received ID format: $id');
+
+      // 处理 ObjectId("xxx") 格式
+      if (id.startsWith('ObjectId(') && id.endsWith(')')) {
+        // 提取引号内的内容
+        String hexString = id.substring(id.indexOf('"') + 1, id.lastIndexOf('"'));
+        //print('Extracted hex string: $hexString');
+        return ObjectId.fromHexString(hexString);
+      }
+
+      // 处理纯 24 位十六进制
+      if (id.length == 24) {
+        return ObjectId.fromHexString(id);
+      }
+
+      throw FormatException('Invalid ObjectId format: $id');
+    } catch (e) {
+      print('Parse ObjectId error: $e');
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> getUserInfoById(String userId) async {
     try {
+      // 检查缓存
+      if (_userInfoCache.containsKey(userId)) {
+        final timestamp = _cacheTimestamp[userId];
+        if (timestamp != null &&
+            DateTime.now().difference(timestamp) < _cacheExpiration) {
+          return _userInfoCache[userId]!;
+        }
+      }
+
+      // 缓存不存在或已过期，从数据库获取
+      final objId = _parseObjectId(userId);
       final userDoc = await _dbConnectionService.users.findOne(
-        where.eq('_id', ObjectId.fromHexString(userId)),
+        where.eq('_id', objId),
       );
 
       if (userDoc != null) {
-        return {
+        final userInfo = {
           'username': userDoc['username'],
           'avatar': userDoc['avatar'],
         };
+        // 更新缓存
+        _userInfoCache[userId] = userInfo;
+        _cacheTimestamp[userId] = DateTime.now();
+        return userInfo;
       }
       return {'username': '未知用户', 'avatar': null};
     } catch (e) {
@@ -345,15 +391,26 @@ class UserService {
       return {'username': '未知用户', 'avatar': null};
     }
   }
-
+  // 清除缓存的方法
+  void clearUserInfoCache([String? userId]) {
+    if (userId != null) {
+      _userInfoCache.remove(userId);
+      _cacheTimestamp.remove(userId);
+    } else {
+      _userInfoCache.clear();
+      _cacheTimestamp.clear();
+    }
+  }
   Future<Map<String, dynamic>?> safegetUserById(String userId) async {
     try {
+      print('safegetUserById received userId: $userId'); // 添加日志
+      final objId = _parseObjectId(userId);
+
       final userDoc = await _dbConnectionService.users.findOne(
-        where.eq('_id', ObjectId.fromHexString(userId)),
+        where.eq('_id', objId),
       );
 
       if (userDoc != null) {
-        // 移除敏感信息
         userDoc.remove('hash');
         userDoc.remove('salt');
         userDoc.remove('email');

@@ -1,6 +1,7 @@
 // lib/services/forum_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
 import '../models/post.dart';
+import '../models/message.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 import './history/post_history_service.dart';
@@ -68,7 +69,8 @@ class ForumService {
 
         final posts = await _dbConnectionService.posts
             .find(query)
-            .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
+            .map((doc) =>
+            Post.fromJson(_dbConnectionService.convertDocument(doc)))
             .toList();
 
         yield posts;
@@ -89,7 +91,8 @@ class ForumService {
             .eq('authorId', userId)
             .ne('status', PostStatus.deleted.toString().split('.').last)
             .sortBy('createTime', descending: true))
-            .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
+            .map((doc) =>
+            Post.fromJson(_dbConnectionService.convertDocument(doc)))
             .toList();
 
         yield posts;
@@ -105,9 +108,8 @@ class ForumService {
   // 修改 getPost 方法以添加历史记录
   Future<Post?> getPost(String postId) async {
     try {
-      final postDoc = await _dbConnectionService.posts.findOne(
-          where.eq('_id', ObjectId.fromHexString(postId))
-      );
+      final postDoc = await _dbConnectionService.posts
+          .findOne(where.eq('_id', ObjectId.fromHexString(postId)));
 
       if (postDoc == null) return null;
 
@@ -125,7 +127,8 @@ class ForumService {
   }
 
   // 创建帖子
-  Future<void> createPost(String title, String content, List<String> tags) async {
+  Future<void> createPost(
+      String title, String content, List<String> tags) async {
     try {
       final sanitizedTitle = _sanitizer.sanitizeTitle(title);
       final sanitizedContent = _sanitizer.sanitizePostContent(content);
@@ -152,13 +155,13 @@ class ForumService {
   }
 
   // 更新帖子
-  Future<void> updatePost(String postId, String title, String content, List<String> tags) async {
+  Future<void> updatePost(
+      String postId, String title, String content, List<String> tags) async {
     try {
       final currentUser = await _userService.getCurrentUser();
 
-      final post = await _dbConnectionService.posts.findOne(
-          where.eq('_id', ObjectId.fromHexString(postId))
-      );
+      final post = await _dbConnectionService.posts
+          .findOne(where.eq('_id', ObjectId.fromHexString(postId)));
 
       if (post == null) {
         throw Exception('帖子不存在');
@@ -189,10 +192,10 @@ class ForumService {
   Future<void> deletePost(String postId) async {
     try {
       final currentUser = await _userService.getCurrentUser();
+      final postObjId = ObjectId.fromHexString(postId);
 
-      final post = await _dbConnectionService.posts.findOne(
-          where.eq('_id', ObjectId.fromHexString(postId))
-      );
+      final post = await _dbConnectionService.posts
+          .findOne(where.eq('_id', postObjId));
 
       if (post == null) {
         throw Exception('帖子不存在');
@@ -202,32 +205,21 @@ class ForumService {
         throw Exception('无权限删除此帖子');
       }
 
-      // 将帖子状态设为已删除
-      await _dbConnectionService.posts.updateOne(
-        where.eq('_id', ObjectId.fromHexString(postId)),
-        {
-          r'$set': {
-            'status': PostStatus.deleted.toString().split('.').last,
-            'updateTime': DateTime.now(),
-          }
-        },
+      // 直接从数据库中删除帖子
+      await _dbConnectionService.posts.deleteOne(
+        where.eq('_id', postObjId),
       );
 
-      // 同时将该帖子下的所有回复设为已删除
-      await _dbConnectionService.replies.updateMany(
+      // 同时删除该帖子下的所有回复
+      await _dbConnectionService.replies.deleteMany(
         where.eq('postId', postId),
-        {
-          r'$set': {
-            'status': ReplyStatus.deleted.toString().split('.').last,
-            'updateTime': DateTime.now(),
-          }
-        },
       );
     } catch (e) {
       print('Delete post error: $e');
       rethrow;
     }
   }
+
 
   // 锁定/解锁帖子
   Future<void> togglePostLock(String postId) async {
@@ -238,15 +230,15 @@ class ForumService {
         throw Exception('只有管理员可以锁定/解锁帖子');
       }
 
-      final post = await _dbConnectionService.posts.findOne(
-          where.eq('_id', ObjectId.fromHexString(postId))
-      );
+      final post = await _dbConnectionService.posts
+          .findOne(where.eq('_id', ObjectId.fromHexString(postId)));
 
       if (post == null) {
         throw Exception('帖子不存在');
       }
 
-      final newStatus = post['status'] == PostStatus.locked.toString().split('.').last
+      final newStatus =
+      post['status'] == PostStatus.locked.toString().split('.').last
           ? PostStatus.active
           : PostStatus.locked;
 
@@ -266,6 +258,7 @@ class ForumService {
   }
 
   // 获取帖子的回复
+  // 在 ForumService 类中更新处理回复的方法
   Stream<List<Reply>> getReplies(String postId) async* {
     try {
       while (true) {
@@ -275,10 +268,10 @@ class ForumService {
           yield cachedReplies;
         } else {
           // 从数据库获取
+          final postObjId = ObjectId.fromHexString(postId);
           final replies = await _dbConnectionService.replies
               .find(where
-              .eq('postId', postId)
-              .eq('status', ReplyStatus.active.toString().split('.').last)
+              .eq('postId', postObjId)
               .sortBy('createTime'))
               .map((doc) => Reply.fromJson(_dbConnectionService.convertDocument(doc)))
               .toList();
@@ -287,7 +280,8 @@ class ForumService {
           await _cacheService.cachePostReplies(postId, replies);
           yield replies;
         }
-        await Future.delayed(const Duration(seconds: 1));
+        // 增加轮询间隔到 5 秒
+        await Future.delayed(const Duration(seconds: 5));
       }
     } catch (e) {
       print('Get replies error: $e');
@@ -295,15 +289,18 @@ class ForumService {
     }
   }
 
-  // 添加回复
+  // 在 ForumService 类中修改 addReply 方法
   Future<void> addReply(String postId, String content, {String? parentId}) async {
     try {
       final currentUser = await _userService.getCurrentUser();
       final sanitizedContent = _sanitizer.sanitizeComment(content);
 
-      final post = await _dbConnectionService.posts.findOne(
-          where.eq('_id', ObjectId.fromHexString(postId))
-      );
+      // 准备所有需要的 ObjectId
+      final postObjId = ObjectId.fromHexString(postId);
+      final authorObjId = ObjectId.fromHexString(currentUser.id);
+      final newReplyId = ObjectId();
+
+      final post = await _dbConnectionService.posts.findOne(where.eq('_id', postObjId));
 
       if (post == null) {
         throw Exception('帖子不存在');
@@ -313,22 +310,76 @@ class ForumService {
         throw Exception('帖子已被锁定');
       }
 
-      final reply = {
-        'postId': postId,
+      // 准备回复数据
+      final Map<String, dynamic> reply = {
+        '_id': newReplyId,
+        'postId': postObjId,
         'content': sanitizedContent,
-        'authorId': currentUser.id,
-        'parentId': parentId,
+        'authorId': authorObjId,
         'createTime': DateTime.now(),
         'updateTime': DateTime.now(),
         'status': ReplyStatus.active.toString().split('.').last,
       };
 
+      // 处理父回复相关逻辑
+      if (parentId != null) {
+        final parentObjId = ObjectId.fromHexString(parentId);
+        final parentReply = await _dbConnectionService.replies.findOne(where.eq('_id', parentObjId));
+
+        if (parentReply != null) {
+          reply['parentId'] = parentObjId;
+          final parentUserId = parentReply['authorId'];
+
+          // 只有在回复不是自己的评论时才发送消息
+          if (parentUserId != authorObjId) {
+            final parentUserObjId = parentUserId is ObjectId
+                ? parentUserId
+                : ObjectId.fromHexString(parentUserId.toString());
+
+            // 检查父回复作者是否是帖子作者，避免重复通知
+            if (parentUserObjId.toHexString() != post['authorId'].toString()) {
+              final message = Message.createPostReplyMessage(
+                senderId: currentUser.id,
+                recipientId: parentUserObjId.toHexString(),
+                postId: postId,
+                postTitle: post['title'],
+                content: sanitizedContent,
+              );
+
+              await _dbConnectionService.messages.insertOne(message);
+            }
+          }
+        }
+      } else {
+        // 直接回复帖子的情况
+        final postAuthorId = post['authorId'].toString();
+        final currentUserId = authorObjId.toHexString();
+
+        // 只有在回复不是自己的帖子时才发送消息
+        if (postAuthorId != currentUserId) {
+          final postAuthorObjId = post['authorId'] is ObjectId
+              ? post['authorId']
+              : ObjectId.fromHexString(post['authorId'].toString());
+
+          final message = Message.createPostReplyMessage(
+            senderId: currentUser.id,
+            recipientId: postAuthorObjId.toHexString(),
+            postTitle: post['title'],
+            postId: postId,
+            content: sanitizedContent,
+          );
+
+          await _dbConnectionService.messages.insertOne(message);
+        }
+      }
+
+      // 插入回复
       await _dbConnectionService.replies.insertOne(reply);
-      await _cacheService.clearPostRepliesCache(postId);  // 清除缓存
+      await _cacheService.clearPostRepliesCache(postId);
 
       // 更新帖子回复数
       await _dbConnectionService.posts.updateOne(
-        where.eq('_id', ObjectId.fromHexString(postId)),
+        where.eq('_id', postObjId),
         {r'$inc': {'replyCount': 1}},
       );
     } catch (e) {
@@ -338,94 +389,140 @@ class ForumService {
   }
 
   // 编辑回复
+  // 更新回复内容
   Future<void> updateReply(String replyId, String content) async {
     try {
       final currentUser = await _userService.getCurrentUser();
+      final replyObjId = ObjectId.fromHexString(replyId);
 
       final reply = await _dbConnectionService.replies.findOne(
-          where.eq('_id', ObjectId.fromHexString(replyId))
+          where.eq('_id', replyObjId)
       );
-      if (reply != null) {
-        await _cacheService.clearPostRepliesCache(reply['postId']);
-      }
 
       if (reply == null) {
         throw Exception('回复不存在');
       }
 
-      if (reply['authorId'] != currentUser.id && !currentUser.isAdmin) {
+      // 清除缓存
+      final postId = reply['postId'] is ObjectId
+          ? reply['postId'].toHexString()
+          : reply['postId'];
+      await _cacheService.clearPostRepliesCache(postId);
+
+      // 权限检查
+      final replyAuthorId = reply['authorId'] is ObjectId
+          ? reply['authorId'].toHexString()
+          : reply['authorId'].toString();
+
+      if (replyAuthorId != currentUser.id && !currentUser.isAdmin) {
         throw Exception('无权限修改此回复');
       }
 
+      // 更新回复内容
       await _dbConnectionService.replies.updateOne(
-        where.eq('_id', ObjectId.fromHexString(replyId)),
+        where.eq('_id', replyObjId),
         {
           r'$set': {
             'content': content,
             'updateTime': DateTime.now(),
+            'isEdited': true
           }
         },
       );
-
     } catch (e) {
       print('Update reply error: $e');
       rethrow;
     }
   }
 
-  // 删除回复
   Future<void> deleteReply(String replyId) async {
     try {
-      final currentUser = await _userService.getCurrentUser();
+      print('Attempting to delete reply with ID: $replyId');
 
+      final currentUser = await _userService.getCurrentUser();
+      final replyObjId = ObjectId.fromHexString(replyId);
+
+      // 查找回复
       final reply = await _dbConnectionService.replies.findOne(
-          where.eq('_id', ObjectId.fromHexString(replyId))
+          where.eq('_id', replyObjId)
       );
-      if (reply != null) {
-        await _cacheService.clearPostRepliesCache(reply['postId']);
-      }
 
       if (reply == null) {
+        print('Reply not found: $replyId');
         throw Exception('回复不存在');
       }
 
-      if (reply['authorId'] != currentUser.id && !currentUser.isAdmin) {
-        throw Exception('无权限删除此回复');
+      // 获取 postId 用于后续操作
+      final postId = reply['postId'] is ObjectId
+          ? reply['postId']
+          : ObjectId.fromHexString(reply['postId']);
+
+      // 删除相关的消息通知
+      await _dbConnectionService.messages.deleteMany(
+          where
+              .eq('type', 'post_reply')
+              .eq('senderId', reply['authorId'])
+              .eq('postId', postId.toHexString())
+      );
+
+      // 获取这个回复下的所有子回复数量
+      final childrenCount = await _dbConnectionService.replies.count(
+          where.eq('parentId', replyObjId)
+      );
+
+      // 删除子回复相关的消息
+      final childReplies = await _dbConnectionService.replies
+          .find(where.eq('parentId', replyObjId))
+          .toList();
+
+      for (final childReply in childReplies) {
+        await _dbConnectionService.messages.deleteMany(
+            where
+                .eq('type', 'post_reply')
+                .eq('senderId', childReply['authorId'])
+                .eq('postId', postId.toHexString())
+        );
       }
 
-      // 将回复状态设为已删除
-      await _dbConnectionService.replies.updateOne(
-        where.eq('_id', ObjectId.fromHexString(replyId)),
-        {
-          r'$set': {
-            'status': ReplyStatus.deleted.toString().split('.').last,
-            'updateTime': DateTime.now(),
-          }
-        },
+      // 删除子回复
+      await _dbConnectionService.replies.deleteMany(
+          where.eq('parentId', replyObjId)
       );
 
-      // 更新帖子回复数
-      await _dbConnectionService.posts.updateOne(
-        where.eq('_id', ObjectId.fromHexString(reply['postId'])),
-        {r'$inc': {'replyCount': -1}},
+      // 删除回复本身
+      await _dbConnectionService.replies.deleteOne(
+          where.eq('_id', replyObjId)
       );
+
+      // 清除缓存
+      await _cacheService.clearPostRepliesCache(postId.toHexString());
+
+      // 更新帖子回复数（减去主回复和所有子回复的数量）
+      await _dbConnectionService.posts.updateOne(
+        where.eq('_id', postId),
+        {r'$inc': {'replyCount': -(childrenCount + 1)}},
+      );
+
+      print('Successfully deleted reply: $replyId');
     } catch (e) {
       print('Delete reply error: $e');
+      print('Error stack trace: ${StackTrace.current}');
       rethrow;
     }
   }
+
+
   Future<List<Post>> getRecentUserPosts(String userId, {int limit = 5}) async {
     try {
-      final cursor = _dbConnectionService.posts.find(
-          where
-              .eq('authorId', userId)
-              .ne('status', PostStatus.deleted.toString().split('.').last)
-              .sortBy('createTime', descending: true)
-              .limit(limit)
-      );
+      final cursor = _dbConnectionService.posts.find(where
+          .eq('authorId', userId)
+          .ne('status', PostStatus.deleted.toString().split('.').last)
+          .sortBy('createTime', descending: true)
+          .limit(limit));
 
       final posts = await cursor
-          .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
+          .map(
+              (doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
           .toList();
 
       return posts;

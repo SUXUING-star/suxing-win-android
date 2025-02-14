@@ -18,6 +18,7 @@ import './widgets/dialogs/db_reset_dialog.dart';
 import './routes/app_routes.dart';
 import 'services/user_service.dart';
 import 'services/forum_service.dart';
+import 'services/restart_service.dart';
 
 
 class App extends StatelessWidget {
@@ -25,9 +26,11 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (_) => InitializationProvider(),
-      child: InitialScreen(),
+    return RestartWrapper(  // 添加 RestartWrapper
+      child: ChangeNotifierProvider(
+        create: (_) => InitializationProvider(),
+        child: InitialScreen(),
+      ),
     );
   }
 }
@@ -78,6 +81,7 @@ class MyApp extends StatelessWidget {
         Provider<PostHistoryService>(
           create: (_) => PostHistoryService(),
         ),
+        Provider<RestartService>(create: (_) => RestartService()),
       ],
       child: MaterialApp(
         title: '宿星茶会（windows版）',

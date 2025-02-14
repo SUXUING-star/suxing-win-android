@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:io';
 import '../../models/game.dart';
 import '../../services/game_service.dart';
 import '../../utils/admin_check.dart';
@@ -201,13 +202,18 @@ class _GamesListScreenState extends State<GamesListScreen> {
     if (_games.isEmpty) {
       return _buildEmptyState(context, '暂无游戏数据');
     }
+    double default_cardRatio = 0.70;
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      default_cardRatio = 0.90;
+    }
+
 
     return GridView.builder(
       controller: _scrollController,
       padding: EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
-        childAspectRatio: 0.8,
+        childAspectRatio: default_cardRatio ,  // 从 0.8 改为 0.75
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../widgets/home/home_hot.dart';
 import '../../widgets/home/home_latest.dart';
 import '../../utils/loading_route_observer.dart';
-import '../../widgets/common/custom_app_bar.dart';
+import 'dart:io';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -75,8 +75,14 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildBanner() {
+    double bannerHeight = 140.0; // 默认移动端高度
+
+    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+      bannerHeight = 200.0; // 桌面端高度
+    }
+
     return Container(
-      height: 200,
+      height: bannerHeight,
       width: double.infinity,
       child: PageView.builder(
         itemCount: 3,
@@ -85,10 +91,13 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: const EdgeInsets.all(8.0),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(8.0),
-              child: Image.asset(
-                //home顶部图片
-                'images/kaev.jpg',
-                fit: BoxFit.cover,
+              child: Opacity(
+                opacity: 0.8,
+                child: Image.asset(
+                  //home顶部图片
+                  'images/kaev.jpg',
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
           );

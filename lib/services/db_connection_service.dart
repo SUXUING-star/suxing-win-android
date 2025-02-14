@@ -26,6 +26,7 @@ class DBConnectionService {
   late DbCollection tools;
   late DbCollection gameHistory;
   late DbCollection postHistory;
+  late DbCollection messages;  // 添加消息集合
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
@@ -132,6 +133,7 @@ class DBConnectionService {
       tools = _db.collection('tools');
       gameHistory = _db.collection('game_history');
       postHistory = _db.collection('post_history');
+      messages = _db.collection('messages');  // 添加消息集合初始化
 
       await _ensureIndexes();
 
@@ -265,6 +267,18 @@ class DBConnectionService {
         postHistory.createIndex(keys: {
           'userId': 1,
           'lastViewTime': -1,
+        }),
+        // 消息相关索引
+        messages.createIndex(keys: {
+          'recipientId': 1,
+          'createTime': -1
+        }),
+        messages.createIndex(keys: {
+          'recipientId': 1,
+          'isRead': 1
+        }),
+        messages.createIndex(keys: {
+          'senderId': 1
         }),
       ]);
     } catch (e) {

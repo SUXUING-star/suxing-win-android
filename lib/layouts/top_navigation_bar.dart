@@ -6,6 +6,7 @@ import '../providers/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../widgets/logo/app_logo.dart';
 import '../widgets/update/update_button.dart';
+import '../widgets/message/message_badge.dart';  // 新增导入
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
@@ -26,6 +27,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
+      iconTheme: IconThemeData(color: Colors.grey[700]), // 设置默认图标颜色
       leading: _buildLeadingLogo(context),
       title: _buildSearchBar(context),
       titleSpacing: 8.0,
@@ -35,10 +37,25 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           child: UpdateButton(),
         ),
         const SizedBox(width: 8),
+        _buildMessageBadge(context), // 使用新的方法构建消息徽章
+        const SizedBox(width: 8),
         _buildProfileAvatar(context),
         const SizedBox(width: 16),
       ],
     );
+  }
+
+  Widget _buildMessageBadge(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
+
+    if (authProvider.isLoggedIn) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: MessageBadge(),  // 添加消息图标
+      );
+    } else {
+      return SizedBox.shrink(); // 如果未登录，则不显示消息图标
+    }
   }
 
   Widget _buildLeadingLogo(BuildContext context) {

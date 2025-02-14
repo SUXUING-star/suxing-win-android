@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 import '../../../models/game.dart';
 import '../../../services/game_service.dart';
 import '../../../routes/app_routes.dart';
@@ -15,6 +16,7 @@ class _HomeHotState extends State<HomeHot> {
   final PageController _pageController = PageController();
   Timer? _timer;
   int _currentPage = 0;
+
   static const double cardWidth = 160.0;
   static const double cardMargin = 16.0;
 
@@ -32,13 +34,12 @@ class _HomeHotState extends State<HomeHot> {
   }
 
   void _startAutoScroll() {
-    _timer = Timer.periodic(Duration(seconds: 5), (timer) async {  // 添加 async
+    _timer = Timer.periodic(Duration(seconds: 5), (timer) async {
       if (!mounted) {
         timer.cancel();
         return;
       }
       if (_pageController.hasClients) {
-        // 使用 await 直接获取 page 值
         final currentPage = (_pageController.page ?? 0).round();
 
         final builder = context.findAncestorWidgetOfExactType<StreamBuilder<List<Game>>>();
@@ -69,7 +70,7 @@ class _HomeHotState extends State<HomeHot> {
     double screenWidth = MediaQuery.of(context).size.width;
     double availableWidth = screenWidth - 32; // 减去左右padding
     int cardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
-    return cardsPerPage > 0 ? cardsPerPage : 1;
+    return cardsPerPage < 2 ? 2 : cardsPerPage;
   }
 
   int _getTotalPages(int cardsPerPage, List<Game> games) {
@@ -146,6 +147,10 @@ class _HomeHotState extends State<HomeHot> {
   }
 
   Widget _buildNavigationButtons(int totalPages) {
+    // 根据平台决定按钮大小
+    final buttonSize = Platform.isAndroid ? 32.0 : 40.0;
+    final iconSize = Platform.isAndroid ? 18.0 : 24.0;
+
     return Positioned(
       left: 0,
       right: 0,
@@ -162,6 +167,8 @@ class _HomeHotState extends State<HomeHot> {
                 curve: Curves.easeInOut,
               );
             } : null,
+            buttonSize: buttonSize,
+            iconSize: iconSize,
           ),
           _buildNavigationButton(
             icon: Icons.arrow_forward_ios,
@@ -171,6 +178,8 @@ class _HomeHotState extends State<HomeHot> {
                 curve: Curves.easeInOut,
               );
             } : null,
+            buttonSize: buttonSize,
+            iconSize: iconSize,
           ),
         ],
       ),
@@ -180,9 +189,13 @@ class _HomeHotState extends State<HomeHot> {
   Widget _buildNavigationButton({
     required IconData icon,
     VoidCallback? onPressed,
+    required double buttonSize,
+    required double iconSize,
   }) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 8),
+      width: buttonSize,
+      height: buttonSize,
       decoration: BoxDecoration(
         color: onPressed == null
             ? Colors.grey.withOpacity(0.3)
@@ -190,9 +203,9 @@ class _HomeHotState extends State<HomeHot> {
         shape: BoxShape.circle,
       ),
       child: IconButton(
-        icon: Icon(icon, color: Colors.white),
+        icon: Icon(icon, color: Colors.white, size: iconSize),
         onPressed: onPressed,
-        splashRadius: 24,
+        splashRadius: buttonSize / 2,
         tooltip: icon == Icons.arrow_back_ios ? '上一页' : '下一页',
       ),
     );

@@ -22,14 +22,13 @@ class GameCard extends StatelessWidget {
     return completer.future;
   }
 
-  // 获取图片宽高比
   Future<double> _getImageAspectRatio(String imageUrl) async {
     try {
       final ui.Image image = await _getImage(imageUrl);
       return image.width / image.height;
     } catch (e) {
       print('Error getting image aspect ratio: $e');
-      return 1.0; // 加载失败时返回默认比例
+      return 1.0;
     }
   }
 
@@ -39,16 +38,17 @@ class GameCard extends StatelessWidget {
       onTap: () {
         Navigator.pushNamed(context, '/game/detail', arguments: game);
       },
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-            // 自适应高度的封面图
+      child: ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: 280),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
             LayoutBuilder(
               builder: (BuildContext context, BoxConstraints constraints) {
                 return FutureBuilder<double>(
                   future: _getImageAspectRatio(game.coverImage),
                   builder: (context, snapshot) {
-                    double aspectRatio = snapshot.data ?? 16 / 9; // 默认比例
+                    double aspectRatio = snapshot.data ?? 16 / 9;
                     return AspectRatio(
                       aspectRatio: aspectRatio,
                       child: CachedNetworkImage(
@@ -68,9 +68,8 @@ class GameCard extends StatelessWidget {
                 );
               },
             ),
-            // 使用 Padding 代替 Expanded
             Padding(
-              padding: EdgeInsets.all(8),
+              padding: EdgeInsets.fromLTRB(8, 4, 8, 4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -83,18 +82,18 @@ class GameCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 4),
+                  SizedBox(height: 2),
                   Text(
                     game.summary,
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,
+                      height: 1.2,
                     ),
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 8),
-                  // 点赞和浏览等信息
+                  SizedBox(height: 4),
                   Row(
                     children: [
                       Icon(Icons.thumb_up, size: 14),
@@ -103,10 +102,7 @@ class GameCard extends StatelessWidget {
                         game.likeCount.toString(),
                         style: TextStyle(fontSize: 12),
                       ),
-                    ],
-                  ),
-                  Row(
-                    children: [
+                      SizedBox(width: 12),
                       Icon(Icons.star, size: 14, color: Colors.amber),
                       SizedBox(width: 4),
                       Text(
@@ -127,7 +123,7 @@ class GameCard extends StatelessWidget {
             ),
           ],
         ),
-
+      ),
     );
   }
 }

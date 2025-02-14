@@ -214,7 +214,7 @@ class _InitializationScreenState extends State<InitializationScreen>
                     fontFamily: FontConfig.defaultFontFamily,
                     fontFamilyFallback: FontConfig.fontFallback,
                     color: Colors.blue[400],
-                    fontSize: 24,
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
                 ),

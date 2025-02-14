@@ -9,6 +9,7 @@ class DBStateProvider extends ChangeNotifier {
 
   bool get isConnected => _isConnected;
   bool get needsReset => _needsReset;
+  bool get hasError => _errorMessage != null;
   String? get errorMessage => _errorMessage;
 
   void setConnectionState(bool connected, {String? error}) {

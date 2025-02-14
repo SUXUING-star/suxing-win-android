@@ -15,11 +15,20 @@ class CommentsCacheService {
   late Box<dynamic> _gameCommentsBox;
   late Box<dynamic> _postRepliesBox;
 
+  Box? _cacheBox;
+
   CommentsCacheService._internal();
 
   Future<void> init() async {
     _gameCommentsBox = await Hive.openBox(gameCommentsBox);
     _postRepliesBox = await Hive.openBox(postRepliesBox);
+  }
+
+  Future<void> dispose() async {
+    if (_cacheBox != null && _cacheBox!.isOpen) {
+      await _cacheBox!.close();
+      _cacheBox = null;
+    }
   }
 
   // 游戏评论缓存
@@ -72,13 +81,24 @@ class CommentsCacheService {
     }
   }
 
-  // 帖子回复缓存
+  // 修改缓存帖子回复的方法
   Future<void> cachePostReplies(String postId, List<Reply> replies) async {
     try {
       final currentTime = DateTime.now();
       await _postRepliesBox.put('${postId}_timestamp', currentTime.toIso8601String());
 
-      final repliesData = replies.map((reply) => reply.toJson()).toList();
+      final repliesData = replies.map((reply) {
+        final replyMap = reply.toJson();
+        // 确保所有 ID 都是字符串形式
+        replyMap['_id'] = replyMap['_id']?.toString() ?? reply.id;
+        replyMap['postId'] = replyMap['postId']?.toString() ?? reply.postId;
+        replyMap['authorId'] = replyMap['authorId']?.toString() ?? reply.authorId;
+        if (reply.parentId != null) {
+          replyMap['parentId'] = reply.parentId.toString();
+        }
+        return replyMap;
+      }).toList();
+
       await _postRepliesBox.put(postId, repliesData);
     } catch (e) {
       print('Cache post replies error: $e');
@@ -100,6 +120,7 @@ class CommentsCacheService {
 
       return (cachedData as List).map((item) {
         final replyMap = Map<String, dynamic>.from(item as Map);
+        // 确保数据格式正确
         return Reply.fromJson(replyMap);
       }).toList();
     } catch (e) {

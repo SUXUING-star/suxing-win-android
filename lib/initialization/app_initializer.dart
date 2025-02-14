@@ -14,12 +14,20 @@ import '../services/cache/avatar_cache_service.dart';
 import '../services/cache/links_tools_cache_service.dart';
 import '../services/cache/history_cache_service.dart';
 import '../services/cache/comment_cache_service.dart';
+import '../services/restart_service.dart';
 
 class AppInitializer {
   static Future<Map<String, dynamic>> initializeServices(
       InitializationProvider initProvider
       ) async {
     try {
+      // 在初始化开始时检查是否是重启
+      if (RestartService().restartNotifier.value) {
+        // 如果是重启，等待一小段时间确保之前的清理完成
+        await Future.delayed(const Duration(milliseconds: 500));
+        // 重置重启标志
+        RestartService().restartNotifier.value = false;
+      }
       await Future.delayed(const Duration(milliseconds: 100));
       initProvider.updateProgress('正在初始化本地存储...', 0.1);
       await Hive.initFlutter();

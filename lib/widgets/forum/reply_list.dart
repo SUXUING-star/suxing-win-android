@@ -1,21 +1,29 @@
 // lib/widgets/forum/reply_list.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../services/user_service.dart';
 import '../../services/forum_service.dart';
 import '../../screens/profile/open_profile_screen.dart';
+import '../../providers/auth_provider.dart';
 
-class ReplyList extends StatelessWidget {
+class ReplyList extends StatefulWidget {
   final String postId;
+
+  const ReplyList({Key? key, required this.postId}) : super(key: key);
+
+  @override
+  _ReplyListState createState() => _ReplyListState();
+}
+
+class _ReplyListState extends State<ReplyList> {
   final ForumService _forumService = ForumService();
   final UserService _userService = UserService();
-
-  ReplyList({Key? key, required this.postId}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<List<Reply>>(
-      stream: _forumService.getReplies(postId),
+      stream: _forumService.getReplies(widget.postId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
           return Center(child: Text('加载失败：${snapshot.error}'));
@@ -56,8 +64,8 @@ class ReplyList extends StatelessWidget {
                     final username = snapshot.data?['username'] ?? '';
                     final avatarUrl = snapshot.data?['avatar'];
 
-                    return MouseRegion( // 添加 MouseRegion
-                      cursor: SystemMouseCursors.click, // 设置鼠标指针
+                    return MouseRegion(
+                      cursor: SystemMouseCursors.click,
                       child: GestureDetector(
                         onTap: () {
                           Navigator.push(
@@ -109,25 +117,31 @@ class ReplyList extends StatelessWidget {
               ],
             ),
             const Spacer(),
-            // 右侧时间和操作按钮
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  reply.createTime.toString().substring(0, 16),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                ),
-                _buildReplyActions(context, reply),
-              ],
-            ),
+
           ],
         ),
         const SizedBox(height: 8),
         Padding(
           padding: const EdgeInsets.only(left: 36),
-          child: Text(
-            reply.content,
-            style: Theme.of(context).textTheme.bodyMedium,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                reply.content,
+                style: Theme.of(context).textTheme.bodyMedium,
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end, // Align items to the right
+                children: [
+                  Text(
+                    reply.createTime.toString().substring(0, 16),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
+                  ),
+                  const SizedBox(width: 8),
+                  _buildReplyActions(context, reply),
+                ],
+              ),
+            ],
           ),
         ),
       ],
@@ -135,20 +149,139 @@ class ReplyList extends StatelessWidget {
   }
 
   Widget _buildReplyActions(BuildContext context, Reply reply) {
-    return PopupMenuButton<String>(
-      itemBuilder: (context) => [
-        const PopupMenuItem(
-          value: 'edit',
-          child: Text('编辑'),
-        ),
-        const PopupMenuItem(
-          value: 'delete',
-          child: Text('删除'),
-        ),
-      ],
-      onSelected: (value) {
-        // 处理编辑和删除操作
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        // Debug logs
+        print('Auth check - Current user ID: ${auth.currentUser?.id}');
+        print('Auth check - Reply author ID: ${reply.authorId}');
+        print('Auth check - Is logged in: ${auth.isLoggedIn}');
+        print('Auth check - Is admin: ${auth.currentUser?.isAdmin}');
+
+        // 如果用户未登录，不显示按钮
+        if (!auth.isLoggedIn) {
+          return const SizedBox.shrink();
+        }
+
+        // 将 ObjectId 转换为字符串进行比较
+        final currentUserId = auth.currentUser?.id;
+        final replyAuthorId = reply.authorId.replaceAll('ObjectId("', '').replaceAll('")', '');
+
+        // 如果是本人的评论或者是管理员，显示按钮
+        final isAuthor = currentUserId == replyAuthorId;
+        final isAdmin = auth.currentUser?.isAdmin ?? false;
+
+        if (!isAuthor && !isAdmin) {
+          return const SizedBox.shrink();
+        }
+
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, size: 20),
+              itemBuilder: (context) => [
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Text('编辑'),
+                ),
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Text('删除'),
+                ),
+              ],
+              onSelected: (value) {
+                switch (value) {
+                  case 'edit':
+                    _handleEditReply(context, reply);
+                    break;
+                  case 'delete':
+                    _handleDeleteReply(context, reply);
+                    break;
+                }
+              },
+            ),
+          ],
+        );
       },
     );
+  }
+
+  Future<void> _handleEditReply(BuildContext context, Reply reply) async {
+    try {
+      final newContent = await showDialog<String>(
+        context: context,
+        builder: (context) {
+          final textController = TextEditingController(text: reply.content);
+          return AlertDialog(
+            title: const Text('编辑回复'),
+            content: TextField(
+              controller: textController,
+              maxLines: 4,
+              decoration: InputDecoration(
+                hintText: '输入新的回复内容',
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.of(context).pop(textController.text),
+                child: const Text('保存'),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (newContent != null && newContent.trim().isNotEmpty) {
+        await _forumService.updateReply(reply.id, newContent);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('回复编辑成功')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('编辑失败：$e')),
+      );
+    }
+  }
+
+  Future<void> _handleDeleteReply(BuildContext context, Reply reply) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('确认删除'),
+        content: const Text('确定要删除这个回复吗？删除后不可恢复。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('删除'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _forumService.deleteReply(reply.id);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('回复删除成功')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败：$e')),
+        );
+      }
+    }
   }
 }

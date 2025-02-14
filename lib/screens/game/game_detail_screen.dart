@@ -8,11 +8,11 @@ import '../../widgets/game/game_detail_content.dart';
 import 'edit_game_screen.dart';
 
 class GameDetailScreen extends StatefulWidget {
-  final Game game;
+  final String? gameId;  // 改为可空类型
 
   const GameDetailScreen({
     Key? key,
-    required this.game,
+    this.gameId,
   }) : super(key: key);
 
   @override
@@ -28,23 +28,33 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _loadGameDetails();
-    _incrementViewCount();
-    _addToHistory();
+    if (widget.gameId != null) {
+      _loadGameDetails();
+      _incrementViewCount();
+      _addToHistory();
+    } else {
+      setState(() {
+        _error = '无效的游戏ID';
+      });
+    }
   }
 
   void _addToHistory() {
-    _gameService.addToGameHistory(widget.game.id);
+    if (widget.gameId != null) {
+      _gameService.addToGameHistory(widget.gameId!);
+    }
   }
 
   Future<void> _loadGameDetails() async {
+    if (widget.gameId == null) return;
+
     try {
       setState(() {
         _isLoading = true;
         _error = null;
       });
 
-      final game = await _gameService.getGameById(widget.game.id);
+      final game = await _gameService.getGameById(widget.gameId!);
       if (game == null) throw Exception('游戏不存在');
 
       setState(() {
@@ -76,13 +86,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   void _incrementViewCount() {
-    _gameService.incrementGameView(widget.game.id);
+    if (widget.gameId != null) {
+      _gameService.incrementGameView(widget.gameId!);
+    }
   }
 
   void _toggleLike(BuildContext context, bool isLiked) async {
-    final game = _game ?? widget.game;
+    if (_game == null) return;
+
     try {
-      await _gameService.toggleLike(game.id);
+      await _gameService.toggleLike(_game!.id);
       Toaster.show(
         context,
         message: isLiked ? '已取消点赞' : '点赞成功',
@@ -97,9 +110,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildFavoriteButton(BuildContext context) {
-    // 确保在构建FAB之前已经完成了必要的初始化
-    if (_isLoading) {
-      return const SizedBox.shrink(); // 加载时不显示FAB
+    if (_isLoading || _game == null) {
+      return const SizedBox.shrink();
     }
 
     return Consumer<AuthProvider>(
@@ -121,14 +133,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
         return StreamBuilder<List<String>>(
           stream: _gameService.getUserFavorites(),
-          initialData: const [], // 添加初始数据
+          initialData: const [],
           builder: (context, snapshot) {
             if (!snapshot.hasData) {
-              return const SizedBox.shrink(); // 数据加载时不显示FAB
+              return const SizedBox.shrink();
             }
 
-            final game = _game ?? widget.game;
-            final isFavorite = snapshot.data!.contains(game.id);
+            final isFavorite = snapshot.data!.contains(_game!.id);
 
             return FloatingActionButton(
               onPressed: () => _toggleLike(context, isFavorite),
@@ -215,14 +226,25 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 1. 首先检查 gameId 是否为空
+    if (widget.gameId == null) {
+      return Scaffold(
+        appBar: AppBar(title: Text('错误')),
+        body: Center(child: Text('无效的游戏ID')),
+      );
+    }
+
+    // 2. 检查加载状态
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
+    // 3. 检查错误状态
     if (_error != null) {
       return Scaffold(
+        appBar: AppBar(title: Text('错误')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -241,18 +263,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       );
     }
 
-    final game = _game ?? widget.game;
 
+    // 5. 显示游戏详情
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshGameDetails,
         child: CustomScrollView(
-          // 添加key以帮助Flutter正确重建widget
           key: PageStorageKey('game_detail'),
           slivers: [
-            _buildSliverAppBar(game),
+            _buildSliverAppBar(_game!),
             SliverToBoxAdapter(
-              child: GameDetailContent(game: game),
+              child: GameDetailContent(game: _game!),
             ),
           ],
         ),
@@ -260,7 +281,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       floatingActionButton: Align(
         alignment: Alignment.centerRight,
         child: Padding(
-          padding: EdgeInsets.only(right: 16.0), // 可选：调整与右侧的距离
+          padding: const EdgeInsets.only(right: 16.0),
           child: _buildFavoriteButton(context),
         ),
       ),

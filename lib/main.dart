@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
+import 'services/restart_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,7 +13,7 @@ void main() async {
     await windowManager.ensureInitialized();
 
     WindowOptions windowOptions = const WindowOptions(
-      size: Size(1280, 960),
+      size: Size(1280, 720),
       center: true,
       title: "宿星茶会（windows版）",  // 这里设置中文标题
       minimumSize: Size(800, 600),
@@ -24,5 +25,5 @@ void main() async {
     });
   }
 
-  runApp(const App());
+  runApp(const RestartWrapper(child: App())); // 添加 RestartWrapper
 }

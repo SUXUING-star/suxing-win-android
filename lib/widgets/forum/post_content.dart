@@ -17,22 +17,28 @@ class PostContent extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            post.title,
-            style: Theme.of(context).textTheme.titleLarge,
+          // 修改标题和标签的布局
+          Row(
+            children: [
+              Expanded( // 使用Expanded让标题占据剩余空间
+                child: Text(
+                  post.title,
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+              if (post.tags.isNotEmpty)
+                Row( // 水平排列标签
+                  children: post.tags.map((tag) => Padding(
+                    padding: const EdgeInsets.only(left: 8), // 标签之间的间距
+                    child: Chip(label: Text(tag)),
+                  )).toList(),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           _buildAuthorRow(context),
           const SizedBox(height: 16),
           Text(post.content),
-          if (post.tags.isNotEmpty) ...[
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: post.tags.map((tag) => Chip(label: Text(tag))).toList(),
-            ),
-          ],
         ],
       ),
     );

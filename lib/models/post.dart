@@ -1,4 +1,5 @@
 // lib/models/post.dart
+import 'package:mongo_dart/mongo_dart.dart';
 enum PostStatus {
   active,
   locked,
@@ -75,6 +76,8 @@ enum ReplyStatus {
   deleted
 }
 
+// In post.dart
+
 class Reply {
   final String id;
   final String postId;
@@ -97,15 +100,14 @@ class Reply {
   });
 
   factory Reply.fromJson(Map<String, dynamic> json) {
-    // 处理 MongoDB 的 _id 字段
     String replyId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
 
     return Reply(
       id: replyId,
-      postId: json['postId'] ?? '',
+      postId: json['postId']?.toString() ?? '',
       content: json['content'] ?? '',
-      authorId: json['authorId'] ?? '',
-      parentId: json['parentId'],
+      authorId: json['authorId']?.toString() ?? '',
+      parentId: json['parentId']?.toString(),
       createTime: json['createTime'] is DateTime
           ? json['createTime']
           : DateTime.parse(json['createTime']),
@@ -121,6 +123,7 @@ class Reply {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'postId': postId,
       'content': content,
       'authorId': authorId,
@@ -129,5 +132,24 @@ class Reply {
       'updateTime': updateTime.toIso8601String(),
       'status': status.toString().split('.').last,
     };
+  }
+
+  // 添加一个新方法用于转换为 MongoDB 文档
+  Map<String, dynamic> toMongoDocument() {
+    try {
+      return {
+        '_id': id.isEmpty ? ObjectId() : ObjectId.fromHexString(id),
+        'postId': ObjectId.fromHexString(postId),
+        'content': content,
+        'authorId': ObjectId.fromHexString(authorId),
+        'parentId': parentId != null ? ObjectId.fromHexString(parentId!) : null,
+        'createTime': createTime,
+        'updateTime': updateTime,
+        'status': status.toString().split('.').last,
+      };
+    } catch (e) {
+      print('Error in Reply.toMongoDocument(): $e');
+      rethrow;
+    }
   }
 }

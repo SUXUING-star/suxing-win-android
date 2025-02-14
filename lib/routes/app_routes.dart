@@ -71,15 +71,28 @@ class AppRoutes {
             builder: (_) => ResetPasswordScreen(email: email));
 
       case '/game/detail':
-        if (settings.arguments is! Game) {
+        final arguments = settings.arguments;
+        String? gameId;
+
+        if (arguments is String) {
+          gameId = arguments;
+        } else if (arguments is Game) {
+          gameId = arguments.id;
+        }
+
+        // 如果 gameId 为空，返回错误页面
+        if (gameId == null || gameId.isEmpty) {
           return MaterialPageRoute(
             builder: (_) => Scaffold(
-              body: Center(child: Text('无效的游戏数据')),
+              appBar: AppBar(title: Text('错误')),
+              body: Center(child: Text('无效的游戏ID')),
             ),
           );
         }
-        final Game game = settings.arguments as Game;
-        return MaterialPageRoute(builder: (_) => GameDetailScreen(game: game));
+        // 此时 gameId 一定非空，可以安全地传递给 GameDetailScreen
+        return MaterialPageRoute(
+            builder: (_) => GameDetailScreen(gameId: gameId)
+        );
       case '/games':
         return MaterialPageRoute(builder: (_) => GamesListScreen());
       case '/hot-games':

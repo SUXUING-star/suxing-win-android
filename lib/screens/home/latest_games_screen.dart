@@ -96,7 +96,7 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
       padding: EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
-        childAspectRatio: 0.8,
+        childAspectRatio: 0.70,
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
