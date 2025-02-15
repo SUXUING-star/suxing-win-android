@@ -144,9 +144,29 @@ class HistoryCacheService {
     await _postHistoryBox.clear();
   }
 
+  Future<void> clearCacheData() async {
+    try {
+      if (_gameHistoryBox.isOpen) {
+        await _gameHistoryBox.clear();
+      }
+      if (_postHistoryBox.isOpen) {
+        await _postHistoryBox.clear();
+      }
+    } catch (e) {
+      print('Clear history cache data error: $e');
+      rethrow;
+    }
+  }
+
+  // 修改现有的clearAllCache方法
   Future<void> clearAllCache() async {
-    await clearGameHistoryCache();
-    await clearPostHistoryCache();
+    try {
+      await clearGameHistoryCache();
+      await clearPostHistoryCache();
+    } catch (e) {
+      print('Clear all history cache error: $e');
+      rethrow;
+    }
   }
 
   // 检查缓存是否过期方法保持不变

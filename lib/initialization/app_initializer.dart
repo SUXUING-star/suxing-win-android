@@ -3,18 +3,18 @@
 import 'dart:async';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../providers/initialization_provider.dart';
-import '../providers/db_state_provider.dart';
-import '../providers/theme_provider.dart';
-import '../providers/auth_provider.dart';
+import '../providers/initialize/initialization_provider.dart';
+import '../providers/connection/db_state_provider.dart';
+import '../providers/theme/theme_provider.dart';
+import '../providers/auth/auth_provider.dart';
 import '../services/db_connection_service.dart';
-import '../services/update_service.dart';
+import '../services/update/update_service.dart';
 import '../services/cache/game_cache_service.dart';
 import '../services/cache/avatar_cache_service.dart';
 import '../services/cache/links_tools_cache_service.dart';
 import '../services/cache/history_cache_service.dart';
 import '../services/cache/comment_cache_service.dart';
-import '../services/restart_service.dart';
+import '../services/restart/restart_service.dart';
 
 class AppInitializer {
   static Future<Map<String, dynamic>> initializeServices(

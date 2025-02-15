@@ -1,10 +1,11 @@
 // lib/widgets/game/game_detail_content.dart
 import 'package:flutter/material.dart';
 import '../../models/game.dart';
-import './game_header.dart';
-import './game_description.dart';
-import './game_images.dart';
-import '../game/comments_section.dart';
+import 'header/game_header.dart';
+import 'description/game_description.dart';
+import 'image/game_images.dart';
+import 'comment/comments_section.dart';
+import 'random/random_games_section.dart';
 
 class GameDetailContent extends StatelessWidget {
   final Game game;
@@ -22,8 +23,11 @@ class GameDetailContent extends StatelessWidget {
         GameHeader(game: game),
         GameDescription(game: game),
         GameImages(game: game),
-        const Divider(height: 32),
+        const Divider(height: 8),
         CommentsSection(gameId: game.id),
+        const Divider(height: 8),
+        RandomGamesSection(currentGameId: game.id)
+
       ],
     );
   }

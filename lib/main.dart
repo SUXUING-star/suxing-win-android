@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
-import 'services/restart_service.dart';
+import 'services/restart/restart_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

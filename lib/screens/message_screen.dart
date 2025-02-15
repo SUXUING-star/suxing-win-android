@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import '../services/message_service.dart';
 import '../models/message.dart';
 import '../models/message_type.dart';
-import './game/game_detail_screen.dart';
-import './forum/post_detail_screen.dart';
+import 'game/detail/game_detail_screen.dart';
+import 'forum/post/post_detail_screen.dart';
 
 class MessageScreen extends StatelessWidget {
   final MessageService _messageService = MessageService();

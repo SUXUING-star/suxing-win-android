@@ -3,9 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import '../../providers/db_state_provider.dart';
+import '../../providers/connection/db_state_provider.dart';
 import '../../utils/font_config.dart';
-import '../../services/restart_service.dart';
+import '../../services/restart/restart_service.dart';
 
 class DBResetDialog extends StatelessWidget {
   final VoidCallback onReset;
@@ -76,13 +76,14 @@ class DBResetDialog extends StatelessWidget {
                 }
               }
             },
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red[400],
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Theme.of(context).primaryColor,
             ),
             child: Text(
               '重启应用',
               style: TextStyle(
                 fontSize: 14,
+                color: Colors.white,
                 fontFamily: FontConfig.defaultFontFamily,
                 fontFamilyFallback: FontConfig.fontFallback,
               ),

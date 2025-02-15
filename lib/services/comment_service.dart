@@ -224,9 +224,14 @@ class CommentService {
             .eq('gameId', gameId));
       }
 
-      // 删除评论及其所有回复
+      // 删除评论本身
+      await _dbConnectionService.comments.deleteOne(
+        where.eq('_id', commentObjId),
+      );
+
+      // 删除所有回复（子评论）
       await _dbConnectionService.comments.deleteMany(
-        where.eq('_id', commentObjId).eq('parentId', commentObjId),
+        where.eq('parentId', commentObjId),
       );
 
       // 清除该游戏的评论缓存
@@ -236,6 +241,7 @@ class CommentService {
       rethrow;
     }
   }
+
 
   // 获取评论数量
   Future<int> getCommentCount(String gameId) async {

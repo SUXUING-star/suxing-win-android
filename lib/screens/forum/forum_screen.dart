@@ -4,10 +4,12 @@ import 'package:provider/provider.dart';
 import '../../models/post.dart';
 import '../../services/forum_service.dart';
 import '../../services/user_service.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/loading_route_observer.dart';
-import '../../screens/profile/open_profile_screen.dart';
+import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/forum/post_card.dart'; // 引入 PostCard 组件
+import '../../widgets/forum/tag_filter.dart'; // 引入 TagFilter 组件
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
@@ -87,14 +89,14 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('论坛'),
+      appBar: CustomAppBar(
+        title: '论坛',
         actions: [
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               if (authProvider.isLoggedIn) {
                 return IconButton(
-                  icon: const Icon(Icons.add),
+                  icon: Icon(Icons.add, color: Colors.white),
                   onPressed: () {
                     Navigator.pushNamed(context, AppRoutes.createPost);
                   },
@@ -107,39 +109,20 @@ class _ForumScreenState extends State<ForumScreen> {
       ),
       body: Column(
         children: [
-          _buildTagFilter(),
+          TagFilter(
+            tags: _tags,
+            selectedTag: _selectedTag,
+            onTagSelected: (tag) {
+              setState(() {
+                _selectedTag = tag;
+              });
+              _loadPosts();
+            },
+          ),
           Expanded(
             child: _buildPostsList(),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildTagFilter() {
-    return Container(
-      height: 50,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: _tags.length,
-        itemBuilder: (context, index) {
-          final tag = _tags[index];
-          final isSelected = tag == _selectedTag;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(tag),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() => _selectedTag = tag);
-                  _loadPosts();
-                }
-              },
-            ),
-          );
-        },
       ),
     );
   }
@@ -164,150 +147,8 @@ class _ForumScreenState extends State<ForumScreen> {
         itemCount: _posts!.length,
         itemBuilder: (context, index) {
           final post = _posts![index];
-          return _buildPostCard(post);
+          return PostCard(post: post, userService: _userService); // 使用 PostCard 组件
         },
-      ),
-    );
-  }
-
-  Widget _buildPostCard(Post post) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(
-              context, AppRoutes.postDetail, arguments: post.id);
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  if (post.status == PostStatus.locked)
-                    const Padding(
-                      padding: EdgeInsets.only(right: 8),
-                      child: Icon(Icons.lock, size: 16, color: Colors.grey),
-                    ),
-                  Expanded(
-                    child: Text(
-                      post.title,
-                      style: Theme
-                          .of(context)
-                          .textTheme
-                          .titleMedium,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                post.content,
-                style: Theme
-                    .of(context)
-                    .textTheme
-                    .bodyMedium,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              const SizedBox(height: 8),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: post.tags.map((tag) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Chip(
-                        label: Text(tag),
-                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  // 左侧用户信息
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      FutureBuilder<Map<String, dynamic>>(
-                        future: _userService.getUserInfoById(post.authorId),
-                        builder: (context, snapshot) {
-                          final username = snapshot.data?['username'] ?? '';
-                          final avatarUrl = snapshot.data?['avatar'];
-
-                          return MouseRegion(  // 使用 MouseRegion
-                            cursor: SystemMouseCursors.click, // 设置鼠标指针样式为点击样式
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        OpenProfileScreen(userId: post.authorId),
-                                  ),
-                                );
-                              },
-                              child: CircleAvatar(
-                                radius: 12,
-                                backgroundImage: avatarUrl != null ? NetworkImage(
-                                    avatarUrl) : null,
-                                child: avatarUrl == null && username.isNotEmpty
-                                    ? Text(username[0].toUpperCase(),
-                                    style: const TextStyle(fontSize: 12))
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                      const SizedBox(width: 8),
-                      FutureBuilder<Map<String, dynamic>>(
-                        future: _userService.getUserInfoById(post.authorId),
-                        builder: (context, snapshot) {
-                          return ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: 120),
-                            child: Text(
-                              snapshot.data?['username'] ?? '',
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                  const Spacer(),
-                  // 右侧浏览和评论数
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.remove_red_eye_outlined, size: 16,
-                          color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        post.viewCount.toString(),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                      const SizedBox(width: 16),
-                      Icon(Icons.chat_bubble_outline, size: 16,
-                          color: Colors.grey[600]),
-                      const SizedBox(width: 4),
-                      Text(
-                        post.replyCount.toString(),
-                        style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

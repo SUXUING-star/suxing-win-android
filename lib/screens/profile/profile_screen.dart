@@ -5,13 +5,15 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../models/user.dart';
-import '../../providers/auth_provider.dart';
+import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/user_service.dart';
 import '../../widgets/profile/profile_header.dart';
 import '../../widgets/profile/profile_menu_list.dart';
 import '../../utils/loading_route_observer.dart'; // 确保这个导入存在
 import '../../utils/file_upload.dart';
+import '../../utils/font_config.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class ProfileScreen extends StatefulWidget {
   @override
@@ -221,8 +223,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('个人资料'),
+      appBar: CustomAppBar(
+        title: '个人资料',
         actions: [
           IconButton(
             icon: Icon(Icons.settings),
@@ -291,15 +293,50 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.account_circle_outlined, size: 48, color: Colors.grey),
-          SizedBox(height: 16),
-          Text('请先登录'),
+          Icon(
+            Icons.account_circle_outlined,
+            size: 80,
+            color: Theme.of(context).colorScheme.secondary,
+          ),
           SizedBox(height: 24),
+          Text(
+            '还未登录',
+            style: TextStyle(
+              fontSize: 18,
+              fontFamily: FontConfig.defaultFontFamily,
+              fontFamilyFallback: FontConfig.fontFallback,
+              color: Theme.of(context).textTheme.bodyLarge?.color,
+            ),
+          ),
+          SizedBox(height: 16),
+          Text(
+            '登录后可以体验更多功能',
+            style: TextStyle(
+              fontSize: 14,
+              fontFamily: FontConfig.defaultFontFamily,
+              fontFamilyFallback: FontConfig.fontFallback,
+              color: Colors.grey,
+            ),
+          ),
+          SizedBox(height: 32),
           ElevatedButton(
             onPressed: () {
               Navigator.pushNamed(context, AppRoutes.login);
             },
-            child: Text('去登录'),
+            style: ElevatedButton.styleFrom(
+              padding: EdgeInsets.symmetric(horizontal: 48, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+            child: Text(
+              '立即登录',
+              style: TextStyle(
+                fontSize: 16,
+                fontFamily: FontConfig.defaultFontFamily,
+                fontFamilyFallback: FontConfig.fontFallback,
+              ),
+            ),
           ),
         ],
       ),

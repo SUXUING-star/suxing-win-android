@@ -148,9 +148,34 @@ class CommentsCacheService {
     }
   }
 
+  // 新增：只清理数据但不关闭boxes
+  Future<void> clearCacheData() async {
+    try {
+      if (_gameCommentsBox.isOpen) {
+        await _gameCommentsBox.clear();
+      }
+      if (_postRepliesBox.isOpen) {
+        await _postRepliesBox.clear();
+      }
+    } catch (e) {
+      print('Clear comments cache data error: $e');
+      rethrow;
+    }
+  }
+
+  // 修改现有的clearAllCache方法
   Future<void> clearAllCache() async {
-    await _gameCommentsBox.clear();
-    await _postRepliesBox.clear();
+    try {
+      if (_gameCommentsBox.isOpen) {
+        await _gameCommentsBox.clear();
+      }
+      if (_postRepliesBox.isOpen) {
+        await _postRepliesBox.clear();
+      }
+    } catch (e) {
+      print('Clear all comments cache error: $e');
+      rethrow;
+    }
   }
 
   // 判断缓存是否过期

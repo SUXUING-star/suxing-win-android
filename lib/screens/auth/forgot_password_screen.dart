@@ -1,10 +1,11 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
-import '../../services/email_service.dart';
+import '../../services/email/email_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/loading_route_observer.dart';
 import 'dart:async';
 import '../../widgets/common/toaster.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -73,7 +74,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       await _authService.resetPassword(_emailController.text, "123456");
 
       _verificationCode = EmailService.generateVerificationCode();
-      await EmailService.sendVerificationCode(
+      await EmailService.sendPasswordResetCode(
           _emailController.text,
           _verificationCode!
       );
@@ -120,89 +121,140 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(title: Text('找回密码')),
-        body: Padding(
-          padding: EdgeInsets.all(16.0),
-          child: Form(
-              key: _formKey,
-              child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                  // 显示错误信息
-                  if (_error != null)
-              Padding(
-          padding: const EdgeInsets.only(bottom: 16.0),
-          child: Text(
-            _error!,
-            style: TextStyle(color: Colors.red),
-            textAlign: TextAlign.center,
-          ),
-        ),
-
-        TextFormField(
-          controller: _emailController,
-          decoration: InputDecoration(
-            labelText: '邮箱',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return '请输入邮箱';
-            }
-            if (!value.contains('@')) {
-              return '请输入有效的邮箱地址';
-            }
-            return null;
-          },
-        ),
-        SizedBox(height: 16),
-        if (_codeSent) ...[
-    TextFormField(
-    controller: _codeController,
-    decoration: InputDecoration(
-    labelText: '验证码',
-    border: OutlineInputBorder(),
-    ),
-    validator: (value) {
-    if (value == null || value.isEmpty) {
-    return '请输入验证码';
-    }
-    return null;
-    },
-    ),
-    SizedBox(height: 16),
-    ],
-    Row(
-    children: [
-    Expanded(
-    child: ElevatedButton(
-    onPressed: _countDown > 0 ? null : _sendVerificationCode,
-    child: Text(_codeSent
-    ? (_countDown > 0? '重新发送(${_countDown}s)' : '重新发送')
-        : '发送验证码'),
-      style: ElevatedButton.styleFrom(
-        minimumSize: Size(double.infinity, 48),
+      appBar: CustomAppBar(
+        title: '找回密码',
       ),
-    ),
-    ),
-      if (_codeSent) ...[
-        SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: _verifyCode,
-            child: Text('验证'),
-            style: ElevatedButton.styleFrom(
-              minimumSize: Size(double.infinity, 48),
+      extendBodyBehindAppBar: true,
+      body: Stack(
+        children: [
+          // 使用 Banner 中的图片作为背景
+          // 半透明遮罩
+          Opacity(
+            opacity: 0.6,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
             ),
           ),
-        ),
-      ],
-    ],
-    ),
-                  ],
+          // 找回密码表单
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(24.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // 标题
+                      Text(
+                        '找回密码',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        '通过邮箱重置您的密码',
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      SizedBox(height: 24),
+
+                      // 显示错误信息
+                      if (_error != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: Text(
+                            _error!,
+                            style: TextStyle(color: Colors.red),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+
+                      // 邮箱输入
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: '邮箱',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '请输入邮箱';
+                          }
+                          if (!value.contains('@')) {
+                            return '请输入有效的邮箱地址';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 16),
+
+                      // 验证码输入（仅在发送验证码后显示）
+                      if (_codeSent)
+                        TextFormField(
+                          controller: _codeController,
+                          decoration: InputDecoration(
+                            labelText: '验证码',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.code),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return '请输入验证码';
+                            }
+                            return null;
+                          },
+                        ),
+                      if (_codeSent) SizedBox(height: 16),
+
+                      // 发送/重新发送验证码和验证按钮
+                      Row(
+                        children: [
+                          Expanded(
+                            child: ElevatedButton(
+                              onPressed: _countDown > 0 ? null : _sendVerificationCode,
+                              child: Text(_codeSent
+                                  ? (_countDown > 0 ? '重新发送(${_countDown}s)' : '重新发送')
+                                  : '发送验证码'),
+                              style: ElevatedButton.styleFrom(
+                                minimumSize: Size(double.infinity, 48),
+                              ),
+                            ),
+                          ),
+                          if (_codeSent) ...[
+                            SizedBox(width: 16),
+                            Expanded(
+                              child: ElevatedButton(
+                                onPressed: _verifyCode,
+                                child: Text('验证'),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: Size(double.infinity, 48),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
               ),
+            ),
           ),
-        ),
+        ],
+      ),
     );
   }
 }

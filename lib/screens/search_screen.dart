@@ -4,7 +4,7 @@ import '../models/game.dart';
 import '../services/game_service.dart';
 import '../services/user_service.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth_provider.dart';
+import '../providers/auth/auth_provider.dart';
 import '../utils/loading_route_observer.dart';
 import 'dart:async';
 

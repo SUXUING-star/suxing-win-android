@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 
 class LoadingRouteObserver extends NavigatorObserver {
   final ValueNotifier<bool> isLoading;
@@ -11,19 +12,25 @@ class LoadingRouteObserver extends NavigatorObserver {
   @override
   void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPush(route, previousRoute);
-    _startLoading();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _startLoading();
+    });
   }
 
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
     super.didPop(route, previousRoute);
-    _startLoading();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _startLoading();
+    });
   }
 
   @override
   void didReplace({Route<dynamic>? newRoute, Route<dynamic>? oldRoute}) {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-    _startLoading();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      _startLoading();
+    });
   }
 
   void _startLoading() {
@@ -37,10 +44,14 @@ class LoadingRouteObserver extends NavigatorObserver {
   }
 
   void showLoading() {
-    isLoading.value = true;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      isLoading.value = true;
+    });
   }
 
   void hideLoading() {
-    isLoading.value = false;
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      isLoading.value = false;
+    });
   }
 }

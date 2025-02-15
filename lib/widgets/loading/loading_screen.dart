@@ -1,7 +1,7 @@
 // lib/widgets/loading/loading_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../providers/db_state_provider.dart';
+import '../../providers/connection/db_state_provider.dart';
 import 'normal_loading_overlay.dart';
 import 'first_load_screen.dart';
 

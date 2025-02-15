@@ -6,9 +6,9 @@ import '../screens/auth/login_screen.dart';
 import '../screens/auth/register_screen.dart';
 import '../screens/auth/forgot_password_screen.dart';
 import '../screens/auth/reset_password_screen.dart';
-import '../screens/game/game_detail_screen.dart';
-import '../screens/home/hot_games_screen.dart';
-import '../screens/home/latest_games_screen.dart';
+import '../screens/game/detail/game_detail_screen.dart';
+import '../screens/home/game/hot_games_screen.dart';
+import '../screens/home/game/latest_games_screen.dart';
 import '../screens/game/games_list_screen.dart';
 import '../screens/linkstools/linkstools_screen.dart';
 import '../screens/profile/profile_screen.dart';
@@ -17,13 +17,13 @@ import '../screens/game/add_game_screen.dart';
 import '../models/game.dart';
 import '../models/post.dart';
 import '../screens/forum/forum_screen.dart';
-import '../screens/forum/post_detail_screen.dart';
-import '../screens/forum/create_post_screen.dart';
-import '../screens/forum/edit_post_screen.dart';
-import '../screens/profile/history_screen.dart';
-import '../screens/profile/my_posts_screen.dart';
-import '../screens/profile/favorites_screen.dart';
-import '../screens/profile/settings_screen.dart';
+import '../screens/forum/post/post_detail_screen.dart';
+import '../screens/forum/post/create_post_screen.dart';
+import '../screens/forum/post/edit_post_screen.dart';
+import '../screens/profile/other/history_screen.dart';
+import '../screens/profile/other/my_posts_screen.dart';
+import '../screens/profile/other/favorites_screen.dart';
+import '../screens/profile/other/settings_screen.dart';
 
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)

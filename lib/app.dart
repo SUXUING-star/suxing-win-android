@@ -7,9 +7,9 @@ import 'package:provider/provider.dart';
 import 'services/history/game_history_service.dart';
 import 'services/history/post_history_service.dart';
 import './initialization/initialization_wrapper.dart';
-import './providers/initialization_provider.dart';
-import './providers/theme_provider.dart';
-import './providers/db_state_provider.dart';
+import 'providers/initialize/initialization_provider.dart';
+import 'providers/theme/theme_provider.dart';
+import 'providers/connection/db_state_provider.dart';
 import './utils/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import './layouts/app_background.dart';
@@ -18,7 +18,7 @@ import './widgets/dialogs/db_reset_dialog.dart';
 import './routes/app_routes.dart';
 import 'services/user_service.dart';
 import 'services/forum_service.dart';
-import 'services/restart_service.dart';
+import 'services/restart/restart_service.dart';
 
 
 class App extends StatelessWidget {

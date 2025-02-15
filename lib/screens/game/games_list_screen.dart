@@ -3,8 +3,9 @@ import 'dart:io';
 import '../../models/game.dart';
 import '../../services/game_service.dart';
 import '../../utils/admin_check.dart';
-import '../../widgets/game/game_card.dart';
+import '../../widgets/game/card/game_card.dart';
 import '../../utils/loading_route_observer.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class GamesListScreen extends StatefulWidget {
   @override
@@ -166,11 +167,11 @@ class _GamesListScreenState extends State<GamesListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('游戏列表'),
+      appBar: CustomAppBar(
+        title: '游戏列表',
         actions: [
           IconButton(
-            icon: Icon(Icons.filter_list),
+            icon: Icon(Icons.filter_list, color: Colors.white),
             onPressed: () => _showFilterDialog(context),
           ),
         ],
@@ -202,7 +203,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
     if (_games.isEmpty) {
       return _buildEmptyState(context, '暂无游戏数据');
     }
-    double default_cardRatio = 0.70;
+    double default_cardRatio = 0.65;
     if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
       default_cardRatio = 0.90;
     }

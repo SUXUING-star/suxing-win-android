@@ -96,6 +96,7 @@ class _HomeHotState extends State<HomeHot> {
         final totalPages = _getTotalPages(cardsPerPage, games);
 
         return _buildSection(
+
           title: '热门游戏',
           onMorePressed: () {
             Navigator.pushNamed(context, AppRoutes.hotGames);
@@ -115,7 +116,7 @@ class _HomeHotState extends State<HomeHot> {
                   itemBuilder: (context, pageIndex) {
                     final startIndex = pageIndex * cardsPerPage;
                     return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 16),
+                      margin: EdgeInsets.symmetric(horizontal: 8), // 减少水平边距
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: List.generate(cardsPerPage, (index) {
@@ -123,7 +124,6 @@ class _HomeHotState extends State<HomeHot> {
                           if (gameIndex >= games.length) {
                             return SizedBox(width: cardWidth + cardMargin);
                           }
-
                           return HomeGameCard(
                             game: games[gameIndex],
                             onTap: () => Navigator.pushNamed(
@@ -219,22 +219,64 @@ class _HomeHotState extends State<HomeHot> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: EdgeInsets.all(16),
+        Container(
+          padding: EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            border: Border(
+              bottom: BorderSide(
+                color: Colors.grey.shade200,
+                width: 1,
+              ),
+            ),
+          ),
           child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
+              Container(
+                width: 6,
+                height: 22,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(3),
+                ),
+              ),
+              SizedBox(width: 12),
               Text(
                 title,
-                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[900],
+                ),
               ),
-              TextButton(
-                onPressed: onMorePressed,
-                child: Text('更多 >'),
+              Spacer(),
+              InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: onMorePressed,
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    children: [
+                      Text(
+                        '更多',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: Colors.grey[700],
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ],
           ),
         ),
+        SizedBox(height: 16),
         child,
       ],
     );

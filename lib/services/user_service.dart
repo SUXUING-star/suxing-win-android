@@ -17,22 +17,46 @@ class UserService {
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
   final AvatarCacheService _avatarCache = AvatarCacheService();
-  final HistoryCacheService _cacheService  = HistoryCacheService();
+  final HistoryCacheService _cacheService = HistoryCacheService();
   Box<String>? _authBox;
-
-  UserService._internal();
 
   // 添加内存缓存
   final Map<String, Map<String, dynamic>> _userInfoCache = {};
   final Duration _cacheExpiration = Duration(minutes: 5);
   final Map<String, DateTime> _cacheTimestamp = {};
 
+  UserService._internal();
+
 
   Future<Box<String>> _getAuthBox() async {
-    if (_authBox == null) {
+    if (_authBox == null || !_authBox!.isOpen) {
       _authBox = await Hive.openBox<String>('authBox');
     }
     return _authBox!;
+  }
+
+  // 新增：清理数据但不关闭box
+  Future<void> clearAuthData() async {
+    try {
+      final box = await _getAuthBox();
+      if (box.isOpen) {
+        await box.clear();
+      }
+    } catch (e) {
+      print('Clear auth data error: $e');
+    }
+  }
+
+  // 新增：关闭box
+  Future<void> closeBox() async {
+    try {
+      if (_authBox != null && _authBox!.isOpen) {
+        await _authBox!.close();
+        _authBox = null;
+      }
+    } catch (e) {
+      print('Close auth box error: $e');
+    }
   }
 
   Future<String?> get currentUserId async => (await _getAuthBox()).get('currentUserId');
@@ -127,11 +151,17 @@ class UserService {
     }
   }
 
+  // 修改登出方法，确保正确清理所有数据
   Future<void> signOut() async {
-    await _setCurrentUserId(null);
-    // 在用户登出时
-    await HistoryCacheService().clearAllCache();
+    try {
+      await clearAuthData();
+      await _cacheService.clearAllCache();
+      clearUserInfoCache();
+    } catch (e) {
+      print('Sign out error: $e');
+    }
   }
+
 
   Future<void> resetPassword(String email, String newPassword) async {
     try {
@@ -153,6 +183,15 @@ class UserService {
       }
     } catch (e) {
       print('Reset password error: $e');
+      rethrow;
+    }
+  }
+  Future<bool> checkEmailExists(String email) async {
+    try {
+      final existingUser = await _dbConnectionService.users.findOne(where.eq('email', email));
+      return existingUser != null;
+    } catch (e) {
+      print('Check email exists error: $e');
       rethrow;
     }
   }

@@ -2,9 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../../providers/auth_provider.dart';
+import '../../providers/auth/auth_provider.dart';
 import '../../../utils/loading_route_observer.dart';
 import '../../widgets/common/toaster.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -18,25 +19,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _rememberMe = false;
   late Box<String> _box;
   String? _error;
+  bool _obscurePassword = true; // 新增密码可见性状态
 
   @override
   void initState() {
     super.initState();
     _initHive();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
-          .whereType<LoadingRouteObserver>()
-          .first;
-
-      // 不需要初始加载动画
-    });
   }
 
   Future<void> _initHive() async {
@@ -70,7 +58,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     final loadingObserver = Navigator.of(context)
-        .widget.observers
+        .widget
+        .observers
         .whereType<LoadingRouteObserver>()
         .first;
 
@@ -102,96 +91,145 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('登录')),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (_error != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0),
-                  child: Text(
-                    _error!,
-                    style: TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              TextFormField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: '邮箱',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                keyboardType: TextInputType.emailAddress,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入邮箱';
-                  }
-                  if (!value.contains('@')) {
-                    return '请输入有效的邮箱地址';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 16),
-              TextFormField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: '密码',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                obscureText: true,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入密码';
-                  }
-                  if (value.length < 6) {
-                    return '密码长度至少6位';
-                  }
-                  return null;
-                },
-              ),
-              SizedBox(height: 8),
-              Row(
-                children: [
-                  Checkbox(
-                    value: _rememberMe,
-                    onChanged: (value) {
-                      setState(() => _rememberMe = value ?? false);
-                    },
-                  ),
-                  Text('记住密码'),
-                  Spacer(),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/forgot-password');
-                    },
-                    child: Text('忘记密码？'),
-                  ),
-                ],
-              ),
-              SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () => _handleLogin(context),
-                child: Text('登录'),
-                style: ElevatedButton.styleFrom(
-                  minimumSize: Size(double.infinity, 48),
-                ),
-              ),
-              TextButton(
-                onPressed: () {
-                  Navigator.pushNamed(context, '/register');
-                },
-                child: Text('还没有账号？立即注册'),
-              ),
-            ],
+      appBar: CustomAppBar(
+        title: '登录',
+      ),
+      extendBodyBehindAppBar: true, // 扩展body到AppBar后面
+      body: Stack(
+        children: [
+          // 半透明遮罩
+          Opacity(
+            opacity: 0.6,
+            child: Container(
+              width: double.infinity,
+              height: double.infinity,
+            ),
           ),
-        ),
+          // 登录表单
+          Center(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(24.0),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.9),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                padding: EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Logo 或应用标题
+                      Text(
+                        '欢迎回来',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+
+                      // 邮箱输入
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: '邮箱',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.email),
+                        ),
+                        keyboardType: TextInputType.emailAddress,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '请输入邮箱';
+                          }
+                          if (!value.contains('@')) {
+                            return '请输入有效的邮箱地址';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 16),
+
+                      // 密码输入，添加显示/隐藏密码功能
+                      TextFormField(
+                        controller: _passwordController,
+                        decoration: InputDecoration(
+                          labelText: '密码',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                            ),
+                            onPressed: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                          ),
+                        ),
+                        obscureText: _obscurePassword,
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return '请输入密码';
+                          }
+                          if (value.length < 6) {
+                            return '密码长度至少6位';
+                          }
+                          return null;
+                        },
+                      ),
+                      SizedBox(height: 16),
+
+                      // 记住密码和忘记密码
+                      Row(
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            onChanged: (value) {
+                              setState(() => _rememberMe = value ?? false);
+                            },
+                          ),
+                          Text('记住密码'),
+                          Spacer(),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.pushNamed(context, '/forgot-password');
+                            },
+                            child: Text('忘记密码？'),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 24),
+
+                      // 登录按钮
+                      ElevatedButton(
+                        onPressed: () => _handleLogin(context),
+                        child: Text('登录'),
+                        style: ElevatedButton.styleFrom(
+                          minimumSize: Size(double.infinity, 48),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+
+                      // 注册跳转
+                      TextButton(
+                        onPressed: () {
+                          Navigator.pushNamed(context, '/register');
+                        },
+                        child: Text('还没有账号？立即注册'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

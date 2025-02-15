@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import './app_initializer.dart';
 import '../widgets/startup/initialization_screen.dart';
-import '../providers/initialization_provider.dart';
+import '../providers/initialize/initialization_provider.dart';
 
 class InitializationWrapper extends StatefulWidget {
   final Widget Function(List<ChangeNotifierProvider> providers) onInitialized;

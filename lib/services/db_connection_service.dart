@@ -2,10 +2,10 @@
 
 import 'package:mongo_dart/mongo_dart.dart';
 import '../config/app_config.dart';
-import '../providers/db_state_provider.dart';
+import '../providers/connection/db_state_provider.dart';
 import 'dart:async';
 import 'dart:io';
-import 'ssl_cert_service.dart';
+import 'cert/ssl_cert_service.dart';
 import './limiter/db_rate_limiter_service.dart';
 
 class DBConnectionService {
@@ -55,7 +55,7 @@ class DBConnectionService {
       _startConnectivityCheck();
     } catch (e) {
       _isConnected = false;
-      print('Database initialization failed: $e'); // 保留原始错误日志供调试
+      print('Database initialization failed'); // 保留原始错误日志供调试
       _handleConnectionFailure('服务器连接失败，请检查网络连接。');
       rethrow;
     } finally {

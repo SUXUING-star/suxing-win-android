@@ -1,17 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart'; // 导入 url_launcher 包
+import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
   const AboutScreen({Key? key}) : super(key: key);
 
-  // 技术栈数据
   final List<Map<String, dynamic>> techStacks = const [
     {
       "title": "开发技术",
       "items": [
         {"name": "Flutter", "desc": "用户界面构建"},
-        {"name": "Dart", "desc": "编程语言"},
-        {"name": "Provider", "desc": "状态管理"}
+        {"name": "Dart", "desc": "编程语言"}
       ]
     },
     {
@@ -23,7 +21,6 @@ class AboutScreen extends StatelessWidget {
     }
   ];
 
-  // 打开链接的函数
   Future<void> _handleOpenLink(String url) async {
     final Uri uri = Uri.parse(url);
     if (!await launchUrl(uri)) {
@@ -43,7 +40,6 @@ class AboutScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              // 关于宿星茶会
               Card(
                 elevation: 2,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -62,48 +58,70 @@ class AboutScreen extends StatelessWidget {
                         style: TextStyle(color: Colors.grey, fontSize: 14),
                       ),
                       const SizedBox(height: 16.0),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center, // 居中对齐
-                        children: [
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.code, size: 16),
-                            label: const Text('GitHub账号', style: TextStyle(fontSize: 12)),
-                            onPressed: () => _handleOpenLink(
-                                'https://github.com/SUXUING-star/SUXUING-star.github.io'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black87,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.message, size: 16),
-                            label: const Text('QQ交流群: 829701655', style: TextStyle(fontSize: 12)),
-                            onPressed: () => _handleOpenLink(
-                                'https://qm.qq.com/cgi-bin/qm/qr?k=KYP0Gq7Q9x_Yn6xzH1k2qGGIyC36fPcG&jump_from=webapi&authKey=PmG2m4kZYFX3vXiOHBiKJdKoNYvL2iEUAeVJPaONTdxu2EEmkNBK++SISnqrXwSJ'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton.icon(
-                            icon: const Icon(Icons.video_library, size: 16),
-                            label: const Text('b站: Paysage_宿星', style: TextStyle(fontSize: 12)),
-                            onPressed: () => _handleOpenLink(
-                                'https://space.bilibili.com/your_bilibili_id'), // 替换为实际的 B 站链接
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.pink,
-                              foregroundColor: Colors.white,
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                            ),
-                          ),
-                        ],
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          return Wrap(
+                            spacing: 8, // 水平间距
+                            runSpacing: 8, // 垂直间距
+                            alignment: WrapAlignment.center,
+                            children: [
+                              SizedBox(
+                                width: constraints.maxWidth > 600 ? null : (constraints.maxWidth - 16) / 3,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.code, size: 16),
+                                  label: const Text('GitHub',
+                                    style: TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onPressed: () => _handleOpenLink(
+                                      'https://github.com/SUXUING-star/SUXUING-star.github.io'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.black87,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: constraints.maxWidth > 600 ? null : (constraints.maxWidth - 16) / 3,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.message, size: 16),
+                                  label: const Text('QQ群',
+                                    style: TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onPressed: () => _handleOpenLink(
+                                      'https://qm.qq.com/cgi-bin/qm/qr?k=KYP0Gq7Q9x_Yn6xzH1k2qGGIyC36fPcG&jump_from=webapi&authKey=PmG2m4kZYFX3vXiOHBiKJdKoNYvL2iEUAeVJPaONTdxu2EEmkNBK++SISnqrXwSJ'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.blue,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(
+                                width: constraints.maxWidth > 600 ? null : (constraints.maxWidth - 16) / 3,
+                                child: ElevatedButton.icon(
+                                  icon: const Icon(Icons.video_library, size: 16),
+                                  label: const Text('bilibili',
+                                    style: TextStyle(fontSize: 12),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  onPressed: () => _handleOpenLink(
+                                      'https://space.bilibili.com/32892805?spm_id_from=333.1007.0.0'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.pink,
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -112,7 +130,7 @@ class AboutScreen extends StatelessWidget {
 
               const SizedBox(height: 24.0),
 
-              // 技术栈
+              // 技术栈部分保持不变
               Card(
                 elevation: 4,
                 child: Padding(
@@ -137,7 +155,7 @@ class AboutScreen extends StatelessWidget {
                             const SizedBox(height: 8.0),
                             ListView.builder(
                               shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(), // 禁止 ListView 滚动
+                              physics: const NeverScrollableScrollPhysics(),
                               itemCount: (section['items'] as List).length,
                               itemBuilder: (context, i) {
                                 final item = (section['items'] as List)[i];

@@ -61,6 +61,17 @@ class AvatarCacheService {
       'timestamp': DateTime.now().toIso8601String(),
     });
   }
+  // 新增：只清理数据但不关闭box
+  Future<void> clearCacheData() async {
+    try {
+      if (_box != null && _box!.isOpen) {
+        await _box!.clear();
+      }
+    } catch (e) {
+      print('Clear avatar cache data error: $e');
+      rethrow;
+    }
+  }
 
   Future<void> clearCache() async {
     if (_box == null) await init();

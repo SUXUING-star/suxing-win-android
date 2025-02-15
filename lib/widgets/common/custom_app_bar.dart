@@ -1,43 +1,57 @@
-// lib/widgets/common/custom_app_bar.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final Widget? leading;
-  final PreferredSizeWidget? bottom;
 
   const CustomAppBar({
     Key? key,
     required this.title,
     this.actions,
     this.leading,
-    this.bottom,
   }) : super(key: key);
-
-  @override
-  Size get preferredSize => Size.fromHeight(bottom != null ? kToolbarHeight + 48 : kToolbarHeight);
 
   @override
   Widget build(BuildContext context) {
     return AppBar(
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
       title: Text(
         title,
         style: TextStyle(
-          color: Colors.grey[800],
-          fontSize: 18,
-          fontWeight: FontWeight.w500,
-          letterSpacing: 0.5,
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 20,
         ),
       ),
-      centerTitle: true,
-      elevation: 0,
-      backgroundColor: Colors.lightBlueAccent,
       leading: leading,
       actions: actions,
-      bottom: bottom,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.centerLeft,
+            end: Alignment.centerRight,
+            colors: [
+              Color(0xFF6AB7F0),  // 浅蓝色
+              Color(0xFF4E9DE3),  // 稍深一点的蓝色
+            ],
+          ),
+        ),
+      ),
+      bottom: PreferredSize(
+        preferredSize: Size.fromHeight(4.0),
+        child: Opacity(
+          opacity: 0.7,
+          child: Container(
+            color: Colors.white.withOpacity(0.2),
+            height: 1,
+          ),
+        ),
+      ),
     );
   }
+
+  @override
+  Size get preferredSize => Size.fromHeight(kToolbarHeight);
 }

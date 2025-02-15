@@ -1,9 +1,8 @@
-// lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
 import '../../widgets/home/home_hot.dart';
 import '../../widgets/home/home_latest.dart';
 import '../../utils/loading_route_observer.dart';
-import 'dart:io';
+import '../../widgets/home/home_banner.dart'; // 导入 HomeBanner 组件
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -64,44 +63,12 @@ class _HomeScreenState extends State<HomeScreen> {
           physics: AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              _buildBanner(),
+              HomeBanner(), // 使用 HomeBanner 组件
               HomeHot(),
               HomeLatest(),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildBanner() {
-    double bannerHeight = 140.0; // 默认移动端高度
-
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      bannerHeight = 200.0; // 桌面端高度
-    }
-
-    return Container(
-      height: bannerHeight,
-      width: double.infinity,
-      child: PageView.builder(
-        itemCount: 3,
-        itemBuilder: (context, index) {
-          return Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(8.0),
-              child: Opacity(
-                opacity: 0.8,
-                child: Image.asset(
-                  //home顶部图片
-                  'images/kaev.jpg',
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          );
-        },
       ),
     );
   }

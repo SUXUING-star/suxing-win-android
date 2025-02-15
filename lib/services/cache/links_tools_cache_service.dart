@@ -143,6 +143,21 @@ class LinksToolsCacheService {
     await _toolsBox!.put('tools', toolsData);
   }
 
+  Future<void> clearCacheData() async {
+    try {
+      if (_linksBox != null && _linksBox!.isOpen) {
+        await _linksBox!.clear();
+      }
+      if (_toolsBox != null && _toolsBox!.isOpen) {
+        await _toolsBox!.clear();
+      }
+    } catch (e) {
+      print('Clear links tools cache data error: $e');
+      rethrow;
+    }
+  }
+
+  // 修改现有的clearCache方法
   Future<void> clearCache() async {
     if (_linksBox == null || _toolsBox == null) await init();
     await _linksBox!.clear();

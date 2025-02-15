@@ -6,10 +6,11 @@ import '../../services/link_tool_service.dart';
 import '../../models/link.dart';
 import '../../models/tool.dart';
 import '../../widgets/common/toaster.dart';
-import '../../providers/auth_provider.dart';
-import '../../widgets/form/link_form_dialog.dart';
-import '../../widgets/form/tool_form_dialog.dart';
+import '../../providers/auth/auth_provider.dart';
+import '../../widgets/form/linkform/link_form_dialog.dart';
+import '../../widgets/form/toolform/tool_form_dialog.dart';
 import '../../utils/loading_route_observer.dart';
+import '../../widgets/common/custom_app_bar.dart';
 
 class LinksToolsScreen extends StatefulWidget {
   @override
@@ -138,8 +139,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('实用工具'),
+      appBar: CustomAppBar(
+        title: '实用工具',
         actions: [
           if (isAdmin) ...[
             IconButton(

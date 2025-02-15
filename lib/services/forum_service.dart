@@ -44,7 +44,7 @@ class ForumService {
 
       final userId = await _userService.currentUserId;
       if (userId == null) {
-        print('Cannot add to history: User not logged in');
+        //print('Cannot add to history: User not logged in');
         return;
       }
 

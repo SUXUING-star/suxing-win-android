@@ -312,7 +312,7 @@ class GameService {
 
       final userId = await _userService.currentUserId;
       if (userId == null) {
-        print('Cannot add to history: User not logged in');
+        //print('Cannot add to history: User not logged in');
         return;
       }
 
@@ -395,6 +395,56 @@ class GameService {
     } catch (e) {
       print('Get total games count error: $e');
       return 0;
+    }
+  }
+
+  Future<List<Game>> getRandomGames({int limit = 3, String? excludeId}) async {
+    try {
+      // First try to get from cache
+      final cacheKey = 'random_games_${limit}_${excludeId ?? ""}';
+      final cachedGames = await _cacheService.getCachedGames(cacheKey);
+      if (cachedGames != null) {
+        return cachedGames;
+      }
+
+      // 构建排除当前游戏的查询条件
+      var query = where;
+      if (excludeId != null) {
+        query = query.ne('_id', ObjectId.fromHexString(excludeId));
+      }
+
+      // 获取总游戏数（排除当前游戏）
+      final totalGames = await _dbConnectionService.games.count(query);
+
+      if (totalGames == 0) {
+        return [];
+      }
+
+      // 随机生成跳过的数量
+      final skip = totalGames > limit ? (DateTime.now().millisecondsSinceEpoch % (totalGames - limit)) : 0;
+
+      // 使用 skip 和 limit 来实现随机选择
+      final cursor = _dbConnectionService.games;
+      final selector = where
+          .skip(skip)
+          .limit(limit);
+
+      if (excludeId != null) {
+        selector.ne('_id', ObjectId.fromHexString(excludeId));
+      }
+
+      final randomGames = await cursor
+          .find(selector)
+          .map((game) => Game.fromJson(_dbConnectionService.convertDocument(game)))
+          .toList();
+
+      // Cache the results
+      await _cacheService.cacheGames(cacheKey, randomGames);
+
+      return randomGames;
+    } catch (e) {
+      print('Get random games error: $e');
+      return [];
     }
   }
 }

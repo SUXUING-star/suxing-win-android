@@ -68,8 +68,27 @@ class GameCacheService {
     }
   }
 
+  Future<void> clearCacheData() async {
+    try {
+      if (_box.isOpen) {
+        await _box.clear();
+      }
+    } catch (e) {
+      print('Clear games cache data error: $e');
+      rethrow;
+    }
+  }
+
+  // 修改现有的clearCache方法
   Future<void> clearCache() async {
-    await _box.clear();
+    try {
+      if (_box.isOpen) {
+        await _box.clear();
+      }
+    } catch (e) {
+      print('Clear games cache error: $e');
+      rethrow;
+    }
   }
 
   bool isCacheExpired(String key) {
