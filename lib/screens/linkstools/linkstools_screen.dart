@@ -11,6 +11,8 @@ import '../../widgets/form/linkform/link_form_dialog.dart';
 import '../../widgets/form/toolform/tool_form_dialog.dart';
 import '../../utils/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/linkstools/links_section.dart';
+import '../../widgets/linkstools/tools_section.dart';
 
 class LinksToolsScreen extends StatefulWidget {
   @override
@@ -26,22 +28,18 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
-          .whereType<LoadingRouteObserver>()
-          .first;
-
-      loadingObserver.showLoading();
-
-      _loadData().then((_) {
-        loadingObserver.hideLoading();
-      });
+      _loadData();
     });
   }
 
   Future<void> _loadData() async {
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
     try {
       final links = await _linkToolService.getLinks().first;
       final tools = await _linkToolService.getTools().first;
@@ -57,18 +55,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         _links = [];
         _tools = [];
       });
-    }
-  }
-
-  Future<void> _refreshData() async {
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
-    try {
-      await _loadData();
     } finally {
       loadingObserver.hideLoading();
     }
@@ -84,6 +70,116 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       }
     } catch (e) {
       Toaster.show(context, message: '打开链接失败: $e', isError: true);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: '实用工具',
+        actions: [
+          if (isAdmin) ...[
+            IconButton(
+              icon: Icon(Icons.add_link),
+              onPressed: () => _showAddLinkDialog(context),
+              tooltip: '添加链接',
+            ),
+            IconButton(
+              icon: Icon(Icons.add_box),
+              onPressed: () => _showAddToolDialog(context),
+              tooltip: '添加工具',
+            ),
+          ],
+        ],
+      ),
+      body: RefreshIndicator(
+        onRefresh: _loadData,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+                child: Text(
+                  '常用链接',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            if (_errorMessage != null)
+              SliverToBoxAdapter(
+                child: Center(child: Text(_errorMessage!)),
+              )
+            else if (_links == null)
+              SliverToBoxAdapter(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_links!.isEmpty)
+                SliverToBoxAdapter(
+                  child: Center(child: Text('暂无链接')),
+                )
+              else
+                LinksSection(
+                  links: _links!,
+                  isAdmin: isAdmin,
+                  onRefresh: _loadData,
+                  onLaunchURL: (url) => _launchURL(context, url),
+                  linkToolService: _linkToolService,
+                ),
+
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+                child: Text(
+                  '实用工具',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+            if (_errorMessage != null)
+              SliverToBoxAdapter(
+                child: Center(child: Text(_errorMessage!)),
+              )
+            else if (_tools == null)
+              SliverToBoxAdapter(
+                child: Center(child: CircularProgressIndicator()),
+              )
+            else if (_tools!.isEmpty)
+                SliverToBoxAdapter(
+                  child: Center(child: Text('暂无工具')),
+                )
+              else
+                ToolsSection(
+                  tools: _tools!,
+                  isAdmin: isAdmin,
+                  onLaunchURL: (url) => _launchURL(context, url),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+
+
+
+
+  Future<void> _refreshData() async {
+    final loadingObserver = Navigator.of(context)
+        .widget.observers
+        .whereType<LoadingRouteObserver>()
+        .first;
+
+    loadingObserver.showLoading();
+    try {
+      await _loadData();
+    } finally {
+      loadingObserver.hideLoading();
     }
   }
 
@@ -132,61 +228,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         }
       }
     });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
-
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '实用工具',
-        actions: [
-          if (isAdmin) ...[
-            IconButton(
-              icon: Icon(Icons.add_link),
-              onPressed: () => _showAddLinkDialog(context),
-              tooltip: '添加链接',
-            ),
-            IconButton(
-              icon: Icon(Icons.add_box),
-              onPressed: () => _showAddToolDialog(context),
-              tooltip: '添加工具',
-            ),
-          ],
-        ],
-      ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: CustomScrollView(
-          slivers: [
-            // 链接区域标题
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-                child: Text(
-                  '常用链接',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ),
-            _buildLinksSection(context, isAdmin),
-
-            // 工具区域标题
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 8),
-                child: Text(
-                  '实用工具',
-                  style: Theme.of(context).textTheme.titleLarge,
-                ),
-              ),
-            ),
-            _buildToolsSection(context, isAdmin),
-          ],
-        ),
-      ),
-    );
   }
 
   Widget _buildLinksSection(BuildContext context, bool isAdmin) {

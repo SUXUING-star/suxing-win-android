@@ -33,31 +33,37 @@ class GameService {
 
   Stream<List<Game>> getHotGames() async* {
     try {
-      // 先尝试从缓存获取数据
+      // 先检查缓存
       final cachedGames = await _cacheService.getCachedGames('hot_games');
       if (cachedGames != null) {
         yield cachedGames;
+        // 如果缓存未过期，延迟更新
+        if (!_cacheService.isCacheExpired('hot_games')) {
+          await Future.delayed(const Duration(seconds: 30));
+        }
       }
 
-      // 设置一个较长的刷新间隔，比如30秒
       while (true) {
         try {
           final cursor = _dbConnectionService.games.find(
-              where.sortBy('viewCount', descending: true).limit(10));
+              where.sortBy('viewCount', descending: true).limit(10)
+          );
 
           final games = await cursor
               .map((game) => Game.fromJson(_dbConnectionService.convertDocument(game)))
               .toList();
 
-          // 更新缓存
-          await _cacheService.cacheGames('hot_games', games);
-          yield games;
+          // 只有当数据真正发生变化时才更新缓存和触发刷新
+          final currentCached = await _cacheService.getCachedGames('hot_games');
+          if (currentCached == null || !_areGamesEqual(currentCached, games)) {
+            await _cacheService.cacheGames('hot_games', games);
+            yield games;
+          }
 
-          // 增加刷新间隔到30秒
-          await Future.delayed(const Duration(seconds: 30));
+          // 增加刷新间隔
+          await Future.delayed(const Duration(minutes: 1));
         } catch (e) {
           print('Get hot games error in loop: $e');
-          // 出错时等待后重试
           await Future.delayed(const Duration(seconds: 30));
         }
       }
@@ -65,6 +71,19 @@ class GameService {
       print('Get hot games initial error: $e');
       yield [];
     }
+  }
+
+// 辅助方法：比较两个游戏列表是否相同
+  bool _areGamesEqual(List<Game> list1, List<Game> list2) {
+    if (list1.length != list2.length) return false;
+    for (int i = 0; i < list1.length; i++) {
+      if (list1[i].id != list2[i].id ||
+          list1[i].updateTime != list2[i].updateTime ||
+          list1[i].viewCount != list2[i].viewCount) {
+        return false;
+      }
+    }
+    return true;
   }
 
   Stream<List<Game>> getLatestGames() async* {

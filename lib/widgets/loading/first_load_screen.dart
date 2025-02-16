@@ -1,6 +1,8 @@
 // lib/widgets/loading/first_load_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'dart:io'; // For Platform.isAndroid
 import '../logo/app_logo.dart';
 import '../../utils/font_config.dart';
 
@@ -70,6 +72,17 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
 
   @override
   Widget build(BuildContext context) {
+
+    bool isAndroid = !kIsWeb && Platform.isAndroid;
+
+    // 根据平台确定 logo 和文字大小
+    double logoSize = isAndroid ? 150 : 180;
+    double logoContentSize = isAndroid ? 36 : 48;
+    double loadingTextSize = isAndroid ? 16 : 18;
+    double welcomeTextSize = isAndroid ? 14 : 16;
+    double appNameTextSize = isAndroid ? 16 : 18;
+
+
     return AnimatedOpacity(
       duration: const Duration(milliseconds: 300),
       opacity: 1.0,
@@ -106,10 +119,10 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
                         builder: (context, child) {
                           return Transform.scale(
                             scale: _pulseAnimation.value,
-                            child: Container(
-                              width: 180,
-                              height: 180,
-                              child: AppLogo(size: 48),
+                            child: SizedBox(
+                              width: logoSize,
+                              height: logoSize,
+                              child: AppLogo(size: logoContentSize),
                             ),
                           );
                         },
@@ -139,7 +152,7 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
                             fontFamily: FontConfig.defaultFontFamily,
                             fontFamilyFallback: FontConfig.fontFallback,
                             color: Colors.blue[700],
-                            fontSize: 18,
+                            fontSize: loadingTextSize,
                             fontWeight: FontWeight.w500,
                           ),
                           textAlign: TextAlign.center,
@@ -153,7 +166,7 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
                           fontFamily: FontConfig.defaultFontFamily,
                           fontFamilyFallback: FontConfig.fontFallback,
                           color: Colors.blue[400],
-                          fontSize: 16,
+                          fontSize: welcomeTextSize,
                           fontWeight: FontWeight.w300,
                         ),
                       ),
@@ -162,7 +175,7 @@ class _FirstLoadScreenState extends State<FirstLoadScreen>
                         '宿星茶会（跨平台版）',
                         style: TextStyle(
                           color: Colors.blue[400],
-                          fontSize: 18,
+                          fontSize: appNameTextSize,
                           fontWeight: FontWeight.bold,
                         ),
                       ),

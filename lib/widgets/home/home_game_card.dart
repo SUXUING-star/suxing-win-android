@@ -1,4 +1,3 @@
-// lib/widgets/home/home_game_card.dart
 import 'package:flutter/material.dart';
 import '../../models/game.dart';
 import '../common/animated_card_container.dart';
@@ -33,13 +32,28 @@ class HomeGameCard extends StatelessWidget {
                   height: 120,
                   width: double.infinity,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, exception, stackTrace) {
+                  // 添加缓存策略
+                  cacheWidth: 320, // 2倍于显示尺寸以支持高清屏
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
                     return Container(
-                      height: 120,
-                      color: Colors.grey[300],
+                      height: 120.0,
+                      color: Colors.grey[200],
                       child: Center(
-                        child: Icon(Icons.error_outline, color: Colors.red),
+                        child: CircularProgressIndicator(
+                          value: loadingProgress.expectedTotalBytes != null
+                              ? loadingProgress.cumulativeBytesLoaded /
+                              loadingProgress.expectedTotalBytes!
+                              : null,
+                        ),
                       ),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) {
+                    return Container(
+                      height: 120.0,
+                      color: Colors.grey[200],
+                      child: Icon(Icons.error_outline),
                     );
                   },
                 ),

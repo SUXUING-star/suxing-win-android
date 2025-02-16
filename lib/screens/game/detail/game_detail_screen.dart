@@ -1,14 +1,14 @@
+// lib/screens/game/game_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../models/game.dart';
 import '../../../services/game_service.dart';
-import '../../../providers/auth/auth_provider.dart';
-import '../../../widgets/common/toaster.dart';
+import '../../../widgets/game/button/edit_button.dart';
+import '../../../widgets/game/button/like_button.dart';
 import '../../../widgets/game/game_detail_content.dart';
-import '../edit_game_screen.dart';
+import '../../../widgets/game/coverImage/game_cover_image.dart';
 
 class GameDetailScreen extends StatefulWidget {
-  final String? gameId;  // 改为可空类型
+  final String? gameId;
 
   const GameDetailScreen({
     Key? key,
@@ -91,70 +91,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  void _toggleLike(BuildContext context, bool isLiked) async {
-    if (_game == null) return;
-
-    try {
-      await _gameService.toggleLike(_game!.id);
-      Toaster.show(
-        context,
-        message: isLiked ? '已取消点赞' : '点赞成功',
-      );
-    } catch (e) {
-      Toaster.show(
-        context,
-        message: '操作失败，请稍后重试',
-        isError: true,
-      );
-    }
-  }
-
-  Widget _buildFavoriteButton(BuildContext context) {
-    if (_isLoading || _game == null) {
-      return const SizedBox.shrink();
-    }
-
-    return Consumer<AuthProvider>(
-      builder: (context, authProvider, child) {
-        if (!authProvider.isLoggedIn) {
-          return FloatingActionButton(
-            onPressed: () {
-              Toaster.show(
-                context,
-                message: '请先登录后再操作',
-                isError: true,
-              );
-              Navigator.pushNamed(context, '/login');
-            },
-            child: const Icon(Icons.favorite_border),
-            backgroundColor: Theme.of(context).primaryColor,
-          );
-        }
-
-        return StreamBuilder<List<String>>(
-          stream: _gameService.getUserFavorites(),
-          initialData: const [],
-          builder: (context, snapshot) {
-            if (!snapshot.hasData) {
-              return const SizedBox.shrink();
-            }
-
-            final isFavorite = snapshot.data!.contains(_game!.id);
-
-            return FloatingActionButton(
-              onPressed: () => _toggleLike(context, isFavorite),
-              child: Icon(
-                isFavorite ? Icons.favorite : Icons.favorite_border,
-                color: Colors.white,
-              ),
-              backgroundColor: isFavorite ? Colors.red : Theme.of(context).primaryColor,
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildSliverAppBar(Game game) {
     return SliverAppBar(
       expandedHeight: 300,
@@ -176,10 +112,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         background: Stack(
           fit: StackFit.expand,
           children: [
-            Image.network(
-              game.coverImage,
-              fit: BoxFit.cover,
-            ),
+            GameCoverImage(imageUrl: game.coverImage),
             const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -202,49 +135,28 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             // 实现分享功能
           },
         ),
-        Consumer<AuthProvider>(
-          builder: (context, authProvider, _) {
-            if (authProvider.isAdmin) {
-              return IconButton(
-                icon: const Icon(Icons.edit),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => EditGameScreen(game: game),
-                    ),
-                  ).then((_) => _refreshGameDetails());
-                },
-              );
-            }
-            return const SizedBox.shrink();
-          },
-        ),
       ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // 1. 首先检查 gameId 是否为空
     if (widget.gameId == null) {
       return Scaffold(
-        appBar: AppBar(title: Text('错误')),
-        body: Center(child: Text('无效的游戏ID')),
+        appBar: AppBar(title: const Text('错误')),
+        body: const Center(child: Text('无效的游戏ID')),
       );
     }
 
-    // 2. 检查加载状态
     if (_isLoading) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
     }
 
-    // 3. 检查错误状态
     if (_error != null) {
       return Scaffold(
-        appBar: AppBar(title: Text('错误')),
+        appBar: AppBar(title: const Text('错误')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -263,13 +175,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       );
     }
 
-
-    // 5. 显示游戏详情
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshGameDetails,
         child: CustomScrollView(
-          key: PageStorageKey('game_detail'),
+          key: const PageStorageKey('game_detail'),
           slivers: [
             _buildSliverAppBar(_game!),
             SliverToBoxAdapter(
@@ -278,12 +188,23 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           ],
         ),
       ),
-      floatingActionButton: Align(
-        alignment: Alignment.centerRight,
-        child: Padding(
-          padding: const EdgeInsets.only(right: 16.0),
-          child: _buildFavoriteButton(context),
-        ),
+      floatingActionButton: Stack(
+        children: [
+          EditButton(
+            game: _game!,
+            onEditComplete: _refreshGameDetails,
+          ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: Padding(
+              padding: const EdgeInsets.only(right: 16.0),
+              child: LikeButton(
+                game: _game!,
+                gameService: _gameService,
+              ),
+            ),
+          ),
+        ],
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
     );

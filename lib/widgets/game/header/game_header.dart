@@ -13,7 +13,7 @@ class GameHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Opacity(
-      opacity: 0.7,
+      opacity: 0.9,
       child: Container(
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(

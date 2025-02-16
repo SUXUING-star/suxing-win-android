@@ -289,56 +289,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildLoginPrompt(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.account_circle_outlined,
-            size: 80,
-            color: Theme.of(context).colorScheme.secondary,
-          ),
-          SizedBox(height: 24),
-          Text(
-            '还未登录',
-            style: TextStyle(
-              fontSize: 18,
-              fontFamily: FontConfig.defaultFontFamily,
-              fontFamilyFallback: FontConfig.fontFallback,
-              color: Theme.of(context).textTheme.bodyLarge?.color,
-            ),
-          ),
-          SizedBox(height: 16),
-          Text(
-            '登录后可以体验更多功能',
-            style: TextStyle(
-              fontSize: 14,
-              fontFamily: FontConfig.defaultFontFamily,
-              fontFamilyFallback: FontConfig.fontFallback,
-              color: Colors.grey,
-            ),
-          ),
-          SizedBox(height: 32),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pushNamed(context, AppRoutes.login);
-            },
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 48, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
+    return SingleChildScrollView( // Added SingleChildScrollView
+      child: Center(
+        child: Padding( // Added Padding for spacing
+          padding: const EdgeInsets.all(16.0), // Adjust padding as needed
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.account_circle_outlined,
+                size: 80,
+                color: Theme.of(context).colorScheme.secondary,
               ),
-            ),
-            child: Text(
-              '立即登录',
-              style: TextStyle(
-                fontSize: 16,
-                fontFamily: FontConfig.defaultFontFamily,
-                fontFamilyFallback: FontConfig.fontFallback,
+              const SizedBox(height: 24),
+              Text(
+                '还未登录',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontFamily: FontConfig.defaultFontFamily,
+                  fontFamilyFallback: FontConfig.fontFallback,
+                  color: Theme.of(context).textTheme.bodyLarge?.color,
+                ),
               ),
-            ),
+              const SizedBox(height: 16),
+              Text(
+                '登录后可以体验更多功能',
+                textAlign: TextAlign.center, // Added textAlign for better readability
+                style: TextStyle(
+                  fontSize: 14,
+                  fontFamily: FontConfig.defaultFontFamily,
+                  fontFamilyFallback: FontConfig.fontFallback,
+                  color: Colors.grey,
+                ),
+              ),
+              const SizedBox(height: 32),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pushNamed(context, AppRoutes.login);
+                },
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: Text(
+                  '立即登录',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontFamily: FontConfig.defaultFontFamily,
+                    fontFamilyFallback: FontConfig.fontFallback,
+                  ),
+                ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

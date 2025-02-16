@@ -1,12 +1,12 @@
-// lib/layouts/top_navigation_bar.dart
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 import '../screens/search_screen.dart';
 import '../services/user_service.dart';
 import '../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../widgets/logo/app_logo.dart';
 import '../widgets/update/update_button.dart';
-import '../widgets/message/message_badge.dart';  // 新增导入
+import '../widgets/message/message_badge.dart';
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
@@ -20,58 +20,65 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }) : super(key: key);
 
   @override
-  Size get preferredSize => Size.fromHeight(kToolbarHeight);
+  Size get preferredSize {
+    return Platform.isAndroid &&
+        WidgetsBinding.instance.window.physicalSize.width >
+            WidgetsBinding.instance.window.physicalSize.height
+        ? Size.fromHeight(kToolbarHeight * 0.8)
+        : Size.fromHeight(kToolbarHeight);
+  }
 
   @override
   Widget build(BuildContext context) {
+    final bool isAndroidLandscape = Platform.isAndroid &&
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final double verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
+    final double iconSize = isAndroidLandscape ? 18.0 : 20.0;
+    final double logoSize = isAndroidLandscape ? 36.0 : 48.0;
+    final double searchBarHeight = isAndroidLandscape ? 32.0 : 40.0;
+    final double avatarRadius = isAndroidLandscape ? 12.0 : 14.0;
+
     return AppBar(
       elevation: 0,
       backgroundColor: Colors.white,
-      iconTheme: IconThemeData(color: Colors.grey[700]), // 设置默认图标颜色
-      leading: _buildLeadingLogo(context),
-      title: _buildSearchBar(context),
+      iconTheme: IconThemeData(color: Colors.grey[700]),
+      leading: _buildLeadingLogo(context, logoSize, verticalPadding),
+      title: _buildSearchBar(context, searchBarHeight, iconSize),
       titleSpacing: 8.0,
       actions: [
         MouseRegion(
           cursor: SystemMouseCursors.click,
-          child: UpdateButton(),
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: verticalPadding),
+            child: UpdateButton(),
+          ),
         ),
         const SizedBox(width: 8),
-        _buildMessageBadge(context), // 使用新的方法构建消息徽章
+        _buildMessageBadge(context, verticalPadding),
         const SizedBox(width: 8),
-        _buildProfileAvatar(context),
+        _buildProfileAvatar(context, avatarRadius, verticalPadding),
         const SizedBox(width: 16),
       ],
     );
   }
 
-  Widget _buildMessageBadge(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+  // ... 其他辅助方法保持不变，但需要接收并使用新的尺寸参数 ...
 
-    if (authProvider.isLoggedIn) {
-      return MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: MessageBadge(),  // 添加消息图标
-      );
-    } else {
-      return SizedBox.shrink(); // 如果未登录，则不显示消息图标
-    }
-  }
-
-  Widget _buildLeadingLogo(BuildContext context) {
+  Widget _buildLeadingLogo(BuildContext context, double size, double padding) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: GestureDetector(
         onTap: onLogoTap,
         child: Padding(
-          padding: EdgeInsets.all(8.0),
-          child: AppLogo(size: 48),
+          padding: EdgeInsets.all(padding),
+          child: AppLogo(size: size),
         ),
       ),
     );
   }
 
-  Widget _buildSearchBar(BuildContext context) {
+  Widget _buildSearchBar(BuildContext context, double height, double iconSize) {
     return MouseRegion(
       cursor: SystemMouseCursors.click,
       child: Material(
@@ -83,7 +90,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           ),
           borderRadius: BorderRadius.circular(20),
           child: Container(
-            height: 40,
+            height: height,
             decoration: BoxDecoration(
               color: Colors.grey[100],
               borderRadius: BorderRadius.circular(20),
@@ -95,7 +102,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                   child: Icon(
                     Icons.search_rounded,
                     color: Colors.grey[400],
-                    size: 20,
+                    size: iconSize,
                   ),
                 ),
                 Expanded(
@@ -103,7 +110,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                     '搜索游戏...',
                     style: TextStyle(
                       color: Colors.grey[400],
-                      fontSize: 14,
+                      fontSize: iconSize * 0.7,
                     ),
                   ),
                 ),
@@ -115,7 +122,21 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildProfileAvatar(BuildContext context) {
+  Widget _buildMessageBadge(BuildContext context, double padding) {
+    final authProvider = Provider.of<AuthProvider>(context);
+    if (authProvider.isLoggedIn) {
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: padding),
+          child: MessageBadge(),
+        ),
+      );
+    }
+    return SizedBox.shrink();
+  }
+
+  Widget _buildProfileAvatar(BuildContext context, double radius, double padding) {
     return StreamBuilder<String?>(
       stream: _userService.getCurrentUserProfile().map((user) => user?.avatar),
       builder: (context, snapshot) {
@@ -125,7 +146,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           child: GestureDetector(
             onTap: onProfileTap,
             child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12),
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
               child: Container(
                 padding: EdgeInsets.all(2),
                 decoration: BoxDecoration(
@@ -136,7 +157,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                   ),
                 ),
                 child: CircleAvatar(
-                  radius: 14,
+                  radius: radius,
                   backgroundColor: Colors.grey[100],
                   backgroundImage: snapshot.hasData && snapshot.data != null
                       ? NetworkImage(snapshot.data!)
@@ -144,7 +165,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                   child: !snapshot.hasData || snapshot.data == null
                       ? Icon(
                     Icons.person_rounded,
-                    size: 18,
+                    size: radius * 1.3,
                     color: Colors.grey[400],
                   )
                       : null,

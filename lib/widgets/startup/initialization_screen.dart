@@ -1,6 +1,8 @@
 // lib/widgets/startup/initialization_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'dart:io'; // For Platform
 import '../logo/app_logo.dart';
 import '../../utils/font_config.dart';
 
@@ -60,6 +62,15 @@ class _InitializationScreenState extends State<InitializationScreen>
 
   @override
   Widget build(BuildContext context) {
+    // 检查是否是Android平台
+    bool isAndroid = !kIsWeb && Platform.isAndroid;
+
+    // 根据平台确定 logo 和文字大小
+    double logoSize = isAndroid ? 150 : 180; // 安卓上 Logo 更小
+    double logoContentSize = isAndroid ? 36 : 48; // 安卓上 Logo 内容更小
+    double welcomeTextSize = isAndroid ? 16 : 18; // 安卓上欢迎文字更小
+    double messageTextSize = isAndroid ? 16 : 18; //安卓消息文字大小
+
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
@@ -84,10 +95,10 @@ class _InitializationScreenState extends State<InitializationScreen>
                   builder: (context, child) {
                     return Transform.scale(
                       scale: _pulseAnimation.value,
-                      child: Container(
-                        width: 180,
-                        height: 180,
-                        child: AppLogo(size: 48),
+                      child: SizedBox(
+                        width: logoSize, // 使用平台特定的Logo尺寸
+                        height: logoSize, // 使用平台特定的Logo尺寸
+                        child: AppLogo(size: logoContentSize), //logo内容大小
                       ),
                     );
                   },
@@ -120,7 +131,7 @@ class _InitializationScreenState extends State<InitializationScreen>
                         fontFamily: FontConfig.defaultFontFamily,
                         fontFamilyFallback: FontConfig.fontFallback,
                         color: Colors.blue[700],
-                        fontSize: 18,
+                        fontSize: messageTextSize, //使用特定平台文字大小
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,
@@ -214,7 +225,7 @@ class _InitializationScreenState extends State<InitializationScreen>
                     fontFamily: FontConfig.defaultFontFamily,
                     fontFamilyFallback: FontConfig.fontFallback,
                     color: Colors.blue[400],
-                    fontSize: 18,
+                    fontSize: welcomeTextSize, // 使用平台特定的欢迎文字尺寸
                     fontWeight: FontWeight.bold,
                   ),
                 ),

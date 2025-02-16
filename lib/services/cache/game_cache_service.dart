@@ -20,10 +20,13 @@ class GameCacheService {
       final currentTime = DateTime.now();
       await _box.put('${key}_timestamp', currentTime.toIso8601String());
 
-      // 确保转换为正确的数据类型
+      // 优化数据结构，分离图片URL和其他数据
       final gameDataList = games.map((game) {
         final json = game.toJson();
-        // 确保所有值都是正确的类型
+        // 存储图片URL的引用
+        _box.put('${key}_image_${game.id}', json['coverImage']);
+        // 移除大型数据以减少主缓存大小
+        json['coverImage'] = game.id; // 仅存储ID引用
         return Map<String, dynamic>.from(json);
       }).toList();
 
@@ -43,7 +46,6 @@ class GameCacheService {
       final currentTime = DateTime.now();
       final difference = currentTime.difference(lastUpdateTime).inMinutes;
 
-      // 如果缓存超过10分钟，返回null触发刷新
       if (difference >= cacheExpiration) {
         return null;
       }
@@ -52,13 +54,15 @@ class GameCacheService {
       if (cachedData == null) return null;
 
       return (cachedData as List).map((item) {
-        // 确保将数据转换为正确的类型
         final gameMap = Map<String, dynamic>.from(item as Map);
-        // 转换嵌套的数据结构
+        // 恢复图片URL
+        final gameId = gameMap['coverImage'];
+        gameMap['coverImage'] = _box.get('${key}_image_${gameId}');
+
         if (gameMap['downloadLinks'] != null) {
-          gameMap['downloadLinks'] = (gameMap['downloadLinks'] as List).map((link) {
-            return Map<String, dynamic>.from(link as Map);
-          }).toList();
+          gameMap['downloadLinks'] = (gameMap['downloadLinks'] as List)
+              .map((link) => Map<String, dynamic>.from(link as Map))
+              .toList();
         }
         return Game.fromJson(gameMap);
       }).toList();

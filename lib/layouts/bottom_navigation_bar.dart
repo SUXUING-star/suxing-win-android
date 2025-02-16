@@ -1,5 +1,5 @@
-// lib/layouts/bottom_navigation_bar.dart
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -13,6 +13,13 @@ class CustomBottomNavigationBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 检查是否是安卓横屏模式
+    final bool isAndroidLandscape = Platform.isAndroid &&
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    // 根据模式调整内边距
+    final verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -26,7 +33,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+          padding: EdgeInsets.symmetric(horizontal: 8, vertical: verticalPadding),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: BottomNavigationBar(
@@ -38,17 +45,17 @@ class CustomBottomNavigationBar extends StatelessWidget {
               unselectedItemColor: Colors.grey[400],
               selectedLabelStyle: TextStyle(
                 fontWeight: FontWeight.w500,
-                fontSize: 12,
+                fontSize: isAndroidLandscape ? 10 : 12,
               ),
               unselectedLabelStyle: TextStyle(
-                fontSize: 12,
+                fontSize: isAndroidLandscape ? 10 : 12,
               ),
               items: [
-                _buildNavItem(Icons.home_rounded, '首页'),
-                _buildNavItem(Icons.games_rounded, '游戏'),
-                _buildNavItem(Icons.link_rounded, '外部'),
-                _buildNavItem(Icons.forum_rounded, '论坛'),
-                _buildNavItem(Icons.person_rounded, '我的'),
+                _buildNavItem(Icons.home_rounded, '首页', isAndroidLandscape),
+                _buildNavItem(Icons.games_rounded, '游戏', isAndroidLandscape),
+                _buildNavItem(Icons.link_rounded, '外部', isAndroidLandscape),
+                _buildNavItem(Icons.forum_rounded, '论坛', isAndroidLandscape),
+                _buildNavItem(Icons.person_rounded, '我的', isAndroidLandscape),
               ],
               onTap: onTap,
             ),
@@ -58,21 +65,24 @@ class CustomBottomNavigationBar extends StatelessWidget {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label) {
+  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isAndroidLandscape) {
+    final padding = isAndroidLandscape ? 6.0 : 8.0;
+    final iconSize = isAndroidLandscape ? 20.0 : 24.0;
+
     return BottomNavigationBarItem(
       icon: MouseRegion(
         cursor: SystemMouseCursors.click,
-        child: Icon(icon),
+        child: Icon(icon, size: iconSize),
       ),
       activeIcon: Container(
-        padding: EdgeInsets.all(8),
+        padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
           color: Color(0xFF2979FF).withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: MouseRegion(
           cursor: SystemMouseCursors.click,
-          child: Icon(icon),
+          child: Icon(icon, size: iconSize),
         ),
       ),
       label: label,

@@ -144,7 +144,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     }
 
     return Opacity(
-      opacity: 0.8,
+      opacity: 0.9,
       child: Container(
         //margin: const EdgeInsets.symmetric(vertical: 16),
         padding: const EdgeInsets.all(16),

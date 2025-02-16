@@ -12,8 +12,9 @@ import 'providers/theme/theme_provider.dart';
 import 'providers/connection/db_state_provider.dart';
 import './utils/loading_route_observer.dart';
 import './layouts/main_layout.dart';
-import './layouts/app_background.dart';
+import 'layouts/background/app_background.dart';
 import 'widgets/loading/loading_screen.dart';
+import 'widgets/effects/mouse_trail_effect.dart';
 import './widgets/dialogs/db_reset_dialog.dart';
 import './routes/app_routes.dart';
 import 'services/user_service.dart';
@@ -91,6 +92,8 @@ class MyApp extends StatelessWidget {
   }
 }
 
+// lib/app.dart 中的 AppContent 类修改
+
 class AppContent extends StatelessWidget {
   final LoadingRouteObserver loadingRouteObserver;
 
@@ -103,7 +106,12 @@ class AppContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<ThemeProvider, DBStateProvider>(
       builder: (context, themeProvider, dbStateProvider, _) {
-        return MaterialApp(
+        // 根据主题选择更柔和的粒子颜色
+        final particleColor = themeProvider.themeMode == ThemeMode.dark
+            ? const Color(0xFFE0E0E0) // 浅灰色
+            : const Color(0xFFB3E5FC); // 非常浅的蓝色
+
+        final app = MaterialApp(
           theme: themeProvider.lightTheme,
           darkTheme: themeProvider.darkTheme,
           themeMode: themeProvider.themeMode,
@@ -148,6 +156,14 @@ class AppContent extends StatelessWidget {
           },
           home: MainLayout(),
           onGenerateRoute: AppRoutes.onGenerateRoute,
+        );
+
+        // 在最外层包装 MouseTrailEffect
+        return MouseTrailEffect(
+          particleColor: particleColor,
+          maxParticles: 20,
+          particleLifespan: const Duration(milliseconds: 800),
+          child: app,
         );
       },
     );

@@ -19,10 +19,10 @@ class FileUpload {
         int? quality,
       }) async {
     try {
-      // 打印文件信息
-      print('准备上传文件: ${imageFile.path}');
-      print('文件是否存在: ${imageFile.existsSync()}');
-      print('文件大小: ${imageFile.lengthSync()} 字节');
+      // 设置默认值
+      quality = quality ?? 80;  // 默认80%质量
+      maxWidth = maxWidth ?? 1200;  // 默认最大宽度
+      maxHeight = maxHeight ?? 1200; // 默认最大高度
 
       final uri = Uri.parse('$baseUrl/upload');
       var request = http.MultipartRequest('POST', uri);
@@ -35,29 +35,23 @@ class FileUpload {
       );
 
       request.files.add(multipartFile);
-
-      // 确保 folder 有值
       request.fields['folder'] = folder ?? 'avatars';
-
-      if (maxWidth != null) request.fields['width'] = maxWidth.toString();
-      if (maxHeight != null) request.fields['height'] = maxHeight.toString();
-      if (quality != null) request.fields['quality'] = quality.toString();
+      request.fields['width'] = maxWidth.toString();
+      request.fields['height'] = maxHeight.toString();
+      request.fields['quality'] = quality.toString();
 
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-
-      print('上传响应状态码: ${response.statusCode}');
-      print('上传响应内容: ${response.body}');
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         return data['url'];
       } else {
-        throw Exception('上传失败: ${response.statusCode}, ${response.body}');
+        throw Exception('上传失败，请稍后重试');  // 统一的错误信息
       }
     } catch (e) {
-      print('上传错误: $e');
-      rethrow;
+      print('上传错误: $e');  // 只在日志中记录具体错误
+      throw Exception('上传失败，请稍后重试');  // 向用户显示友好的错误信息
     }
   }
 
