@@ -150,11 +150,11 @@ class _GameFormState extends State<GameForm> {
         TextFormField(
           controller: _titleController,
           decoration: InputDecoration(
-            labelText: '游戏标题 - Game Title',
+            labelText: '游戏标题',
             border: OutlineInputBorder(),
           ),
           validator: (value) => value?.isEmpty ?? true
-              ? '请输入游戏标题 - Please enter the game title'
+              ? '请输入游戏标题'
               : null,
         ),
         SizedBox(height: 16),
@@ -162,12 +162,12 @@ class _GameFormState extends State<GameForm> {
         TextFormField(
           controller: _summaryController,
           decoration: InputDecoration(
-            labelText: '游戏简介 - Game Summary',
+            labelText: '游戏简介',
             border: OutlineInputBorder(),
           ),
           maxLines: 2,
           validator: (value) => value?.isEmpty ?? true
-              ? '请输入游戏简介 - Please enter the game summary'
+              ? '请输入游戏简介'
               : null,
         ),
         SizedBox(height: 16),
@@ -175,12 +175,12 @@ class _GameFormState extends State<GameForm> {
         TextFormField(
           controller: _descriptionController,
           decoration: InputDecoration(
-            labelText: '详细描述 - Detailed Description',
+            labelText: '详细描述',
             border: OutlineInputBorder(),
           ),
           maxLines: 5,
           validator: (value) => value?.isEmpty ?? true
-              ? '请输入详细描述 - Please enter the detailed description'
+              ? '请输入详细描述 '
               : null,
         ),
         SizedBox(height: 16),
@@ -188,7 +188,7 @@ class _GameFormState extends State<GameForm> {
         TextFormField(
           controller: _musicUrlController,
           decoration: InputDecoration(
-            labelText: '背景音乐链接(可选) - Background Music Link (Optional)',
+            labelText: '背景音乐链接(可选)',
             border: OutlineInputBorder(),
           ),
         ),
@@ -201,7 +201,7 @@ class _GameFormState extends State<GameForm> {
       onPressed: _submitForm,
       child: Padding(
         padding: EdgeInsets.symmetric(vertical: 16),
-        child: Text(widget.game == null ? '添加游戏 - Add Game' : '保存修改 - Save Changes'),
+        child: Text(widget.game == null ? '添加游戏' : '保存修改'),
       ),
     );
   }

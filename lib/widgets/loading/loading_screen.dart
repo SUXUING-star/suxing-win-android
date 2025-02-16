@@ -27,7 +27,7 @@ class _LoadingScreenState extends State<LoadingScreen> {
     return Consumer<DBStateProvider>(
       builder: (context, dbStateProvider, child) {
         // 如果需要重置或存在错误，不显示加载动画
-        if (dbStateProvider.needsReset || dbStateProvider.hasError) {
+        if (dbStateProvider.needsReset ) {
           return const SizedBox.shrink();
         }
 

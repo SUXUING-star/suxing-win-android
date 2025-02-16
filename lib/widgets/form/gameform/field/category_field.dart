@@ -19,7 +19,7 @@ class CategoryField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('游戏分类 - Game Categories'),
+        Text('游戏分类'),
         Wrap(
           children: categoryOptions.map((category) {
             return Padding(

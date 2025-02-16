@@ -203,7 +203,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
     if (_games.isEmpty) {
       return _buildEmptyState(context, '暂无游戏数据');
     }
-    double default_cardRatio =0.90;
+    double default_cardRatio =0.8;
     if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)){
       default_cardRatio = 0.65;
     }

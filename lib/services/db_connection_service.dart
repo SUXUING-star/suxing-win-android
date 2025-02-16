@@ -96,8 +96,10 @@ class DBConnectionService {
 
   void _handleConnectionFailure(String error) {
     _isConnected = false;
-    _dbStateProvider?.triggerReset(error);
     _stopHealthCheck();
+
+    // 直接触发状态更新，这将启动3秒自动重启计时器
+    _dbStateProvider?.triggerReset(error);
   }
 
   void _stopHealthCheck() {

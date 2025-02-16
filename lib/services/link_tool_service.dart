@@ -119,9 +119,22 @@ class LinkToolService {
 
   Future<void> addTool(Tool tool) async {
     try {
-      final toolDoc = tool.toJson();
-      toolDoc.remove('_id');
-      toolDoc['createTime'] = DateTime.now();
+      final toolDoc = {
+        '_id': ObjectId.fromHexString(tool.id),
+        'name': tool.name,
+        'description': tool.description,
+        'color': tool.color,
+        'icon': tool.icon,
+        'type': tool.type,
+        'downloads': tool.downloads.map((download) => {
+          'name': download.name,
+          'description': download.description,
+          'url': download.url,
+        }).toList(),
+        'createTime': DateTime.now(),
+        'isActive': tool.isActive,
+      };
+
       await _dbConnectionService.tools.insertOne(toolDoc);
       // 清除缓存
       await _cache.clearCache();
@@ -130,19 +143,22 @@ class LinkToolService {
       rethrow;
     }
   }
-
   Future<void> updateTool(Tool tool) async {
     try {
-      final toolDoc = tool.toJson();
-      toolDoc.remove('_id');
-
-      final originalToolDoc = await _dbConnectionService.tools.findOne(
-          where.eq('_id', ObjectId.fromHexString(tool.id))
-      );
-
-      if (originalToolDoc != null) {
-        toolDoc['createTime'] = originalToolDoc['createTime'];
-      }
+      final toolDoc = {
+        'name': tool.name,
+        'description': tool.description,
+        'color': tool.color,
+        'icon': tool.icon,
+        'type': tool.type,
+        'downloads': tool.downloads.map((download) => {
+          'name': download.name,
+          'description': download.description,
+          'url': download.url,
+        }).toList(),
+        'isActive': tool.isActive,
+        'updateTime': DateTime.now(),
+      };
 
       await _dbConnectionService.tools.updateOne(
         where.eq('_id', ObjectId.fromHexString(tool.id)),

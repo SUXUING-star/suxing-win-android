@@ -185,12 +185,12 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   }
 
   void _showAddToolDialog(BuildContext context) {
-    showDialog(
+    showDialog<Tool>( // 明确指定返回类型为 Tool
       context: context,
-      barrierDismissible: false, // 防止误触关闭
+      barrierDismissible: false,
       builder: (context) => ToolFormDialog(),
-    ).then((toolData) async {
-      if (toolData != null) {
+    ).then((tool) async { // 直接使用 Tool 对象
+      if (tool != null) {
         try {
           final loadingObserver = Navigator.of(context)
               .widget.observers
@@ -198,7 +198,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
               .first;
           loadingObserver.showLoading();
 
-          await _linkToolService.addTool(Tool.fromJson(toolData));
+          await _linkToolService.addTool(tool); // 直接使用 Tool 对象，不需要 fromJson
           Toaster.show(context, message: '添加工具成功');
           await _loadData();
         } catch (e) {

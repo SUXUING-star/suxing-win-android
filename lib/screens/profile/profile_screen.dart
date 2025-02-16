@@ -183,7 +183,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   List<ProfileMenuItem> _getMenuItems() {
-    return [
+    final menuItems = [
+      if (Provider.of<AuthProvider>(context, listen: false).isAdmin)
+        ProfileMenuItem(
+          icon: Icons.admin_panel_settings,
+          title: '管理员面板',
+          route: AppRoutes.adminDashboard,
+        ),
       ProfileMenuItem(
         icon: Icons.favorite,
         title: '我的收藏',
@@ -199,6 +205,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: '我的帖子',
         route: AppRoutes.myPosts,
       ),
+
       ProfileMenuItem(
         icon: Icons.share,
         title: '分享应用',
@@ -216,6 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: _showHelpAndFeedback,
       ),
     ];
+    return menuItems;
   }
 
   @override

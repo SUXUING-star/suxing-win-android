@@ -97,7 +97,7 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
       return _buildEmptyState('暂无热门游戏');
     }
 
-    double default_cardRatio =0.90; // 照抄GamesListScreen中的值
+    double default_cardRatio =0.8; // 照抄GamesListScreen中的值
     if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)){
       default_cardRatio = 0.65;
     }

@@ -13,6 +13,10 @@
 migrate_working_dir/
 # 配置文件
 lib/config/
+# 防护服务
+service/security/
+service/cert/
+service/limiter/
 
 #不需要这些
 android/app/

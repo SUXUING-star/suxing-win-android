@@ -17,7 +17,7 @@ class RatingField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('评分 - Rating: ${rating.toStringAsFixed(1)}'),
+        Text('评分: ${rating.toStringAsFixed(1)}'),
         Slider(
           value: rating,
           min: 0,

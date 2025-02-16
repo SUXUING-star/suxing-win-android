@@ -1,5 +1,31 @@
-// lib/models/tool.dart
 import 'package:mongo_dart/mongo_dart.dart';
+class ToolDownload {
+  final String name;
+  final String description;
+  final String url;
+
+  ToolDownload({
+    required this.name,
+    required this.description,
+    required this.url,
+  });
+
+  factory ToolDownload.fromJson(Map<String, dynamic> json) {
+    return ToolDownload(
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
+      url: json['url']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'description': description,
+      'url': url,
+    };
+  }
+}
 
 class Tool {
   final String id;
@@ -8,7 +34,7 @@ class Tool {
   final String? icon;
   final String color;
   final String? type;
-  final List<Map<String, dynamic>> downloads;
+  final List<ToolDownload> downloads;
   final DateTime createTime;
   final bool isActive;
 
@@ -29,6 +55,14 @@ class Tool {
         ? json['_id'].toHexString()
         : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
 
+    List<ToolDownload> parseDownloads(dynamic downloads) {
+      if (downloads == null) return [];
+      if (downloads is List) {
+        return downloads.map((item) => ToolDownload.fromJson(item)).toList();
+      }
+      return [];
+    }
+
     return Tool(
       id: toolId,
       name: json['name']?.toString() ?? '',
@@ -36,10 +70,11 @@ class Tool {
       icon: json['icon']?.toString(),
       color: json['color']?.toString() ?? '#19712C',
       type: json['type']?.toString(),
-      downloads: List<Map<String, dynamic>>.from(json['downloads'] ?? []),
+      downloads: parseDownloads(json['downloads']),
       createTime: json['createTime'] is DateTime
           ? json['createTime']
-          : DateTime.parse(json['createTime'] ?? DateTime.now().toIso8601String()),
+          : DateTime.parse(
+          json['createTime'] ?? DateTime.now().toIso8601String()),
       isActive: json['isActive'] ?? true,
     );
   }
@@ -52,7 +87,7 @@ class Tool {
       'icon': icon,
       'color': color,
       'type': type,
-      'downloads': downloads,
+      'downloads': downloads.map((d) => d.toJson()).toList(),
       'createTime': createTime.toIso8601String(),
       'isActive': isActive,
     };

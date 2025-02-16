@@ -39,7 +39,8 @@ class ToolsSection extends StatelessWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: Color(int.parse(tool.color.replaceFirst('#', '0xFF'))),
+                        color: Color(
+                            int.parse(tool.color.replaceFirst('#', '0xFF'))),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(Icons.build, color: Colors.white, size: 24),
@@ -71,16 +72,17 @@ class ToolsSection extends StatelessWidget {
                               Padding(
                                 padding: EdgeInsets.only(bottom: 8),
                                 child: ListTile(
-                                  contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                                  contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 8),
                                   title: Text(
-                                    download['name'] ?? '',
+                                    download.name,
                                     style: TextStyle(
                                       fontSize: 15,
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
                                   subtitle: Text(
-                                    download['description'] ?? '',
+                                    download.description,
                                     style: TextStyle(
                                       fontSize: 13,
                                       color: Colors.grey[600],
@@ -91,11 +93,7 @@ class ToolsSection extends StatelessWidget {
                                       Icons.download,
                                       color: Colors.blue,
                                     ),
-                                    onPressed: () {
-                                      if (download['url'] != null) {
-                                        onLaunchURL(download['url']);
-                                      }
-                                    },
+                                    onPressed: () => onLaunchURL(download.url),
                                   ),
                                 ),
                               ),

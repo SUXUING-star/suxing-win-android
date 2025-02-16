@@ -47,7 +47,7 @@ class DownloadLinksField extends StatelessWidget {
       onChanged(newLinks);
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已添加下载链接 - Download link added')),
+        SnackBar(content: Text('已添加下载链接')),
       );
     }
   }
@@ -61,22 +61,22 @@ class DownloadLinksField extends StatelessWidget {
         final descriptionController = TextEditingController();
 
         return AlertDialog(
-          title: Text('添加下载链接 - Add Download Link'),
+          title: Text('添加下载链接'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleController,
                 decoration: InputDecoration(
-                  labelText: '链接标题 - Link Title',
-                  hintText: '例如：官方下载、Steam - e.g., Official Download, Steam',
+                  labelText: '链接标题',
+                  hintText: '例如：网盘',
                 ),
               ),
               SizedBox(height: 8),
               TextField(
                 controller: urlController,
                 decoration: InputDecoration(
-                  labelText: '下载链接 - Download Link',
+                  labelText: '下载链接',
                   hintText: 'https://',
                 ),
               ),
@@ -84,7 +84,7 @@ class DownloadLinksField extends StatelessWidget {
               TextField(
                 controller: descriptionController,
                 decoration: InputDecoration(
-                  labelText: '描述 - Description',
+                  labelText: '描述',
                 ),
               ),
             ],
@@ -108,7 +108,7 @@ class DownloadLinksField extends StatelessWidget {
                   Navigator.pop(context);
                 }
               },
-              child: Text('添加 - Add'),
+              child: Text('添加'),
             ),
           ],
         );
@@ -124,18 +124,18 @@ class DownloadLinksField extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('下载链接 - Download Links'),
+            Text('下载链接'),
             Row(
               children: [
                 TextButton.icon(
                   onPressed: () => _quickAddFromClipboard(context),
                   icon: Icon(Icons.paste),
-                  label: Text('快速添加 - Quick Add'),
+                  label: Text('快速添加'),
                 ),
                 TextButton.icon(
                   onPressed: () => _addDownloadLink(context),
                   icon: Icon(Icons.add),
-                  label: Text('添加链接 - Add Link'),
+                  label: Text('添加链接'),
                 ),
               ],
             ),

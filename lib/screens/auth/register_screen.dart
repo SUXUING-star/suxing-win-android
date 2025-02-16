@@ -4,8 +4,6 @@ import 'dart:async';
 import '../../services/email/email_service.dart';
 import '../../services/user_service.dart';
 import '../../utils/loading_route_observer.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth/auth_provider.dart';
 import '../../widgets/common/toaster.dart';
 import '../../widgets/common/custom_app_bar.dart';
 

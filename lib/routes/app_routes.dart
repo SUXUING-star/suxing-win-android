@@ -24,6 +24,7 @@ import '../screens/profile/other/history_screen.dart';
 import '../screens/profile/other/my_posts_screen.dart';
 import '../screens/profile/other/favorites_screen.dart';
 import '../screens/profile/other/settings_screen.dart';
+import '../screens/admin/admin_dashboard.dart';
 
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)
@@ -50,6 +51,7 @@ class AppRoutes {
   static const String postDetail = '/forum/post';
   static const String createPost = '/forum/post/create';
   static const String editPost = '/forum/post/edit';
+  static const String adminDashboard = '/admin';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
@@ -150,6 +152,8 @@ class AppRoutes {
         }
         final Post post = settings.arguments as Post;
         return MaterialPageRoute(builder: (_) => EditPostScreen(post: post));
+      case '/admin':
+        return MaterialPageRoute(builder: (_) => AdminDashboard());
       default:
         return MaterialPageRoute(
           builder: (_) => const NotFoundScreen(),

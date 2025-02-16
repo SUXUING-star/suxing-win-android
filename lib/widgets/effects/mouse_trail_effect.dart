@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
+import 'dart:io' show Platform;
 
 class MouseTrailParticle {
   Offset position;
@@ -53,10 +54,14 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
   Timer? _cleanupTimer;
   late AnimationController _animationController;
   final math.Random _random = math.Random();
+  bool _isEnabled = true;
 
   @override
   void initState() {
     super.initState();
+    // 仅在非 Windows 平台启用效果
+    _isEnabled = !Platform.isWindows;
+
     _animationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 16),
@@ -69,6 +74,8 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
   }
 
   void _updateParticles() {
+    if (!_isEnabled) return;
+
     for (var particle in _particles) {
       particle.update();
     }
@@ -76,6 +83,8 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
   }
 
   void _cleanupParticles() {
+    if (!_isEnabled) return;
+
     _particles.removeWhere((particle) => particle.opacity < 0.01);
     if (_particles.isEmpty && _animationController.isAnimating) {
       _animationController.stop();
@@ -84,6 +93,8 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
   }
 
   void _addParticle(Offset position) {
+    if (!_isEnabled) return;
+
     if (_particles.length >= widget.maxParticles) {
       _particles.removeAt(0);
     }
@@ -115,13 +126,14 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
 
   @override
   Widget build(BuildContext context) {
+    if (!_isEnabled) {
+      return widget.child;
+    }
+
     return Stack(
       children: [
-        // 主内容始终在底层
         widget.child,
-
-        // 粒子效果层
-        Positioned.fill(
+        if (_isEnabled) Positioned.fill(
           child: MouseRegion(
             opaque: false,
             onHover: (event) {

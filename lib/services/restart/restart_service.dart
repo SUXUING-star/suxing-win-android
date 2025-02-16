@@ -40,13 +40,13 @@ class RestartService {
 
   Future<void> _cleanupServices() async {
     try {
-      // 1. 首先清理各缓存服务内的数据，但不关闭boxes
+      // 1. 清理缓存数据，但保留认证信息
       final cleanupTasks = [
             () async {
           try {
-            await UserService().clearAuthData();
+            await GameCacheService().clearCacheData();
           } catch (e) {
-            print('Clear auth data error: $e');
+            print('Clear game cache error: $e');
           }
         },
             () async {
@@ -91,7 +91,6 @@ class RestartService {
 
       // 2. 关闭所有服务
       await Future.wait([
-        UserService().closeBox(),
         DBConnectionService().close(),
       ]);
 

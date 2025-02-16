@@ -10,13 +10,11 @@ import './initialization/initialization_wrapper.dart';
 import 'providers/initialize/initialization_provider.dart';
 import 'providers/theme/theme_provider.dart';
 import 'providers/connection/db_state_provider.dart';
-import 'providers/device/device_provider.dart';
 import './utils/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
 import 'widgets/loading/loading_screen.dart';
 import 'widgets/effects/mouse_trail_effect.dart';
-import './widgets/dialogs/db_reset_dialog.dart';
 import './routes/app_routes.dart';
 import 'services/user_service.dart';
 import 'services/forum_service.dart';
@@ -108,10 +106,9 @@ class AppContent extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer2<ThemeProvider, DBStateProvider>(
       builder: (context, themeProvider, dbStateProvider, _) {
-        // 根据主题选择更柔和的粒子颜色
         final particleColor = themeProvider.themeMode == ThemeMode.dark
-            ? const Color(0xFFE0E0E0) // 浅灰色
-            : const Color(0xFFB3E5FC); // 非常浅的蓝色
+            ? const Color(0xFFE0E0E0)
+            : const Color(0xFFB3E5FC);
 
         final app = MaterialApp(
           theme: themeProvider.lightTheme,
@@ -127,14 +124,28 @@ class AppContent extends StatelessWidget {
                     child: Container(
                       color: Colors.black54,
                       child: Center(
-                        child: DBResetDialog(
-                          onReset: () {
-                            if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
-                              exit(0);
-                            } else {
-                              SystemNavigator.pop();
-                            }
-                          },
+                        child: Card(
+                          margin: const EdgeInsets.all(32),
+                          child: Padding(
+                            padding: const EdgeInsets.all(16),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const CircularProgressIndicator(),
+                                const SizedBox(height: 16),
+                                Text(
+                                  dbStateProvider.errorMessage ?? '连接已断开',
+                                  textAlign: TextAlign.center,
+                                  style: Theme.of(context).textTheme.titleMedium,
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  '正在准备重启应用...',
+                                  style: Theme.of(context).textTheme.bodyMedium,
+                                ),
+                              ],
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -160,7 +171,6 @@ class AppContent extends StatelessWidget {
           onGenerateRoute: AppRoutes.onGenerateRoute,
         );
 
-        // 在最外层包装 MouseTrailEffect
         return MouseTrailEffect(
           particleColor: particleColor,
           maxParticles: 20,

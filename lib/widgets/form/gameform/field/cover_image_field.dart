@@ -1,8 +1,10 @@
+// lib/widgets/form/gameform/field/cover_image_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../utils/file_upload.dart';
-import '../../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
+import '../../../../utils/device/device_utils.dart';
+import 'dialog/image_url_dialog.dart';
 
 class CoverImageField extends StatelessWidget {
   final String? coverImageUrl;
@@ -18,7 +20,7 @@ class CoverImageField extends StatelessWidget {
     required this.onLoadingChanged,
   }) : super(key: key);
 
-  Future<void> _pickCoverImage() async {
+  Future<void> _pickCoverImage(BuildContext context) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
@@ -39,16 +41,32 @@ class CoverImageField extends StatelessWidget {
         );
         onChanged(coverUrl);
       } catch (e) {
-        // Handle error
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('上传图片失败：$e')),
+          );
+        }
       } finally {
         onLoadingChanged(false);
       }
     }
   }
 
+  Future<void> _showUrlDialog(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => ImageUrlDialog(
+        initialUrl: coverImageUrl?.startsWith('http') == true ? coverImageUrl : null,
+      ),
+    );
+
+    if (result != null) {
+      onChanged(result);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // 根据设备类型调整间距
     final double verticalSpacing = DeviceUtils.isAndroidLandscape(context) ? 4.0 : 8.0;
     final double fontSize = DeviceUtils.isAndroidLandscape(context) ? 14.0 : 16.0;
 
@@ -56,52 +74,50 @@ class CoverImageField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '封面图片 - Cover Image',
+          '封面图片',
           style: TextStyle(fontSize: fontSize),
         ),
         SizedBox(height: verticalSpacing),
 
-        TextFormField(
-          initialValue: coverImageUrl,
-          decoration: InputDecoration(
-            labelText: '封面图片链接 (HTTPS) - Cover Image Link (HTTPS)',
-            border: OutlineInputBorder(),
-          ),
-          onChanged: onChanged,
-          validator: (value) {
-            if ((value == null || value.isEmpty) && coverImageUrl == null) {
-              return '请选择或输入封面图片 - Please select or enter a cover image';
-            }
-            return null;
-          },
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton.icon(
+              onPressed: () => _pickCoverImage(context),
+              icon: Icon(Icons.upload_file),
+              label: Text('上传本地图片'),
+            ),
+            ElevatedButton.icon(
+              onPressed: () => _showUrlDialog(context),
+              icon: Icon(Icons.link),
+              label: Text('输入图片链接'),
+            ),
+          ],
         ),
         SizedBox(height: verticalSpacing),
 
         AspectRatio(
           aspectRatio: 16 / 9,
-          child: GestureDetector(
-            onTap: _pickCoverImage,
-            child: Container(
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: _buildCoverPreview(),
+          child: Container(
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey),
+              borderRadius: BorderRadius.circular(8),
             ),
+            child: _buildCoverPreview(context),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCoverPreview() {
-    if (coverImageUrl == null) {
+  Widget _buildCoverPreview(BuildContext context) {
+    if (coverImageUrl == null || coverImageUrl!.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate, size: 48),
-            Text('点击选择本地图片 - Tap to select local image'),
+            Icon(Icons.image, size: 48),
+            Text('请选择或输入封面图片'),
           ],
         ),
       );
@@ -114,12 +130,15 @@ class CoverImageField extends StatelessWidget {
         coverImageUrl!,
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          return Center(child: Text('图片加载失败 - Image failed to load'));
+          return Center(child: Text('图片加载失败'));
         },
       )
-          : Image.file(
-        File(coverImageUrl!),
+          : Image.network(
+        'uploads/games/covers/${coverImageUrl!.split('/').last}',
         fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Center(child: Text('图片加载失败'));
+        },
       ),
     );
   }

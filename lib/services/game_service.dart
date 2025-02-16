@@ -175,7 +175,13 @@ class GameService {
       final gameDoc = game.toJson();
       // 移除 _id，因为它不应该被更新
       gameDoc.remove('_id');
+
+      // 确保日期字段保持 DateTime 类型
+      gameDoc['createTime'] = game.createTime;
       gameDoc['updateTime'] = DateTime.now();
+      if (game.lastViewedAt != null) {
+        gameDoc['lastViewedAt'] = game.lastViewedAt;
+      }
 
       final objectId = ObjectId.fromHexString(game.id);
       final result = await _dbConnectionService.games.updateOne(

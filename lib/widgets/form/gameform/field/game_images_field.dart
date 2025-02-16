@@ -52,14 +52,14 @@ class GameImagesField extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text(
-              '游戏截图 - Game Screenshots',
+              '游戏截图',
               style: TextStyle(fontSize: fontSize),
             ),
             TextButton.icon(
               onPressed: _pickGameImages,
               icon: Icon(Icons.add, size: iconSize),
               label: Text(
-                '添加截图 - Add Screenshot',
+                '添加截图',
                 style: TextStyle(fontSize: fontSize),
               ),
             ),
