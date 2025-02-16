@@ -74,6 +74,7 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopNavigationBar(
+
         onLogoTap: () {
           if (_currentIndex != 0) {
             setState(() => _currentIndex = 0);

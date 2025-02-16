@@ -10,6 +10,7 @@ import '../../../services/history/game_history_service.dart';
 import '../../../services/history/post_history_service.dart';
 import '../../../routes/app_routes.dart';
 import '../../../utils/loading_route_observer.dart';
+import '../../../widgets/common/custom_app_bar.dart';
 
 class HistoryScreen extends StatefulWidget {
   @override
@@ -34,7 +35,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final loadingObserver = Navigator.of(context)
-          .widget.observers
+          .widget
+          .observers
           .whereType<LoadingRouteObserver>()
           .first;
 
@@ -53,23 +55,19 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
       // 注意这里改用 gameId 和 postId
       final gameIds = gameHistory.map((h) => h.gameId).toSet().toList();
-      final games = await Future.wait(
-          gameIds.map((id) => _gameService.getGameById(id))
-      );
+      final games =
+          await Future.wait(gameIds.map((id) => _gameService.getGameById(id)));
 
       final postIds = postHistory.map((h) => h.postId).toSet().toList();
-      final posts = await Future.wait(
-          postIds.map((id) => _forumService.getPost(id))
-      );
+      final posts =
+          await Future.wait(postIds.map((id) => _forumService.getPost(id)));
 
       _gameCache = {
-        for (var game in games.where((g) => g != null))
-          game!.id: game
+        for (var game in games.where((g) => g != null)) game!.id: game
       };
 
       _postCache = {
-        for (var post in posts.where((p) => p != null))
-          post!.id: post
+        for (var post in posts.where((p) => p != null)) post!.id: post
       };
 
       setState(() {
@@ -88,7 +86,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
   Future<void> _refreshHistory() async {
     final loadingObserver = Navigator.of(context)
-        .widget.observers
+        .widget
+        .observers
         .whereType<LoadingRouteObserver>()
         .first;
 
@@ -103,7 +102,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('浏览历史')),
+      appBar: CustomAppBar(title: '浏览历史'),
       body: RefreshIndicator(
         onRefresh: _refreshHistory,
         child: _buildContent(),

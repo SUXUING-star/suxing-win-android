@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../../models/game.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../common/animated_card_container.dart';
-import 'dart:io';
+import '../../../utils/device/device_utils.dart';
 
 class GameCard extends StatelessWidget {
   final Game game;
@@ -12,7 +12,7 @@ class GameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isAndroid = Platform.isAndroid;
+    final isAndroidPortrait = DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
     return AnimatedCardContainer(
       onTap: () {
         Navigator.pushNamed(context, '/game/detail', arguments: game);
@@ -63,7 +63,7 @@ class GameCard extends StatelessWidget {
                     game.title,
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
-                      fontSize: isAndroid? 14 :16,
+                      fontSize: isAndroidPortrait? 14 :16,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -73,7 +73,7 @@ class GameCard extends StatelessWidget {
                     game.summary,
                     style: TextStyle(
                       color: Colors.grey[600],
-                      fontSize: isAndroid? 12:14,
+                      fontSize: isAndroidPortrait? 12:14,
                       height: 1.2,
                     ),
                     maxLines: 2,
@@ -84,7 +84,7 @@ class GameCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.thumb_up,
-                        size: isAndroid? 14 :16,
+                        size: isAndroidPortrait? 14 :16,
                         color: Colors.redAccent,
                       ),
                       SizedBox(width: 4),

@@ -3,8 +3,9 @@ import '../../../models/game.dart';
 import '../../../services/game_service.dart';
 import '../../../widgets/game/card/game_card.dart';
 import '../../../utils/loading_route_observer.dart';
+import '../../../utils/device/device_utils.dart';
 import '../../../widgets/common/custom_app_bar.dart';
-import 'dart:io'; // 保持一致性
+
 
 class LatestGamesScreen extends StatefulWidget {
   @override
@@ -97,9 +98,9 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
       return _buildEmptyState('暂无最新游戏');
     }
 
-    double default_cardRatio = 0.65;  // 照抄GamesListScreen中的值
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {  // 照抄GamesListScreen中的判断
-      default_cardRatio = 0.90;
+    double default_cardRatio =0.90; // 照抄GamesListScreen中的值
+    if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)){
+      default_cardRatio = 0.65;
     }
 
     return GridView.builder(

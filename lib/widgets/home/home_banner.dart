@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
+import 'package:suxingchahui/utils/device/device_utils.dart';
+
 class HomeBanner extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    double bannerHeight = 140.0;
-
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      bannerHeight = 200.0;
+    double bannerHeight = 200.0;
+    if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)) {
+      bannerHeight = 140.0;
     }
 
     return Container(

@@ -10,6 +10,7 @@ import './initialization/initialization_wrapper.dart';
 import 'providers/initialize/initialization_provider.dart';
 import 'providers/theme/theme_provider.dart';
 import 'providers/connection/db_state_provider.dart';
+import 'providers/device/device_provider.dart';
 import './utils/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
@@ -31,6 +32,7 @@ class App extends StatelessWidget {
       child: ChangeNotifierProvider(
         create: (_) => InitializationProvider(),
         child: InitialScreen(),
+
       ),
     );
   }

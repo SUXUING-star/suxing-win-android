@@ -248,16 +248,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return _buildError(context, _error!);
     }
 
-    if (_user == null && !authProvider.isLoggedIn) {
-      return _buildLoginPrompt(context);
+    if (_user == null) {
+      if (!authProvider.isLoggedIn) {
+        return _buildLoginPrompt(context);
+      }
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 16),
+            Text('加载用户信息...'),
+          ],
+        ),
+      );
     }
+
+    // 创建一个本地final变量
+    final user = _user!;  // 使用感叹号断言_user不为空
 
     return SingleChildScrollView(
       child: Column(
         children: [
           ProfileHeader(
-            user: _user!,
-            onEditProfile: () => _showEditProfileDialog(_user!),
+            user: user,  // 使用本地变量
+            onEditProfile: () => _showEditProfileDialog(user),
             onAvatarTap: _pickAndUploadAvatar,
           ),
           Divider(),
@@ -269,7 +284,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
     );
   }
-
   Widget _buildError(BuildContext context, String message) {
     return Center(
       child: Column(

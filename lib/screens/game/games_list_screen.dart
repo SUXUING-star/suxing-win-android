@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import '../../models/game.dart';
 import '../../services/game_service.dart';
 import '../../utils/admin_check.dart';
+import '../../utils/device/device_utils.dart';
 import '../../widgets/game/card/game_card.dart';
 import '../../utils/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
@@ -203,9 +203,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
     if (_games.isEmpty) {
       return _buildEmptyState(context, '暂无游戏数据');
     }
-    double default_cardRatio = 0.65;
-    if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
-      default_cardRatio = 0.90;
+    double default_cardRatio =0.90;
+    if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)){
+      default_cardRatio = 0.65;
     }
 
 

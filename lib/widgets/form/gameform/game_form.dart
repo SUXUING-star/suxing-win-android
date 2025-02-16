@@ -3,11 +3,11 @@
 import 'package:flutter/material.dart';
 import '../../../models/game.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'cover_image_field.dart';
-import 'download_links_field.dart';
-import 'game_images_field.dart';
-import 'category_field.dart';
-import 'rating_field.dart';
+import 'field/cover_image_field.dart';
+import 'field/download_links_field.dart';
+import 'field/game_images_field.dart';
+import 'field/category_field.dart';
+import 'field/rating_field.dart';
 
 class GameForm extends StatefulWidget {
   final Game? game;

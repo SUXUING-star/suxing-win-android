@@ -1,9 +1,8 @@
-// widgets/form/gameform/cover_image_field.dart
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../utils/file_upload.dart';
+import '../../../../utils/file_upload.dart';
+import '../../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
 
 class CoverImageField extends StatelessWidget {
   final String? coverImageUrl;
@@ -49,11 +48,18 @@ class CoverImageField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 根据设备类型调整间距
+    final double verticalSpacing = DeviceUtils.isAndroidLandscape(context) ? 4.0 : 8.0;
+    final double fontSize = DeviceUtils.isAndroidLandscape(context) ? 14.0 : 16.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('封面图片 - Cover Image'),
-        SizedBox(height: 8),
+        Text(
+          '封面图片 - Cover Image',
+          style: TextStyle(fontSize: fontSize),
+        ),
+        SizedBox(height: verticalSpacing),
 
         TextFormField(
           initialValue: coverImageUrl,
@@ -69,7 +75,7 @@ class CoverImageField extends StatelessWidget {
             return null;
           },
         ),
-        SizedBox(height: 8),
+        SizedBox(height: verticalSpacing),
 
         AspectRatio(
           aspectRatio: 16 / 9,

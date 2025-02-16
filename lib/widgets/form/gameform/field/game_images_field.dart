@@ -1,9 +1,8 @@
-// widgets/form/gameform/game_images_field.dart
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../utils/file_upload.dart';
+import '../../../../utils/file_upload.dart';
+import '../../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
 
 class GameImagesField extends StatelessWidget {
   final List<String> gameImages;
@@ -40,23 +39,35 @@ class GameImagesField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isLandscape = DeviceUtils.isLandscape(context);
+    final double imageWidth = isLandscape ? 120 : 160;
+    final double imageHeight = isLandscape ? 90 : 120;
+    final double fontSize = isLandscape ? 14 : 16;
+    final double iconSize = isLandscape ? 14 : 16;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('游戏截图 - Game Screenshots'),
+            Text(
+              '游戏截图 - Game Screenshots',
+              style: TextStyle(fontSize: fontSize),
+            ),
             TextButton.icon(
               onPressed: _pickGameImages,
-              icon: Icon(Icons.add),
-              label: Text('添加截图 - Add Screenshot'),
+              icon: Icon(Icons.add, size: iconSize),
+              label: Text(
+                '添加截图 - Add Screenshot',
+                style: TextStyle(fontSize: fontSize),
+              ),
             ),
           ],
         ),
         if (gameImages.isNotEmpty)
           Container(
-            height: 120,
+            height: imageHeight,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: gameImages.length,
@@ -67,8 +78,8 @@ class GameImagesField extends StatelessWidget {
                       padding: EdgeInsets.only(right: 8),
                       child: Image.network(
                         gameImages[index],
-                        width: 160,
-                        height: 120,
+                        width: imageWidth,
+                        height: imageHeight,
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -89,7 +100,7 @@ class GameImagesField extends StatelessWidget {
                           ),
                           child: Icon(
                             Icons.close,
-                            size: 16,
+                            size: iconSize,
                             color: Colors.white,
                           ),
                         ),

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
+import '../utils/device/device_utils.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -14,8 +14,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 检查是否是安卓横屏模式
-    final bool isAndroidLandscape = Platform.isAndroid &&
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final bool isAndroidLandscape = DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
 
     // 根据模式调整内边距
     final verticalPadding = isAndroidLandscape ? 4.0 : 8.0;

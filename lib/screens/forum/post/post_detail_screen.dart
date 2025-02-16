@@ -9,6 +9,7 @@ import '../../../routes/app_routes.dart';
 import '../../../widgets/forum/post/post_content.dart';
 import '../../../widgets/forum/post/reply_list.dart';
 import '../../../utils/font_config.dart';
+import '../../../widgets/common/custom_app_bar.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -84,8 +85,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('帖子详情'),
+      appBar: CustomAppBar(
+        title: '帖子详情',
         actions: [
           if (_post != null) _buildMoreMenu(),
         ],

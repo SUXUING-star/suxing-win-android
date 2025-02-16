@@ -1,9 +1,9 @@
-// lib/widgets/game/button/edit_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/game.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../screens/game/edit_game_screen.dart';
+import '../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
 
 class EditButton extends StatelessWidget {
   final Game game;
@@ -23,10 +23,13 @@ class EditButton extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
+        final double leftPadding = DeviceUtils.isAndroidLandscape(context) ? 4.0 : (DeviceUtils.isAndroid ? 8.0 : 16.0); // 根据不同情况设置padding
+        final double iconSize = DeviceUtils.getIconSize(context);
+
         return Align(
           alignment: Alignment.centerLeft,
           child: Padding(
-            padding: const EdgeInsets.only(left: 16.0),
+            padding: EdgeInsets.only(left: leftPadding),
             child: FloatingActionButton(
               heroTag: 'editButton',
               onPressed: () {
@@ -37,8 +40,8 @@ class EditButton extends StatelessWidget {
                   ),
                 ).then((_) => onEditComplete());
               },
-              child: const Icon(Icons.edit),
-              backgroundColor: Theme.of(context).primaryColor,
+              child: Icon(Icons.edit, size: iconSize,),
+              backgroundColor: Colors.white,
             ),
           ),
         );

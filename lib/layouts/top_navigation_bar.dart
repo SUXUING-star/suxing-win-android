@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
+import '../utils/device/device_utils.dart';
 import '../screens/search_screen.dart';
 import '../services/user_service.dart';
 import '../providers/auth/auth_provider.dart';
@@ -21,7 +21,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize {
-    return Platform.isAndroid &&
+    return DeviceUtils.isAndroid &&
         WidgetsBinding.instance.window.physicalSize.width >
             WidgetsBinding.instance.window.physicalSize.height
         ? Size.fromHeight(kToolbarHeight * 0.8)
@@ -30,8 +30,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isAndroidLandscape = Platform.isAndroid &&
-        MediaQuery.of(context).orientation == Orientation.landscape;
+    final bool isAndroidLandscape = DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
 
     final double verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
     final double iconSize = isAndroidLandscape ? 18.0 : 20.0;
