@@ -6,6 +6,7 @@ import '../../utils/device/device_utils.dart';
 import '../../widgets/game/card/game_card.dart';
 import '../../utils/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
+import '../../utils/device/device_utils.dart';
 
 class GamesListScreen extends StatefulWidget {
   @override
@@ -203,27 +204,22 @@ class _GamesListScreenState extends State<GamesListScreen> {
     if (_games.isEmpty) {
       return _buildEmptyState(context, '暂无游戏数据');
     }
-    double default_cardRatio =0.8;
-    if (DeviceUtils.isAndroid && DeviceUtils.isPortrait(context)){
-      default_cardRatio = 0.65;
-    }
-
 
     return GridView.builder(
-      controller: _scrollController,
+      controller: _scrollController, // Only needed in GamesListScreen
       padding: EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
-        childAspectRatio: default_cardRatio ,  // 从 0.8 改为 0.75
+        childAspectRatio: DeviceUtils.calculateCardRatio(context),
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
-      itemCount: _games.length + (_isLoading ? 1 : 0),
+      itemCount: _games.length + (_isLoading ? 1 : 0), // The +1 part only for GamesListScreen
       itemBuilder: (context, index) {
         if (index < _games.length) {
           return GameCard(game: _games[index]);
         } else {
-          return Center(child: CircularProgressIndicator());
+          return Center(child: CircularProgressIndicator()); // Only for GamesListScreen
         }
       },
     );
