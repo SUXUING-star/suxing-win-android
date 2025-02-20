@@ -13,11 +13,12 @@
 migrate_working_dir/
 # 配置文件
 lib/config/
+assets/encrypted_config.json
 # 防护服务
 lib/service/security/
 lib/service/cert/
 lib/service/limiter/
-#加密文件
+# 加密文件
 lib/utils/decrypt/
 tools/
 
