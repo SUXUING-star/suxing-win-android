@@ -1,6 +1,6 @@
 // lib/services/message_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../models/message.dart';
+import '../models/message/message.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 
@@ -38,7 +38,7 @@ class MessageService {
             .cast<Message>()
             .toList();
 
-        print('Retrieved ${messages.length} messages for user ${currentUser.id}');
+        //print('Retrieved ${messages.length} messages for user ${currentUser.id}');
         yield messages;
         await Future.delayed(const Duration(seconds: 1));
       }

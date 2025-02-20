@@ -1,8 +1,8 @@
 // lib/screens/message_screen.dart
 import 'package:flutter/material.dart';
 import '../services/message_service.dart';
-import '../models/message.dart';
-import '../models/message_type.dart';
+import '../models/message/message.dart';
+import '../models/message/message_type.dart';
 import 'game/detail/game_detail_screen.dart';
 import 'forum/post/post_detail_screen.dart';
 

@@ -1,7 +1,7 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/user_service.dart';
-import '../../utils/loading_route_observer.dart';
+import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster.dart';
 import '../../widgets/common/custom_app_bar.dart';
 

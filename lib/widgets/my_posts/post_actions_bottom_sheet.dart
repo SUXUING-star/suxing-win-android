@@ -1,7 +1,7 @@
 // lib/widgets/my_posts/post_actions_bottom_sheet.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../models/post.dart';
+import '../../models/post/post.dart';
 import '../../routes/app_routes.dart';
 import '../../blocs/my_posts/my_posts_bloc.dart';
 import '../../blocs/my_posts/my_posts_event.dart';

@@ -5,10 +5,10 @@ import 'package:path/path.dart' as path;
 import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import 'package:mime_type/mime_type.dart';
-import '../config/app_config.dart';
+import '../../config/app_config.dart';
 
 class FileUpload {
-  static final String baseUrl = 'http://${AppConfig.ipaddress}:${AppConfig.fileupload_port}';
+  static final String baseUrl = 'http://${AppConfig.ipAddress}:${AppConfig.fileUploadPort}';
 
   // 上传图片（替换原来的 uploadImage 方法）
   static Future<String> uploadImage(

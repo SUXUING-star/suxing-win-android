@@ -1,7 +1,7 @@
 // lib/screens/admin/widgets/link_management.dart
 import 'package:flutter/material.dart';
 import '../../../services/link_tool_service.dart';
-import '../../../models/link.dart';
+import '../../../models/linkstools/link.dart';
 import '../../../widgets/form/linkform/link_form_dialog.dart';
 
 class LinkManagement extends StatefulWidget {

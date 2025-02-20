@@ -1,7 +1,7 @@
 // widgets/form/gameform/game_form.dart
 
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'field/cover_image_field.dart';
 import 'field/download_links_field.dart';
@@ -69,6 +69,7 @@ class _GameFormState extends State<GameForm> {
     if (_formKey.currentState!.validate()) {
       final game = Game(
         id: widget.game?.id ?? mongo.ObjectId().toHexString(),
+        authorId: widget.game?.authorId ?? '',
         title: _titleController.text,
         summary: _summaryController.text,
         description: _descriptionController.text,

@@ -1,6 +1,6 @@
 // lib/services/game_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../models/game.dart';
+import '../models/game/game.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 import './history/game_history_service.dart';
@@ -162,6 +162,13 @@ class GameService {
       gameDoc['updateTime'] = DateTime.now();
       gameDoc['viewCount'] = 0;
       gameDoc['likeCount'] = 0;
+
+      final userId = await _userService.currentUserId;
+      if (userId == null) {
+        throw Exception('User not logged in');
+      }
+      gameDoc['authorId'] = ObjectId.fromHexString(userId); // 转换为ObjectId
+
       await _dbConnectionService.games.insertOne(gameDoc);
       await _cacheService.clearCache();
     } catch (e) {

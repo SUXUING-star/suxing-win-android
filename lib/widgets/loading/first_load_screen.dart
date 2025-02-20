@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'dart:io'; // For Platform.isAndroid
 import '../logo/app_logo.dart';
-import '../../utils/font_config.dart';
+import '../../utils/font/font_config.dart';
 
 class FirstLoadScreen extends StatefulWidget {
   final String? message;

@@ -18,6 +18,10 @@ class BatchViewCounterService {
   Timer? _flushTimer;
 
   BatchViewCounterService._internal() {
+    _startPeriodicFlush();
+  }
+
+  void _startPeriodicFlush() {
     _flushTimer = Timer.periodic(_flushInterval, (_) => _flushAll());
   }
 
@@ -41,19 +45,21 @@ class BatchViewCounterService {
     if (_gameViewCounts.isEmpty) return;
 
     try {
-      final Map<String, int> countsToUpdate = Map.from(_gameViewCounts);
-      _gameViewCounts.clear();
+      await _dbConnectionService.runWithErrorHandling(() async {
+        final Map<String, int> countsToUpdate = Map.from(_gameViewCounts);
+        _gameViewCounts.clear();
 
-      final List<Map<String, Object>> bulkUpdates = countsToUpdate.entries.map((entry) => {
-        'updateOne': {
-          'filter': {'_id': ObjectId.fromHexString(entry.key)} as Map<String, Object>,
-          'update': {r'$inc': {'viewCount': entry.value}} as Map<String, Object>
-        } as Map<String, Object>
-      }).toList();
+        final List<Map<String, Object>> bulkUpdates = countsToUpdate.entries.map((entry) => {
+          'updateOne': {
+            'filter': {'_id': ObjectId.fromHexString(entry.key)} as Map<String, Object>,
+            'update': {r'$inc': {'viewCount': entry.value}} as Map<String, Object>
+          } as Map<String, Object>
+        }).toList();
 
-      if (bulkUpdates.isNotEmpty) {
-        await _dbConnectionService.games.bulkWrite(bulkUpdates);
-      }
+        if (bulkUpdates.isNotEmpty) {
+          await _dbConnectionService.games.bulkWrite(bulkUpdates);
+        }
+      });
     } catch (e) {
       print('Flush game views error: $e');
       _gameViewCounts.addAll(_gameViewCounts);
@@ -64,19 +70,21 @@ class BatchViewCounterService {
     if (_postViewCounts.isEmpty) return;
 
     try {
-      final Map<String, int> countsToUpdate = Map.from(_postViewCounts);
-      _postViewCounts.clear();
+      await _dbConnectionService.runWithErrorHandling(() async {
+        final Map<String, int> countsToUpdate = Map.from(_postViewCounts);
+        _postViewCounts.clear();
 
-      final List<Map<String, Object>> bulkUpdates = countsToUpdate.entries.map((entry) => {
-        'updateOne': {
-          'filter': {'_id': ObjectId.fromHexString(entry.key)} as Map<String, Object>,
-          'update': {r'$inc': {'viewCount': entry.value}} as Map<String, Object>
-        } as Map<String, Object>
-      }).toList();
+        final List<Map<String, Object>> bulkUpdates = countsToUpdate.entries.map((entry) => {
+          'updateOne': {
+            'filter': {'_id': ObjectId.fromHexString(entry.key)} as Map<String, Object>,
+            'update': {r'$inc': {'viewCount': entry.value}} as Map<String, Object>
+          } as Map<String, Object>
+        }).toList();
 
-      if (bulkUpdates.isNotEmpty) {
-        await _dbConnectionService.posts.bulkWrite(bulkUpdates);
-      }
+        if (bulkUpdates.isNotEmpty) {
+          await _dbConnectionService.posts.bulkWrite(bulkUpdates);
+        }
+      });
     } catch (e) {
       print('Flush post views error: $e');
       _postViewCounts.addAll(_postViewCounts);

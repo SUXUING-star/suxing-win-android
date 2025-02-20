@@ -14,9 +14,12 @@ migrate_working_dir/
 # 配置文件
 lib/config/
 # 防护服务
-service/security/
-service/cert/
-service/limiter/
+lib/service/security/
+lib/service/cert/
+lib/service/limiter/
+#加密文件
+lib/utils/decrypt/
+tools/
 
 #不需要这些
 android/app/
@@ -30,6 +33,7 @@ test/
 macos/
 linux/
 ios/
+web/
 build/
 .idea/
 .dart_tool/

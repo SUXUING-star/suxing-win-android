@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../common/toaster.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 
 class GameDownloadLinks extends StatelessWidget {
   final List<DownloadLink> downloadLinks;

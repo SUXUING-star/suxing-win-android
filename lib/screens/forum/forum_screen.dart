@@ -1,12 +1,12 @@
 // lib/screens/forum/forum_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../models/post.dart';
+import '../../models/post/post.dart';
 import '../../services/forum_service.dart';
 import '../../services/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
-import '../../utils/loading_route_observer.dart';
+import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../widgets/forum/post_card.dart'; // 引入 PostCard 组件
 import '../../widgets/forum/tag_filter.dart'; // 引入 TagFilter 组件

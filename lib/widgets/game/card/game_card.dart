@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import '../../common/animated_card_container.dart';
 import '../../../utils/device/device_utils.dart';

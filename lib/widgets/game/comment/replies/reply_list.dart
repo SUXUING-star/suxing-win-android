@@ -1,6 +1,6 @@
 // lib/widgets/game/comment/reply_list.dart
 import 'package:flutter/material.dart';
-import '../../../../models/comment.dart';
+import '../../../../models/comment/comment.dart';
 import 'reply_item.dart';
 
 class ReplyList extends StatelessWidget {

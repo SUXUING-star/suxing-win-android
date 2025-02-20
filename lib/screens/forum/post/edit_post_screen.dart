@@ -1,6 +1,6 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
-import '../../../models/post.dart';
+import '../../../models/post/post.dart';
 import '../../../services/forum_service.dart';
 import '../../../widgets/common/toaster.dart';
 

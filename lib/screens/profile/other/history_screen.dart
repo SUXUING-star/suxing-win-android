@@ -1,15 +1,15 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
-import '../../../models/post.dart';
-import '../../../models/game_history.dart';
-import '../../../models/post_history.dart';
+import '../../../models/game/game.dart';
+import '../../../models/post/post.dart';
+import '../../../models/game/game_history.dart';
+import '../../../models/post/post_history.dart';
 import '../../../services/game_service.dart';
 import '../../../services/forum_service.dart';
 import '../../../services/history/game_history_service.dart';
 import '../../../services/history/post_history_service.dart';
 import '../../../routes/app_routes.dart';
-import '../../../utils/loading_route_observer.dart';
+import '../../../utils/load/loading_route_observer.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 
 class HistoryScreen extends StatefulWidget {

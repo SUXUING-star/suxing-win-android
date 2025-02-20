@@ -1,7 +1,7 @@
 // lib/services/comment_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../models/comment.dart';
-import '../models/message.dart';
+import '../models/comment/comment.dart';
+import '../models/message/message.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 import './security/input_sanitizer_service.dart';
@@ -23,50 +23,45 @@ class CommentService {
   // 获取游戏的评论列表
   Stream<List<Comment>> getGameComments(String gameId) async* {
     try {
-      while (true) {
-        // 尝试从缓存获取
-        final cachedComments =
-            await _cacheService.getCachedGameComments(gameId);
-        if (cachedComments != null) {
-          yield cachedComments;
-        } else {
-          // 从数据库获取所有评论
-          final allComments = await _dbConnectionService.comments
-              .find(where.eq('gameId', ObjectId.fromHexString(gameId)))
-              .map((doc) =>
-                  Comment.fromJson(_dbConnectionService.convertDocument(doc)))
-              .toList();
-
-          // 将评论组织成树形结构
-          final Map<String, Comment> commentMap = {};
-          final List<Comment> topLevelComments = [];
-
-          // 建立评论 ID 到评论对象的映射
-          for (var comment in allComments) {
-            commentMap[comment.id] = comment;
-          }
-
-          // 组织评论层级
-          for (var comment in allComments) {
-            if (comment.parentId == null) {
-              topLevelComments.add(comment);
-            } else {
-              final parentComment = commentMap[comment.parentId];
-              if (parentComment != null) {
-                parentComment.replies.add(comment);
-              }
-            }
-          }
-
-          // 按创建时间排序
-          topLevelComments.sort((a, b) => b.createTime.compareTo(a.createTime));
-
-          // 更新缓存
-          await _cacheService.cacheGameComments(gameId, topLevelComments);
-          yield topLevelComments;
-        }
-        await Future.delayed(const Duration(seconds: 1));
+      // 尝试从缓存获取
+      final cachedComments = await _cacheService.getCachedGameComments(gameId);
+      if (cachedComments != null) {
+        yield cachedComments;
+        return; // 如果有缓存直接返回
       }
+
+      // 从数据库获取评论
+      final allComments = await _dbConnectionService.comments
+          .find(where.eq('gameId', ObjectId.fromHexString(gameId)))
+          .map((doc) => Comment.fromJson(_dbConnectionService.convertDocument(doc)))
+          .toList();
+
+      // 组织评论树形结构（之前的逻辑保持不变）
+      final Map<String, Comment> commentMap = {};
+      final List<Comment> topLevelComments = [];
+
+      for (var comment in allComments) {
+        commentMap[comment.id] = comment;
+      }
+
+      for (var comment in allComments) {
+        if (comment.parentId == null) {
+          topLevelComments.add(comment);
+        } else {
+          final parentComment = commentMap[comment.parentId];
+          if (parentComment != null) {
+            parentComment.replies.add(comment);
+          }
+        }
+      }
+
+      // 按创建时间排序
+      topLevelComments.sort((a, b) => b.createTime.compareTo(a.createTime));
+
+      // 更新缓存
+      await _cacheService.cacheGameComments(gameId, topLevelComments);
+
+      yield topLevelComments;
     } catch (e) {
       print('Get comments error: $e');
       yield [];

@@ -6,24 +6,22 @@ import 'dart:math';
 import 'package:mongo_dart/mongo_dart.dart' hide Box;
 import 'package:hive_flutter/hive_flutter.dart';
 
-import '../models/user.dart';
+import '../models/user/user.dart';
+import '../models/user/user_ban.dart';
 import 'db_connection_service.dart';
-import 'cache/avatar_cache_service.dart';
+import 'cache/info_cache_service.dart';
 import 'cache/history_cache_service.dart';
+import 'ban/user_ban_service.dart';
 
 class UserService {
   static final UserService _instance = UserService._internal();
   factory UserService() => _instance;
 
   final DBConnectionService _dbConnectionService = DBConnectionService();
-  final AvatarCacheService _avatarCache = AvatarCacheService();
-  final HistoryCacheService _cacheService = HistoryCacheService();
+  final InfoCacheService _infoCache = InfoCacheService();
+  final HistoryCacheService _historyCache = HistoryCacheService();
+  final UserBanService _banService = UserBanService();
   Box<String>? _authBox;
-
-  // 添加内存缓存
-  final Map<String, Map<String, dynamic>> _userInfoCache = {};
-  final Duration _cacheExpiration = Duration(minutes: 5);
-  final Map<String, DateTime> _cacheTimestamp = {};
 
   UserService._internal();
 
@@ -92,6 +90,7 @@ class UserService {
     }
   }
 
+  // 在登录时检查封禁状态
   Future<User> signIn(String email, String password) async {
     try {
       final userDoc = await _dbConnectionService.users.findOne(where.eq('email', email));
@@ -108,12 +107,28 @@ class UserService {
       }
 
       final userId = userDoc['_id'].toHexString();
-      await _setCurrentUserId(userId);
 
+      // 检查用户是否被封禁
+      final ban = await _banService.checkUserBan(userId);
+      if (ban != null) {
+        throw UserBanException(ban);
+      }
+
+      await _setCurrentUserId(userId);
       return User.fromJson(_dbConnectionService.convertDocument(userDoc));
     } catch (e) {
       print('Sign in error: $e');
       rethrow;
+    }
+  }
+  // 检查当前用户是否被封禁
+  Future<void> checkCurrentUserBan() async {
+    final userId = await currentUserId;
+    if (userId == null) return;
+
+    final ban = await _banService.checkUserBan(userId);
+    if (ban != null) {
+      throw UserBanException(ban);
     }
   }
 
@@ -151,16 +166,17 @@ class UserService {
     }
   }
 
-  // 修改登出方法，确保正确清理所有数据
+  // 修改登出方法，确保清理所有缓存
   Future<void> signOut() async {
     try {
       await clearAuthData();
-      await _cacheService.clearAllCache();
-      clearUserInfoCache();
+      await _historyCache.clearAllCache();
+      await _infoCache.clearAllCache();
     } catch (e) {
       print('Sign out error: $e');
     }
   }
+
 
 
   Future<void> resetPassword(String email, String newPassword) async {
@@ -329,10 +345,8 @@ class UserService {
           {r'$set': updates}
       );
 
-      // 如果更新了头像，清除该用户的头像缓存
-      if (avatar != null) {
-        await _avatarCache.removeAvatar(currentId);
-      }
+      // 如果更新了信息，清除该用户的缓存
+      await _infoCache.removeUserCache(currentId);
     } catch (e) {
       print('Update profile error: $e');
       rethrow;
@@ -399,16 +413,13 @@ class UserService {
 
   Future<Map<String, dynamic>> getUserInfoById(String userId) async {
     try {
-      // 检查缓存
-      if (_userInfoCache.containsKey(userId)) {
-        final timestamp = _cacheTimestamp[userId];
-        if (timestamp != null &&
-            DateTime.now().difference(timestamp) < _cacheExpiration) {
-          return _userInfoCache[userId]!;
-        }
+      // 首先尝试从缓存获取
+      final cachedInfo = await _infoCache.getUserInfo(userId);
+      if (cachedInfo != null) {
+        return cachedInfo;
       }
 
-      // 缓存不存在或已过期，从数据库获取
+      // 缓存未命中，从数据库获取
       final objId = _parseObjectId(userId);
       final userDoc = await _dbConnectionService.users.findOne(
         where.eq('_id', objId),
@@ -419,9 +430,10 @@ class UserService {
           'username': userDoc['username'],
           'avatar': userDoc['avatar'],
         };
-        // 更新缓存
-        _userInfoCache[userId] = userInfo;
-        _cacheTimestamp[userId] = DateTime.now();
+
+        // 异步更新缓存
+        _infoCache.setUserInfo(userId, userInfo);
+
         return userInfo;
       }
       return {'username': '未知用户', 'avatar': null};
@@ -430,14 +442,45 @@ class UserService {
       return {'username': '未知用户', 'avatar': null};
     }
   }
-  // 清除缓存的方法
-  void clearUserInfoCache([String? userId]) {
-    if (userId != null) {
-      _userInfoCache.remove(userId);
-      _cacheTimestamp.remove(userId);
-    } else {
-      _userInfoCache.clear();
-      _cacheTimestamp.clear();
+
+  Future<List<Map<String, dynamic>>> getAllUsers() async {
+    try {
+      final users = await _dbConnectionService.users
+          .find()
+          .map((doc) {
+        // 确保 _id 被正确转换
+        final convertedDoc = _dbConnectionService.convertDocument(doc);
+        convertedDoc['_id'] = doc['_id'].toHexString(); // 显式转换 ObjectId 到字符串
+        return convertedDoc;
+      })
+          .toList();
+      return users;
+    } catch (e) {
+      print('Get all users error: $e');
+      rethrow;
+    }
+  }
+
+  // 更新用户管理员状态
+  Future<void> updateUserAdminStatus(String userId, bool isAdmin) async {
+    try {
+      // 处理可能的 null 或空字符串
+      if (userId == null || userId.isEmpty) {
+        throw Exception('无效的用户ID');
+      }
+
+      final objId = _parseObjectId(userId);
+      final result = await _dbConnectionService.users.updateOne(
+        where.eq('_id', objId),
+        {r'$set': {'isAdmin': isAdmin}},
+      );
+
+      if (!result.isSuccess) {
+        throw Exception('更新失败');
+      }
+    } catch (e) {
+      print('Update user admin status error: $e');
+      rethrow;
     }
   }
   Future<Map<String, dynamic>?> safegetUserById(String userId) async {
@@ -460,5 +503,18 @@ class UserService {
       print('Get user by id error: $e');
       return null;
     }
+  }
+}
+
+class UserBanException implements Exception {
+  final UserBan ban;
+  UserBanException(this.ban);
+
+  @override
+  String toString() {
+    if (ban.isPermanent) {
+      return '您的账号已被永久封禁\n原因：${ban.reason}';
+    }
+    return '您的账号已被临时封禁至 ${ban.endTime}\n原因：${ban.reason}';
   }
 }

@@ -1,7 +1,7 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
 import '../../../services/link_tool_service.dart';
-import '../../../models/tool.dart';
+import '../../../models/linkstools/tool.dart';
 import '../../../widgets/form/toolform/tool_form_dialog.dart';
 
 class ToolManagement extends StatefulWidget {

@@ -1,6 +1,6 @@
 // lib/widgets/linkstools/tools_section.dart
 import 'package:flutter/material.dart';
-import '../../models/tool.dart';
+import '../../models/linkstools/tool.dart';
 
 class ToolsSection extends StatelessWidget {
   final List<Tool> tools;

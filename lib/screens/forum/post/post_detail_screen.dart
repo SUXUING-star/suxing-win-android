@@ -1,14 +1,14 @@
 // lib/screens/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../models/post.dart';
+import '../../../models/post/post.dart';
 import '../../../services/forum_service.dart';
 import '../../../services/history/post_history_service.dart';  // 更新import
 import '../../../providers/auth/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/forum/post/post_content.dart';
 import '../../../widgets/forum/post/reply_list.dart';
-import '../../../utils/font_config.dart';
+import '../../../utils/font/font_config.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 
 class PostDetailScreen extends StatefulWidget {

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../providers/auth/auth_provider.dart';
-import '../../../utils/loading_route_observer.dart';
+import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster.dart';
 import '../../widgets/common/custom_app_bar.dart';
 

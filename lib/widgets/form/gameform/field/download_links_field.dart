@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import '../../../../models/game.dart';
+import '../../../../models/game/game.dart';
 
 class DownloadLinksField extends StatelessWidget {
   final List<DownloadLink> downloadLinks;

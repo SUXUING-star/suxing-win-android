@@ -1,21 +1,25 @@
 // lib/services/cache/comments_cache_service.dart
 
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../models/comment.dart';
-import '../../models/post.dart';
+import '../../models/comment/comment.dart';
+import '../../models/post/post.dart';
+import '../../config/app_config.dart';
 
 class CommentsCacheService {
-  static final CommentsCacheService _instance = CommentsCacheService._internal();
+  static final CommentsCacheService _instance = CommentsCacheService
+      ._internal();
+
   factory CommentsCacheService() => _instance;
 
   static const String gameCommentsBox = 'game_comments_cache';
   static const String postRepliesBox = 'post_replies_cache';
   static const int cacheExpiration = 5; // 5分钟过期
 
+  final String _redisProxyUrl = AppConfig.redisProxyUrl;
   late Box<dynamic> _gameCommentsBox;
   late Box<dynamic> _postRepliesBox;
-
-  Box? _cacheBox;
 
   CommentsCacheService._internal();
 
@@ -24,39 +28,91 @@ class CommentsCacheService {
     _postRepliesBox = await Hive.openBox(postRepliesBox);
   }
 
-  Future<void> dispose() async {
-    if (_cacheBox != null && _cacheBox!.isOpen) {
-      await _cacheBox!.close();
-      _cacheBox = null;
-    }
-  }
-
   // 游戏评论缓存
   Future<void> cacheGameComments(String gameId, List<Comment> comments) async {
     try {
-      final currentTime = DateTime.now();
-      await _gameCommentsBox.put('${gameId}_timestamp', currentTime.toIso8601String());
+      // 本地缓存
+      await _cacheLocalGameComments(gameId, comments);
 
-      final commentsData = comments.map((comment) {
-        final Map<String, dynamic> commentMap = comment.toJson();
-        // 处理回复列表
-        commentMap['replies'] = comment.replies.map((reply) => reply.toJson()).toList();
-        return commentMap;
-      }).toList();
+      // Redis缓存
+      final response = await http.post(
+        Uri.parse('$_redisProxyUrl/cache/comments/game'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'gameId': gameId,
+          'data': comments.map((c) => c.toJson()).toList(),
+          'expiration': cacheExpiration * 60,
+        }),
+      );
 
-      await _gameCommentsBox.put(gameId, commentsData);
+      if (response.statusCode != 200) {
+        print('Redis cache failed: ${response.statusCode}');
+      }
     } catch (e) {
       print('Cache game comments error: $e');
     }
   }
 
+  Future<void> _cacheLocalGameComments(String gameId,
+      List<Comment> comments) async {
+    try {
+      final currentTime = DateTime.now();
+      await _gameCommentsBox.put(
+          '${gameId}_timestamp', currentTime.toIso8601String());
+
+      final commentsData = comments.map((comment) {
+        final Map<String, dynamic> commentMap = comment.toJson();
+        commentMap['replies'] =
+            comment.replies.map((reply) => reply.toJson()).toList();
+        return commentMap;
+      }).toList();
+
+      await _gameCommentsBox.put(gameId, commentsData);
+    } catch (e) {
+      print('Local cache error: $e');
+    }
+  }
+
   Future<List<Comment>?> getCachedGameComments(String gameId) async {
+    try {
+      // 尝试从Redis获取
+      final response = await http.get(
+        Uri.parse('$_redisProxyUrl/cache/comments/game/$gameId'),
+      );
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['data'] != null) {
+          final comments = (responseData['data'] as List)
+              .map((item) => Comment.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+
+          // 同步到本地缓存
+          await _cacheLocalGameComments(gameId, comments);
+          return comments;
+        }
+      }
+
+      // 如果Redis没有数据，尝试从本地缓存获取
+      return await _getLocalCachedGameComments(gameId);
+    } catch (e) {
+      print('Get cached game comments error: $e');
+      return await _getLocalCachedGameComments(gameId);
+    }
+  }
+
+  Future<List<Comment>?> _getLocalCachedGameComments(String gameId) async {
     try {
       final timestamp = _gameCommentsBox.get('${gameId}_timestamp');
       if (timestamp == null) return null;
 
       final lastUpdateTime = DateTime.parse(timestamp);
-      if (DateTime.now().difference(lastUpdateTime).inMinutes >= cacheExpiration) {
+      if (DateTime
+          .now()
+          .difference(lastUpdateTime)
+          .inMinutes >= cacheExpiration) {
         return null;
       }
 
@@ -65,31 +121,89 @@ class CommentsCacheService {
 
       return (cachedData as List).map((item) {
         final commentMap = Map<String, dynamic>.from(item as Map);
+
         // 处理回复列表
         if (commentMap['replies'] != null) {
           final List<Map<String, dynamic>> repliesData =
-          (commentMap['replies'] as List).map((reply) =>
-          Map<String, dynamic>.from(reply as Map)
-          ).toList();
+          (commentMap['replies'] as List).map((reply) {
+            // 确保 ID 字段正确转换
+            final replyMap = Map<String, dynamic>.from(reply as Map);
+            if (replyMap['_id'] != null) {
+              replyMap['id'] = replyMap['_id'];
+              replyMap.remove('_id');
+            }
+            return replyMap;
+          }).toList();
           commentMap['replies'] = repliesData;
+        } else {
+          commentMap['replies'] = [];
         }
+
+        // 确保主评论的 ID 字段正确
+        if (commentMap['_id'] != null) {
+          commentMap['id'] = commentMap['_id'];
+          commentMap.remove('_id');
+        }
+
+        // 确保日期字段正确转换
+        if (commentMap['createTime'] is String) {
+          commentMap['createTime'] = DateTime.parse(commentMap['createTime']);
+        }
+        if (commentMap['updateTime'] is String) {
+          commentMap['updateTime'] = DateTime.parse(commentMap['updateTime']);
+        }
+
         return Comment.fromJson(commentMap);
-      }).toList();
+      }).toList()
+        ..sort((a, b) => b.createTime.compareTo(a.createTime)); // 按时间倒序排序
     } catch (e) {
-      print('Get cached game comments error: $e');
+      print('Get local cached game comments error: $e');
       return null;
     }
   }
-
-  // 修改缓存帖子回复的方法
+  // 缓存帖子回复
   Future<void> cachePostReplies(String postId, List<Reply> replies) async {
+    try {
+      // 本地缓存
+      await _cacheLocalPostReplies(postId, replies);
+
+      // Redis缓存
+      final response = await http.post(
+        Uri.parse('$_redisProxyUrl/cache/comments/post'),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'postId': postId,
+          'data': replies.map((reply) {
+            final replyMap = reply.toJson();
+            replyMap['_id'] = replyMap['_id']?.toString() ?? reply.id;
+            replyMap['postId'] = replyMap['postId']?.toString() ?? reply.postId;
+            replyMap['authorId'] = replyMap['authorId']?.toString() ?? reply.authorId;
+            if (reply.parentId != null) {
+              replyMap['parentId'] = reply.parentId.toString();
+            }
+            return replyMap;
+          }).toList(),
+          'expiration': cacheExpiration * 60,
+        }),
+      );
+
+      if (response.statusCode != 200) {
+        print('Redis cache failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Cache post replies error: $e');
+    }
+  }
+
+  Future<void> _cacheLocalPostReplies(String postId, List<Reply> replies) async {
     try {
       final currentTime = DateTime.now();
       await _postRepliesBox.put('${postId}_timestamp', currentTime.toIso8601String());
 
       final repliesData = replies.map((reply) {
         final replyMap = reply.toJson();
-        // 确保所有 ID 都是字符串形式
         replyMap['_id'] = replyMap['_id']?.toString() ?? reply.id;
         replyMap['postId'] = replyMap['postId']?.toString() ?? reply.postId;
         replyMap['authorId'] = replyMap['authorId']?.toString() ?? reply.authorId;
@@ -101,11 +215,39 @@ class CommentsCacheService {
 
       await _postRepliesBox.put(postId, repliesData);
     } catch (e) {
-      print('Cache post replies error: $e');
+      print('Local cache error: $e');
     }
   }
 
   Future<List<Reply>?> getCachedPostReplies(String postId) async {
+    try {
+      // 尝试从Redis获取
+      final response = await http.get(
+        Uri.parse('$_redisProxyUrl/cache/comments/post/$postId'),
+      ).timeout(Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final responseData = json.decode(response.body);
+        if (responseData['data'] != null) {
+          final replies = (responseData['data'] as List)
+              .map((item) => Reply.fromJson(Map<String, dynamic>.from(item)))
+              .toList();
+
+          // 同步到本地缓存
+          await _cacheLocalPostReplies(postId, replies);
+          return replies;
+        }
+      }
+
+      // 如果Redis没有数据，尝试从本地缓存获取
+      return await _getLocalCachedPostReplies(postId);
+    } catch (e) {
+      print('Get cached post replies error: $e');
+      return await _getLocalCachedPostReplies(postId);
+    }
+  }
+
+  Future<List<Reply>?> _getLocalCachedPostReplies(String postId) async {
     try {
       final timestamp = _postRepliesBox.get('${postId}_timestamp');
       if (timestamp == null) return null;
@@ -120,78 +262,64 @@ class CommentsCacheService {
 
       return (cachedData as List).map((item) {
         final replyMap = Map<String, dynamic>.from(item as Map);
-        // 确保数据格式正确
         return Reply.fromJson(replyMap);
       }).toList();
     } catch (e) {
-      print('Get cached post replies error: $e');
+      print('Get local cached post replies error: $e');
       return null;
     }
   }
 
-  // 清除缓存
+  // 清除缓存方法
   Future<void> clearGameCommentsCache(String? gameId) async {
-    if (gameId != null) {
-      await _gameCommentsBox.delete(gameId);
-      await _gameCommentsBox.delete('${gameId}_timestamp');
-    } else {
-      await _gameCommentsBox.clear();
+    try {
+      if (gameId != null) {
+        // 清除本地缓存
+        await _gameCommentsBox.delete(gameId);
+        await _gameCommentsBox.delete('${gameId}_timestamp');
+
+        // 清除Redis缓存
+        await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/game/$gameId'));
+      } else {
+        // 清除所有游戏评论缓存
+        await _gameCommentsBox.clear();
+        await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/game'));
+      }
+    } catch (e) {
+      print('Clear game comments cache error: $e');
     }
   }
 
   Future<void> clearPostRepliesCache(String? postId) async {
-    if (postId != null) {
-      await _postRepliesBox.delete(postId);
-      await _postRepliesBox.delete('${postId}_timestamp');
-    } else {
-      await _postRepliesBox.clear();
-    }
-  }
-
-  // 新增：只清理数据但不关闭boxes
-  Future<void> clearCacheData() async {
     try {
-      if (_gameCommentsBox.isOpen) {
-        await _gameCommentsBox.clear();
-      }
-      if (_postRepliesBox.isOpen) {
+      if (postId != null) {
+        // 清除本地缓存
+        await _postRepliesBox.delete(postId);
+        await _postRepliesBox.delete('${postId}_timestamp');
+
+        // 清除Redis缓存
+        await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/post/$postId'));
+      } else {
+        // 清除所有帖子回复缓存
         await _postRepliesBox.clear();
+        await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/post'));
       }
     } catch (e) {
-      print('Clear comments cache data error: $e');
-      rethrow;
+      print('Clear post replies cache error: $e');
     }
   }
 
-  // 修改现有的clearAllCache方法
   Future<void> clearAllCache() async {
     try {
-      if (_gameCommentsBox.isOpen) {
-        await _gameCommentsBox.clear();
-      }
-      if (_postRepliesBox.isOpen) {
-        await _postRepliesBox.clear();
-      }
+      // 清除本地缓存
+      await _gameCommentsBox.clear();
+      await _postRepliesBox.clear();
+
+      // 清除Redis缓存
+      await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/game'));
+      await http.delete(Uri.parse('$_redisProxyUrl/cache/comments/post'));
     } catch (e) {
       print('Clear all comments cache error: $e');
-      rethrow;
     }
-  }
-
-  // 判断缓存是否过期
-  bool isGameCommentsCacheExpired(String gameId) {
-    final timestamp = _gameCommentsBox.get('${gameId}_timestamp');
-    if (timestamp == null) return true;
-
-    final lastUpdateTime = DateTime.parse(timestamp);
-    return DateTime.now().difference(lastUpdateTime).inMinutes >= cacheExpiration;
-  }
-
-  bool isPostRepliesCacheExpired(String postId) {
-    final timestamp = _postRepliesBox.get('${postId}_timestamp');
-    if (timestamp == null) return true;
-
-    final lastUpdateTime = DateTime.parse(timestamp);
-    return DateTime.now().difference(lastUpdateTime).inMinutes >= cacheExpiration;
   }
 }

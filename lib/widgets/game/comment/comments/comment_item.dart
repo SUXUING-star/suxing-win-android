@@ -1,7 +1,7 @@
 // lib/widgets/game/comment/comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../models/comment.dart';
+import '../../../../models/comment/comment.dart';
 import '../../../../services/comment_service.dart';
 import '../../../../services/user_service.dart';
 import '../../../../providers/auth/auth_provider.dart';

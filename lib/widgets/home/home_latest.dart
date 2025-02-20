@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../models/game/game.dart';
 import '../../../services/game_service.dart';
 import '../../../routes/app_routes.dart';
 
 class HomeLatest extends StatelessWidget {
-  final GameService _gameService = GameService();
+  final Stream<List<Game>>? gamesStream;
+
+  const HomeLatest({
+    Key? key,
+    required this.gamesStream,  // 添加 stream 参数
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -96,13 +101,13 @@ class HomeLatest extends StatelessWidget {
 
   Widget _buildGameList(BuildContext context) {
     return StreamBuilder<List<Game>>(
-      stream: _gameService.getLatestGames(),
+      stream: gamesStream,  // 使用传入的 stream 而不是直接创建
       builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return _buildError('加载失败：${snapshot.error}');
-        }
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _buildLoading();
+        }
+        if (snapshot.hasError) {
+          return _buildError('加载失败：${snapshot.error}');
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
           return _buildEmptyState('暂无最新游戏');

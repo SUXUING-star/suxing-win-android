@@ -1,9 +1,9 @@
 // lib/screens/add_game_screen.dart
 import 'package:flutter/material.dart';
-import '../../models/game.dart';
+import '../../models/game/game.dart';
 import '../../services/game_service.dart'; // 引入 GameService
 import '../../widgets/form/gameform/game_form.dart';
-import '../../utils/admin_check.dart';
+import '../../utils/check/admin_check.dart';
 
 class AddGameScreen extends StatelessWidget {
   final GameService _gameService = GameService(); // 使用 GameService

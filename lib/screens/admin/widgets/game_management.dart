@@ -1,7 +1,7 @@
 // lib/screens/admin/widgets/game_management.dart
 import 'package:flutter/material.dart';
 import '../../../services/game_service.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../game/edit_game_screen.dart';
 import '../../game/add_game_screen.dart';
 

@@ -1,9 +1,6 @@
 // lib/widgets/profile/profile_header.dart
 import 'package:flutter/material.dart';
-import '../../models/user.dart';
-import 'package:image_picker/image_picker.dart';
-import '../../services/user_service.dart';
-
+import '../../models/user/user.dart';
 class ProfileHeader extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;

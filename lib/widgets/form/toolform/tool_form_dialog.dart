@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../../../models/tool.dart';
+import '../../../models/linkstools/tool.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class ToolFormDialog extends StatefulWidget {

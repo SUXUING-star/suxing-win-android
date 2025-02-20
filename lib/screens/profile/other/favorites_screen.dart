@@ -1,9 +1,9 @@
 // lib/screens/profile/favorites_screen.dart
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../../services/game_service.dart';
 import '../../../routes/app_routes.dart';
-import '../../../utils/loading_route_observer.dart';
+import '../../../utils/load/loading_route_observer.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 
 class FavoritesScreen extends StatefulWidget {

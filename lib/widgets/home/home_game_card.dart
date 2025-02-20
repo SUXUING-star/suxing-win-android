@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../models/game.dart';
+import '../../models/game/game.dart';
 import '../common/animated_card_container.dart';
 
 class HomeGameCard extends StatelessWidget {

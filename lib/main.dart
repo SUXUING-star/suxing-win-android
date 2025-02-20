@@ -4,9 +4,13 @@ import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
 import 'services/restart/restart_service.dart';
+import 'utils/decrypt/config_decrypt.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // 初始化配置
+  await ConfigDecrypt.initialize();
 
   // 如果是桌面平台，初始化窗口管理器
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

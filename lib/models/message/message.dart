@@ -1,6 +1,6 @@
 // lib/models/message.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import './message_type.dart';
+import 'message_type.dart';
 
 class Message {
   final String id;

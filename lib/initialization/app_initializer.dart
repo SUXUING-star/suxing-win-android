@@ -10,11 +10,13 @@ import '../providers/auth/auth_provider.dart';
 import '../services/db_connection_service.dart';
 import '../services/update/update_service.dart';
 import '../services/cache/game_cache_service.dart';
-import '../services/cache/avatar_cache_service.dart';
+import '../services/cache/info_cache_service.dart';
 import '../services/cache/links_tools_cache_service.dart';
 import '../services/cache/history_cache_service.dart';
 import '../services/cache/comment_cache_service.dart';
+import '../services/cache/forum_cache_service.dart';
 import '../services/restart/restart_service.dart';
+import '../services/cache/user_ban_cache_service.dart';
 
 class AppInitializer {
   static Future<Map<String, dynamic>> initializeServices(
@@ -37,6 +39,7 @@ class AppInitializer {
       final dbStateProvider = DBStateProvider();
       final dbService = DBConnectionService();
       final updateService = UpdateService();
+
       dbService.setStateProvider(dbStateProvider);
 
       try {
@@ -62,8 +65,8 @@ class AppInitializer {
       final gameCacheService = GameCacheService();
       await gameCacheService.init();
 
-      final avatarCacheService = AvatarCacheService();
-      await avatarCacheService.init();
+      final infoCacheService = InfoCacheService();
+      await infoCacheService.init();
 
       final linksToolsCacheService = LinksToolsCacheService();
       await linksToolsCacheService.init();
@@ -74,6 +77,12 @@ class AppInitializer {
       final commentsCacheService = CommentsCacheService();
       await commentsCacheService.init();
 
+      final forumCacheService = ForumCacheService();
+      await forumCacheService.init();
+
+      final useBanCacheService = UserBanCacheService();
+      await useBanCacheService.init();
+
       await Future.delayed(const Duration(milliseconds: 100));
       initProvider.updateProgress('初始化完成', 1.0);
 
@@ -82,10 +91,12 @@ class AppInitializer {
         'dbStateProvider': dbStateProvider,
         'updateService': updateService,
         'gameCacheService': gameCacheService,
-        'avatarCacheService': avatarCacheService,
+        'infoCacheService': infoCacheService,
         'linksToolsCacheService': linksToolsCacheService,
         'historyCacheService' : historyCacheService,
-        'commentsCacheService' : commentsCacheService
+        'commentsCacheService' : commentsCacheService,
+        'forumCacheService' : forumCacheService,
+        'useBanCacheService' : useBanCacheService,
 
       };
     } catch (e) {

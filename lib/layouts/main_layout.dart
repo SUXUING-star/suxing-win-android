@@ -8,10 +8,12 @@ import '../screens/profile/profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth/auth_provider.dart';
 import '../services/update/update_service.dart';
+import '../services/ban/user_ban_service.dart';
 import '../services/user_service.dart';
-import 'top_navigation_bar.dart';
-import 'bottom_navigation_bar.dart';
+import 'android/top_navigation_bar.dart';
+import 'android/bottom_navigation_bar.dart';
 import '../widgets/dialogs/force_update_dialog.dart';
+import '../widgets/dialogs/user_ban_dialog.dart';
 
 class MainLayout extends StatefulWidget {
   @override
@@ -21,6 +23,7 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   int _currentIndex = 0;
   final UserService _userService = UserService();
+  final UserBanService _banService = UserBanService();
   late List<Widget> _screens;
 
   @override
@@ -36,8 +39,28 @@ class _MainLayoutState extends State<MainLayout> {
     // 应用启动时检查更新
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForUpdates();
+      _checkBanStatus();
     });
   }
+  Future<void> _checkBanStatus() async {
+    try {
+      final userId = await _userService.currentUserId;
+      if (userId != null) {
+        final ban = await _banService.checkUserBan(userId);
+        if (ban != null && mounted) {
+          // 显示封禁对话框
+          showDialog(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => UserBanDialog(ban: ban),
+          );
+        }
+      }
+    } catch (e) {
+      print('Check ban status error: $e');
+    }
+  }
+
 
   Future<void> _checkForUpdates() async {
     if (!mounted) return;

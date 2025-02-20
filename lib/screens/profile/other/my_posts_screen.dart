@@ -10,7 +10,7 @@ import '../../../services/user_service.dart';
 import '../../../widgets/my_posts/post_list_item.dart';
 import '../../../widgets/my_posts/post_actions_bottom_sheet.dart';
 import '../../../routes/app_routes.dart';
-import '../../../utils/loading_route_observer.dart';
+import '../../../utils/load/loading_route_observer.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 
 class MyPostsScreen extends StatefulWidget {

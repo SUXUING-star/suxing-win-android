@@ -1,13 +1,14 @@
 // lib/services/forum_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../models/post.dart';
-import '../models/message.dart';
+import '../models/post/post.dart';
+import '../models/message/message.dart';
 import 'db_connection_service.dart';
 import 'user_service.dart';
 import './history/post_history_service.dart';
 import './security/input_sanitizer_service.dart';
 import './counter/batch_view_counter_service.dart';
 import 'cache/comment_cache_service.dart';
+import 'cache/forum_cache_service.dart';
 
 class ForumService {
   static final ForumService _instance = ForumService._internal();
@@ -22,6 +23,7 @@ class ForumService {
   final BatchViewCounterService _viewCounter = BatchViewCounterService();
 
   final CommentsCacheService _cacheService = CommentsCacheService();
+  final ForumCacheService _forumCacheService = ForumCacheService();  // 新增缓存服务
 
   ForumService._internal();
 
@@ -56,9 +58,24 @@ class ForumService {
   }
 
   // 获取帖子列表
+  // 修改获取帖子列表方法，添加缓存逻辑
   Stream<List<Post>> getPosts({String? tag}) async* {
     try {
       while (true) {
+        final cacheKey = tag != null ? 'posts_tag_$tag' : 'all_posts';
+
+        // 尝试从缓存获取
+        final cachedPosts = await _forumCacheService.getCachedPosts(cacheKey);
+        if (cachedPosts != null) {
+          yield cachedPosts;
+          // 如果缓存未过期，增加轮询间隔
+          if (!await _forumCacheService.isRedisCacheExpired(cacheKey)) {
+            await Future.delayed(const Duration(seconds: 5));
+            continue;
+          }
+        }
+
+        // 缓存未命中或已过期，从数据库获取
         final query = where
             .eq('status', PostStatus.active.toString().split('.').last)
             .sortBy('createTime', descending: true);
@@ -69,9 +86,11 @@ class ForumService {
 
         final posts = await _dbConnectionService.posts
             .find(query)
-            .map((doc) =>
-            Post.fromJson(_dbConnectionService.convertDocument(doc)))
+            .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
             .toList();
+
+        // 更新缓存
+        await _forumCacheService.cachePosts(cacheKey, posts);
 
         yield posts;
         await Future.delayed(const Duration(seconds: 1));
@@ -82,18 +101,33 @@ class ForumService {
     }
   }
 
-  // 获取某个用户的帖子
+  // 修改获取用户帖子列表方法，添加缓存逻辑
   Stream<List<Post>> getUserPosts(String userId) async* {
     try {
       while (true) {
+        final cacheKey = 'user_posts_$userId';
+
+        // 尝试从缓存获取
+        final cachedPosts = await _forumCacheService.getCachedPosts(cacheKey);
+        if (cachedPosts != null) {
+          yield cachedPosts;
+          if (!await _forumCacheService.isRedisCacheExpired(cacheKey)) {
+            await Future.delayed(const Duration(seconds: 5));
+            continue;
+          }
+        }
+
+        // 缓存未命中或已过期，从数据库获取
         final posts = await _dbConnectionService.posts
             .find(where
             .eq('authorId', userId)
             .ne('status', PostStatus.deleted.toString().split('.').last)
             .sortBy('createTime', descending: true))
-            .map((doc) =>
-            Post.fromJson(_dbConnectionService.convertDocument(doc)))
+            .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
             .toList();
+
+        // 更新缓存
+        await _forumCacheService.cachePosts(cacheKey, posts);
 
         yield posts;
         await Future.delayed(const Duration(seconds: 1));
@@ -104,27 +138,52 @@ class ForumService {
     }
   }
 
-  // 获取帖子详情
-  // 修改 getPost 方法以添加历史记录
+
+  // 修改获取帖子详情方法，添加缓存逻辑
   Future<Post?> getPost(String postId) async {
     try {
+
+      if (postId.isEmpty) {
+        throw Exception('Invalid post ID');
+      }
+
+      final cacheKey = 'post_${postId.trim()}';  // 确保 key 格式正确
+
+      // 尝试从缓存获取
+      final cachedPosts = await _forumCacheService.getCachedPosts(cacheKey);
+      if (cachedPosts != null && cachedPosts.isNotEmpty) {
+        // 使用批量计数服务
+        _viewCounter.incrementPostView(postId);
+        // 添加到浏览历史
+        await addToPostHistory(postId);
+        return cachedPosts.first;
+      }
+
+      // 缓存未命中，从数据库获取
       final postDoc = await _dbConnectionService.posts
-          .findOne(where.eq('_id', ObjectId.fromHexString(postId)));
+          .findOne(where.eq('_id', ObjectId.fromHexString(postId.trim())));
 
       if (postDoc == null) return null;
 
       // 使用批量计数服务
       _viewCounter.incrementPostView(postId);
-
       // 添加到浏览历史
       await addToPostHistory(postId);
 
-      return Post.fromJson(_dbConnectionService.convertDocument(postDoc));
+      final post = Post.fromJson(_dbConnectionService.convertDocument(postDoc));
+
+      // 更新缓存
+      if (post != null) {
+        await _forumCacheService.cachePosts(cacheKey, [post]);
+      }
+
+      return post;
     } catch (e) {
       print('Get post error: $e');
-      rethrow;
+      return null;  // 返回 null 而不是抛出异常，这样可以优雅地处理错误
     }
   }
+
 
   // 创建帖子
   Future<void> createPost(
@@ -148,6 +207,16 @@ class ForumService {
       };
 
       await _dbConnectionService.posts.insertOne(post);
+
+      // 清除相关缓存
+      await _forumCacheService.clearCache('all_posts');
+      if (tags.isNotEmpty) {
+        for (final tag in tags) {
+          await _forumCacheService.clearCache('posts_tag_$tag');
+        }
+      }
+      await _forumCacheService.clearCache('user_posts_${currentUser.id}');
+      await _forumCacheService.clearCache('recent_user_posts_${currentUser.id}_5');
     } catch (e) {
       print('Create post error: $e');
       rethrow;
@@ -182,6 +251,17 @@ class ForumService {
           }
         },
       );
+
+      // 清除相关缓存
+      await _forumCacheService.clearCache('post_$postId');
+      await _forumCacheService.clearCache('all_posts');
+      if (tags.isNotEmpty) {
+        for (final tag in tags) {
+          await _forumCacheService.clearCache('posts_tag_$tag');
+        }
+      }
+      await _forumCacheService.clearCache('user_posts_${currentUser.id}');
+      await _forumCacheService.clearCache('recent_user_posts_${currentUser.id}_5');
     } catch (e) {
       print('Update post error: $e');
       rethrow;
@@ -214,6 +294,16 @@ class ForumService {
       await _dbConnectionService.replies.deleteMany(
         where.eq('postId', postId),
       );
+      // 清除相关缓存
+      await _forumCacheService.clearCache('post_$postId');
+      await _forumCacheService.clearCache('all_posts');
+      if (post != null && post['tags'] != null) {
+        for (final tag in post['tags']) {
+          await _forumCacheService.clearCache('posts_tag_$tag');
+        }
+      }
+      await _forumCacheService.clearCache('user_posts_${currentUser.id}');
+      await _forumCacheService.clearCache('recent_user_posts_${currentUser.id}_5');
     } catch (e) {
       print('Delete post error: $e');
       rethrow;
@@ -512,8 +602,20 @@ class ForumService {
   }
 
 
+
+
+  // 修改获取最近用户帖子方法，添加缓存逻辑
   Future<List<Post>> getRecentUserPosts(String userId, {int limit = 5}) async {
     try {
+      final cacheKey = 'recent_user_posts_${userId}_$limit';
+
+      // 尝试从缓存获取
+      final cachedPosts = await _forumCacheService.getCachedPosts(cacheKey);
+      if (cachedPosts != null) {
+        return cachedPosts;
+      }
+
+      // 缓存未命中，从数据库获取
       final cursor = _dbConnectionService.posts.find(where
           .eq('authorId', userId)
           .ne('status', PostStatus.deleted.toString().split('.').last)
@@ -521,9 +623,11 @@ class ForumService {
           .limit(limit));
 
       final posts = await cursor
-          .map(
-              (doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
+          .map((doc) => Post.fromJson(_dbConnectionService.convertDocument(doc)))
           .toList();
+
+      // 更新缓存
+      await _forumCacheService.cachePosts(cacheKey, posts);
 
       return posts;
     } catch (e) {

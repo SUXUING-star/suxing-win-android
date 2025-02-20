@@ -1,14 +1,65 @@
 // lib/widgets/game/game_header.dart
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
+import '../../../services/user_service.dart';
+import '../../../screens/profile/open_profile_screen.dart';
+
 
 class GameHeader extends StatelessWidget {
   final Game game;
+  final UserService _userService = UserService();
 
-  const GameHeader({
+  GameHeader({
     Key? key,
     required this.game,
   }) : super(key: key);
+
+  void _navigateToProfile(BuildContext context, String userId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => OpenProfileScreen(userId: userId),
+      ),
+    );
+  }
+
+  Widget _buildAuthorInfo(BuildContext context) {
+    return FutureBuilder<Map<String, dynamic>>(
+      future: _userService.getUserInfoById(game.authorId),
+      builder: (context, snapshot) {
+        final username = snapshot.data?['username'] ?? '未知用户';
+        final avatarUrl = snapshot.data?['avatar'];
+
+        return MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: GestureDetector(
+            onTap: () => _navigateToProfile(context, game.authorId),
+            child: Row(
+              children: [
+                CircleAvatar(
+                  radius: 14,
+                  backgroundColor: Colors.grey[100],
+                  backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
+                  child: avatarUrl == null
+                      ? Icon(Icons.person_outline, size: 16, color: Colors.grey[600])
+                      : null,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  username,
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey[800],
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -79,6 +130,8 @@ class GameHeader extends StatelessWidget {
               ),
             ),
             SizedBox(height: 12),
+            Divider(color: Colors.grey[200]),
+            SizedBox(height: 12),
             _buildMetaInfo(context),
           ],
         ),
@@ -93,25 +146,35 @@ class GameHeader extends StatelessWidget {
       height: 1.4,
     );
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.grey[600]),
-        SizedBox(width: 4),
-        Text('${game.viewCount} 次浏览', style: textStyle),
-        Container(
-          margin: EdgeInsets.symmetric(horizontal: 12),
-          width: 1,
-          height: 12,
-          color: Colors.grey[300],
+        Row(
+          children: [
+            _buildAuthorInfo(context),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 12),
+              width: 1,
+              height: 12,
+              color: Colors.grey[300],
+            ),
+            Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.grey[600]),
+            SizedBox(width: 4),
+            Text('${game.viewCount} 次浏览', style: textStyle),
+          ],
         ),
-        Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-        SizedBox(width: 4),
-        Text('发布于 ${DateFormatter.format(game.createTime)}', style: textStyle),
+        SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+            SizedBox(width: 4),
+            Text('发布于 ${DateFormatter.format(game.createTime)}', style: textStyle),
+          ],
+        ),
       ],
     );
   }
 }
-
 class DateFormatter {
   static String format(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';

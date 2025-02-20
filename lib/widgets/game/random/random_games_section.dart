@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../../services/game_service.dart';
 
 class RandomGamesSection extends StatefulWidget {

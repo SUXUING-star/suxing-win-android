@@ -10,7 +10,7 @@ import './initialization/initialization_wrapper.dart';
 import 'providers/initialize/initialization_provider.dart';
 import 'providers/theme/theme_provider.dart';
 import 'providers/connection/db_state_provider.dart';
-import './utils/loading_route_observer.dart';
+import 'utils/load/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
 import 'widgets/loading/loading_screen.dart';
@@ -18,6 +18,7 @@ import 'widgets/effects/mouse_trail_effect.dart';
 import './routes/app_routes.dart';
 import 'services/user_service.dart';
 import 'services/forum_service.dart';
+import 'services/ban/user_ban_service.dart';
 import 'services/restart/restart_service.dart';
 
 
@@ -81,6 +82,9 @@ class MyApp extends StatelessWidget {
         ),
         Provider<PostHistoryService>(
           create: (_) => PostHistoryService(),
+        ),
+        Provider<UserBanService>(
+          create: (_) => UserBanService(),
         ),
         Provider<RestartService>(create: (_) => RestartService()),
       ],

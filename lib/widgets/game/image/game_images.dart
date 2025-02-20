@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../../screens/game/detail/image_preview_screen.dart';
 
 class GameImages extends StatelessWidget {

@@ -1,6 +1,6 @@
 // lib/services/game_history_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../../models/game_history.dart';
+import '../../models/game/game_history.dart';
 import './../db_connection_service.dart';
 import './../user_service.dart';
 import '../counter/batch_history_service.dart';

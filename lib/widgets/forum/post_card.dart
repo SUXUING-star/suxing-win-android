@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/post.dart';
+import '../../models/post/post.dart';
 import '../../../routes/app_routes.dart';
 import '../../../screens/profile/open_profile_screen.dart';
 import '../../../services/user_service.dart';

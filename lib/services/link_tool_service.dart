@@ -1,7 +1,7 @@
 // lib/services/link_tool_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../models/link.dart';
-import '../models/tool.dart';
+import '../models/linkstools/link.dart';
+import '../models/linkstools/tool.dart';
 import 'db_connection_service.dart';
 import 'cache/links_tools_cache_service.dart';
 

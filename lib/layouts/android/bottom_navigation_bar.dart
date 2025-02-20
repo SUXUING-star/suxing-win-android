@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../utils/device/device_utils.dart';
+import '../../utils/device/device_utils.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;

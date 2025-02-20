@@ -1,6 +1,6 @@
 // lib/services/post_history_service.dart
 import 'package:mongo_dart/mongo_dart.dart';
-import '../../models/post_history.dart';
+import '../../models/post/post_history.dart';
 import './../db_connection_service.dart';
 import './../user_service.dart';
 import '../counter/batch_history_service.dart';

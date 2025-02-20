@@ -3,6 +3,7 @@ import 'package:mongo_dart/mongo_dart.dart';
 
 class Game {
   final String id;
+  final String authorId; // 新增字段
   final String title;
   final String summary;
   final String description;
@@ -21,6 +22,7 @@ class Game {
 
   Game({
     required this.id,
+    required this.authorId,
     required this.title,
     required this.summary,
     required this.description,
@@ -42,6 +44,9 @@ class Game {
     String gameId = json['_id'] is ObjectId
         ? json['_id'].toHexString()
         : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
+    String authorId = json['authorId'] is ObjectId
+        ? json['authorId'].toHexString()
+        : json['authorId']?.toString() ?? '';
 
     List<DownloadLink> parseDownloadLinks(dynamic links) {
       if (links == null) return [];
@@ -53,6 +58,7 @@ class Game {
 
     return Game(
       id: gameId,
+      authorId: authorId,
       title: json['title']?.toString() ?? '',
       summary: json['summary']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
@@ -82,6 +88,7 @@ class Game {
   Map<String, dynamic> toJson() {
     return {
       '_id': id,
+      'authorId': authorId,
       'title': title,
       'summary': summary,
       'description': description,
@@ -102,6 +109,7 @@ class Game {
 
   Game copyWith({
     String? id,
+    String? authorId, // 新增
     String? title,
     String? summary,
     String? description,
@@ -120,6 +128,7 @@ class Game {
   }) {
     return Game(
       id: id ?? this.id,
+      authorId: authorId ?? this.authorId, // 新增
       title: title ?? this.title,
       summary: summary ?? this.summary,
       description: description ?? this.description,

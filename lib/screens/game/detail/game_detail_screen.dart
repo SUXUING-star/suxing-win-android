@@ -1,6 +1,6 @@
 // lib/screens/game/game_detail_screen.dart
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../../services/game_service.dart';
 import '../../../widgets/game/button/edit_button.dart';
 import '../../../widgets/game/button/like_button.dart';

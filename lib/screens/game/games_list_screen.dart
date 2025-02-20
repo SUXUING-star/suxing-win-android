@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../models/game.dart';
+import '../../models/game/game.dart';
 import '../../services/game_service.dart';
-import '../../utils/admin_check.dart';
+import '../../utils/check/admin_check.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/game/card/game_card.dart';
-import '../../utils/loading_route_observer.dart';
+import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
 import '../../utils/device/device_utils.dart';
 
@@ -23,6 +23,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
   String _currentSortBy = 'createTime';
   bool _isDescending = true;
   String? _errorMessage;
+  bool _isDisposed = false; // 添加标志位追踪组件状态
 
   final ScrollController _scrollController = ScrollController();
 
@@ -30,7 +31,12 @@ class _GamesListScreenState extends State<GamesListScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // 使用 mounted 检查确保组件仍在树中
+    if (!mounted) return;
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;  // 再次检查，因为回调可能在组件销毁后执行
+
       final loadingObserver = Navigator.of(context)
           .widget.observers
           .whereType<LoadingRouteObserver>()
@@ -39,6 +45,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
       loadingObserver.showLoading();
 
       _loadGames().then((_) {
+        if (!mounted) return;  // 确保组件仍然存在
         loadingObserver.hideLoading();
       });
     });
@@ -46,8 +53,11 @@ class _GamesListScreenState extends State<GamesListScreen> {
     _scrollController.addListener(_onScroll);
   }
 
+
   @override
   void dispose() {
+    _isDisposed = true; // 标记组件已销毁
+    _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
   }
@@ -61,6 +71,8 @@ class _GamesListScreenState extends State<GamesListScreen> {
   }
 
   Future<void> _loadGames({bool initialLoad = true}) async {
+    if (!mounted) return;  // 提前检查组件状态
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -72,6 +84,7 @@ class _GamesListScreenState extends State<GamesListScreen> {
     try {
       if (initialLoad) {
         _totalPages = await _calculateTotalPages();
+        if (!mounted) return;  // 检查异步操作后的组件状态
         _games.clear();
       }
 
@@ -82,11 +95,15 @@ class _GamesListScreenState extends State<GamesListScreen> {
         descending: _isDescending,
       );
 
+      if (!mounted) return;  // 再次检查组件状态
+
       setState(() {
         _games.addAll(games);
         _isLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;  // 错误处理前检查组件状态
+
       setState(() {
         _errorMessage = '加载失败：${e.toString()}';
         _isLoading = false;
@@ -107,6 +124,8 @@ class _GamesListScreenState extends State<GamesListScreen> {
   }
 
   Future<void> _refreshData() async {
+    if (!mounted) return;
+
     final loadingObserver = Navigator.of(context)
         .widget.observers
         .whereType<LoadingRouteObserver>()
@@ -116,7 +135,9 @@ class _GamesListScreenState extends State<GamesListScreen> {
     try {
       await _loadGames();
     } finally {
-      loadingObserver.hideLoading();
+      if (mounted) {  // 确保在显示/隐藏加载指示器时组件仍然存在
+        loadingObserver.hideLoading();
+      }
     }
   }
 

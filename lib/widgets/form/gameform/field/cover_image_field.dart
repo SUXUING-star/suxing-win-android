@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../../utils/file_upload.dart';
+import '../../../../utils/upload/file_upload.dart';
 import '../../../../utils/device/device_utils.dart';
 import 'dialog/image_url_dialog.dart';
 

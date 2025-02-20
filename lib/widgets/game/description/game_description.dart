@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../download/game_download_links.dart';
 
 class GameDescription extends StatelessWidget {

@@ -37,7 +37,7 @@ class UpdateService extends ChangeNotifier {
       print("当前版本: $_currentVersion");
 
       final githubName = AppConfig.githubName;
-      final reponame = AppConfig.repoName;
+      final reponame = AppConfig.githubRepo;
 
       // 检查 GitHub Release
       final response = await http.get(

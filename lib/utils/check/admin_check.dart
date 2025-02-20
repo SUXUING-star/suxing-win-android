@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../providers/auth/auth_provider.dart';
+import '../../providers/auth/auth_provider.dart';
 
 class AdminCheck extends StatelessWidget {
   final Widget child;

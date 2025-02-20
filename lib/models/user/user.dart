@@ -8,6 +8,7 @@ class User {
   final String? avatar;
   final DateTime createTime;
   final bool isAdmin;
+  final bool isSuperAdmin;  // 新增字段
 
   User({
     required this.id,
@@ -18,6 +19,7 @@ class User {
     this.avatar,
     required this.createTime,
     this.isAdmin = false,
+    this.isSuperAdmin = false,  // 默认为 false
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -34,6 +36,7 @@ class User {
           : json['createTime'])
           : DateTime.now(),
       isAdmin: json['isAdmin'] ?? false,
+      isSuperAdmin: json['isSuperAdmin'] ?? false,  // 从 JSON 解析
     );
   }
 
@@ -47,6 +50,7 @@ class User {
       'avatar': avatar,
       'createTime': createTime.toIso8601String(),
       'isAdmin': isAdmin,
+      'isSuperAdmin': isSuperAdmin,  // 新增字段
     };
   }
 
@@ -59,6 +63,7 @@ class User {
       'avatar': avatar,
       'createTime': createTime.toIso8601String(),
       'isAdmin': isAdmin,
+      'isSuperAdmin': isSuperAdmin,  // 新增字段
     };
   }
 
@@ -71,6 +76,7 @@ class User {
     String? avatar,
     DateTime? createTime,
     bool? isAdmin,
+    bool? isSuperAdmin,  // 新增字段
   }) {
     return User(
       id: id ?? this.id,
@@ -81,6 +87,7 @@ class User {
       avatar: avatar ?? this.avatar,
       createTime: createTime ?? this.createTime,
       isAdmin: isAdmin ?? this.isAdmin,
+      isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,  // 新增字段
     );
   }
 }

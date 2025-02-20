@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../models/user.dart';
+import '../../models/user/user.dart';
 import '../../services/user_service.dart';
 
 class AuthProvider with ChangeNotifier {
@@ -16,6 +16,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
+  bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
   String? get userId => _currentUser?.id;
 
   Future<void> _init() async {

@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
-import '../../../models/game.dart';
+import '../../models/game/game.dart';
 import '../../../services/game_service.dart';
 import '../../../routes/app_routes.dart';
 import 'home_game_card.dart';
 
 class HomeHot extends StatefulWidget {
+  final Stream<List<Game>>? gamesStream;
+  const HomeHot({Key? key, this.gamesStream}) : super(key: key);
   @override
   _HomeHotState createState() => _HomeHotState();
 }
@@ -23,7 +25,7 @@ class _HomeHotState extends State<HomeHot> {
   @override
   void initState() {
     super.initState();
-    _startAutoScroll();
+    _startAutoScroll();  // 只启动了自动滚动，没有协调数据加载
   }
 
   @override

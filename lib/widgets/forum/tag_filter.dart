@@ -1,6 +1,6 @@
 // lib/widgets/forum/tag_filter.dart
 import 'package:flutter/material.dart';
-import '../../utils/font_config.dart';
+import '../../utils/font/font_config.dart';
 
 class TagFilter extends StatelessWidget {
   final List<String> tags;

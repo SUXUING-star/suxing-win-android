@@ -4,15 +4,14 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import '../../models/user.dart';
+import '../../models/user/user.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/user_service.dart';
 import '../../widgets/profile/profile_header.dart';
 import '../../widgets/profile/profile_menu_list.dart';
-import '../../utils/loading_route_observer.dart'; // 确保这个导入存在
-import '../../utils/file_upload.dart';
-import '../../utils/font_config.dart';
+import '../../utils/upload/file_upload.dart';
+import '../../utils/font/font_config.dart';
 import '../../widgets/common/custom_app_bar.dart';
 
 class ProfileScreen extends StatefulWidget {

@@ -1,5 +1,5 @@
 // lib/blocs/my_posts/my_posts_state.dart
-import '../../models/post.dart';
+import '../../models/post/post.dart';
 
 class MyPostsState {
   final List<Post> posts;

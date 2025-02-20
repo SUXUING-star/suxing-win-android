@@ -2,17 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import '../../providers/initialize/initialization_provider.dart';
-import '../../providers/connection/db_state_provider.dart';
-import '../../providers/theme/theme_provider.dart';
-import '../../providers/auth/auth_provider.dart';
 import '../db_connection_service.dart';
-import '../cache/game_cache_service.dart';
-import '../cache/avatar_cache_service.dart';
-import '../cache/links_tools_cache_service.dart';
-import '../cache/history_cache_service.dart';
-import '../cache/comment_cache_service.dart';
-import '../user_service.dart';
+
 
 class RestartService {
   static final RestartService _instance = RestartService._internal();
@@ -40,54 +31,9 @@ class RestartService {
 
   Future<void> _cleanupServices() async {
     try {
-      // 1. 清理缓存数据，但保留认证信息
-      final cleanupTasks = [
-            () async {
-          try {
-            await GameCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear game cache error: $e');
-          }
-        },
-            () async {
-          try {
-            await GameCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear game cache error: $e');
-          }
-        },
-            () async {
-          try {
-            await AvatarCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear avatar cache error: $e');
-          }
-        },
-            () async {
-          try {
-            await LinksToolsCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear links tools cache error: $e');
-          }
-        },
-            () async {
-          try {
-            await HistoryCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear history cache error: $e');
-          }
-        },
-            () async {
-          try {
-            await CommentsCacheService().clearCacheData();
-          } catch (e) {
-            print('Clear comments cache error: $e');
-          }
-        },
-      ];
 
       // 并行执行清理任务
-      await Future.wait(cleanupTasks.map((task) => task()));
+      //await Future.wait(cleanupTasks.map((task) => task()));
 
       // 2. 关闭所有服务
       await Future.wait([

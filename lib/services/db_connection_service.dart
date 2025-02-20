@@ -8,6 +8,7 @@ import 'dart:io';
 import 'cert/ssl_cert_service.dart';
 import './limiter/db_rate_limiter_service.dart';
 
+
 class DBConnectionService {
   //限流服务
   final DBRateLimiterService _rateLimiter = DBRateLimiterService();
@@ -27,6 +28,7 @@ class DBConnectionService {
   late DbCollection gameHistory;
   late DbCollection postHistory;
   late DbCollection messages;  // 添加消息集合
+  late DbCollection userBans;
 
   bool _isConnected = false;
   bool get isConnected => _isConnected;
@@ -117,7 +119,7 @@ class DBConnectionService {
       final password = AppConfig.mongodbPassword;
 
       final connectionString = 'mongodb://$username:$password@${uri.replaceAll('mongodb://', '')}/$database'
-          '?authSource=admin'
+          '?authSource=galshare'
           '&tls=true'
           '&tlsAllowInvalidCertificates=true';
 
@@ -136,6 +138,7 @@ class DBConnectionService {
       gameHistory = _db.collection('game_history');
       postHistory = _db.collection('post_history');
       messages = _db.collection('messages');  // 添加消息集合初始化
+      userBans = _db.collection('user_bans');  // 添加 userBans 集合初始化
 
       await _ensureIndexes();
 
@@ -282,6 +285,17 @@ class DBConnectionService {
         messages.createIndex(keys: {
           'senderId': 1
         }),
+        // 用户封禁相关索引
+        userBans.createIndex(
+            keys: {'userId': 1},
+            unique: true
+        ),
+        userBans.createIndex(
+            keys: {'banTime': -1}
+        ),
+        userBans.createIndex(
+            keys: {'endTime': 1}
+        ),
       ]);
     } catch (e) {
       print('Error creating indexes: $e');

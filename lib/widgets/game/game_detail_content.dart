@@ -1,6 +1,6 @@
 // lib/widgets/game/game_detail_content.dart
 import 'package:flutter/material.dart';
-import '../../models/game.dart';
+import '../../models/game/game.dart';
 import 'header/game_header.dart';
 import 'description/game_description.dart';
 import 'image/game_images.dart';

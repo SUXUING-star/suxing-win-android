@@ -1,7 +1,7 @@
 // lib/widgets/game/button/like_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../models/game.dart';
+import '../../../models/game/game.dart';
 import '../../../services/game_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../widgets/common/toaster.dart';

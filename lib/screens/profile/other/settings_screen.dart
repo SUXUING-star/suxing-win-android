@@ -5,7 +5,7 @@ import '../../../routes/app_routes.dart';
 import '../../../services/history/game_history_service.dart';
 import '../../../services/history/post_history_service.dart';
 import '../../../services/user_service.dart';
-import '../../../utils/loading_route_observer.dart';
+import '../../../utils/load/loading_route_observer.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 
 // 状态
