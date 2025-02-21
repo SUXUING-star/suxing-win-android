@@ -7,7 +7,7 @@ import '../screens/forum/forum_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth/auth_provider.dart';
-import '../services/update/update_service.dart';
+import '../services/main/update/update_service.dart';
 import '../services/main/user/user_ban_service.dart';
 import '../services/main/user/user_service.dart';
 import 'android/top_navigation_bar.dart';

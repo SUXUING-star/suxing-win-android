@@ -1,6 +1,7 @@
 // lib/providers/initialization_provider.dart
 import 'package:flutter/material.dart';
 import '../../widgets/startup/initialization_screen.dart';
+import '../../utils/error/error_formatter.dart';
 
 class InitializationProvider extends ChangeNotifier {
   InitializationStatus _status = InitializationStatus.inProgress;
@@ -18,8 +19,13 @@ class InitializationProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setError(String errorMessage) {
-    _message = errorMessage;
+  void setError(dynamic error) {
+    // 只有在实际是错误对象时才进行格式化
+    if (error is Exception || error is Error) {
+      _message = ErrorFormatter.formatErrorMessage(error);
+    } else {
+      _message = error.toString();
+    }
     _status = InitializationStatus.error;
     notifyListeners();
   }
