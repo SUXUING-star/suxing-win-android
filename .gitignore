@@ -14,8 +14,8 @@ migrate_working_dir/
 # 配置文件
 lib/config/
 assets/encrypted_config.json
-# 防护服务
-lib/services/main/database/
+# 服务
+lib/services/
 # 加密文件
 lib/utils/decrypt/
 tools/
