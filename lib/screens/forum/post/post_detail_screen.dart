@@ -2,12 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/post/post.dart';
-import '../../../services/forum_service.dart';
-import '../../../services/history/post_history_service.dart';  // 更新import
+import '../../../services/main/forum/forum_service.dart';
+import '../../../services/main/history/post_history_service.dart';  // 更新import
 import '../../../providers/auth/auth_provider.dart';
 import '../../../routes/app_routes.dart';
-import '../../../widgets/forum/post/post_content.dart';
-import '../../../widgets/forum/post/reply_list.dart';
+import '../../../widgets/components/screen/forum/post/post_content.dart';
+import '../../../widgets/components/screen/forum/post/reply_list.dart';
 import '../../../utils/font/font_config.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 

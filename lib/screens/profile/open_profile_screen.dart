@@ -1,14 +1,15 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
 import '../../models/user/user.dart';
-import '../../services/user_service.dart';
-import '../../services/forum_service.dart';
-import '../../services/game_service.dart';
+import '../../services/main/user/user_service.dart';
+import '../../services/main/forum/forum_service.dart';
+import '../../services/main/game/game_service.dart';
 import '../../models/post/post.dart';
 import '../../models/game/game.dart';
 import '../../widgets/common/custom_app_bar.dart';
-import '../../widgets/profile/open/profile_game_card..dart';
-import '../../widgets/profile/open/profile_post_card.dart';
+import '../../widgets/components/screen/profile/open/profile_game_card..dart';
+import '../../widgets/components/screen/profile/open/profile_post_card.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -49,20 +50,27 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> {
         _user = User.fromJson(userDoc);
       }
 
-      // 并行加载帖子和游戏
-      final futures = await Future.wait([
-        _forumService.getRecentUserPosts(widget.userId, limit: 5),
-        _gameService.getGamesPaginated(
-          page: 1,
-          pageSize: 5,
-          sortBy: 'createTime',
-          descending: true,
-        ),
-      ]);
+      // 加载该用户发布的帖子
+      final userPosts = await _forumService.getRecentUserPosts(widget.userId, limit: 5);
+
+      // 查询该用户发布的游戏
+      // 修改为使用authorId过滤查询
+      final query = mongo.where
+          .eq('authorId', widget.userId)
+          .sortBy('createTime', descending: true)
+          .limit(5);
+
+      final userGames = await _gameService.getGamesPaginated(
+        page: 1,
+        pageSize: 5,
+        sortBy: 'createTime',
+        descending: true,
+        authorId: widget.userId, // 添加authorId参数进行过滤
+      );
 
       setState(() {
-        _recentPosts = futures[0] as List<Post>;
-        _publishedGames = futures[1] as List<Game>;
+        _recentPosts = userPosts;
+        _publishedGames = userGames;
         _isLoading = false;
       });
     } catch (e) {
@@ -72,6 +80,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

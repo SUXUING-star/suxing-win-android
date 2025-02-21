@@ -1,11 +1,11 @@
 // lib/screens/game/game_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../../../models/game/game.dart';
-import '../../../services/game_service.dart';
-import '../../../widgets/game/button/edit_button.dart';
-import '../../../widgets/game/button/like_button.dart';
-import '../../../widgets/game/game_detail_content.dart';
-import '../../../widgets/game/coverImage/game_cover_image.dart';
+import '../../../services/main/game/game_service.dart';
+import '../../../widgets/components/screen/game/button/edit_button.dart';
+import '../../../widgets/components/screen/game/button/like_button.dart';
+import '../../../widgets/components/screen/game/game_detail_content.dart';
+import '../../../widgets/components/screen/game/coverImage/game_cover_image.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
@@ -182,31 +182,37 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           key: const PageStorageKey('game_detail'),
           slivers: [
             _buildSliverAppBar(_game!),
-            SliverToBoxAdapter(
-              child: GameDetailContent(game: _game!),
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 80), // 给底部留出空间
+              sliver: SliverToBoxAdapter(
+                child: GameDetailContent(game: _game!),
+              ),
             ),
           ],
         ),
       ),
-      floatingActionButton: Stack(
-        children: [
-          EditButton(
-            game: _game!,
-            onEditComplete: _refreshGameDetails,
-          ),
-          Align(
-            alignment: Alignment.centerRight,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 16.0),
-              child: LikeButton(
-                game: _game!,
-                gameService: _gameService,
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0), // 给 FAB 添加底部边距
+        child: Stack(
+          children: [
+            EditButton(
+              game: _game!,
+              onEditComplete: _refreshGameDetails,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: LikeButton(
+                  game: _game!,
+                  gameService: _gameService,
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // 改变 FAB 位置
     );
   }
 }

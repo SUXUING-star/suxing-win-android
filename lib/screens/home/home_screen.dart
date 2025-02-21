@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../widgets/home/home_hot.dart';
-import '../../widgets/home/home_latest.dart';
+import '../../widgets/components/screen/home/field/home_hot.dart';
+import '../../widgets/components/screen/home/field/home_latest.dart';
 import '../../utils/load/loading_route_observer.dart';
-import '../../widgets/home/home_banner.dart';
+import '../../widgets/components/screen/home/banner/home_banner.dart';
 import '../../models/game/game.dart';
-import '../../services/game_service.dart';
+import '../../services/main/game/game_service.dart';
 
 class HomeScreen extends StatefulWidget {
 

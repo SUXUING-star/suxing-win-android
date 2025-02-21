@@ -81,7 +81,9 @@ class FileUpload {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        return List<String>.from(data['urls']);
+        final files = data['files'] as List<dynamic>;
+        // 从每个文件对象中提取 url
+        return files.map((file) => file['url'] as String).toList();
       } else {
         throw Exception('上传失败: ${response.statusCode}');
       }

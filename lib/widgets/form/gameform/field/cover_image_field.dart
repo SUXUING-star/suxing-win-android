@@ -55,9 +55,7 @@ class CoverImageField extends StatelessWidget {
   Future<void> _showUrlDialog(BuildContext context) async {
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => ImageUrlDialog(
-        initialUrl: coverImageUrl?.startsWith('http') == true ? coverImageUrl : null,
-      ),
+      builder: (context) => ImageUrlDialog(),
     );
 
     if (result != null) {

@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../routes/app_routes.dart';
-import '../../../services/history/game_history_service.dart';
-import '../../../services/history/post_history_service.dart';
-import '../../../services/user_service.dart';
+import '../../../services/main/history/game_history_service.dart';
+import '../../../services/main/history/post_history_service.dart';
+import '../../../services/main/user/user_service.dart';
 import '../../../utils/load/loading_route_observer.dart';
 import '../../../widgets/common/custom_app_bar.dart';
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/game/game.dart';
-import '../../services/game_service.dart';
-import '../../widgets/game/card/game_card.dart';
+import '../../services/main/game/game_service.dart';
+import '../../widgets/components/screen/game/card/game_card.dart';
 import '../../utils/load/loading_route_observer.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/common/custom_app_bar.dart';

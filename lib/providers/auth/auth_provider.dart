@@ -1,7 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../models/user/user.dart';
-import '../../services/user_service.dart';
+import '../../services/main/user/user_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final UserService _authService = UserService();

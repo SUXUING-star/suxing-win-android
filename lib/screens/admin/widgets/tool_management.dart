@@ -1,6 +1,6 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
-import '../../../services/link_tool_service.dart';
+import '../../../services/main/linktool/link_tool_service.dart';
 import '../../../models/linkstools/tool.dart';
 import '../../../widgets/form/toolform/tool_form_dialog.dart';
 

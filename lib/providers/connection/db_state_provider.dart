@@ -1,7 +1,7 @@
 // lib/providers/connection/db_state_provider.dart
 
 import 'package:flutter/material.dart';
-import '../../services/restart/restart_service.dart';
+import '../../services/main/database/restart/restart_service.dart';
 import 'dart:async';
 
 class DBStateProvider with ChangeNotifier {

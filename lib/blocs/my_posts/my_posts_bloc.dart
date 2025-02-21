@@ -1,7 +1,7 @@
 // lib/blocs/my_posts/my_posts_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../services/forum_service.dart';
-import '../../services/user_service.dart';
+import '../../services/main/forum/forum_service.dart';
+import '../../services/main/user/user_service.dart';
 import 'my_posts_event.dart';
 import 'my_posts_state.dart';
 

@@ -1,9 +1,9 @@
 // desktop_top_bar.dart
 import 'package:flutter/material.dart';
 import '../../screens/search_screen.dart';
-import '../../services/user_service.dart';
+import '../../services/main/user/user_service.dart';
 import '../../widgets/update/update_button.dart';
-import '../../widgets/message/message_badge.dart';
+import '../../widgets/components/screen/message/message_badge.dart';
 
 class DesktopTopBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;

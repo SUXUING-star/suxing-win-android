@@ -1,6 +1,6 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
-import '../../../services/forum_service.dart';
+import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/common/toaster.dart';
 
 class CreatePostScreen extends StatefulWidget {

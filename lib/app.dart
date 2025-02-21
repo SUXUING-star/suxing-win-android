@@ -1,11 +1,9 @@
 // lib/app.dart
-
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
-import 'services/history/game_history_service.dart';
-import 'services/history/post_history_service.dart';
+import 'services/main/history/game_history_service.dart';
+import 'services/main/history/post_history_service.dart';
 import './initialization/initialization_wrapper.dart';
 import 'providers/initialize/initialization_provider.dart';
 import 'providers/theme/theme_provider.dart';
@@ -16,10 +14,10 @@ import 'layouts/background/app_background.dart';
 import 'widgets/loading/loading_screen.dart';
 import 'widgets/effects/mouse_trail_effect.dart';
 import './routes/app_routes.dart';
-import 'services/user_service.dart';
-import 'services/forum_service.dart';
-import 'services/ban/user_ban_service.dart';
-import 'services/restart/restart_service.dart';
+import 'services/main/user/user_service.dart';
+import 'services/main/forum/forum_service.dart';
+import 'services/main/user/user_ban_service.dart';
+import 'services/main/database/restart/restart_service.dart';
 
 
 class App extends StatelessWidget {

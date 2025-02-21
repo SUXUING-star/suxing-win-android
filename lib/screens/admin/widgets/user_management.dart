@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../providers/auth/auth_provider.dart';
-import '../../../services/user_service.dart';
-import '../../../services/ban/user_ban_service.dart';
+import '../../../services/main/user/user_service.dart';
+import '../../../services/main/user/user_ban_service.dart';
 
 class UserManagement extends StatefulWidget {
   const UserManagement({Key? key}) : super(key: key);

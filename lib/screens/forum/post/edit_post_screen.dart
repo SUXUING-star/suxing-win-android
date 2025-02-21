@@ -1,7 +1,7 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
 import '../../../models/post/post.dart';
-import '../../../services/forum_service.dart';
+import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/common/toaster.dart';
 
 class EditPostScreen extends StatefulWidget {

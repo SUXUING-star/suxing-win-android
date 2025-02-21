@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../utils/device/device_utils.dart';
 import '../../screens/search_screen.dart';
-import '../../services/user_service.dart';
+import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
 import '../../widgets/logo/app_logo.dart';
 import '../../widgets/update/update_button.dart';
-import '../../widgets/message/message_badge.dart';
+import '../../widgets/components/screen/message/message_badge.dart';
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;

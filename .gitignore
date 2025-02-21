@@ -15,12 +15,12 @@ migrate_working_dir/
 lib/config/
 assets/encrypted_config.json
 # 防护服务
-lib/service/security/
-lib/service/cert/
-lib/service/limiter/
+lib/services/main/database/
 # 加密文件
 lib/utils/decrypt/
 tools/
+
+
 
 #不需要这些
 android/app/

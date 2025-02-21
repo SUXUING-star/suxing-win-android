@@ -1,8 +1,8 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
-import '../../services/email/email_service.dart';
-import '../../services/user_service.dart';
+import '../../services/main/email/email_service.dart';
+import '../../services/main/user/user_service.dart';
 import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster.dart';
 import '../../widgets/common/custom_app_bar.dart';

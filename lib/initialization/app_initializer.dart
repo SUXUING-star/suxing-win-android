@@ -7,29 +7,58 @@ import '../providers/initialize/initialization_provider.dart';
 import '../providers/connection/db_state_provider.dart';
 import '../providers/theme/theme_provider.dart';
 import '../providers/auth/auth_provider.dart';
-import '../services/db_connection_service.dart';
+import '../services/main/database/db_service.dart';
 import '../services/update/update_service.dart';
-import '../services/cache/game_cache_service.dart';
-import '../services/cache/info_cache_service.dart';
-import '../services/cache/links_tools_cache_service.dart';
-import '../services/cache/history_cache_service.dart';
-import '../services/cache/comment_cache_service.dart';
-import '../services/cache/forum_cache_service.dart';
-import '../services/restart/restart_service.dart';
-import '../services/cache/user_ban_cache_service.dart';
+import '../services/main/game/cache/game_cache_service.dart';
+import '../services/main/user/cache/info_cache_service.dart';
+import '../services/main/linktool/cache/links_tools_cache_service.dart';
+import '../services/main/history/cache/history_cache_service.dart';
+import '../services/main/game/comment/cache/comment_cache_service.dart';
+import '../services/main/forum/cache/forum_cache_service.dart';
+import '../services/main/database/restart/restart_service.dart';
+import '../services/main/user/cache/user_ban_cache_service.dart';
+import '../services/main/message/cache/message_cache_service.dart';
+
+import '../utils/decrypt/config_decrypt.dart';
 
 class AppInitializer {
+  static const int _maxRetries = 3;
+  static const Duration _retryDelay = Duration(seconds: 2);
+
+  static Future<void> _initializeKeyWithRetry(
+      InitializationProvider initProvider,
+      {int retryCount = 0}
+      ) async {
+    try {
+      initProvider.updateProgress('正在获取配置...', 0.05);
+      await ConfigDecrypt.initialize();
+    } catch (e) {
+      if (retryCount < _maxRetries) {
+        initProvider.updateProgress(
+            '配置获取失败，正在重试 (${retryCount + 1}/$_maxRetries)...',
+            0.05
+        );
+        await Future.delayed(_retryDelay);
+        return _initializeKeyWithRetry(initProvider, retryCount: retryCount + 1);
+      } else {
+        throw Exception('无法获取配置: ${_formatErrorMessage(e)}');
+      }
+    }
+  }
+
   static Future<Map<String, dynamic>> initializeServices(
       InitializationProvider initProvider
       ) async {
     try {
+      // 首先初始化密钥服务
+      await _initializeKeyWithRetry(initProvider);
+
       // 在初始化开始时检查是否是重启
       if (RestartService().restartNotifier.value) {
-        // 如果是重启，等待一小段时间确保之前的清理完成
         await Future.delayed(const Duration(milliseconds: 500));
-        // 重置重启标志
         RestartService().restartNotifier.value = false;
       }
+
       await Future.delayed(const Duration(milliseconds: 100));
       initProvider.updateProgress('正在初始化本地存储...', 0.1);
       await Hive.initFlutter();
@@ -37,7 +66,7 @@ class AppInitializer {
       await Future.delayed(const Duration(milliseconds: 100));
       initProvider.updateProgress('正在连接数据库...', 0.3);
       final dbStateProvider = DBStateProvider();
-      final dbService = DBConnectionService();
+      final dbService = DBService();
       final updateService = UpdateService();
 
       dbService.setStateProvider(dbStateProvider);
@@ -53,7 +82,6 @@ class AppInitializer {
         throw Exception('数据库连接失败: ${e.toString()}');
       }
 
-      // 仅在数据库连接成功后继续初始化其他服务
       if (!dbService.isConnected) {
         throw Exception('数据库连接失败');
       }
@@ -83,6 +111,9 @@ class AppInitializer {
       final useBanCacheService = UserBanCacheService();
       await useBanCacheService.init();
 
+      final messageCacheService = MessageCacheService();
+      await messageCacheService.init();
+
       await Future.delayed(const Duration(milliseconds: 100));
       initProvider.updateProgress('初始化完成', 1.0);
 
@@ -97,7 +128,7 @@ class AppInitializer {
         'commentsCacheService' : commentsCacheService,
         'forumCacheService' : forumCacheService,
         'useBanCacheService' : useBanCacheService,
-
+        'messageCacheService' : messageCacheService,
       };
     } catch (e) {
       print('Initialization error: $e');
@@ -106,7 +137,7 @@ class AppInitializer {
   }
 
   static List<ChangeNotifierProvider> createProviders(Map<String, dynamic> services) {
-    final dbService = services['dbService'] as DBConnectionService;
+    final dbService = services['dbService'] as DBService;
     if (!dbService.isConnected) {
       throw Exception('数据库未连接，无法创建服务');
     }
