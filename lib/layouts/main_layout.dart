@@ -14,6 +14,7 @@ import 'android/top_navigation_bar.dart';
 import 'android/bottom_navigation_bar.dart';
 import '../widgets/dialogs/force_update_dialog.dart';
 import '../widgets/dialogs/user_ban_dialog.dart';
+import '../widgets/components/screen/home/player/floating_music_player.dart';
 
 class MainLayout extends StatefulWidget {
   @override
@@ -97,7 +98,6 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: TopNavigationBar(
-
         onLogoTap: () {
           if (_currentIndex != 0) {
             setState(() => _currentIndex = 0);
@@ -105,7 +105,13 @@ class _MainLayoutState extends State<MainLayout> {
         },
         onProfileTap: _handleProfileTap,
       ),
-      body: _screens[_currentIndex],
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+
+          //FloatingMusicPlayer(),
+        ],
+      ),
       bottomNavigationBar: CustomBottomNavigationBar(
         currentIndex: _currentIndex,
         onTap: (index) => setState(() => _currentIndex = index),

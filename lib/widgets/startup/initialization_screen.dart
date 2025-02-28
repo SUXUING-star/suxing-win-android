@@ -66,10 +66,10 @@ class _InitializationScreenState extends State<InitializationScreen>
     bool isAndroid = !kIsWeb && Platform.isAndroid;
 
     // 根据平台确定 logo 和文字大小
-    double logoSize = isAndroid ? 150 : 180; // 安卓上 Logo 更小
-    double logoContentSize = isAndroid ? 36 : 48; // 安卓上 Logo 内容更小
-    double welcomeTextSize = isAndroid ? 16 : 18; // 安卓上欢迎文字更小
-    double messageTextSize = isAndroid ? 16 : 18; //安卓消息文字大小
+    double logoSize = isAndroid ? 120 : 180; // 安卓上 Logo 更小
+    double logoContentSize = isAndroid ? 24 : 48; // 安卓上 Logo 内容更小
+    double welcomeTextSize = isAndroid ? 12 : 18; // 安卓上欢迎文字更小
+    double messageTextSize = isAndroid ? 12 : 18; //安卓消息文字大小
 
     return Container(
       decoration: BoxDecoration(
@@ -122,8 +122,22 @@ class _InitializationScreenState extends State<InitializationScreen>
                   ),
                   const SizedBox(height: 20),
                   // 加载文本
+
+                  // 加载文本
                   AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 500),
+                    duration: const Duration(milliseconds: 300),
+                    transitionBuilder: (Widget child, Animation<double> animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0.0, 0.5),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
                     child: Text(
                       widget.message,
                       key: ValueKey<String>(widget.message),
@@ -131,7 +145,7 @@ class _InitializationScreenState extends State<InitializationScreen>
                         fontFamily: FontConfig.defaultFontFamily,
                         fontFamilyFallback: FontConfig.fontFallback,
                         color: Colors.blue[700],
-                        fontSize: messageTextSize, //使用特定平台文字大小
+                        fontSize: messageTextSize,
                         fontWeight: FontWeight.w500,
                       ),
                       textAlign: TextAlign.center,

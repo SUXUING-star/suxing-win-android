@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/logo/star_logo.dart';
 import '../../utils/device/device_utils.dart';
 import '../../screens/search_screen.dart';
 import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/logo/app_logo.dart';
+import '../../widgets/logo/star_logo.dart';
 import '../../widgets/update/update_button.dart';
 import '../../widgets/components/screen/message/message_badge.dart';
 
@@ -62,7 +63,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // ... 其他辅助方法保持不变，但需要接收并使用新的尺寸参数 ...
 
   Widget _buildLeadingLogo(BuildContext context, double size, double padding) {
     return MouseRegion(
@@ -71,7 +71,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         onTap: onLogoTap,
         child: Padding(
           padding: EdgeInsets.all(padding),
-          child: AppLogo(size: size),
+          child: StarLogo(size: size),
         ),
       ),
     );

@@ -16,8 +16,10 @@ lib/config/
 assets/encrypted_config.json
 # 服务
 lib/services/
+lib/initialization/
 # 加密文件
 lib/utils/decrypt/
+lib/utils/encrypt/
 tools/
 
 

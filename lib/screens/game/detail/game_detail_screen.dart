@@ -5,7 +5,7 @@ import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/screen/game/button/edit_button.dart';
 import '../../../widgets/components/screen/game/button/like_button.dart';
 import '../../../widgets/components/screen/game/game_detail_content.dart';
-import '../../../widgets/components/screen/game/coverImage/game_cover_image.dart';
+import '../../../widgets/common/custom_app_bar.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
@@ -24,6 +24,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Game? _game;
   String? _error;
   bool _isLoading = false;
+
+  // 用来强制刷新界面的计数器
+  int _refreshCounter = 0;
 
   @override
   void initState() {
@@ -81,6 +84,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     } finally {
       setState(() {
         _isLoading = false;
+        // 增加刷新计数器以强制重建界面
+        _refreshCounter++;
       });
     }
   }
@@ -91,51 +96,144 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  Widget _buildSliverAppBar(Game game) {
-    return SliverAppBar(
-      expandedHeight: 300,
-      pinned: true,
-      flexibleSpace: FlexibleSpaceBar(
-        title: Text(
-          game.title,
-          style: const TextStyle(
-            color: Colors.white,
-            shadows: [
-              Shadow(
-                offset: Offset(0, 1),
-                blurRadius: 3.0,
-                color: Color.fromARGB(255, 0, 0, 0),
-              ),
-            ],
-          ),
-        ),
-        background: Stack(
-          fit: StackFit.expand,
-          children: [
-            GameCoverImage(imageUrl: game.coverImage),
-            const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Colors.black54,
+  // 处理点赞后刷新界面
+  void _handleLikeChanged() {
+    _refreshGameDetails();
+  }
+
+  // 处理评论后刷新界面
+  void _handleCommentAdded() {
+    _refreshGameDetails();
+  }
+
+  Widget _buildMobileLayout(Game game) {
+    return Scaffold(
+      body: RefreshIndicator(
+        onRefresh: _refreshGameDetails,
+        child: CustomScrollView(
+          // 使用计数器作为Key的一部分，强制刷新
+          key: ValueKey('game_detail_${_refreshCounter}'),
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 300,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  game.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3.0,
+                        color: Color.fromARGB(255, 0, 0, 0),
+                      ),
+                    ],
+                  ),
+                ),
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Image.network(
+                      game.coverImage,
+                      fit: BoxFit.cover,
+                    ),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black54,
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
+                ),
+              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.share),
+                  onPressed: () {
+                    // 实现分享功能
+                  },
+                ),
+              ],
+            ),
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 80),
+              sliver: SliverToBoxAdapter(
+                // 已保持GameDetailContent不变，仅在需要刷新的地方处理
+                child: GameDetailContent(game: game),
+              ),
+            ),
+          ],
+        ),
+      ),
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 16.0),
+        child: Stack(
+          children: [
+            EditButton(
+              game: game,
+              onEditComplete: _refreshGameDetails,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16.0),
+                child: LikeButton(
+                  game: game,
+                  gameService: _gameService,
+                  onLikeChanged: _handleLikeChanged, // 这里添加点赞变化回调
                 ),
               ),
             ),
           ],
         ),
       ),
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.share),
-          onPressed: () {
-            // 实现分享功能
-          },
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildDesktopLayout(Game game) {
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: game.title,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.share),
+            onPressed: () {
+              // 实现分享功能
+            },
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            child: LikeButton(
+              game: game,
+              gameService: _gameService,
+              onLikeChanged: _handleLikeChanged, // 这里添加点赞变化回调
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(right: 16.0),
+            child: EditButton(
+              game: game,
+              onEditComplete: _refreshGameDetails,
+            ),
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        // 使用计数器作为Key的一部分，强制刷新
+        key: ValueKey('game_detail_content_${_refreshCounter}'),
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: GameDetailContent(game: game),
         ),
-      ],
+      ),
     );
   }
 
@@ -175,44 +273,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       );
     }
 
-    return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _refreshGameDetails,
-        child: CustomScrollView(
-          key: const PageStorageKey('game_detail'),
-          slivers: [
-            _buildSliverAppBar(_game!),
-            SliverPadding(
-              padding: const EdgeInsets.only(bottom: 80), // 给底部留出空间
-              sliver: SliverToBoxAdapter(
-                child: GameDetailContent(game: _game!),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 16.0), // 给 FAB 添加底部边距
-        child: Stack(
-          children: [
-            EditButton(
-              game: _game!,
-              onEditComplete: _refreshGameDetails,
-            ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: LikeButton(
-                  game: _game!,
-                  gameService: _gameService,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat, // 改变 FAB 位置
-    );
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    return isDesktop ? _buildDesktopLayout(_game!) : _buildMobileLayout(_game!);
   }
 }

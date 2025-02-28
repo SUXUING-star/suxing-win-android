@@ -5,9 +5,8 @@ import 'package:provider/provider.dart';
 import 'services/main/history/game_history_service.dart';
 import 'services/main/history/post_history_service.dart';
 import './initialization/initialization_wrapper.dart';
-import 'providers/initialize/initialization_provider.dart';
 import 'providers/theme/theme_provider.dart';
-import 'providers/connection/db_state_provider.dart';
+import 'providers/auth/auth_provider.dart';
 import 'utils/load/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
@@ -18,6 +17,7 @@ import 'services/main/user/user_service.dart';
 import 'services/main/forum/forum_service.dart';
 import 'services/main/user/user_ban_service.dart';
 import 'services/main/database/restart/restart_service.dart';
+import 'services/main/audio/audio_service.dart';
 
 
 class App extends StatelessWidget {
@@ -25,27 +25,14 @@ class App extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RestartWrapper(  // 添加 RestartWrapper
-      child: ChangeNotifierProvider(
-        create: (_) => InitializationProvider(),
-        child: InitialScreen(),
-
-      ),
-    );
-  }
-}
-
-class InitialScreen extends StatelessWidget {
-  const InitialScreen({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: InitializationWrapper(
-        onInitialized: (providers) => MyApp(
-          providers: providers,
-          loadingRouteObserver: LoadingRouteObserver(),
+    return RestartWrapper(
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: InitializationWrapper(
+          onInitialized: (providers) => MyApp(
+            providers: providers,
+            loadingRouteObserver: LoadingRouteObserver(),
+          ),
         ),
       ),
     );
@@ -55,6 +42,7 @@ class InitialScreen extends StatelessWidget {
 class MyApp extends StatelessWidget {
   final List<ChangeNotifierProvider> providers;
   final LoadingRouteObserver loadingRouteObserver;
+
 
   const MyApp({
     Key? key,
@@ -66,6 +54,10 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ...providers,
+        // 添加 AuthProvider
+        ChangeNotifierProvider<AuthProvider>(
+          create: (_) => AuthProvider(),
+        ),
         // 添加 ForumService provider
         Provider<ForumService>(
           create: (_) => ForumService(),
@@ -84,7 +76,12 @@ class MyApp extends StatelessWidget {
         Provider<UserBanService>(
           create: (_) => UserBanService(),
         ),
-        Provider<RestartService>(create: (_) => RestartService()),
+        Provider<RestartService>(
+            create: (_) => RestartService()
+        ),
+        Provider<AudioService>(
+          create: (_) => AudioService(),
+        ),
       ],
       child: MaterialApp(
         title: '宿星茶会（windows版）',
@@ -93,8 +90,6 @@ class MyApp extends StatelessWidget {
     );
   }
 }
-
-// lib/app.dart 中的 AppContent 类修改
 
 class AppContent extends StatelessWidget {
   final LoadingRouteObserver loadingRouteObserver;
@@ -106,8 +101,8 @@ class AppContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer2<ThemeProvider, DBStateProvider>(
-      builder: (context, themeProvider, dbStateProvider, _) {
+    return Consumer<ThemeProvider>(
+      builder: (context, themeProvider, _) {
         final particleColor = themeProvider.themeMode == ThemeMode.dark
             ? const Color(0xFFE0E0E0)
             : const Color(0xFFB3E5FC);
@@ -121,48 +116,12 @@ class AppContent extends StatelessWidget {
             return Stack(
               children: [
                 AppBackground(child: child ?? Container()),
-                if (dbStateProvider.needsReset)
-                  Positioned.fill(
-                    child: Container(
-                      color: Colors.black54,
-                      child: Center(
-                        child: Card(
-                          margin: const EdgeInsets.all(32),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const CircularProgressIndicator(),
-                                const SizedBox(height: 16),
-                                Text(
-                                  dbStateProvider.errorMessage ?? '连接已断开',
-                                  textAlign: TextAlign.center,
-                                  style: Theme.of(context).textTheme.titleMedium,
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  '正在准备重启应用...',
-                                  style: Theme.of(context).textTheme.bodyMedium,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
                 ValueListenableBuilder<bool>(
                   valueListenable: loadingRouteObserver.isLoading,
                   builder: (context, isLoading, _) {
-                    return ValueListenableBuilder<bool>(
-                      valueListenable: loadingRouteObserver.isFirstLoad,
-                      builder: (context, isFirstLoad, _) {
-                        return LoadingScreen(
-                          isLoading: isLoading,
-                          isFirstLoad: isFirstLoad,
-                        );
-                      },
+                    return LoadingScreen(
+                      isLoading: isLoading,
+                      message: isLoading ? '加载中...' : null,
                     );
                   },
                 ),

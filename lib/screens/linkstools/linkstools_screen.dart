@@ -11,8 +11,8 @@ import '../../widgets/form/linkform/link_form_dialog.dart';
 import '../../widgets/form/toolform/tool_form_dialog.dart';
 import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
-import '../../widgets/linkstools/links_section.dart';
-import '../../widgets/linkstools/tools_section.dart';
+import '../../widgets/components/screen/linkstools/links_section.dart';
+import '../../widgets/components/screen/linkstools/tools_section.dart';
 
 class LinksToolsScreen extends StatefulWidget {
   @override
@@ -24,6 +24,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   List<Link>? _links;
   List<Tool>? _tools;
   String? _errorMessage;
+
+  // Define breakpoint for desktop layout
+  final double _desktopBreakpoint = 900.0;
 
   @override
   void didChangeDependencies() {
@@ -76,9 +79,14 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   @override
   Widget build(BuildContext context) {
     final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= _desktopBreakpoint;
 
     return Scaffold(
-      appBar: CustomAppBar(
+      // AppBar only for mobile layout
+      appBar: isDesktop
+          ? null
+          : CustomAppBar(
         title: '实用工具',
         actions: [
           if (isAdmin) ...[
@@ -97,75 +105,176 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadData,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
-                child: Text(
-                  '常用链接',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            if (_errorMessage != null)
-              SliverToBoxAdapter(
-                child: Center(child: Text(_errorMessage!)),
-              )
-            else if (_links == null)
-              SliverToBoxAdapter(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_links!.isEmpty)
-                SliverToBoxAdapter(
-                  child: Center(child: Text('暂无链接')),
-                )
-              else
-                LinksSection(
-                  links: _links!,
-                  isAdmin: isAdmin,
-                  onRefresh: _loadData,
-                  onLaunchURL: (url) => _launchURL(context, url),
-                  linkToolService: _linkToolService,
-                ),
-
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
-                child: Text(
-                  '实用工具',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ),
-            if (_errorMessage != null)
-              SliverToBoxAdapter(
-                child: Center(child: Text(_errorMessage!)),
-              )
-            else if (_tools == null)
-              SliverToBoxAdapter(
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (_tools!.isEmpty)
-                SliverToBoxAdapter(
-                  child: Center(child: Text('暂无工具')),
-                )
-              else
-                ToolsSection(
-                  tools: _tools!,
-                  isAdmin: isAdmin,
-                  onLaunchURL: (url) => _launchURL(context, url),
-                ),
-          ],
-        ),
+        child: isDesktop
+            ? _buildDesktopLayout(isAdmin)
+            : _buildMobileLayout(isAdmin),
       ),
     );
   }
 
+  // Desktop layout with side-by-side sections
+  Widget _buildDesktopLayout(bool isAdmin) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Links Section (Left side)
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '常用链接',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // Add link button for desktop on the left side
+                      if (isAdmin)
+                        IconButton(
+                          icon: Icon(Icons.add_link),
+                          onPressed: () => _showAddLinkDialog(context),
+                          tooltip: '添加链接',
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildLinksContent(isAdmin),
+            ],
+          ),
+        ),
+
+        // Improved vertical divider with elegant desktop styling
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 16.0),
+          child: VerticalDivider(
+            width: 32,
+            thickness: 1,
+            color: Theme.of(context).dividerColor.withOpacity(0.15),
+            indent: 8,
+            endIndent: 8,
+          ),
+        ),
+
+        // Tools Section (Right side)
+        Expanded(
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '实用工具',
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // Add tool button for desktop on the right side
+                      if (isAdmin)
+                        IconButton(
+                          icon: Icon(Icons.add_box),
+                          onPressed: () => _showAddToolDialog(context),
+                          tooltip: '添加工具',
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+              _buildToolsContent(isAdmin),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Original mobile layout (stacked vertically)
+  Widget _buildMobileLayout(bool isAdmin) {
+    return CustomScrollView(
+      slivers: [
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+            child: Text(
+              '常用链接',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        _buildLinksContent(isAdmin),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
+            child: Text(
+              '实用工具',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ),
+        _buildToolsContent(isAdmin),
+      ],
+    );
+  }
+
+  // Common links section content
+  Widget _buildLinksContent(bool isAdmin) {
+    if (_errorMessage != null) {
+      return SliverToBoxAdapter(
+        child: Center(child: Text(_errorMessage!)),
+      );
+    } else if (_links == null) {
+      return SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (_links!.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(child: Text('暂无链接')),
+      );
+    } else {
+      return LinksSection(
+        links: _links!,
+        isAdmin: isAdmin,
+        onRefresh: _loadData,
+        onLaunchURL: (url) => _launchURL(context, url),
+        linkToolService: _linkToolService,
+      );
+    }
+  }
+
+  // Common tools section content
+  Widget _buildToolsContent(bool isAdmin) {
+    if (_errorMessage != null) {
+      return SliverToBoxAdapter(
+        child: Center(child: Text(_errorMessage!)),
+      );
+    } else if (_tools == null) {
+      return SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      );
+    } else if (_tools!.isEmpty) {
+      return SliverToBoxAdapter(
+        child: Center(child: Text('暂无工具')),
+      );
+    } else {
+      return ToolsSection(
+        tools: _tools!,
+        isAdmin: isAdmin,
+        onLaunchURL: (url) => _launchURL(context, url),
+      );
+    }
+  }
 
   void _showAddLinkDialog(BuildContext context) {
     showDialog(
@@ -185,11 +294,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   }
 
   void _showAddToolDialog(BuildContext context) {
-    showDialog<Tool>( // 明确指定返回类型为 Tool
+    showDialog<Tool>(
       context: context,
       barrierDismissible: false,
       builder: (context) => ToolFormDialog(),
-    ).then((tool) async { // 直接使用 Tool 对象
+    ).then((tool) async {
       if (tool != null) {
         try {
           final loadingObserver = Navigator.of(context)
@@ -198,7 +307,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
               .first;
           loadingObserver.showLoading();
 
-          await _linkToolService.addTool(tool); // 直接使用 Tool 对象，不需要 fromJson
+          await _linkToolService.addTool(tool);
           Toaster.show(context, message: '添加工具成功');
           await _loadData();
         } catch (e) {

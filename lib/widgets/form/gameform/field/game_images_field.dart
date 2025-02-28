@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import '../../../../utils/upload/file_upload.dart';
-import '../../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
+import '../../../../utils/device/device_utils.dart';
 
 class GameImagesField extends StatelessWidget {
   final List<String> gameImages;
@@ -24,16 +24,43 @@ class GameImagesField extends StatelessWidget {
       try {
         onLoadingChanged(true);
         final files = images.map((image) => File(image.path)).toList();
+
+        // 上传新图片（不需要删除旧图片，因为这是添加新截图）
         final urls = await FileUpload.uploadFiles(
           files,
           folder: 'games/screenshots',
         );
         onChanged([...gameImages, ...urls]);
       } catch (e) {
-        // Handle error
+        // 处理错误
+        print('上传游戏截图失败: $e');
       } finally {
         onLoadingChanged(false);
       }
+    }
+  }
+
+  // 删除单个截图
+  Future<void> _deleteImage(int index) async {
+    try {
+      onLoadingChanged(true);
+
+      // 获取要删除的URL
+      final urlToDelete = gameImages[index];
+
+      // 创建新的图片列表（不包含要删除的图片）
+      final newImages = List<String>.from(gameImages);
+      newImages.removeAt(index);
+
+      // 先更新UI，移除图片
+      onChanged(newImages);
+
+      // 然后在后台删除图片文件
+      await FileUpload.deleteFile(urlToDelete);
+    } catch (e) {
+      print('删除游戏截图失败: $e');
+    } finally {
+      onLoadingChanged(false);
     }
   }
 
@@ -81,17 +108,39 @@ class GameImagesField extends StatelessWidget {
                         width: imageWidth,
                         height: imageHeight,
                         fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            width: imageWidth,
+                            height: imageHeight,
+                            color: Colors.grey[200],
+                            child: Center(
+                              child: CircularProgressIndicator(
+                                value: loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                    (loadingProgress.expectedTotalBytes ?? 1)
+                                    : null,
+                              ),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            width: imageWidth,
+                            height: imageHeight,
+                            color: Colors.grey[300],
+                            child: Center(
+                              child: Icon(Icons.error_outline),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     Positioned(
                       top: 4,
                       right: 12,
                       child: GestureDetector(
-                        onTap: () {
-                          final newImages = List<String>.from(gameImages);
-                          newImages.removeAt(index);
-                          onChanged(newImages);
-                        },
+                        onTap: () => _deleteImage(index),
                         child: Container(
                           padding: EdgeInsets.all(4),
                           decoration: BoxDecoration(

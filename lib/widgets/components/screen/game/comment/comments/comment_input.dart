@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
-import '../../../../../common/toaster.dart';
 
 class CommentInput extends StatefulWidget {
   final String gameId;
+  final VoidCallback? onCommentAdded; // 添加回调函数
 
-  const CommentInput({Key? key, required this.gameId}) : super(key: key);
+  const CommentInput({
+    Key? key,
+    required this.gameId,
+    this.onCommentAdded, // 初始化回调
+  }) : super(key: key);
 
   @override
   State<CommentInput> createState() => _CommentInputState();
@@ -17,11 +21,57 @@ class CommentInput extends StatefulWidget {
 class _CommentInputState extends State<CommentInput> {
   final TextEditingController _controller = TextEditingController();
   final CommentService _commentService = CommentService();
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
+  }
+
+  Future<void> _submitComment() async {
+    final comment = _controller.text.trim();
+    if (comment.isEmpty) return;
+
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      await _commentService.addComment(widget.gameId, comment);
+
+      // 清空输入并通知父组件刷新
+      _controller.clear();
+
+      // 调用刷新回调
+      if (widget.onCommentAdded != null) {
+        widget.onCommentAdded!();
+      }
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('成功发表评论'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('发表评论失败: ${e.toString()}'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
@@ -50,38 +100,19 @@ class _CommentInputState extends State<CommentInput> {
                 border: OutlineInputBorder(),
               ),
               maxLines: 3,
+              enabled: !_isSubmitting,
             ),
           ),
           const SizedBox(width: 16),
-          ElevatedButton(
-            onPressed: () async {
-              if (_controller.text.trim().isEmpty) return;
-
-              // 在 CommentInput 中
-              try {
-                await _commentService.addComment(widget.gameId, _controller.text.trim());
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('成功发表评论'),
-                      duration: Duration(seconds: 2),
-                      // 移除 behavior: SnackBarBehavior.floating
-                      // 移除 margin
-                    ),
-                  );
-                }
-                _controller.clear();
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('发表评论失败'),
-                      duration: Duration(seconds: 2),
-                    ),
-                  );
-                }
-              }
-            },
+          _isSubmitting
+              ? Container(
+            margin: const EdgeInsets.only(left: 10),
+            width: 24,
+            height: 24,
+            child: const CircularProgressIndicator(),
+          )
+              : ElevatedButton(
+            onPressed: _submitComment,
             child: const Text('发表'),
           ),
         ],

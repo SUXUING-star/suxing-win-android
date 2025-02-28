@@ -1,4 +1,4 @@
-// lib/widgets/game/comment/reply_item.dart
+// lib/widgets/game/comment/replies/reply_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../models/comment/comment.dart';
@@ -9,8 +9,13 @@ import '../../../../../../screens/profile/open_profile_screen.dart';
 
 class ReplyItem extends StatefulWidget {
   final Comment reply;
+  final VoidCallback? onReplyChanged; // 添加回调函数
 
-  const ReplyItem({Key? key, required this.reply}) : super(key: key);
+  const ReplyItem({
+    Key? key,
+    required this.reply,
+    this.onReplyChanged, // 初始化回调
+  }) : super(key: key);
 
   @override
   State<ReplyItem> createState() => _ReplyItemState();
@@ -20,6 +25,7 @@ class _ReplyItemState extends State<ReplyItem> {
   final UserService _userService = UserService();
   final CommentService _commentService = CommentService();
   final Map<String, Future<Map<String, dynamic>>> _userInfoCache = {};
+  bool _isDeleting = false; // 添加删除状态标志
 
   Future<Map<String, dynamic>> _getUserInfo(String userId) {
     _userInfoCache[userId] ??= _userService.getUserInfoById(userId);
@@ -112,7 +118,7 @@ class _ReplyItemState extends State<ReplyItem> {
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('编辑回复'),
         content: TextField(
           controller: controller,
@@ -124,7 +130,7 @@ class _ReplyItemState extends State<ReplyItem> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('取消'),
           ),
           ElevatedButton(
@@ -132,15 +138,31 @@ class _ReplyItemState extends State<ReplyItem> {
               if (controller.text.trim().isEmpty) return;
 
               try {
+                // 关闭对话框
+                Navigator.pop(dialogContext);
+
+                // 更新回复
                 await _commentService.updateComment(
                   reply.id,
                   controller.text.trim(),
                 );
-                Navigator.pop(context);
+
+                // 通知回复已更新
+                if (widget.onReplyChanged != null) {
+                  widget.onReplyChanged!();
+                }
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('回复已更新')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('编辑回复失败：$e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('编辑回复失败：$e')),
+                  );
+                }
               }
             },
             child: const Text('保存'),
@@ -153,27 +175,65 @@ class _ReplyItemState extends State<ReplyItem> {
   void _showDeleteDialog(BuildContext context, Comment reply) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('删除回复'),
         content: const Text('确定要删除这条回复吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('取消'),
           ),
-          ElevatedButton(
+          _isDeleting
+              ? const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : ElevatedButton(
             onPressed: () async {
               try {
+                // 设置删除状态为true
+                setState(() {
+                  _isDeleting = true;
+                });
+
+                // 关闭对话框
+                Navigator.pop(dialogContext);
+
+                // 执行删除操作
                 await _commentService.deleteComment(reply.id);
-                Navigator.pop(context);
+
+                // 通知回复已删除
+                if (widget.onReplyChanged != null) {
+                  widget.onReplyChanged!();
+                }
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('回复已删除')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('删除回复失败：$e')),
-                );
+                // 重置删除状态
+                if (mounted) {
+                  setState(() {
+                    _isDeleting = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除回复失败：$e')),
+                  );
+                }
+              } finally {
+                // 确保状态重置
+                if (mounted) {
+                  setState(() {
+                    _isDeleting = false;
+                  });
+                }
               }
             },
-            child: const Text('删除'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('删除'),
           ),
         ],
       ),

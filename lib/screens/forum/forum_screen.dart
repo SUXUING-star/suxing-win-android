@@ -8,8 +8,8 @@ import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/custom_app_bar.dart';
-import '../../widgets/components/screen/forum/post_card.dart'; // 引入 PostCard 组件
-import '../../widgets/components/screen/forum/tag_filter.dart'; // 引入 TagFilter 组件
+import '../../widgets/components/screen/forum/post_card.dart';
+import '../../widgets/components/screen/forum/tag_filter.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
@@ -27,6 +27,9 @@ class _ForumScreenState extends State<ForumScreen> {
   String _selectedTag = '全部';
   List<Post>? _posts;
   String? _errorMessage;
+
+  // 定义桌面端断点
+  final double _desktopBreakpoint = 900.0;
 
   @override
   void initState() {
@@ -88,6 +91,9 @@ class _ForumScreenState extends State<ForumScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= _desktopBreakpoint;
+
     return Scaffold(
       appBar: CustomAppBar(
         title: '论坛',
@@ -120,14 +126,14 @@ class _ForumScreenState extends State<ForumScreen> {
             },
           ),
           Expanded(
-            child: _buildPostsList(),
+            child: _buildPostsList(isDesktop),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildPostsList() {
+  Widget _buildPostsList(bool isDesktop) {
     if (_errorMessage != null) {
       return Center(child: Text(_errorMessage!));
     }
@@ -142,14 +148,47 @@ class _ForumScreenState extends State<ForumScreen> {
 
     return RefreshIndicator(
       onRefresh: _refreshData,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: _posts!.length,
-        itemBuilder: (context, index) {
-          final post = _posts![index];
-          return PostCard(post: post, userService: _userService); // 使用 PostCard 组件
-        },
+      child: isDesktop
+          ? _buildDesktopPostsGrid()
+          : _buildMobilePostsList(),
+    );
+  }
+
+  // 移动端帖子列表（垂直排列）
+  Widget _buildMobilePostsList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _posts!.length,
+      itemBuilder: (context, index) {
+        final post = _posts![index];
+        return PostCard(
+          post: post,
+          userService: _userService,
+          isDesktopLayout: false,
+        );
+      },
+    );
+  }
+
+  // 桌面端帖子网格（并排排列）
+  Widget _buildDesktopPostsGrid() {
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, // 每行2个
+        childAspectRatio: 2.5, // 宽高比
+        crossAxisSpacing: 16, // 水平间距
+        mainAxisSpacing: 16, // 垂直间距
       ),
+      itemCount: _posts!.length,
+      itemBuilder: (context, index) {
+        final post = _posts![index];
+        return PostCard(
+          post: post,
+          userService: _userService,
+          isDesktopLayout: true,
+        );
+      },
     );
   }
 }

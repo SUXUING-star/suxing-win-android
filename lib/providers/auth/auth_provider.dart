@@ -4,9 +4,10 @@ import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 
 class AuthProvider with ChangeNotifier {
-  final UserService _authService = UserService();
+  final UserService _userService = UserService();
   User? _currentUser;
   bool _isLoading = true;
+  bool _disposed = false;
 
   AuthProvider() {
     _init();
@@ -20,27 +21,37 @@ class AuthProvider with ChangeNotifier {
   String? get userId => _currentUser?.id;
 
   Future<void> _init() async {
-    _isLoading = true;
-    notifyListeners();
+    if (_disposed) return;
 
     try {
-      final userId = await _authService.currentUserId;
+      final userId = await _userService.currentUserId;
+      if (_disposed) return;  // 再次检查，以防在获取userId期间被dispose
+
       if (userId != null) {
-        _currentUser = await _authService.getCurrentUser();
+        _currentUser = await _userService.getCurrentUser();
+        if (_disposed) return;  // 再次检查，以防在获取用户信息期间被dispose
       }
     } catch (e) {
       print('Error initializing auth state: $e');
-      _currentUser = null;
+      if (!_disposed) {
+        _currentUser = null;
+      }
     } finally {
-      _isLoading = false;
-      notifyListeners();
+      if (!_disposed) {
+        _isLoading = false;
+        notifyListeners();
+      }
     }
   }
 
   Future<void> signIn(String email, String password) async {
+    if (_disposed) return;
+
     try {
-      _currentUser = await _authService.signIn(email, password);
-      notifyListeners();
+      _currentUser = await _userService.signIn(email, password);
+      if (!_disposed) {
+        notifyListeners();
+      }
     } catch (e) {
       print('Sign in error in AuthProvider: $e');
       rethrow;
@@ -48,8 +59,18 @@ class AuthProvider with ChangeNotifier {
   }
 
   Future<void> signOut() async {
-    await _authService.signOut();
-    _currentUser = null;
-    notifyListeners();
+    if (_disposed) return;
+
+    await _userService.signOut();
+    if (!_disposed) {
+      _currentUser = null;
+      notifyListeners();
+    }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 }

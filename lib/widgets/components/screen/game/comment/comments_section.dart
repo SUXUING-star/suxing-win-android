@@ -1,14 +1,41 @@
+// lib/widgets/game/comment/comments_section.dart
 import 'package:flutter/material.dart';
-import 'comments/comment_input.dart';
-import 'comments/comment_list.dart';
+import './comments/comment_input.dart';
+import './comments/comment_list.dart';
 
-class CommentsSection extends StatelessWidget {
+class CommentsSection extends StatefulWidget {
   final String gameId;
+  final VoidCallback? onCommentAdded; // 添加评论回调
 
   const CommentsSection({
     Key? key,
-    required this.gameId
+    required this.gameId,
+    this.onCommentAdded, // 初始化回调
   }) : super(key: key);
+
+  @override
+  State<CommentsSection> createState() => _CommentsSectionState();
+}
+
+class _CommentsSectionState extends State<CommentsSection> {
+  // 用于在添加评论后强制刷新评论列表
+  final ValueNotifier<DateTime> _refreshTrigger = ValueNotifier(DateTime.now());
+
+  void _handleCommentChanged() {
+    // 更新时间触发器通知评论列表刷新
+    _refreshTrigger.value = DateTime.now();
+
+    // 同时通知父组件有评论变化
+    if (widget.onCommentAdded != null) {
+      widget.onCommentAdded!();
+    }
+  }
+
+  @override
+  void dispose() {
+    _refreshTrigger.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -52,8 +79,21 @@ class CommentsSection extends StatelessWidget {
               ],
             ),
             SizedBox(height: 16),
-            CommentInput(gameId: gameId),
-            CommentList(gameId: gameId),
+            // 传递评论添加回调
+            CommentInput(
+              gameId: widget.gameId,
+              onCommentAdded: _handleCommentChanged,
+            ),
+            // 使用 ValueListenableBuilder 监听刷新触发器
+            ValueListenableBuilder<DateTime>(
+                valueListenable: _refreshTrigger,
+                builder: (context, dateTime, child) {
+                  return CommentList(
+                    gameId: widget.gameId,
+                    refreshTrigger: dateTime,
+                  );
+                }
+            ),
           ],
         ),
       ),

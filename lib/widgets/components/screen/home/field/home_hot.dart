@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'dart:io' show Platform;
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../card/home_game_card.dart';
+import '../../../../../utils/device/device_utils.dart';
 
 class HomeHot extends StatefulWidget {
   final Stream<List<Game>>? gamesStream;
@@ -150,8 +150,8 @@ class _HomeHotState extends State<HomeHot> {
 
   Widget _buildNavigationButtons(int totalPages) {
     // 根据平台决定按钮大小
-    final buttonSize = Platform.isAndroid ? 32.0 : 40.0;
-    final iconSize = Platform.isAndroid ? 18.0 : 24.0;
+    final buttonSize = DeviceUtils.isAndroid ? 32.0 : 40.0;
+    final iconSize = DeviceUtils.isAndroid ? 18.0 : 24.0;
 
     return Positioned(
       left: 0,

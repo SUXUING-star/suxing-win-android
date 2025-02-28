@@ -18,13 +18,10 @@ class GameCoverImage extends StatelessWidget {
         if (loadingProgress == null) {
           return child;
         }
-        return Stack(
-          alignment: Alignment.center,
-          children: [
-            Container(
-              color: Colors.grey[300],
-            ),
-            Column(
+        return Container(
+          color: Colors.grey[300],
+          child: Center(
+            child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 CircularProgressIndicator(
@@ -45,20 +42,13 @@ class GameCoverImage extends StatelessWidget {
                           100)
                           .toStringAsFixed(0)}%',
                       style: const TextStyle(
-                        color: Colors.white,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(0, 1),
-                            blurRadius: 3.0,
-                            color: Colors.black,
-                          ),
-                        ],
+                        color: Colors.grey,
                       ),
                     ),
                   ),
               ],
             ),
-          ],
+          ),
         );
       },
       errorBuilder: (context, error, stackTrace) {

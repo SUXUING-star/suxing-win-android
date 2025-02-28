@@ -6,13 +6,43 @@ import '../models/message/message_type.dart';
 import 'game/detail/game_detail_screen.dart';
 import 'forum/post/post_detail_screen.dart';
 
-class MessageScreen extends StatelessWidget {
+class MessageScreen extends StatefulWidget {
+  @override
+  _MessageScreenState createState() => _MessageScreenState();
+}
+
+class _MessageScreenState extends State<MessageScreen> {
   final MessageService _messageService = MessageService();
+  List<Message> _messages = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // 进入页面时自动标记所有消息为已读
+    _markAllAsRead();
+  }
+
+  // 标记所有消息为已读
+  Future<void> _markAllAsRead() async {
+    try {
+      await _messageService.markAllAsRead();
+    } catch (e) {
+      print('标记所有消息为已读失败: $e');
+    }
+  }
 
   void _handleMessageTap(BuildContext context, Message message) async {
     // 先标记为已读
     if (!message.isRead) {
       await _messageService.markAsRead(message.id);
+      // 更新本地消息状态
+      setState(() {
+        int index = _messages.indexWhere((m) => m.id == message.id);
+        if (index != -1) {
+          _messages[index] = _messages[index].copyWith(isRead: true);
+        }
+      });
     }
 
     // 根据消息类型跳转到相应页面
@@ -40,26 +70,42 @@ class MessageScreen extends StatelessWidget {
         title: Text('消息中心'),
         backgroundColor: Colors.blue,
         elevation: 0,
+        actions: [
+          IconButton(
+            icon: Icon(Icons.done_all),
+            tooltip: '全部标为已读',
+            onPressed: _markAllAsRead,
+          ),
+        ],
       ),
       body: StreamBuilder<List<Message>>(
         stream: _messageService.getUserMessages(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) {
+          if (snapshot.connectionState == ConnectionState.waiting && _messages.isEmpty) {
             return Center(child: CircularProgressIndicator());
           }
 
-          final messages = snapshot.data!;
-          if (messages.isEmpty) {
+          if (snapshot.hasData) {
+            _messages = snapshot.data!;
+          }
+
+          if (_messages.isEmpty) {
             return Center(child: Text('暂无消息'));
           }
 
           return ListView.builder(
-            itemCount: messages.length,
+            itemCount: _messages.length,
             itemBuilder: (context, index) {
-              final message = messages[index];
+              final message = _messages[index];
               return MessageItem(
                 message: message,
                 onTap: () => _handleMessageTap(context, message),
+                onDelete: () async {
+                  await _messageService.deleteMessage(message.id);
+                  setState(() {
+                    _messages.removeAt(index);
+                  });
+                },
               );
             },
           );
@@ -72,11 +118,13 @@ class MessageScreen extends StatelessWidget {
 class MessageItem extends StatelessWidget {
   final Message message;
   final VoidCallback onTap;
+  final VoidCallback onDelete;
 
   const MessageItem({
     Key? key,
     required this.message,
     required this.onTap,
+    required this.onDelete,
   }) : super(key: key);
 
   @override
@@ -108,7 +156,7 @@ class MessageItem extends StatelessWidget {
                   ),
                   TextButton(
                     onPressed: () {
-                      MessageService().deleteMessage(message.id);
+                      onDelete();
                       Navigator.pop(context);
                     },
                     child: Text('删除'),

@@ -1,22 +1,22 @@
-// lib/utils/file_upload.dart (替换原来的 oss_upload.dart)
+// lib/utils/upload/file_upload.dart
 import 'dart:io';
 import 'package:http/http.dart' as http;
-import 'package:path/path.dart' as path;
 import 'package:http_parser/http_parser.dart';
 import 'dart:convert';
 import 'package:mime_type/mime_type.dart';
 import '../../config/app_config.dart';
 
 class FileUpload {
-  static final String baseUrl = 'http://${AppConfig.ipAddress}:${AppConfig.fileUploadPort}';
+  static final String baseUrl = 'http://${AppConfig.ipAddress}:${AppConfig.bridgeServerPort}';
 
-  // 上传图片（替换原来的 uploadImage 方法）
+  // 上传图片（支持删除旧图片）
   static Future<String> uploadImage(
       File imageFile, {
         String? folder,
         int? maxWidth,
         int? maxHeight,
         int? quality,
+        String? oldImageUrl, // 添加旧图片URL参数
       }) async {
     try {
       // 设置默认值
@@ -40,6 +40,11 @@ class FileUpload {
       request.fields['height'] = maxHeight.toString();
       request.fields['quality'] = quality.toString();
 
+      // 如果有旧图像URL，将其添加到请求中以便服务器删除
+      if (oldImageUrl != null && oldImageUrl.isNotEmpty) {
+        request.fields['oldFileUrl'] = oldImageUrl;
+      }
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -55,10 +60,11 @@ class FileUpload {
     }
   }
 
-  // 上传多个文件（替换原来的 uploadFiles 方法）
+  // 上传多个文件（支持删除旧文件）
   static Future<List<String>> uploadFiles(
       List<File> files, {
         String? folder,
+        List<String>? oldFileUrls, // 添加旧文件URL列表参数
       }) async {
     try {
       final uri = Uri.parse('$baseUrl/upload-multiple');
@@ -76,6 +82,11 @@ class FileUpload {
 
       if (folder != null) request.fields['folder'] = folder;
 
+      // 如果有旧文件URL，将其添加到请求中以便服务器删除
+      if (oldFileUrls != null && oldFileUrls.isNotEmpty) {
+        request.fields['oldFileUrls'] = jsonEncode(oldFileUrls);
+      }
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
 
@@ -90,6 +101,29 @@ class FileUpload {
     } catch (e) {
       print('上传错误: $e');
       rethrow;
+    }
+  }
+
+  // 删除文件方法
+  static Future<bool> deleteFile(String fileUrl) async {
+    try {
+      final uri = Uri.parse('$baseUrl/delete-file');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'url': fileUrl}),
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return data['success'] == true;
+      } else {
+        print('删除文件失败: ${response.statusCode}');
+        return false;
+      }
+    } catch (e) {
+      print('删除文件错误: $e');
+      return false;
     }
   }
 }

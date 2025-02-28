@@ -32,12 +32,15 @@ class CoverImageField extends StatelessWidget {
     if (image != null) {
       try {
         onLoadingChanged(true);
+
+        // 上传新图片时传递旧图片URL，以便后端删除旧图片
         final coverUrl = await FileUpload.uploadImage(
           File(image.path),
           folder: 'games/covers',
           maxWidth: 1200,
           maxHeight: 1200,
           quality: 85,
+          oldImageUrl: coverImageUrl, // 传递旧图片URL
         );
         onChanged(coverUrl);
       } catch (e) {
@@ -59,7 +62,33 @@ class CoverImageField extends StatelessWidget {
     );
 
     if (result != null) {
-      onChanged(result);
+      // 如果用户输入了新的URL，并且存在旧的URL，尝试删除旧图片
+      if (coverImageUrl != null && coverImageUrl!.isNotEmpty) {
+        // 只有当新旧URL不同时才删除旧图片
+        if (result != coverImageUrl) {
+          try {
+            // 设置loading状态
+            onLoadingChanged(true);
+
+            // 删除旧图片
+            await FileUpload.deleteFile(coverImageUrl!);
+
+            // 更新URL
+            onChanged(result);
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('删除旧图片失败，但新URL已更新')),
+              );
+            }
+          } finally {
+            onLoadingChanged(false);
+          }
+        }
+      } else {
+        // 如果没有旧图片，直接更新URL
+        onChanged(result);
+      }
     }
   }
 
@@ -81,12 +110,12 @@ class CoverImageField extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton.icon(
-              onPressed: () => _pickCoverImage(context),
+              onPressed: isLoading ? null : () => _pickCoverImage(context),
               icon: Icon(Icons.upload_file),
               label: Text('上传本地图片'),
             ),
             ElevatedButton.icon(
-              onPressed: () => _showUrlDialog(context),
+              onPressed: isLoading ? null : () => _showUrlDialog(context),
               icon: Icon(Icons.link),
               label: Text('输入图片链接'),
             ),
@@ -109,6 +138,12 @@ class CoverImageField extends StatelessWidget {
   }
 
   Widget _buildCoverPreview(BuildContext context) {
+    if (isLoading) {
+      return Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     if (coverImageUrl == null || coverImageUrl!.isEmpty) {
       return Center(
         child: Column(

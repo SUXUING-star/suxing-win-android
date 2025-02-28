@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game.dart';
-import '../../../../../services/main/game/game_service.dart';
 import '../../../../../routes/app_routes.dart';
 
 class HomeLatest extends StatelessWidget {

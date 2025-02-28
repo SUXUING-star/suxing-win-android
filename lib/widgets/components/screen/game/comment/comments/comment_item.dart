@@ -12,8 +12,14 @@ import '../replies/reply_input.dart';
 class CommentItem extends StatefulWidget {
   final Comment comment;
   final String gameId;
+  final VoidCallback? onCommentChanged; // 添加回调函数
 
-  const CommentItem({Key? key, required this.comment, required this.gameId}) : super(key: key);
+  const CommentItem({
+    Key? key,
+    required this.comment,
+    required this.gameId,
+    this.onCommentChanged, // 初始化回调
+  }) : super(key: key);
 
   @override
   State<CommentItem> createState() => _CommentItemState();
@@ -23,6 +29,7 @@ class _CommentItemState extends State<CommentItem> {
   final UserService _userService = UserService();
   final CommentService _commentService = CommentService();
   final Map<String, Future<Map<String, dynamic>>> _userInfoCache = {};
+  bool _isDeleting = false; // 添加删除状态标志
 
   Future<Map<String, dynamic>> _getUserInfo(String userId) {
     _userInfoCache[userId] ??= _userService.getUserInfoById(userId);
@@ -135,15 +142,28 @@ class _CommentItemState extends State<CommentItem> {
               if (controller.text.trim().isEmpty) return;
 
               try {
+                Navigator.pop(context); // 先关闭对话框
                 await _commentService.updateComment(
                   comment.id,
                   controller.text.trim(),
                 );
-                Navigator.pop(context);
+
+                // 通知父组件评论已更新
+                if (widget.onCommentChanged != null) {
+                  widget.onCommentChanged!();
+                }
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('评论已更新')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('编辑评论失败：$e')),
-                );
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('编辑评论失败：$e')),
+                  );
+                }
               }
             },
             child: const Text('保存'),
@@ -156,27 +176,65 @@ class _CommentItemState extends State<CommentItem> {
   void _showDeleteDialog(BuildContext context, Comment comment) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('删除评论'),
         content: const Text('确定要删除这条评论吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('取消'),
           ),
-          ElevatedButton(
+          _isDeleting
+              ? const Padding(
+            padding: EdgeInsets.all(8.0),
+            child: CircularProgressIndicator(strokeWidth: 2),
+          )
+              : ElevatedButton(
             onPressed: () async {
               try {
+                // 设置删除状态为true
+                setState(() {
+                  _isDeleting = true;
+                });
+
+                // 关闭对话框
+                Navigator.pop(dialogContext);
+
+                // 执行删除操作
                 await _commentService.deleteComment(comment.id);
-                Navigator.pop(context);
+
+                // 通知父组件评论已删除
+                if (widget.onCommentChanged != null) {
+                  widget.onCommentChanged!();
+                }
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('评论已删除')),
+                  );
+                }
               } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('删除评论失败：$e')),
-                );
+                // 重置删除状态
+                if (mounted) {
+                  setState(() {
+                    _isDeleting = false;
+                  });
+
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('删除评论失败：$e')),
+                  );
+                }
+              } finally {
+                // 确保状态重置
+                if (mounted) {
+                  setState(() {
+                    _isDeleting = false;
+                  });
+                }
               }
             },
-            child: const Text('删除'),
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('删除'),
           ),
         ],
       ),
@@ -220,9 +278,16 @@ class _CommentItemState extends State<CommentItem> {
           ),
           if (widget.comment.replies.isNotEmpty) ...[
             const Divider(),
-            ReplyList(replies: widget.comment.replies),
+            ReplyList(
+              replies: widget.comment.replies,
+              onReplyChanged: widget.onCommentChanged, // 传递回调
+            ),
           ],
-          ReplyInput(gameId: widget.gameId, parentId: widget.comment.id),
+          ReplyInput(
+            gameId: widget.gameId,
+            parentId: widget.comment.id,
+            onReplyAdded: widget.onCommentChanged, // 传递回调
+          ),
         ],
       ),
     );
