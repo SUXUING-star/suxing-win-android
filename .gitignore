@@ -9,7 +9,10 @@
 .buildlog/
 .history
 .svn/
-.swiftpm/
+.swift
+.vs/
+.vscode/
+pm/
 migrate_working_dir/
 # 配置文件
 lib/config/

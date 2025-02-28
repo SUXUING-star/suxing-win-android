@@ -27,9 +27,13 @@ Android版并没有经过其他平台分发，仅在此处发布，使用手机�
 本项目的大致架构如下
 
 Flutter(ui层&服务端交互层)-->Go(实际业务处理层)
+
 -->Nodejs代理层(主要是Redis缓存服务)-->Mongodb
+
 (Flutter构建Windows底层是cpp文件构建，main.cpp会启动flutter应用。
+
 构建Android底层是kotlin&java文件,mainactity.kt会启动flutter应用)
+
 ~~(至于为什么要用mongodb因为比较懒，而且两边平台好适配)~~
 
 如果你想要研究本项目的源码，你需要拥有以下配置
