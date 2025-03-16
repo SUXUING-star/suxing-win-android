@@ -1,4 +1,4 @@
-// lib/models/user.dart
+// lib/models/user/user.dart
 class User {
   final String id;
   final String username;
@@ -8,7 +8,14 @@ class User {
   final String? avatar;
   final DateTime createTime;
   final bool isAdmin;
-  final bool isSuperAdmin;  // 新增字段
+  final bool isSuperAdmin;
+  final int experience;
+  final int level;
+  final int? consecutiveCheckIn;
+  final int? totalCheckIn;
+  final DateTime? lastCheckInDate;
+  final List<String> following;    // 添加关注列表
+  final List<String> followers;    // 添加粉丝列表
 
   User({
     required this.id,
@@ -19,12 +26,34 @@ class User {
     this.avatar,
     required this.createTime,
     this.isAdmin = false,
-    this.isSuperAdmin = false,  // 默认为 false
+    this.isSuperAdmin = false,
+    this.experience = 0,
+    this.level = 1,
+    this.consecutiveCheckIn,
+    this.totalCheckIn,
+    this.lastCheckInDate,
+    this.following = const [],     // 初始化为空列表
+    this.followers = const [],     // 初始化为空列表
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
+    // 处理关注和粉丝列表
+    List<String> followingList = [];
+    if (json['following'] != null) {
+      if (json['following'] is List) {
+        followingList = List<String>.from(json['following']);
+      }
+    }
+
+    List<String> followersList = [];
+    if (json['followers'] != null) {
+      if (json['followers'] is List) {
+        followersList = List<String>.from(json['followers']);
+      }
+    }
+
     return User(
-      id: json['id'] ?? json['_id'], // 添加 '_id' 兼容
+      id: json['id'] ?? json['_id'] ?? '',
       username: json['username'] ?? '',
       email: json['email'] ?? '',
       hash: json['hash'],
@@ -36,13 +65,24 @@ class User {
           : json['createTime'])
           : DateTime.now(),
       isAdmin: json['isAdmin'] ?? false,
-      isSuperAdmin: json['isSuperAdmin'] ?? false,  // 从 JSON 解析
+      isSuperAdmin: json['isSuperAdmin'] ?? false,
+      experience: json['experience'] ?? 0,
+      level: json['level'] ?? 1,
+      consecutiveCheckIn: json['consecutiveCheckIn'],
+      totalCheckIn: json['totalCheckIn'],
+      lastCheckInDate: json['lastCheckInDate'] != null
+          ? (json['lastCheckInDate'] is String
+          ? DateTime.parse(json['lastCheckInDate'])
+          : json['lastCheckInDate'])
+          : null,
+      following: followingList,
+      followers: followersList,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      '_id': id,
+      'id': id,
       'username': username,
       'email': email,
       'hash': hash,
@@ -50,7 +90,14 @@ class User {
       'avatar': avatar,
       'createTime': createTime.toIso8601String(),
       'isAdmin': isAdmin,
-      'isSuperAdmin': isSuperAdmin,  // 新增字段
+      'isSuperAdmin': isSuperAdmin,
+      'experience': experience,
+      'level': level,
+      'consecutiveCheckIn': consecutiveCheckIn,
+      'totalCheckIn': totalCheckIn,
+      'lastCheckInDate': lastCheckInDate?.toIso8601String(),
+      'following': following,
+      'followers': followers,
     };
   }
 
@@ -63,10 +110,20 @@ class User {
       'avatar': avatar,
       'createTime': createTime.toIso8601String(),
       'isAdmin': isAdmin,
-      'isSuperAdmin': isSuperAdmin,  // 新增字段
+      'isSuperAdmin': isSuperAdmin,
+      'experience': experience,
+      'level': level,
+      'consecutiveCheckIn': consecutiveCheckIn,
+      'totalCheckIn': totalCheckIn,
+      'lastCheckInDate': lastCheckInDate?.toIso8601String(),
+      'following': following,
+      'followers': followers,
+      'followingCount': following.length,
+      'followersCount': followers.length,
     };
   }
 
+  // 复制带有更新的用户对象
   User copyWith({
     String? id,
     String? username,
@@ -76,7 +133,15 @@ class User {
     String? avatar,
     DateTime? createTime,
     bool? isAdmin,
-    bool? isSuperAdmin,  // 新增字段
+    bool? isSuperAdmin,
+    int? experience,
+    int? level,
+    int? consecutiveCheckIn,
+    int? totalCheckIn,
+    DateTime? lastCheckInDate,
+    List<String>? following,
+    List<String>? followers,
+    bool clearLastCheckInDate = false,
   }) {
     return User(
       id: id ?? this.id,
@@ -87,7 +152,29 @@ class User {
       avatar: avatar ?? this.avatar,
       createTime: createTime ?? this.createTime,
       isAdmin: isAdmin ?? this.isAdmin,
-      isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,  // 新增字段
+      isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
+      experience: experience ?? this.experience,
+      level: level ?? this.level,
+      consecutiveCheckIn: consecutiveCheckIn ?? this.consecutiveCheckIn,
+      totalCheckIn: totalCheckIn ?? this.totalCheckIn,
+      lastCheckInDate: clearLastCheckInDate ? null : (lastCheckInDate ?? this.lastCheckInDate),
+      following: following ?? this.following,
+      followers: followers ?? this.followers,
     );
+  }
+
+  // 判断用户是否今日已签到
+  bool get hasCheckedInToday {
+    if (lastCheckInDate == null) return false;
+
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final checkInDate = DateTime(
+      lastCheckInDate!.year,
+      lastCheckInDate!.month,
+      lastCheckInDate!.day,
+    );
+
+    return checkInDate.isAtSameMomentAs(today);
   }
 }

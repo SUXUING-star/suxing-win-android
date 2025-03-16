@@ -1,4 +1,4 @@
-// lib/widgets/components/tag_filter/tag_filter.dart
+// lib/widgets/components/screen/gamelist/tag/tag_filter.dart
 import 'package:flutter/material.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/font/font_config.dart';

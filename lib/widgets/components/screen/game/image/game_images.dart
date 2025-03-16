@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../screens/game/detail/image_preview_screen.dart';
+import '../../../../common/image/safe_cached_image.dart';
 
 class GameImages extends StatelessWidget {
   final Game game;
@@ -91,11 +92,15 @@ class GameImages extends StatelessWidget {
           tag: 'game_image_$index',
           child: ClipRRect(
             borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              game.images[index],
+            child: SafeCachedImage(
+              imageUrl: game.images[index],
               width: 280,
               height: 180,
               fit: BoxFit.cover,
+              memCacheWidth: 560, // 2倍于显示宽度
+              onError: (url, error) {
+                print('游戏截图加载失败: $url, 错误: $error');
+              },
             ),
           ),
         ),

@@ -1,7 +1,9 @@
 // lib/widgets/game/comment/comments_section.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import './comments/comment_input.dart';
 import './comments/comment_list.dart';
+import '../../../../../../providers/auth/auth_provider.dart';
 
 class CommentsSection extends StatefulWidget {
   final String gameId;
@@ -39,6 +41,9 @@ class _CommentsSectionState extends State<CommentsSection> {
 
   @override
   Widget build(BuildContext context) {
+    // 获取用户登录状态
+    final authProvider = Provider.of<AuthProvider>(context);
+
     return Opacity(
       opacity: 0.9,
       child: Container(
@@ -79,20 +84,51 @@ class _CommentsSectionState extends State<CommentsSection> {
               ],
             ),
             SizedBox(height: 16),
-            // 传递评论添加回调
-            CommentInput(
-              gameId: widget.gameId,
-              onCommentAdded: _handleCommentChanged,
-            ),
-            // 使用 ValueListenableBuilder 监听刷新触发器
-            ValueListenableBuilder<DateTime>(
-                valueListenable: _refreshTrigger,
-                builder: (context, dateTime, child) {
-                  return CommentList(
-                    gameId: widget.gameId,
-                    refreshTrigger: dateTime,
-                  );
-                }
+
+            // 根据登录状态决定显示什么内容
+            authProvider.isLoggedIn
+                ? Column(
+              children: [
+                // 传递评论添加回调
+                CommentInput(
+                  gameId: widget.gameId,
+                  onCommentAdded: _handleCommentChanged,
+                ),
+                // 使用 ValueListenableBuilder 监听刷新触发器
+                ValueListenableBuilder<DateTime>(
+                    valueListenable: _refreshTrigger,
+                    builder: (context, dateTime, child) {
+                      return CommentList(
+                        gameId: widget.gameId,
+                        refreshTrigger: dateTime,
+                      );
+                    }
+                ),
+              ],
+            )
+                : Center(
+              child: Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    Text(
+                      '登录后查看和发表评论',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[700],
+                      ),
+                    ),
+                    SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pushNamed(context, '/login'),
+                      child: const Text('登录'),
+                      style: ElevatedButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ],
         ),

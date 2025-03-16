@@ -1,4 +1,5 @@
 import 'package:mongo_dart/mongo_dart.dart';
+
 class ToolDownload {
   final String name;
   final String description;
@@ -51,16 +52,49 @@ class Tool {
   });
 
   factory Tool.fromJson(Map<String, dynamic> json) {
-    String toolId = json['_id'] is ObjectId
-        ? json['_id'].toHexString()
-        : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
+    // 不要递归调用Tool.fromJson，这可能是问题所在
+    // 始终确保传入的是Map<String, dynamic>而不是Tool对象
 
-    List<ToolDownload> parseDownloads(dynamic downloads) {
-      if (downloads == null) return [];
-      if (downloads is List) {
-        return downloads.map((item) => ToolDownload.fromJson(item)).toList();
+    // 处理ID
+    String toolId = '';
+    var idValue = json['_id'] ?? json['id'];
+
+    if (idValue is ObjectId) {
+      toolId = idValue.toHexString();
+    } else if (idValue is String) {
+      toolId = idValue;
+    } else if (idValue is Map && idValue.containsKey('\$oid')) {
+      toolId = idValue['\$oid'].toString();
+    }
+
+    // 处理下载
+    List<ToolDownload> downloads = [];
+    if (json['downloads'] != null && json['downloads'] is List) {
+      for (var item in json['downloads']) {
+        if (item is Map) {
+          try {
+            var downloadMap = Map<String, dynamic>.from(item);
+            downloads.add(ToolDownload.fromJson(downloadMap));
+          } catch (e) {
+            print('Error parsing download: $e');
+          }
+        }
       }
-      return [];
+    }
+
+    // 处理日期
+    DateTime createTime = DateTime.now();
+    var dateValue = json['createTime'];
+    if (dateValue != null) {
+      if (dateValue is DateTime) {
+        createTime = dateValue;
+      } else if (dateValue is String) {
+        try {
+          createTime = DateTime.parse(dateValue);
+        } catch (e) {
+          // 使用当前时间作为默认值
+        }
+      }
     }
 
     return Tool(
@@ -70,11 +104,8 @@ class Tool {
       icon: json['icon']?.toString(),
       color: json['color']?.toString() ?? '#19712C',
       type: json['type']?.toString(),
-      downloads: parseDownloads(json['downloads']),
-      createTime: json['createTime'] is DateTime
-          ? json['createTime']
-          : DateTime.parse(
-          json['createTime'] ?? DateTime.now().toIso8601String()),
+      downloads: downloads,
+      createTime: createTime,
       isActive: json['isActive'] ?? true,
     );
   }

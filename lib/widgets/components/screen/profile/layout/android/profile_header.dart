@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/profile/profile_header.dart
 import 'package:flutter/material.dart';
-import '../../../../models/user/user.dart';
-import '../../../../utils/font/font_config.dart';
-import '../../../common/image/safe_user_avatar.dart';
+import '../../../../../../models/user/user.dart';
+import '../../../../../../utils/font/font_config.dart';
+import '../../../../../common/image/safe_user_avatar.dart';
 
 class ProfileHeader extends StatelessWidget {
   final User user;

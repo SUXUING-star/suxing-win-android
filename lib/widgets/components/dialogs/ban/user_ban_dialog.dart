@@ -1,7 +1,7 @@
 // lib/widgets/dialogs/user_ban_dialog.dart
 
 import 'package:flutter/material.dart';
-import '../../../models/user/user_ban.dart';
+import '../../../../models/user/user_ban.dart';
 
 class UserBanDialog extends StatelessWidget {
   final UserBan ban;

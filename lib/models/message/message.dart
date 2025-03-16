@@ -13,6 +13,11 @@ class Message {
   final DateTime? readTime;
   final String? gameId;    // 关联的游戏ID
   final String? postId;    // 关联的帖子ID
+  // 新增分组字段
+  final int? groupCount;   // 此组中消息的数量
+  final List<String>? references; // 相关引用，可以是用户ID或内容摘要
+  final String? lastContent; // 最新内容的摘要
+  final DateTime? updateTime; // 消息更新时间
 
   Message({
     required this.id,
@@ -25,6 +30,10 @@ class Message {
     this.readTime,
     this.gameId,
     this.postId,
+    this.groupCount,
+    this.references,
+    this.lastContent,
+    this.updateTime,
   });
 
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -83,6 +92,15 @@ class Message {
       return DateTime.now();
     }
 
+    // 安全解析引用列表
+    List<String>? safeParseReferences(dynamic value) {
+      if (value == null) return null;
+      if (value is List) {
+        return value.map((item) => item.toString()).toList();
+      }
+      return null;
+    }
+
     return Message(
       id: safeParseId(json['_id'] ?? json['id']),
       senderId: safeParseId(json['senderId']),
@@ -94,6 +112,11 @@ class Message {
       readTime: json['readTime'] != null ? safeParseDateTime(json['readTime']) : null,
       gameId: json['gameId'] != null ? safeParseId(json['gameId']) : null,
       postId: json['postId'] != null ? safeParseId(json['postId']) : null,
+      // 解析新增的分组字段
+      groupCount: json['groupCount'] is int ? json['groupCount'] : null,
+      references: safeParseReferences(json['references']),
+      lastContent: json['lastContent'],
+      updateTime: json['updateTime'] != null ? safeParseDateTime(json['updateTime']) : null,
     );
   }
 
@@ -109,9 +132,48 @@ class Message {
       'readTime': readTime?.toIso8601String(),
       'gameId': gameId,
       'postId': postId,
+      // 包含新增的分组字段
+      'groupCount': groupCount,
+      'references': references,
+      'lastContent': lastContent,
+      'updateTime': updateTime?.toIso8601String(),
     };
   }
-  // 添加到 Message 类中
+
+  // 获取消息预览内容
+  String getPreviewContent() {
+    if (lastContent != null && lastContent!.isNotEmpty) {
+      if (lastContent!.length > 50) {
+        return lastContent!.substring(0, 47) + '...';
+      }
+      return lastContent!;
+    }
+
+    // 尝试从内容中提取预览
+    if (type == MessageType.commentReply.toString() || type == MessageType.postReply.toString()) {
+      final parts = content.split('收到了新回复: ');
+      if (parts.length > 1) {
+        final extractedContent = parts[1];
+        if (extractedContent.length > 50) {
+          return extractedContent.substring(0, 47) + '...';
+        }
+        return extractedContent;
+      }
+    }
+
+    // 如果无法提取特定内容，使用原始内容的截断
+    if (content.length > 50) {
+      return content.substring(0, 47) + '...';
+    }
+    return content;
+  }
+
+  // 判断是否为分组消息
+  bool get isGrouped => (groupCount != null && groupCount! > 1);
+
+  // 获取消息显示的时间（优先使用更新时间）
+  DateTime get displayTime => updateTime ?? createTime;
+
   Message copyWith({
     String? id,
     String? senderId,
@@ -123,6 +185,10 @@ class Message {
     DateTime? readTime,
     String? gameId,
     String? postId,
+    int? groupCount,
+    List<String>? references,
+    String? lastContent,
+    DateTime? updateTime,
   }) {
     return Message(
       id: id ?? this.id,
@@ -135,6 +201,10 @@ class Message {
       readTime: readTime ?? this.readTime,
       gameId: gameId ?? this.gameId,
       postId: postId ?? this.postId,
+      groupCount: groupCount ?? this.groupCount,
+      references: references ?? this.references,
+      lastContent: lastContent ?? this.lastContent,
+      updateTime: updateTime ?? this.updateTime,
     );
   }
 }

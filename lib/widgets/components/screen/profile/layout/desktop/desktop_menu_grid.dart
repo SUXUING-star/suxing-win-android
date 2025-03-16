@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/desktop_menu_grid.dart
 import 'package:flutter/material.dart';
-import '../../../../utils/font/font_config.dart';
-import 'profile_menu_list.dart';
+import '../../../../../../utils/font/font_config.dart';
+import '../android/profile_menu_list.dart';
 
 class DesktopMenuGrid extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
@@ -13,6 +13,11 @@ class DesktopMenuGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 根据屏幕宽度调整布局
+    final screenWidth = MediaQuery.of(context).size.width;
+    // 根据屏幕宽度决定每行显示的项目数
+    int crossAxisCount = screenWidth < 800 ? 2 : (screenWidth < 1200 ? 3 : 4);
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -39,20 +44,35 @@ class DesktopMenuGrid extends StatelessWidget {
                 fontFamilyFallback: FontConfig.fontFallback,
               ),
             ),
-            SizedBox(height: 24),
-            Expanded(
-              child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 4, // 每行显示4个而不是3个
-                  childAspectRatio: 1.5, // 更宽扁的比例
-                  crossAxisSpacing: 10, // 减小间距
-                  mainAxisSpacing: 10, // 减小间距
-                ),
-                padding: EdgeInsets.zero, // 移除内边距
-                itemCount: menuItems.length,
-                itemBuilder: (context, index) {
-                  final item = menuItems[index];
-                  return _buildMenuCard(context, item);
+            SizedBox(height: 16), // 减少一些垂直间距
+
+            // 使用 Flexible 替代 Expanded，更灵活地调整大小
+            Flexible(
+              fit: FlexFit.loose, // 允许小于其最大高度
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  // 动态计算 childAspectRatio
+                  // 在较小的屏幕上，使项目高度增大以确保文本有足够空间显示
+                  double childAspectRatio = screenWidth < 800 ? 1.3 : 1.5;
+
+                  return GridView.builder(
+                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: crossAxisCount,
+                      childAspectRatio: childAspectRatio,
+                      crossAxisSpacing: 8, // 适度减小间距
+                      mainAxisSpacing: 8, // 适度减小间距
+                    ),
+                    padding: EdgeInsets.zero,
+                    // 使用 shrinkWrap 防止 GridView 尝试占用尽可能多的空间
+                    // shrinkWrap: true, // 移除 shrinkWrap
+                    // 禁用滚动以避免嵌套滚动冲突
+                    // physics: NeverScrollableScrollPhysics(), // 移除此行以启用滚动
+                    itemCount: menuItems.length,
+                    itemBuilder: (context, index) {
+                      final item = menuItems[index];
+                      return _buildMenuCard(context, item, screenWidth);
+                    },
+                  );
                 },
               ),
             ),
@@ -62,23 +82,29 @@ class DesktopMenuGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuCard(BuildContext context, ProfileMenuItem item) {
+  Widget _buildMenuCard(BuildContext context, ProfileMenuItem item, double screenWidth) {
+    // 根据屏幕宽度调整卡片内的尺寸
+    final bool isSmallScreen = screenWidth < 800;
+    final double iconSize = isSmallScreen ? 18 : 22;
+    final double containerSize = isSmallScreen ? 36 : 40;
+    final double fontSize = isSmallScreen ? 12 : 14;
+
     return Card(
       elevation: 1,
-      margin: EdgeInsets.zero, // 移除外边距
+      margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: InkWell(
         onTap: item.onTap ?? () => Navigator.pushNamed(context, item.route),
         borderRadius: BorderRadius.circular(8),
         child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4), // 减小内边距
+          padding: EdgeInsets.symmetric(vertical: 6, horizontal: 4), // 减小内边距
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min, // 使列占用最少的空间
+            mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 40, // 减小图标容器大小
-                height: 40, // 减小图标容器大小
+                width: containerSize,
+                height: containerSize,
                 decoration: BoxDecoration(
                   color: Theme.of(context).primaryColor.withOpacity(0.1),
                   shape: BoxShape.circle,
@@ -86,19 +112,23 @@ class DesktopMenuGrid extends StatelessWidget {
                 child: Icon(
                   item.icon,
                   color: Theme.of(context).primaryColor,
-                  size: 22, // 减小图标大小
+                  size: iconSize,
                 ),
               ),
-              SizedBox(height: 6), // 减小间距
-              Text(
-                item.title,
-                style: TextStyle(
-                  fontSize: 14, // 减小字体大小
-                  fontWeight: FontWeight.w500,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
+              SizedBox(height: 4), // 减小间距
+              Flexible(
+                child: Text(
+                  item.title,
+                  style: TextStyle(
+                    fontSize: fontSize,
+                    fontWeight: FontWeight.w500,
+                    fontFamily: FontConfig.defaultFontFamily,
+                    fontFamilyFallback: FontConfig.fontFallback,
+                  ),
+                  textAlign: TextAlign.center,
+                  maxLines: 2, // 限制最大行数
+                  overflow: TextOverflow.ellipsis, // 文本溢出时显示省略号
                 ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),

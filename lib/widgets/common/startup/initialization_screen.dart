@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'dart:io'; // For Platform
 import 'dart:math'; // For Random
-import '../../utils/font/font_config.dart';
+import '../../../utils/font/font_config.dart';
 
 class InitializationScreen extends StatefulWidget {
   final InitializationStatus status;

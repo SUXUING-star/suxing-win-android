@@ -10,6 +10,10 @@
 
 ~~ios不打算弄了，要缴纳皇帝税弄不了~~
 
+web版出于js十分垃圾的安全机制不想再额外开发web版了，如果开发web线路需要额外考虑各种安全机制。。。
+
+（web版有打算用severless来做一个新的）
+
 曾经的网页版：[宿星茶会](https://www.suxing.site/)
 
 # 使用(using)
@@ -20,15 +24,13 @@ windows版和android版都以压缩包形式存储了，你需要解压打开使
 
 Android版并没有经过其他平台分发，仅在此处发布，使用手机进行安装请自行接受风险警告。
 
-# 源码（source）
+# 关于源码（source）
 
 由于本项目属于客户端开发，出于安全考虑，部分服务层代码暂不开放,因为涉及加密和安全机制的问题。
 
 本项目的大致架构如下
 
-Flutter(ui层&服务端交互层)-->Go(实际业务处理层)
-
--->Nodejs代理层(主要是Redis缓存服务)-->Mongodb
+Flutter(ui层&服务端交互层&本地缓存)-->Go(实际业务处理层&redis/内存缓存处理)-->Mongodb
 
 (Flutter构建Windows底层是cpp文件构建，main.cpp会启动flutter应用。
 
@@ -40,8 +42,7 @@ Flutter(ui层&服务端交互层)-->Go(实际业务处理层)
 ```json
 {
     "server1": "..., //服务端(go/nodejs/java...)",
-    "server2": "..., //redis代理服务(go/nodejs/java...)",
-    "server4": "..., //其他代理服务",
+    "server2": "..., //其他代理服务",
     "database": { 
       "user":"...:..., //用户名",
       "password":"..., // 密码",

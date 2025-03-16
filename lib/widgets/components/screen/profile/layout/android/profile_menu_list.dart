@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/profile_menu_list.dart
 import 'package:flutter/material.dart';
-import '../../../../routes/app_routes.dart';
-import '../../../../utils/font/font_config.dart';
+import '../../../../../../routes/app_routes.dart';
+import '../../../../../../utils/font/font_config.dart';
 
 class ProfileMenuItem {
   final IconData icon;

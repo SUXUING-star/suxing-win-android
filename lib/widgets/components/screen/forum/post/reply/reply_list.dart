@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../../models/post/post.dart';
-import '../../../../../services/main/user/user_service.dart';
-import '../../../../../services/main/forum/forum_service.dart';
-import '../../../../../providers/auth/auth_provider.dart';
+import '../../../../../../models/post/post.dart';
+import '../../../../../../services/main/user/user_service.dart';
+import '../../../../../../services/main/forum/forum_service.dart';
+import '../../../../../../providers/auth/auth_provider.dart';
 import 'reply_item.dart';
 import 'empty_replies.dart';
 
@@ -35,6 +35,7 @@ class _ReplyListState extends State<ReplyList> {
         final replies = snapshot.data!;
 
         return Container(
+
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(8),

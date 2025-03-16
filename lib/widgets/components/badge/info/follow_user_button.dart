@@ -1,7 +1,7 @@
 // lib/widgets/components/button/follow_user_button.dart
 import 'package:flutter/material.dart';
-import '../../../services/main/user/user_follow_service.dart';
-import '../../../providers/auth/auth_provider.dart';
+import '../../../../services/main/user/user_follow_service.dart';
+import '../../../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 

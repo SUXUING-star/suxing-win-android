@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../providers/auth/auth_provider.dart';
-import '../../../../../screens/game/edit_game_screen.dart';
+import '../../../../../screens/game/edit/edit_game_screen.dart';
 import '../../../../../utils/device/device_utils.dart'; // 引入 DeviceUtils
 
 class EditButton extends StatelessWidget {

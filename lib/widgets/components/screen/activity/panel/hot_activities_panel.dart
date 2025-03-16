@@ -66,17 +66,17 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
   // 解析活动类型为中文名称
   String _getActivityTypeName(String type) {
     switch (type) {
-      case 'gameComment':
+      case 'game_comment':
         return '游戏评论';
-      case 'gameLike':
+      case 'game_like':
         return '游戏点赞';
-      case 'gameCollection':
+      case 'collection':
         return '游戏收藏';
-      case 'postReply':
+      case 'post_reply':
         return '帖子回复';
-      case 'userFollow':
+      case 'follow':
         return '用户关注';
-      case 'checkIn':
+      case 'check_in':
         return '每日签到';
       default:
         return '其他活动';

@@ -1,174 +1,80 @@
-// lib/widgets/components/screen/game/collection/layout/collection_game_card.dart
+// lib/widgets/components/screen/game/collection/collection_game_card.dart
 import 'package:flutter/material.dart';
-import '../../../../../../../models/game/game.dart';
-import '../../../../../../common/animated_card_container.dart';
-import '../../../../../../../utils/device/device_utils.dart';
-import '../../../tag/game_tags.dart';
-import '../../../../../../common/image/safe_cached_image.dart';
+import '../../../../../models/game/game.dart';
+import '../../../../../utils/device/device_utils.dart';
+import '../../../../common/image/safe_cached_image.dart';
 
-/// 游戏收藏屏幕专用紧凑型游戏卡片
+/// 为游戏收藏屏幕专门设计的卡片组件
 ///
-/// 为了解决并排显示时的空间限制问题，此卡片比标准GameCard更紧凑
+/// 使用左图右信息的横向布局，标题在右侧内容区顶部
 class CollectionGameCard extends StatelessWidget {
   final Game game;
-  final bool isMobile; // 是否为移动设备布局
+  final String? collectionStatus; // 收藏状态: want_to_play, playing, played
 
-  CollectionGameCard({
+  const CollectionGameCard({
     Key? key,
     required this.game,
-    this.isMobile = true,
+    this.collectionStatus,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    // 根据是否为移动设备选择构建方法
-    return isMobile ? _buildMobileCard(context) : _buildDesktopCard(context);
-  }
+    // 判断是否为桌面布局
+    final bool isDesktop = DeviceUtils.isDesktop;
 
-  // 移动设备布局 - 垂直卡片
-  Widget _buildMobileCard(BuildContext context) {
-    return AnimatedCardContainer(
-      onTap: () {
-        Navigator.pushNamed(context, '/game/detail', arguments: game);
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 图片部分
-          _buildCardImage(context, 140.0),
+    return Card(
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: InkWell(
+        onTap: () {
+          Navigator.pushNamed(context, '/game/detail', arguments: game);
+        },
+        child: IntrinsicHeight( // 确保左右两侧高度一致
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 左侧图片
+              _buildGameCover(context, isDesktop),
 
-          // 内容部分
-          Padding(
-            padding: EdgeInsets.all(8),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题
-                Text(
-                  game.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+              // 右侧信息
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: _buildGameInfo(context),
                 ),
-                SizedBox(height: 4),
-
-                // 底部统计信息
-                Row(
-                  children: [
-                    // 点赞数
-                    Icon(Icons.thumb_up, size: 14, color: Colors.redAccent),
-                    SizedBox(width: 4),
-                    Text(game.likeCount.toString(), style: TextStyle(fontSize: 12)),
-                    SizedBox(width: 8),
-
-                    // 查看数
-                    Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.lightBlueAccent),
-                    SizedBox(width: 4),
-                    Text(game.viewCount.toString(), style: TextStyle(fontSize: 12)),
-
-                    // 状态指示器 (根据实际业务逻辑调整)
-                    Spacer(),
-                    _buildCollectionStatusIndicator(context),
-                  ],
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
-  // 桌面设备布局 - 更紧凑的垂直卡片
-  Widget _buildDesktopCard(BuildContext context) {
-    return AnimatedCardContainer(
-      onTap: () {
-        Navigator.pushNamed(context, '/game/detail', arguments: game);
-      },
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 图片部分
-          _buildCardImage(context, 120.0),
+  // 游戏封面（左侧）
+  Widget _buildGameCover(BuildContext context, bool isDesktop) {
+    // 根据设备类型调整图片大小
+    final coverWidth = isDesktop ? 120.0 : 100.0;
 
-          // 内容部分 - 更紧凑
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题
-                Text(
-                  game.title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 3),
-
-                // 单行标签
-                if (game.tags.isNotEmpty)
-                  GameTags(
-                    game: game,
-                    wrap: false,
-                    maxTags: 1,
-                    fontSize: 10,
-                  ),
-
-                SizedBox(height: 3),
-
-                // 底部统计信息
-                Row(
-                  children: [
-                    Icon(Icons.thumb_up, size: 12, color: Colors.redAccent),
-                    SizedBox(width: 2),
-                    Text(game.likeCount.toString(), style: TextStyle(fontSize: 11)),
-                    SizedBox(width: 6),
-                    Icon(Icons.remove_red_eye_outlined, size: 12, color: Colors.lightBlueAccent),
-                    SizedBox(width: 2),
-                    Text(game.viewCount.toString(), style: TextStyle(fontSize: 11)),
-                    Spacer(),
-                    _buildCollectionStatusIndicator(context, isDesktop: true),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 构建卡片图片
-  Widget _buildCardImage(BuildContext context, double height) {
     return Stack(
       children: [
-        ClipRRect(
-          borderRadius: BorderRadius.vertical(top: Radius.circular(4)),
+        Container(
+          width: coverWidth,
+          height: coverWidth * 0.75, // 4:3 比例
           child: SafeCachedImage(
             imageUrl: game.coverImage,
-            height: height,
-            width: double.infinity,
             fit: BoxFit.cover,
-            memCacheWidth: 320, // 由于紧凑布局，使用更小的缓存尺寸
+            memCacheWidth: isDesktop ? 240 : 200,
             backgroundColor: Colors.grey[200],
             onError: (url, error) {
-              print('游戏收藏卡片图片加载失败: $url, 错误: $error');
+              print('游戏卡片图片加载失败: $url, 错误: $error');
             },
           ),
         ),
 
-        // 在图片上方显示类别标签
+        // 类别标签
         Positioned(
           top: 8,
           left: 8,
@@ -176,7 +82,7 @@ class CollectionGameCard extends StatelessWidget {
             padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
               color: Theme.of(context).primaryColor.withOpacity(0.8),
-              borderRadius: BorderRadius.circular(10),
+              borderRadius: BorderRadius.circular(8),
             ),
             child: Text(
               game.category,
@@ -192,54 +98,128 @@ class CollectionGameCard extends StatelessWidget {
     );
   }
 
-  // 构建收藏状态指示器
-  Widget _buildCollectionStatusIndicator(BuildContext context, {bool isDesktop = false}) {
-    // 这里可以根据游戏的收藏状态显示不同的图标
-    // 假设game对象有一个属性表示收藏状态
-    IconData statusIcon;
-    Color statusColor;
+  // 游戏信息（右侧）
+  Widget _buildGameInfo(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 标题和收藏状态图标在一行
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                game.title,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 15,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            if (collectionStatus != null)
+              _buildStatusIcon(collectionStatus!),
+          ],
+        ),
 
-    // 这里模拟不同的收藏状态（实际应用中应该从game对象获取）
-    // 例如：根据game.collectionStatus来决定图标
-    final collectionStatus = _getCollectionStatus();
+        SizedBox(height: 4),
 
-    switch (collectionStatus) {
-      case 'want_to_play':
-        statusIcon = Icons.star_border;
-        statusColor = Colors.blue;
-        break;
-      case 'playing':
-        statusIcon = Icons.videogame_asset;
-        statusColor = Colors.green;
-        break;
-      case 'played':
-        statusIcon = Icons.check_circle;
-        statusColor = Colors.purple;
-        break;
-      default:
-        statusIcon = Icons.bookmark;
-        statusColor = Colors.grey;
-    }
 
-    return Icon(
-      statusIcon,
-      size: isDesktop ? 14 : 16,
-      color: statusColor,
+        // 中间可以放简短描述
+        if (game.summary != null && game.summary.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Text(
+              game.summary,
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[700],
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+
+        // 标签
+        if (game.tags.isNotEmpty)
+          _buildTags(game.tags),
+
+        Spacer(),
+
+        // 底部统计信息
+        Row(
+          children: [
+            // 点赞数
+            Icon(Icons.thumb_up, size: 14, color: Colors.redAccent),
+            SizedBox(width: 4),
+            Text(
+              game.likeCount.toString(),
+              style: TextStyle(fontSize: 12),
+            ),
+
+            SizedBox(width: 12),
+
+            // 查看数
+            Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.lightBlueAccent),
+            SizedBox(width: 4),
+            Text(
+              game.viewCount.toString(),
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  // 模拟获取收藏状态的方法
-  // 在实际应用中，应该从game对象中获取真实的收藏状态
-  String _getCollectionStatus() {
-    // 假设根据game.id的末尾数字来模拟不同状态
-    int lastDigit = int.tryParse(game.id.toString().substring(game.id.toString().length - 1)) ?? 0;
+  // 构建游戏标签
+  Widget _buildTags(List<String> tags) {
+    return Wrap(
+      spacing: 4,
+      runSpacing: 4,
+      children: tags.take(2).map((tag) {
+        return Container(
+          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: Colors.grey[200],
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            tag,
+            style: TextStyle(
+              fontSize: 10,
+              color: Colors.grey[700],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
 
-    if (lastDigit < 3) {
-      return 'want_to_play';
-    } else if (lastDigit < 7) {
-      return 'playing';
-    } else {
-      return 'played';
+  // 收藏状态图标
+  Widget _buildStatusIcon(String status) {
+    IconData icon;
+    Color color;
+
+    switch (status) {
+      case 'want_to_play':
+        icon = Icons.star_border;
+        color = Colors.blue;
+        break;
+      case 'playing':
+        icon = Icons.videogame_asset;
+        color = Colors.green;
+        break;
+      case 'played':
+        icon = Icons.check_circle;
+        color = Colors.purple;
+        break;
+      default:
+        icon = Icons.bookmark;
+        color = Colors.grey;
     }
+
+    return Icon(icon, size: 16, color: color);
   }
 }

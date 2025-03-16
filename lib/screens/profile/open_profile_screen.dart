@@ -6,10 +6,10 @@ import '../../services/main/forum/forum_service.dart';
 import '../../services/main/game/game_service.dart';
 import '../../models/post/post.dart';
 import '../../models/game/game.dart';
-import '../../widgets/common/custom_app_bar.dart';
-import '../../widgets/components/screen/profile/open/profile_game_card..dart';
-import '../../widgets/components/screen/profile/open/profile_post_card.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/common/image/safe_user_avatar.dart';
+import '../../widgets/components/screen/profile/open/mobile/profile_game_card..dart';
+import '../../widgets/components/screen/profile/open/mobile/profile_post_card.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -53,13 +53,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> {
       // 加载该用户发布的帖子
       final userPosts = await _forumService.getRecentUserPosts(widget.userId, limit: 5);
 
-      // 查询该用户发布的游戏
-      // 修改为使用authorId过滤查询
-      final query = mongo.where
-          .eq('authorId', widget.userId)
-          .sortBy('createTime', descending: true)
-          .limit(5);
-
+      // 查询该用户发布的游戏 - 使用原方法，它返回List<Game>
       final userGames = await _gameService.getGamesPaginated(
         page: 1,
         pageSize: 5,
@@ -140,17 +134,13 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> {
   Widget _buildUserHeader() {
     return Row(
       children: [
-        CircleAvatar(
+        // 使用安全头像组件
+        SafeUserAvatar(
+          userId: _user?.id,
+          avatarUrl: _user?.avatar,
+          username: _user?.username ?? '',
           radius: 40,
-          backgroundImage: _user?.avatar != null
-              ? NetworkImage(_user!.avatar!)
-              : null,
-          child: _user?.avatar == null
-              ? Text(
-            _user?.username.substring(0, 1).toUpperCase() ?? '',
-            style: TextStyle(fontSize: 24),
-          )
-              : null,
+          enableNavigation: false, // 禁用导航，因为已经在用户资料页面内
         ),
         SizedBox(width: 16),
         Expanded(

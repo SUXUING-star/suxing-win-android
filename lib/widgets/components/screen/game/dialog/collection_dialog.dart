@@ -1,14 +1,14 @@
-// lib/widgets/components/screen/game/dialogs/collection_dialog.dart
+// lib/widgets/components/screen/game/dialog/collection_dialog.dart
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game_collection.dart';
-import '../../../components/form/collection/collection_form.dart';
+import '../../../../../widgets/components/form/collection/collection_form.dart';
 
 class CollectionDialog extends StatelessWidget {
   final String gameId;
   final String gameName;
   final String? currentStatus;
   final String? currentNotes;
-  final String? currentReview;
+  final String? currentReview;  // Add this field
   final double? currentRating;
 
   const CollectionDialog({
@@ -17,7 +17,7 @@ class CollectionDialog extends StatelessWidget {
     required this.gameName,
     this.currentStatus,
     this.currentNotes,
-    this.currentReview,
+    this.currentReview,  // Add this parameter
     this.currentRating,
   }) : super(key: key);
 
@@ -66,7 +66,7 @@ class CollectionDialog extends StatelessWidget {
                       gameId: gameId,
                       initialStatus: currentStatus ?? '',
                       initialNotes: currentNotes,
-                      initialReview: currentReview,
+                      initialReview: currentReview,  // Pass the review field
                       initialRating: currentRating,
                       showRemoveButton: isEditing,
                       onCancel: () => Navigator.of(context).pop(),
@@ -75,12 +75,12 @@ class CollectionDialog extends StatelessWidget {
                           'action': 'remove',
                         });
                       },
-                      onSubmit: (status, notes, review, rating) {
+                      onSubmit: (status, notes, review, rating) {  // Make sure this function accepts review
                         Navigator.of(context).pop({
                           'action': 'set',
                           'status': status,
                           'notes': notes,
-                          'review': review,
+                          'review': review,  // Include review in result
                           'rating': rating,
                         });
                       },

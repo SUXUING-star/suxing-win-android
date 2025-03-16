@@ -1,16 +1,12 @@
-// widgets/form/gameform/game_form.dart
+// lib/widgets/form/gameform/game_form.dart
 
 import 'package:flutter/material.dart';
-import '../../../models/game/game.dart';
+import '../../../../models/game/game.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'field/cover_image_field.dart';
-import 'field/download_links_field.dart';
-import 'field/game_images_field.dart';
-import 'field/category_field.dart';
-import 'field/rating_field.dart';
-import 'field/tags_field.dart';
-import '../../../utils/device/device_utils.dart';
-import '../../../utils/font/font_config.dart';
+import 'layout/desktop_layout.dart';
+import 'layout/mobile_layout.dart';
+import 'common/loading_overlay.dart';
+import '../../../../utils/device/device_utils.dart';
 
 class GameForm extends StatefulWidget {
   final Game? game;
@@ -39,6 +35,10 @@ class _GameFormState extends State<GameForm> {
   bool _isLoading = false;
   List<String> _selectedCategories = [];
   List<String> _selectedTags = [];
+
+  // Add validation error messages
+  String? _coverImageError;
+  String? _categoryError;
 
   @override
   void initState() {
@@ -76,9 +76,40 @@ class _GameFormState extends State<GameForm> {
     super.dispose();
   }
 
+  // Validate all form fields, including non-FormField widgets
+  bool _validateForm() {
+    bool isValid = _formKey.currentState?.validate() ?? false;
+
+    // Validate cover image
+    if (_coverImageUrl == null || _coverImageUrl!.isEmpty) {
+      setState(() {
+        _coverImageError = '请上传封面图片';
+      });
+      isValid = false;
+    } else {
+      setState(() {
+        _coverImageError = null;
+      });
+    }
+
+    // Validate category
+    if (_selectedCategories.isEmpty) {
+      setState(() {
+        _categoryError = '请选择至少一个分类';
+      });
+      isValid = false;
+    } else {
+      setState(() {
+        _categoryError = null;
+      });
+    }
+
+    return isValid;
+  }
+
   void _submitForm() {
-    if (_formKey.currentState!.validate()) {
-      final tags = _selectedTags ?? [];
+    if (_validateForm()) {
+      final tags = _selectedTags;
 
       final game = Game(
         id: widget.game?.id ?? mongo.ObjectId().toHexString(),
@@ -102,6 +133,14 @@ class _GameFormState extends State<GameForm> {
       );
 
       widget.onSubmit(game);
+    } else {
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('请检查表单中的错误并修正'),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -116,365 +155,70 @@ class _GameFormState extends State<GameForm> {
       children: [
         Form(
           key: _formKey,
-          child: useDesktopLayout ? _buildDesktopLayout(context) : _buildMobileLayout(context),
+          child: useDesktopLayout
+              ? DesktopLayout(
+            formKey: _formKey,
+            titleController: _titleController,
+            summaryController: _summaryController,
+            descriptionController: _descriptionController,
+            musicUrlController: _musicUrlController,
+            coverImageUrl: _coverImageUrl,
+            onCoverImageChanged: (url) => setState(() => _coverImageUrl = url as String?),
+            gameImages: _gameImages,
+            onGameImagesChanged: (images) => setState(() => _gameImages = images as List<String>),
+            downloadLinks: _downloadLinks,
+            onDownloadLinksChanged: (links) => setState(() => _downloadLinks = links as List<DownloadLink>),
+            rating: _rating,
+            onRatingChanged: (value) => setState(() => _rating = value),
+            isLoading: _isLoading,
+            onLoadingChanged: (loading) => setState(() => _isLoading = loading),
+            selectedCategories: _selectedCategories,
+            onCategoriesChanged: (categories) => setState(() {
+              _selectedCategories = categories as List<String>;
+              if (categories.isNotEmpty) {
+                _categoryError = null;
+              }
+            }),
+            selectedTags: _selectedTags,
+            onTagsChanged: (tags) => setState(() => _selectedTags = tags as List<String>),
+            coverImageError: _coverImageError,
+            categoryError: _categoryError,
+            onSubmit: _submitForm,
+            existingGame: widget.game,
+          )
+              : MobileLayout(
+            formKey: _formKey,
+            titleController: _titleController,
+            summaryController: _summaryController,
+            descriptionController: _descriptionController,
+            musicUrlController: _musicUrlController,
+            coverImageUrl: _coverImageUrl,
+            onCoverImageChanged: (url) => setState(() => _coverImageUrl = url),
+            gameImages: _gameImages,
+            onGameImagesChanged: (images) => setState(() => _gameImages = images),
+            downloadLinks: _downloadLinks,
+            onDownloadLinksChanged: (links) => setState(() => _downloadLinks = links),
+            rating: _rating,
+            onRatingChanged: (value) => setState(() => _rating = value),
+            isLoading: _isLoading,
+            onLoadingChanged: (loading) => setState(() => _isLoading = loading),
+            selectedCategories: _selectedCategories,
+            onCategoriesChanged: (categories) => setState(() {
+              _selectedCategories = categories;
+              if (categories.isNotEmpty) {
+                _categoryError = null;
+              }
+            }),
+            selectedTags: _selectedTags,
+            onTagsChanged: (tags) => setState(() => _selectedTags = tags),
+            coverImageError: _coverImageError,
+            categoryError: _categoryError,
+            onSubmit: _submitForm,
+            existingGame: widget.game,
+          ),
         ),
-        if (_isLoading) _buildLoadingOverlay(),
+        if (_isLoading) const LoadingOverlay(),
       ],
-    );
-  }
-
-  Widget _buildDesktopLayout(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final double cardHeight = screenSize.height - 100; // Allow for some margin
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left panel - Visual content (40% width)
-            Expanded(
-              flex: 4,
-              child: Card(
-                elevation: 2,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: cardHeight,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '视觉内容',
-                            style: TextStyle(
-                              fontFamily: FontConfig.defaultFontFamily,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Divider(),
-                          SizedBox(height: 16),
-
-                          // Cover Image
-                          CoverImageField(
-                            coverImageUrl: _coverImageUrl,
-                            onChanged: (url) => setState(() => _coverImageUrl = url),
-
-                            isLoading: _isLoading,
-                            onLoadingChanged: (loading) => setState(() => _isLoading = loading),
-                          ),
-                          SizedBox(height: 24),
-
-                          // Game Images
-                          GameImagesField(
-                            gameImages: _gameImages,
-                            onChanged: (images) => setState(() => _gameImages = images),
-                            onLoadingChanged: (loading) => setState(() => _isLoading = loading),
-                          ),
-                          SizedBox(height: 24),
-
-                          // Download Links
-                          DownloadLinksField(
-                            downloadLinks: _downloadLinks,
-                            onChanged: (links) => setState(() => _downloadLinks = links),
-                          ),
-                          SizedBox(height: 24),
-
-                          // Music URL
-                          TextFormField(
-                            controller: _musicUrlController,
-                            decoration: InputDecoration(
-                              labelText: '背景音乐链接(可选)',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.music_note),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            SizedBox(width: 16),
-
-            // Right panel - Text content (60% width)
-            Expanded(
-              flex: 6,
-              child: Card(
-                elevation: 2,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: cardHeight,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            '游戏信息',
-                            style: TextStyle(
-                              fontFamily: FontConfig.defaultFontFamily,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Divider(),
-                          SizedBox(height: 16),
-
-                          // Title
-                          TextFormField(
-                            controller: _titleController,
-                            style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-                            decoration: InputDecoration(
-                              labelText: '游戏标题',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.games),
-                            ),
-                            validator: (value) => value?.isEmpty ?? true
-                                ? '请输入游戏标题'
-                                : null,
-                          ),
-                          SizedBox(height: 16),
-
-                          // Summary
-                          TextFormField(
-                            controller: _summaryController,
-                            style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-                            decoration: InputDecoration(
-                              labelText: '游戏简介',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.short_text),
-                            ),
-                            maxLines: 2,
-                            validator: (value) => value?.isEmpty ?? true
-                                ? '请输入游戏简介'
-                                : null,
-                          ),
-                          SizedBox(height: 16),
-
-                          // Description - reduced max lines to prevent overflow
-                          TextFormField(
-                            controller: _descriptionController,
-                            style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-                            decoration: InputDecoration(
-                              labelText: '详细描述',
-                              border: OutlineInputBorder(),
-                              alignLabelWithHint: true,
-                              prefixIcon: Icon(Icons.description),
-                            ),
-                            maxLines: 6, // Reduced from 8 to help prevent overflow
-                            validator: (value) => value?.isEmpty ?? true
-                                ? '请输入详细描述'
-                                : null,
-                          ),
-                          SizedBox(height: 24),
-
-                          // Category and Tags in a row
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Categories
-                              Expanded(
-                                child: CategoryField(
-                                  selectedCategories: _selectedCategories,
-                                  onChanged: (categories) => setState(() => _selectedCategories = categories),
-                                ),
-                              ),
-                              SizedBox(width: 16),
-                              // Rating
-                              Expanded(
-                                child: RatingField(
-                                  rating: _rating,
-                                  onChanged: (value) => setState(() => _rating = value),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: 24),
-
-                          // Tags
-                          TagsField(
-                            tags: _selectedTags,
-                            onChanged: (tags) => setState(() => _selectedTags = tags),
-                          ),
-                          SizedBox(height: 32),
-
-                          // Submit Button - Centered
-                          Center(child: _buildSubmitButton()),
-                          SizedBox(height: 16), // Add bottom padding to avoid cutoff
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMobileLayout(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.all(16),
-      children: [
-        CoverImageField(
-          coverImageUrl: _coverImageUrl,
-          onChanged: (url) => setState(() => _coverImageUrl = url),
-          isLoading: _isLoading,
-          onLoadingChanged: (loading) => setState(() => _isLoading = loading),
-        ),
-        SizedBox(height: 16),
-
-        _buildBasicFields(),
-        SizedBox(height: 16),
-
-        CategoryField(
-          selectedCategories: _selectedCategories,
-          onChanged: (categories) => setState(() => _selectedCategories = categories),
-        ),
-        SizedBox(height: 16),
-
-        TagsField(
-          tags: _selectedTags,
-          onChanged: (tags) => setState(() => _selectedTags = tags),
-        ),
-        SizedBox(height: 16),
-
-        DownloadLinksField(
-          downloadLinks: _downloadLinks,
-          onChanged: (links) => setState(() => _downloadLinks = links),
-        ),
-        SizedBox(height: 16),
-
-        RatingField(
-          rating: _rating,
-          onChanged: (value) => setState(() => _rating = value),
-        ),
-        SizedBox(height: 16),
-
-        GameImagesField(
-          gameImages: _gameImages,
-          onChanged: (images) => setState(() => _gameImages = images),
-          onLoadingChanged: (loading) => setState(() => _isLoading = loading),
-        ),
-        SizedBox(height: 24),
-
-        _buildSubmitButton(),
-        SizedBox(height: 16), // Add bottom padding to avoid cutoff
-      ],
-    );
-  }
-
-  Widget _buildBasicFields() {
-    return Column(
-      children: [
-        TextFormField(
-          controller: _titleController,
-          style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-          decoration: InputDecoration(
-            labelText: '游戏标题',
-            border: OutlineInputBorder(),
-          ),
-          validator: (value) => value?.isEmpty ?? true
-              ? '请输入游戏标题'
-              : null,
-        ),
-        SizedBox(height: 16),
-
-        TextFormField(
-          controller: _summaryController,
-          style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-          decoration: InputDecoration(
-            labelText: '游戏简介',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 2,
-          validator: (value) => value?.isEmpty ?? true
-              ? '请输入游戏简介'
-              : null,
-        ),
-        SizedBox(height: 16),
-
-        TextFormField(
-          controller: _descriptionController,
-          style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-          decoration: InputDecoration(
-            labelText: '详细描述',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 5,
-          validator: (value) => value?.isEmpty ?? true
-              ? '请输入详细描述 '
-              : null,
-        ),
-        SizedBox(height: 16),
-
-        TextFormField(
-          controller: _musicUrlController,
-          style: TextStyle(fontFamily: FontConfig.defaultFontFamily),
-          decoration: InputDecoration(
-            labelText: '背景音乐链接(可选)',
-            border: OutlineInputBorder(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSubmitButton() {
-    return ElevatedButton(
-      onPressed: _submitForm,
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      child: Text(
-        widget.game == null ? '添加游戏' : '保存修改',
-        style: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily,
-          fontSize: 16,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadingOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.5),
-      child: Center(
-        child: Card(
-          margin: EdgeInsets.all(16),
-          child: Padding(
-            padding: EdgeInsets.all(16),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text(
-                  '正在上传图片...',
-                  style: TextStyle(
-                      fontFamily: FontConfig.defaultFontFamily,
-                      fontSize: 16
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
     );
   }
 }

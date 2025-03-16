@@ -1,6 +1,6 @@
 // lib/widgets/link_form_dialog.dart
 import 'package:flutter/material.dart';
-import '../../../models/linkstools/link.dart';
+import '../../../../models/linkstools/link.dart';
 
 class LinkFormDialog extends StatefulWidget {
   final Link? link;

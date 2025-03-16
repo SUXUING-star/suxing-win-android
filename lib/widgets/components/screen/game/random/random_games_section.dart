@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
+import '../../../../common/image/safe_cached_image.dart';
 
 class RandomGamesSection extends StatefulWidget {
   final String currentGameId;
@@ -18,14 +19,24 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
   final GameService _gameService = GameService();
   List<Game> _randomGames = [];
   bool _isLoading = true;
+  bool _isMounted = false; // 添加一个变量跟踪组件挂载状态
 
   @override
   void initState() {
     super.initState();
+    _isMounted = true; // 设置组件为已挂载
     _loadRandomGames();
   }
 
+  @override
+  void dispose() {
+    _isMounted = false; // 组件销毁时标记为未挂载
+    super.dispose();
+  }
+
   Future<void> _loadRandomGames() async {
+    if (!_isMounted) return; // 检查组件是否仍然挂载
+
     setState(() {
       _isLoading = true;
     });
@@ -35,15 +46,29 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
         limit: 3,
         excludeId: widget.currentGameId,
       );
+
+      // 检查组件是否仍然挂载，防止在setState前组件已销毁
+      if (!_isMounted) return;
+
       setState(() {
         _randomGames = games;
         _isLoading = false;
       });
     } catch (e) {
+      // 检查组件是否仍然挂载，防止在setState前组件已销毁
+      if (!_isMounted) return;
+
       setState(() {
         _isLoading = false;
       });
       print('Error loading random games: $e');
+    }
+  }
+
+  // 添加一个安全的setState方法
+  void setStateIfMounted(VoidCallback fn) {
+    if (_isMounted) {
+      setState(fn);
     }
   }
 
@@ -62,13 +87,12 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
         child: Container(
           width: 160,
           margin: const EdgeInsets.only(right: 16),
-          // 移除 Column 的 height 限制，让它自然扩展
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisSize: MainAxisSize.min, // 添加这个确保列只占用必要的空间
+            mainAxisSize: MainAxisSize.min,
             children: [
               AspectRatio(
-                aspectRatio: 4/3, // 使用固定的宽高比
+                aspectRatio: 4/3,
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(12),
@@ -82,16 +106,24 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      game.coverImage,
+                    child: SafeCachedImage(
+                      imageUrl: game.coverImage,
                       fit: BoxFit.cover,
+                      memCacheWidth: 320,
+                      // 使用空的错误处理器避免错误级联
+                      onError: (url, error) {
+                        // 仅在组件仍然挂载时记录错误
+                        if (_isMounted) {
+                          print('随机游戏图片加载失败: $url, 错误: $error');
+                        }
+                      },
                     ),
                   ),
                 ),
               ),
               const SizedBox(height: 8),
               ConstrainedBox(
-                constraints: BoxConstraints(maxHeight: 40), // 限制标题最大高度
+                constraints: const BoxConstraints(maxHeight: 40),
                 child: Text(
                   game.title,
                   maxLines: 2,
@@ -99,7 +131,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 14,
-                    height: 1.2, // 减小行高
+                    height: 1.2,
                   ),
                 ),
               ),
@@ -146,7 +178,6 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     return Opacity(
       opacity: 0.9,
       child: Container(
-        //margin: const EdgeInsets.symmetric(vertical: 16),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
@@ -185,8 +216,10 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
             ),
             const SizedBox(height: 16),
             SizedBox(
-              height: 190, // 增加容器高度
-              child: ListView.builder(
+              height: 190,
+              child: _randomGames.isEmpty
+                  ? const Center(child: Text('暂无推荐游戏'))
+                  : ListView.builder(
                 scrollDirection: Axis.horizontal,
                 itemCount: _randomGames.length,
                 padding: EdgeInsets.zero,

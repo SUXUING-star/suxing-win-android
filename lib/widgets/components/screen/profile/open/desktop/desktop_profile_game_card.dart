@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_game_card.dart
 import 'package:flutter/material.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../../../models/game/game.dart';
+import '../../../../../common/image/safe_cached_image.dart';
 
 class DesktopProfileGameCard extends StatelessWidget {
   final Game game;

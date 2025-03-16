@@ -53,8 +53,11 @@ class CustomBottomNavigationBar extends StatelessWidget {
                 _buildNavItem(Icons.home_rounded, '首页', isAndroidLandscape),
                 _buildNavItem(Icons.games_rounded, '游戏', isAndroidLandscape),
                 _buildNavItem(Icons.link_rounded, '外部', isAndroidLandscape),
-                _buildNavItem(Icons.forum_rounded, '论坛', isAndroidLandscape),
+                _buildNavItem(Icons.forum_rounded, '帖子', isAndroidLandscape),
+                _buildNavItem(Icons.rocket_launch, '动态', isAndroidLandscape),
                 _buildNavItem(Icons.person_rounded, '我的', isAndroidLandscape),
+
+                //_buildNavItem(Icons.rocket, 'ai', isAndroidLandscape),
               ],
               onTap: onTap,
             ),

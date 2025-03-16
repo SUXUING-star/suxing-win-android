@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import '../../services/main/user/user_service.dart';
 import '../../utils/load/loading_route_observer.dart';
-import '../../widgets/common/toaster.dart';
-import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/common/toaster/toaster.dart';
+import '../../widgets/common/appbar/custom_app_bar.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -96,123 +96,128 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               height: double.infinity,
             ),
           ),
-          // 重置密码表单
+          // 重置密码表单 - 添加最大宽度约束
           Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(24.0),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.9),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                padding: EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      // 标题
-                      Text(
-                        '重置密码',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      Text(
-                        '为您的账号设置新密码',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.grey,
-                        ),
-                      ),
-                      SizedBox(height: 24),
-
-                      // 显示错误信息
-                      if (_error != null)
-                        Padding(
-                          padding: const EdgeInsets.only(bottom: 16.0),
-                          child: Text(
-                            _error!,
-                            style: TextStyle(color: Colors.red),
-                            textAlign: TextAlign.center,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: 450, // 设置最大宽度
+              ),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  padding: EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // 标题
+                        Text(
+                          '重置密码',
+                          style: TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
                           ),
                         ),
+                        SizedBox(height: 16),
+                        Text(
+                          '为您的账号设置新密码',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        SizedBox(height: 24),
 
-                      // 新密码输入
-                      TextFormField(
-                        controller: _passwordController,
-                        decoration: InputDecoration(
-                          labelText: '新密码',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                        // 显示错误信息
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: Text(
+                              _error!,
+                              style: TextStyle(color: Colors.red),
+                              textAlign: TextAlign.center,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
                           ),
-                        ),
-                        obscureText: _obscurePassword,
-                        validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return '请输入新密码';
-                          }
-                          if (value.length < 6) {
-                            return '密码长度至少6位';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 16),
 
-                      // 确认新密码输入
-                      TextFormField(
-                        controller: _confirmPasswordController,
-                        decoration: InputDecoration(
-                          labelText: '确认新密码',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.lock),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscureConfirmPassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
+                        // 新密码输入
+                        TextFormField(
+                          controller: _passwordController,
+                          decoration: InputDecoration(
+                            labelText: '新密码',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscurePassword = !_obscurePassword;
+                                });
+                              },
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
-                              });
-                            },
+                          ),
+                          obscureText: _obscurePassword,
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return '请输入新密码';
+                            }
+                            if (value.length < 6) {
+                              return '密码长度至少6位';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 16),
+
+                        // 确认新密码输入
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          decoration: InputDecoration(
+                            labelText: '确认新密码',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.lock),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
+                              onPressed: () {
+                                setState(() {
+                                  _obscureConfirmPassword = !_obscureConfirmPassword;
+                                });
+                              },
+                            ),
+                          ),
+                          obscureText: _obscureConfirmPassword,
+                          validator: (value) {
+                            if (value != _passwordController.text) {
+                              return '两次输入的密码不一致';
+                            }
+                            return null;
+                          },
+                        ),
+                        SizedBox(height: 24),
+
+                        // 重置密码按钮
+                        ElevatedButton(
+                          onPressed: _resetPassword,
+                          child: Text('重置密码'),
+                          style: ElevatedButton.styleFrom(
+                            minimumSize: Size(double.infinity, 48),
                           ),
                         ),
-                        obscureText: _obscureConfirmPassword,
-                        validator: (value) {
-                          if (value != _passwordController.text) {
-                            return '两次输入的密码不一致';
-                          }
-                          return null;
-                        },
-                      ),
-                      SizedBox(height: 24),
-
-                      // 重置密码按钮
-                      ElevatedButton(
-                        onPressed: _resetPassword,
-                        child: Text('重置密码'),
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: Size(double.infinity, 48),
-                        ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),

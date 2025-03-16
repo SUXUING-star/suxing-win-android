@@ -2,22 +2,27 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'services/common/image_manager_service.dart';
 import 'services/main/history/game_history_service.dart';
 import 'services/main/history/post_history_service.dart';
 import './initialization/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
-import 'providers/auth/auth_provider.dart';
 import 'utils/load/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
-import 'widgets/loading/loading_screen.dart';
-import 'widgets/effects/mouse_trail_effect.dart';
+import 'widgets/common/load/loading_screen.dart';
+import 'widgets/components/effects/mouse_trail_effect.dart';
 import './routes/app_routes.dart';
 import 'services/main/user/user_service.dart';
+import 'services/main/user/user_checkin_service.dart';
+import 'services/main/user/user_level_service.dart';
 import 'services/main/forum/forum_service.dart';
 import 'services/main/user/user_ban_service.dart';
-import 'services/main/database/restart/restart_service.dart';
+import 'services/main/restart/restart_service.dart';
 import 'services/main/audio/audio_service.dart';
+import 'services/main/game/collection/game_collection_service.dart';
+import 'services/main/activity/activity_service.dart';
 
 
 class App extends StatelessWidget {
@@ -53,25 +58,37 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        ...providers,
-        // 添加 AuthProvider
-        ChangeNotifierProvider<AuthProvider>(
-          create: (_) => AuthProvider(),
-        ),
-        // 添加 ForumService provider
+        ...providers, // 包含了所有从 AppInitializer.createProviders 创建的服务
+        // 其他不需要特殊初始化的服务
         Provider<ForumService>(
           create: (_) => ForumService(),
         ),
-        // 添加 UserService provider
         Provider<UserService>(
           create: (_) => UserService(),
         ),
-        // 添加 GameHistoryService和PostHistoryService provider
+        Provider<UserActivityService>(  // 添加用户动态服务
+          create: (_) => UserActivityService(),
+        ),
+        Provider<UserFollowService>(
+          create: (_) => UserFollowService(),
+        ),
+        Provider<UserCheckInService>(
+          create: (_) => UserCheckInService(),
+        ),
+        Provider<UserLevelService>(
+          create: (_) => UserLevelService(),
+        ),
+        Provider<ImageManagerService>(
+          create: (_) => ImageManagerService(),
+        ),
         Provider<GameHistoryService>(
           create: (_) => GameHistoryService(),
         ),
         Provider<PostHistoryService>(
           create: (_) => PostHistoryService(),
+        ),
+        Provider<GameCollectionService>(
+          create: (_) => GameCollectionService(),
         ),
         Provider<UserBanService>(
           create: (_) => UserBanService(),

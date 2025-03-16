@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/logo/star_logo.dart';
 import '../../utils/device/device_utils.dart';
-import '../../screens/search_screen.dart';
+import '../../screens/search/search_screen.dart';
+import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/logo/star_logo.dart';
-import '../../widgets/update/update_button.dart';
+import '../../widgets/common/logo/star_logo.dart';
+import '../../widgets/common/button/update_button.dart';
 import '../../widgets/components/screen/message/message_badge.dart';
+import '../../widgets/common/image/safe_user_avatar.dart';
+import '../../widgets/components/indicators/announcement_indicator.dart';
+// 添加网络状态指示器
+import '../../widgets/components/indicators/network_status_indicator.dart';
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
@@ -55,6 +59,12 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         const SizedBox(width: 8),
+        // 添加网络状态指示器
+        _buildNetworkStatusIndicator(context, verticalPadding),
+        const SizedBox(width: 8),
+        // 添加公告指示器
+        _buildAnnouncementIndicator(context, verticalPadding),
+        const SizedBox(width: 8),
         _buildMessageBadge(context, verticalPadding),
         const SizedBox(width: 8),
         _buildProfileAvatar(context, avatarRadius, verticalPadding),
@@ -63,6 +73,29 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
+  // 添加网络状态指示器构建方法
+  Widget _buildNetworkStatusIndicator(BuildContext context, double padding) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: padding),
+        child: const NetworkStatusIndicator(
+          onReconnect: null, // 可以添加重连回调
+        ),
+      ),
+    );
+  }
+
+  // 添加公告指示器构建方法
+  Widget _buildAnnouncementIndicator(BuildContext context, double padding) {
+    return MouseRegion(
+      cursor: SystemMouseCursors.click,
+      child: Padding(
+        padding: EdgeInsets.symmetric(vertical: padding),
+        child: const AnnouncementIndicator(),
+      ),
+    );
+  }
 
   Widget _buildLeadingLogo(BuildContext context, double size, double padding) {
     return MouseRegion(
@@ -123,6 +156,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   Widget _buildMessageBadge(BuildContext context, double padding) {
     final authProvider = Provider.of<AuthProvider>(context);
+    // 添加空值检查
     if (authProvider.isLoggedIn) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
@@ -136,16 +170,14 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildProfileAvatar(BuildContext context, double radius, double padding) {
-    return StreamBuilder<String?>(
-      stream: _userService.getCurrentUserProfile().map((user) => user?.avatar),
-      builder: (context, snapshot) {
-        final authProvider = Provider.of<AuthProvider>(context);
-        return MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: onProfileTap,
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
+    return Consumer<AuthProvider>(
+      builder: (context, authProvider, child) {
+        // If not logged in, show default avatar
+        if (!authProvider.isLoggedIn) {
+          return Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
+            child: GestureDetector(
+              onTap: onProfileTap,
               child: Container(
                 padding: EdgeInsets.all(2),
                 decoration: BoxDecoration(
@@ -158,20 +190,71 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                 child: CircleAvatar(
                   radius: radius,
                   backgroundColor: Colors.grey[100],
-                  backgroundImage: snapshot.hasData && snapshot.data != null
-                      ? NetworkImage(snapshot.data!)
-                      : null,
-                  child: !snapshot.hasData || snapshot.data == null
-                      ? Icon(
+                  child: Icon(
                     Icons.person_rounded,
                     size: radius * 1.3,
                     color: Colors.grey[400],
-                  )
-                      : null,
+                  ),
                 ),
               ),
             ),
-          ),
+          );
+        }
+
+        // For logged in users, use StreamBuilder with getCurrentUser
+        // instead of SafeUserAvatar which has issues
+        return StreamBuilder<User?>(
+          stream: _userService.getCurrentUserProfile(),
+          builder: (context, snapshot) {
+            return Padding(
+              padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
+              child: Container(
+                padding: EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Color(0xFF2979FF),
+                    width: 1.5,
+                  ),
+                ),
+                child: GestureDetector(
+                  onTap: onProfileTap,
+                  child: snapshot.hasData && snapshot.data?.avatar != null
+                      ? ClipOval(
+                    child: Image.network(
+                      snapshot.data!.avatar!,
+                      width: radius * 2,
+                      height: radius * 2,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return CircleAvatar(
+                          radius: radius,
+                          backgroundColor: Colors.grey[100],
+                          child: Text(
+                            snapshot.data?.username?[0].toUpperCase() ?? '?',
+                            style: TextStyle(
+                              fontSize: radius * 0.8,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade700,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                      : CircleAvatar(
+                    radius: radius,
+                    backgroundColor: Colors.grey[100],
+                    child: Icon(
+                      Icons.person_rounded,
+                      size: radius * 1.3,
+                      color: Colors.grey[400],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         );
       },
     );

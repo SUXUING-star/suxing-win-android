@@ -1,15 +1,19 @@
 // lib/screens/forum/forum_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import '../../models/post/post.dart';
 import '../../services/main/forum/forum_service.dart';
 import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../utils/load/loading_route_observer.dart';
-import '../../widgets/common/custom_app_bar.dart';
+import '../../utils/device/device_utils.dart';
+import '../../widgets/components/form/postform/config/post_taglists.dart';
+import '../../widgets/common/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/forum/post_card.dart';
 import '../../widgets/components/screen/forum/tag_filter.dart';
+import '../../widgets/components/screen/forum/panel/forum_right_panel.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
@@ -23,13 +27,13 @@ class ForumScreen extends StatefulWidget {
 class _ForumScreenState extends State<ForumScreen> {
   final ForumService _forumService = ForumService();
   final UserService _userService = UserService();
-  final List<String> _tags = ['全部', '讨论', '攻略', '分享', '求助'];
+  final List<String> _tags = PostTagLists.filterTags;
   String _selectedTag = '全部';
   List<Post>? _posts;
   String? _errorMessage;
 
-  // 定义桌面端断点
-  final double _desktopBreakpoint = 900.0;
+  // 控制右侧面板显示状态
+  bool _showRightPanel = true;
 
   @override
   void initState() {
@@ -44,8 +48,10 @@ class _ForumScreenState extends State<ForumScreen> {
     super.didChangeDependencies();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
+      final loadingObserver = Navigator
+          .of(context)
+          .widget
+          .observers
           .whereType<LoadingRouteObserver>()
           .first;
 
@@ -59,9 +65,11 @@ class _ForumScreenState extends State<ForumScreen> {
 
   Future<void> _loadPosts() async {
     try {
-      final posts = await _forumService.getPosts(
+      final posts = await _forumService
+          .getPosts(
         tag: _selectedTag == '全部' ? null : _selectedTag,
-      ).first;
+      )
+          .first;
 
       setState(() {
         _posts = posts;
@@ -76,8 +84,10 @@ class _ForumScreenState extends State<ForumScreen> {
   }
 
   Future<void> _refreshData() async {
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
+    final loadingObserver = Navigator
+        .of(context)
+        .widget
+        .observers
         .whereType<LoadingRouteObserver>()
         .first;
 
@@ -89,15 +99,41 @@ class _ForumScreenState extends State<ForumScreen> {
     }
   }
 
+  void _toggleRightPanel() {
+    setState(() {
+      _showRightPanel = !_showRightPanel;
+    });
+  }
+
+  void _onTagSelected(String tag) {
+    setState(() {
+      _selectedTag = tag;
+    });
+    _loadPosts();
+  }
+
+  bool _isDesktop(BuildContext context) {
+    return DeviceUtils.isDesktop;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= _desktopBreakpoint;
+    final isDesktop = _isDesktop(context);
 
     return Scaffold(
       appBar: CustomAppBar(
         title: '论坛',
         actions: [
+          // 只在桌面端显示右侧面板切换按钮
+          if (isDesktop)
+            IconButton(
+              icon: Icon(
+                Icons.analytics_outlined,
+                color: _showRightPanel ? Colors.yellow : Colors.white,
+              ),
+              onPressed: _toggleRightPanel,
+              tooltip: _showRightPanel ? '隐藏统计面板' : '显示统计面板',
+            ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               if (authProvider.isLoggedIn) {
@@ -118,19 +154,40 @@ class _ForumScreenState extends State<ForumScreen> {
           TagFilter(
             tags: _tags,
             selectedTag: _selectedTag,
-            onTagSelected: (tag) {
-              setState(() {
-                _selectedTag = tag;
-              });
-              _loadPosts();
-            },
+            onTagSelected: _onTagSelected,
           ),
           Expanded(
-            child: _buildPostsList(isDesktop),
+            child: isDesktop
+                ? _buildDesktopLayout()
+                : _buildMobileLayout(),
           ),
         ],
       ),
     );
+  }
+
+  Widget _buildDesktopLayout() {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 主内容区域
+        Expanded(
+          child: _buildPostsList(true),
+        ),
+
+        // 右侧统计面板（只在显示时渲染）
+        if (_showRightPanel && _posts != null)
+          ForumRightPanel(
+            currentPosts: _posts!,
+            selectedTag: _selectedTag == '全部' ? null : _selectedTag,
+            onTagSelected: _onTagSelected,
+          ),
+      ],
+    );
+  }
+
+  Widget _buildMobileLayout() {
+    return _buildPostsList(false);
   }
 
   Widget _buildPostsList(bool isDesktop) {
@@ -170,16 +227,13 @@ class _ForumScreenState extends State<ForumScreen> {
     );
   }
 
-  // 桌面端帖子网格（并排排列）
+  // 桌面端帖子网格 - 使用 StaggeredGridView 允许不同高度
   Widget _buildDesktopPostsGrid() {
-    return GridView.builder(
+    return MasonryGridView.count(
+      crossAxisCount: 3,
+      mainAxisSpacing: 8,
+      crossAxisSpacing: 16,
       padding: const EdgeInsets.all(16),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2, // 每行2个
-        childAspectRatio: 2.5, // 宽高比
-        crossAxisSpacing: 16, // 水平间距
-        mainAxisSpacing: 16, // 垂直间距
-      ),
       itemCount: _posts!.length,
       itemBuilder: (context, index) {
         final post = _posts![index];

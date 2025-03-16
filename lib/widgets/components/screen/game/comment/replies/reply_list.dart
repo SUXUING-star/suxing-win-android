@@ -1,4 +1,4 @@
-// lib/widgets/game/comment/replies/reply_list.dart
+// lib/widgets/components/screen/game/comment/replies/reply_list.dart
 import 'package:flutter/material.dart';
 import '../../../../../../models/comment/comment.dart';
 import 'reply_item.dart';

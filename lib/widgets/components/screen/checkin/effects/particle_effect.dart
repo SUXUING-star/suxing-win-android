@@ -21,16 +21,26 @@ class ParticleEffect extends StatefulWidget {
 class _ParticleEffectState extends State<ParticleEffect> {
   List<Particle> particles = [];
   final Random random = Random();
+  bool _isDisposed = false;
 
   @override
   void initState() {
     super.initState();
     initParticles();
-    widget.controller.addListener(() {
-      if (widget.controller.isAnimating) {
-        setState(() {});
-      }
-    });
+    widget.controller.addListener(_updateParticles);
+  }
+
+  void _updateParticles() {
+    if (widget.controller.isAnimating && mounted && !_isDisposed) {
+      setState(() {});
+    }
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    widget.controller.removeListener(_updateParticles);
+    super.dispose();
   }
 
   void initParticles() {

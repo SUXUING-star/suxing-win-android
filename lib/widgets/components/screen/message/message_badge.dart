@@ -1,7 +1,7 @@
 // lib/widgets/message/message_badge.dart
 import 'package:flutter/material.dart';
 import '../../../../services/main/message/message_service.dart';
-import '../../../../screens/message_screen.dart';
+import '../../../../screens/message/message_screen.dart';
 
 class MessageBadge extends StatelessWidget {
   final MessageService _messageService = MessageService();
@@ -40,7 +40,7 @@ class MessageBadge extends StatelessWidget {
                     minHeight: 16,
                   ),
                   child: Text(
-                    unreadCount.toString(),
+                    unreadCount > 99 ? '99+' : unreadCount.toString(),
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 10,

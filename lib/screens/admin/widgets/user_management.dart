@@ -17,10 +17,19 @@ class _UserManagementState extends State<UserManagement> {
   final UserService _userService = UserService();
   final UserBanService _banService = UserBanService();
   bool _loading = false;
+  // 添加刷新标记，用于触发FutureBuilder重新加载
+  int _refreshCounter = 0;
 
   Future<bool> _checkBanStatus(String userId) async {
     final ban = await _banService.checkUserBan(userId);
     return ban != null;
+  }
+
+  // 刷新用户列表
+  void _refreshUserList() {
+    setState(() {
+      _refreshCounter++;
+    });
   }
 
   Future<void> _showBanDialog(BuildContext context, Map<String, dynamic> user) async {
@@ -129,7 +138,8 @@ class _UserManagementState extends State<UserManagement> {
 
                 Navigator.pop(dialogContext);
                 if(mounted) {
-                  setState(() {});
+                  // 刷新用户列表
+                  _refreshUserList();
                   ScaffoldMessenger.of(rootContext).showSnackBar(
                     SnackBar(content: Text('用户已被封禁')),
                   );
@@ -168,7 +178,8 @@ class _UserManagementState extends State<UserManagement> {
                 await _banService.unbanUser(user['_id'].toString());
                 Navigator.pop(dialogContext);
                 if(mounted) {
-                  setState(() {});
+                  // 刷新用户列表
+                  _refreshUserList();
                   ScaffoldMessenger.of(rootContext).showSnackBar(
                     SnackBar(content: Text('已解除封禁')),
                   );
@@ -198,7 +209,9 @@ class _UserManagementState extends State<UserManagement> {
       );
     }
 
+    // 使用刷新计数器作为 FutureBuilder 的 key，使其能够重新加载
     return FutureBuilder<List<Map<String, dynamic>>>(
+      key: ValueKey(_refreshCounter),
       future: _userService.getAllUsers(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
@@ -211,90 +224,105 @@ class _UserManagementState extends State<UserManagement> {
 
         final users = snapshot.data!;
 
-        return ListView.builder(
-          itemCount: users.length,
-          itemBuilder: (context, index) {
-            final user = users[index];
-            final isAdmin = user['isAdmin'] as bool? ?? false;
-
-            if (user['_id'] == authProvider.currentUser?.id) {
-              return const SizedBox.shrink();
-            }
-
-            return FutureBuilder<bool>(
-              future: _checkBanStatus(user['_id']),
-              builder: (context, banSnapshot) {
-                final isBanned = banSnapshot.data ?? false;
-
-                return Card(
-                  margin: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
-                  ),
-                  child: ListTile(
-                    leading: const Icon(Icons.person),
-                    title: Text(user['username'] ?? '未知用户'),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(user['email'] ?? ''),
-                        if (isBanned)
-                          Text(
-                            '已封禁',
-                            style: TextStyle(color: Colors.red),
-                          ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(isAdmin ? '管理员' : '普通用户'),
-                        const SizedBox(width: 8),
-                        Switch(
-                          value: isAdmin,
-                          onChanged: _loading ? null : (bool value) async {
-                            setState(() => _loading = true);
-                            try {
-                              await _userService.updateUserAdminStatus(
-                                user['_id'].toString(),
-                                value,
-                              );
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    '已${value ? '设置' : '取消'}管理员权限',
-                                  ),
-                                ),
-                              );
-                            } catch (e) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('操作失败：$e')),
-                              );
-                            } finally {
-                              setState(() => _loading = false);
-                            }
-                          },
-                        ),
-                        IconButton(
-                          icon: Icon(
-                            isBanned ? Icons.lock_open : Icons.block,
-                            color: isBanned ? Colors.orange : Colors.red,
-                          ),
-                          onPressed: () {
-                            if (isBanned) {
-                              _showUnbanDialog(context, user);
-                            } else {
-                              _showBanDialog(context, user);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
+        return RefreshIndicator(
+          onRefresh: () async {
+            // 添加下拉刷新支持
+            _refreshUserList();
           },
+          child: ListView.builder(
+            itemCount: users.length,
+            itemBuilder: (context, index) {
+              final user = users[index];
+              final isAdmin = user['isAdmin'] as bool? ?? false;
+
+              if (user['_id'] == authProvider.currentUser?.id) {
+                return const SizedBox.shrink();
+              }
+
+              return FutureBuilder<bool>(
+                // 增加key以确保每次刷新都重新检查封禁状态
+                key: ValueKey('${user['_id']}_${_refreshCounter}'),
+                future: _checkBanStatus(user['_id']),
+                builder: (context, banSnapshot) {
+                  final isBanned = banSnapshot.data ?? false;
+
+                  return Card(
+                    margin: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: ListTile(
+                      leading: const Icon(Icons.person),
+                      title: Text(user['username'] ?? '未知用户'),
+                      subtitle: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user['email'] ?? ''),
+                          if (isBanned)
+                            Text(
+                              '已封禁',
+                              style: TextStyle(color: Colors.red),
+                            ),
+                        ],
+                      ),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(isAdmin ? '管理员' : '普通用户'),
+                          const SizedBox(width: 8),
+                          Switch(
+                            value: isAdmin,
+                            onChanged: _loading ? null : (bool value) async {
+                              setState(() => _loading = true);
+                              try {
+                                await _userService.updateUserAdminStatus(
+                                  user['_id'].toString(),
+                                  value,
+                                );
+
+                                // 更新本地显示状态
+                                setState(() {
+                                  // 直接修改当前用户对象的状态
+                                  user['isAdmin'] = value;
+                                });
+
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      '已${value ? '设置' : '取消'}管理员权限',
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('操作失败：$e')),
+                                );
+                              } finally {
+                                setState(() => _loading = false);
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: Icon(
+                              isBanned ? Icons.lock_open : Icons.block,
+                              color: isBanned ? Colors.orange : Colors.red,
+                            ),
+                            onPressed: () {
+                              if (isBanned) {
+                                _showUnbanDialog(context, user);
+                              } else {
+                                _showBanDialog(context, user);
+                              }
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         );
       },
     );

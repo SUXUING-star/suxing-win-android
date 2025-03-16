@@ -1,6 +1,6 @@
 // lib/widgets/forum/post_guidelines.dart
 import 'package:flutter/material.dart';
-import '../../../../utils/font/font_config.dart';
+import '../../../../../utils/font/font_config.dart';
 
 class PostGuidelines extends StatelessWidget {
   final List<String> guidelines;

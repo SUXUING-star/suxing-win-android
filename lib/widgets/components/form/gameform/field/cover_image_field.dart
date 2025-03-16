@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../../utils/upload/file_upload.dart';
-import '../../../../utils/device/device_utils.dart';
-import '../../../common/image/safe_cached_image.dart';
-import 'dialog/image_url_dialog.dart';
+import '../../../../../services/common/file_upload_service.dart';
+import '../../../../../utils/device/device_utils.dart';
+import '../../../../common/image/safe_cached_image.dart';
+import 'image_url_dialog.dart';
 
 class CoverImageField extends StatelessWidget {
   final String? coverImageUrl;
@@ -57,9 +57,10 @@ class CoverImageField extends StatelessWidget {
   }
 
   Future<void> _showUrlDialog(BuildContext context) async {
+    // 不传递initialUrl，这样就不会显示原来的路径
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => ImageUrlDialog(initialUrl: coverImageUrl),
+      builder: (context) => ImageUrlDialog(initialUrl: ''),
     );
 
     if (result != null) {

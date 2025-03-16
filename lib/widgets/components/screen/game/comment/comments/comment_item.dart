@@ -1,24 +1,24 @@
-// lib/widgets/game/comment/comment_item.dart
+// lib/widgets/components/screen/game/comment/comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
-import '../../../../../../services/main/user/user_service.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
-import '../../../../../../screens/profile/open_profile_screen.dart';
+import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../replies/reply_list.dart';
 import '../replies/reply_input.dart';
+import '../../../../badge/info/user_info_badge.dart'; // 导入UserInfoBadge
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
   final String gameId;
-  final VoidCallback? onCommentChanged; // 添加回调函数
+  final VoidCallback? onCommentChanged;
 
   const CommentItem({
     Key? key,
     required this.comment,
     required this.gameId,
-    this.onCommentChanged, // 初始化回调
+    this.onCommentChanged,
   }) : super(key: key);
 
   @override
@@ -26,61 +26,8 @@ class CommentItem extends StatefulWidget {
 }
 
 class _CommentItemState extends State<CommentItem> {
-  final UserService _userService = UserService();
   final CommentService _commentService = CommentService();
-  final Map<String, Future<Map<String, dynamic>>> _userInfoCache = {};
-  bool _isDeleting = false; // 添加删除状态标志
-
-  Future<Map<String, dynamic>> _getUserInfo(String userId) {
-    _userInfoCache[userId] ??= _userService.getUserInfoById(userId);
-    return _userInfoCache[userId]!;
-  }
-
-  void _navigateToProfile(BuildContext context, String userId) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OpenProfileScreen(userId: userId),
-      ),
-    );
-  }
-
-  Widget _buildUserAvatar(BuildContext context, String userId, String fallbackUsername) {
-    return FutureBuilder<Map<String, dynamic>>(
-      future: _getUserInfo(userId),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const SizedBox(
-            width: 40,
-            height: 40,
-            child: CircleAvatar(
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        }
-
-        final username = snapshot.data?['username'] ?? fallbackUsername;
-        final avatarUrl = snapshot.data?['avatar'];
-
-        return MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: GestureDetector(
-            onTap: () => _navigateToProfile(context, userId),
-            child: CircleAvatar(
-              radius: 20,
-              backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-              child: avatarUrl == null && username.isNotEmpty
-                  ? Text(
-                username[0].toUpperCase(),
-                style: const TextStyle(fontSize: 16),
-              )
-                  : null,
-            ),
-          ),
-        );
-      },
-    );
-  }
+  bool _isDeleting = false;
 
   Widget _buildCommentActions(BuildContext context, Comment comment) {
     return PopupMenuButton<String>(
@@ -142,13 +89,12 @@ class _CommentItemState extends State<CommentItem> {
               if (controller.text.trim().isEmpty) return;
 
               try {
-                Navigator.pop(context); // 先关闭对话框
+                Navigator.pop(context);
                 await _commentService.updateComment(
                   comment.id,
                   controller.text.trim(),
                 );
 
-                // 通知父组件评论已更新
                 if (widget.onCommentChanged != null) {
                   widget.onCommentChanged!();
                 }
@@ -192,18 +138,13 @@ class _CommentItemState extends State<CommentItem> {
               : ElevatedButton(
             onPressed: () async {
               try {
-                // 设置删除状态为true
                 setState(() {
                   _isDeleting = true;
                 });
 
-                // 关闭对话框
                 Navigator.pop(dialogContext);
-
-                // 执行删除操作
                 await _commentService.deleteComment(comment.id);
 
-                // 通知父组件评论已删除
                 if (widget.onCommentChanged != null) {
                   widget.onCommentChanged!();
                 }
@@ -214,7 +155,6 @@ class _CommentItemState extends State<CommentItem> {
                   );
                 }
               } catch (e) {
-                // 重置删除状态
                 if (mounted) {
                   setState(() {
                     _isDeleting = false;
@@ -225,7 +165,6 @@ class _CommentItemState extends State<CommentItem> {
                   );
                 }
               } finally {
-                // 确保状态重置
                 if (mounted) {
                   setState(() {
                     _isDeleting = false;
@@ -241,11 +180,6 @@ class _CommentItemState extends State<CommentItem> {
     );
   }
 
-  String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')} '
-        '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -253,24 +187,32 @@ class _CommentItemState extends State<CommentItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ListTile(
-            leading: SizedBox(
-              width: 40,
-              height: 40,
-              child: _buildUserAvatar(context, widget.comment.userId, widget.comment.username),
+          Padding(
+            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 使用UserInfoBadge替换原有的用户信息显示
+                Expanded(
+                  child: UserInfoBadge(
+                    userId: widget.comment.userId,
+                    showFollowButton: false, // 不显示关注按钮
+                  ),
+                ),
+                // 时间标签
+                Text(
+                  DateTimeFormatter.formatStandard(widget.comment.createTime) +
+                      (widget.comment.isEdited ? ' (已编辑)' : ''),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // 评论操作菜单
+                _buildCommentActions(context, widget.comment),
+              ],
             ),
-            title: FutureBuilder<Map<String, dynamic>>(
-              future: _getUserInfo(widget.comment.userId),
-              builder: (context, snapshot) {
-                final username = snapshot.data?['username'] ?? widget.comment.username;
-                return Text(username.isNotEmpty ? username : '未知用户');
-              },
-            ),
-            subtitle: Text(
-              _formatDate(widget.comment.createTime) +
-                  (widget.comment.isEdited ? ' (已编辑)' : ''),
-            ),
-            trailing: _buildCommentActions(context, widget.comment),
           ),
           Padding(
             padding: const EdgeInsets.all(16.0),
@@ -280,13 +222,13 @@ class _CommentItemState extends State<CommentItem> {
             const Divider(),
             ReplyList(
               replies: widget.comment.replies,
-              onReplyChanged: widget.onCommentChanged, // 传递回调
+              onReplyChanged: widget.onCommentChanged,
             ),
           ],
           ReplyInput(
             gameId: widget.gameId,
             parentId: widget.comment.id,
-            onReplyAdded: widget.onCommentChanged, // 传递回调
+            onReplyAdded: widget.onCommentChanged,
           ),
         ],
       ),

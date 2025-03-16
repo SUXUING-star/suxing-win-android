@@ -1,7 +1,7 @@
 // lib/widgets/common/safe_cached_image.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import '../../utils/network/url_utils.dart';
+import '../../../utils/network/url_utils.dart';
 
 /// 安全的缓存图片组件
 ///

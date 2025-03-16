@@ -3,11 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/activity_header.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/activity_target.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/activity_action_buttons.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/activity_comment_item.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/activity_comment_input.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
+import '../dialog/activity_edit_dialog.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
@@ -107,12 +108,96 @@ class _ActivityCardState extends State<ActivityCard> {
     }
   }
 
+
   @override
   void didUpdateWidget(ActivityCard oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.activity != widget.activity) {
       _activity = widget.activity;
       _initializeCardProperties();
+    }
+  }
+
+  void _handleEdit() async {
+    HapticFeedback.mediumImpact();
+
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => ActivityEditDialog(
+        initialContent: _activity.content,
+        metadata: _activity.metadata,
+      ),
+    );
+
+    if (result != null) {
+      final success = await _activityService.updateActivity(
+          _activity.id,
+          result['content'],
+          result['metadata']
+      );
+
+      if (success) {
+        // 加载更新后的活动
+        final updatedActivity = await _activityService.getActivityDetail(_activity.id);
+        if (updatedActivity != null && mounted) {
+          setState(() {
+            _activity = updatedActivity;
+          });
+
+          if (widget.onUpdated != null) {
+            widget.onUpdated!();
+          }
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('动态已更新')),
+          );
+        }
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('更新失败，请稍后重试')),
+        );
+      }
+    }
+  }
+
+// 处理活动删除
+  void _handleDelete() async {
+    HapticFeedback.heavyImpact();
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('删除动态'),
+        content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('删除', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      final success = await _activityService.deleteActivity(_activity.id);
+
+      if (success && mounted) {
+        if (widget.onUpdated != null) {
+          widget.onUpdated!();
+        }
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('动态已删除')),
+        );
+      } else if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('删除失败，请稍后重试')),
+        );
+      }
     }
   }
 

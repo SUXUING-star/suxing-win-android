@@ -6,17 +6,18 @@ class AboutScreen extends StatelessWidget {
 
   final List<Map<String, dynamic>> techStacks = const [
     {
-      "title": "开发技术",
+      "title": "客户端开发",
       "items": [
-        {"name": "Flutter", "desc": "用户界面构建"},
-        {"name": "Dart", "desc": "编程语言"}
+        {"name": "Dart", "desc": "ui层&交互层"},
+        {"name": "Golang" , "desc": "业务处理层"},
+        {"name": "Nodejs" , "desc": "Redis代理层"},
       ]
     },
     {
-      "title": "数据库技术",
+      "title": "底层开发",
       "items": [
-        {"name": "Mongodb", "desc": "云数据库及服务"},
-        {"name": "Hive", "desc": "静态本地存储"},
+        {"name": "C++" , "desc": "Windows构建底层"},
+        {"name": "Kotlin", "desc": "Android构建底层"}
       ]
     }
   ];

@@ -1,16 +1,18 @@
 // lib/widgets/game/collection/game_collection_section.dart
 import 'package:flutter/material.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../models/game/game_collection.dart';
-import '../../../../../../services/main/game/collection/game_collection_service.dart';
-import 'game_collection_button.dart';
+import '../../../../../models/game/game.dart';
+import '../../../../../models/game/game_collection.dart';
+import '../../../../../services/main/game/collection/game_collection_service.dart';
+import '../../../../../widgets/components/screen/game/collection/game_collection_button.dart';
 
 class GameCollectionSection extends StatefulWidget {
   final Game game;
+  final Function? onCollectionChanged; // 添加回调
 
   const GameCollectionSection({
     Key? key,
     required this.game,
+    this.onCollectionChanged,
   }) : super(key: key);
 
   @override
@@ -60,6 +62,16 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
     }
   }
 
+  void _onCollectionChanged() {
+    // 重新加载统计信息
+    _loadStats();
+
+    // 调用父组件的回调
+    if (widget.onCollectionChanged != null) {
+      widget.onCollectionChanged!();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -104,8 +116,11 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                   ),
                 ),
                 Spacer(),
-                // 重新设计的收藏按钮，使用自定义按钮而不是调用其他组件
-                _buildCollectionButton(context),
+                // 添加回调到收藏按钮
+                GameCollectionButton(
+                  game: widget.game,
+                  onCollectionChanged: _onCollectionChanged,
+                ),
               ],
             ),
             SizedBox(height: 20),
@@ -178,13 +193,6 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildCollectionButton(BuildContext context) {
-    return GameCollectionButton(
-      game: widget.game,
-      onCollectionChanged: _loadStats,
     );
   }
 

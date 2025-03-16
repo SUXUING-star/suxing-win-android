@@ -2,9 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../../utils/upload/file_upload.dart';
-import '../../../../utils/device/device_utils.dart';
-import '../../../common/image/safe_cached_image.dart';
+import '../../../../../services/common/file_upload_service.dart';
+import '../../../../../utils/device/device_utils.dart';
+import '../../../../common/image/safe_cached_image.dart';
 
 class GameImagesField extends StatelessWidget {
   final List<String> gameImages;

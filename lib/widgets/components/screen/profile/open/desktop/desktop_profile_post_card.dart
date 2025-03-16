@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_post_card.dart
 import 'package:flutter/material.dart';
-import '../../../../../models/post/post.dart';
+import '../../../../../../models/post/post.dart';
 
 class DesktopProfilePostCard extends StatelessWidget {
   final Post post;

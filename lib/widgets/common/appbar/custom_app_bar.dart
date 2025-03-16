@@ -1,4 +1,4 @@
-// lib/widgets/common/custom_app_bar.dart
+// lib/widgets/common/appbar/custom_app_bar.dart
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 

@@ -3,7 +3,7 @@ import 'dart:async';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 import '../../../../../../routes/app_routes.dart';
-import '../card/home_game_card.dart';
+import 'home_game_card.dart';
 import '../../../../../utils/device/device_utils.dart';
 
 class HomeHot extends StatefulWidget {
@@ -19,13 +19,38 @@ class _HomeHotState extends State<HomeHot> {
   Timer? _timer;
   int _currentPage = 0;
 
+  // 保存数据以避免重复请求
+  List<Game>? _cachedGames;
+  bool _isLoading = false;
+  String? _errorMessage;
+
   static const double cardWidth = 160.0;
   static const double cardMargin = 16.0;
 
   @override
   void initState() {
     super.initState();
-    _startAutoScroll();  // 只启动了自动滚动，没有协调数据加载
+    _startAutoScroll();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // 如果没有数据且未在加载，加载数据
+    if (_cachedGames == null && !_isLoading) {
+      _loadGames();
+    }
+  }
+
+  @override
+  void didUpdateWidget(HomeHot oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 当流改变时重新加载数据
+    if (widget.gamesStream != oldWidget.gamesStream) {
+      _loadGames();
+    }
   }
 
   @override
@@ -35,35 +60,84 @@ class _HomeHotState extends State<HomeHot> {
     super.dispose();
   }
 
+  // 加载游戏数据
+  void _loadGames() {
+    // 如果外部提供了流，使用外部流
+    if (widget.gamesStream != null) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      // 从流中只取第一个事件
+      widget.gamesStream!.first.then((games) {
+        if (mounted) {
+          setState(() {
+            _cachedGames = games;
+            _isLoading = false;
+          });
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = '加载失败：$error';
+            _isLoading = false;
+          });
+        }
+      });
+    }
+    // 否则从本地缓存或服务获取
+    else {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      // 使用优化的getHotGames方法，利用Redis缓存
+      _gameService.getHotGames().first.then((games) {
+        if (mounted) {
+          setState(() {
+            _cachedGames = games;
+            _isLoading = false;
+          });
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = '加载失败：$error';
+            _isLoading = false;
+          });
+        }
+      });
+    }
+  }
+
   void _startAutoScroll() {
     _timer = Timer.periodic(Duration(seconds: 5), (timer) async {
       if (!mounted) {
         timer.cancel();
         return;
       }
-      if (_pageController.hasClients) {
-        final currentPage = (_pageController.page ?? 0).round();
 
-        final builder = context.findAncestorWidgetOfExactType<StreamBuilder<List<Game>>>();
-        if (builder == null) return;
+      if (!_pageController.hasClients || _cachedGames == null || _cachedGames!.isEmpty) {
+        return;
+      }
 
-        final snapshot = builder as StreamBuilder<List<Game>>;
-        final games = snapshot.initialData ?? [];
-        final cardsPerPage = _getCardsPerPage(context);
-        final totalPages = _getTotalPages(cardsPerPage, games);
+      final currentPage = (_pageController.page ?? 0).round();
+      final cardsPerPage = _getCardsPerPage(context);
+      final totalPages = _getTotalPages(cardsPerPage, _cachedGames!);
 
-        if (currentPage >= totalPages - 1) {
-          _pageController.animateToPage(
-            0,
-            duration: Duration(milliseconds: 800),
-            curve: Curves.easeInOut,
-          );
-        } else {
-          _pageController.nextPage(
-            duration: Duration(milliseconds: 800),
-            curve: Curves.easeInOut,
-          );
-        }
+      if (currentPage >= totalPages - 1) {
+        _pageController.animateToPage(
+          0,
+          duration: Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
+      } else {
+        _pageController.nextPage(
+          duration: Duration(milliseconds: 800),
+          curve: Curves.easeInOut,
+        );
       }
     });
   }
@@ -82,69 +156,76 @@ class _HomeHotState extends State<HomeHot> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Game>>(
-      stream: _gameService.getHotGames(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError) {
-          return _buildError('加载失败：${snapshot.error}');
-        }
+    // 显示加载状态
+    if (_isLoading && _cachedGames == null) {
+      return Container(
+        height: 200,
+        child: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildEmptyState('暂无热门游戏');
-        }
+    // 显示错误
+    if (_errorMessage != null) {
+      return _buildError(_errorMessage!);
+    }
 
-        final games = snapshot.data!;
-        final cardsPerPage = _getCardsPerPage(context);
-        final totalPages = _getTotalPages(cardsPerPage, games);
+    // 没有数据
+    if (_cachedGames == null || _cachedGames!.isEmpty) {
+      return _buildEmptyState('暂无热门游戏');
+    }
 
-        return _buildSection(
+    // 显示游戏列表
+    final games = _cachedGames!;
+    final cardsPerPage = _getCardsPerPage(context);
+    final totalPages = _getTotalPages(cardsPerPage, games);
 
-          title: '热门游戏',
-          onMorePressed: () {
-            Navigator.pushNamed(context, AppRoutes.hotGames);
-          },
-          child: Stack(
-            children: [
-              Container(
-                height: 200,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: totalPages,
-                  onPageChanged: (int page) {
-                    if (mounted) {
-                      setState(() => _currentPage = page);
-                    }
-                  },
-                  itemBuilder: (context, pageIndex) {
-                    final startIndex = pageIndex * cardsPerPage;
-                    return Container(
-                      margin: EdgeInsets.symmetric(horizontal: 8), // 减少水平边距
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: List.generate(cardsPerPage, (index) {
-                          final gameIndex = startIndex + index;
-                          if (gameIndex >= games.length) {
-                            return SizedBox(width: cardWidth + cardMargin);
-                          }
-                          return HomeGameCard(
-                            game: games[gameIndex],
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.gameDetail,
-                              arguments: games[gameIndex],
-                            ),
-                          );
-                        }),
-                      ),
-                    );
-                  },
-                ),
-              ),
-              if (totalPages > 1) _buildNavigationButtons(totalPages),
-            ],
-          ),
-        );
+    return _buildSection(
+      title: '热门游戏',
+      onMorePressed: () {
+        Navigator.pushNamed(context, AppRoutes.hotGames);
       },
+      child: Stack(
+        children: [
+          Container(
+            height: 200,
+            child: PageView.builder(
+              controller: _pageController,
+              itemCount: totalPages,
+              onPageChanged: (int page) {
+                if (mounted) {
+                  setState(() => _currentPage = page);
+                }
+              },
+              itemBuilder: (context, pageIndex) {
+                final startIndex = pageIndex * cardsPerPage;
+                return Container(
+                  margin: EdgeInsets.symmetric(horizontal: 8), // 减少水平边距
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: List.generate(cardsPerPage, (index) {
+                      final gameIndex = startIndex + index;
+                      if (gameIndex >= games.length) {
+                        return SizedBox(width: cardWidth + cardMargin);
+                      }
+                      return HomeGameCard(
+                        game: games[gameIndex],
+                        onTap: () => Navigator.pushNamed(
+                          context,
+                          AppRoutes.gameDetail,
+                          arguments: games[gameIndex],
+                        ),
+                      );
+                    }),
+                  ),
+                );
+              },
+            ),
+          ),
+          if (totalPages > 1) _buildNavigationButtons(totalPages),
+        ],
+      ),
     );
   }
 

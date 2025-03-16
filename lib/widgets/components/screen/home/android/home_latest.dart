@@ -1,14 +1,97 @@
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
+import '../../../../common/image/safe_cached_image.dart';
+import '../../../../../services/main/game/game_service.dart';
 
-class HomeLatest extends StatelessWidget {
+class HomeLatest extends StatefulWidget {
   final Stream<List<Game>>? gamesStream;
 
   const HomeLatest({
     Key? key,
-    required this.gamesStream,  // 添加 stream 参数
+    required this.gamesStream,
   }) : super(key: key);
+
+  @override
+  _HomeLatestState createState() => _HomeLatestState();
+}
+
+class _HomeLatestState extends State<HomeLatest> {
+  // 保存数据以避免重复请求
+  List<Game>? _cachedGames;
+  bool _isLoading = false;
+  String? _errorMessage;
+
+  // 如果没有传入流，就创建自己的GameService
+  final GameService _gameService = GameService();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadGames();
+  }
+
+  @override
+  void didUpdateWidget(HomeLatest oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // 当流改变时重新加载数据
+    if (widget.gamesStream != oldWidget.gamesStream) {
+      _loadGames();
+    }
+  }
+
+  // 加载游戏数据
+  void _loadGames() {
+    // 如果外部提供了流，使用外部流
+    if (widget.gamesStream != null) {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      // 从流中只取第一个事件以避免频繁更新
+      widget.gamesStream!.first.then((games) {
+        if (mounted) {
+          setState(() {
+            _cachedGames = games;
+            _isLoading = false;
+          });
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = '加载失败：$error';
+            _isLoading = false;
+          });
+        }
+      });
+    }
+    // 否则从本地缓存或服务获取
+    else {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+
+      // 使用带缓存的getLatestGames
+      _gameService.getLatestGames().first.then((games) {
+        if (mounted) {
+          setState(() {
+            _cachedGames = games;
+            _isLoading = false;
+          });
+        }
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _errorMessage = '加载失败：$error';
+            _isLoading = false;
+          });
+        }
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +127,8 @@ class HomeLatest extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 6,  // 略微加宽
-                    height: 22,  // 略微加高
+                    width: 6,
+                    height: 22,
                     decoration: BoxDecoration(
                       color: Theme.of(context).primaryColor,
                       borderRadius: BorderRadius.circular(3),
@@ -55,9 +138,9 @@ class HomeLatest extends StatelessWidget {
                   Text(
                     '最新发布',
                     style: TextStyle(
-                      fontSize: 20,  // 稍微增大字号
-                      fontWeight: FontWeight.w700,  // 使用更粗的字重
-                      color: Colors.grey[900],  // 使用更深的颜色
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[900],
                     ),
                   ),
                   Spacer(),
@@ -99,21 +182,23 @@ class HomeLatest extends StatelessWidget {
   }
 
   Widget _buildGameList(BuildContext context) {
-    return StreamBuilder<List<Game>>(
-      stream: gamesStream,  // 使用传入的 stream 而不是直接创建
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return _buildLoading();
-        }
-        if (snapshot.hasError) {
-          return _buildError('加载失败：${snapshot.error}');
-        }
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return _buildEmptyState('暂无最新游戏');
-        }
-        return _buildVerticalGameList(snapshot.data!, context);
-      },
-    );
+    // 显示加载状态
+    if (_isLoading) {
+      return _buildLoading();
+    }
+
+    // 显示错误
+    if (_errorMessage != null) {
+      return _buildError(_errorMessage!);
+    }
+
+    // 没有数据
+    if (_cachedGames == null || _cachedGames!.isEmpty) {
+      return _buildEmptyState('暂无最新游戏');
+    }
+
+    // 显示游戏列表
+    return _buildVerticalGameList(_cachedGames!, context);
   }
 
   Widget _buildVerticalGameList(List<Game> games, BuildContext context) {
@@ -124,8 +209,8 @@ class HomeLatest extends StatelessWidget {
       physics: NeverScrollableScrollPhysics(),
       itemCount: displayGames.length,
       separatorBuilder: (context, index) => Divider(
-        height: 16, // 增加分隔高度
-        indent: 40,  // 从左侧 80 像素开始
+        height: 16,
+        indent: 40,
         endIndent: 0,
         color: Colors.grey.withOpacity(0.1),
       ),
@@ -160,23 +245,16 @@ class HomeLatest extends StatelessWidget {
               tag: 'game_image_${game.id}',
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  game.coverImage,
+                child: SafeCachedImage(
+                  imageUrl: game.coverImage,
                   width: 70,
                   height: 70,
                   fit: BoxFit.cover,
-                  errorBuilder: (context, exception, stackTrace) {
-                    return Container(
-                      width: 70,
-                      height: 70,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Center(
-                        child: Icon(Icons.error_outline, color: Colors.red),
-                      ),
-                    );
+                  memCacheWidth: 140, // 2倍于显示宽度
+                  borderRadius: BorderRadius.circular(8),
+                  backgroundColor: Colors.grey[300],
+                  onError: (url, error) {
+                    print('最新游戏列表图片加载失败: $url, 错误: $error');
                   },
                 ),
               ),
@@ -232,7 +310,6 @@ class HomeLatest extends StatelessWidget {
     );
   }
 
-
   Widget _buildError(String message) {
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 16),
@@ -245,6 +322,11 @@ class HomeLatest extends StatelessWidget {
             Text(
               message,
               style: TextStyle(color: Colors.grey[600]),
+            ),
+            SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadGames,
+              child: Text('重试'),
             ),
           ],
         ),

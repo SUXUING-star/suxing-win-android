@@ -7,8 +7,10 @@ import 'image/game_images.dart';
 import 'comment/comments_section.dart';
 import 'random/random_games_section.dart';
 import 'coverImage/game_cover_image.dart';
+import 'collection/game_collection_section.dart';
+import 'collection/game_reviews_section.dart';
 
-class GameDetailContent extends StatelessWidget {
+class GameDetailContent extends StatefulWidget {
   final Game game;
 
   const GameDetailContent({
@@ -16,17 +18,38 @@ class GameDetailContent extends StatelessWidget {
     required this.game,
   }) : super(key: key);
 
+  @override
+  _GameDetailContentState createState() => _GameDetailContentState();
+}
+
+class _GameDetailContentState extends State<GameDetailContent> {
+  // 创建一个全局键来引用GameReviewSection
+  final GlobalKey<GameReviewSectionState> _reviewSectionKey = GlobalKey<GameReviewSectionState>();
+
+  // 当收藏状态改变时刷新评价部分
+  void _refreshReviews() {
+    _reviewSectionKey.currentState?.refresh();
+  }
+
   Widget _buildMobileLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GameHeader(game: game),
-        GameDescription(game: game),
-        GameImages(game: game),
+        GameHeader(game: widget.game),
+        GameDescription(game: widget.game),
+        GameCollectionSection(
+          game: widget.game,
+          onCollectionChanged: _refreshReviews, // 添加回调
+        ),
+        GameReviewSection(
+          key: _reviewSectionKey, // 添加key
+          game: widget.game,
+        ),
+        GameImages(game: widget.game),
         const Divider(height: 8),
-        CommentsSection(gameId: game.id),
+        CommentsSection(gameId: widget.game.id),
         const Divider(height: 8),
-        RandomGamesSection(currentGameId: game.id),
+        RandomGamesSection(currentGameId: widget.game.id),
       ],
     );
   }
@@ -45,13 +68,23 @@ class GameDetailContent extends StatelessWidget {
                 aspectRatio: 4/3,
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: GameCoverImage(imageUrl: game.coverImage),
+                  child: GameCoverImage(imageUrl: widget.game.coverImage),
                 ),
               ),
               const SizedBox(height: 24),
-              GameImages(game: game),
+              GameImages(game: widget.game),
               const SizedBox(height: 24),
-              RandomGamesSection(currentGameId: game.id),
+              RandomGamesSection(currentGameId: widget.game.id),
+              const SizedBox(height: 24),
+              GameCollectionSection(
+                game: widget.game,
+                onCollectionChanged: _refreshReviews, // 添加回调
+              ),
+              const SizedBox(height: 24),
+              GameReviewSection(
+                key: _reviewSectionKey, // 添加key
+                game: widget.game,
+              ),
             ],
           ),
         ),
@@ -62,11 +95,11 @@ class GameDetailContent extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              GameHeader(game: game),
+              GameHeader(game: widget.game),
               const SizedBox(height: 24),
-              GameDescription(game: game),
+              GameDescription(game: widget.game),
               const SizedBox(height: 24),
-              CommentsSection(gameId: game.id),
+              CommentsSection(gameId: widget.game.id),
             ],
           ),
         ),

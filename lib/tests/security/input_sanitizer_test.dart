@@ -1,7 +1,7 @@
 // lib/tests/security/input_sanitizer_test.dart
 
 import 'package:test/test.dart';
-import '../../services/main/database/security/input_sanitizer_service.dart';
+import '../../services/main/security/input_sanitizer_service.dart';
 
 void main() {
   late InputSanitizerService sanitizer;

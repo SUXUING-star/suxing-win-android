@@ -1,7 +1,10 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
 import '../../../services/main/forum/forum_service.dart';
-import '../../../widgets/common/toaster.dart';
+import '../../../widgets/common/toaster/toaster.dart';
+import '../../../widgets/components/form/postform/post_form.dart';
+import '../../../widgets/components/form/postform/field/post_guidelines.dart';
+import '../../../widgets/components/form/postform/config/post_taglists.dart';
 
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({Key? key}) : super(key: key);
@@ -11,111 +14,33 @@ class CreatePostScreen extends StatefulWidget {
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
-  final _titleController = TextEditingController();
-  final _contentController = TextEditingController();
   final _forumService = ForumService();
-  final List<String> _availableTags = ['讨论', '攻略', '分享', '求助'];
-  final List<String> _selectedTags = [];
+  final List<String> _availableTags = PostTagLists.availableTags;
   bool _isSubmitting = false;
 
   @override
-  void dispose() {
-    _titleController.dispose();
-    _contentController.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('发布帖子'),
-        actions: [
-          TextButton(
-            onPressed: _isSubmitting ? null : _submitPost,
-            child: Text(
-              _isSubmitting ? '发布中...' : '发布',
-              style: const TextStyle(color: Colors.white),
-            ),
-          ),
+    return PostForm(
+      title: '发布帖子',
+      availableTags: _availableTags,
+      isSubmitting: _isSubmitting,
+      onSubmit: _submitPost,
+      submitButtonText: '发布帖子',
+      additionalInfo: PostGuidelines(
+        guidelines: [
+          '请确保帖子内容符合社区规范',
+          '标题请简明扼要地概括主题',
+          '请选择适当的标签以便其他用户查找',
+          '发布后可在24小时内编辑内容',
         ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            TextField(
-              controller: _titleController,
-              decoration: const InputDecoration(
-                labelText: '标题',
-                hintText: '请输入帖子标题',
-                border: OutlineInputBorder(),
-              ),
-              maxLength: 100,
-            ),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _contentController,
-              decoration: const InputDecoration(
-                labelText: '内容',
-                hintText: '请输入帖子内容',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 10,
-              maxLength: 5000,
-            ),
-            const SizedBox(height: 16),
-            const Text('标签'),
-            Wrap(
-              spacing: 8,
-              children: _availableTags.map((tag) {
-                final isSelected = _selectedTags.contains(tag);
-                return FilterChip(
-                  label: Text(tag),
-                  selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        if (_selectedTags.length < 3) {
-                          _selectedTags.add(tag);
-                        }
-                      } else {
-                        _selectedTags.remove(tag);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
       ),
     );
   }
 
-  Future<void> _submitPost() async {
-    final title = _titleController.text.trim();
-    final content = _contentController.text.trim();
-
-    if (title.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入标题')),
-      );
-      return;
-    }
-
-    if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入内容')),
-      );
-      return;
-    }
-
+  Future<void> _submitPost(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      await _forumService.createPost(title, content, _selectedTags);
+      await _forumService.createPost(data.title, data.content, data.tags);
       Toaster.success(context, "发布帖子成功！");
       Navigator.pop(context);
     } catch (e) {

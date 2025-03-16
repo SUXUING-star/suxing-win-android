@@ -1,8 +1,9 @@
-// lib/widgets/game/comment/comment_input.dart
+// lib/widgets/components/screen/game/comment/comment_input.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
+import '../../../../dialogs/limiter/rate_limit_dialog.dart';
 
 class CommentInput extends StatefulWidget {
   final String gameId;
@@ -58,12 +59,21 @@ class _CommentInputState extends State<CommentInput> {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('发表评论失败: ${e.toString()}'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        // 检查是否为速率限制错误
+        final errorMsg = e.toString();
+        if (errorMsg.contains('评论速率超限')) {
+          // 解析剩余时间并显示对话框
+          final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
+          showRateLimitDialog(context, remainingSeconds);
+        } else {
+          // 显示常规错误消息
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('发表评论失败: ${e.toString()}'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) {

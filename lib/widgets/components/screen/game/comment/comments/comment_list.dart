@@ -1,4 +1,4 @@
-// lib/widgets/game/comment/comment_list.dart
+// lib/widgets/components/screen/game/comment/comment_list.dart
 import 'package:flutter/material.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';

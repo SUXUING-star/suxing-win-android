@@ -1,72 +1,157 @@
 // lib/widgets/components/screen/activity/activity_header.dart
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/components/badge/user_info_badge.dart';
+import 'package:suxingchahui/widgets/components/badge/info/user_info_badge.dart';
 import 'dart:math' as math;
 
 class ActivityHeader extends StatelessWidget {
   final Map<String, dynamic>? user;
   final DateTime createTime;
+  final DateTime? updateTime;  // 新增字段
+  final bool isEdited;         // 新增字段
   final String activityType;
   final bool isAlternate;
   final double cardHeight;
+  final VoidCallback? onEdit;  // 新增回调
+  final VoidCallback? onDelete; // 新增回调
+
 
   const ActivityHeader({
     Key? key,
     required this.user,
     required this.createTime,
+    this.updateTime,
+    this.isEdited = false,
     required this.activityType,
     this.isAlternate = false,
     this.cardHeight = 1.0,
+    this.onEdit,
+    this.onDelete,
   }) : super(key: key);
+
 
   @override
   Widget build(BuildContext context) {
     final userId = user?['userId'] ?? '';
-    final timeAgo = _formatDateTime(createTime);
+    final String timeAgo = _formatDateTime(createTime);
+    final String? updateTimeAgo = updateTime != null && isEdited
+        ? _formatDateTime(updateTime!)
+        : null;
 
-    return Row(
-      textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
+    return Column(
+      crossAxisAlignment: isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // 使用UserInfoBadge替代原来的用户信息显示
-        Expanded(
-          child: userId.isNotEmpty
-              ? UserInfoBadge(
-            userId: userId,
-            showFollowButton: true, // 不显示关注按钮
-            mini: true, // 使用小尺寸
-            showLevel: true, // 不显示等级
-            backgroundColor: Colors.transparent, // 透明背景
-          )
-              : _buildLegacyUserInfo(), // 如果没有userId，使用原来的方式显示
+        Row(
+          textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
+          children: [
+            // UserInfoBadge 部分保持不变
+            Expanded(
+              child: userId.isNotEmpty
+                  ? UserInfoBadge(
+                userId: userId,
+                showFollowButton: true,
+                mini: true,
+                showLevel: true,
+                backgroundColor: Colors.transparent,
+              )
+                  : _buildLegacyUserInfo(),
+            ),
+
+            // 显示时间
+            if (!isAlternate)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                child: Text(
+                  timeAgo,
+                  style: TextStyle(
+                    fontSize: 11 * math.sqrt(cardHeight * 0.8),
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+
+            // 活动类型标签
+            _buildActivityTypeChip(),
+
+            // 如果是交替布局，显示时间在右侧
+            if (isAlternate)
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: Text(
+                  timeAgo,
+                  style: TextStyle(
+                    fontSize: 11 * math.sqrt(cardHeight * 0.8),
+                    color: Colors.grey.shade600,
+                  ),
+                ),
+              ),
+
+            // 如果有编辑或删除回调，显示操作菜单
+            if (onEdit != null || onDelete != null)
+              PopupMenuButton<String>(
+                icon: Icon(
+                  Icons.more_vert,
+                  size: 16 * math.sqrt(cardHeight * 0.8),
+                  color: Colors.grey.shade600,
+                ),
+                onSelected: (value) {
+                  if (value == 'edit' && onEdit != null) {
+                    onEdit!();
+                  } else if (value == 'delete' && onDelete != null) {
+                    onDelete!();
+                  }
+                },
+                itemBuilder: (context) => [
+                  if (onEdit != null)
+                    const PopupMenuItem<String>(
+                      value: 'edit',
+                      child: Row(
+                        children: [
+                          Icon(Icons.edit, size: 16),
+                          SizedBox(width: 8),
+                          Text('编辑'),
+                        ],
+                      ),
+                    ),
+                  if (onDelete != null)
+                    const PopupMenuItem<String>(
+                      value: 'delete',
+                      child: Row(
+                        children: [
+                          Icon(Icons.delete, size: 16, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('删除', style: TextStyle(color: Colors.red)),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+          ],
         ),
 
-        // 显示时间
-        if (!isAlternate)
+        // 如果是编辑过的，显示编辑时间
+        if (isEdited && updateTime != null)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
-            child: Text(
-              timeAgo,
-              style: TextStyle(
-                fontSize: 11 * math.sqrt(cardHeight * 0.8),
-                color: Colors.grey.shade600,
-              ),
-            ),
-          ),
-
-        // 活动类型标签
-        _buildActivityTypeChip(),
-
-        // 如果是交替布局，显示时间在右侧
-        if (isAlternate)
-          Padding(
-            padding: const EdgeInsets.only(left: 8.0),
-            child: Text(
-              timeAgo,
-              style: TextStyle(
-                fontSize: 11 * math.sqrt(cardHeight * 0.8),
-                color: Colors.grey.shade600,
-              ),
+            padding: const EdgeInsets.only(top: 4.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
+              children: [
+                Icon(
+                  Icons.edit,
+                  size: 10 * math.sqrt(cardHeight * 0.7),
+                  color: Colors.grey.shade500,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  '编辑于 $updateTimeAgo',
+                  style: TextStyle(
+                    fontSize: 10 * math.sqrt(cardHeight * 0.7),
+                    color: Colors.grey.shade500,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ),
           ),
       ],

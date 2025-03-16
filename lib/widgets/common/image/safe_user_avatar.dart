@@ -1,8 +1,8 @@
 // lib/widgets/common/safe_user_avatar.dart
 import 'package:flutter/material.dart';
-import '../../services/main/user/user_service.dart';
+import '../../../services/main/user/user_service.dart';
 import 'safe_cached_image.dart';
-import '../../screens/profile/open_profile_screen.dart';
+import '../../../screens/profile/open_profile_screen.dart';
 
 /// 安全的用户头像组件
 ///
@@ -95,25 +95,31 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
   Future<void> _loadUserInfo() async {
     if (widget.userId == null || _isLoading) return;
 
-    setState(() {
-      _isLoading = true;
-    });
+    // Set loading state
+    if (mounted) {
+      setState(() {
+        _isLoading = true;
+      });
+    }
 
     try {
       final userInfo = await _userService.getUserInfoById(widget.userId!);
+
+      // Check mounted again before setState
       if (mounted) {
         setState(() {
           _avatarUrl = userInfo['avatar'];
-          _username = userInfo['username'] ?? widget.username;
+          // Always use the username from userInfo if available
+          _username = userInfo['username'] ?? _username ?? '未知用户';
           _isLoading = false;
         });
       }
     } catch (e) {
+      print('Avatar loading error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
-        // 可以考虑添加错误处理提示
       }
     }
   }

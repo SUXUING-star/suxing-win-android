@@ -40,14 +40,15 @@ class Toaster {
         ),
         duration: duration,
         backgroundColor: baseColor.withOpacity(0.95),
-        behavior: SnackBarBehavior.floating,
+        // 关键修改：在移动端使用固定行为，在桌面端保持浮动行为
+        behavior: isDesktop ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
         elevation: 6,
-        // 桌面端在右下角显示，移动端居中底部显示
+        // 桌面端在右下角显示，移动端使用默认底部边距
         margin: isDesktop
             ? const EdgeInsets.only(bottom: 24, right: 24)
-            : const EdgeInsets.all(16),
+            : null, // 移动端不设置边距，让 SnackBar 保持在底部
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(isDesktop ? 12 : 0), // 移动端不使用圆角
         ),
         animation: CurvedAnimation(
           parent: const AlwaysStoppedAnimation(1),

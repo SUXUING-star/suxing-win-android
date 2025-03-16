@@ -1,19 +1,20 @@
-// lib/widgets/game/comment/replies/reply_input.dart
+// lib/widgets/components/screen/game/comment/replies/reply_input.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
+import '../../../../dialogs/limiter/rate_limit_dialog.dart';
 
 class ReplyInput extends StatefulWidget {
   final String gameId;
   final String parentId;
-  final VoidCallback? onReplyAdded; // 添加回调函数
+  final VoidCallback? onReplyAdded;
 
   const ReplyInput({
     Key? key,
     required this.gameId,
     required this.parentId,
-    this.onReplyAdded, // 初始化回调
+    this.onReplyAdded,
   }) : super(key: key);
 
   @override
@@ -63,12 +64,21 @@ class _ReplyInputState extends State<ReplyInput> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('回复评论失败: ${e.toString()}'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        // 检查是否为速率限制错误
+        final errorMsg = e.toString();
+        if (errorMsg.contains('评论速率超限')) {
+          // 解析剩余时间并显示对话框
+          final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
+          showRateLimitDialog(context, remainingSeconds);
+        } else {
+          // 显示常规错误消息
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('回复评论失败: ${e.toString()}'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
       }
     } finally {
       if (mounted) {

@@ -33,13 +33,17 @@
             android:windowSoftInputMode="adjustResize">
             <!-- 不再使用NormalTheme，保持与启动界面一致 -->
         </activity>
-        <activity
-            android:name="com.yalantis.ucrop.UCropActivity"
-            android:screenOrientation="portrait"
-            android:theme="@style/Theme.AppCompat.Light.NoActionBar"/>
+
 
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
     </application>
+    <!-- 外部浏览器权限 -->
+    <queries>
+        <intent>
+            <action android:name="android.intent.action.VIEW" />
+            <data android:scheme="https" />
+        </intent>
+    </queries>
 </manifest>

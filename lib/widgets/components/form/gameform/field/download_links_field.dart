@@ -3,7 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import '../../../../models/game/game.dart';
+import '../../../../../models/game/game.dart';
 
 class DownloadLinksField extends StatelessWidget {
   final List<DownloadLink> downloadLinks;
@@ -53,15 +53,64 @@ class DownloadLinksField extends StatelessWidget {
   }
 
   void _addDownloadLink(BuildContext context) {
+    _showLinkDialog(
+      context: context,
+      title: '添加下载链接',
+      confirmButtonText: '添加',
+      onConfirm: (title, url, description) {
+        final newLinks = List<DownloadLink>.from(downloadLinks);
+        newLinks.add(DownloadLink(
+          id: mongo.ObjectId().toHexString(),
+          title: title,
+          url: url,
+          description: description,
+        ));
+        onChanged(newLinks);
+      },
+    );
+  }
+
+  void _editDownloadLink(BuildContext context, int index) {
+    final link = downloadLinks[index];
+
+    _showLinkDialog(
+      context: context,
+      title: '编辑下载链接',
+      initialTitle: link.title,
+      initialUrl: link.url,
+      initialDescription: link.description,
+      confirmButtonText: '保存',
+      onConfirm: (title, url, description) {
+        final newLinks = List<DownloadLink>.from(downloadLinks);
+        newLinks[index] = DownloadLink(
+          id: link.id,
+          title: title,
+          url: url,
+          description: description,
+        );
+        onChanged(newLinks);
+      },
+    );
+  }
+
+  void _showLinkDialog({
+    required BuildContext context,
+    required String title,
+    String initialTitle = '',
+    String initialUrl = '',
+    String initialDescription = '',
+    required String confirmButtonText,
+    required Function(String title, String url, String description) onConfirm,
+  }) {
     showDialog(
       context: context,
       builder: (context) {
-        final titleController = TextEditingController();
-        final urlController = TextEditingController();
-        final descriptionController = TextEditingController();
+        final titleController = TextEditingController(text: initialTitle);
+        final urlController = TextEditingController(text: initialUrl);
+        final descriptionController = TextEditingController(text: initialDescription);
 
         return AlertDialog(
-          title: Text('添加下载链接'),
+          title: Text(title),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -97,18 +146,15 @@ class DownloadLinksField extends StatelessWidget {
             TextButton(
               onPressed: () {
                 if (titleController.text.isNotEmpty && urlController.text.isNotEmpty) {
-                  final newLinks = List<DownloadLink>.from(downloadLinks);
-                  newLinks.add(DownloadLink(
-                    id: mongo.ObjectId().toHexString(),
-                    title: titleController.text,
-                    url: urlController.text,
-                    description: descriptionController.text,
-                  ));
-                  onChanged(newLinks);
+                  onConfirm(
+                    titleController.text,
+                    urlController.text,
+                    descriptionController.text,
+                  );
                   Navigator.pop(context);
                 }
               },
-              child: Text('添加'),
+              child: Text(confirmButtonText),
             ),
           ],
         );
@@ -156,18 +202,28 @@ class DownloadLinksField extends StatelessWidget {
                     children: [
                       Text(link.url),
                       if (link.description.isNotEmpty)
-                        Text(link.description,
+                        Text(
+                          link.description,
                           style: TextStyle(color: Colors.grey[600]),
                         ),
                     ],
                   ),
-                  trailing: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      final newLinks = List<DownloadLink>.from(downloadLinks);
-                      newLinks.removeAt(index);
-                      onChanged(newLinks);
-                    },
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.edit),
+                        onPressed: () => _editDownloadLink(context, index),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.delete),
+                        onPressed: () {
+                          final newLinks = List<DownloadLink>.from(downloadLinks);
+                          newLinks.removeAt(index);
+                          onChanged(newLinks);
+                        },
+                      ),
+                    ],
                   ),
                 ),
               );

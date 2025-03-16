@@ -3,8 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../services/main/update/update_service.dart';
-import '../dialogs/force_update_dialog.dart';
+import '../../../services/main/update/update_service.dart';
+import '../../components/dialogs/update/force_update_dialog.dart';
 
 class UpdateButton extends StatelessWidget {
   @override

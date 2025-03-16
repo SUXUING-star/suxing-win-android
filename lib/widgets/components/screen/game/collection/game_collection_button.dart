@@ -1,12 +1,12 @@
 // lib/widgets/components/screen/game/collection/game_collection_button.dart
 import 'package:flutter/material.dart';
-import '../../../../../../models/game/game_collection.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../services/main/game/collection/game_collection_service.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
+import '../../../../../models/game/game_collection.dart';
+import '../../../../../models/game/game.dart';
+import '../../../../../services/main/game/collection/game_collection_service.dart';
+import '../../../../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../../../../dialogs/collection/collection_dialog.dart';
+import '../../../../../routes/app_routes.dart';
+import '../dialog/collection_dialog.dart';
 
 class GameCollectionButton extends StatefulWidget {
   final Game game;
@@ -94,17 +94,19 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
         gameName: widget.game.title,
         currentStatus: _collectionStatus?.status,
         currentNotes: _collectionStatus?.notes,
+        currentReview: _collectionStatus?.review,
         currentRating: _collectionStatus?.rating,
       ),
     );
 
-    // 处理对话框结果
+// 处理对话框结果
     if (result != null) {
       final action = result['action'] as String;
 
       if (action == 'set') {
         final status = result['status'] as String;
         final notes = result['notes'] as String?;
+        final review = result['review'] as String?; // 添加review
         final rating = result['rating'] as double?;
 
         setState(() {
@@ -116,6 +118,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
             widget.game.id,
             status,
             notes: notes,
+            review: review, // 传递review参数
             rating: rating,
           );
 

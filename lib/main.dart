@@ -3,13 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
-import 'services/main/database/restart/restart_service.dart';
+import 'services/main/restart/restart_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 初始化配置
-
 
   // 如果是桌面平台，初始化窗口管理器
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

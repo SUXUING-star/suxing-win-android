@@ -1,16 +1,16 @@
+// lib/widgets/components/screen/forum/post/reply/reply_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../../models/post/post.dart';
-import '../../../../../services/main/user/user_service.dart';
-import '../../../../../services/main/forum/forum_service.dart';
-import '../../../../../screens/profile/open_profile_screen.dart';
-import '../../../../../providers/auth/auth_provider.dart';
+import '../../../../../../models/post/post.dart';
+import '../../../../../../services/main/forum/forum_service.dart';
+import '../../../../../../providers/auth/auth_provider.dart';
+import '../../../../../../utils/datetime/date_time_formatter.dart';
+import '../../../../badge/info/user_info_badge.dart'; // 导入UserInfoBadge
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
   final int floor;
   final ForumService _forumService = ForumService();
-  final UserService _userService = UserService();
 
   ReplyItem({Key? key, required this.reply, required this.floor}) : super(key: key);
 
@@ -21,59 +21,14 @@ class ReplyItem extends StatelessWidget {
       children: [
         Row(
           children: [
-            FutureBuilder<Map<String, dynamic>>(
-              future: _userService.getUserInfoById(reply.authorId),
-              builder: (context, snapshot) {
-                final username = snapshot.data?['username'] ?? '';
-                final avatarUrl = snapshot.data?['avatar'];
-
-                return Row(
-                  children: [
-                    MouseRegion(
-                      cursor: SystemMouseCursors.click,
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => OpenProfileScreen(
-                                userId: reply.authorId,
-                              ),
-                            ),
-                          );
-                        },
-                        child: CircleAvatar(
-                          radius: 14,
-                          backgroundImage: avatarUrl != null
-                              ? NetworkImage(avatarUrl)
-                              : null,
-                          child: avatarUrl == null && username.isNotEmpty
-                              ? Text(
-                            username[0].toUpperCase(),
-                            style: const TextStyle(fontSize: 14),
-                          )
-                              : null,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 120),
-                      child: Text(
-                        username,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
-                          color: Color(0xFF333333),
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                );
-              },
+            // 使用UserInfoBadge替换原有的用户信息显示
+            Expanded(
+              child: UserInfoBadge(
+                userId: reply.authorId,
+                showFollowButton: false, // 不显示关注按钮
+                mini: true, // 使用迷你版本
+              ),
             ),
-            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
               decoration: BoxDecoration(
@@ -88,7 +43,7 @@ class ReplyItem extends StatelessWidget {
                 ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 8),
             _buildReplyActions(context, reply),
           ],
         ),
@@ -155,7 +110,7 @@ class ReplyItem extends StatelessWidget {
                     },
                   ),
                   Text(
-                    reply.createTime.toString().substring(0, 16),
+                    DateTimeFormatter.formatStandard(reply.createTime),
                     style: TextStyle(
                       color: Colors.grey[600],
                       fontSize: 12,

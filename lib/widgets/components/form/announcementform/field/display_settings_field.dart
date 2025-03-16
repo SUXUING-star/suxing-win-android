@@ -1,6 +1,7 @@
 // lib/widgets/components/form/announcementform/field/display_settings_field.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'image_field.dart';
 
 class DisplaySettingsField extends StatelessWidget {
   final DateTime startDate;
@@ -13,6 +14,8 @@ class DisplaySettingsField extends StatelessWidget {
   final Function(bool) onActiveChanged;
   final Function(int) onPriorityChanged;
   final Function(String) onImageUrlChanged;
+  final bool isLoading;
+  final Function(bool) onLoadingChanged;
 
   const DisplaySettingsField({
     Key? key,
@@ -26,6 +29,8 @@ class DisplaySettingsField extends StatelessWidget {
     required this.onActiveChanged,
     required this.onPriorityChanged,
     required this.onImageUrlChanged,
+    this.isLoading = false,
+    required this.onLoadingChanged,
   }) : super(key: key);
 
   @override
@@ -119,32 +124,12 @@ class DisplaySettingsField extends StatelessWidget {
         ),
         const SizedBox(height: 16),
 
-        // 图片 URL
-        const Text(
-          '图片URL (可选)',
-          style: TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          initialValue: imageUrl ?? '',
-          decoration: const InputDecoration(
-            hintText: '输入图片URL',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          ),
-          onChanged: onImageUrlChanged,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '为公告添加图片，留空则不显示图片。',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-            fontStyle: FontStyle.italic,
-          ),
+        // 图片上传组件（替换原来的简单输入框）
+        AnnouncementImageField(
+          imageUrl: imageUrl,
+          onImageUrlChanged: onImageUrlChanged,
+          isLoading: isLoading,
+          onLoadingChanged: onLoadingChanged,
         ),
         const SizedBox(height: 16),
 

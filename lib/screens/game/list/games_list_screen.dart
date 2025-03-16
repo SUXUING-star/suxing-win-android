@@ -1,8 +1,8 @@
 // lib/screens/game/games_list_screen.dart
 import 'package:flutter/material.dart';
-import '../../models/game/game.dart';
-import '../../services/main/game/game_service.dart';
-import './base_game_list_screen.dart';
+import '../../../models/game/game.dart';
+import '../../../services/main/game/game_service.dart';
+import 'base_game_list_screen.dart';
 
 class GamesListScreen extends StatefulWidget {
   final String? selectedTag;

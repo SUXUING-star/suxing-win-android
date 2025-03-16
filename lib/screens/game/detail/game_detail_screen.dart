@@ -5,7 +5,7 @@ import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/screen/game/button/edit_button.dart';
 import '../../../widgets/components/screen/game/button/like_button.dart';
 import '../../../widgets/components/screen/game/game_detail_content.dart';
-import '../../../widgets/common/custom_app_bar.dart';
+import '../../../widgets/common/appbar/custom_app_bar.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
@@ -172,24 +172,21 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           ],
         ),
       ),
+      // 修改按钮区域布局，确保有足够的空间给Snackbar
       floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 16.0),
-        child: Stack(
+        padding: const EdgeInsets.only(bottom: 16.0, left: 32.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             EditButton(
               game: game,
               onEditComplete: _refreshGameDetails,
             ),
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 16.0),
-                child: LikeButton(
-                  game: game,
-                  gameService: _gameService,
-                  onLikeChanged: _handleLikeChanged, // 这里添加点赞变化回调
-                ),
-              ),
+            const SizedBox(width: 16.0),
+            LikeButton(
+              game: game,
+              gameService: _gameService,
+              onLikeChanged: _handleLikeChanged,
             ),
           ],
         ),

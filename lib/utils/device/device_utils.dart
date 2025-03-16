@@ -1,19 +1,21 @@
-// lib/utils/device_utils.dart
-
+// lib/utils/device/device_utils.dart
+import 'dart:math';
 import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 
 class DeviceUtils {
   static bool get isWeb => kIsWeb;
+  static bool isTablet(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final diagonal = sqrt(size.width * size.width + size.height * size.height);
+    return diagonal > 1100; // Approximately 7-inch diagonal
+  }
   static bool get isAndroid => !kIsWeb && Platform.isAndroid;
   static bool get isIOS => !kIsWeb && Platform.isIOS;
   static bool get isWindows => !kIsWeb && Platform.isWindows;
   static bool get isDesktop => !kIsWeb &&
       (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
-
-  // 侧边栏宽度，用于在Windows平台计算布局
-  static const double sidebarWidth = 260.0;
 
   // 判断是否横屏
   static bool isLandscape(BuildContext context) {
@@ -47,47 +49,202 @@ class DeviceUtils {
     return isAndroidLandscape(context) ? 4.0 : 8.0;
   }
 
-  // 获取可用内容宽度（考虑侧边栏）
-  static double getAvailableContentWidth(BuildContext context) {
+  // 获取面板宽度 - 根据屏幕尺寸自适应
+  static double getSidePanelWidth(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    return isWindows ? screenWidth - sidebarWidth : screenWidth;
+
+    // 在小屏幕上使用更窄的面板
+    if (screenWidth < 600) {
+      return 180;
+    }
+    // 在中等屏幕上使用中等宽度
+    else if (screenWidth < 1200) {
+      return 200;
+    }
+    // 在大屏幕上使用更宽的面板
+    else {
+      return 220;
+    }
   }
 
-  static double calculateCardRatio(BuildContext context) {
-    // 获取可用宽度（如果是Windows平台，需要减去侧边栏宽度）
-    final availableWidth = getAvailableContentWidth(context);
+  // 获取可用内容宽度 - 考虑面板情况
+  static double getAvailableContentWidth(BuildContext context, {bool withPanels = false, bool leftPanelVisible = true, bool rightPanelVisible = true}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    // 如果需要考虑面板，则减去面板宽度
+    if (withPanels && isDesktop) {
+      double panelWidth = getSidePanelWidth(context);
+      double deduction = 0;
+
+      if (leftPanelVisible) {
+        deduction += panelWidth;
+      }
+
+      if (rightPanelVisible) {
+        deduction += panelWidth;
+      }
+
+      return screenWidth - deduction;
+    }
+
+    return screenWidth;
+  }
+
+  // 计算一行能容纳的卡片数量
+  static int calculateCardsPerRow(BuildContext context, {bool withPanels = false, bool leftPanelVisible = false, bool rightPanelVisible = false}) {
+    final availableWidth = getAvailableContentWidth(
+        context,
+        withPanels: withPanels,
+        leftPanelVisible: leftPanelVisible,
+        rightPanelVisible: rightPanelVisible
+    );
+
     final horizontalPadding = 16.0; // 总的左右内边距
     final crossAxisSpacing = 8.0;
+    final effectiveWidth = availableWidth - horizontalPadding;
 
-    // 计算一行可以放下多少卡片
-    final maxCardWidth = 250.0; // GridView的maxCrossAxisExtent
-    final cardsPerRow = (availableWidth / (maxCardWidth + crossAxisSpacing)).floor();
+    // 根据屏幕宽度动态调整卡片宽度
+    double targetCardWidth;
+    if (availableWidth < 600) {
+      targetCardWidth = 160; // 小屏幕使用更窄的卡片
+    } else if (availableWidth < 900) {
+      targetCardWidth = 180; // 中小屏幕
+    } else if (availableWidth < 1200) {
+      targetCardWidth = 200; // 中屏幕
+    } else {
+      targetCardWidth = 220; // 大屏幕使用更宽的卡片
+    }
+
+    // 计算可容纳的卡片数量
+    int cardsPerRow = ((effectiveWidth + crossAxisSpacing) / (targetCardWidth + crossAxisSpacing)).floor();
+
+    // 保证至少有1张卡片
+    return cardsPerRow > 0 ? cardsPerRow : 1;
+  }
+
+  // 计算卡片高度
+  static double calculateCardHeight(BuildContext context, bool showTags, bool isCompact) {
+    // 基础组件高度
+    final imageHeight = isCompact ? 140.0 : 160.0;
+    final titleHeight = isCompact ? 22.0 : 24.0;
+    final summaryHeight = isAndroidPortrait(context) ?
+    (isCompact ? 18.0 : 20.0) : (isCompact ? 36.0 : 40.0);
+    final tagsHeight = showTags ? (isCompact ? 24.0 : 28.0) : 0.0;
+    final statsHeight = isCompact ? 24.0 : 28.0;
+    final padding = isCompact ? 16.0 : 20.0;
+
+    // 总高度
+    return imageHeight + titleHeight + summaryHeight + tagsHeight + statsHeight + padding;
+  }
+
+  // 改进后的卡片比例计算方法
+  static double calculateCardRatio(BuildContext context, {
+    bool withPanels = false,
+    bool leftPanelVisible = false,
+    bool rightPanelVisible = false,
+    bool showTags = true
+  }) {
+    // 计算一行可容纳的卡片数量
+    final cardsPerRow = calculateCardsPerRow(
+        context,
+        withPanels: withPanels,
+        leftPanelVisible: leftPanelVisible,
+        rightPanelVisible: rightPanelVisible
+    );
+
+    // 获取可用宽度
+    final availableWidth = getAvailableContentWidth(
+        context,
+        withPanels: withPanels,
+        leftPanelVisible: leftPanelVisible,
+        rightPanelVisible: rightPanelVisible
+    );
+
+    // 计算实际卡片宽度
+    final horizontalPadding = 16.0;
+    final crossAxisSpacing = 8.0;
     final actualCardWidth = (availableWidth - horizontalPadding - (crossAxisSpacing * (cardsPerRow - 1))) / cardsPerRow;
 
-    // 计算卡片所需高度（使用更宽松的间距）
-    final imageHeight = 160.0; // GameCard中的固定图片高度
-    final contentPadding = 24.0; // 从16.0增加到24.0
-    final titleHeight = isAndroid && isPortrait(context) ? 24.0 : 28.0; // 标题高度增加
-    final summaryHeight = isAndroid && isPortrait(context) ? 40.0 : 44.0; // 摘要高度增加
-    final statsHeight = 32.0; // 从24.0增加到32.0
-    final additionalSpacing = 16.0; // 为了更好的视觉效果添加额外间距
+    // 确定卡片是否应该使用紧凑模式
+    final isCompact = (cardsPerRow > 3) || (actualCardWidth < 180);
 
-    final minCardHeight = imageHeight + contentPadding + titleHeight + summaryHeight + statsHeight + additionalSpacing;
-
-    // 添加缩放因子，使卡片略高一些
-    final scalingFactor = 1.2; // 使卡片高度增加20%
-
-    final adjustedCardHeight = minCardHeight * scalingFactor;
+    // 计算卡片所需高度
+    final cardHeight = calculateCardHeight(context, showTags, isCompact);
 
     // 计算并返回纵横比
-    double ratio = actualCardWidth / adjustedCardHeight;
+    double ratio = actualCardWidth / cardHeight;
+
+    // 打印计算信息用于调试
+    print('屏幕宽度: ${MediaQuery.of(context).size.width}, '
+        '有效宽度: $availableWidth, '
+        '卡片数: $cardsPerRow, '
+        '卡片宽度: $actualCardWidth, '
+        '卡片高度: $cardHeight, '
+        '比例: $ratio');
+
+    // 约束比例在合理范围内
+    double minRatio, maxRatio;
+
+    if (isAndroidPortrait(context)) {
+      minRatio = 0.58;
+      maxRatio = 0.68;
+    } else {
+      minRatio = 0.62;
+      maxRatio = 0.75;
+    }
+
+    return ratio.clamp(minRatio, maxRatio);
+  }
+
+  // 为热门/最新列表计算卡片比例
+  static double calculateSimpleCardRatio(BuildContext context, {bool showTags = true}) {
+    return calculateCardRatio(context, withPanels: false, showTags: showTags);
+  }
+
+  // 为游戏列表计算卡片比例
+  static double calculateGameListCardRatio(BuildContext context, bool leftPanelVisible, bool rightPanelVisible, {bool showTags = true}) {
+    return calculateCardRatio(
+        context,
+        withPanels: true,
+        leftPanelVisible: leftPanelVisible,
+        rightPanelVisible: rightPanelVisible,
+        showTags: showTags
+    );
+  }
+
+  // 原有的帖子卡片比例计算
+  static double calculatePostCardRatio(BuildContext context) {
+    // 获取可用宽度
+    final availableWidth = getAvailableContentWidth(context);
+    final horizontalPadding = 16.0; // 总的左右内边距
+    final crossAxisSpacing = 16.0;
+
+    // 计算一行可以放下多少卡片
+    final cardsPerRow = 2; // 固定每行2个
+    final actualCardWidth = (availableWidth - horizontalPadding - (crossAxisSpacing * (cardsPerRow - 1))) / cardsPerRow;
+
+    // 计算卡片所需高度
+    final titleHeight = isAndroid && isPortrait(context) ? 24.0 : 28.0;
+    final contentHeight = isAndroid && isPortrait(context) ? 48.0 : 52.0; // 两行内容
+    final infoHeight = 36.0; // 用户信息和统计信息
+    final tagsHeight = 32.0; // 标签行高度
+    final padding = 24.0; // 内边距
+
+    // 最小卡片高度，不包括标签（因为标签可能不存在）
+    final minCardHeight = titleHeight + contentHeight + infoHeight + padding;
+
+    // 考虑标签的最大高度
+    final maxCardHeight = minCardHeight + tagsHeight;
+
+    // 计算并返回纵横比
+    double ratio = actualCardWidth / maxCardHeight;
 
     // 应用最小和最大约束
-    ratio = ratio.clamp(0.65, 0.8);
+    ratio = ratio.clamp(1.8, 2.2);
 
-    // 对于Android纵向模式，我们需要更小的比例
+    // 对于Android纵向模式，调整比例
     if (isAndroid && isPortrait(context)) {
-      ratio = ratio.clamp(0.60, 0.65);
+      ratio = ratio.clamp(1.6, 1.8);
     }
 
     return ratio;

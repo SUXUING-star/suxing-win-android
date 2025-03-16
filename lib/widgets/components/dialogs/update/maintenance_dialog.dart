@@ -3,8 +3,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../../services/main/maintenance/maintenance_service.dart';
-import '../../../../providers/auth/auth_provider.dart';
+import '../../../../../services/main/maintenance/maintenance_service.dart';
+import '../../../../../providers/auth/auth_provider.dart';
 
 
 class MaintenanceDialog extends StatefulWidget {

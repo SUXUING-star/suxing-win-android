@@ -5,12 +5,12 @@ import 'package:provider/provider.dart';
 import '../../services/main/linktool/link_tool_service.dart';
 import '../../models/linkstools/link.dart';
 import '../../models/linkstools/tool.dart';
-import '../../widgets/common/toaster.dart';
+import '../../widgets/common/toaster/toaster.dart';
 import '../../providers/auth/auth_provider.dart';
-import '../../widgets/form/linkform/link_form_dialog.dart';
-import '../../widgets/form/toolform/tool_form_dialog.dart';
+import '../../widgets/components/form/linkform/link_form_dialog.dart';
+import '../../widgets/components/form/toolform/tool_form_dialog.dart';
 import '../../utils/load/loading_route_observer.dart';
-import '../../widgets/common/custom_app_bar.dart';
+import '../../widgets/common/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/linkstools/links_section.dart';
 import '../../widgets/components/screen/linkstools/tools_section.dart';
 
@@ -294,12 +294,12 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   }
 
   void _showAddToolDialog(BuildContext context) {
-    showDialog<Tool>(
+    showDialog(
       context: context,
       barrierDismissible: false,
       builder: (context) => ToolFormDialog(),
-    ).then((tool) async {
-      if (tool != null) {
+    ).then((toolData) async {
+      if (toolData != null) {
         try {
           final loadingObserver = Navigator.of(context)
               .widget.observers
@@ -307,10 +307,14 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
               .first;
           loadingObserver.showLoading();
 
+          // 修改：使用 Tool.fromJson 将 Map 转换为 Tool 对象
+          final tool = Tool.fromJson(toolData);
           await _linkToolService.addTool(tool);
+
           Toaster.show(context, message: '添加工具成功');
           await _loadData();
         } catch (e) {
+          print('添加工具错误: $e'); // 添加日志以便调试
           Toaster.show(context, message: '添加工具失败: $e', isError: true);
         } finally {
           Navigator.of(context)
