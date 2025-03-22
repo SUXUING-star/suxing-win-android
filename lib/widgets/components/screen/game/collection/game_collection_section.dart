@@ -1,13 +1,11 @@
 // lib/widgets/game/collection/game_collection_section.dart
 import 'package:flutter/material.dart';
 import '../../../../../models/game/game.dart';
-import '../../../../../models/game/game_collection.dart';
-import '../../../../../services/main/game/collection/game_collection_service.dart';
 import '../../../../../widgets/components/screen/game/collection/game_collection_button.dart';
 
 class GameCollectionSection extends StatefulWidget {
   final Game game;
-  final Function? onCollectionChanged; // 添加回调
+  final Function? onCollectionChanged; // 保留回调
 
   const GameCollectionSection({
     Key? key,
@@ -20,52 +18,17 @@ class GameCollectionSection extends StatefulWidget {
 }
 
 class _GameCollectionSectionState extends State<GameCollectionSection> {
-  final GameCollectionService _collectionService = GameCollectionService();
-  bool _isLoading = true;
-  GameCollectionStats? _stats;
-
   @override
   void initState() {
     super.initState();
-    _loadStats();
   }
 
   @override
   void didUpdateWidget(GameCollectionSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.game.id != widget.game.id) {
-      _loadStats();
-    }
-  }
-
-  Future<void> _loadStats() async {
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final stats = await _collectionService.getGameCollectionStats(widget.game.id);
-
-      if (mounted) {
-        setState(() {
-          _stats = stats;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      print('Load collection stats error: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
   }
 
   void _onCollectionChanged() {
-    // 重新加载统计信息
-    _loadStats();
-
     // 调用父组件的回调
     if (widget.onCollectionChanged != null) {
       widget.onCollectionChanged!();
@@ -124,72 +87,57 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
               ],
             ),
             SizedBox(height: 20),
-            if (_isLoading)
-              Center(
-                child: CircularProgressIndicator(),
-              )
-            else if (_stats != null) ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildStatContainer(
-                    context,
-                    Icons.star_border,
-                    '想玩',
-                    _stats!.wantToPlayCount,
-                    Color(0xFF3D8BFF), // 更亮的蓝色
-                    Color(0xFFE6F0FF), // 非常浅的蓝色背景
-                  ),
-                  _buildStatContainer(
-                    context,
-                    Icons.sports_esports,
-                    '在玩',
-                    _stats!.playingCount,
-                    Color(0xFF4CAF50), // 鲜明的绿色
-                    Color(0xFFE8F5E9), // 非常浅的绿色背景
-                  ),
-                  _buildStatContainer(
-                    context,
-                    Icons.check_circle_outline,
-                    '玩过',
-                    _stats!.playedCount,
-                    Color(0xFF9C27B0), // 鲜明的紫色
-                    Color(0xFFF3E5F5), // 非常浅的紫色背景
-                  ),
-                ],
-              ),
-              SizedBox(height: 16),
-              Divider(color: Colors.grey[200]),
-              SizedBox(height: 12),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                      Icons.people_alt_outlined,
-                      size: 18,
-                      color: theme.primaryColor.withOpacity(0.7)
-                  ),
-                  SizedBox(width: 8),
-                  Text(
-                    '总收藏人数: ${_stats!.totalCount}',
-                    style: TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w500,
-                      color: theme.primaryColor.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-              ),
-            ] else
-              Center(
-                child: Text(
-                  '暂无收藏数据',
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildStatContainer(
+                  context,
+                  Icons.star_border,
+                  '想玩',
+                  widget.game.wantToPlayCount,
+                  Color(0xFF3D8BFF), // 更亮的蓝色
+                  Color(0xFFE6F0FF), // 非常浅的蓝色背景
+                ),
+                _buildStatContainer(
+                  context,
+                  Icons.sports_esports,
+                  '在玩',
+                  widget.game.playingCount,
+                  Color(0xFF4CAF50), // 鲜明的绿色
+                  Color(0xFFE8F5E9), // 非常浅的绿色背景
+                ),
+                _buildStatContainer(
+                  context,
+                  Icons.check_circle_outline,
+                  '玩过',
+                  widget.game.playedCount,
+                  Color(0xFF9C27B0), // 鲜明的紫色
+                  Color(0xFFF3E5F5), // 非常浅的紫色背景
+                ),
+              ],
+            ),
+            SizedBox(height: 16),
+            Divider(color: Colors.grey[200]),
+            SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                    Icons.people_alt_outlined,
+                    size: 18,
+                    color: theme.primaryColor.withOpacity(0.7)
+                ),
+                SizedBox(width: 8),
+                Text(
+                  '总收藏人数: ${widget.game.totalCollections}',
                   style: TextStyle(
-                    color: Colors.grey[600],
                     fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: theme.primaryColor.withOpacity(0.9),
                   ),
                 ),
-              ),
+              ],
+            ),
           ],
         ),
       ),

@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/activity_header.dart
+// lib/widgets/components/screen/activity/card/activity_header.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/badge/info/user_info_badge.dart';

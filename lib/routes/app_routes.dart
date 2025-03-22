@@ -34,6 +34,7 @@ import '../screens/profile/follow/user_follows_screen.dart';
 import '../screens/activity/activity_feed_screen.dart';
 import '../screens/activity/activity_detail_screen.dart';
 import '../screens/activity/activity_alternating_feed_screen.dart';
+import '../layouts/main_layout.dart';
 
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)
@@ -78,7 +79,34 @@ class AppRoutes {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
     switch (routeName) {
+
+    // 在 app_routes.dart 中更新根路由的处理
       case '/':
+      // 检查是否有传递标签索引参数
+        if (settings.arguments != null) {
+          print("AppRoutes: 接收到主页面导航参数: ${settings.arguments}");
+
+          if (settings.arguments is Map<String, dynamic> &&
+              (settings.arguments as Map<String, dynamic>).containsKey('tab_index')) {
+            // 获取标签索引
+            final int tabIndex = (settings.arguments as Map<String, dynamic>)['tab_index'] as int;
+            print("AppRoutes: 将设置主页面标签索引为: $tabIndex");
+
+            // 返回主页面并在下一帧设置标签索引
+            return MaterialPageRoute(
+                builder: (context) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    print("AppRoutes: 主页面构建完成，现在设置标签索引: $tabIndex");
+                    MainLayout.navigateTo(tabIndex);
+                  });
+                  return HomeScreen();
+                }
+            );
+          }
+        }
+
+        // 默认行为，无参数时直接返回主页面
+        print("AppRoutes: 返回默认主页面");
         return MaterialPageRoute(builder: (_) => HomeScreen());
       case '/about':
         return MaterialPageRoute(builder: (_) => AboutScreen());
@@ -153,7 +181,7 @@ class AppRoutes {
       case '/my-games':
         return MaterialPageRoute(builder: (_) => GameCollectionScreen());
       case '/activity-feed':
-        return MaterialPageRoute(builder: (_) => const ActivityAlternatingFeedScreen());
+        return MaterialPageRoute(builder: (_) => ActivityFeedScreen());
 
       case '/user-activities':
         if (settings.arguments is! String) {

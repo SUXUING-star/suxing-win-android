@@ -5,7 +5,7 @@ import '../../services/main/game/game_service.dart';
 import '../../services/main/user/user_service.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth/auth_provider.dart';
-import '../../utils/load/loading_route_observer.dart';
+import '../../widgets/components/loading/loading_route_observer.dart';
 import 'dart:async';
 
 class SearchScreen extends StatefulWidget {

@@ -1,5 +1,4 @@
 // lib/models/message/message.dart
-import 'package:mongo_dart/mongo_dart.dart';
 import 'message_type.dart';
 
 class Message {

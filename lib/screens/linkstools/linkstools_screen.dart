@@ -9,10 +9,11 @@ import '../../widgets/common/toaster/toaster.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/components/form/linkform/link_form_dialog.dart';
 import '../../widgets/components/form/toolform/tool_form_dialog.dart';
-import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/linkstools/links_section.dart';
 import '../../widgets/components/screen/linkstools/tools_section.dart';
+import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/components/common/error_widget.dart';
 
 class LinksToolsScreen extends StatefulWidget {
   @override
@@ -24,6 +25,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   List<Link>? _links;
   List<Tool>? _tools;
   String? _errorMessage;
+  bool _isLoading = true;
 
   // Define breakpoint for desktop layout
   final double _desktopBreakpoint = 900.0;
@@ -37,12 +39,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   }
 
   Future<void> _loadData() async {
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    loadingObserver.showLoading();
     try {
       final links = await _linkToolService.getLinks().first;
       final tools = await _linkToolService.getTools().first;
@@ -50,16 +51,15 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       setState(() {
         _links = links;
         _tools = tools;
-        _errorMessage = null;
+        _isLoading = false;
       });
     } catch (e) {
       setState(() {
         _errorMessage = '加载失败：${e.toString()}';
         _links = [];
         _tools = [];
+        _isLoading = false;
       });
-    } finally {
-      loadingObserver.hideLoading();
     }
   }
 
@@ -81,6 +81,26 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= _desktopBreakpoint;
+
+    // 处理加载状态
+    if (_isLoading) {
+      return Scaffold(
+        appBar: isDesktop ? null : CustomAppBar(title: '实用工具'),
+        body: LoadingWidget.fullScreen(message: '正在加载工具和链接...'),
+      );
+    }
+
+    // 处理错误状态
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: isDesktop ? null : CustomAppBar(title: '实用工具'),
+        body: CustomErrorWidget(
+          errorMessage: _errorMessage!,
+          onRetry: _loadData,
+          title: '加载失败',
+        ),
+      );
+    }
 
     return Scaffold(
       // AppBar only for mobile layout
@@ -112,7 +132,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     );
   }
 
-  // Desktop layout with side-by-side sections
+  // 桌面端布局 (代码保持不变)
   Widget _buildDesktopLayout(bool isAdmin) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -196,7 +216,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     );
   }
 
-  // Original mobile layout (stacked vertically)
+  // 移动端布局 (代码保持不变)
   Widget _buildMobileLayout(bool isAdmin) {
     return CustomScrollView(
       slivers: [
@@ -228,52 +248,48 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     );
   }
 
-  // Common links section content
+  // 链接区域内容构建 (替换原有的错误和加载处理)
   Widget _buildLinksContent(bool isAdmin) {
-    if (_errorMessage != null) {
+    if (_links == null || _links!.isEmpty) {
       return SliverToBoxAdapter(
-        child: Center(child: Text(_errorMessage!)),
-      );
-    } else if (_links == null) {
-      return SliverToBoxAdapter(
-        child: Center(child: CircularProgressIndicator()),
-      );
-    } else if (_links!.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(child: Text('暂无链接')),
-      );
-    } else {
-      return LinksSection(
-        links: _links!,
-        isAdmin: isAdmin,
-        onRefresh: _loadData,
-        onLaunchURL: (url) => _launchURL(context, url),
-        linkToolService: _linkToolService,
+        child: CustomErrorWidget(
+          errorMessage: '暂无链接',
+          icon: Icons.link_off,
+          title: '链接',
+          retryText: '刷新',
+          onRetry: _loadData,
+        ),
       );
     }
+
+    return LinksSection(
+      links: _links!,
+      isAdmin: isAdmin,
+      onRefresh: _loadData,
+      onLaunchURL: (url) => _launchURL(context, url),
+      linkToolService: _linkToolService,
+    );
   }
 
-  // Common tools section content
+  // 工具区域内容构建 (替换原有的错误和加载处理)
   Widget _buildToolsContent(bool isAdmin) {
-    if (_errorMessage != null) {
+    if (_tools == null || _tools!.isEmpty) {
       return SliverToBoxAdapter(
-        child: Center(child: Text(_errorMessage!)),
-      );
-    } else if (_tools == null) {
-      return SliverToBoxAdapter(
-        child: Center(child: CircularProgressIndicator()),
-      );
-    } else if (_tools!.isEmpty) {
-      return SliverToBoxAdapter(
-        child: Center(child: Text('暂无工具')),
-      );
-    } else {
-      return ToolsSection(
-        tools: _tools!,
-        isAdmin: isAdmin,
-        onLaunchURL: (url) => _launchURL(context, url),
+        child: CustomErrorWidget(
+          errorMessage: '暂无工具',
+          icon: Icons.miscellaneous_services,
+          title: '工具',
+          retryText: '刷新',
+          onRetry: _loadData,
+        ),
       );
     }
+
+    return ToolsSection(
+      tools: _tools!,
+      isAdmin: isAdmin,
+      onLaunchURL: (url) => _launchURL(context, url),
+    );
   }
 
   void _showAddLinkDialog(BuildContext context) {
@@ -301,13 +317,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     ).then((toolData) async {
       if (toolData != null) {
         try {
-          final loadingObserver = Navigator.of(context)
-              .widget.observers
-              .whereType<LoadingRouteObserver>()
-              .first;
-          loadingObserver.showLoading();
-
-          // 修改：使用 Tool.fromJson 将 Map 转换为 Tool 对象
           final tool = Tool.fromJson(toolData);
           await _linkToolService.addTool(tool);
 
@@ -316,12 +325,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         } catch (e) {
           print('添加工具错误: $e'); // 添加日志以便调试
           Toaster.show(context, message: '添加工具失败: $e', isError: true);
-        } finally {
-          Navigator.of(context)
-              .widget.observers
-              .whereType<LoadingRouteObserver>()
-              .first
-              .hideLoading();
         }
       }
     });

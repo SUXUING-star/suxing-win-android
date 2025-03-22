@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../../providers/auth/auth_provider.dart';
-import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -20,6 +21,7 @@ class _LoginScreenState extends State<LoginScreen> {
   late Box<String> _box;
   String? _error;
   bool _obscurePassword = true;
+  bool _isLoading = false;
 
   @override
   void initState() {
@@ -57,13 +59,10 @@ class _LoginScreenState extends State<LoginScreen> {
   Future<void> _handleLogin(BuildContext context) async {
     if (!_formKey.currentState!.validate()) return;
 
-    final loadingObserver = Navigator.of(context)
-        .widget
-        .observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -80,11 +79,10 @@ class _LoginScreenState extends State<LoginScreen> {
         _error = '登录失败: ${e.toString()}';
       });
       Toaster.error(context, '登录失败');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_error!)),
-      );
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -94,7 +92,6 @@ class _LoginScreenState extends State<LoginScreen> {
       appBar: CustomAppBar(
         title: '登录',
       ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // 半透明遮罩
@@ -105,6 +102,11 @@ class _LoginScreenState extends State<LoginScreen> {
               height: double.infinity,
             ),
           ),
+
+          // 加载状态
+          if (_isLoading)
+            LoadingWidget.fullScreen(message: '正在登录...'),
+
           // 登录表单 - 添加最大宽度约束
           Center(
             child: ConstrainedBox(
@@ -134,6 +136,24 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                         SizedBox(height: 16),
+
+                        // 显示错误信息
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: CustomErrorWidget(
+                              errorMessage: _error!,
+                              icon: Icons.error_outline,
+                              title: '登录错误',
+                              retryText: '重试',
+                              iconColor: Colors.red,
+                              onRetry: () {
+                                setState(() {
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ),
 
                         // 邮箱输入
                         TextFormField(

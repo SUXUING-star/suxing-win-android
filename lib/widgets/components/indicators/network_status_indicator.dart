@@ -25,55 +25,40 @@ class _NetworkStatusIndicatorState extends State<NetworkStatusIndicator> {
       builder: (context, networkManager, _) {
         final isConnected = networkManager.isConnected;
 
-        return MouseRegion(
-          cursor: SystemMouseCursors.click,
+        if (_isLoading) {
+          return SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          );
+        }
+
+        return Tooltip(
+          message: isConnected ? '网络已连接' : '点击重新连接',
           child: GestureDetector(
-            onTap: _isLoading ? null : () => _handleTap(networkManager),
+            onTap: () => _handleTap(networkManager),
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              width: 24,
+              height: 24,
               decoration: BoxDecoration(
-                color: _getBackgroundColor(isConnected),
-                borderRadius: BorderRadius.circular(12),
+                color: isConnected ? Colors.green : Colors.red,
+                shape: BoxShape.circle,
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isConnected ? Icons.cloud_done : Icons.cloud_off,
-                    size: 16,
-                    color: isConnected ? Colors.green : Colors.red,
-                  ),
-                  const SizedBox(width: 4),
-                  if (_isLoading)
-                    SizedBox(
-                      width: 12,
-                      height: 12,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: isConnected ? Colors.green : Colors.red,
-                      ),
-                    )
-                  else
-                    Text(
-                      isConnected ? '已连接' : '重连',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: isConnected ? Colors.green : Colors.red,
-                      ),
-                    ),
-                ],
+              child: Center(
+                child: Icon(
+                  isConnected ? Icons.wifi : Icons.wifi_off,
+                  size: 16,
+                  color: Colors.white,
+                ),
               ),
             ),
           ),
         );
       },
     );
-  }
-
-  Color _getBackgroundColor(bool isConnected) {
-    return isConnected
-        ? Colors.green.withOpacity(0.1)
-        : Colors.red.withOpacity(0.1);
   }
 
   Future<void> _handleTap(NetworkManager networkManager) async {
@@ -87,6 +72,7 @@ class _NetworkStatusIndicatorState extends State<NetworkStatusIndicator> {
     try {
       // 尝试重新连接
       final bool success = await networkManager.reconnect();
+      // 注意：现在NetworkManager.reconnect()会在成功连接时自动调用onNetworkRestored回调
 
       if (success && widget.onReconnect != null) {
         widget.onReconnect!();

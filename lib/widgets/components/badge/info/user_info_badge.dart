@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../services/main/user/user_service.dart';
 import '../../../../screens/profile/open_profile_screen.dart';
 import '../../../common/image/safe_user_avatar.dart';
-import 'follow_user_button.dart';
+import '../../button/follow_user_button.dart';
 
 class UserInfoBadge extends StatelessWidget {
   final String userId;

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../widgets/common/image/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../badge/info/follow_user_button.dart';
+import '../../../button/follow_user_button.dart';
 
 class ResponsiveFollowsLayout extends StatelessWidget {
   final TabController tabController;

@@ -26,6 +26,8 @@ class _HomeHotState extends State<HomeHot> {
 
   static const double cardWidth = 160.0;
   static const double cardMargin = 16.0;
+  // 这里使用HomeGameCard的高度常量，确保视图高度与卡片高度匹配
+  static const double containerHeight = 210; // 与HomeGameCard.cardHeight保持一致
 
   @override
   void initState() {
@@ -159,7 +161,7 @@ class _HomeHotState extends State<HomeHot> {
     // 显示加载状态
     if (_isLoading && _cachedGames == null) {
       return Container(
-        height: 200,
+        height: containerHeight,
         child: Center(
           child: CircularProgressIndicator(),
         ),
@@ -189,7 +191,7 @@ class _HomeHotState extends State<HomeHot> {
       child: Stack(
         children: [
           Container(
-            height: 200,
+            height: containerHeight, // 使用更新后的高度，与HomeGameCard.cardHeight保持一致
             child: PageView.builder(
               controller: _pageController,
               itemCount: totalPages,
@@ -202,22 +204,44 @@ class _HomeHotState extends State<HomeHot> {
                 final startIndex = pageIndex * cardsPerPage;
                 return Container(
                   margin: EdgeInsets.symmetric(horizontal: 8), // 减少水平边距
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(cardsPerPage, (index) {
-                      final gameIndex = startIndex + index;
-                      if (gameIndex >= games.length) {
-                        return SizedBox(width: cardWidth + cardMargin);
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      // 根据可用宽度计算实际可以显示的卡片数量
+                      double availableWidth = constraints.maxWidth;
+                      int actualCardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
+                      actualCardsPerPage = actualCardsPerPage < 1 ? 1 : actualCardsPerPage;
+
+                      // 创建卡片列表
+                      List<Widget> cardWidgets = [];
+                      for (int index = 0; index < actualCardsPerPage; index++) {
+                        final gameIndex = startIndex + index;
+                        if (gameIndex >= games.length) {
+                          // 如果没有更多游戏，添加一个占位符
+                          cardWidgets.add(SizedBox(width: cardWidth));
+                        } else {
+                          // 使用新的HomeGameCard实现
+                          cardWidgets.add(
+                            HomeGameCard(
+                              game: games[gameIndex],
+                              onTap: () => Navigator.pushNamed(
+                                context,
+                                AppRoutes.gameDetail,
+                                arguments: games[gameIndex],
+                              ),
+                            ),
+                          );
+                        }
                       }
-                      return HomeGameCard(
-                        game: games[gameIndex],
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          AppRoutes.gameDetail,
-                          arguments: games[gameIndex],
+
+                      // 使用Wrap替代Row避免溢出
+                      return Center(
+                        child: Wrap(
+                          alignment: WrapAlignment.center,
+                          spacing: cardMargin,
+                          children: cardWidgets,
                         ),
                       );
-                    }),
+                    },
                   ),
                 );
               },
@@ -367,7 +391,7 @@ class _HomeHotState extends State<HomeHot> {
 
   Widget _buildError(String message) {
     return Container(
-      height: 200,
+      height: containerHeight, // 更新错误状态的容器高度
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -383,7 +407,7 @@ class _HomeHotState extends State<HomeHot> {
 
   Widget _buildEmptyState(String message) {
     return Container(
-      height: 200,
+      height: containerHeight, // 更新空状态的容器高度
       child: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

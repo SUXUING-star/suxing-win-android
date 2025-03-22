@@ -34,6 +34,7 @@ class MessageTabs extends StatefulWidget {
 class _MessageTabsState extends State<MessageTabs> {
   @override
   Widget build(BuildContext context) {
+// In the build method in _MessageTabsState class
     return RefreshIndicator(
       onRefresh: () async {
         await widget.onRefresh();
@@ -67,9 +68,22 @@ class _MessageTabsState extends State<MessageTabs> {
             selectedMessage: widget.selectedMessage,
             isCompact: widget.isCompact,
           ),
+
+          // 关注通知 - 新增
+          MessageList(
+            messages: _getFollowNotifications(),
+            messageService: widget.messageService,
+            onMessageTap: widget.onMessageTap,
+            selectedMessage: widget.selectedMessage,
+            isCompact: widget.isCompact,
+          ),
         ],
       ),
     );
+  }
+  // 获取关注通知
+  List<Message> _getFollowNotifications() {
+    return widget.groupedMessages["follow_notification"] ?? [];
   }
 
   // 获取所有消息的平铺列表

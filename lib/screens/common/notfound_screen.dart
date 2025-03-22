@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/common/appbar/custom_app_bar.dart';
 
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({Key? key}) : super(key: key);
@@ -6,9 +7,8 @@ class NotFoundScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('404 - Page Not Found'),
-        automaticallyImplyLeading: false, // 隐藏默认的返回箭头
+      appBar: CustomAppBar(
+        title: '404 - Page Not Found',
       ),
       body: Center(
         child: Padding(

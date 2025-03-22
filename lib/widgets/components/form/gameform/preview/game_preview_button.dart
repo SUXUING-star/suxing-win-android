@@ -48,7 +48,7 @@ class GamePreviewButton extends StatelessWidget {
       onPressed: () {
         // Get the current user ID from AuthProvider
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final currentUserId = authProvider.userId;
+        final currentUserId = authProvider.currentUserId;
 
         // Create a temporary Game object from the current form data
         final previewGame = Game(

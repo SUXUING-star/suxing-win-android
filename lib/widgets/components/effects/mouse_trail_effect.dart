@@ -130,44 +130,48 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
       return widget.child;
     }
 
-    return Stack(
-      children: [
-        widget.child,
-        if (_isEnabled) Positioned.fill(
-          child: MouseRegion(
-            opaque: false,
-            onHover: (event) {
-              final currentPosition = event.localPosition;
-              if (_lastPosition != null) {
-                final distance = (_lastPosition! - currentPosition).distance;
-                final numberOfPoints = (distance / 10).round();
+    // 添加 Directionality 小部件解决 Android 上的方向性问题
+    return Directionality(
+      textDirection: TextDirection.ltr, // 使用从左到右的文本方向
+      child: Stack(
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: MouseRegion(
+              opaque: false,
+              onHover: (event) {
+                final currentPosition = event.localPosition;
+                if (_lastPosition != null) {
+                  final distance = (_lastPosition! - currentPosition).distance;
+                  final numberOfPoints = (distance / 10).round();
 
-                if (numberOfPoints > 0) {
-                  for (var i = 0; i < numberOfPoints; i++) {
-                    final t = i / numberOfPoints;
-                    final interpolatedPosition = Offset.lerp(
-                      _lastPosition!,
-                      currentPosition,
-                      t,
-                    )!;
-                    _addParticle(interpolatedPosition);
+                  if (numberOfPoints > 0) {
+                    for (var i = 0; i < numberOfPoints; i++) {
+                      final t = i / numberOfPoints;
+                      final interpolatedPosition = Offset.lerp(
+                        _lastPosition!,
+                        currentPosition,
+                        t,
+                      )!;
+                      _addParticle(interpolatedPosition);
+                    }
                   }
                 }
-              }
-              _lastPosition = currentPosition;
-            },
-            child: IgnorePointer(
-              child: CustomPaint(
-                size: Size.infinite,
-                painter: _MouseTrailPainter(
-                  particles: _particles,
-                  color: widget.particleColor,
+                _lastPosition = currentPosition;
+              },
+              child: IgnorePointer(
+                child: CustomPaint(
+                  size: Size.infinite,
+                  painter: _MouseTrailPainter(
+                    particles: _particles,
+                    color: widget.particleColor,
+                  ),
                 ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

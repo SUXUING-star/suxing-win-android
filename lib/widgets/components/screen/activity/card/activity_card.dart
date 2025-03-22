@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/activity_card.dart
+// lib/widgets/components/screen/activity/card/activity_card.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
@@ -8,6 +8,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/card/activity_ta
 import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
 import '../dialog/activity_edit_dialog.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:flutter/services.dart';
@@ -37,6 +38,7 @@ class ActivityCard extends StatefulWidget {
 
 class _ActivityCardState extends State<ActivityCard> {
   late UserActivity _activity;
+  bool _isAlternate =false;
   final UserActivityService _activityService = UserActivityService();
   bool _showComments = false;
   late double _cardHeight; // 控制卡片高度
@@ -46,6 +48,7 @@ class _ActivityCardState extends State<ActivityCard> {
   void initState() {
     super.initState();
     _activity = widget.activity;
+    _isAlternate = widget.isAlternate;
     _initializeCardProperties();
   }
 
@@ -331,6 +334,7 @@ class _ActivityCardState extends State<ActivityCard> {
 
         SizedBox(height: 12 * _cardHeight),
 
+
         // 内容文本
         if (_activity.content.isNotEmpty)
           Container(
@@ -355,6 +359,13 @@ class _ActivityCardState extends State<ActivityCard> {
             cardHeight: _cardHeight * 0.8, // 缩小比例
           ),
         ],
+        // 添加导航至目标组件
+        ActivityTargetNavigation(
+          activity: _activity,
+          isAlternate: _isAlternate,
+        ),
+
+
 
         SizedBox(height: 16 * _cardHeight),
 
@@ -379,9 +390,12 @@ class _ActivityCardState extends State<ActivityCard> {
 
     // 如果不需要自己的背景（在详情页里的卡片），则直接返回内容
     if (!widget.hasOwnBackground) {
-      return GestureDetector(
-        onTap: _handleActivityTap,
-        child: contentWidget,
+      return MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: _handleActivityTap,
+          child: contentWidget,
+        ),
       );
     }
 
@@ -395,39 +409,42 @@ class _ActivityCardState extends State<ActivityCard> {
         horizontal: 16,
         vertical: 4 * _cardHeight,
       ),
-      child: GestureDetector(
-        onTap: _handleActivityTap,
-        child: Container(
-          width: calculatedWidth,
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.95, // 最大不超过屏幕宽度的95%
-            minWidth: screenWidth * 0.6,  // 最小不小于屏幕宽度的60%
-          ),
-          child: Card(
-            elevation: 1, // 减小阴影
-            margin: EdgeInsets.zero,
-            // 使用更圆润的边角，增加气泡效果
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(widget.isAlternate ? 20 : 4),
-                topRight: Radius.circular(widget.isAlternate ? 4 : 20),
-                bottomLeft: const Radius.circular(20),
-                bottomRight: const Radius.circular(20),
-              ),
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: GestureDetector(
+          onTap: _handleActivityTap,
+          child: Container(
+            width: calculatedWidth,
+            constraints: BoxConstraints(
+              maxWidth: screenWidth * 0.95, // 最大不超过屏幕宽度的95%
+              minWidth: screenWidth * 0.6,  // 最小不小于屏幕宽度的60%
             ),
-            child: Container(
-              padding: EdgeInsets.all(16 * math.sqrt(_cardHeight)),
-              decoration: BoxDecoration(
+            child: Card(
+              elevation: 1, // 减小阴影
+              margin: EdgeInsets.zero,
+              // 使用更圆润的边角，增加气泡效果
+              shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(widget.isAlternate ? 20 : 4),
                   topRight: Radius.circular(widget.isAlternate ? 4 : 20),
                   bottomLeft: const Radius.circular(20),
                   bottomRight: const Radius.circular(20),
                 ),
-                // 去掉渐变，使用单色背景
-                color: Colors.white,
               ),
-              child: contentWidget,
+              child: Container(
+                padding: EdgeInsets.all(16 * math.sqrt(_cardHeight)),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.only(
+                    topLeft: Radius.circular(widget.isAlternate ? 20 : 4),
+                    topRight: Radius.circular(widget.isAlternate ? 4 : 20),
+                    bottomLeft: const Radius.circular(20),
+                    bottomRight: const Radius.circular(20),
+                  ),
+                  // 去掉渐变，使用单色背景
+                  color: Colors.white,
+                ),
+                child: contentWidget,
+              ),
             ),
           ),
         ),

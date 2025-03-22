@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/activity_type_filter.dart
+// lib/widgets/components/screen/activity/card/activity_type_filter.dart
 
 import 'package:flutter/material.dart';
 

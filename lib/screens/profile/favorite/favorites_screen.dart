@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
-import '../../../utils/load/loading_route_observer.dart';
+import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/common/appbar/custom_app_bar.dart';
 import '../../../widgets/components/screen/profile/favorite/responsive_favorites_layout.dart';
 

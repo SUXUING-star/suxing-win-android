@@ -1,31 +1,36 @@
 // lib/widgets/common/appbar/custom_app_bar.dart
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
+import '../../../utils/device/device_utils.dart';
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget>? actions;
   final Widget? leading;
-  final PreferredSizeWidget? bottom; // 新增bottom参数
+  final PreferredSizeWidget? bottom;
 
   const CustomAppBar({
     Key? key,
     required this.title,
     this.actions,
     this.leading,
-    this.bottom, // 添加bottom参数
+    this.bottom,
   }) : super(key: key);
 
   @override
   Size get preferredSize {
-    // 调整首选大小以适应底部组件（如果有）
+    // 桌面平台主页不显示AppBar
+    if (DeviceUtils.isDesktop && _isMainPage(title)) {
+      return Size.zero;
+    }
+
+    // 移动平台保持原有的尺寸计算
     double height = Platform.isAndroid &&
         WidgetsBinding.instance.window.physicalSize.width >
             WidgetsBinding.instance.window.physicalSize.height
         ? kToolbarHeight * 0.8
         : kToolbarHeight;
 
-    // 如果有底部组件，则增加高度
     if (bottom != null) {
       height += bottom!.preferredSize.height;
     }
@@ -35,6 +40,12 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 桌面平台主页不显示AppBar
+    if (DeviceUtils.isDesktop && _isMainPage(title)) {
+      return SizedBox.shrink();
+    }
+
+    // 移动平台或桌面平台的二级页面正常显示AppBar
     final bool isAndroidLandscape = Platform.isAndroid &&
         MediaQuery.of(context).orientation == Orientation.landscape;
 
@@ -50,26 +61,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           fontSize: fontSize,
         ),
       ),
-      leading: leading != null
-          ? Theme(
-        data: Theme.of(context).copyWith(
-          iconTheme: IconThemeData(
-            size: isAndroidLandscape ? 20.0 : 24.0,
-          ),
-        ),
-        child: leading!,
-      )
-          : null,
-      actions: actions != null
-          ? actions!.map((widget) => Theme(
-        data: Theme.of(context).copyWith(
-          iconTheme: IconThemeData(
-            size: isAndroidLandscape ? 20.0 : 24.0,
-          ),
-        ),
-        child: widget,
-      )).toList()
-          : null,
+      leading: leading,
+      actions: actions,
       backgroundColor: Colors.transparent,
       elevation: 0,
       toolbarHeight: preferredSize.height - (bottom?.preferredSize.height ?? 0),
@@ -85,7 +78,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-      bottom: bottom ?? PreferredSize( // 使用提供的bottom或默认底部边框
+      bottom: bottom ?? PreferredSize(
         preferredSize: Size.fromHeight(bottomHeight),
         child: Opacity(
           opacity: 0.7,
@@ -96,5 +89,22 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ),
       ),
     );
+  }
+
+  // 判断是否是主页面（根据标题）
+  bool _isMainPage(String title) {
+    // 主页面标题列表
+    final List<String> mainPageTitles = [
+      '首页',
+      '游戏',
+      '外部链接',
+      '论坛',
+      '帖子',
+      '动态',
+      '个人中心',
+      '我的',
+    ];
+
+    return mainPageTitles.contains(title);
   }
 }

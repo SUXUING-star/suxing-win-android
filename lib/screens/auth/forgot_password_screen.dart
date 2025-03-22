@@ -1,11 +1,11 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/main/email/email_service.dart';
-import '../../services/main/user/user_service.dart';
-import '../../utils/load/loading_route_observer.dart';
 import 'dart:async';
 import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -16,26 +16,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
-  final UserService _authService = UserService();
   String? _error;
   bool _codeSent = false;
   String? _verificationCode;
   int _countDown = 0;
   Timer? _timer;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
-          .whereType<LoadingRouteObserver>()
-          .first;
-
-      // 不需要初始加载动画
-    });
-  }
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -62,17 +48,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Future<void> _sendVerificationCode() async {
     if (!_formKey.currentState!.validate()) return;
 
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
-      // 1. 验证邮箱是否存在
-      //await _authService.resetPassword(_emailController.text, "123456");
-
       _verificationCode = EmailService.generateVerificationCode();
       await EmailService.sendPasswordResetCode(
           _emailController.text,
@@ -94,7 +75,9 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
         SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -124,7 +107,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: CustomAppBar(
         title: '找回密码',
       ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // 半透明遮罩
@@ -135,6 +117,10 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
               height: double.infinity,
             ),
           ),
+          // 加载状态处理
+          if (_isLoading)
+            LoadingWidget.fullScreen(message: '正在发送验证码...'),
+
           // 找回密码表单 - 添加最大宽度约束
           Center(
             child: ConstrainedBox(
@@ -173,14 +159,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                         SizedBox(height: 24),
 
-                        // 显示错误信息
+                        // 显示错误信息 - 使用自定义错误组件
                         if (_error != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
+                            child: CustomErrorWidget(
+                              errorMessage: _error!,
+                              icon: Icons.error_outline,
+                              title: '错误',
+                              retryText: '重试',
+                              iconColor: Colors.red,
+                              onRetry: () {
+                                setState(() {
+                                  _error = null;
+                                });
+                              },
                             ),
                           ),
 

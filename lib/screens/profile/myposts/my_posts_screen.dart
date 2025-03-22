@@ -2,15 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../blocs/my_posts/my_posts_bloc.dart';
-import '../../../blocs/my_posts/my_posts_event.dart';
-import '../../../blocs/my_posts/my_posts_state.dart';
+import 'blocs/my_posts_bloc.dart';
+import 'blocs/my_posts_event.dart';
+import 'blocs/my_posts_state.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../services/main/user/user_service.dart';
 import '../../../widgets/components/screen/my_posts/post_list_item.dart';
 import '../../../widgets/components/screen/my_posts/post_actions_bottom_sheet.dart';
 import '../../../routes/app_routes.dart';
-import '../../../utils/load/loading_route_observer.dart';
+import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/common/appbar/custom_app_bar.dart';
 
 class MyPostsScreen extends StatefulWidget {

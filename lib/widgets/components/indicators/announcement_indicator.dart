@@ -1,4 +1,4 @@
-// lib/widgets/indicators/announcement_indicator.dart
+// lib/widgets/components/indicators/announcement_indicator.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../services/main/announcement/announcement_service.dart';
@@ -67,7 +67,8 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (_lastCheckTime != null) {
       final timeSinceLastCheck = DateTime.now().difference(_lastCheckTime!);
       if (timeSinceLastCheck < _minCheckInterval) {
-        print('公告指示器: 距离上次检查只过了 ${timeSinceLastCheck.inSeconds} 秒，跳过本次检查');
+        print('公告指示器: 距离上次检查只过了 ${timeSinceLastCheck
+            .inSeconds} 秒，跳过本次检查');
         return;
       }
     }
@@ -75,7 +76,8 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     _isCheckingAnnouncements = true;
 
     try {
-      final announcementService = Provider.of<AnnouncementService>(context, listen: false);
+      final announcementService = Provider.of<AnnouncementService>(
+          context, listen: false);
 
       // 确保服务已初始化
       if (!announcementService.isInitialized) {
@@ -106,7 +108,8 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
             setState(() {
               _isInitialized = true;
             });
-            await announcementService.getActiveAnnouncements(forceRefresh: false);
+            await announcementService.getActiveAnnouncements(
+                forceRefresh: false);
             _lastCheckTime = DateTime.now();
           }
         } catch (e2) {
@@ -125,7 +128,8 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (!mounted) return;
 
     try {
-      final announcementService = Provider.of<AnnouncementService>(context, listen: false);
+      final announcementService = Provider.of<AnnouncementService>(
+          context, listen: false);
       final unreadAnnouncements = announcementService.getUnreadAnnouncements();
 
       if (unreadAnnouncements.isEmpty) {
@@ -209,22 +213,27 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
   Widget build(BuildContext context) {
     return Consumer<AnnouncementService>(
       builder: (context, service, child) {
-        // 如果正在加载或没有未读公告，不显示指示器
-        if (service.isLoading || service.unreadCount == 0) {
-          return const SizedBox.shrink();
+        // 如果是loading状态显示loading指示器
+        if (service.isLoading) {
+          return SizedBox(
+            width: 24,
+            height: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: Colors.white,
+            ),
+          );
         }
 
-        // 显示未读数量指示器
-        return GestureDetector(
-          onTap: _showAnnouncements,
-          child: Tooltip(
-            message: '您有 ${service.unreadCount} 条未读公告',
+        // 如果有未读公告，显示未读数量指示器
+        if (service.unreadCount > 0) {
+          return GestureDetector(
+            onTap: _showAnnouncements,
             child: Container(
               width: 24,
               height: 24,
-              margin: const EdgeInsets.only(right: 8),
               decoration: BoxDecoration(
-                color: Colors.red,
+                color: Colors.orange,
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -236,6 +245,26 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
                     fontSize: 12,
                   ),
                 ),
+              ),
+            ),
+          );
+        }
+
+        // 默认显示公告图标
+        return GestureDetector(
+          onTap: _showAnnouncements,
+          child: Container(
+            width: 24,
+            height: 24,
+            decoration: BoxDecoration(
+              color: Colors.lightGreen[400],
+              shape: BoxShape.circle,
+            ),
+            child: Center(
+              child: Icon(
+                Icons.campaign,
+                size: 16,
+                color: Colors.white,
               ),
             ),
           ),

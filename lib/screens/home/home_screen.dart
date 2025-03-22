@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../utils/load/loading_route_observer.dart';
+import '../../widgets/components/loading/loading_route_observer.dart';
 import '../../widgets/components/screen/home/android/home_hot.dart';
 import '../../widgets/components/screen/home/android/home_latest.dart';
 import '../../widgets/components/screen/home/android/home_banner.dart';
 import '../../models/game/game.dart';
 import '../../services/main/game/game_service.dart';
+import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/components/common/error_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -24,6 +26,10 @@ class _HomeScreenState extends State<HomeScreen> {
   // 追踪是否第一次初始化
   bool _isFirstLoad = true;
 
+  // 错误处理
+  String? _errorMessage;
+  bool _isLoading = true;
+
   @override
   void initState() {
     super.initState();
@@ -34,12 +40,28 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 初始化游戏数据流
   void _initGameStreams() {
-    // 使用缓存优先的流
-    _hotGamesStream = _gameService.getHotGames();
-    _latestGamesStream = _gameService.getLatestGames();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
-    // 设置刷新时间
-    _lastRefreshTime = DateTime.now();
+    try {
+      // 使用缓存优先的流
+      _hotGamesStream = _gameService.getHotGames();
+      _latestGamesStream = _gameService.getLatestGames();
+
+      // 设置刷新时间
+      _lastRefreshTime = DateTime.now();
+
+      setState(() {
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _errorMessage = '加载数据失败：${e.toString()}';
+        _isLoading = false;
+      });
+    }
   }
 
   // 判断是否应该刷新数据
@@ -66,7 +88,10 @@ class _HomeScreenState extends State<HomeScreen> {
         .whereType<LoadingRouteObserver>()
         .first;
 
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
 
     try {
       // 检查是否应该强制刷新
@@ -74,9 +99,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (shouldForceRefresh) {
         print('主页：强制刷新数据');
-
-        // 清除相关缓存（可选，取决于是否需要强制从服务器获取新数据）
-        // 在GameCacheService中添加一个特定方法来清除首页相关缓存
 
         // 重新初始化数据流
         setState(() {
@@ -88,11 +110,9 @@ class _HomeScreenState extends State<HomeScreen> {
         await Future.delayed(Duration(milliseconds: 200));
 
         // 重新获取数据
-        setState(() {
-          _hotGamesStream = _gameService.getHotGames();
-          _latestGamesStream = _gameService.getLatestGames();
-          _lastRefreshTime = DateTime.now();
-        });
+        _hotGamesStream = _gameService.getHotGames();
+        _latestGamesStream = _gameService.getLatestGames();
+        _lastRefreshTime = DateTime.now();
       } else {
         print('主页：使用缓存数据，不强制刷新');
         // 如果不强制刷新，只需轻微刷新UI
@@ -100,13 +120,38 @@ class _HomeScreenState extends State<HomeScreen> {
           setState(() {});
         }
       }
+    } catch (e) {
+      setState(() {
+        _errorMessage = '刷新数据失败：${e.toString()}';
+      });
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 加载状态处理
+    if (_isLoading) {
+      return Scaffold(
+        body: LoadingWidget.fullScreen(message: '正在加载首页...'),
+      );
+    }
+
+    // 错误状态处理
+    if (_errorMessage != null) {
+      return Scaffold(
+        body: CustomErrorWidget(
+          errorMessage: _errorMessage!,
+          onRetry: _initGameStreams,
+          title: '加载失败',
+        ),
+      );
+    }
+
+    // 正常显示内容
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshData,

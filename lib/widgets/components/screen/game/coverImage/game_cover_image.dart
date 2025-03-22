@@ -9,6 +9,8 @@ class GameCoverImage extends StatelessWidget {
   final double borderRadius;
   final bool hasShadow;
   final double? height;
+  final double? width;
+  final BoxFit fit;
 
   const GameCoverImage({
     Key? key,
@@ -16,17 +18,20 @@ class GameCoverImage extends StatelessWidget {
     this.borderRadius = 12.0, // 默认圆角大小
     this.hasShadow = true,    // 默认启用阴影
     this.height,              // 可选高度
+    this.width,               // 可选宽度
+    this.fit = BoxFit.contain, // 默认使用contain以保持原始比例
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // 创建一个自适应比例的图片
     Widget coverImage = SafeCachedImage(
       imageUrl: imageUrl,
-      fit: BoxFit.cover,
-      width: double.infinity,
+      fit: fit,               // 使用contain而不是cover，保持图片原始比例
+      width: width ?? double.infinity,
       height: height,
       memCacheWidth: 640,
-      backgroundColor: Colors.grey[300],
+      backgroundColor: Colors.grey[200], // 修改为浅灰色背景以便更好地显示图片
       borderRadius: BorderRadius.circular(borderRadius),
       onError: (url, error) {
         print('游戏封面图片加载失败: $url, 错误: $error');
@@ -35,27 +40,28 @@ class GameCoverImage extends StatelessWidget {
 
     // 添加装饰效果（边框和阴影）
     return Container(
+      width: width,
+      height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: Colors.grey[400]!,
-          width: 2.0,
+          color: Colors.grey[300]!, // 降低边框对比度
+          width: 1.0,              // 减小边框宽度
         ),
         boxShadow: hasShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withOpacity(0.15),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
         ] : null,
+        color: Colors.grey[200],   // 添加背景色，与图片背景色匹配
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(borderRadius - 2), // 调整内部圆角以适应边框
+        borderRadius: BorderRadius.circular(borderRadius - 1), // 调整内部圆角以适应边框
         child: coverImage,
       ),
     );
-
-    return coverImage;
   }
 }

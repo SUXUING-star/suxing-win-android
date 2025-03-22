@@ -10,7 +10,8 @@ import '../../../widgets/common/appbar/custom_app_bar.dart';
 import '../../../utils/device/device_utils.dart';
 import '../../../widgets/components/screen/forum/post/layout/desktop/desktop_layout.dart';
 import '../../../widgets/components/screen/forum/post/layout/mobile/mobile_layout.dart';
-import '../../../widgets/components/screen/forum/post/error_display.dart';
+import '../../../widgets/components/common/error_widget.dart';
+import '../../../widgets/components/common/loading_widget.dart';
 import '../../../widgets/components/screen/forum/post/reply/desktop_reply_input.dart';
 import '../../../widgets/components/screen/forum/post/reply/mobile_reply_input.dart';
 
@@ -124,11 +125,28 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     if (confirm == true) {
       try {
+        // 显示加载状态
+        setState(() {
+          _isLoading = true;
+        });
+
         await _forumService.deletePost(widget.postId);
-        Navigator.pop(context);
-      } catch (e) {
+
+        // 返回，并传递更新标志
+        Navigator.pop(context, true);
+
+        // 显示成功消息
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(e.toString())),
+          const SnackBar(content: Text('帖子已删除')),
+        );
+      } catch (e) {
+        // 取消加载状态
+        setState(() {
+          _isLoading = false;
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('删除失败: ${e.toString()}')),
         );
       }
     }
@@ -149,41 +167,66 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop || DeviceUtils.isWeb || DeviceUtils.isTablet(context);
 
+    // 使用新的加载和错误组件
+    if (_isLoading) {
+      return Scaffold(
+        appBar: CustomAppBar(title: '帖子详情'),
+        body: LoadingWidget.fullScreen(message: '正在加载帖子...'),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        appBar: CustomAppBar(title: '帖子详情'),
+        body: CustomErrorWidget(
+          errorMessage: _error!,
+          onRetry: _loadPost,
+          title: '加载错误',
+        ),
+      );
+    }
+
+    if (_post == null) {
+      return Scaffold(
+        appBar: CustomAppBar(title: '帖子详情'),
+        body: NotFoundErrorWidget(
+          message: '请求的帖子不存在',
+          onBack: () => Navigator.pop(context),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: CustomAppBar(
         title: '帖子详情',
         actions: [
-          if (_post != null) _buildMoreMenu(),
+          _buildMoreMenu(),
         ],
       ),
       body: RefreshIndicator(
         onRefresh: _refreshPost,
-        child: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-            ? ErrorDisplay(error: _error!, onRetry: _loadPost)
-            : (_post == null
-            ? const Center(child: Text('帖子不存在'))
-            : (isDesktop
+        child: isDesktop
             ? DesktopLayout(
           post: _post!,
           postId: widget.postId,
           replyInput: DesktopReplyInput(
-              post: _post!,
-              replyController: _replyController,
-              onSubmitReply: _submitReply),
+            post: _post!,
+            replyController: _replyController,
+            onSubmitReply: _submitReply,
+          ),
         )
             : MobileLayout(
           post: _post!,
           postId: widget.postId,
-        ))),
+        ),
       ),
       bottomNavigationBar: isDesktop
           ? null
           : MobileReplyInput(
-          post: _post,
-          replyController: _replyController,
-          onSubmitReply: _submitReply),
+        post: _post,
+        replyController: _replyController,
+        onSubmitReply: _submitReply,
+      ),
     );
   }
 

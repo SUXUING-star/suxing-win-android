@@ -171,3 +171,115 @@ class CheckInStats {
     );
   }
 }
+
+
+
+class CheckInUser {
+  final String id;
+  final String userId;
+  final String username;
+  final String nickname;
+  final String avatar;
+  final int level;
+  final DateTime checkInTime;
+  final int experienceGained;
+  final int consecutiveCheckIn;
+  final int totalCheckIn;
+
+  CheckInUser({
+    required this.id,
+    required this.userId,
+    required this.username,
+    required this.nickname,
+    required this.avatar,
+    required this.level,
+    required this.checkInTime,
+    required this.experienceGained,
+    required this.consecutiveCheckIn,
+    required this.totalCheckIn,
+  });
+
+  factory CheckInUser.fromJson(Map<String, dynamic> json) {
+    return CheckInUser(
+      id: json['id'] ?? '',
+      userId: json['userId'] ?? '',
+      username: json['username'] ?? '',
+      nickname: json['nickname'] ?? json['username'] ?? '用户',
+      avatar: json['avatar'] ?? '',
+      level: json['level'] is int ? json['level'] : 1,
+      checkInTime: json['checkInTime'] is String
+          ? DateTime.parse(json['checkInTime'])
+          : DateTime.now(),
+      experienceGained: json['experienceGained'] is int
+          ? json['experienceGained']
+          : 0,
+      consecutiveCheckIn: json['consecutiveCheckIn'] is int
+          ? json['consecutiveCheckIn']
+          : 1,
+      totalCheckIn: json['totalCheckIn'] is int
+          ? json['totalCheckIn']
+          : 1,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'username': username,
+      'nickname': nickname,
+      'avatar': avatar,
+      'level': level,
+      'checkInTime': checkInTime.toIso8601String(),
+      'experienceGained': experienceGained,
+      'consecutiveCheckIn': consecutiveCheckIn,
+      'totalCheckIn': totalCheckIn,
+    };
+  }
+
+  // 格式化签到时间为"HH:MM:SS"
+  String get formattedTime {
+    return '${checkInTime.hour.toString().padLeft(2, '0')}:${checkInTime.minute.toString().padLeft(2, '0')}:${checkInTime.second.toString().padLeft(2, '0')}';
+  }
+
+  // 显示名称（优先使用昵称，没有则使用用户名）
+  String get displayName {
+    return nickname.isNotEmpty ? nickname : (username.isNotEmpty ? username : '用户');
+  }
+}
+
+class CheckInUserList {
+  final String date;
+  final List<CheckInUser> users;
+  final int count;
+
+  CheckInUserList({
+    required this.date,
+    required this.users,
+    required this.count,
+  });
+
+  factory CheckInUserList.fromJson(Map<String, dynamic> json) {
+    List<CheckInUser> userList = [];
+
+    if (json['list'] != null && json['list'] is List) {
+      userList = (json['list'] as List)
+          .map((item) => CheckInUser.fromJson(item))
+          .toList();
+    }
+
+    return CheckInUserList(
+      date: json['date'] ?? DateTime.now().toString().substring(0, 10),
+      users: userList,
+      count: json['count'] ?? userList.length,
+    );
+  }
+
+  factory CheckInUserList.empty() {
+    return CheckInUserList(
+      date: DateTime.now().toString().substring(0, 10),
+      users: [],
+      count: 0,
+    );
+  }
+}

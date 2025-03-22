@@ -40,7 +40,7 @@ class AuthProvider with ChangeNotifier {
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
-  String? get userId => _currentUser?.id;
+  String? get currentUserId => _currentUser?.id;
 
   // 获取日志
   List<String> get logs => List.unmodifiable(_logs);

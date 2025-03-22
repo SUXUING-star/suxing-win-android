@@ -7,13 +7,15 @@ import '../../services/main/forum/forum_service.dart';
 import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
-import '../../utils/load/loading_route_observer.dart';
+import '../../widgets/components/loading/loading_route_observer.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/components/form/postform/config/post_taglists.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/forum/post_card.dart';
+import '../../widgets/components/screen/forum/card/post_card.dart';
 import '../../widgets/components/screen/forum/tag_filter.dart';
 import '../../widgets/components/screen/forum/panel/forum_right_panel.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
@@ -24,7 +26,7 @@ class ForumScreen extends StatefulWidget {
   _ForumScreenState createState() => _ForumScreenState();
 }
 
-class _ForumScreenState extends State<ForumScreen> {
+class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   final ForumService _forumService = ForumService();
   final UserService _userService = UserService();
   final List<String> _tags = PostTagLists.filterTags;
@@ -32,8 +34,16 @@ class _ForumScreenState extends State<ForumScreen> {
   List<Post>? _posts;
   String? _errorMessage;
 
+  // 添加刷新控制器
+  final RefreshController _refreshController = RefreshController();
+
   // 控制右侧面板显示状态
   bool _showRightPanel = true;
+
+  // 添加路由观察者引用
+  LoadingRouteObserver? _routeObserver;
+  // 追踪是否需要刷新
+  bool _needsRefresh = false;
 
   @override
   void initState() {
@@ -41,61 +51,107 @@ class _ForumScreenState extends State<ForumScreen> {
     if (widget.tag != null) {
       _selectedTag = widget.tag!;
     }
+
+    // 添加应用生命周期观察者
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
 
+    // 获取路由观察者引用
+    final observers = Navigator.of(context).widget.observers;
+    _routeObserver = observers.whereType<LoadingRouteObserver>().firstOrNull;
+
+    // 初始加载帖子
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator
-          .of(context)
-          .widget
-          .observers
-          .whereType<LoadingRouteObserver>()
-          .first;
-
-      loadingObserver.showLoading();
-
-      _loadPosts().then((_) {
-        loadingObserver.hideLoading();
-      });
+      _loadPosts();
     });
+  }
+
+  @override
+  void dispose() {
+    // 移除应用生命周期观察者
+    WidgetsBinding.instance.removeObserver(this);
+
+    // 释放刷新控制器
+    _refreshController.dispose();
+    super.dispose();
+  }
+
+  // 实现应用生命周期状态监听
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 当应用恢复前台时，如果需要刷新，则刷新数据
+    if (state == AppLifecycleState.resumed && _needsRefresh) {
+      _refreshData();
+      _needsRefresh = false;
+    } else if (state == AppLifecycleState.paused) {
+      // 标记应用进入后台时可能需要刷新
+      _needsRefresh = true;
+    }
+  }
+
+  // 添加一个清除缓存并刷新的方法
+  Future<void> _clearCacheAndRefresh() async {
+    try {
+      // 清除指定标签的帖子缓存
+      final tag = _selectedTag == '全部' ? null : _selectedTag;
+      await _forumService.clearForumCache(tag);
+      await _loadPosts();
+    } catch (e) {
+      print('清除缓存失败: $e');
+    }
   }
 
   Future<void> _loadPosts() async {
     try {
+      if (_routeObserver != null) {
+        _routeObserver!.showLoading();
+      }
+
       final posts = await _forumService
           .getPosts(
         tag: _selectedTag == '全部' ? null : _selectedTag,
       )
           .first;
 
-      setState(() {
-        _posts = posts;
-        _errorMessage = null;
-      });
+      if (mounted) {
+        setState(() {
+          _posts = posts;
+          _errorMessage = null;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _errorMessage = '加载失败: $e';
-        _posts = [];
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = '加载失败: $e';
+          _posts = [];
+        });
+      }
+    } finally {
+      if (_routeObserver != null) {
+        _routeObserver!.hideLoading();
+      }
+
+      // 完成刷新
+      _refreshController.refreshCompleted();
     }
   }
 
   Future<void> _refreshData() async {
-    final loadingObserver = Navigator
-        .of(context)
-        .widget
-        .observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
     try {
-      await _loadPosts();
+      if (_routeObserver != null) {
+        _routeObserver!.showLoading();
+      }
+
+      // 清除论坛缓存
+      await _clearCacheAndRefresh();
     } finally {
-      loadingObserver.hideLoading();
+      if (_routeObserver != null) {
+        _routeObserver!.hideLoading();
+      }
     }
   }
 
@@ -116,6 +172,16 @@ class _ForumScreenState extends State<ForumScreen> {
     return DeviceUtils.isDesktop;
   }
 
+  void _navigateToCreatePost() async {
+    // 使用 await 等待导航结果
+    final result = await Navigator.pushNamed(context, AppRoutes.createPost);
+
+    // 如果返回的结果是 true，表示创建了新帖子，刷新数据
+    if (result == true) {
+      _refreshData();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final isDesktop = _isDesktop(context);
@@ -134,14 +200,17 @@ class _ForumScreenState extends State<ForumScreen> {
               onPressed: _toggleRightPanel,
               tooltip: _showRightPanel ? '隐藏统计面板' : '显示统计面板',
             ),
+          IconButton(
+            icon: Icon(Icons.refresh, color: Colors.white),
+            onPressed: _refreshData,
+            tooltip: '刷新帖子',
+          ),
           Consumer<AuthProvider>(
             builder: (context, authProvider, child) {
               if (authProvider.isLoggedIn) {
                 return IconButton(
                   icon: Icon(Icons.add, color: Colors.white),
-                  onPressed: () {
-                    Navigator.pushNamed(context, AppRoutes.createPost);
-                  },
+                  onPressed: _navigateToCreatePost,
                 );
               }
               return const SizedBox.shrink();
@@ -191,16 +260,29 @@ class _ForumScreenState extends State<ForumScreen> {
   }
 
   Widget _buildPostsList(bool isDesktop) {
+    // 使用新的错误组件处理错误状态
     if (_errorMessage != null) {
-      return Center(child: Text(_errorMessage!));
+      return CustomErrorWidget(
+        errorMessage: _errorMessage!,
+        onRetry: _refreshData,
+        title: '加载错误',
+      );
     }
 
+    // 使用新的加载组件处理加载状态
     if (_posts == null) {
-      return const Center(child: CircularProgressIndicator());
+      return LoadingWidget.fullScreen(message: '正在加载帖子...');
     }
 
+    // 处理空列表状态
     if (_posts!.isEmpty) {
-      return const Center(child: Text('暂无帖子'));
+      return CustomErrorWidget(
+        errorMessage: '暂无帖子',
+        onRetry: _refreshData,
+        icon: Icons.message_outlined,
+        title: '没有帖子',
+        retryText: '刷新',
+      );
     }
 
     return RefreshIndicator(
@@ -220,8 +302,11 @@ class _ForumScreenState extends State<ForumScreen> {
         final post = _posts![index];
         return PostCard(
           post: post,
-          userService: _userService,
           isDesktopLayout: false,
+          onDeleted: () {
+            // 添加删除回调
+            _refreshData();
+          },
         );
       },
     );
@@ -239,10 +324,29 @@ class _ForumScreenState extends State<ForumScreen> {
         final post = _posts![index];
         return PostCard(
           post: post,
-          userService: _userService,
+
           isDesktopLayout: true,
+          onDeleted: () {
+            // 添加删除回调
+            _refreshData();
+          },
         );
       },
     );
+  }
+}
+
+// 保留原有的刷新控制器类
+class RefreshController {
+  VoidCallback? _onRefreshCompleted;
+
+  void refreshCompleted() {
+    if (_onRefreshCompleted != null) {
+      _onRefreshCompleted!();
+    }
+  }
+
+  void dispose() {
+    _onRefreshCompleted = null;
   }
 }

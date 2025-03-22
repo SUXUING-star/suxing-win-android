@@ -47,7 +47,9 @@ class ActivityDetailContent extends StatelessWidget {
                 hasOwnBackground: false, // 不需要自己的背景
               ),
 
+
               const SizedBox(height: 16),
+
 
               // 评论区标题
               Row(

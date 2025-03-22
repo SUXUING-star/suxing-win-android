@@ -12,6 +12,8 @@ class LevelProgressCard extends StatelessWidget {
   final bool hasCheckedToday;
   final AnimationController animationController;
   final VoidCallback onCheckIn;
+  final int missedDays; // Total missed days in the month
+  final int consecutiveMissedDays; // Days since last check-in
 
   const LevelProgressCard({
     Key? key,
@@ -21,6 +23,8 @@ class LevelProgressCard extends StatelessWidget {
     required this.hasCheckedToday,
     required this.animationController,
     required this.onCheckIn,
+    this.missedDays = 0, // Default missed days to 0
+    this.consecutiveMissedDays = 0, // Default check-in gap to 0
   }) : super(key: key);
 
   @override
@@ -28,7 +32,7 @@ class LevelProgressCard extends StatelessWidget {
     final theme = Theme.of(context);
     final levelTitle = userLevel?.levelTitle ?? "茶会新人";
 
-    // 计算正确的百分比值，确保它是0.0到1.0之间的一个double
+    // Calculate correct percentage value, ensure it's a double between 0.0 and 1.0
     double progressPercentage = 0.0;
     if (stats.levelProgress is double) {
       progressPercentage = stats.levelProgress / 100.0;
@@ -36,7 +40,7 @@ class LevelProgressCard extends StatelessWidget {
       progressPercentage = (stats.levelProgress as num).toDouble() / 100.0;
     }
 
-    // 确保百分比在合理范围内
+    // Ensure percentage is within reasonable range
     progressPercentage = progressPercentage.clamp(0.0, 1.0);
 
     return Card(
@@ -90,6 +94,16 @@ class LevelProgressCard extends StatelessWidget {
                             : FontWeight.normal,
                       ),
                     ),
+                    // Add check-in gap display (days since last check-in)
+                    if (consecutiveMissedDays > 0)
+                      Text(
+                        '断签 $consecutiveMissedDays 天',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.red[400],
+                          fontWeight: FontWeight.normal,
+                        ),
+                      ),
                   ],
                 ),
               ],
@@ -97,7 +111,7 @@ class LevelProgressCard extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // 等级进度条 - 使用安全的百分比值
+            // Level progress bar with safe percentage value
             LevelProgressBar(
               level: stats.level,
               current: stats.currentExp,
@@ -117,7 +131,7 @@ class LevelProgressCard extends StatelessWidget {
 
             const SizedBox(height: 16),
 
-            // 签到按钮
+            // Check-in button
             CheckInButton(
               hasCheckedToday: hasCheckedToday,
               isLoading: isLoading,

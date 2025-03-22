@@ -3,12 +3,13 @@ import 'package:flutter/material.dart';
 import '../../../../models/user/user_checkin.dart';
 import '../../../../models/user/user_level.dart';
 import '../../../../utils/device/device_utils.dart';
-import 'calendar_view.dart';
+import 'calendar/calendar_view.dart';
 import 'checkin_rules_card.dart';
 import 'level_progress_card.dart';
+import 'today_checkin_list.dart';
 
-/// 响应式签到布局组件
-/// 根据设备类型和屏幕尺寸自动调整布局
+/// Responsive Check-in Layout Component
+/// Automatically adjusts layout based on device type and screen size
 class ResponsiveCheckInLayout extends StatelessWidget {
   final CheckInStats? checkInStats;
   final UserLevel? userLevel;
@@ -21,6 +22,8 @@ class ResponsiveCheckInLayout extends StatelessWidget {
   final AnimationController animationController;
   final Function(int, int) onChangeMonth;
   final VoidCallback onCheckIn;
+  final int missedDays; // Total missed days in the month (漏签天数)
+  final int consecutiveMissedDays; // Days since last check-in (断签天数)
 
   const ResponsiveCheckInLayout({
     Key? key,
@@ -35,6 +38,8 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     required this.animationController,
     required this.onChangeMonth,
     required this.onCheckIn,
+    this.missedDays = 0, // Default to 0
+    this.consecutiveMissedDays = 0, // Default check-in gap to 0
   }) : super(key: key);
 
   @override
@@ -43,28 +48,28 @@ class ResponsiveCheckInLayout extends StatelessWidget {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // 判断设备类型
+    // Determine device type
     final isTablet = DeviceUtils.isTablet(context);
     final isDesktop = DeviceUtils.isDesktop;
     final isLandscape = DeviceUtils.isLandscape(context);
 
-    // 桌面端或平板横屏使用并排布局
+    // Desktop or landscape tablet use side-by-side layout
     if (isDesktop || (isTablet && isLandscape)) {
       return _buildHorizontalLayout(context);
     } else {
-      // 移动端或平板竖屏使用垂直布局
+      // Mobile or portrait tablet use vertical layout
       return _buildVerticalLayout(context);
     }
   }
 
-  /// 水平并排布局 (桌面端或平板横屏)
+  /// Horizontal side-by-side layout (desktop or landscape tablet)
   Widget _buildHorizontalLayout(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 左侧 - 日历区域（使其可滚动）
+          // Left - Calendar area (scrollable)
           Expanded(
             flex: 3,
             child: SingleChildScrollView(
@@ -73,13 +78,14 @@ class ResponsiveCheckInLayout extends StatelessWidget {
                 selectedMonth: selectedMonth,
                 monthlyData: monthlyData,
                 onChangeMonth: onChangeMonth,
+                missedDays: missedDays,
               ),
             ),
           ),
 
           const SizedBox(width: 16),
 
-          // 右侧面板 - 高度受控，可滚动
+          // Right panel - height controlled, scrollable
           Expanded(
             flex: 2,
             child: _buildRightPanel(context),
@@ -89,11 +95,11 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     );
   }
 
-  /// 右侧面板构建 - 包含用户等级、签到统计和规则
+  /// Right panel build - includes user level, check-in stats and rules
   Widget _buildRightPanel(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height - 80, // 考虑AppBar和一些边距
+        maxHeight: MediaQuery.of(context).size.height - 80, // Account for AppBar and margins
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -106,9 +112,14 @@ class ResponsiveCheckInLayout extends StatelessWidget {
                 hasCheckedToday: hasCheckedToday,
                 animationController: animationController,
                 onCheckIn: onCheckIn,
+                missedDays: missedDays, // Total missed days
+                consecutiveMissedDays: consecutiveMissedDays, // Check-in gap
               ),
             const SizedBox(height: 16),
             _buildStatsSummary(context),
+            const SizedBox(height: 16),
+            // Add today's check-in list
+            TodayCheckInList(maxHeight: 200),
             const SizedBox(height: 16),
             CheckInRulesCard(),
           ],
@@ -117,14 +128,14 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     );
   }
 
-  /// 垂直布局 (移动端或平板竖屏)
+  /// Vertical layout (mobile or portrait tablet)
   Widget _buildVerticalLayout(BuildContext context) {
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 等级进度卡
+          // Level progress card
           if (checkInStats != null)
             LevelProgressCard(
               stats: checkInStats!,
@@ -133,16 +144,23 @@ class ResponsiveCheckInLayout extends StatelessWidget {
               hasCheckedToday: hasCheckedToday,
               animationController: animationController,
               onCheckIn: onCheckIn,
+              missedDays: missedDays, // Pass missed days
+              consecutiveMissedDays: consecutiveMissedDays, // Pass check-in gap
             ),
 
           const SizedBox(height: 16),
 
-          // 签到统计摘要
+          // Check-in stats summary
           _buildStatsSummary(context),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // 日历视图 - 减小上下边距，防止溢出
+          // Add today's check-in list
+          TodayCheckInList(),
+
+          const SizedBox(height: 16),
+
+          // Calendar view - reduce vertical padding to prevent overflow
           Container(
             constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.5),
             child: CalendarView(
@@ -150,19 +168,20 @@ class ResponsiveCheckInLayout extends StatelessWidget {
               selectedMonth: selectedMonth,
               monthlyData: monthlyData,
               onChangeMonth: onChangeMonth,
+              missedDays: missedDays,
             ),
           ),
 
-          const SizedBox(height: 20),
+          const SizedBox(height: 16),
 
-          // 签到规则
+          // Check-in rules
           CheckInRulesCard(),
         ],
       ),
     );
   }
 
-  /// 签到统计摘要卡片
+  /// Check-in stats summary card
   Widget _buildStatsSummary(BuildContext context) {
     final theme = Theme.of(context);
     final continuousDays = checkInStats?.continuousDays ?? 0;
@@ -198,13 +217,29 @@ class ResponsiveCheckInLayout extends StatelessWidget {
               color: continuousDays > 0 ? Colors.orange : theme.primaryColor,
               isBold: continuousDays > 0,
             ),
+            // Only show when there's a check-in gap
+            if (consecutiveMissedDays > 0) ...[
+              Container(
+                height: 50,
+                width: 1,
+                color: Colors.grey.shade300,
+              ),
+              _buildStatItem(
+                context: context,
+                icon: Icons.history_toggle_off,
+                title: '断签记录',
+                value: '$consecutiveMissedDays 天',
+                color: Colors.red[400]!,
+                isBold: false,
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  /// 构建统计项
+  /// Build stat item
   Widget _buildStatItem({
     required BuildContext context,
     required IconData icon,

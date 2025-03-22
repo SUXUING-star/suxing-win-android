@@ -12,8 +12,8 @@ import '../../services/main/user/user_service.dart';
 import '../../services/common/upload/rate_limited_file_upload.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/profile/layout/android/profile_header.dart';
-import '../../widgets/components/screen/profile/layout/android/profile_menu_list.dart';
+import '../../widgets/components/screen/profile/layout/section/profile_header.dart';
+import '../../widgets/components/screen/profile/layout/section/profile_menu_list.dart';
 import '../../widgets/components/screen/profile/layout/desktop/desktop_profile_card.dart';
 import '../../widgets/components/screen/profile/layout/desktop/desktop_menu_grid.dart';
 import '../../widgets/components/dialogs/limiter/avatar_rate_limit_dialog.dart';
@@ -66,6 +66,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _isLoading = true;
         _error = null;
       });
+
+      // Clear experience progress cache to ensure fresh data
+      await _userService.clearExperienceProgressCache();
+
+      // Reload user profile
       await _loadUserProfile();
     } finally {
       setState(() {

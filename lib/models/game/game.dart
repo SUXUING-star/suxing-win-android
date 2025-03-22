@@ -21,6 +21,12 @@ class Game {
   final String? musicUrl;
   final DateTime? lastViewedAt;
 
+  // 新增收藏统计字段
+  final int wantToPlayCount;
+  final int playingCount;
+  final int playedCount;
+  final int totalCollections;
+
   Game({
     required this.id,
     required this.authorId,
@@ -40,6 +46,11 @@ class Game {
     required this.downloadLinks,
     this.musicUrl,
     this.lastViewedAt,
+    // 初始化新增的收藏统计字段
+    this.wantToPlayCount = 0,
+    this.playingCount = 0,
+    this.playedCount = 0,
+    this.totalCollections = 0,
   }) : this.tags = tags ?? [];
 
   factory Game.fromJson(Map<String, dynamic> json) {
@@ -110,6 +121,19 @@ class Game {
       }
     }
 
+    // Parse int values safely
+    int parseIntSafely(dynamic value) {
+      if (value == null) return 0;
+      if (value is int) return value;
+
+      try {
+        return int.tryParse(value.toString()) ?? 0;
+      } catch (e) {
+        print('Error parsing int: $e');
+        return 0;
+      }
+    }
+
     return Game(
       id: gameId,
       authorId: authorId,
@@ -123,12 +147,17 @@ class Game {
       rating: (json['rating'] != null) ? double.tryParse(json['rating'].toString()) ?? 0.0 : 0.0,
       createTime: parseDateTime(json['createTime']),
       updateTime: parseDateTime(json['updateTime']),
-      viewCount: (json['viewCount'] != null) ? int.tryParse(json['viewCount'].toString()) ?? 0 : 0,
-      likeCount: (json['likeCount'] != null) ? int.tryParse(json['likeCount'].toString()) ?? 0 : 0,
+      viewCount: parseIntSafely(json['viewCount']),
+      likeCount: parseIntSafely(json['likeCount']),
       likedBy: (json['likedBy'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       downloadLinks: parseDownloadLinks(json['downloadLinks']),
       musicUrl: json['musicUrl']?.toString(),
       lastViewedAt: json['lastViewedAt'] != null ? parseDateTime(json['lastViewedAt']) : null,
+      // 解析收藏统计字段
+      wantToPlayCount: parseIntSafely(json['wantToPlayCount']),
+      playingCount: parseIntSafely(json['playingCount']),
+      playedCount: parseIntSafely(json['playedCount']),
+      totalCollections: parseIntSafely(json['totalCollections']),
     );
   }
 
@@ -152,6 +181,11 @@ class Game {
       'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl,
       'lastViewedAt': lastViewedAt?.toIso8601String(),
+      // 添加收藏统计字段
+      'wantToPlayCount': wantToPlayCount,
+      'playingCount': playingCount,
+      'playedCount': playedCount,
+      'totalCollections': totalCollections,
     };
   }
 
@@ -174,6 +208,10 @@ class Game {
     List<DownloadLink>? downloadLinks,
     String? musicUrl,
     DateTime? lastViewedAt,
+    int? wantToPlayCount,
+    int? playingCount,
+    int? playedCount,
+    int? totalCollections,
   }) {
     return Game(
       id: id ?? this.id,
@@ -194,9 +232,14 @@ class Game {
       downloadLinks: downloadLinks ?? this.downloadLinks,
       musicUrl: musicUrl ?? this.musicUrl,
       lastViewedAt: lastViewedAt ?? this.lastViewedAt,
+      wantToPlayCount: wantToPlayCount ?? this.wantToPlayCount,
+      playingCount: playingCount ?? this.playingCount,
+      playedCount: playedCount ?? this.playedCount,
+      totalCollections: totalCollections ?? this.totalCollections,
     );
   }
 }
+
 class DownloadLink {
   final String id;
   final String title;

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../../services/main/history/game_history_service.dart';
 import '../../../services/main/history/post_history_service.dart';
-import '../../../utils/load/loading_route_observer.dart';
+import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/common/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件

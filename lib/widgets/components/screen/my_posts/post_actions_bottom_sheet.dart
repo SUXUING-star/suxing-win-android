@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../models/post/post.dart';
 import '../../../../routes/app_routes.dart';
-import '../../../../blocs/my_posts/my_posts_bloc.dart';
-import '../../../../blocs/my_posts/my_posts_event.dart';
+import '../../../../screens/profile/myposts/blocs/my_posts_bloc.dart';
+import '../../../../screens/profile/myposts/blocs/my_posts_event.dart';
 
 class PostActionsBottomSheet extends StatelessWidget {
   final Post post;

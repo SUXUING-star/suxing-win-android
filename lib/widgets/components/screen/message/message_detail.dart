@@ -72,7 +72,22 @@ class MessageDetail extends StatelessWidget {
     final bool isCommentReply = message.type.toLowerCase().contains("comment") ||
         message.type == MessageType.commentReply.toString();
 
-    final String typeText = isCommentReply ? '评论回复' : '帖子回复';
+    final bool isPostReply = message.type.toLowerCase().contains("post") ||
+        message.type == MessageType.postReply.toString();
+
+    final bool isFollowNotification = message.type.toLowerCase().contains("follow") ||
+        message.type == MessageType.followNotification.toString();
+
+    String typeText;
+    if (isCommentReply) {
+      typeText = '评论回复';
+    } else if (isPostReply) {
+      typeText = '帖子回复';
+    } else if (isFollowNotification) {
+      typeText = '关注通知';
+    } else {
+      typeText = '其他通知';
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),

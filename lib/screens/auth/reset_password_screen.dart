@@ -1,9 +1,10 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import '../../services/main/user/user_service.dart';
-import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -22,20 +23,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   String? _error;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      final loadingObserver = Navigator.of(context)
-          .widget.observers
-          .whereType<LoadingRouteObserver>()
-          .first;
-
-      // 不需要初始加载动画
-    });
-  }
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -48,23 +36,16 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     // 验证表单
     if (!_formKey.currentState!.validate()) return;
 
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       await _authService.resetPassword(
         widget.email,
         _passwordController.text,
       );
-
-      // 清除错误状态
-      setState(() {
-        _error = null;
-      });
 
       Toaster.success(context, "重置密码成功，用新的密码进行登录吧！");
 
@@ -75,7 +56,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       });
       Toaster.error(context, "重置密码失败");
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -85,7 +68,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
       appBar: CustomAppBar(
         title: '重置密码',
       ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // 半透明遮罩
@@ -96,6 +78,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
               height: double.infinity,
             ),
           ),
+
+          // 加载状态
+          if (_isLoading)
+            LoadingWidget.fullScreen(message: '正在重置密码...'),
+
           // 重置密码表单 - 添加最大宽度约束
           Center(
             child: ConstrainedBox(
@@ -138,10 +125,17 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         if (_error != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
-                            child: Text(
-                              _error!,
-                              style: TextStyle(color: Colors.red),
-                              textAlign: TextAlign.center,
+                            child: CustomErrorWidget(
+                              errorMessage: _error!,
+                              icon: Icons.error_outline,
+                              title: '重置密码错误',
+                              retryText: '重试',
+                              iconColor: Colors.red,
+                              onRetry: () {
+                                setState(() {
+                                  _error = null;
+                                });
+                              },
                             ),
                           ),
 

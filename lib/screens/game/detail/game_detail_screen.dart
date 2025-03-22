@@ -1,4 +1,4 @@
-// lib/screens/game/game_detail_screen.dart
+// Updated version of lib/screens/game/game_detail_screen.dart
 import 'package:flutter/material.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
@@ -6,14 +6,13 @@ import '../../../widgets/components/screen/game/button/edit_button.dart';
 import '../../../widgets/components/screen/game/button/like_button.dart';
 import '../../../widgets/components/screen/game/game_detail_content.dart';
 import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/components/common/error_widget.dart';
+import '../../../widgets/components/common/loading_widget.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
 
-  const GameDetailScreen({
-    Key? key,
-    this.gameId,
-  }) : super(key: key);
+  const GameDetailScreen({Key? key, this.gameId}) : super(key: key);
 
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
@@ -24,8 +23,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Game? _game;
   String? _error;
   bool _isLoading = false;
-
-  // 用来强制刷新界面的计数器
   int _refreshCounter = 0;
 
   @override
@@ -58,7 +55,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       });
 
       final game = await _gameService.getGameById(widget.gameId!);
-      if (game == null) throw Exception('游戏不存在');
+      if (game == null) {
+        throw 'not_found';
+      }
 
       setState(() {
         _game = game;
@@ -66,8 +65,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       });
     } catch (e) {
       setState(() {
-        _error = e.toString();
         _isLoading = false;
+        if (e == 'not_found') {
+          _error = 'not_found';
+        } else {
+          _error = e.toString();
+        }
       });
     }
   }
@@ -84,7 +87,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     } finally {
       setState(() {
         _isLoading = false;
-        // 增加刷新计数器以强制重建界面
         _refreshCounter++;
       });
     }
@@ -96,14 +98,22 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  // 处理点赞后刷新界面
   void _handleLikeChanged() {
     _refreshGameDetails();
   }
 
-  // 处理评论后刷新界面
   void _handleCommentAdded() {
     _refreshGameDetails();
+  }
+
+  // Add a handler for navigation
+  void _handleNavigate(String gameId) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => GameDetailScreen(gameId: gameId),
+      ),
+    );
   }
 
   Widget _buildMobileLayout(Game game) {
@@ -111,7 +121,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       body: RefreshIndicator(
         onRefresh: _refreshGameDetails,
         child: CustomScrollView(
-          // 使用计数器作为Key的一部分，强制刷新
           key: ValueKey('game_detail_${_refreshCounter}'),
           slivers: [
             SliverAppBar(
@@ -165,14 +174,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             SliverPadding(
               padding: const EdgeInsets.only(bottom: 80),
               sliver: SliverToBoxAdapter(
-                // 已保持GameDetailContent不变，仅在需要刷新的地方处理
-                child: GameDetailContent(game: game),
+                child: GameDetailContent(
+                  game: game,
+                  onNavigate: _handleNavigate, // Pass the navigation handler
+                ),
               ),
             ),
           ],
         ),
       ),
-      // 修改按钮区域布局，确保有足够的空间给Snackbar
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(bottom: 16.0, left: 32.0),
         child: Row(
@@ -211,7 +221,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             child: LikeButton(
               game: game,
               gameService: _gameService,
-              onLikeChanged: _handleLikeChanged, // 这里添加点赞变化回调
+              onLikeChanged: _handleLikeChanged,
             ),
           ),
           Padding(
@@ -224,11 +234,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ],
       ),
       body: SingleChildScrollView(
-        // 使用计数器作为Key的一部分，强制刷新
         key: ValueKey('game_detail_content_${_refreshCounter}'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: GameDetailContent(game: game),
+          child: GameDetailContent(
+            game: game,
+            onNavigate: _handleNavigate, // Pass the navigation handler
+          ),
         ),
       ),
     );
@@ -237,37 +249,22 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   Widget build(BuildContext context) {
     if (widget.gameId == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('错误')),
-        body: const Center(child: Text('无效的游戏ID')),
-      );
+      return const CustomErrorWidget(errorMessage: '无效的游戏ID');
     }
 
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return LoadingWidget.fullScreen(message: '加载中...');
     }
 
     if (_error != null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('错误')),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.error_outline, color: Colors.red, size: 48),
-              const SizedBox(height: 16),
-              Text(_error!),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadGameDetails,
-                child: const Text('重新加载'),
-              ),
-            ],
-          ),
-        ),
-      );
+      if (_error == 'not_found') {
+        return NotFoundErrorWidget(onBack: _loadGameDetails);
+      } else if (_error == 'network_error') {
+        return NetworkErrorWidget(onRetry: _loadGameDetails);
+      }
+      else {
+        return CustomErrorWidget(errorMessage: _error, onRetry: _loadGameDetails);
+      }
     }
 
     final isDesktop = MediaQuery.of(context).size.width >= 1024;

@@ -4,12 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_type_filter.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activities_panel.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
 
 class ActivityFeedScreen extends StatefulWidget {
   final String? userId; // 可选用户ID，如果提供则显示该用户的动态
@@ -31,7 +28,8 @@ class ActivityFeedScreen extends StatefulWidget {
   _ActivityFeedScreenState createState() => _ActivityFeedScreenState();
 }
 
-class _ActivityFeedScreenState extends State<ActivityFeedScreen> with SingleTickerProviderStateMixin {
+class _ActivityFeedScreenState extends State<ActivityFeedScreen>
+    with SingleTickerProviderStateMixin {
   final UserActivityService _activityService = UserActivityService();
   final ScrollController _scrollController = ScrollController();
 
@@ -44,6 +42,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> with SingleTick
   String? _selectedType; // 当前选择的过滤类型
   bool _useAlternatingLayout = true; // 是否使用交替布局
   bool _showHotActivities = true; // 是否显示热门动态面板
+
+  // 新增：折叠模式
+  FeedCollapseMode _collapseMode = FeedCollapseMode.none;
 
   // 动画控制器
   late AnimationController _refreshAnimationController;
@@ -74,7 +75,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> with SingleTick
 
   // 滚动监听器，用于触发加载更多
   void _scrollListener() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.9) {
       _loadMoreActivities();
     }
   }
@@ -101,6 +103,23 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> with SingleTick
   void _toggleHotActivitiesPanel() {
     setState(() {
       _showHotActivities = !_showHotActivities;
+    });
+  }
+
+  // 新增：切换折叠模式
+  void _toggleCollapseMode() {
+    setState(() {
+      switch (_collapseMode) {
+        case FeedCollapseMode.none:
+          _collapseMode = FeedCollapseMode.byUser;
+          break;
+        case FeedCollapseMode.byUser:
+          _collapseMode = FeedCollapseMode.byType;
+          break;
+        case FeedCollapseMode.byType:
+          _collapseMode = FeedCollapseMode.none;
+          break;
+      }
     });
   }
 
@@ -231,136 +250,151 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> with SingleTick
     );
   }
 
+  // 获取当前折叠模式的显示文本
+  String _getCollapseModeText() {
+    switch (_collapseMode) {
+      case FeedCollapseMode.none:
+        return '标准视图';
+      case FeedCollapseMode.byUser:
+        return '按用户折叠';
+      case FeedCollapseMode.byType:
+        return '按类型折叠';
+    }
+  }
+
+  // 获取当前折叠模式的图标
+  IconData _getCollapseModeIcon() {
+    switch (_collapseMode) {
+      case FeedCollapseMode.none:
+        return Icons.view_agenda;
+      case FeedCollapseMode.byUser:
+        return Icons.people;
+      case FeedCollapseMode.byType:
+        return Icons.category;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
-        title: widget.title,
-        actions: [
-          RotationTransition(
-            turns: Tween(begin: 0.0, end: 1.0).animate(_refreshAnimationController),
-            child: IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _loadActivities,
-              tooltip: '刷新',
-            ),
-          ),
-          // 布局切换按钮
-          IconButton(
-            icon: Icon(
-              _useAlternatingLayout ? Icons.chat_bubble_outline : Icons.view_stream,
-            ),
-            onPressed: _toggleLayoutMode,
-            tooltip: _useAlternatingLayout ? '切换到标准布局' : '切换到聊天气泡布局',
-          ),
-          // 热门动态面板显示切换按钮
-          IconButton(
-            icon: Icon(
-              _showHotActivities ? Icons.view_sidebar : Icons.view_agenda,
-            ),
-            onPressed: _toggleHotActivitiesPanel,
-            tooltip: _showHotActivities ? '隐藏热门动态' : '显示热门动态',
-          ),
-        ],
-      ),
-      body: _buildBody(),
-    );
-  }
-
-  Widget _buildBody() {
-    if (_isLoading && _activities.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (_error.isNotEmpty && _activities.isEmpty) {
-      return ActivityEmptyState(
-        message: _error,
-        icon: Icons.error_outline,
-        onRefresh: _loadActivities,
-      );
-    }
-
-    // 使用Row布局，添加热门动态面板
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // 主动态流列表
-        Expanded(
-          child: Column(
-            children: [
-              // 类型过滤器 (仅在用户个人页面显示)
-              if (widget.userId != null)
-                ActivityTypeFilter(
-                  selectedType: _selectedType,
-                  onTypeSelected: _onTypeFilterChanged,
-                ),
-
-              if (_activities.isEmpty)
-                Expanded(
-                  child: const ActivityEmptyState(
-                    message: '暂无动态内容',
-                    icon: Icons.feed_outlined,
-                  ),
-                )
-              else
-                Expanded(
-                  child: RefreshIndicator(
-                    onRefresh: _loadActivities,
-                    child: AnimationLimiter(
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(vertical: 8),
-                        itemCount: _activities.length + (_isLoadingMore ? 1 : 0),
-                        itemBuilder: (context, index) {
-                          // 显示加载更多指示器
-                          if (index == _activities.length) {
-                            return const Center(
-                              child: Padding(
-                                padding: EdgeInsets.all(16.0),
-                                child: CircularProgressIndicator(),
-                              ),
-                            );
-                          }
-
-                          // 获取活动项
-                          final activity = _activities[index];
-
-                          // 左右交替显示 (如果启用交替布局)
-                          final bool isAlternate = _useAlternatingLayout && index % 2 == 1;
-
-                          // 应用渐入和滑动动画
-                          return AnimationConfiguration.staggeredList(
-                            position: index,
-                            duration: const Duration(milliseconds: 375),
-                            child: SlideAnimation(
-                              verticalOffset: 50.0,
-                              horizontalOffset: isAlternate ? 50.0 : -50.0, // 根据左右位置添加横向偏移
-                              child: FadeInAnimation(
-                                child: ActivityCard(
-                                  activity: activity,
-                                  isAlternate: isAlternate,
-                                  onUpdated: _onActivityUpdated,
-                                  // 添加点击回调，用于导航到活动详情页
-                                  onActivityTap: _navigateToActivityDetail,
-                                ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // 顶部操作栏
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+              child: Row(
+                children: [
+                  // 新增：折叠模式切换按钮
+                  Expanded(
+                    child: InkWell(
+                      onTap: _toggleCollapseMode,
+                      borderRadius: BorderRadius.circular(20),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: Theme.of(context).primaryColor.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _getCollapseModeIcon(),
+                              size: 16,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              _getCollapseModeText(),
+                              style: TextStyle(
+                                color: Theme.of(context).primaryColor,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          );
-                        },
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-            ],
-          ),
-        ),
+                  const SizedBox(width: 8),
+                  // 刷新按钮
+                  RotationTransition(
+                    turns: Tween(begin: 0.0, end: 1.0)
+                        .animate(_refreshAnimationController),
+                    child: IconButton(
+                      icon: const Icon(Icons.refresh),
+                      onPressed: _loadActivities,
+                      tooltip: '刷新',
+                    ),
+                  ),
+                  // 布局切换按钮
+                  IconButton(
+                    icon: Icon(
+                      _useAlternatingLayout
+                          ? Icons.chat_bubble_outline
+                          : Icons.view_stream,
+                    ),
+                    onPressed: _toggleLayoutMode,
+                    tooltip: _useAlternatingLayout ? '切换到标准布局' : '切换到聊天气泡布局',
+                  ),
+                  // 热门动态显示切换
+                  IconButton(
+                    icon: Icon(
+                      _showHotActivities ? Icons.view_sidebar : Icons.view_agenda,
+                    ),
+                    onPressed: _toggleHotActivitiesPanel,
+                    tooltip: _showHotActivities ? '隐藏热门动态' : '显示热门动态',
+                  ),
+                ],
+              ),
+            ),
 
-        // 热门动态面板 (可显示/隐藏)
-        if (_showHotActivities)
-          const HotActivitiesPanel(),
-      ],
+            Expanded(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 主内容区域
+                  Expanded(
+                    child: Column(
+                      children: [
+                        // 类型过滤器（仅在用户配置文件页面上显示）
+                        if (widget.userId != null)
+                          ActivityTypeFilter(
+                            selectedType: _selectedType,
+                            onTypeSelected: _onTypeFilterChanged,
+                          ),
+
+                        // 使用新的可折叠活动Feed组件
+                        Expanded(
+                          child: CollapsibleActivityFeed(
+                            activities: _activities,
+                            isLoading: _isLoading,
+                            isLoadingMore: _isLoadingMore,
+                            error: _error,
+                            collapseMode: _collapseMode,
+                            useAlternatingLayout: _useAlternatingLayout,
+                            onActivityTap: _navigateToActivityDetail,
+                            onRefresh: _loadActivities,
+                            onLoadMore: _loadMoreActivities,
+                            scrollController: _scrollController,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // 热门动态面板（可显示/隐藏）
+                  if (_showHotActivities) const HotActivitiesPanel(),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

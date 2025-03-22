@@ -3,9 +3,10 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../services/main/email/email_service.dart';
 import '../../services/main/user/user_service.dart';
-import '../../utils/load/loading_route_observer.dart';
 import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -27,6 +28,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _verificationCode;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
+  bool _isLoading = false;
 
   // 添加计时器相关变量
   Timer? _timer;
@@ -61,12 +63,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
     // 只验证邮箱字段
     if (!_emailFormKey.currentState!.validate()) return;
 
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       _verificationCode = EmailService.generateVerificationCode();
@@ -85,11 +85,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _error = '发送验证码失败：${e.toString()}';
         Toaster.error(context, "发送验证码失败");
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_error!), backgroundColor: Colors.red),
-      );
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -108,12 +107,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
     try {
       await _authService.signUp(
@@ -121,11 +118,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
         _passwordController.text,
         _usernameController.text,
       );
-
-      // 清除错误状态
-      setState(() {
-        _error = null;
-      });
 
       Toaster.success(context, "注册成功，请进行登录");
 
@@ -139,7 +131,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
         SnackBar(content: Text(_error!), backgroundColor: Colors.red),
       );
     } finally {
-      loadingObserver.hideLoading();
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
 
@@ -149,7 +143,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       appBar: CustomAppBar(
         title: '注册',
       ),
-      extendBodyBehindAppBar: true,
       body: Stack(
         children: [
           // 半透明遮罩
@@ -160,6 +153,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
               height: double.infinity,
             ),
           ),
+
+          // 加载状态
+          if (_isLoading) LoadingWidget.fullScreen(message: '正在注册...'),
+
           // 注册表单 - 添加最大宽度约束
           Center(
             child: ConstrainedBox(
@@ -189,6 +186,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                         SizedBox(height: 16),
+
+                        // 显示错误信息
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: CustomErrorWidget(
+                              errorMessage: _error!,
+                              icon: Icons.error_outline,
+                              title: '注册错误',
+                              retryText: '重试',
+                              iconColor: Colors.red,
+                              onRetry: () {
+                                setState(() {
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ),
 
                         // 用户名输入
                         TextFormField(
@@ -322,7 +337,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                               onPressed: () {
                                 setState(() {
                                   _obscureConfirmPassword =
-                                  !_obscureConfirmPassword;
+                                      !_obscureConfirmPassword;
                                 });
                               },
                             ),

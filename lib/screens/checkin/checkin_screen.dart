@@ -8,6 +8,8 @@ import '../../models/user/user_level.dart';
 import '../../widgets/common/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/checkin/responsive_checkin_layout.dart';
 import '../../widgets/components/screen/checkin/effects/particle_effect.dart';
+import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/components/common/loading_widget.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({Key? key}) : super(key: key);
@@ -26,6 +28,9 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
   Map<String, dynamic>? _monthlyData;
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
+  String? _errorMessage;
+  int _missedDays = 0; // 添加漏签天数变量
+  int _consecutiveMissedDays = 0; // 添加断签天数变量（上次签到至今的天数）
 
   // 动画控制器
   late AnimationController _particleController;
@@ -62,6 +67,7 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
 
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
     try {
@@ -80,12 +86,20 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
         month: _selectedMonth,
       );
 
+      // 5. 计算漏签天数（本月未签到的总天数）
+      final missedDays = await _calculateMissedDays(monthlyData);
+
+      // 6. Calculate consecutive missed days (days since last check-in)
+      final consecutiveMissedDays = await _checkInService.calculateConsecutiveMissedDays();
+      print(consecutiveMissedDays);
       if (mounted) {
         setState(() {
           _checkInStats = stats;
           _userLevel = userLevel;
           _isCheckedToday = stats.hasCheckedToday;
           _monthlyData = monthlyData;
+          _missedDays = missedDays; // 设置漏签天数
+          _consecutiveMissedDays = consecutiveMissedDays; // 设置断签天数
           _isLoading = false;
         });
       }
@@ -93,9 +107,73 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       print('签到数据加载失败: $e');
       if (mounted) {
         setState(() {
+          _errorMessage = '签到数据加载失败: ${e.toString()}';
           _isLoading = false;
         });
       }
+    }
+  }
+
+  // 计算漏签天数
+  Future<int> _calculateMissedDays(Map<String, dynamic>? monthlyData) async {
+    if (monthlyData == null) return 0;
+
+    // 只计算当前月份的漏签
+    final now = DateTime.now();
+    if (_selectedYear != now.year || _selectedMonth != now.month) {
+      return 0;
+    }
+
+    try {
+      // 从月度数据中提取已签到日期
+      final List<dynamic> rawDays = monthlyData['days'] as List? ?? [];
+      final Set<int> checkedDays = {};
+
+      // 收集已签到的日期
+      for (final rawDay in rawDays) {
+        if (rawDay is! Map) continue;
+        final Map<String, dynamic> dayData = Map<String, dynamic>.from(rawDay);
+
+        if (dayData['checkedIn'] == true && dayData.containsKey('day')) {
+          var dayValue = dayData['day'];
+          int? dayOfMonth;
+
+          if (dayValue is int) {
+            dayOfMonth = dayValue;
+          } else if (dayValue is String) {
+            dayOfMonth = int.tryParse(dayValue);
+
+            if (dayOfMonth == null && dayValue.contains('-')) {
+              try {
+                final parts = dayValue.split('-');
+                if (parts.length >= 3) {
+                  dayOfMonth = int.parse(parts[2]);
+                }
+              } catch (e) {
+                print('解析日期失败: $e');
+              }
+            }
+          }
+
+          if (dayOfMonth != null) {
+            checkedDays.add(dayOfMonth);
+          }
+        }
+      }
+
+      // 计算漏签天数（从1号到昨天）
+      final currentDay = now.day;
+      int missedDays = 0;
+      for (int day = 1; day < currentDay; day++) {
+        if (!checkedDays.contains(day)) {
+          missedDays++;
+        }
+      }
+
+      return missedDays;
+    } catch (e) {
+      print('计算漏签天数失败: $e');
+      return 0;
     }
   }
 
@@ -195,6 +273,10 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       _selectedYear = year;
       _selectedMonth = month;
       _monthlyData = null; // 清除旧数据
+      // 重置漏签天数（不是当前月不显示）
+      if (year != DateTime.now().year || month != DateTime.now().month) {
+        _missedDays = 0;
+      }
     });
 
     // 加载新月份数据
@@ -205,6 +287,17 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       if (mounted) {
         setState(() {
           _monthlyData = data;
+
+          // 如果是当前月份，重新计算漏签天数
+          if (year == DateTime.now().year && month == DateTime.now().month) {
+            _calculateMissedDays(data).then((missedDays) {
+              if (mounted) {
+                setState(() {
+                  _missedDays = missedDays;
+                });
+              }
+            });
+          }
         });
       }
     }).catchError((e) {
@@ -226,20 +319,34 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       ),
       body: Stack(
         children: [
-          // 使用响应式布局组件
-          ResponsiveCheckInLayout(
-            checkInStats: _checkInStats,
-            userLevel: _userLevel,
-            monthlyData: _monthlyData,
-            selectedYear: _selectedYear,
-            selectedMonth: _selectedMonth,
-            isLoading: _isLoading,
-            isCheckInLoading: _checkInLoading,
-            hasCheckedToday: _isCheckedToday,
-            animationController: _particleController,
-            onChangeMonth: _handleChangeMonth,
-            onCheckIn: _handleCheckIn,
-          ),
+          // 处理加载和错误状态
+          if (_isLoading)
+            LoadingWidget.fullScreen(message: '正在加载签到数据...'),
+
+          if (_errorMessage != null)
+            CustomErrorWidget(
+              errorMessage: _errorMessage!,
+              onRetry: _loadData,
+              title: '签到数据加载失败',
+            ),
+
+          // 成功状态下显示响应式布局
+          if (!_isLoading && _errorMessage == null)
+            ResponsiveCheckInLayout(
+              checkInStats: _checkInStats,
+              userLevel: _userLevel,
+              monthlyData: _monthlyData,
+              selectedYear: _selectedYear,
+              selectedMonth: _selectedMonth,
+              isLoading: _isLoading,
+              isCheckInLoading: _checkInLoading,
+              hasCheckedToday: _isCheckedToday,
+              animationController: _particleController,
+              onChangeMonth: _handleChangeMonth,
+              onCheckIn: _handleCheckIn,
+              missedDays: _missedDays, // 漏签天数
+              consecutiveMissedDays: _consecutiveMissedDays, // 断签天数
+            ),
 
           // 粒子效果
           if (!_isCheckedToday)

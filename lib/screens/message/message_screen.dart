@@ -1,5 +1,6 @@
 // lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
 import '../../services/main/message/message_service.dart';
 import '../../models/message/message.dart';
 import '../../models/message/message_type.dart';
@@ -43,6 +44,7 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
       '全部',
       '帖子回复',
       '评论回复',
+      '关注通知',  // 新增
     ];
 
     // 初始化TabController
@@ -157,6 +159,10 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
     bool isPostReply = message.type.toLowerCase().contains("post") ||
         message.type == MessageType.postReply.toString();
 
+    // 对于关注通知类型
+    bool isFollowNotification = message.type.toLowerCase().contains("follow") ||
+        message.type == MessageType.followNotification.toString();
+
     // 根据消息类型跳转到相应页面
     if (isCommentReply && message.gameId != null) {
       Navigator.push(
@@ -170,6 +176,14 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
         context,
         MaterialPageRoute(
           builder: (context) => PostDetailScreen(postId: message.postId!),
+        ),
+      );
+    } else if (isFollowNotification && message.senderId.isNotEmpty) {
+      // 关注通知跳转到用户个人页面
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => OpenProfileScreen(userId: message.senderId),
         ),
       );
     }

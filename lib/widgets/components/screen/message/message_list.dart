@@ -148,9 +148,18 @@ class MessageList extends StatelessWidget {
   }
 
   // 构建单条消息项
+  // 构建单条消息项
   Widget _buildSingleMessageItem(BuildContext context, Message message) {
     final horizontalPadding = isCompact ? 8.0 : 16.0;
     final verticalPadding = isCompact ? 4.0 : 8.0;
+
+    // 确定消息图标
+    IconData messageIcon;
+    if (message.type.toLowerCase().contains("follow")) {
+      messageIcon = message.isRead ? Icons.person : Icons.person_add;
+    } else {
+      messageIcon = message.isRead ? Icons.mark_email_read : Icons.mark_email_unread;
+    }
 
     return Card(
       margin: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
@@ -161,7 +170,7 @@ class MessageList extends StatelessWidget {
           : (message.isRead ? null : Colors.blue[50]),
       child: ListTile(
         leading: Icon(
-          message.isRead ? Icons.mark_email_read : Icons.mark_email_unread,
+          messageIcon,
           color: message.isRead ? Colors.grey : Colors.blue,
           size: isCompact ? 20 : 24,
         ),

@@ -5,11 +5,12 @@ import '../../../models/tag/tag.dart';
 import '../../../services/main/game/tag/tag_service.dart';
 import '../../../utils/check/admin_check.dart';
 import '../../../utils/device/device_utils.dart';
+import '../../../utils/navigation/navigation_util.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../../widgets/components/screen/gamelist/tag/tag_bar.dart';
 import '../../../widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import '../../../widgets/components/screen/gamelist/panel/game_right_panel.dart';
-import '../../../utils/load/loading_route_observer.dart';
+import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/common/appbar/custom_app_bar.dart';
 
 class BaseGameListScreen extends StatefulWidget {
@@ -269,7 +270,7 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
       floatingActionButton: widget.showAddButton ? AdminCheck(
         child: FloatingActionButton(
           onPressed: () {
-            Navigator.pushNamed(context, '/game/add');
+            NavigationUtil.navigateTo(context, '/game/add');
           },
           child: Icon(Icons.add),
         ),
@@ -423,9 +424,6 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
         showTags: widget.showTagSelection
     );
 
-    // 打印调试信息
-    print('构建游戏列表: 每行卡片数=$cardsPerRow, 紧凑模式=$useCompactMode, 卡片比例=$cardRatio');
-
     return GridView.builder(
       controller: _scrollController,
       padding: EdgeInsets.all(8),
@@ -443,6 +441,7 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
             game: _games[index],
             adaptForPanels: withPanels,
             showTags: widget.showTagSelection,
+            showCollectionStats: true,
             forceCompact: useCompactMode,
             maxTags: useCompactMode ? 1 : 2,
           );
@@ -500,7 +499,7 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
             AdminCheck(
               child: ElevatedButton(
                 onPressed: () {
-                  Navigator.pushNamed(context, '/game/add');
+                  NavigationUtil.navigateTo(context, '/game/add');
                 },
                 child: Text('添加游戏'),
               ),

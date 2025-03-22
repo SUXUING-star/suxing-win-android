@@ -26,6 +26,20 @@ class DeviceUtils {
   static bool isPortrait(BuildContext context) {
     return MediaQuery.of(context).orientation == Orientation.portrait;
   }
+  static bool isLargeScreen(BuildContext context) {
+    return MediaQuery.of(context).size.width >= 1200;
+  }
+
+  // Window state for desktop
+  static bool get isFullScreen {
+    if (isDesktop) {
+      // Note: This would require a plugin like window_manager for Flutter desktop
+      // to accurately determine if the window is fullscreen
+      // For now we'll return a placeholder
+      return false;
+    }
+    return false;
+  }
 
   // 常用组合判断
   static bool isAndroidLandscape(BuildContext context) {

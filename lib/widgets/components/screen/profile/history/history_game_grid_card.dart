@@ -40,7 +40,7 @@ class HistoryGameGridCard extends StatelessWidget {
           children: [
             // 封面图
             Expanded(
-              flex: 3,
+              flex: 4,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
