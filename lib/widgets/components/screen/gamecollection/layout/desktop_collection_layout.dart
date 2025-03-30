@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/collection/layout/desktop_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../models/game/game_collection.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -171,7 +172,7 @@ class _DesktopCollectionLayoutState extends State<DesktopCollectionLayout> {
           SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.gamesList);
+              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
             },
             style: ElevatedButton.styleFrom(
               padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),

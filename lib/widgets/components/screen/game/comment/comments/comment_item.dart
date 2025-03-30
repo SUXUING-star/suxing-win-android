@@ -7,7 +7,10 @@ import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../replies/reply_list.dart';
 import '../replies/reply_input.dart';
-import '../../../../badge/info/user_info_badge.dart'; // 导入UserInfoBadge
+import '../../../../../ui/badges/user_info_badge.dart';
+import '../../../../../ui/dialogs/edit_dialog.dart'; // 导入编辑对话框
+import '../../../../../ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
+import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路径正确
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
@@ -27,11 +30,27 @@ class CommentItem extends StatefulWidget {
 
 class _CommentItemState extends State<CommentItem> {
   final CommentService _commentService = CommentService();
-  bool _isDeleting = false;
+  // bool _isDeleting = false; // 4. 移除状态变量
+  bool _showReplyInput = false; // 控制回复输入框显示
 
+  // 2. 修改 _buildCommentActions 方法
   Widget _buildCommentActions(BuildContext context, Comment comment) {
-    return PopupMenuButton<String>(
+    // return PopupMenuButton<String>(...); // 旧代码
+
+    // 使用 CustomPopupMenuButton
+    return CustomPopupMenuButton<String>(
+      // --- 自定义外观 ---
+      icon: Icons.more_vert,
+      iconSize: 20,
+      iconColor: Colors.grey[600],
+      padding: const EdgeInsets.all(0), // 紧凑一点
+      tooltip: '评论选项',
+      elevation: 4,
+      splashRadius: 18,
+
+      // --- 核心逻辑 ---
       onSelected: (value) async {
+        // onSelected 逻辑保持不变
         switch (value) {
           case 'edit':
             _showEditDialog(context, comment);
@@ -41,194 +60,247 @@ class _CommentItemState extends State<CommentItem> {
             break;
         }
       },
+      // 3. 美化 itemBuilder 中的 PopupMenuItem
       itemBuilder: (context) {
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        if (!authProvider.isLoggedIn) return [];
+        final List<PopupMenuEntry<String>> items = [];
 
-        return [
-          if (comment.userId == authProvider.currentUser?.id) ...[
-            const PopupMenuItem(
+        if (!authProvider.isLoggedIn) return items;
+
+        bool canEdit = comment.userId == authProvider.currentUser?.id;
+        bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
+
+        if (canEdit) {
+          items.add(
+            PopupMenuItem<String>(
               value: 'edit',
-              child: Text('编辑'),
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]),
+                  const SizedBox(width: 10),
+                  const Text('编辑'),
+                ],
+              ),
             ),
-          ],
-          if (comment.userId == authProvider.currentUser?.id ||
-              authProvider.currentUser?.isAdmin == true) ...[
-            const PopupMenuItem(
+          );
+        }
+
+        if (canEdit && canDelete) {
+          items.add(const PopupMenuDivider(height: 1));
+        }
+
+        if (canDelete) {
+          items.add(
+            PopupMenuItem<String>(
               value: 'delete',
-              child: Text('删除'),
+              height: 40,
+              child: Row(
+                children: [
+                  Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
+                  const SizedBox(width: 10),
+                  Text('删除', style: TextStyle(color: Colors.red[700])),
+                ],
+              ),
             ),
-          ],
-        ];
+          );
+        }
+        return items;
       },
     );
   }
 
+  // _showEditDialog 方法保持不变
   void _showEditDialog(BuildContext context, Comment comment) {
-    final controller = TextEditingController(text: comment.content);
-
-    showDialog(
+    EditDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('编辑评论'),
-        content: TextField(
-          controller: controller,
-          decoration: const InputDecoration(
-            hintText: '编辑评论内容...',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 3,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              if (controller.text.trim().isEmpty) return;
-
-              try {
-                Navigator.pop(context);
-                await _commentService.updateComment(
-                  comment.id,
-                  controller.text.trim(),
-                );
-
-                if (widget.onCommentChanged != null) {
-                  widget.onCommentChanged!();
-                }
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('评论已更新')),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('编辑评论失败：$e')),
-                  );
-                }
-              }
-            },
-            child: const Text('保存'),
-          ),
-        ],
-      ),
+      title: '编辑评论',
+      initialText: comment.content,
+      hintText: '编辑评论内容...',
+      onSave: (text) async {
+        try {
+          await _commentService.updateComment(comment.id, text);
+          widget.onCommentChanged?.call();
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('评论已更新')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('编辑评论失败：$e')),
+            );
+          }
+        }
+      },
     );
   }
 
+  // _showDeleteDialog 方法保持不变 (移除 setState)
   void _showDeleteDialog(BuildContext context, Comment comment) {
-    showDialog(
+    CustomConfirmDialog.show(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('删除评论'),
-        content: const Text('确定要删除这条评论吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('取消'),
-          ),
-          _isDeleting
-              ? const Padding(
-            padding: EdgeInsets.all(8.0),
-            child: CircularProgressIndicator(strokeWidth: 2),
-          )
-              : ElevatedButton(
-            onPressed: () async {
-              try {
-                setState(() {
-                  _isDeleting = true;
-                });
+      title: '删除评论',
+      message: '确定要删除这条评论吗？\n(评论下的所有回复也会被删除)', // 提示更清晰
+      confirmButtonText: '删除',
+      confirmButtonColor: Colors.red,
+      onConfirm: () async {
+        try {
+          // 不再需要管理 _isDeleting 状态
+          // setState(() { _isDeleting = true; });
 
-                Navigator.pop(dialogContext);
-                await _commentService.deleteComment(comment.id);
+          await _commentService.deleteComment(comment.id);
+          widget.onCommentChanged?.call();
 
-                if (widget.onCommentChanged != null) {
-                  widget.onCommentChanged!();
-                }
-
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('评论已删除')),
-                  );
-                }
-              } catch (e) {
-                if (mounted) {
-                  setState(() {
-                    _isDeleting = false;
-                  });
-
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('删除评论失败：$e')),
-                  );
-                }
-              } finally {
-                if (mounted) {
-                  setState(() {
-                    _isDeleting = false;
-                  });
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('评论已删除')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('删除评论失败：$e')),
+            );
+          }
+          rethrow; // 重新抛出以便外部捕获（如果需要）
+        }
+        // finally 块也可以移除
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      elevation: 1.5, // 轻微调整阴影
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)), // 卡片圆角
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // --- 评论头部 ---
           Padding(
-            padding: const EdgeInsets.only(top: 12, left: 16, right: 16),
+            padding: const EdgeInsets.only(top: 12, left: 16, right: 8), // 调整右边距
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center, // 尝试垂直居中
               children: [
-                // 使用UserInfoBadge替换原有的用户信息显示
                 Expanded(
                   child: UserInfoBadge(
                     userId: widget.comment.userId,
-                    showFollowButton: false, // 不显示关注按钮
+                    showFollowButton: false, // 通常评论区不显示关注
                   ),
                 ),
-                // 时间标签
-                Text(
-                  DateTimeFormatter.formatStandard(widget.comment.createTime) +
-                      (widget.comment.isEdited ? ' (已编辑)' : ''),
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // 评论操作菜单
-                _buildCommentActions(context, widget.comment),
+                // 条件渲染操作按钮
+                if (authProvider.isLoggedIn &&
+                    (widget.comment.userId == authProvider.currentUser?.id ||
+                        authProvider.currentUser?.isAdmin == true))
+                  _buildCommentActions(context, widget.comment), // 使用修改后的方法
               ],
             ),
           ),
+          // --- 评论内容和时间 ---
           Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Text(widget.comment.content),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 8.0, bottom: 8.0), // 调整内边距
+            child: Text(
+              widget.comment.content,
+              style: Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.4), // 使用主题样式并调整行高
+            ),
           ),
-          if (widget.comment.replies.isNotEmpty) ...[
-            const Divider(),
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: Text(
+                DateTimeFormatter.formatRelative(widget.comment.createTime) + // 使用相对时间
+                    (widget.comment.isEdited ? ' (已编辑)' : ''),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
+              ),
+            ),
+          ),
+
+          // --- 回复区域和操作 ---
+          const Divider(height: 1, thickness: 0.5), // 分隔线
+          Padding(
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end, // 操作按钮靠右
+              children: [
+                // 可以添加点赞、不喜欢等按钮在这里
+                // TextButton.icon(onPressed: (){}, icon: Icon(Icons.thumb_up_alt_outlined, size: 16), label: Text('赞')),
+                TextButton(
+                  onPressed: () {
+                    // 需要检查是否登录才能回复
+                    if (!authProvider.isLoggedIn) {
+                      // 可以跳转登录或提示
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('请先登录后才能回复'))
+                      );
+                      return;
+                    }
+                    setState(() {
+                      _showReplyInput = !_showReplyInput;
+                    });
+                  },
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).primaryColor, // 使用主题色
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                  ),
+                  child: Row( // 使用 Row 添加图标
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(_showReplyInput ? Icons.close : Icons.reply, size: 16),
+                      const SizedBox(width: 4),
+                      Text(_showReplyInput ? '收起' : '回复'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // --- 回复列表 ---
+          // 如果有回复，显示回复列表
+          if (widget.comment.replies.isNotEmpty)
             ReplyList(
               replies: widget.comment.replies,
               onReplyChanged: widget.onCommentChanged,
             ),
-          ],
-          ReplyInput(
-            gameId: widget.gameId,
-            parentId: widget.comment.id,
-            onReplyAdded: widget.onCommentChanged,
+
+          // --- 回复输入框 ---
+          // 根据状态显示或隐藏回复输入框
+          AnimatedSize( // 添加动画效果
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeInOut,
+            child: Visibility(
+              visible: _showReplyInput,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // 给输入框一些边距
+                child: ReplyInput(
+                  gameId: widget.gameId,
+                  parentId: widget.comment.id,
+                  onReplyAdded: () {
+                    // 回复成功后可以自动收起输入框
+                    setState(() {
+                      _showReplyInput = false;
+                    });
+                    // 并触发外部的回调刷新
+                    widget.onCommentChanged?.call();
+                  },
+                  onCancel: () { // 添加取消回调
+                    setState(() {
+                      _showReplyInput = false;
+                    });
+                  },
+                ),
+              ),
+            ),
           ),
         ],
       ),

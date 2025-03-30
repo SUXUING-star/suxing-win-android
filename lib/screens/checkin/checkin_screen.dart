@@ -1,15 +1,16 @@
 // lib/screens/check_in/check_in_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../services/main/user/user_checkin_service.dart';
 import '../../services/main/user/user_level_service.dart';
 import '../../models/user/user_checkin.dart';
 import '../../models/user/user_level.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/checkin/responsive_checkin_layout.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../widgets/components/screen/checkin/layout/responsive_checkin_layout.dart';
 import '../../widgets/components/screen/checkin/effects/particle_effect.dart';
-import '../../widgets/components/common/error_widget.dart';
-import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/ui/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({Key? key}) : super(key: key);
@@ -259,7 +260,7 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => NavigationUtils.of(context).pop(),
             child: Text('确定'),
           ),
         ],

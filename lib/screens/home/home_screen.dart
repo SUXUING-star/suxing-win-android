@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../widgets/components/loading/loading_route_observer.dart';
 import '../../widgets/components/screen/home/android/home_hot.dart';
 import '../../widgets/components/screen/home/android/home_latest.dart';
 import '../../widgets/components/screen/home/android/home_banner.dart';
 import '../../models/game/game.dart';
 import '../../services/main/game/game_service.dart';
-import '../../widgets/components/common/loading_widget.dart';
-import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
+import '../../widgets/ui/common/error_widget.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -83,7 +84,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 刷新数据的方法
   Future<void> _refreshData() async {
-    final loadingObserver = Navigator.of(context)
+    final loadingObserver = NavigationUtils.of(context)
         .widget.observers
         .whereType<LoadingRouteObserver>()
         .first;

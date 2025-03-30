@@ -1,19 +1,21 @@
+// lib/screens/forum/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../services/main/history/post_history_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../routes/app_routes.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../../utils/device/device_utils.dart';
 import '../../../widgets/components/screen/forum/post/layout/desktop/desktop_layout.dart';
 import '../../../widgets/components/screen/forum/post/layout/mobile/mobile_layout.dart';
-import '../../../widgets/components/common/error_widget.dart';
-import '../../../widgets/components/common/loading_widget.dart';
-import '../../../widgets/components/screen/forum/post/reply/desktop_reply_input.dart';
-import '../../../widgets/components/screen/forum/post/reply/mobile_reply_input.dart';
+import '../../../widgets/ui/common/error_widget.dart';
+import '../../../widgets/ui/common/loading_widget.dart';
+import '../../../widgets/ui/inputs/post_reply_input.dart'; // 统一回复输入组件
+import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // 确认对话框组件
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -31,6 +33,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   Post? _post;
   String? _error;
   bool _isLoading = true;
+  bool _isSubmitting = false; // 提交状态
+
+  // 交互标志
+  bool _hasInteraction = false;
 
   @override
   void initState() {
@@ -67,7 +73,22 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   @override
   void dispose() {
     _replyController.dispose();
+
+    // 在页面关闭时，如果有交互操作，通知前一个页面刷新
+    if (_hasInteraction) {
+      NavigationUtils.pop(context, true);
+    }
+
     super.dispose();
+  }
+
+  // 处理交互成功回调
+  void _handleInteractionSuccess() {
+    // 标记有交互操作
+    _hasInteraction = true;
+
+    // 刷新当前帖子页面
+    _refreshPost();
   }
 
   Future<void> _refreshPost() async {
@@ -88,9 +109,19 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final content = _replyController.text.trim();
     if (content.isEmpty) return;
 
+    setState(() {
+      _isSubmitting = true;
+    });
+
     try {
       await _forumService.addReply(widget.postId, content);
       _replyController.clear();
+
+      // 标记有交互操作
+      _hasInteraction = true;
+
+      // 刷新当前页面
+      await _refreshPost();
 
       // Show confirmation
       ScaffoldMessenger.of(context).showSnackBar(
@@ -100,66 +131,107 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
+    } finally {
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
+  // 使用可复用的确认对话框
   Future<void> _handleDeletePost(BuildContext context) async {
-    final confirm = await showDialog<bool>(
+    // 使用ConfirmDialog
+    CustomConfirmDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个帖子吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('删除'),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-          ),
-        ],
-      ),
+      title: '删除帖子',
+      message: '确定要删除这个帖子吗？删除后无法恢复。',
+      confirmButtonText: '删除',
+      confirmButtonColor: Colors.red,
+      onConfirm: () async {
+        try {
+          // 显示加载状态
+          setState(() {
+            _isLoading = true;
+          });
+
+          await _forumService.deletePost(widget.postId);
+
+          // 标记有交互操作
+          _hasInteraction = true;
+
+          // 返回，并传递更新标志
+          NavigationUtils.pop(context, true);
+
+          // 显示成功消息
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('帖子已删除')),
+          );
+        } catch (e) {
+          // 取消加载状态
+          setState(() {
+            _isLoading = false;
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('删除失败: ${e.toString()}')),
+          );
+        }
+      },
+    );
+  }
+
+  // 使用可复用的确认对话框
+  Future<void> _handleToggleLock(BuildContext context) async {
+    final statusText = _post?.status == PostStatus.locked ? '解锁' : '锁定';
+
+    // 使用ConfirmDialog
+    CustomConfirmDialog.show(
+      context: context,
+      title: '$statusText帖子',
+      message: '确定要$statusText这个帖子吗？',
+      confirmButtonText: '确定',
+      confirmButtonColor: Colors.blue,
+      onConfirm: () async {
+        try {
+          await _forumService.togglePostLock(widget.postId);
+
+          // 标记有交互操作
+          _hasInteraction = true;
+
+          await _loadPost();
+
+          // 显示成功消息
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('帖子已$statusText')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('$statusText失败: ${e.toString()}')),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  // 处理编辑帖子
+  Future<void> _handleEditPost(BuildContext context) async {
+    if (_post == null) return;
+
+    // 跳转到编辑页面
+    final result = await NavigationUtils.pushNamed(
+      context,
+      AppRoutes.editPost,
+      arguments: _post,
     );
 
-    if (confirm == true) {
-      try {
-        // 显示加载状态
-        setState(() {
-          _isLoading = true;
-        });
-
-        await _forumService.deletePost(widget.postId);
-
-        // 返回，并传递更新标志
-        Navigator.pop(context, true);
-
-        // 显示成功消息
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('帖子已删除')),
-        );
-      } catch (e) {
-        // 取消加载状态
-        setState(() {
-          _isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败: ${e.toString()}')),
-        );
-      }
-    }
-  }
-
-  Future<void> _handleToggleLock(BuildContext context) async {
-    try {
-      await _forumService.togglePostLock(widget.postId);
-      await _loadPost();
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+    // 如果编辑成功，刷新页面
+    if (result == true) {
+      _hasInteraction = true;
+      await _refreshPost();
     }
   }
 
@@ -191,7 +263,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         appBar: CustomAppBar(title: '帖子详情'),
         body: NotFoundErrorWidget(
           message: '请求的帖子不存在',
-          onBack: () => Navigator.pop(context),
+          onBack: () => NavigationUtils.pop(context),
         ),
       );
     }
@@ -209,23 +281,31 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             ? DesktopLayout(
           post: _post!,
           postId: widget.postId,
-          replyInput: DesktopReplyInput(
-            post: _post!,
-            replyController: _replyController,
+          replyInput: PostReplyInput(
+            post: _post,
+            controller: _replyController,
             onSubmitReply: _submitReply,
+            isSubmitting: _isSubmitting,
+            isDesktopLayout: true,
           ),
+          // 传递交互成功回调
+          onInteractionSuccess: _handleInteractionSuccess,
         )
             : MobileLayout(
           post: _post!,
           postId: widget.postId,
+          // 传递交互成功回调
+          onInteractionSuccess: _handleInteractionSuccess,
         ),
       ),
       bottomNavigationBar: isDesktop
           ? null
-          : MobileReplyInput(
+          : PostReplyInput(
         post: _post,
-        replyController: _replyController,
+        controller: _replyController,
         onSubmitReply: _submitReply,
+        isSubmitting: _isSubmitting,
+        isDesktopLayout: false,
       ),
     );
   }
@@ -259,11 +339,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           onSelected: (value) async {
             switch (value) {
               case 'edit':
-                Navigator.pushNamed(
-                  context,
-                  AppRoutes.editPost,
-                  arguments: _post,
-                );
+                await _handleEditPost(context);
                 break;
               case 'delete':
                 await _handleDeletePost(context);

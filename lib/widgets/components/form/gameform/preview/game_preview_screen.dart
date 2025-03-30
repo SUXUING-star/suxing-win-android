@@ -1,5 +1,6 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../widgets/components/screen/game/game_detail_content.dart';
 import '../../../../../../utils/font/font_config.dart';
@@ -28,7 +29,7 @@ class GamePreviewScreen extends StatelessWidget {
           TextButton.icon(
             icon: Icon(Icons.arrow_back),
             label: Text('返回编辑'),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => NavigationUtils.of(context).pop(),
             style: TextButton.styleFrom(foregroundColor: Colors.white),
           ),
         ],

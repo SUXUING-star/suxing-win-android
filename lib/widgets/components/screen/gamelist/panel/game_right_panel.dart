@@ -5,7 +5,6 @@ import '../../../../../models/stats/category_stat.dart';
 import '../../../../../models/stats/tag_stat.dart';
 import '../../../../../services/main/game/stats/game_stats_service.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../tag/tag_cloud.dart';
 
 class GameRightPanel extends StatelessWidget {
   final List<Game> currentPageGames;
@@ -13,7 +12,7 @@ class GameRightPanel extends StatelessWidget {
   final String? selectedTag;
   final Function(String)? onTagSelected;
 
-  // 服务实例 - 统计逻辑放在服务层
+  // 服务实例
   final GameStatsService _statsService = GameStatsService();
 
   GameRightPanel({
@@ -26,204 +25,333 @@ class GameRightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 从服务层获取统计数据
+    // 获取统计数据
     final List<CategoryStat> categoryStats = _statsService.getCategoryStatistics(currentPageGames);
     final List<TagStat> tagStats = _statsService.getTagStatistics(currentPageGames);
     final int uniqueCategoriesCount = _statsService.getUniqueCategoriesCount(currentPageGames);
     final int uniqueTagsCount = _statsService.getUniqueTagsCount(currentPageGames);
 
-    // 使用自适应宽度
+    // 面板宽度
     final panelWidth = DeviceUtils.getSidePanelWidth(context);
-    final isCompact = panelWidth < 220; // 当面板宽度较小时使用紧凑模式
 
     return Container(
       width: panelWidth,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surface,
-        border: Border(
-          left: BorderSide(
-            color: Theme.of(context).dividerColor,
-            width: 1.0,
-          ),
-        ),
-      ),
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.all(isCompact ? 6.0 : 8.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPageSummary(context, uniqueCategoriesCount, uniqueTagsCount, isCompact),
-              SizedBox(height: isCompact ? 8 : 12),
-              _buildCategoriesPanel(context, categoryStats, isCompact),
-              SizedBox(height: isCompact ? 8 : 12),
-              _buildTagsPanel(context, tagStats, isCompact),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPageSummary(BuildContext context, int categoriesCount, int tagsCount, bool isCompact) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: EdgeInsets.all(isCompact ? 8.0 : 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '当前页面摘要',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: isCompact ? 14 : null,
-              ),
-            ),
-            SizedBox(height: isCompact ? 6 : 8),
-            _buildInfoRow('显示游戏数', '${currentPageGames.length}'),
-            Divider(height: 16),
-            _buildInfoRow('分类数', '$categoriesCount'),
-            Divider(height: 16),
-            _buildInfoRow('标签数', '$tagsCount'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCategoriesPanel(BuildContext context, List<CategoryStat> categoryStats, bool isCompact) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: EdgeInsets.all(isCompact ? 8.0 : 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '当前页面分类',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                fontSize: isCompact ? 14 : null,
-              ),
-            ),
-            SizedBox(height: isCompact ? 6 : 8),
-            categoryStats.isEmpty
-                ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text('无分类数据'),
-            )
-                : ListView.separated(
-              physics: NeverScrollableScrollPhysics(),
-              shrinkWrap: true,
-              itemCount: categoryStats.length,
-              separatorBuilder: (context, index) => Divider(height: 1),
-              itemBuilder: (context, index) {
-                final category = categoryStats[index];
-                return Padding(
-                  padding: EdgeInsets.symmetric(vertical: isCompact ? 6.0 : 8.0),
+      margin: EdgeInsets.all(8),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: Opacity(
+          opacity: 0.8, // 透明度调整为0.7
+          child: Container(
+            color: Colors.white,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 标题栏
+                Container(
+                  padding: EdgeInsets.all(12),
+                  color: Colors.blue,
                   child: Row(
                     children: [
-                      Expanded(
-                        child: Text(
-                          category.name.isEmpty ? '(未分类)' : category.name,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            fontSize: isCompact ? 12 : 14,
-                          ),
+                      Icon(
+                        Icons.analytics,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      SizedBox(width: 8),
+                      Text(
+                        '统计信息',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
                         ),
                       ),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                            horizontal: isCompact ? 6 : 8,
-                            vertical: isCompact ? 1 : 2
+                    ],
+                  ),
+                ),
+
+                // 统计区
+                Expanded(
+                  child: ListView(
+                    padding: EdgeInsets.all(12),
+                    children: [
+                      _buildStatsCard(
+                        context,
+                        '页面摘要',
+                        [
+                          StatsItem('显示游戏数', '${currentPageGames.length}'),
+                          StatsItem('分类数', '$uniqueCategoriesCount'),
+                          StatsItem('标签数', '$uniqueTagsCount'),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+
+                      _buildCategoriesStats(context, categoryStats),
+                      SizedBox(height: 16),
+
+                      _buildTagsStats(context, tagStats),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatsCard(BuildContext context, String title, List<StatsItem> items) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.blue,
+          ),
+        ),
+        SizedBox(height: 8),
+        ...items.map((item) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  item.label,
+                  style: TextStyle(fontSize: 12),
+                ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    item.value,
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        Divider(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildCategoriesStats(BuildContext context, List<CategoryStat> categoryStats) {
+    if (categoryStats.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '分类统计',
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+              color: Colors.blue,
+            ),
+          ),
+          SizedBox(height: 8),
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: Text(
+                '暂无分类数据',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ),
+          Divider(height: 16),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '分类统计',
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            color: Colors.blue,
+          ),
+        ),
+        SizedBox(height: 8),
+        ...categoryStats.map((category) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        category.name.isEmpty ? '(未分类)' : category.name,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                    Text(
+                      '${category.count}',
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(2),
+                  child: LinearProgressIndicator(
+                    value: categoryStats[0].count > 0
+                        ? category.count / categoryStats[0].count
+                        : 0,
+                    backgroundColor: Colors.grey[200],
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+                    minHeight: 4,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+        Divider(height: 16),
+      ],
+    );
+  }
+
+  Widget _buildTagsStats(BuildContext context, List<TagStat> tagStats) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '标签统计',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+                color: Colors.blue,
+              ),
+            ),
+            if (selectedTag != null && onTagSelected != null)
+              InkWell(
+                onTap: () => onTagSelected!(selectedTag!),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.close, size: 12, color: Colors.blue),
+                      SizedBox(width: 4),
+                      Text(
+                        '清除',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue,
                         ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+          ],
+        ),
+        SizedBox(height: 8),
+        tagStats.isEmpty
+            ? Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Text(
+              '暂无标签数据',
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+          ),
+        )
+            : Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: tagStats.map((stat) {
+            final isSelected = selectedTag == stat.name;
+
+            return Container(
+              decoration: BoxDecoration(
+                color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: InkWell(
+                onTap: onTagSelected != null ? () => onTagSelected!(stat.name) : null,
+                borderRadius: BorderRadius.circular(16),
+                child: Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        stat.name,
+                        style: TextStyle(
+                          color: isSelected ? Colors.white : Colors.blue,
+                          fontSize: 12,
+                        ),
+                      ),
+                      SizedBox(width: 4),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
+                          color: isSelected ? Colors.white.withOpacity(0.3) : Colors.blue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
-                          '${category.count}',
+                          '${stat.count}',
                           style: TextStyle(
+                            color: isSelected ? Colors.white : Colors.blue,
                             fontWeight: FontWeight.bold,
-                            fontSize: isCompact ? 10 : 12,
+                            fontSize: 10,
                           ),
                         ),
                       ),
                     ],
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTagsPanel(BuildContext context, List<TagStat> tagStats, bool isCompact) {
-    return Card(
-      elevation: 1,
-      margin: EdgeInsets.zero,
-      child: Padding(
-        padding: EdgeInsets.all(isCompact ? 8.0 : 12.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '当前页面标签',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isCompact ? 14 : null,
-                  ),
                 ),
-                if (selectedTag != null && onTagSelected != null)
-                  IconButton(
-                    icon: Icon(Icons.clear, size: isCompact ? 16 : 18),
-                    onPressed: () => onTagSelected!(selectedTag!),
-                    tooltip: '清除筛选',
-                    constraints: BoxConstraints(
-                      minWidth: 24,
-                      minHeight: 24,
-                    ),
-                    padding: EdgeInsets.zero,
-                  ),
-              ],
-            ),
-            SizedBox(height: isCompact ? 6 : 8),
-            tagStats.isEmpty
-                ? Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Text('无标签数据'),
-            )
-                : StatTagCloud(
-              tags: tagStats,
-              selectedTag: selectedTag,
-              onTagSelected: onTagSelected,
-              compact: isCompact,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(label),
-        Text(
-          value,
-          style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
   }
+}
+
+// 辅助类
+class StatsItem {
+  final String label;
+  final String value;
+
+  StatsItem(this.label, this.value);
 }

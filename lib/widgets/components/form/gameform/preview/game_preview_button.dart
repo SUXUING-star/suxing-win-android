@@ -1,12 +1,16 @@
 // lib/widgets/form/gameform/preview/game_preview_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
+// *** Import AppButton ***
+import '../../../../ui/buttons/app_button.dart'; // 确认路径正确
 import 'game_preview_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class GamePreviewButton extends StatelessWidget {
+  // --- 参数保持不变 ---
   final TextEditingController titleController;
   final TextEditingController summaryController;
   final TextEditingController descriptionController;
@@ -36,21 +40,16 @@ class GamePreviewButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ElevatedButton.icon(
-      icon: Icon(Icons.preview),
-      label: Text('预览游戏详情'),
-      style: ElevatedButton.styleFrom(
-        padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
+    // *** 使用 AppButton 替换 ElevatedButton.icon ***
+    return AppButton(
+      // --- 传递参数给 AppButton ---
+      text: '预览游戏详情',
+      icon: const Icon(Icons.visibility_outlined), // 使用 AppButton 的 icon 参数
+      // onPressed 逻辑保持不变
       onPressed: () {
-        // Get the current user ID from AuthProvider
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final currentUserId = authProvider.currentUserId;
 
-        // Create a temporary Game object from the current form data
         final previewGame = Game(
           id: existingGame?.id ?? mongo.ObjectId().toHexString(),
           authorId: existingGame?.authorId ?? currentUserId ?? 'preview_mode',
@@ -72,14 +71,16 @@ class GamePreviewButton extends StatelessWidget {
           lastViewedAt: existingGame?.lastViewedAt,
         );
 
-        // Navigate to the preview screen
-        Navigator.of(context).push(
+        NavigationUtils.of(context).push(
           MaterialPageRoute(
             builder: (context) => GamePreviewScreen(game: previewGame),
             fullscreenDialog: true,
           ),
         );
       },
+      // 可以根据需要设置 isMini 或 isPrimaryAction (预览按钮通常不是 Primary)
+      isMini: false,
+      isPrimaryAction: true,
     );
   }
 }

@@ -1,5 +1,6 @@
 // lib/widgets/components/common/avatar_rate_limit_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class AvatarRateLimitDialog extends StatelessWidget {
   final int remainingSeconds;
@@ -13,7 +14,7 @@ class AvatarRateLimitDialog extends StatelessWidget {
       content: Text('您的头像上传速率超出限制。每分钟最多只能上传2次头像。\n\n请在 $remainingSeconds 秒后再尝试。'),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => NavigationUtils.of(context).pop(),
           child: const Text('了解'),
         ),
       ],

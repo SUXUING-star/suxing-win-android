@@ -1,12 +1,13 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'dart:async';
 import '../../services/main/email/email_service.dart';
 import '../../services/main/user/user_service.dart';
 import '../../widgets/common/toaster/toaster.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/common/error_widget.dart';
-import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../widgets/ui/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
 
 class RegisterScreen extends StatefulWidget {
   @override
@@ -122,7 +123,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       Toaster.success(context, "注册成功，请进行登录");
 
       // 注册成功后跳转到登录页面
-      Navigator.pushReplacementNamed(context, '/');
+      NavigationUtils.pushReplacementNamed(context, '/');
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -365,7 +366,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         // 登录跳转
                         TextButton(
                           onPressed: () {
-                            Navigator.pop(context);
+                            NavigationUtils.pop(context);
                           },
                           child: Text('已有账号？返回登录'),
                         ),

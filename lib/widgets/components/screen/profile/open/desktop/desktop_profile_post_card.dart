@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_post_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/post/post.dart';
 
 class DesktopProfilePostCard extends StatelessWidget {
@@ -16,7 +17,7 @@ class DesktopProfilePostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/forum/post', arguments: post.id),
+        onTap: () => NavigationUtils.pushNamed(context, '/forum/post', arguments: post.id),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(

@@ -1,9 +1,12 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_user_profile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../services/main/user/user_service.dart';
 import '../../models/user/user.dart';
+import '../../widgets/ui/image/safe_cached_image.dart'; // Import the new widget
 
 class DesktopSidebarUserProfile extends StatelessWidget {
   final VoidCallback onProfileTap;
@@ -16,11 +19,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
 
   // 根据等级返回不同的颜色
   Color _getLevelColor(int level) {
-    if (level < 5) return Colors.green;
-    if (level < 10) return Colors.blue;
-    if (level < 20) return Colors.purple;
-    if (level < 50) return Colors.orange;
-    return Colors.red;
+    return LevelColor.getLevelColor(level);
   }
 
   // 未登录状态的用户头像和登录入口
@@ -30,14 +29,17 @@ class DesktopSidebarUserProfile extends StatelessWidget {
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: InkWell(
-          onTap: () => Navigator.pushNamed(context, '/login'),
+          onTap: () => NavigationUtils.navigateToLogin(context),
           hoverColor: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20), // Keep consistent radius
           child: Tooltip(
             message: '登录',
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, // Center vertically
               children: [
                 Container(
+                  width: 40, // Set fixed size for alignment
+                  height: 40, // Set fixed size for alignment
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     border: Border.all(
@@ -46,7 +48,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                     ),
                   ),
                   child: CircleAvatar(
-                    radius: 20,
+                    radius: 20, // Inner radius matches image size
                     backgroundColor: Colors.white.withOpacity(0.2),
                     child: Icon(
                       Icons.person_rounded,
@@ -63,6 +65,8 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                     fontSize: 12,
                   ),
                 ),
+                // Add empty text widgets to roughly match logged-in height if needed
+                // SizedBox(height: 12), // Adjust spacing if alignment differs significantly
               ],
             ),
           ),
@@ -73,6 +77,10 @@ class DesktopSidebarUserProfile extends StatelessWidget {
 
   // 已登录状态的用户信息
   Widget _buildLoggedInProfile(BuildContext context, User user) {
+    // Calculate pixel-aware cache dimensions (optional but good practice)
+    final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final int cacheSize = (40 * devicePixelRatio).round();
+
     return Material(
       color: Colors.transparent,
       child: MouseRegion(
@@ -80,15 +88,20 @@ class DesktopSidebarUserProfile extends StatelessWidget {
         child: InkWell(
           onTap: onProfileTap,
           hoverColor: Colors.white.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(20), // Consistent radius
           child: Tooltip(
             message: '我的资料',
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center, // Center vertically
               children: [
                 Stack(
+                  alignment: Alignment.center, // Center stack items
                   children: [
-                    // 用户头像
+                    // 用户头像 - 使用 SafeCachedImage
                     Container(
+                      // This container now primarily provides the white border
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
@@ -97,18 +110,19 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                         ),
                       ),
                       child: user.avatar != null
-                          ? ClipOval(
-                        child: Image.network(
-                          user.avatar!,
-                          width: 40,
-                          height: 40,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return _fallbackAvatar(user.username);
-                          },
-                        ),
+                          ? SafeCachedImage(
+                        imageUrl: user.avatar!,
+                        width: 40,
+                        height: 40,
+                        fit: BoxFit.cover,
+                        borderRadius: BorderRadius.circular(20), // Make it circular
+                        memCacheWidth: cacheSize, // Optimize cache size
+                        memCacheHeight: cacheSize, // Optimize cache size
+                        // Use SafeCachedImage's built-in placeholder/error handling
+                        // You can still add an onError callback if needed for logging etc.
+                        // onError: (url, error) => print("Failed to load avatar: $url, $error"),
                       )
-                          : _fallbackAvatar(user.username),
+                          : _fallbackAvatar(user.username), // Fallback if no avatar URL
                     ),
 
                     // 等级徽章 - 右下角
@@ -142,15 +156,17 @@ class DesktopSidebarUserProfile extends StatelessWidget {
 
                 // 用户名
                 Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
+                  // Reduced top padding slightly as Stack might add visual space
+                  padding: const EdgeInsets.only(top: 2.0),
                   child: Text(
-                    user.username ?? '',
+                    user.username ?? '', // Handle null username gracefully
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
                     overflow: TextOverflow.ellipsis,
+                    maxLines: 1, // Ensure single line
                   ),
                 ),
 
@@ -170,39 +186,63 @@ class DesktopSidebarUserProfile extends StatelessWidget {
     );
   }
 
-  // 备用头像方法，当无法加载网络头像时
+  // 备用头像方法，当无法加载网络头像或用户没有设置头像时
   Widget _fallbackAvatar(String? username) {
-    return CircleAvatar(
-      radius: 20,
-      backgroundColor: Colors.white.withOpacity(0.2),
-      child: Text(
-        username?[0].toUpperCase() ?? '?',
-        style: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: Colors.white,
+    // Ensure this fallback also fits within the 40x40 circular space
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(0.2), // Background color for the circle
+      ),
+      child: Center( // Center the text within the container
+        child: Text(
+          // Ensure username is not null and not empty before accessing index 0
+          (username != null && username.isNotEmpty) ? username[0].toUpperCase() : '?',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
       ),
     );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      // Adjusted padding for potentially better centering/spacing
+      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, child) {
-          // 如果未登录，显示默认头像
+          // 如果未登录，显示登录提示
           if (!authProvider.isLoggedIn) {
             return _buildLoginPrompt(context);
           }
 
-          // 已登录状态 - 获取用户完整信息，包括等级和经验值
+          // 已登录状态 - 获取用户完整信息
+          // Use FutureBuilder if the profile isn't updated frequently via stream,
+          // or keep StreamBuilder if real-time updates (like XP gain) are desired.
           return StreamBuilder<User?>(
             stream: _userService.getCurrentUserProfile(),
             builder: (context, snapshot) {
-              // 如果没有数据，显示登录提示
-              if (!snapshot.hasData) {
+              // Handle loading state more explicitly (optional)
+              if (snapshot.connectionState == ConnectionState.waiting && !snapshot.hasData) {
+                // You could show a simple loading indicator or reuse login prompt temporarily
+                return _buildLoginPrompt(context); // Or a dedicated loading widget
+              }
+              // Handle error state (optional)
+              if (snapshot.hasError) {
+                print("Error fetching user profile: ${snapshot.error}");
+                // Show login prompt or an error indicator
+                return _buildLoginPrompt(context);
+              }
+              // If no data after loading/error check, treat as logged out/error
+              if (!snapshot.hasData || snapshot.data == null) {
+                // This might happen briefly or if the stream yields null
                 return _buildLoginPrompt(context);
               }
 

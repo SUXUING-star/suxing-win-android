@@ -1,16 +1,17 @@
 // lib/screens/collection/game_collection_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../services/main/game/collection/game_collection_service.dart';
 import '../../../utils/device/device_utils.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../../widgets/components/screen/game/card/game_card.dart';
-import '../../../widgets/components/common/error_widget.dart'; // Import error widgets
-import '../../../widgets/components/common/loading_widget.dart'; // Import loading widgets
+import '../../../widgets/ui/common/error_widget.dart'; // Import error widgets
+import '../../../widgets/ui/common/loading_widget.dart'; // Import loading widgets
 
 class GameCollectionListScreen extends StatefulWidget {
   final String collectionType;
@@ -110,7 +111,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
         return CustomErrorWidget(
           errorMessage: _errorMessage,
           onRetry: () {
-            Navigator.pushReplacementNamed(context, AppRoutes.login);
+            NavigationUtils.pushReplacementNamed(context, AppRoutes.login);
           }
         );
       }
@@ -177,7 +178,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.gamesList);
+              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
             },
             child: Text('发现游戏'),
           ),

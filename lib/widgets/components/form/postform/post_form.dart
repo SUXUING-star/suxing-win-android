@@ -1,7 +1,9 @@
 // lib/widgets/forum/post_form.dart
 import 'package:flutter/material.dart';
-import '../../../../utils/device/device_utils.dart';
-import '../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 确保路径正确
+import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
+import '../../../../utils/device/device_utils.dart'; // 确保路径正确
+import '../../../../utils/font/font_config.dart'; // 确保路径正确
 
 class PostFormData {
   final String title;
@@ -25,7 +27,7 @@ class PostForm extends StatefulWidget {
   final Function(PostFormData) onSubmit;
   final String submitButtonText;
   final String? postIdInfo;
-  final String? createTimeInfo;
+  final String? updatetimeInfo;
   final Widget? additionalInfo;
 
   const PostForm({
@@ -39,7 +41,7 @@ class PostForm extends StatefulWidget {
     required this.onSubmit,
     required this.submitButtonText,
     this.postIdInfo,
-    this.createTimeInfo,
+    this.updatetimeInfo,
     this.additionalInfo,
   }) : super(key: key);
 
@@ -52,6 +54,8 @@ class _PostFormState extends State<PostForm> {
   late TextEditingController _contentController;
   late List<String> _selectedTags;
   final _formKey = GlobalKey<FormState>();
+  // Optional: Key for Scaffold if needed for ScaffoldMessenger or drawers
+  // final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   @override
   void initState() {
@@ -68,161 +72,140 @@ class _PostFormState extends State<PostForm> {
     super.dispose();
   }
 
+  String get _effectiveSubmitButtonText =>
+      widget.isSubmitting ? '处理中...' : widget.submitButtonText;
+
   @override
   Widget build(BuildContext context) {
-    // Get screen dimensions and check if desktop layout should be used
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
-    final bool useDesktopLayout = isDesktop && screenSize.width > 900;
+    final bool useDesktopLayout = isDesktop && screenSize.width >= 960;
+
+    // Note: No Scaffold.of() here anymore
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          widget.title,
-          style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-          ),
-        ),
+      // key: _scaffoldKey, // Assign key if needed
+      appBar: CustomAppBar( // Assuming CustomAppBar works like a standard AppBar
+        title: widget.title,
         actions: [
           TextButton(
             onPressed: widget.isSubmitting ? null : _submit,
             child: Text(
-              widget.isSubmitting ? '处理中...' : '提交',
-              style: const TextStyle(color: Colors.white),
+              _effectiveSubmitButtonText,
+              style: const TextStyle(color: Colors.white, fontSize: 16),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
+      ),
+      body: Form(
+        key: _formKey,
+        child: useDesktopLayout
+            ? _buildDesktopLayout(context) // Pass the correct context
+            : _buildMobileLayout(context), // Pass the correct context
+      ),
+    );
+  }
+
+  // --- Desktop Layout ---
+  Widget _buildDesktopLayout(BuildContext context) { // Context is fine here
+    final screenSize = MediaQuery.of(context).size;
+    // *** FIX HERE: Use kToolbarHeight directly ***
+    final double availableHeight = screenSize.height - kToolbarHeight - 48; // 48 = 24 top + 24 bottom padding
+
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Left panel
+          Expanded(
+            flex: 4,
+            child: Card(
+              elevation: 2,
+              child: Container(
+                constraints: BoxConstraints(maxHeight: availableHeight),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle('帖子信息'),
+                      const SizedBox(height: 24),
+                      _buildTitleField(),
+                      const SizedBox(height: 24),
+                      _buildTagsSection(), // Pass context if it needs it for ScaffoldMessenger
+                      const SizedBox(height: 32),
+                      const Divider(),
+                      const SizedBox(height: 16),
+                      _buildMetadataInfo(),
+                      if (widget.additionalInfo != null) ...[
+                        const SizedBox(height: 24),
+                        widget.additionalInfo!,
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          // Right panel
+          Expanded(
+            flex: 6,
+            child: Card(
+              elevation: 2,
+              child: Container(
+                constraints: BoxConstraints(maxHeight: availableHeight),
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildSectionTitle('帖子内容'),
+                      const SizedBox(height: 24),
+                      _buildContentField(),
+                      const SizedBox(height: 32),
+                      _buildSubmitButton(), // Pass context if it needs it for ScaffoldMessenger
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
         ],
       ),
-      body: useDesktopLayout ? _buildDesktopLayout(context) : _buildMobileLayout(context),
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final double cardHeight = screenSize.height - 100; // Allow for some margin
-
-    return Form(
-      key: _formKey,
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Left panel - Post metadata (40% width)
-            Expanded(
-              flex: 4,
-              child: Card(
-                elevation: 2,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: cardHeight,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('帖子信息'),
-                          const SizedBox(height: 24),
-                          _buildTitleField(),
-                          const SizedBox(height: 24),
-                          _buildTagsSection(),
-                          const SizedBox(height: 32),
-                          const Divider(),
-                          const SizedBox(height: 16),
-                          _buildMetadataInfo(),
-                          if (widget.additionalInfo != null) ...[
-                            const SizedBox(height: 24),
-                            widget.additionalInfo!,
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+  // --- Mobile Layout ---
+  Widget _buildMobileLayout(BuildContext context) { // Context is fine here
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _buildMobileInfoCard(),
+          _buildMobileContentCard(),
+          _buildMobileTagsCard(), // Pass context if needed
+          if (widget.additionalInfo != null)
+            Card(
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 24),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: widget.additionalInfo!,
               ),
             ),
-
-            const SizedBox(width: 24),
-
-            // Right panel - Post content (60% width)
-            Expanded(
-              flex: 6,
-              child: Card(
-                elevation: 2,
-                child: Container(
-                  constraints: BoxConstraints(
-                    maxHeight: cardHeight,
-                  ),
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _buildSectionTitle('帖子内容'),
-                          const SizedBox(height: 24),
-                          _buildContentField(),
-                          const SizedBox(height: 32),
-                          _buildSubmitButton(),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+          const SizedBox(height: 8),
+          _buildSubmitButton(), // Pass context if needed
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
-    return Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildMobileInfoCard(),
-            _buildMobileContentCard(),
-            _buildMobileTagsCard(),
-            if (widget.additionalInfo != null)
-              Card(
-                elevation: 2,
-                margin: const EdgeInsets.only(bottom: 24),
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: widget.additionalInfo!,
-                ),
-              ),
-            Center(
-              child: ElevatedButton(
-                onPressed: widget.isSubmitting ? null : _submit,
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  widget.isSubmitting ? '处理中...' : widget.submitButtonText,
-                  style: TextStyle(
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontSize: 16,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
+  // --- Reusable UI Component Builders ---
 
   Widget _buildSectionTitle(String text) {
     return Column(
@@ -236,7 +219,7 @@ class _PostFormState extends State<PostForm> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const Divider(),
+        const Divider(height: 16, thickness: 1),
       ],
     );
   }
@@ -256,7 +239,7 @@ class _PostFormState extends State<PostForm> {
       ),
       maxLength: 100,
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (value == null || value.trim().isEmpty) {
           return '请输入标题';
         }
         return null;
@@ -264,7 +247,7 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  Widget _buildTagsSection() {
+  Widget _buildTagsSection() { // Pass context IF showing Snackbar here
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -276,10 +259,10 @@ class _PostFormState extends State<PostForm> {
             fontWeight: FontWeight.bold,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Wrap(
-          spacing: 12,
-          runSpacing: 12,
+          spacing: 8,
+          runSpacing: 8,
           children: widget.availableTags.map((tag) {
             final isSelected = _selectedTags.contains(tag);
             return FilterChip(
@@ -287,23 +270,39 @@ class _PostFormState extends State<PostForm> {
                 tag,
                 style: TextStyle(
                   fontFamily: FontConfig.defaultFontFamily,
+                  fontSize: 14,
                 ),
               ),
               selected: isSelected,
-              selectedColor: Colors.blue.withOpacity(0.25),
-              checkmarkColor: Colors.blue,
-              backgroundColor: Colors.grey.withOpacity(0.1),
+              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+              checkmarkColor: Theme.of(context).primaryColor,
+              backgroundColor: Colors.grey.shade200,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
-                  color: isSelected ? Colors.blue : Colors.transparent,
+                  color: isSelected
+                      ? Theme.of(context).primaryColor
+                      : Colors.grey.shade300,
+                  width: 1,
                 ),
               ),
-              onSelected: (selected) {
+              onSelected: widget.isSubmitting
+                  ? null
+                  : (selected) {
                 setState(() {
                   if (selected) {
                     if (_selectedTags.length < 3) {
                       _selectedTags.add(tag);
+                    } else {
+                      // Show snackbar - context here *should* be okay
+                      // because it's from user interaction after build.
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('最多只能选择 3 个标签'),
+                          duration: Duration(seconds: 2),
+                          behavior: SnackBarBehavior.floating, // Good practice
+                        ),
+                      );
                     }
                   } else {
                     _selectedTags.remove(tag);
@@ -323,18 +322,23 @@ class _PostFormState extends State<PostForm> {
       style: TextStyle(
         fontFamily: FontConfig.defaultFontFamily,
         fontSize: 15,
+        height: 1.5,
       ),
       decoration: const InputDecoration(
         labelText: '内容',
-        hintText: '请输入帖子内容',
+        hintText: '请输入帖子内容...',
         border: OutlineInputBorder(),
         alignLabelWithHint: true,
-        prefixIcon: Icon(Icons.article),
+        prefixIcon: Padding(
+          padding: EdgeInsets.only(top: 12.0),
+          child: Icon(Icons.article_outlined),
+        ),
       ),
-      maxLines: 16,
+      maxLines: null,
+      minLines: DeviceUtils.isDesktop ? 10 : 8,
       maxLength: 5000,
       validator: (value) {
-        if (value == null || value.isEmpty) {
+        if (value == null || value.trim().isEmpty) {
           return '请输入内容';
         }
         return null;
@@ -342,54 +346,40 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton() { // Pass context IF showing Snackbar here
     return Center(
-      child: ElevatedButton(
-        onPressed: widget.isSubmitting ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-        ),
-        child: Text(
-          widget.isSubmitting ? '处理中...' : widget.submitButtonText,
-          style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontSize: 16,
-          ),
-        ),
+      child: AppButton(
+        onPressed: widget.isSubmitting ? null : _submit, // Call _submit directly
+        text: _effectiveSubmitButtonText,
+        isPrimaryAction: true,
       ),
     );
   }
 
   Widget _buildMetadataInfo() {
-    if (widget.postIdInfo != null && widget.createTimeInfo != null) {
+    if (widget.updatetimeInfo != null) {
       return Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisAlignment: MainAxisAlignment.start,
         children: [
+          Icon(Icons.update, size: 16, color: Colors.grey[600]),
+          const SizedBox(width: 4),
           Text(
-            '帖子ID: ${widget.postIdInfo}',
+            '更新于: ${widget.updatetimeInfo}',
             style: TextStyle(
               fontFamily: FontConfig.defaultFontFamily,
               color: Colors.grey[600],
               fontSize: 14,
             ),
           ),
-          Text(
-            '创建于: ${widget.createTimeInfo}',
-            style: TextStyle(
-              fontFamily: FontConfig.defaultFontFamily,
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
+          // Consider adding postIdInfo display here if needed
         ],
       );
     } else {
       return const SizedBox.shrink();
     }
   }
+
+  // --- Mobile Layout Specific Card Builders ---
 
   Widget _buildMobileInfoCard() {
     return Card(
@@ -420,26 +410,7 @@ class _PostFormState extends State<PostForm> {
           children: [
             _buildSectionTitle('帖子内容'),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _contentController,
-              style: TextStyle(
-                fontFamily: FontConfig.defaultFontFamily,
-              ),
-              decoration: const InputDecoration(
-                labelText: '内容',
-                hintText: '请输入帖子内容',
-                border: OutlineInputBorder(),
-                alignLabelWithHint: true,
-              ),
-              maxLines: 8,
-              maxLength: 5000,
-              validator: (value) {
-                if (value == null || value.isEmpty) {
-                  return '请输入内容';
-                }
-                return null;
-              },
-            ),
+            _buildContentField(),
           ],
         ),
       ),
@@ -452,73 +423,38 @@ class _PostFormState extends State<PostForm> {
       margin: const EdgeInsets.only(bottom: 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '标签',
-              style: TextStyle(
-                fontFamily: FontConfig.defaultFontFamily,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const Divider(),
-            const SizedBox(height: 8),
-            Text(
-              '最多选择3个标签',
-              style: TextStyle(
-                fontFamily: FontConfig.defaultFontFamily,
-                fontSize: 14,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 16),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: widget.availableTags.map((tag) {
-                final isSelected = _selectedTags.contains(tag);
-                return FilterChip(
-                  label: Text(
-                    tag,
-                    style: TextStyle(
-                      fontFamily: FontConfig.defaultFontFamily,
-                    ),
-                  ),
-                  selected: isSelected,
-                  selectedColor: Colors.blue.withOpacity(0.25),
-                  checkmarkColor: Colors.blue,
-                  backgroundColor: Colors.grey.withOpacity(0.1),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: BorderSide(
-                      color: isSelected ? Colors.blue : Colors.transparent,
-                    ),
-                  ),
-                  onSelected: (selected) {
-                    setState(() {
-                      if (selected) {
-                        if (_selectedTags.length < 3) {
-                          _selectedTags.add(tag);
-                        }
-                      } else {
-                        _selectedTags.remove(tag);
-                      }
-                    });
-                  },
-                );
-              }).toList(),
-            ),
-          ],
-        ),
+        child: _buildTagsSection(), // Call reusable tags section
       ),
     );
   }
 
-  void _submit() {
+  // --- Form Submission Logic ---
+
+  void _submit() { // No need to pass context if ScaffoldMessenger calls use the build context
+    FocusScope.of(context).unfocus();
+
     if (!_formKey.currentState!.validate()) {
+      // Context here is the _PostFormState's context, usually fine for ScaffoldMessenger
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请检查表单内容是否填写完整'),
+          backgroundColor: Colors.redAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
       return;
+    }
+
+    if (_selectedTags.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('请至少选择一个标签'),
+          backgroundColor: Colors.orangeAccent,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      // Decide if tags are mandatory
+      // return;
     }
 
     final data = PostFormData(

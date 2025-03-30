@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/collection/layout/mobile_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../models/game/game_collection.dart';
 import '../../../../../../routes/app_routes.dart';
@@ -92,7 +93,7 @@ class _MobileCollectionLayoutState extends State<MobileCollectionLayout> {
           SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
-              Navigator.pushReplacementNamed(context, AppRoutes.gamesList);
+              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
             },
             child: Text('发现游戏'),
           ),

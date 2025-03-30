@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 import '../../../../../services/main/game/game_service.dart';
 
 class HomeLatest extends StatefulWidget {
@@ -147,7 +148,7 @@ class _HomeLatestState extends State<HomeLatest> {
                   InkWell(
                     borderRadius: BorderRadius.circular(8),
                     onTap: () {
-                      Navigator.pushNamed(context, AppRoutes.latestGames);
+                      NavigationUtils.pushNamed(context, AppRoutes.latestGames);
                     },
                     child: Padding(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -225,7 +226,7 @@ class _HomeLatestState extends State<HomeLatest> {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
-        Navigator.pushNamed(
+        NavigationUtils.pushNamed(
           context,
           AppRoutes.gameDetail,
           arguments: game,

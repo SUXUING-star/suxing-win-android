@@ -1,5 +1,6 @@
 // lib/layouts/mobile/top_navigation_bar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../utils/device/device_utils.dart';
 import '../../screens/search/search_screen.dart';
 import '../../models/user/user.dart';
@@ -39,7 +40,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
     final double verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
     final double iconSize = isAndroidLandscape ? 18.0 : 20.0;
-    final double logoSize = isAndroidLandscape ? 36.0 : 48.0;
     final double searchBarHeight = isAndroidLandscape ? 32.0 : 40.0;
     final double avatarRadius = isAndroidLandscape ? 12.0 : 14.0;
 
@@ -133,7 +133,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => Navigator.push(
+          onTap: () => NavigationUtils.push(
             context,
             MaterialPageRoute(builder: (context) => SearchScreen()),
           ),

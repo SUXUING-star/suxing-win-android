@@ -1,10 +1,11 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../services/main/user/user_service.dart';
 import '../../widgets/common/toaster/toaster.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/common/error_widget.dart';
-import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../widgets/ui/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
@@ -49,7 +50,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
       Toaster.success(context, "重置密码成功，用新的密码进行登录吧！");
 
-      Navigator.pushReplacementNamed(context, '/login');
+      NavigationUtils.pushReplacementNamed(context, '/login');
     } catch (e) {
       setState(() {
         _error = '重置密码失败：${e.toString()}';

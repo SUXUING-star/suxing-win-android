@@ -2,29 +2,41 @@
 import 'package:flutter/material.dart';
 import '../../../models/game/game.dart';
 import '../../../models/tag/tag.dart';
+import '../../../routes/app_routes.dart';
 import '../../../services/main/game/tag/tag_service.dart';
 import '../../../utils/check/admin_check.dart';
 import '../../../utils/device/device_utils.dart';
-import '../../../utils/navigation/navigation_util.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../../widgets/components/screen/gamelist/tag/tag_bar.dart';
 import '../../../widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import '../../../widgets/components/screen/gamelist/panel/game_right_panel.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 
 class BaseGameListScreen extends StatefulWidget {
   final String title;
-  final Future<List<Game>> Function() loadGamesFunction;
+  final Future<List<Game>> Function(String? selectedTag) loadGamesFunction;
   final Future<void> Function()? refreshFunction;
-  final bool showTagSelection;
+  final bool showTagSelection; // Controls if tag functionality (panels, bar) is enabled
   final String? selectedTag;
   final bool showSortOptions;
   final bool showAddButton;
   final Widget? emptyStateIcon;
   final String emptyStateMessage;
   final bool enablePagination;
-  final bool showPanelToggles;
+  final bool showPanelToggles; // Controls if AppBar toggles are shown (requires showTagSelection=true)
+
+  // AppBar 相关属性
+  final bool useScaffold;
+  final List<Widget>? additionalActions;
+  final Function(BuildContext)? onFilterPressed;
+  final Function()? onMySubmissionsPressed;
+  final Function()? onAddPressed;
+  final bool showAddButtonInAppBar;
+  final bool showMySubmissionsButton;
+
+  // 自定义卡片构建函数
+  final Widget Function(Game)? customCardBuilder;
 
   const BaseGameListScreen({
     Key? key,
@@ -38,7 +50,15 @@ class BaseGameListScreen extends StatefulWidget {
     this.emptyStateIcon,
     required this.emptyStateMessage,
     this.enablePagination = false,
-    this.showPanelToggles = false,
+    this.showPanelToggles = false, // Default to false if not provided
+    this.useScaffold = true,
+    this.additionalActions,
+    this.onFilterPressed,
+    this.onMySubmissionsPressed,
+    this.onAddPressed,
+    this.showAddButtonInAppBar = false,
+    this.showMySubmissionsButton = false,
+    this.customCardBuilder,
   }) : super(key: key);
 
   @override
@@ -53,62 +73,71 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   bool _isLoading = false;
   String? _errorMessage;
   String? _selectedTag;
-  bool _showTagFilter = false;
+  bool _showTagFilter = false; // Mobile tag bar toggle
 
-  // 控制左右面板显示状态
+  // 控制面板显示状态 (用户意图)
   bool _showLeftPanel = true;
   bool _showRightPanel = true;
 
   final ScrollController _scrollController = ScrollController();
   DateTime? _lastLoadTime;
-  static const Duration _minRefreshInterval = Duration(minutes: 1);
+  static const Duration _minRefreshInterval = Duration(minutes: 1); // Cache duration
+
+  // --- 屏幕宽度阈值定义 (根据Game侧边栏调整) ---
+  static const double _hideRightPanelThreshold = 1000.0; // 示例值
+  static const double _hideLeftPanelThreshold = 800.0;  // 示例值
 
   @override
   void initState() {
     super.initState();
     _selectedTag = widget.selectedTag;
 
+    // Only load tags if tag selection is enabled
     if (widget.showTagSelection) {
       _loadTopTags();
     }
+    // Initial game load happens in didChangeDependencies
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (!mounted) return;
 
+    // Load games only if needed (initial load or cache expired)
+    // Wrap in addPostFrameCallback to ensure context/navigator are ready
     if (_shouldLoad()) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
-
-        final loadingObserver = Navigator.of(context)
-            .widget.observers
-            .whereType<LoadingRouteObserver>()
-            .first;
-
-        loadingObserver.showLoading();
-
-        _loadGames().then((_) {
-          if (!mounted) return;
-          loadingObserver.hideLoading();
-        });
+        // Use try-finally for loading observer safety
+        LoadingRouteObserver? loadingObserver;
+        try {
+          loadingObserver = Navigator.of(context)
+              .widget.observers
+              .whereType<LoadingRouteObserver>()
+              .firstOrNull; // Use firstOrNull
+          loadingObserver?.showLoading();
+          _loadGames().then((_) {
+            if (!mounted) return;
+            loadingObserver?.hideLoading();
+          });
+        } catch (e) {
+          print("Error accessing LoadingRouteObserver or loading games: $e");
+          loadingObserver?.hideLoading(); // Ensure hiding on error
+        }
       });
     }
 
     if (widget.enablePagination) {
       _scrollController.addListener(_onScroll);
+    } else {
+      // Ensure listener is removed if pagination is disabled later
+      _scrollController.removeListener(_onScroll);
     }
   }
 
   bool _shouldLoad() {
-    // 如果从未加载过，则加载
-    if (_lastLoadTime == null) {
-      return true;
-    }
-
-    // 如果超过刷新间隔，则加载
+    if (_lastLoadTime == null) return true;
     final now = DateTime.now();
     return now.difference(_lastLoadTime!) >= _minRefreshInterval;
   }
@@ -121,51 +150,78 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   }
 
   void _onScroll() {
-    // 仅在启用分页的情况下处理滚动加载
     if (widget.enablePagination &&
-        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 100 &&
+        _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 && // Increase threshold
         !_isLoading) {
+      print("Reached end, loading more games..."); // Debug log
       _loadMoreGames();
     }
   }
 
   Future<void> _loadTopTags() async {
+    if (!widget.showTagSelection) return; // Don't load if not needed
+    // Avoid concurrent loads
+    // if (_isLoading) return; // Maybe not needed for tags?
+
     try {
       final tags = await _tagService.getTagsImmediate();
       if (!mounted) return;
       setState(() {
-        _topTags = tags.take(30).toList();
+        // Take a reasonable number of tags
+        _topTags = tags.take(50).toList();
       });
     } catch (e) {
       print('Load top tags error: $e');
+      if (mounted) {
+        // Optionally show error to user or handle silently
+      }
     }
   }
 
-  Future<void> _loadGames() async {
-    if (!mounted || _isLoading) return;
+  Future<void> _loadGames({bool isLoadMore = false}) async {
+    if (!mounted || (_isLoading && !isLoadMore)) return; // Prevent concurrent full loads
 
     setState(() {
       _isLoading = true;
-      _errorMessage = null;
+      if (!isLoadMore) {
+        _errorMessage = null; // Clear error only on full load/refresh
+      }
     });
 
     try {
-      final games = await widget.loadGamesFunction();
+      // If loading more, we need pagination logic in loadGamesFunction
+      // Assuming loadGamesFunction handles pagination if needed (e.g., takes page/offset)
+      // For simplicity here, we assume it returns the full list on initial load
+      // and potentially appends on loadMore (which needs specific implementation)
+      final games = await widget.loadGamesFunction(_selectedTag);
 
       if (!mounted) return;
 
-      _lastLoadTime = DateTime.now();
+      if (!isLoadMore) {
+        _lastLoadTime = DateTime.now(); // Update cache time only on full load
+      }
 
       setState(() {
-        _games = games;
+        if (isLoadMore) {
+          // Append logic - Requires loadGamesFunction to support pagination
+          // _games.addAll(games); // Example append
+          print("Load more successful (append logic needed here)");
+          // For now, simulate by replacing, assuming no pagination in base class
+          _games = games;
+        } else {
+          _games = games; // Replace on full load/refresh
+        }
         _isLoading = false;
       });
     } catch (e) {
       if (!mounted) return;
-
+      print('Load games error: $e'); // Log error
       setState(() {
-        _errorMessage = '加载失败：${e.toString()}';
-        _isLoading = false;
+        // Set error message only on full load failure
+        if (!isLoadMore) {
+          _errorMessage = '加载游戏失败: ${e.toString()}';
+        }
+        _isLoading = false; // Ensure loading state is reset
       });
     }
   }
@@ -173,63 +229,107 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   Future<void> _refreshData() async {
     if (!mounted) return;
 
-    final loadingObserver = Navigator.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
-
-    loadingObserver.showLoading();
-
+    // Use try-finally for loading observer
+    LoadingRouteObserver? loadingObserver;
     try {
-      // 优先使用自定义刷新逻辑
+      loadingObserver = Navigator.of(context)
+          .widget.observers
+          .whereType<LoadingRouteObserver>()
+          .firstOrNull;
+      loadingObserver?.showLoading();
+
+      // Reset error and list for refresh visual cue
+      setState(() {
+        _errorMessage = null;
+        _games = []; // Clear list immediately for refresh effect
+        _isLoading = true; // Show loading state during refresh
+      });
+
+      // Call custom refresh or default logic
       if (widget.refreshFunction != null) {
         await widget.refreshFunction!();
+        // Assuming custom refresh function updates _games itself or calls _loadGames
+        if(mounted) setState(() => _isLoading = false); // Ensure loading stops if refresh handles it
       } else {
-        _lastLoadTime = null;
+        _lastLoadTime = null; // Invalidate cache
+        // Clear specific tag cache if a tag is selected
         if (widget.showTagSelection && _selectedTag != null) {
-          await _tagService.clearTagCache(_selectedTag!);
+          try {
+            await _tagService.clearTagCache(_selectedTag!);
+          } catch (e) { print("Error clearing tag cache: $e"); }
         }
-        await _loadGames();
+        // Reload games and potentially tags
+        await _loadGames(); // This will set _isLoading=false on completion/error
         if (widget.showTagSelection) {
-          await _loadTopTags();
+          await _loadTopTags(); // Refresh tags too
         }
+      }
+    } catch (e) {
+      print("Refresh error: $e");
+      if (mounted) {
+        setState(() {
+          _errorMessage = "刷新失败: $e";
+          _isLoading = false;
+          _games = []; // Ensure list is empty on refresh error
+        });
       }
     } finally {
       if (mounted) {
-        loadingObserver.hideLoading();
+        loadingObserver?.hideLoading();
       }
     }
   }
 
+
   void _onTagSelected(String tag) {
-    setState(() {
-      if (_selectedTag == tag) {
-        _selectedTag = null;
-      } else {
-        _selectedTag = tag;
-      }
-    });
-    _loadGames();
+    if (!widget.showTagSelection) return;
+    String? newTag;
+    if (_selectedTag == tag) {
+      newTag = null; // Deselect
+    } else {
+      newTag = tag; // Select new tag
+    }
+    // Only reload if tag actually changed
+    if (_selectedTag != newTag) {
+      setState(() {
+        _selectedTag = newTag;
+        _games = []; // Clear list on tag change
+        _errorMessage = null;
+      });
+      _loadGames(); // Load games for the new tag
+    }
   }
 
   void _clearTagSelection() {
+    if (!widget.showTagSelection || _selectedTag == null) return;
     setState(() {
       _selectedTag = null;
+      _games = []; // Clear list
+      _errorMessage = null;
     });
-    _loadGames();
+    _loadGames(); // Load all games
   }
 
+  // Placeholder for pagination - needs actual implementation in loadGamesFunction
   Future<void> _loadMoreGames() async {
-    // 此方法仅在子类中实现分页加载时有用
-    // 基类中只提供接口
+    print("Attempting to load more games...");
+    // This requires widget.loadGamesFunction to accept pagination parameters
+    // e.g., loadGamesFunction(_selectedTag, page: currentPage + 1);
+    // For now, it will just call the same function, likely reloading the first page.
+    if (widget.enablePagination && ! _isLoading) {
+      // Pass a flag or parameter indicating it's a load more operation
+      await _loadGames(isLoadMore: true);
+    }
   }
 
+  // Toggle mobile tag bar visibility
   void _toggleTagFilter() {
     setState(() {
       _showTagFilter = !_showTagFilter;
     });
   }
 
+  // Toggle user intent for panels
   void _toggleLeftPanel() {
     setState(() {
       _showLeftPanel = !_showLeftPanel;
@@ -244,100 +344,162 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = DeviceUtils.isDesktop;
     final displayTitle = _selectedTag != null && widget.showTagSelection
         ? '标签: $_selectedTag'
         : widget.title;
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: displayTitle,
-        actions: _buildAppBarActions(isDesktop),
-        bottom: (!isDesktop && _showTagFilter && _topTags.isNotEmpty && widget.showTagSelection)
-            ? TagBar(
-          tags: _topTags,
-          selectedTag: _selectedTag,
-          onTagSelected: _onTagSelected,
-        )
-            : null,
+    // --- Calculate actual panel visibility based on width and user intent ---
+    // Panels are only relevant in desktop mode and if tag selection is enabled
+    final bool panelsAreRelevant = isDesktop && widget.showTagSelection;
+
+    final bool canShowLeftPanelBasedOnWidth = screenWidth >= _hideLeftPanelThreshold;
+    final bool canShowRightPanelBasedOnWidth = screenWidth >= _hideRightPanelThreshold;
+
+    // Actual visibility: Relevant AND User wants it AND Width allows it
+    final bool actuallyShowLeftPanel = panelsAreRelevant && _showLeftPanel && canShowLeftPanelBasedOnWidth;
+    final bool actuallyShowRightPanel = panelsAreRelevant && _showRightPanel && canShowRightPanelBasedOnWidth;
+
+    // Decide if panel toggles in AppBar should be shown
+    final bool showActualPanelToggles = isDesktop && widget.showPanelToggles && widget.showTagSelection;
+
+
+    final appBar = widget.useScaffold ? CustomAppBar(
+      title: displayTitle,
+      // Pass actual visibility state to build actions
+      actions: _buildAppBarActions(
+          isDesktop,
+          showActualPanelToggles,
+          actuallyShowLeftPanel,
+          actuallyShowRightPanel,
+          canShowLeftPanelBasedOnWidth,
+          canShowRightPanelBasedOnWidth
       ),
-      body: RefreshIndicator(
-        onRefresh: _refreshData,
-        child: isDesktop
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context),
-      ),
-      floatingActionButton: widget.showAddButton ? AdminCheck(
-        child: FloatingActionButton(
-          onPressed: () {
-            NavigationUtil.navigateTo(context, '/game/add');
-          },
-          child: Icon(Icons.add),
-        ),
-      ) : null,
+      // Mobile tag bar logic remains the same
+      bottom: (!isDesktop && widget.showTagSelection && _showTagFilter && _topTags.isNotEmpty)
+          ? TagBar(
+        tags: _topTags,
+        selectedTag: _selectedTag,
+        onTagSelected: _onTagSelected,
+      )
+          : null,
+    ) : null;
+
+    // Pass actual visibility state to layout builders
+    final body = RefreshIndicator(
+      onRefresh: _refreshData,
+      child: isDesktop
+          ? _buildDesktopLayout(context, actuallyShowLeftPanel, actuallyShowRightPanel)
+          : _buildMobileLayout(context),
     );
+
+    // Floating action button logic remains the same
+    final floatingActionButton = widget.showAddButton && widget.useScaffold ? AdminCheck(
+      child: FloatingActionButton(
+        onPressed: widget.onAddPressed ?? () {
+          Navigator.pushNamed(context, AppRoutes.addGame); // Use correct route if needed
+        },
+        child: Icon(Icons.add),
+        tooltip: '添加游戏',
+      ),
+    ) : null;
+
+    if (widget.useScaffold) {
+      return Scaffold(
+        appBar: appBar,
+        body: body,
+        floatingActionButton: floatingActionButton,
+      );
+    } else {
+      return body;
+    }
   }
 
-  List<Widget> _buildAppBarActions(bool isDesktop) {
+  // Updated signature for AppBar actions builder
+  List<Widget> _buildAppBarActions(
+      bool isDesktop,
+      bool showActualPanelToggles,
+      bool actuallyShowLeftPanel,
+      bool actuallyShowRightPanel,
+      bool canShowLeftPanelBasedOnWidth,
+      bool canShowRightPanelBasedOnWidth)
+  {
     final actions = <Widget>[];
+    final Color secondaryColor = Theme.of(context).colorScheme.secondary;
+    final Color disabledColor = Colors.white54;
+    final Color enabledColor = Colors.white;
 
-    // 只在需要时显示面板切换按钮
-    if (isDesktop && widget.showPanelToggles) {
+    if (widget.additionalActions != null) {
+      actions.addAll(widget.additionalActions!);
+    }
+    if (widget.showAddButtonInAppBar) { /* ... Add button logic ... */ }
+    if (widget.showMySubmissionsButton) { /* ... My Submissions logic ... */ }
+
+    // --- Updated Panel Toggle Buttons ---
+    if (showActualPanelToggles) {
+      // Left Panel Toggle
       actions.add(
           IconButton(
             icon: Icon(
               Icons.menu,
-              color: _showLeftPanel ? Colors.yellow : Colors.white,
+              color: actuallyShowLeftPanel ? secondaryColor : (_showLeftPanel ? disabledColor : enabledColor),
             ),
-            onPressed: _toggleLeftPanel,
-            tooltip: _showLeftPanel ? '隐藏左侧面板' : '显示左侧面板',
+            onPressed: canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
+            tooltip: _showLeftPanel
+                ? (canShowLeftPanelBasedOnWidth ? '隐藏左侧面板' : '屏幕宽度不足')
+                : (canShowLeftPanelBasedOnWidth ? '显示左侧面板' : '屏幕宽度不足'),
           )
       );
-
+      // Right Panel Toggle
       actions.add(
           IconButton(
             icon: Icon(
               Icons.analytics_outlined,
-              color: _showRightPanel ? Colors.yellow : Colors.white,
+              color: actuallyShowRightPanel ? secondaryColor : (_showRightPanel ? disabledColor : enabledColor),
             ),
-            onPressed: _toggleRightPanel,
-            tooltip: _showRightPanel ? '隐藏右侧面板' : '显示右侧面板',
+            onPressed: canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
+            tooltip: _showRightPanel
+                ? (canShowRightPanelBasedOnWidth ? '隐藏右侧面板' : '屏幕宽度不足')
+                : (canShowRightPanelBasedOnWidth ? '显示右侧面板' : '屏幕宽度不足'),
           )
       );
     }
 
-    // 标签清除按钮
+    // Tag Clear Button (only if a tag is selected and tags are shown)
     if (_selectedTag != null && widget.showTagSelection) {
       actions.add(
           IconButton(
             icon: Icon(Icons.clear, color: Colors.white),
             onPressed: _clearTagSelection,
-            tooltip: '清除筛选',
+            tooltip: '清除标签筛选',
           )
       );
     }
 
-    // 移动端标签切换按钮
+    // Mobile Tag Toggle Button (only if not desktop and tags are shown)
     if (!isDesktop && widget.showTagSelection) {
       actions.add(
           IconButton(
             icon: Icon(
               Icons.tag,
-              color: _showTagFilter ? Colors.yellow : Colors.white,
+              color: _showTagFilter ? secondaryColor : enabledColor, // Use theme color
             ),
             onPressed: _toggleTagFilter,
-            tooltip: _showTagFilter ? '隐藏标签' : '显示标签',
+            tooltip: _showTagFilter ? '隐藏标签栏' : '显示标签栏',
           )
       );
     }
 
-    // 排序按钮
+    // Sort Button
     if (widget.showSortOptions) {
       actions.add(
           IconButton(
             icon: Icon(Icons.filter_list, color: Colors.white),
-            onPressed: () => _showFilterDialog(context),
-            tooltip: '排序',
+            onPressed: () => widget.onFilterPressed != null
+                ? widget.onFilterPressed!(context)
+                : _showFilterDialog(context), // Placeholder call
+            tooltip: '排序/筛选',
           )
       );
     }
@@ -345,33 +507,39 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
     return actions;
   }
 
+  // Placeholder for filter dialog - implement in subclasses if needed
   void _showFilterDialog(BuildContext context) {
-    // 这个方法只在子类中需要实现
-    // 基类中只提供接口
+    print("Filter dialog not implemented in base class.");
+    // Example: ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text("排序功能待实现")));
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  // Updated Desktop Layout builder signature
+  Widget _buildDesktopLayout(BuildContext context, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 左侧标签云面板（只在需要且显示时渲染）
-        if (_showLeftPanel && widget.showTagSelection)
+        // Conditionally render left panel based on actual state
+        if (actuallyShowLeftPanel) // No need for widget.showTagSelection check here, already incorporated
           GameLeftPanel(
             tags: _topTags,
             selectedTag: _selectedTag,
             onTagSelected: _onTagSelected,
           ),
 
-        // 主内容区域
+        // Main content area - Pass actual state down
         Expanded(
-          child: _buildContent(),
+          child: _buildContent(
+              isDesktop: true,
+              actuallyShowLeftPanel: actuallyShowLeftPanel,
+              actuallyShowRightPanel: actuallyShowRightPanel
+          ),
         ),
 
-        // 右侧统计面板（只在需要且显示时渲染）
-        if (_showRightPanel && widget.showTagSelection)
+        // Conditionally render right panel based on actual state
+        if (actuallyShowRightPanel) // No need for widget.showTagSelection check here
           GameRightPanel(
             currentPageGames: _games,
-            totalGamesCount: _games.length,
+            totalGamesCount: _games.length, // Note: Might need total count from API for pagination
             selectedTag: _selectedTag,
             onTagSelected: _onTagSelected,
           ),
@@ -379,132 +547,166 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
     );
   }
 
+  // Mobile layout builder
   Widget _buildMobileLayout(BuildContext context) {
-    return _buildContent();
+    // Mobile layout doesn't have panels, pass false or defaults
+    return _buildContent(isDesktop: false);
   }
 
-  Widget _buildContent() {
+  // Updated Content builder signature
+  Widget _buildContent({
+    required bool isDesktop,
+    bool actuallyShowLeftPanel = false,
+    bool actuallyShowRightPanel = false
+  }) {
+    // Error and Loading states handled first
     if (_errorMessage != null) {
       return _buildError(_errorMessage!);
     }
-
+    // Show loading indicator centrally, consider list specific loading later
     if (_games.isEmpty && _isLoading) {
       return _buildLoading();
     }
-
-    if (_games.isEmpty) {
+    // Handle empty state after loading finishes
+    if (_games.isEmpty && !_isLoading) {
       return _buildEmptyState(context);
     }
 
-    // 确定是否是桌面和面板状态
-    final isDesktop = DeviceUtils.isDesktop;
-    final withPanels = isDesktop && widget.showTagSelection;
+    // Determine if panels are actually shown (only relevant for desktop)
+    final bool withPanels = isDesktop && (actuallyShowLeftPanel || actuallyShowRightPanel);
 
-    // 动态计算每行卡片数量
+    // --- Use DeviceUtils with ACTUAL panel visibility ---
     final cardsPerRow = DeviceUtils.calculateCardsPerRow(
         context,
-        withPanels: withPanels,
-        leftPanelVisible: _showLeftPanel,
-        rightPanelVisible: _showRightPanel
+        // Pass the actual visibility states received by this function
+        withPanels: withPanels, // Simplified check: are *any* panels shown?
+        leftPanelVisible: actuallyShowLeftPanel,
+        rightPanelVisible: actuallyShowRightPanel
     );
 
-    // 检测是否应使用紧凑模式
+    // Use compact mode calculation (or simplify if not needed)
     final useCompactMode = cardsPerRow > 3 || (cardsPerRow == 3 && withPanels);
 
-    // 根据屏幕状态计算合适的卡片比例
+    // Calculate card ratio based on ACTUAL panel visibility
+    // Decide which calculation method to use based on whether *any* panel is visible
     final cardRatio = withPanels
         ? DeviceUtils.calculateGameListCardRatio(
         context,
-        _showLeftPanel,
-        _showRightPanel,
-        showTags: widget.showTagSelection
+        actuallyShowLeftPanel,
+        actuallyShowRightPanel,
+        showTags: widget.showTagSelection // Pass tag visibility if it affects ratio
     )
         : DeviceUtils.calculateSimpleCardRatio(
         context,
         showTags: widget.showTagSelection
     );
 
+    // print("Grid Calculated - CardsPerRow: $cardsPerRow, Ratio: $cardRatio, Compact: $useCompactMode"); // Debug log
+
     return GridView.builder(
-      controller: _scrollController,
-      padding: EdgeInsets.all(8),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 250,
-        childAspectRatio: cardRatio,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 12, // 增加垂直间距以防止卡片感觉太挤
+      controller: _scrollController, // Attach scroll controller
+      padding: const EdgeInsets.all(12), // Consistent padding
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: cardsPerRow, // Use calculated cards per row
+        childAspectRatio: cardRatio, // Use calculated aspect ratio
+        crossAxisSpacing: 12, // Spacing
+        mainAxisSpacing: 12,
       ),
-      itemCount: _games.length + (_isLoading ? 1 : 0),
+      // Add 1 for loading indicator at the end if loading more
+      itemCount: _games.length + (_isLoading && widget.enablePagination ? 1 : 0), // Show loading spinner only if paginating
       itemBuilder: (context, index) {
         if (index < _games.length) {
-          // 使用BaseGameCard替代GameCard，以提供更好的适配性
-          return BaseGameCard(
-            game: _games[index],
-            adaptForPanels: withPanels,
-            showTags: widget.showTagSelection,
-            showCollectionStats: true,
-            forceCompact: useCompactMode,
-            maxTags: useCompactMode ? 1 : 2,
-          );
+          final game = _games[index];
+          // Use custom builder or default BaseGameCard
+          if (widget.customCardBuilder != null) {
+            return widget.customCardBuilder!(game);
+          } else {
+            return BaseGameCard(
+              game: game,
+              isGridItem: true, // Explicitly state it's for a grid
+              // Adapt based on whether *any* panel is shown on desktop
+              adaptForPanels: withPanels,
+              showTags: widget.showTagSelection,
+              showCollectionStats: true, // Or make configurable
+              forceCompact: useCompactMode,
+              // Adjust maxTags based on compactness or panel state
+              maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
+            );
+          }
         } else {
-          return Center(child: CircularProgressIndicator());
+          // Show loading indicator at the bottom during load more
+          return const Center(
+              child: Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: CircularProgressIndicator()
+              )
+          );
         }
       },
     );
   }
 
-  Widget _buildError(String message) {
+  // Error, Loading, EmptyState widgets remain largely the same
+  Widget _buildError(String message) { /* ... Implementation ... */
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red),
-          SizedBox(height: 16),
-          Text(message),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadGames,
-            child: Text('重试'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
+            SizedBox(height: 16),
+            Text(message, textAlign: TextAlign.center),
+            SizedBox(height: 24),
+            ElevatedButton.icon(
+              icon: Icon(Icons.refresh),
+              label: Text('重试'),
+              onPressed: _loadGames, // Retry loading current view
+            ),
+          ],
+        ),
       ),
     );
   }
-
-  Widget _buildLoading() {
-    return Center(
+  Widget _buildLoading() { /* ... Implementation ... */
+    return const Center(
       child: CircularProgressIndicator(),
     );
   }
-
-  Widget _buildEmptyState(BuildContext context) {
+  Widget _buildEmptyState(BuildContext context) { /* ... Implementation ... */
     String message = _selectedTag != null && widget.showTagSelection
         ? '没有找到标签为"$_selectedTag"的游戏'
         : widget.emptyStateMessage;
 
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          widget.emptyStateIcon ?? Icon(Icons.games_outlined, size: 48, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(message),
-          SizedBox(height: 24),
-          if (_selectedTag != null && widget.showTagSelection)
-            ElevatedButton(
-              onPressed: _clearTagSelection,
-              child: Text('查看全部游戏'),
-            ),
-          SizedBox(height: 16),
-          if (widget.showAddButton)
-            AdminCheck(
-              child: ElevatedButton(
-                onPressed: () {
-                  NavigationUtil.navigateTo(context, '/game/add');
-                },
-                child: Text('添加游戏'),
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            widget.emptyStateIcon ?? Icon(Icons.videogame_asset_off_outlined, size: 60, color: Colors.grey[400]),
+            SizedBox(height: 20),
+            Text(message, style: TextStyle(fontSize: 16, color: Colors.grey[600]), textAlign: TextAlign.center),
+            SizedBox(height: 24),
+            if (_selectedTag != null && widget.showTagSelection)
+              ElevatedButton(
+                onPressed: _clearTagSelection,
+                child: Text('查看全部'),
               ),
-            ),
-        ],
+            // Keep SizedBox even if button above isn't shown, for consistent spacing
+            SizedBox(height: 16),
+            if (widget.showAddButton && !widget.showAddButtonInAppBar) // Show button here only if not in AppBar
+              AdminCheck(
+                child: ElevatedButton.icon(
+                  icon: Icon(Icons.add_circle_outline),
+                  label: Text('添加游戏'),
+                  onPressed: widget.onAddPressed ?? () {
+                    Navigator.pushNamed(context, AppRoutes.addGame); // Adjust route if needed
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

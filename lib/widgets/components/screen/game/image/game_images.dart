@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../screens/game/detail/image_preview_screen.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 
 class GameImages extends StatelessWidget {
   final Game game;
@@ -109,7 +110,7 @@ class GameImages extends StatelessWidget {
   }
 
   void _showImagePreview(BuildContext context, int initialIndex) {
-    Navigator.push(
+    NavigationUtils.push(
       context,
       MaterialPageRoute(
         builder: (_) => ImagePreviewScreen(

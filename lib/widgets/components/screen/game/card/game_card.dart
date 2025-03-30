@@ -4,7 +4,7 @@ import '../../../../../models/game/game.dart';
 import '../../../../common/animated_card_container.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../tag/game_tags.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 
 /// 优化版GameCard
 ///

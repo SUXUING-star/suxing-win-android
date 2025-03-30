@@ -1,5 +1,6 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/game/list/games_list_screen.dart';
 import '../screens/linkstools/linkstools_screen.dart';
@@ -21,27 +22,31 @@ import '../widgets/components/dialogs/ban/user_ban_dialog.dart';
 import '../widgets/components/dialogs/announcement/announcement_dialog.dart';
 
 class MainLayout extends StatefulWidget {
-  // 添加静态全局键和导航方法
-  static final GlobalKey<_MainLayoutState> mainLayoutKey = GlobalKey<_MainLayoutState>();
+  // 移除固定的静态键，改为可选参数
+  static final GlobalKey<_MainLayoutState> _privateMainLayoutKey = GlobalKey<_MainLayoutState>();
+
+  // 添加静态方法获取主布局状态，避免直接暴露键
+  static _MainLayoutState? get currentState => _privateMainLayoutKey.currentState;
 
   static void navigateTo(int index) {
-    final state = mainLayoutKey.currentState;
+    final state = currentState;
     if (state != null) {
       state._handleNavigation(index);
     } else {
       // If state is not available yet, store the index for later
-      // This happens when navigating from a different screen
       _pendingNavigationIndex = index;
     }
   }
+
   // 添加一个公开的方法来设置待处理的导航索引
   static void setPendingNavigation(int index) {
     _pendingNavigationIndex = index;
   }
-  // Add this static field to MainLayout class:
+
   static int? _pendingNavigationIndex;
 
-  MainLayout() : super(key: mainLayoutKey);
+  // 修改构造函数，使用私有静态键
+  MainLayout() : super(key: _privateMainLayoutKey);
 
   @override
   _MainLayoutState createState() => _MainLayoutState();
@@ -172,7 +177,7 @@ class _MainLayoutState extends State<MainLayout> {
     if (authProvider.isLoggedIn) {
       setState(() => _currentIndex = 5);
     } else {
-      Navigator.pushNamed(context, '/login');
+      NavigationUtils.pushNamed(context, '/login');
     }
   }
 

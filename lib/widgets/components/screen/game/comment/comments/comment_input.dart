@@ -1,18 +1,17 @@
-// lib/widgets/components/screen/game/comment/comment_input.dart
+// lib/widgets/components/screen/game/comment/comment_input_updated.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../dialogs/limiter/rate_limit_dialog.dart';
+import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
 
 class CommentInput extends StatefulWidget {
   final String gameId;
-  final VoidCallback? onCommentAdded; // 添加回调函数
+  final VoidCallback? onCommentAdded;
 
   const CommentInput({
     Key? key,
     required this.gameId,
-    this.onCommentAdded, // 初始化回调
+    this.onCommentAdded,
   }) : super(key: key);
 
   @override
@@ -20,18 +19,10 @@ class CommentInput extends StatefulWidget {
 }
 
 class _CommentInputState extends State<CommentInput> {
-  final TextEditingController _controller = TextEditingController();
   final CommentService _commentService = CommentService();
   bool _isSubmitting = false;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitComment() async {
-    final comment = _controller.text.trim();
+  Future<void> _submitComment(String comment) async {
     if (comment.isEmpty) return;
 
     setState(() {
@@ -40,9 +31,6 @@ class _CommentInputState extends State<CommentInput> {
 
     try {
       await _commentService.addComment(widget.gameId, comment);
-
-      // 清空输入并通知父组件刷新
-      _controller.clear();
 
       // 调用刷新回调
       if (widget.onCommentAdded != null) {
@@ -86,47 +74,12 @@ class _CommentInputState extends State<CommentInput> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    if (!authProvider.isLoggedIn) {
-      return Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: ElevatedButton(
-          onPressed: () => Navigator.pushNamed(context, '/login'),
-          child: const Text('登录后发表评论'),
-        ),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                hintText: '发表评论...',
-                border: OutlineInputBorder(),
-              ),
-              maxLines: 3,
-              enabled: !_isSubmitting,
-            ),
-          ),
-          const SizedBox(width: 16),
-          _isSubmitting
-              ? Container(
-            margin: const EdgeInsets.only(left: 10),
-            width: 24,
-            height: 24,
-            child: const CircularProgressIndicator(),
-          )
-              : ElevatedButton(
-            onPressed: _submitComment,
-            child: const Text('发表'),
-          ),
-        ],
-      ),
+    return CommentInputField(
+      hintText: '发表评论...',
+      submitButtonText: '发表',
+      isSubmitting: _isSubmitting,
+      onSubmit: _submitComment,
+      maxLines: 3,
     );
   }
 }

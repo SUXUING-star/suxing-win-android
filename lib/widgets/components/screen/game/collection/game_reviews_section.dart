@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../services/main/game/collection/game_collection_service.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../badge/info/user_info_badge.dart';
+import '../../../../ui/badges/user_info_badge.dart';
 
 class GameReviewSection extends StatefulWidget {
   final Game game;

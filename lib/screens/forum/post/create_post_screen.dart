@@ -1,5 +1,6 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/common/toaster/toaster.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
@@ -42,7 +43,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       setState(() => _isSubmitting = true);
       await _forumService.createPost(data.title, data.content, data.tags);
       Toaster.success(context, "发布帖子成功！");
-      Navigator.pop(context);
+      NavigationUtils.pop(context);
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/common/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({Key? key}) : super(key: key);
@@ -17,7 +18,7 @@ class NotFoundScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               const Text(
-                'Oops! 页面不存在',
+                '你来到了一个不存在的地方',
                 style: TextStyle(
                   fontSize: 24.0,
                   fontWeight: FontWeight.bold,
@@ -34,7 +35,7 @@ class NotFoundScreen extends StatelessWidget {
               ElevatedButton(
                 onPressed: () {
                   // 使用Navigator.popUntil 来返回到应用的根路由
-                  Navigator.popUntil(context, (route) => route.isFirst);
+                  NavigationUtils.popUntil(context, (route) => route.isFirst);
                 },
                 child: const Text('返回主页'),
               ),

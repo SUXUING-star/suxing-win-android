@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/game/coverImage/game_cover_image.dart
 import 'package:flutter/material.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 
 class GameCoverImage extends StatelessWidget {
   final String imageUrl;

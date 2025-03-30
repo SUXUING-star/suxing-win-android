@@ -1,5 +1,6 @@
 // lib/widgets/components/form/announcementform/preview/announcement_preview_button.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/announcement/announcement.dart';
 import 'announcement_preview_screen.dart';
 
@@ -19,7 +20,7 @@ class AnnouncementPreviewButton extends StatelessWidget {
       onPressed: isLoading
           ? null
           : () {
-        Navigator.of(context).push(
+        NavigationUtils.of(context).push(
           MaterialPageRoute(
             builder: (context) => AnnouncementPreviewScreen(
               announcement: announcement,

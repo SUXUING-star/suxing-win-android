@@ -49,7 +49,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     });
 
     try {
-      final status = await _collectionService.getGameCollectionStatus(widget.game.id);
+      final status =
+          await _collectionService.getGameCollectionStatus(widget.game.id);
 
       if (mounted) {
         setState(() {
@@ -193,7 +194,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
             height: 18,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(Theme.of(context).primaryColor),
             ),
           ),
         ),
@@ -213,14 +215,16 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
   Widget _buildAddCollectionButton(BuildContext context) {
     if (widget.compact) {
       return IconButton(
-        icon: Icon(Icons.add_circle_outline, color: Theme.of(context).primaryColor),
+        icon: Icon(Icons.add_circle_outline,
+            color: Theme.of(context).primaryColor),
         tooltip: '添加收藏',
         onPressed: _showCollectionDialog,
       );
     }
 
     return ElevatedButton.icon(
-      icon: Icon(Icons.add_circle_outline, size: 18),
+      icon: Icon(Icons.add_circle_outline,
+          color: Colors.white, size: 18),
       label: Text('添加收藏'),
       style: ElevatedButton.styleFrom(
         foregroundColor: Colors.white,

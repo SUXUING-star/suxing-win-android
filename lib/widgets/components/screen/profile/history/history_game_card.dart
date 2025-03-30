@@ -1,8 +1,9 @@
 // lib/widgets/components/screen/game/history/history_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../common/image/safe_cached_image.dart';
 import '../../../../../routes/app_routes.dart';
 
 /// 为游戏浏览历史屏幕专门设计的列表卡片组件
@@ -31,7 +32,7 @@ class HistoryGameCard extends StatelessWidget {
         onTap: () {
           final gameId = historyItem['gameId']?.toString() ?? '';
           if (gameId.isNotEmpty) {
-            Navigator.pushNamed(context, AppRoutes.gameDetail, arguments: gameId);
+            NavigationUtils.pushNamed(context, AppRoutes.gameDetail, arguments: gameId);
           }
         },
         child: IntrinsicHeight( // 确保左右两侧高度一致

@@ -48,18 +48,6 @@ class UserBanDialog extends StatelessWidget {
             ],
           ),
         ),
-        actions: [
-          // TextButton(
-          //   onPressed: () {
-          //     // 注销当前用户
-          //     Navigator.of(context).pushNamedAndRemoveUntil(
-          //       '/login',
-          //           (route) => false,
-          //     );
-          //   },
-          //   child: Text('退出登录'),
-          // ),
-        ],
       ),
     );
   }

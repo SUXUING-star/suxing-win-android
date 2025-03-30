@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class ActivityTargetNavigation extends StatelessWidget {
   final UserActivity activity;
@@ -70,7 +71,7 @@ class ActivityTargetNavigation extends StatelessWidget {
       child: OutlinedButton.icon(
         onPressed: () {
           // 导航到目标页面
-          Navigator.of(context).pushNamed(
+          NavigationUtils.of(context).pushNamed(
             route,
             arguments: arguments,
           );
@@ -78,27 +79,25 @@ class ActivityTargetNavigation extends StatelessWidget {
         icon: Icon(
           icon,
           size: 18,
-          color: isAlternate ? Colors.white70 : Theme.of(context).primaryColor,
+          color: Theme.of(context).primaryColor,
         ),
         label: Text(
           buttonText,
           style: TextStyle(
-            color: isAlternate ? Colors.white70 : Theme.of(context).primaryColor,
+            color: Theme.of(context).primaryColor,
             fontWeight: FontWeight.w500,
           ),
         ),
         style: OutlinedButton.styleFrom(
           side: BorderSide(
-            color: isAlternate ? Colors.white30 : Theme.of(context).primaryColor.withOpacity(0.5),
+            color: Theme.of(context).primaryColor.withOpacity(0.5),
             width: 1.0,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18.0),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          backgroundColor: isAlternate
-              ? Colors.black12
-              : Theme.of(context).primaryColor.withOpacity(0.05),
+          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.05),
         ),
       ),
     );

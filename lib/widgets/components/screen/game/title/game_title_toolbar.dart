@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/title/game_title_toolbar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 import '../button/edit_button.dart';
@@ -36,7 +37,7 @@ class GameTitleToolbar extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => NavigationUtils.of(context).pop(),
           ),
           const SizedBox(width: 16),
           Expanded(

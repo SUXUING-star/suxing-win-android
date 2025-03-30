@@ -2,16 +2,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import '../../../utils/device/device_utils.dart';
 import 'blocs/my_posts_bloc.dart';
 import 'blocs/my_posts_event.dart';
 import 'blocs/my_posts_state.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../services/main/user/user_service.dart';
-import '../../../widgets/components/screen/my_posts/post_list_item.dart';
+import '../../../widgets/components/screen/forum/card/post_grid_view.dart';
 import '../../../widgets/components/screen/my_posts/post_actions_bottom_sheet.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 
 class MyPostsScreen extends StatefulWidget {
   @override
@@ -21,6 +23,7 @@ class MyPostsScreen extends StatefulWidget {
 class _MyPostsScreenState extends State<MyPostsScreen> {
   late MyPostsBloc _myPostsBloc;
   bool _isInitialized = false;
+  final ScrollController _scrollController = ScrollController();
 
   @override
   void initState() {
@@ -31,6 +34,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       Provider.of<UserService>(context, listen: false),
     );
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -40,7 +44,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       _isInitialized = true;
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final loadingObserver = Navigator.of(context)
+        final loadingObserver = NavigationUtils.of(context)
             .widget.observers
             .whereType<LoadingRouteObserver>()
             .first;
@@ -60,15 +64,15 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
   }
 
-
   @override
   void dispose() {
     _myPostsBloc.close();
+    _scrollController.dispose();
     super.dispose();
   }
 
   Future<void> _refreshPosts() async {
-    final loadingObserver = Navigator.of(context)
+    final loadingObserver = NavigationUtils.of(context)
         .widget.observers
         .whereType<LoadingRouteObserver>()
         .first;
@@ -107,7 +111,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           },
         ),
         floatingActionButton: FloatingActionButton(
-          onPressed: () => Navigator.pushNamed(context, AppRoutes.createPost),
+          onPressed: () => NavigationUtils.pushNamed(context, AppRoutes.createPost),
           child: Icon(Icons.add),
           tooltip: '发布新帖',
         ),
@@ -116,6 +120,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   Widget _buildContent(BuildContext context, MyPostsState state) {
+    final bool isDesktop = DeviceUtils.isDesktop;
+
     if (state.isLoading) {
       return Center(child: CircularProgressIndicator());
     }
@@ -130,7 +136,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
             Text('请先登录'),
             SizedBox(height: 24),
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.login),
+              onPressed: () => NavigationUtils.pushNamed(context, AppRoutes.login),
               child: Text('去登录'),
             ),
           ],
@@ -151,20 +157,10 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       );
     }
 
-    return ListView.builder(
-      itemCount: state.posts.length,
-      itemBuilder: (context, index) {
-        final post = state.posts[index];
-        return PostListItem(
-          post: post,
-          onMoreTap: () {
-            showModalBottomSheet(
-              context: context,
-              builder: (context) => PostActionsBottomSheet(post: post),
-            );
-          },
-        );
-      },
+    return PostGridView(
+      posts: state.posts,
+      scrollController: _scrollController,
+      isDesktopLayout: false,  // 保持原有的列表样式
     );
   }
 }

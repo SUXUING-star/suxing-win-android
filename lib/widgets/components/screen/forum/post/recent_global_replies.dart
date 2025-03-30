@@ -1,11 +1,12 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../services/main/forum/global_replies_service.dart';
 import '../../../../../screens/forum/post/post_detail_screen.dart';
 import '../../../../../screens/profile/open_profile_screen.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../common/image/safe_user_avatar.dart';
+import '../../../../ui/image/safe_user_avatar.dart';
 
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
@@ -172,7 +173,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
       ),
       child: InkWell(
         onTap: () {
-          Navigator.push(
+          NavigationUtils.push(
             context,
             MaterialPageRoute(
               builder: (context) => PostDetailScreen(postId: reply.postId),
@@ -197,7 +198,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                     enableNavigation: true,
                     onTap: () {
                       if (reply.author['id'] != null) {
-                        Navigator.push(
+                        NavigationUtils.push(
                           context,
                           MaterialPageRoute(
                             builder: (context) => OpenProfileScreen(userId: reply.author['id']),

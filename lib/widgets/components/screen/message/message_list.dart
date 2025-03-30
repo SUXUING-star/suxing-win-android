@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/message/message_list.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../models/message/message.dart';
 import '../../../../models/message/message_type.dart';
 import '../../../../services/main/message/message_service.dart';
@@ -205,13 +206,13 @@ class MessageList extends StatelessWidget {
         content: Text('确定要删除这条消息吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtils.pop(context),
             child: Text('取消'),
           ),
           TextButton(
             onPressed: () async {
               await messageService.deleteMessage(message.id);
-              Navigator.pop(context);
+              NavigationUtils.pop(context);
             },
             child: Text('删除'),
           ),

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../services/main/user/user_follow_service.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../utils/device/device_utils.dart';
 import '../../../widgets/components/screen/profile/follow/responsive_follows_layout.dart';

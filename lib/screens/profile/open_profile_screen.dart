@@ -1,13 +1,14 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/level/level_color.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import '../../services/main/forum/forum_service.dart';
 import '../../services/main/game/game_service.dart';
 import '../../models/post/post.dart';
 import '../../models/game/game.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/common/image/safe_user_avatar.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../widgets/ui/image/safe_user_avatar.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/components/screen/profile/open/mobile/profile_game_card.dart';
 import '../../widgets/components/screen/profile/open/mobile/profile_post_card.dart';
@@ -547,10 +548,6 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
   }
 
   Color _getLevelColor(int level) {
-    if (level < 5) return Colors.green;
-    if (level < 10) return Colors.blue;
-    if (level < 20) return Colors.purple;
-    if (level < 50) return Colors.orange;
-    return Colors.red;
+    return LevelColor.getLevelColor(level);
   }
 }

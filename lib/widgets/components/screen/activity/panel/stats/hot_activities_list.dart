@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../utils/activity_utils.dart';
 
 class HotActivitiesList extends StatelessWidget {
@@ -63,7 +65,10 @@ class HotActivitiesList extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          // 可以添加点击查看详情的操作
+          NavigationUtils.pushNamed(
+              context,
+              AppRoutes.activityDetail,
+              arguments: activity.id);
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -166,7 +171,7 @@ class HotActivitiesList extends StatelessWidget {
   }
 
   void _navigateToUserProfile(BuildContext context, String userId) {
-    Navigator.push(
+    NavigationUtils.push(
       context,
       MaterialPageRoute(
         builder: (context) => OpenProfileScreen(userId: userId),

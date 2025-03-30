@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'dart:async';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
@@ -186,7 +187,7 @@ class _HomeHotState extends State<HomeHot> {
     return _buildSection(
       title: '热门游戏',
       onMorePressed: () {
-        Navigator.pushNamed(context, AppRoutes.hotGames);
+        NavigationUtils.pushNamed(context, AppRoutes.hotGames);
       },
       child: Stack(
         children: [
@@ -223,7 +224,7 @@ class _HomeHotState extends State<HomeHot> {
                           cardWidgets.add(
                             HomeGameCard(
                               game: games[gameIndex],
-                              onTap: () => Navigator.pushNamed(
+                              onTap: () => NavigationUtils.pushNamed(
                                 context,
                                 AppRoutes.gameDetail,
                                 arguments: games[gameIndex],

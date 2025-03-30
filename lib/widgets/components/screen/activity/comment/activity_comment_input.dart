@@ -1,17 +1,20 @@
-// lib/widgets/components/screen/activity/activity_comment_input.dart
+// lib/widgets/components/screen/activity/comment/activity_comment_input_updated.dart
 
 import 'package:flutter/material.dart';
-
+import '../../../../../widgets/ui/inputs/comment_input_field.dart'; // 导入可复用的评论输入组件
+import '../../../../../widgets/ui/buttons/login_prompt.dart';
 class ActivityCommentInput extends StatefulWidget {
   final Function(String) onSubmit;
   final bool isAlternate; // 是否交替布局
   final String hintText;
+  final bool isLocked; // 是否锁定状态
 
   const ActivityCommentInput({
     Key? key,
     required this.onSubmit,
     this.isAlternate = false,
     this.hintText = '发表评论...',
+    this.isLocked = false, // 默认为未锁定
   }) : super(key: key);
 
   @override
@@ -19,87 +22,64 @@ class ActivityCommentInput extends StatefulWidget {
 }
 
 class _ActivityCommentInputState extends State<ActivityCommentInput> {
-  final TextEditingController _commentController = TextEditingController();
-  final FocusNode _focusNode = FocusNode();
-  bool _isComposing = false;
+  bool _isSubmitting = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _commentController.addListener(() {
-      setState(() {
-        _isComposing = _commentController.text.trim().isNotEmpty;
-      });
-    });
-  }
-
-  @override
-  void dispose() {
-    _commentController.dispose();
-    _focusNode.dispose();
-    super.dispose();
-  }
-
-  void _handleSubmit() {
-    final comment = _commentController.text.trim();
+  void _handleSubmit(String comment) {
     if (comment.isEmpty) return;
 
-    widget.onSubmit(comment);
-    _commentController.clear();
-    _focusNode.unfocus();
+    setState(() {
+      _isSubmitting = true;
+    });
+
+    try {
+      widget.onSubmit(comment);
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmitting = false;
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(top: 8),
-      child: Row(
-        textDirection: widget.isAlternate ? TextDirection.rtl : TextDirection.ltr,
-        children: [
-          Expanded(
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.grey.shade100,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey.shade300),
-              ),
-              child: Directionality(
-                textDirection: TextDirection.ltr, // 输入框文本方向始终是从左到右
-                child: TextField(
-                  controller: _commentController,
-                  focusNode: _focusNode,
-                  textAlign: widget.isAlternate ? TextAlign.right : TextAlign.left,
-                  decoration: InputDecoration(
-                    hintText: widget.hintText,
-                    hintStyle: TextStyle(color: Colors.grey.shade400),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    border: InputBorder.none,
-                  ),
-                  textInputAction: TextInputAction.send,
-                  onSubmitted: (_) => _handleSubmit(),
-                  maxLines: 3,
-                  minLines: 1,
+    // 使用可复用的CommentInputField组件
+    return CommentInputField(
+      hintText: widget.hintText,
+      submitButtonText: '发送',
+      isSubmitting: _isSubmitting,
+      onSubmit: _handleSubmit,
+      maxLines: 3,
+      // --- 2. Replace the custom Card with LoginPrompt ---
+      loginPrompt: const LoginPrompt(
+        message: '登录后发表评论', // 自定义提示信息
+        buttonText: '立即登录',    // 自定义按钮文字
+      ),
+      lockedContent: widget.isLocked ? Card(
+        elevation: 1,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: Colors.grey.shade200),
+        ),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '评论已锁定',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            ),
+              const SizedBox(height: 16),
+              const Text('该内容已被锁定，无法评论'),
+            ],
           ),
-          const SizedBox(width: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: _isComposing
-                  ? Theme.of(context).primaryColor
-                  : Colors.grey.shade300,
-              shape: BoxShape.circle,
-            ),
-            child: IconButton(
-              icon: const Icon(Icons.send),
-              color: Colors.white,
-              iconSize: 20,
-              onPressed: _isComposing ? _handleSubmit : null,
-            ),
-          ),
-        ],
-      ),
+        ),
+      ) : null,
     );
   }
 }

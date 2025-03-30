@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/dialog/collection_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game_collection.dart';
 import '../../../../../widgets/components/form/collection/collection_form.dart';
 
@@ -69,14 +70,14 @@ class CollectionDialog extends StatelessWidget {
                       initialReview: currentReview,  // Pass the review field
                       initialRating: currentRating,
                       showRemoveButton: isEditing,
-                      onCancel: () => Navigator.of(context).pop(),
+                      onCancel: () => NavigationUtils.of(context).pop(),
                       onRemove: () {
-                        Navigator.of(context).pop({
+                        NavigationUtils.of(context).pop({
                           'action': 'remove',
                         });
                       },
                       onSubmit: (status, notes, review, rating) {  // Make sure this function accepts review
-                        Navigator.of(context).pop({
+                        NavigationUtils.of(context).pop({
                           'action': 'set',
                           'status': status,
                           'notes': notes,

@@ -1,8 +1,9 @@
 // lib/widgets/game/game_header.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import '../../../../../models/game/game.dart';
 import '../tag/game_tags.dart'; // 导入游戏标签组件
-import '../../../badge/info/user_info_badge.dart'; // 导入新的用户信息组件
+import '../../../../ui/badges/user_info_badge.dart'; // 导入新的用户信息组件
 
 class GameHeader extends StatelessWidget {
   final Game game;
@@ -22,6 +23,7 @@ class GameHeader extends StatelessWidget {
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
@@ -119,7 +121,11 @@ class GameHeader extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          alignment: WrapAlignment.start,
+          crossAxisAlignment: WrapCrossAlignment.center,
           children: [
             // 使用新的用户信息组件
             UserInfoBadge(
@@ -128,18 +134,34 @@ class GameHeader extends StatelessWidget {
               showLevel: true,
             ),
             Container(
-              margin: EdgeInsets.symmetric(horizontal: 12),
               width: 1,
               height: 12,
               color: Colors.grey[300],
             ),
-            Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.grey[600]),
-            SizedBox(width: 4),
-            Text('${game.viewCount} 次浏览', style: textStyle),
-            SizedBox(width: 4),
-            Icon(Icons.thumb_up, size: 16, color: Colors.grey[600]),
-            SizedBox(width: 4),
-            Text('${game.likeCount} 人点赞', style: textStyle),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.grey[600]),
+                SizedBox(width: 4),
+                Text('${game.viewCount} 次浏览', style: textStyle),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.thumb_up_off_alt_outlined, size: 16, color: Colors.grey[600]),
+                SizedBox(width: 4),
+                Text('${game.likeCount} 人点赞', style: textStyle),
+              ],
+            ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.bookmark_added_outlined, size: 16, color: Colors.grey[600]),
+                SizedBox(width: 4),
+                Text('${game.totalCollections} 人收藏', style: textStyle),
+              ],
+            ),
           ],
         ),
         SizedBox(height: 8),
@@ -147,16 +169,15 @@ class GameHeader extends StatelessWidget {
           children: [
             Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
             SizedBox(width: 4),
-            Text('发布于 ${DateFormatter.format(game.createTime)}', style: textStyle),
+            Text('发布于 ${DateTimeFormatter.formatTimeAgo(game.createTime)}', style: textStyle),
+            SizedBox(width: 4),
+            Text('编辑于 ${DateTimeFormatter.formatTimeAgo(game.updateTime)}', style: textStyle),
+
           ],
+
         ),
       ],
     );
   }
 }
 
-class DateFormatter {
-  static String format(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
-  }
-}

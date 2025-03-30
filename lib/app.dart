@@ -9,9 +9,10 @@ import 'widgets/components/loading/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
 import 'widgets/components/loading/loading_screen.dart';
-import 'widgets/components/effects/mouse_trail_effect.dart';
+
 import './routes/app_routes.dart';
 import 'wrapper/platform_wrapper.dart';
+import 'wrapper/maintenance_wrapper.dart';
 import 'services/main/restart/restart_service.dart';
 import 'services/main/network/network_manager.dart';
 
@@ -50,6 +51,7 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   NetworkManager? _networkManager;
+
   @override
   void initState() {
     super.initState();
@@ -89,12 +91,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               ? const Color(0xFFE0E0E0)
               : const Color(0xFFB3E5FC);
 
-          return MouseTrailEffect(
-            particleColor: particleColor,
-            maxParticles: 20,
-            particleLifespan: const Duration(milliseconds: 800),
-            child: MaterialApp(
-              // 添加全局导航器键
+          return MaterialApp(
               navigatorKey: mainNavigatorKey,
               title: '宿星茶会（跨平台版）',
               theme: themeProvider.lightTheme,
@@ -102,35 +99,36 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               themeMode: themeProvider.themeMode,
               debugShowCheckedModeBanner: false,
               navigatorObservers: [widget.loadingRouteObserver],
-              // 这里是关键：使用带有Overlay的builder
               builder: (context, child) {
-                return Stack(
-                  children: [
-                    AppBackground(
-                      child: Navigator(
-                        // 这个内部导航器确保有Overlay
-                        onGenerateRoute: (settings) => MaterialPageRoute(
-                          builder: (_) => PlatformWrapper(
-                            child: child ?? Container(),
-                          ),
+                return MaintenanceWrapper( // Add this wrapper
+                  child: Stack(
+                    children: [
+                      AppBackground(
+                        child: Navigator(
+                          onGenerateRoute: (settings) =>
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    PlatformWrapper(
+                                      child: child ?? Container(),
+                                    ),
+                              ),
                         ),
                       ),
-                    ),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: widget.loadingRouteObserver.isLoading,
-                      builder: (context, isLoading, _) {
-                        return LoadingScreen(
-                          isLoading: isLoading,
-                          message: isLoading ? '加载中...' : null,
-                        );
-                      },
-                    ),
-                  ],
+                      ValueListenableBuilder<bool>(
+                        valueListenable: widget.loadingRouteObserver.isLoading,
+                        builder: (context, isLoading, _) {
+                          return LoadingScreen(
+                            isLoading: isLoading,
+                            message: isLoading ? '加载中...' : null,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 );
               },
               home: MainLayout(),
               onGenerateRoute: AppRoutes.onGenerateRoute,
-            ),
           );
         },
       ),

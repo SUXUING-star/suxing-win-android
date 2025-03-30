@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/profile/open/mobile/profile_post_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/post/post.dart';
 
 class ProfilePostCard extends StatelessWidget {
@@ -17,7 +18,7 @@ class ProfilePostCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.pushNamed(context, '/forum/post', arguments: post.id),
+        onTap: () => NavigationUtils.pushNamed(context, '/forum/post', arguments: post.id),
         child: Padding(
           padding: EdgeInsets.all(12),
           child: Column(

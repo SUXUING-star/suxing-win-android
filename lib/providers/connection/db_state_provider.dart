@@ -1,5 +1,4 @@
 // lib/providers/connection/db_state_provider.dart
-
 import 'package:flutter/material.dart';
 import '../../services/main/restart/restart_service.dart';
 import 'dart:async';

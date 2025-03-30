@@ -1,6 +1,6 @@
 // lib/widgets/form/gameform/preview/game_preview.dart
 import 'package:flutter/material.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/font/font_config.dart';
 

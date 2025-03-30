@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../services/main/maintenance/maintenance_service.dart';
 import '../../../../../providers/auth/auth_provider.dart';
 
@@ -131,7 +132,7 @@ class _MaintenanceDialogState extends State<MaintenanceDialog> {
             actions: [
               if (widget.canDismiss)
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => NavigationUtils.of(context).pop(),
                   child: const Text("稍后再试"),
                 ),
               TextButton(
@@ -141,7 +142,7 @@ class _MaintenanceDialogState extends State<MaintenanceDialog> {
 
                   // 如果不再处于维护状态，关闭对话框
                   if (!maintenanceService.isInMaintenance && mounted) {
-                    Navigator.of(context).pop();
+                    NavigationUtils.of(context).pop();
                   } else {
                     // 否则更新剩余时间
                     setState(() {

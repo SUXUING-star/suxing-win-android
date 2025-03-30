@@ -1,8 +1,9 @@
 // lib/widgets/components/screen/common/card/base_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 import '../../../../../routes/app_routes.dart';
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能
@@ -410,7 +411,7 @@ class BaseGameCard extends StatelessWidget {
 
   // 卡片点击事件
   void _onCardTap(BuildContext context) {
-    Navigator.pushNamed(
+    NavigationUtils.pushNamed(
       context,
       '/game/detail',
       arguments: game,

@@ -1,4 +1,4 @@
-// lib/blocs/my_posts/my_posts_bloc.dart
+// lib/screen/profile/myposts/blocs/my_posts_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../services/main/forum/forum_service.dart';
 import '../../../../services/main/user/user_service.dart';

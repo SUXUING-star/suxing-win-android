@@ -1,7 +1,8 @@
 // lib/widgets/components/screen/profile/responsive_follows_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../../widgets/common/image/safe_user_avatar.dart';
+import '../../../../ui/image/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../button/follow_user_button.dart';
 
@@ -253,7 +254,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
           ),
           child: InkWell(
             onTap: () {
-              Navigator.pushNamed(
+              NavigationUtils.pushNamed(
                 context,
                 AppRoutes.openProfile,
                 arguments: userId,

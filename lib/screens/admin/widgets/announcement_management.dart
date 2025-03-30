@@ -1,5 +1,6 @@
 // lib/screens/admin/widgets/announcement_management.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../models/announcement/announcement.dart';
 import '../../../services/main/announcement/announcement_service.dart';
 import '../../../widgets/components/dialogs/announcement/announcement_dialog.dart';
@@ -73,9 +74,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
           child: AnnouncementForm(
             announcement: announcement,
             onSubmit: (updatedAnnouncement) {
-              Navigator.of(context).pop(updatedAnnouncement);
+              NavigationUtils.of(context).pop(updatedAnnouncement);
             },
-            onCancel: () => Navigator.of(context).pop(),
+            onCancel: () => NavigationUtils.of(context).pop(),
           ),
         ),
       ),
@@ -134,11 +135,11 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
         content: const Text('确定要删除这条公告吗？此操作不可撤销。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => NavigationUtils.of(context).pop(false),
             child: const Text('取消'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => NavigationUtils.of(context).pop(true),
             style: TextButton.styleFrom(
               foregroundColor: Colors.red,
             ),

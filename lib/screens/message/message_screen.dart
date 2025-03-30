@@ -1,11 +1,12 @@
 // lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../services/main/message/message_service.dart';
 import '../../models/message/message.dart';
 import '../../models/message/message_type.dart';
 import '../../utils/device/device_utils.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/message/message_detail.dart';
 import '../../widgets/components/screen/message/message_tabs.dart';
 import '../../widgets/components/screen/message/message_desktop_layout.dart';
@@ -165,14 +166,14 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
 
     // 根据消息类型跳转到相应页面
     if (isCommentReply && message.gameId != null) {
-      Navigator.push(
+      NavigationUtils.push(
         context,
         MaterialPageRoute(
           builder: (context) => GameDetailScreen(gameId: message.gameId!),
         ),
       );
     } else if (isPostReply && message.postId != null) {
-      Navigator.push(
+      NavigationUtils.push(
         context,
         MaterialPageRoute(
           builder: (context) => PostDetailScreen(postId: message.postId!),
@@ -180,7 +181,7 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
       );
     } else if (isFollowNotification && message.senderId.isNotEmpty) {
       // 关注通知跳转到用户个人页面
-      Navigator.push(
+      NavigationUtils.push(
         context,
         MaterialPageRoute(
           builder: (context) => OpenProfileScreen(userId: message.senderId),
@@ -198,13 +199,13 @@ class _MessageScreenState extends State<MessageScreen> with SingleTickerProvider
         content: Text('确定要删除这条消息吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => NavigationUtils.pop(context),
             child: Text('取消'),
           ),
           TextButton(
             onPressed: () async {
               await _messageService.deleteMessage(message.id);
-              Navigator.pop(context);
+              NavigationUtils.pop(context);
 
               // 如果当前选中的消息被删除，关闭详情面板
               if (_selectedMessage?.id == message.id) {

@@ -1,5 +1,6 @@
 // lib/widgets/components/form/announcementform/preview/announcement_preview_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/announcement/announcement.dart';
 import '../../../dialogs/announcement/announcement_dialog.dart';
 
@@ -34,7 +35,7 @@ class AnnouncementPreviewScreen extends StatelessWidget {
           TextButton.icon(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             label: const Text('返回编辑', style: TextStyle(color: Colors.white)),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => NavigationUtils.of(context).pop(),
           ),
         ],
       ),
@@ -138,7 +139,7 @@ class AnnouncementPreviewScreen extends StatelessWidget {
         ),
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pop(),
+        onPressed: () => NavigationUtils.of(context).pop(),
         label: const Text('返回继续编辑'),
         icon: const Icon(Icons.edit),
       ),

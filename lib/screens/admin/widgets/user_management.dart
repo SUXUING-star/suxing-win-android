@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../services/main/user/user_service.dart';
 import '../../../services/main/user/user_ban_service.dart';
@@ -115,7 +116,7 @@ class _UserManagementState extends State<UserManagement> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => NavigationUtils.pop(dialogContext),
             child: Text('取消'),
           ),
           ElevatedButton(
@@ -136,7 +137,7 @@ class _UserManagementState extends State<UserManagement> {
                   bannedBy: authProvider.currentUser!.id,
                 );
 
-                Navigator.pop(dialogContext);
+                NavigationUtils.pop(dialogContext);
                 if(mounted) {
                   // 刷新用户列表
                   _refreshUserList();
@@ -169,14 +170,14 @@ class _UserManagementState extends State<UserManagement> {
         content: Text('确定要解除用户 ${user['username']} 的封禁吗？'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
+            onPressed: () => NavigationUtils.pop(dialogContext),
             child: Text('取消'),
           ),
           ElevatedButton(
             onPressed: () async {
               try {
                 await _banService.unbanUser(user['_id'].toString());
-                Navigator.pop(dialogContext);
+                NavigationUtils.pop(dialogContext);
                 if(mounted) {
                   // 刷新用户列表
                   _refreshUserList();

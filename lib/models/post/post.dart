@@ -15,8 +15,16 @@ class Post {
   final DateTime updateTime;
   final int viewCount;
   final int replyCount;
+  final int likeCount;       // 新增：点赞数
+  final int agreeCount;      // 新增：赞成数
+  final int favoriteCount;   // 新增：收藏数
   final List<String> tags;
   final PostStatus status;
+
+  // 新增用户交互状态属性 - 这些属性不会被序列化
+  bool isLiked = false;      // 当前用户是否点赞
+  bool isAgreed = false;     // 当前用户是否赞成
+  bool isFavorited = false;  // 当前用户是否收藏
 
   Post({
     required this.id,
@@ -27,8 +35,14 @@ class Post {
     required this.updateTime,
     this.viewCount = 0,
     this.replyCount = 0,
+    this.likeCount = 0,       // 初始化点赞数
+    this.agreeCount = 0,      // 初始化赞成数
+    this.favoriteCount = 0,   // 初始化收藏数
     this.tags = const [],
     this.status = PostStatus.active,
+    this.isLiked = false,
+    this.isAgreed = false,
+    this.isFavorited = false,
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
@@ -48,11 +62,15 @@ class Post {
           : DateTime.parse(json['updateTime']),
       viewCount: json['viewCount']?.toInt() ?? 0,
       replyCount: json['replyCount']?.toInt() ?? 0,
+      likeCount: json['likeCount']?.toInt() ?? 0,       // 新增：点赞数
+      agreeCount: json['agreeCount']?.toInt() ?? 0,     // 新增：赞成数
+      favoriteCount: json['favoriteCount']?.toInt() ?? 0, // 新增：收藏数
       tags: List<String>.from(json['tags'] ?? []),
       status: PostStatus.values.firstWhere(
             (e) => e.toString().split('.').last == json['status'],
         orElse: () => PostStatus.active,
       ),
+      // 交互状态字段默认为 false，将在获取帖子详情时单独设置
     );
   }
 
@@ -65,9 +83,51 @@ class Post {
       'updateTime': updateTime.toIso8601String(),
       'viewCount': viewCount,
       'replyCount': replyCount,
+      'likeCount': likeCount,       // 新增：点赞数
+      'agreeCount': agreeCount,     // 新增：赞成数
+      'favoriteCount': favoriteCount, // 新增：收藏数
       'tags': tags,
       'status': status.toString().split('.').last,
     };
+  }
+
+  // 创建 Post 的副本，可以更新部分属性
+  Post copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? authorId,
+    DateTime? createTime,
+    DateTime? updateTime,
+    int? viewCount,
+    int? replyCount,
+    int? likeCount,
+    int? agreeCount,
+    int? favoriteCount,
+    List<String>? tags,
+    PostStatus? status,
+    bool? isLiked,
+    bool? isAgreed,
+    bool? isFavorited,
+  }) {
+    return Post(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      authorId: authorId ?? this.authorId,
+      createTime: createTime ?? this.createTime,
+      updateTime: updateTime ?? this.updateTime,
+      viewCount: viewCount ?? this.viewCount,
+      replyCount: replyCount ?? this.replyCount,
+      likeCount: likeCount ?? this.likeCount,
+      agreeCount: agreeCount ?? this.agreeCount,
+      favoriteCount: favoriteCount ?? this.favoriteCount,
+      tags: tags ?? this.tags,
+      status: status ?? this.status,
+      isLiked: isLiked ?? this.isLiked,
+      isAgreed: isAgreed ?? this.isAgreed,
+      isFavorited: isFavorited ?? this.isFavorited,
+    );
   }
 }
 

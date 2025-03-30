@@ -1,5 +1,6 @@
 // lib/widgets/components/button/follow_user_button.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -117,7 +118,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
           action: SnackBarAction(
             label: '去登录',
             onPressed: () {
-              Navigator.pushNamed(context, 'login');
+              NavigationUtils.pushNamed(context, 'login');
             },
           ),
         ),

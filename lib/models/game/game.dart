@@ -20,6 +20,10 @@ class Game {
   final List<DownloadLink> downloadLinks;
   final String? musicUrl;
   final DateTime? lastViewedAt;
+  final String? approvalStatus; // "pending", "approved", "rejected"
+  final String? reviewComment;  // Admin feedback if rejected
+  final DateTime? reviewedAt;   // When the game was reviewed
+  final String? reviewedBy;     // Admin who reviewed the game
 
   // 新增收藏统计字段
   final int wantToPlayCount;
@@ -51,6 +55,10 @@ class Game {
     this.playingCount = 0,
     this.playedCount = 0,
     this.totalCollections = 0,
+    this.approvalStatus,
+    this.reviewComment,
+    this.reviewedAt,
+    this.reviewedBy,
   }) : this.tags = tags ?? [];
 
   factory Game.fromJson(Map<String, dynamic> json) {
@@ -158,6 +166,10 @@ class Game {
       playingCount: parseIntSafely(json['playingCount']),
       playedCount: parseIntSafely(json['playedCount']),
       totalCollections: parseIntSafely(json['totalCollections']),
+      approvalStatus: json['approvalStatus']?.toString(),
+      reviewComment: json['reviewComment']?.toString(),
+      reviewedAt: json['reviewedAt'] != null ? parseDateTime(json['reviewedAt']) : null,
+      reviewedBy: json['reviewedBy']?.toString(),
     );
   }
 
@@ -186,6 +198,10 @@ class Game {
       'playingCount': playingCount,
       'playedCount': playedCount,
       'totalCollections': totalCollections,
+      'approvalStatus': approvalStatus,
+      'reviewComment': reviewComment,
+      'reviewedAt': reviewedAt?.toIso8601String(),
+      'reviewedBy': reviewedBy,
     };
   }
 
@@ -212,6 +228,10 @@ class Game {
     int? playingCount,
     int? playedCount,
     int? totalCollections,
+    String? approvalStatus,
+    String? reviewComment,
+    DateTime? reviewedAt,
+    String? reviewedBy,
   }) {
     return Game(
       id: id ?? this.id,
@@ -236,6 +256,10 @@ class Game {
       playingCount: playingCount ?? this.playingCount,
       playedCount: playedCount ?? this.playedCount,
       totalCollections: totalCollections ?? this.totalCollections,
+      approvalStatus: approvalStatus ?? this.approvalStatus,
+      reviewComment: reviewComment ?? this.reviewComment,
+      reviewedAt: reviewedAt ?? this.reviewedAt,
+      reviewedBy: reviewedBy ?? this.reviewedBy,
     );
   }
 }

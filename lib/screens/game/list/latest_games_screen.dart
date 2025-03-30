@@ -24,8 +24,8 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
     );
   }
 
-  Future<List<Game>> _loadGames() async {
-    // 使用优化的getLatestGames方法，利用Redis缓存
+  Future<List<Game>> _loadGames(String? tag) async {
+    // 最新游戏可能不需要标签筛选，但仍需要保持函数签名一致
     return await _gameService.getLatestGames().first;
   }
 }

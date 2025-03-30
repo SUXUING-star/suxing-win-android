@@ -42,6 +42,10 @@ class TaskStyle {
         taskColor = Colors.teal.shade300;
         taskIcon = Icons.comment;
         break;
+      case 'game_creation': // 新增游戏创建任务类型
+        taskColor = Colors.indigo.shade400;
+        taskIcon = Icons.games;
+        break;
       default:
         taskColor = Colors.grey.shade500;
         taskIcon = Icons.task_alt;

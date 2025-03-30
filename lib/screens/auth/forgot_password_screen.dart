@@ -1,11 +1,12 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../services/main/email/email_service.dart';
 import 'dart:async';
 import '../../widgets/common/toaster/toaster.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
-import '../../widgets/components/common/error_widget.dart';
-import '../../widgets/components/common/loading_widget.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../widgets/ui/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
   @override
@@ -94,7 +95,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       return;
     }
 
-    Navigator.pushReplacementNamed(
+    NavigationUtils.pushReplacementNamed(
       context,
       '/reset-password',
       arguments: _emailController.text,

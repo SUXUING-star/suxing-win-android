@@ -1,5 +1,6 @@
 // lib/widgets/dialogs/announcement_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../models/announcement/announcement.dart';
 import '../../../../services/main/announcement/announcement_service.dart';
@@ -99,7 +100,7 @@ class AnnouncementDialog extends StatelessWidget {
             ),
             onPressed: () {
               _markAsRead();
-              Navigator.of(context).pop();
+              NavigationUtils.of(context).pop();
               if (onClose != null) onClose!();
             },
           ),
@@ -199,7 +200,7 @@ class AnnouncementDialog extends StatelessWidget {
           TextButton(
             onPressed: () {
               _markAsRead();
-              Navigator.of(context).pop();
+              NavigationUtils.of(context).pop();
               if (onClose != null) onClose!();
             },
             child: const Text('不再显示'),

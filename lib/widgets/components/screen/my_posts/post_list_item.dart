@@ -1,5 +1,6 @@
 // lib/widgets/my_posts/post_list_item.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../models/post/post.dart';
 import '../../../../routes/app_routes.dart';
 
@@ -49,7 +50,7 @@ class PostListItem extends StatelessWidget {
           icon: Icon(Icons.more_vert),
           onPressed: onMoreTap,
         ),
-        onTap: () => Navigator.pushNamed(
+        onTap: () => NavigationUtils.pushNamed(
           context,
           AppRoutes.postDetail,
           arguments: post.id,

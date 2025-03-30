@@ -1,9 +1,10 @@
 // lib/widgets/components/screen/game/history/history_game_grid_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../common/image/safe_cached_image.dart';
 
 /// 为游戏浏览历史屏幕的网格视图设计的卡片组件
 class HistoryGameGridCard extends StatelessWidget {
@@ -28,7 +29,7 @@ class HistoryGameGridCard extends StatelessWidget {
         onTap: () {
           final gameId = historyItem['gameId']?.toString() ?? '';
           if (gameId.isNotEmpty) {
-            Navigator.pushNamed(
+            NavigationUtils.pushNamed(
               context,
               AppRoutes.gameDetail,
               arguments: gameId,

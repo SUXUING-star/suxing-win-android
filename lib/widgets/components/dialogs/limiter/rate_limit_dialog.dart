@@ -1,5 +1,6 @@
 // lib/widgets/components/common/rate_limit_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class RateLimitDialog extends StatelessWidget {
   final int remainingSeconds;
@@ -13,7 +14,7 @@ class RateLimitDialog extends StatelessWidget {
       content: Text('您的评论/回复速率超出限制。每分钟最多只能发送2条评论或回复。\n\n请在 $remainingSeconds 秒后再尝试。'),
       actions: [
         TextButton(
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: () => NavigationUtils.of(context).pop(),
           child: const Text('了解'),
         ),
       ],

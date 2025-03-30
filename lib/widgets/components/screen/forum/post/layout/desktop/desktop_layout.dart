@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
 import '../../../../../../../models/post/post.dart';
-import '../../../../../../../widgets/components/screen/forum/post/post_content.dart';
-import '../../../../../../../widgets/components/screen/forum/post/reply/reply_list.dart';
-import '../../../../../../../widgets/components/screen/forum/post/community_guidelines.dart';
-import '../../../../../../../widgets/components/screen/forum/post/recent_global_replies.dart';
+import '../../post_content.dart';
+import '../../reply/reply_list.dart';
+import '../../community_guidelines.dart';
+import '../../recent_global_replies.dart';
 
 class DesktopLayout extends StatelessWidget {
   final Post post;
   final String postId;
   final Widget replyInput;
+  // 添加交互成功回调
+  final VoidCallback? onInteractionSuccess;
 
-  const DesktopLayout({Key? key, required this.post, required this.postId, required this.replyInput})
-      : super(key: key);
+  const DesktopLayout({
+    Key? key,
+    required this.post,
+    required this.postId,
+    required this.replyInput,
+    this.onInteractionSuccess,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -26,7 +33,11 @@ class DesktopLayout extends StatelessWidget {
             child: SingleChildScrollView(
               child: Column(
                 children: [
-                  PostContent(post: post),
+                  // 将交互回调传递给PostContent
+                  PostContent(
+                    post: post,
+                    onInteractionSuccess: onInteractionSuccess,
+                  ),
                   const SizedBox(height: 24),
                   // 社区规则卡片
                   const CommunityGuidelines(useSeparateCard: true),

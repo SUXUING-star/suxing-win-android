@@ -6,7 +6,7 @@ import '../../../services/main/history/game_history_service.dart';
 import '../../../services/main/history/post_history_service.dart';
 import '../../../services/main/user/user_service.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 
 // 状态
 class SettingsState {

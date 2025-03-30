@@ -4,15 +4,16 @@ import 'package:provider/provider.dart';
 import './comments/comment_input.dart';
 import './comments/comment_list.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
+import '../../../../../../widgets/ui/buttons/login_prompt.dart'; // Import the new component
 
 class CommentsSection extends StatefulWidget {
   final String gameId;
-  final VoidCallback? onCommentAdded; // 添加评论回调
+  final VoidCallback? onCommentAdded;
 
   const CommentsSection({
     Key? key,
     required this.gameId,
-    this.onCommentAdded, // 初始化回调
+    this.onCommentAdded,
   }) : super(key: key);
 
   @override
@@ -20,14 +21,11 @@ class CommentsSection extends StatefulWidget {
 }
 
 class _CommentsSectionState extends State<CommentsSection> {
-  // 用于在添加评论后强制刷新评论列表
   final ValueNotifier<DateTime> _refreshTrigger = ValueNotifier(DateTime.now());
 
   void _handleCommentChanged() {
-    // 更新时间触发器通知评论列表刷新
     _refreshTrigger.value = DateTime.now();
 
-    // 同时通知父组件有评论变化
     if (widget.onCommentAdded != null) {
       widget.onCommentAdded!();
     }
@@ -41,7 +39,6 @@ class _CommentsSectionState extends State<CommentsSection> {
 
   @override
   Widget build(BuildContext context) {
-    // 获取用户登录状态
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Opacity(
@@ -85,16 +82,14 @@ class _CommentsSectionState extends State<CommentsSection> {
             ),
             SizedBox(height: 16),
 
-            // 根据登录状态决定显示什么内容
+            // 使用新的LoginPrompt组件代替原来的登录提示UI
             authProvider.isLoggedIn
                 ? Column(
               children: [
-                // 传递评论添加回调
                 CommentInput(
                   gameId: widget.gameId,
                   onCommentAdded: _handleCommentChanged,
                 ),
-                // 使用 ValueListenableBuilder 监听刷新触发器
                 ValueListenableBuilder<DateTime>(
                     valueListenable: _refreshTrigger,
                     builder: (context, dateTime, child) {
@@ -106,29 +101,10 @@ class _CommentsSectionState extends State<CommentsSection> {
                 ),
               ],
             )
-                : Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    Text(
-                      '登录后查看和发表评论',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[700],
-                      ),
-                    ),
-                    SizedBox(height: 12),
-                    ElevatedButton(
-                      onPressed: () => Navigator.pushNamed(context, '/login'),
-                      child: const Text('登录'),
-                      style: ElevatedButton.styleFrom(
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+                : LoginPrompt(
+              message: '登录后查看和发表评论',
+              buttonText: '登录',
+              // 可以自定义导航行为，这里使用默认的
             ),
           ],
         ),

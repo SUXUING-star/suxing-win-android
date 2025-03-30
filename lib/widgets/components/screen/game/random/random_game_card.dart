@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
-import '../../../../common/image/safe_cached_image.dart';
-import '../card/stat_item_widget.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 
 /// A specialized card widget for displaying random games with simplified interface
 class RandomGameCard extends StatelessWidget {
@@ -23,7 +23,7 @@ class RandomGameCard extends StatelessWidget {
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onTap ?? () {
-          Navigator.pushReplacementNamed(
+          NavigationUtils.pushReplacementNamed(
             context,
             '/game/detail',
             arguments: game.id,

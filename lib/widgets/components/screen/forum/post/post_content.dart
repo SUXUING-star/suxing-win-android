@@ -2,12 +2,46 @@ import 'package:flutter/material.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../badge/info/user_info_badge.dart'; // 导入UserInfoBadge
+import '../../../../ui/badges/user_info_badge.dart';
+import 'post_interaction_buttons.dart';
 
-class PostContent extends StatelessWidget {
+class PostContent extends StatefulWidget {
   final Post post;
+  // 添加回调函数，当交互成功时通知父组件
+  final VoidCallback? onInteractionSuccess;
 
-  PostContent({Key? key, required this.post}) : super(key: key);
+  PostContent({
+    Key? key,
+    required this.post,
+    this.onInteractionSuccess,
+  }) : super(key: key);
+
+  @override
+  _PostContentState createState() => _PostContentState();
+}
+
+class _PostContentState extends State<PostContent> {
+  late Post _post;
+
+  @override
+  void initState() {
+    super.initState();
+    _post = widget.post;
+  }
+
+  @override
+  void didUpdateWidget(PostContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.post.id != widget.post.id) {
+      _post = widget.post;
+    }
+  }
+
+  void _updatePost(Post updatedPost) {
+    setState(() {
+      _post = updatedPost;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +82,7 @@ class PostContent extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    post.title,
+                    _post.title,
                     style: TextStyle(
                       fontSize: isDesktop ? 22 : 18,
                       fontWeight: FontWeight.bold,
@@ -60,16 +94,16 @@ class PostContent extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // 作者信息栏 - 使用UserInfoBadge
+            // 作者信息栏
             _buildAuthorRow(context, isDesktop),
             const SizedBox(height: 20),
 
             // 标签栏
-            if (post.tags.isNotEmpty)
+            if (_post.tags.isNotEmpty)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 child: Row(
-                  children: post.tags.map((tag) => Container(
+                  children: _post.tags.map((tag) => Container(
                     margin: const EdgeInsets.only(right: 8),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
@@ -89,7 +123,7 @@ class PostContent extends StatelessWidget {
                   )).toList(),
                 ),
               ),
-            if (post.tags.isNotEmpty) const SizedBox(height: 20),
+            if (_post.tags.isNotEmpty) const SizedBox(height: 20),
 
             // 内容栏
             Container(
@@ -103,13 +137,22 @@ class PostContent extends StatelessWidget {
                     : null,
               ),
               child: Text(
-                post.content,
+                _post.content,
                 style: TextStyle(
                   fontSize: isDesktop ? 16 : 15,
                   height: 1.8,
                   color: Colors.grey[800],
                 ),
               ),
+            ),
+
+            // 添加交互按钮
+            const SizedBox(height: 16),
+            PostInteractionButtons(
+              post: _post,
+              onPostUpdated: _updatePost,
+              // 传递交互成功回调
+              onInteractionSuccess: widget.onInteractionSuccess,
             ),
 
             // Post statistics
@@ -122,7 +165,7 @@ class PostContent extends StatelessWidget {
                     Icon(Icons.remove_red_eye, size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.viewCount}',
+                      '${_post.viewCount}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -132,7 +175,7 @@ class PostContent extends StatelessWidget {
                     Icon(Icons.comment, size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${post.replyCount}',
+                      '${_post.replyCount}',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -153,7 +196,7 @@ class PostContent extends StatelessWidget {
         // 使用UserInfoBadge替换原有的用户信息显示
         Expanded(
           child: UserInfoBadge(
-            userId: post.authorId,
+            userId: _post.authorId,
             showFollowButton: false, // 不显示关注按钮
             mini: !isDesktop, // 根据是否是桌面版决定尺寸
             padding: EdgeInsets.zero,
@@ -178,7 +221,7 @@ class PostContent extends StatelessWidget {
         const SizedBox(width: 12),
         // 发布时间
         Text(
-          DateTimeFormatter.formatRelative(post.createTime),
+          DateTimeFormatter.formatRelative(_post.createTime),
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey[600],

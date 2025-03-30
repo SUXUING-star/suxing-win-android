@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/game_download_links.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../../../common/toaster/toaster.dart';
@@ -90,7 +91,7 @@ class GameDownloadLinks extends StatelessWidget {
   void _navigateToLogin(BuildContext context) {
     // You'll need to adapt this to your routing system
     // This is an example assuming you have a named route for login
-    Navigator.of(context).pushNamed('/login');
+    NavigationUtils.of(context).pushNamed('/login');
   }
 
 

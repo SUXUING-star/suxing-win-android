@@ -1,20 +1,21 @@
 // lib/widgets/components/screen/game/comment/replies/reply_input.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../services/main/game/comment/comment_service.dart';
 import '../../../../dialogs/limiter/rate_limit_dialog.dart';
+import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
 
 class ReplyInput extends StatefulWidget {
   final String gameId;
   final String parentId;
   final VoidCallback? onReplyAdded;
+  final VoidCallback? onCancel;
 
   const ReplyInput({
     Key? key,
     required this.gameId,
     required this.parentId,
     this.onReplyAdded,
+    this.onCancel,
   }) : super(key: key);
 
   @override
@@ -22,18 +23,10 @@ class ReplyInput extends StatefulWidget {
 }
 
 class _ReplyInputState extends State<ReplyInput> {
-  final TextEditingController _controller = TextEditingController();
   final CommentService _commentService = CommentService();
   bool _isSubmitting = false;
 
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  Future<void> _submitReply() async {
-    final reply = _controller.text.trim();
+  Future<void> _submitReply(String reply) async {
     if (reply.isEmpty) return;
 
     setState(() {
@@ -46,8 +39,6 @@ class _ReplyInputState extends State<ReplyInput> {
         reply,
         parentId: widget.parentId,
       );
-
-      _controller.clear();
 
       // 调用回调函数刷新父组件
       if (widget.onReplyAdded != null) {
@@ -91,38 +82,13 @@ class _ReplyInputState extends State<ReplyInput> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    if (!authProvider.isLoggedIn) return const SizedBox();
-
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              decoration: const InputDecoration(
-                hintText: '回复评论...',
-                border: OutlineInputBorder(),
-              ),
-              enabled: !_isSubmitting,
-            ),
-          ),
-          const SizedBox(width: 8),
-          _isSubmitting
-              ? Container(
-            margin: const EdgeInsets.only(left: 10),
-            width: 20,
-            height: 20,
-            child: const CircularProgressIndicator(strokeWidth: 2),
-          )
-              : TextButton(
-            onPressed: _submitReply,
-            child: const Text('回复'),
-          ),
-        ],
-      ),
+    return CommentInputField(
+      hintText: '回复评论...',
+      submitButtonText: '回复',
+      isSubmitting: _isSubmitting,
+      onSubmit: _submitReply,
+      isReply: true, // 标记为回复模式
+      maxLines: 1, // 回复通常使用单行输入
     );
   }
 }

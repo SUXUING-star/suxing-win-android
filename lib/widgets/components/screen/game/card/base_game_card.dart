@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../common/image/safe_cached_image.dart';
+import '../../../../ui/image/safe_cached_image.dart';
 import 'game_category_tag.dart';
 import 'game_stats_widget.dart';
 import 'game_tag_list.dart';
@@ -280,7 +281,7 @@ class BaseGameCard extends StatelessWidget {
 
   // 卡片点击事件
   void _onCardTap(BuildContext context) {
-    Navigator.pushNamed(
+    NavigationUtils.pushNamed(
       context,
       '/game/detail',
       arguments: game,

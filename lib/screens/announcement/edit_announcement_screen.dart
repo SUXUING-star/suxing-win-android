@@ -1,5 +1,6 @@
 // lib/screens/admin/widgets/announcement_management/edit_announcement_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../models/announcement/announcement.dart';
 import '../../../../services/main/announcement/announcement_service.dart';
 import '../../../../widgets/components/form/announcementform/announcement_form.dart';
@@ -39,7 +40,7 @@ class EditAnnouncementScreen extends StatelessWidget {
             }
 
             if (context.mounted) {
-              Navigator.of(context).pop(true); // 返回 true 表示成功
+              NavigationUtils.of(context).pop(true); // 返回 true 表示成功
             }
           } catch (e) {
             if (context.mounted) {
@@ -50,7 +51,7 @@ class EditAnnouncementScreen extends StatelessWidget {
           }
         },
         onCancel: () {
-          Navigator.of(context).pop(false); // 返回 false 表示取消
+          NavigationUtils.of(context).pop(false); // 返回 false 表示取消
         },
       ),
     );

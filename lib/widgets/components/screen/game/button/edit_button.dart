@@ -19,9 +19,6 @@ class EditButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
-        if (!authProvider.isAdmin) {
-          return const SizedBox.shrink();
-        }
 
         final double leftPadding = DeviceUtils.isAndroidLandscape(context) ? 4.0 : (DeviceUtils.isAndroid ? 8.0 : 16.0); // 根据不同情况设置padding
         final double iconSize = DeviceUtils.getIconSize(context);

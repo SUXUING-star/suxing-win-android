@@ -1,9 +1,10 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/history/game_history_service.dart';
 import '../../../services/main/history/post_history_service.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
 
@@ -75,7 +76,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   Future<void> _loadGameHistory() async {
     if (_gameHistoryLoaded) return;
 
-    final loadingObserver = Navigator.of(context)
+    final loadingObserver = NavigationUtils.of(context)
         .widget
         .observers
         .whereType<LoadingRouteObserver>()
@@ -103,7 +104,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   Future<void> _loadPostHistory() async {
     if (_postHistoryLoaded) return;
 
-    final loadingObserver = Navigator.of(context)
+    final loadingObserver = NavigationUtils.of(context)
         .widget
         .observers
         .whereType<LoadingRouteObserver>()

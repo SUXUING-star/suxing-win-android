@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../screens/home/home_screen.dart';
 import '../screens/common/notfound_screen.dart';
 import '../screens/common/about_screen.dart';
@@ -13,6 +14,7 @@ import '../screens/game/list/latest_games_screen.dart';
 import '../screens/game/list/games_list_screen.dart';
 import '../screens/game/collection/game_collection_list_screen.dart';
 import '../screens/game/edit/add_game_screen.dart';
+import '../screens/game/edit/edit_game_screen.dart';
 import '../screens/linkstools/linkstools_screen.dart';
 import '../screens/profile/profile_screen.dart';
 import '../screens/profile/open_profile_screen.dart';
@@ -27,6 +29,7 @@ import '../screens/profile/history/history_screen.dart';
 import '../screens/profile/myposts/my_posts_screen.dart';
 import '../screens/profile/favorite/favorites_screen.dart';
 import '../screens/profile/settings/settings_screen.dart';
+import '../screens/profile/mygames/my_games_screen.dart';
 import '../screens/admin/admin_dashboard.dart';
 import '../screens/ai/gemini_chat_screen.dart';
 import '../screens/checkin/checkin_screen.dart';
@@ -35,6 +38,8 @@ import '../screens/activity/activity_feed_screen.dart';
 import '../screens/activity/activity_detail_screen.dart';
 import '../screens/activity/activity_alternating_feed_screen.dart';
 import '../layouts/main_layout.dart';
+// Import the new route error screen
+import '../screens/common/route_error_screen.dart';
 
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)
@@ -61,6 +66,7 @@ class AppRoutes {
   static const String playingGames = '/collections/playing';
   static const String playedGames = '/collections/played';
   static const String allCollections = '/collections/all';
+  static const String myCollections = '/my-collections';
   static const String myGames = '/my-games';
   static const String forum = '/forum';
   static const String postDetail = '/forum/post';
@@ -74,6 +80,7 @@ class AppRoutes {
   static const String activityFeed = '/activity-feed';
   static const String userActivities = '/user-activities';
   static const String activityDetail = '/activity/detail';
+
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
@@ -117,7 +124,16 @@ class AppRoutes {
       case '/forgot-password':
         return MaterialPageRoute(builder: (_) => ForgotPasswordScreen());
       case '/reset-password':
-        final String email = settings.arguments as String;
+        final arguments = settings.arguments;
+        if (arguments is! String || (arguments as String).isEmpty) {
+          return MaterialPageRoute(
+            builder: (_) => RouteErrorScreen.missingParameter(
+              paramName: '邮箱',
+              onAction: () => NavigationUtils.pushNamed(_, forgotPassword),
+            ),
+          );
+        }
+        final String email = arguments;
         return MaterialPageRoute(
             builder: (_) => ResetPasswordScreen(email: email));
 
@@ -134,9 +150,9 @@ class AppRoutes {
         // 如果 gameId 为空，返回错误页面
         if (gameId == null || gameId.isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: Text('错误')),
-              body: Center(child: Text('无效的游戏ID')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '游戏',
+              onAction: () => NavigationUtils.pushNamed(_, gamesList),
             ),
           );
         }
@@ -156,10 +172,11 @@ class AppRoutes {
       case '/profile':
         return MaterialPageRoute(builder: (_) => ProfileScreen());
       case '/open-profile':
-        if (settings.arguments is! String) {
+        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: Center(child: Text('无效的用户ID')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '用户',
+              onAction: () => NavigationUtils.pop(_),
             ),
           );
         }
@@ -168,6 +185,20 @@ class AppRoutes {
 
       case '/game/add':
         return MaterialPageRoute(builder: (_) => AddGameScreen());
+      case '/game/edit':
+        final arguments = settings.arguments;
+        if (arguments is! Game) {
+          return MaterialPageRoute(
+            builder: (_) => RouteErrorScreen.missingParameter(
+              paramName: '游戏数据',
+              onAction: () => NavigationUtils.pushNamed(_, gamesList),
+            ),
+          );
+        }
+        final Game game = arguments;
+        return MaterialPageRoute(
+          builder: (_) => EditGameScreen(game: game),
+        );
       case '/checkin':
         return MaterialPageRoute(builder: (_) => CheckInScreen());
       case '/favorites':
@@ -178,16 +209,17 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => MyPostsScreen());
       case '/settings':
         return MaterialPageRoute(builder: (_) => SettingsScreen());
-      case '/my-games':
+      case '/my-collections':
         return MaterialPageRoute(builder: (_) => GameCollectionScreen());
       case '/activity-feed':
         return MaterialPageRoute(builder: (_) => ActivityFeedScreen());
 
       case '/user-activities':
-        if (settings.arguments is! String) {
+        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: Center(child: Text('无效的用户ID')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '用户',
+              onAction: () => NavigationUtils.pop(_),
             ),
           );
         }
@@ -201,7 +233,7 @@ class AppRoutes {
 
       case '/activity/detail':
         final arguments = settings.arguments;
-        String activityId;
+        String? activityId;
         UserActivity? activity;
 
         if (arguments is String) {
@@ -213,9 +245,9 @@ class AppRoutes {
           } else {
             // 如果ID不是String类型，返回错误页面
             return MaterialPageRoute(
-              builder: (_) => Scaffold(
-                appBar: AppBar(title: const Text('错误')),
-                body: const Center(child: Text('无效的动态ID格式')),
+              builder: (_) => RouteErrorScreen.invalidId(
+                resourceType: '动态',
+                onAction: () => NavigationUtils.pushNamed(_, activityFeed),
               ),
             );
           }
@@ -223,26 +255,26 @@ class AppRoutes {
         } else {
           // 如果参数类型不正确，返回错误页面
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: const Text('错误')),
-              body: const Center(child: Text('无效的参数类型')),
+            builder: (_) => RouteErrorScreen.missingParameter(
+              paramName: '动态ID',
+              onAction: () => NavigationUtils.pushNamed(_, activityFeed),
             ),
           );
         }
 
         // 如果 activityId 为空，返回错误页面
-        if (activityId.isEmpty) {
+        if (activityId == null || activityId.isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              appBar: AppBar(title: const Text('错误')),
-              body: const Center(child: Text('无效的动态ID')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '动态',
+              onAction: () => NavigationUtils.pushNamed(_, activityFeed),
             ),
           );
         }
 
         return MaterialPageRoute(
           builder: (_) => ActivityDetailScreen(
-            activityId: activityId,
+            activityId: activityId.toString(),
             activity: activity,
           ),
         );
@@ -279,10 +311,11 @@ class AppRoutes {
         final String? tag = settings.arguments as String?;
         return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
       case '/forum/post':
-        if (settings.arguments is! String) {
+        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: Center(child: Text('无效的帖子ID')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '帖子',
+              onAction: () => NavigationUtils.pushNamed(_, forum),
             ),
           );
         }
@@ -292,19 +325,41 @@ class AppRoutes {
       case '/forum/post/create':
         return MaterialPageRoute(builder: (_) => CreatePostScreen());
       case '/forum/post/edit':
-        if (settings.arguments is! Post) {
+        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
-            builder: (_) => Scaffold(
-              body: Center(child: Text('无效的帖子数据')),
+            builder: (_) => RouteErrorScreen.invalidId(
+              resourceType: '帖子',
+              onAction: () => NavigationUtils.pushNamed(_, forum),
             ),
           );
         }
-        final Post post = settings.arguments as Post;
-        return MaterialPageRoute(builder: (_) => EditPostScreen(post: post));
+        final String postId = settings.arguments as String;
+        return MaterialPageRoute(builder: (_) => EditPostScreen(postId: postId));
       case '/admin':
         return MaterialPageRoute(builder: (_) => AdminDashboard());
+      case '/my-games':
+        return MaterialPageRoute(builder: (_) => MyGamesScreen());
       case '/user-follows':
+        if (settings.arguments is! Map<String, dynamic>) {
+          return MaterialPageRoute(
+            builder: (_) => RouteErrorScreen.missingParameter(
+              paramName: '用户关注',
+              onAction: () => NavigationUtils.pop(_),
+            ),
+          );
+        }
+
         final Map<String, dynamic> args = settings.arguments as Map<String, dynamic>;
+
+        if (args['userId'] == null || args['username'] == null) {
+          return MaterialPageRoute(
+            builder: (_) => RouteErrorScreen.missingParameter(
+              paramName: '用户ID或用户名',
+              onAction: () => NavigationUtils.pop(_),
+            ),
+          );
+        }
+
         return MaterialPageRoute(
           builder: (_) => UserFollowsScreen(
             userId: args['userId'],

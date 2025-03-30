@@ -18,10 +18,12 @@ class DesktopSidebar extends StatelessWidget {
     this.currentIndex = 0,
   }) : super(key: key);
 
+  static const iconPath = 'assets/images/icons';
+
   // 导航菜单项列表
   List<Map<String, dynamic>> _getNavItems() {
     return [
-      {'icon': Icons.home_rounded, 'label': '首页', 'index': 0},
+      {'icon': Icons.games_rounded, 'label': '首页', 'index': 0},
       {'icon': Icons.games_rounded, 'label': '游戏', 'index': 1},
       {'icon': Icons.forum_rounded, 'label': '论坛', 'index': 2},
       {'icon': Icons.rocket_launch, 'label': '动态', 'index': 3},

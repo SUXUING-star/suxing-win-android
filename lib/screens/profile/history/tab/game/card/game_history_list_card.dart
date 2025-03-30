@@ -1,8 +1,9 @@
 // lib/screens/profile/tab/widgets/game_history_list_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../../../widgets/common/image/safe_cached_image.dart';
+import '../../../../../../widgets/ui/image/safe_cached_image.dart';
 
 // 游戏历史列表卡片组件
 class GameHistoryListCard extends StatelessWidget {
@@ -22,7 +23,7 @@ class GameHistoryListCard extends StatelessWidget {
         onTap: () {
           final gameId = historyItem['gameId']?.toString() ?? '';
           if (gameId.isNotEmpty) {
-            Navigator.pushNamed(
+            NavigationUtils.pushNamed(
               context,
               AppRoutes.gameDetail,
               arguments: gameId,

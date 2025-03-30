@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class CustomAvatarCropper {
   // 保存原始图片的引用，用于重新裁剪
@@ -102,7 +103,7 @@ class CustomAvatarCropper {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
+              NavigationUtils.of(context).pop();
 
               // 重新裁剪时使用原始图片，而不是裁剪后的图片
               if (_originalImageFile != null) {

@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/post/history/post_history_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
 import '../../../../../routes/app_routes.dart';
 
@@ -26,7 +27,7 @@ class PostHistoryCard extends StatelessWidget {
         onTap: () {
           final postId = historyItem['postId']?.toString() ?? '';
           if (postId.isNotEmpty) {
-            Navigator.pushNamed(context, AppRoutes.postDetail, arguments: postId);
+            NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: postId);
           }
         },
         child: Padding(

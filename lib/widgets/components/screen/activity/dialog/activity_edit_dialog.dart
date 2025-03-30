@@ -1,6 +1,7 @@
 // 创建新文件 lib/widgets/components/screen/activity/dialog/activity_edit_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class ActivityEditDialog extends StatefulWidget {
   final String initialContent;
@@ -63,13 +64,13 @@ class _ActivityEditDialogState extends State<ActivityEditDialog> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => NavigationUtils.of(context).pop(),
                   child: const Text('取消'),
                 ),
                 const SizedBox(width: 8),
                 ElevatedButton(
                   onPressed: () {
-                    Navigator.of(context).pop({
+                    NavigationUtils.of(context).pop({
                       'content': _contentController.text,
                       'metadata': _metadata,
                     });

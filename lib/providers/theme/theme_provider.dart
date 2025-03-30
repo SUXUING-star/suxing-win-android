@@ -97,6 +97,7 @@ class ThemeProvider extends ChangeNotifier {
   ThemeData get lightTheme {
     final baseTheme = ThemeData(
       primarySwatch: Colors.blue,
+      primaryColor: Colors.blue.shade300,
       scaffoldBackgroundColor: Colors.transparent,
       fontFamily: FontConfig.defaultFontFamily,  // 设置全局默认字体
     );
@@ -157,7 +158,7 @@ class ThemeProvider extends ChangeNotifier {
     );
 
     return baseTheme.copyWith(
-      primaryColor: Colors.blue,
+      primaryColor: Colors.white,
       scaffoldBackgroundColor: Colors.transparent,
       textTheme: _getPlatformTextTheme(baseTheme.textTheme),
       appBarTheme: AppBarTheme(

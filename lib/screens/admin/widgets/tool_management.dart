@@ -1,5 +1,6 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/linktool/link_tool_service.dart';
 import '../../../models/linkstools/tool.dart';
 import '../../../widgets/components/form/toolform/tool_form_dialog.dart';
@@ -218,11 +219,11 @@ class _ToolManagementState extends State<ToolManagement> {
           content: Text('确定要删除工具"${tool.name}"吗？'),
           actions: [
             TextButton(
-              onPressed: () => Navigator.pop(context, false),
+              onPressed: () => NavigationUtils.pop(context, false),
               child: const Text('取消'),
             ),
             TextButton(
-              onPressed: () => Navigator.pop(context, true),
+              onPressed: () => NavigationUtils.pop(context, true),
               child: const Text('删除'),
               style: TextButton.styleFrom(foregroundColor: Colors.red),
             ),

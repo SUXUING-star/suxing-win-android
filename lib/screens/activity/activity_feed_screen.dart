@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_type_filter.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activities_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
@@ -240,7 +241,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   // 导航到活动详情页
   void _navigateToActivityDetail(UserActivity activity) {
-    Navigator.pushNamed(
+    NavigationUtils.pushNamed(
       context,
       '/activity/detail',
       arguments: {

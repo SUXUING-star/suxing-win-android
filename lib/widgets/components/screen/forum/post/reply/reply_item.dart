@@ -1,21 +1,33 @@
 // lib/widgets/components/screen/forum/post/reply/reply_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../models/post/post.dart';
 import '../../../../../../services/main/forum/forum_service.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../badge/info/user_info_badge.dart'; // 导入UserInfoBadge
+import '../../../../../ui/badges/user_info_badge.dart'; // 用户信息徽章组件
+import '../../../../../ui/dialogs/edit_dialog.dart'; // 编辑对话框组件
+import '../../../../../ui/dialogs/confirm_dialog.dart'; // 确认对话框组件
+import '../../../../../ui/inputs/text_input_field.dart'; // 文本输入组件
+import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路径正确
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
   final int floor;
   final ForumService _forumService = ForumService();
+  final VoidCallback? onReplyChanged;
 
-  ReplyItem({Key? key, required this.reply, required this.floor}) : super(key: key);
+  ReplyItem({
+    Key? key,
+    required this.reply,
+    required this.floor,
+    this.onReplyChanged,
+  }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    final bool isTopLevel = floor > 0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -29,20 +41,21 @@ class ReplyItem extends StatelessWidget {
                 mini: true, // 使用迷你版本
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                '$floor楼',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[700],
+            if (isTopLevel)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  '$floor楼',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[700],
+                  ),
                 ),
               ),
-            ),
             const SizedBox(width: 8),
             _buildReplyActions(context, reply),
           ],
@@ -78,33 +91,7 @@ class ReplyItem extends StatelessWidget {
                           minimumSize: Size.zero,
                         ),
                         onPressed: () {
-                          // Show a bottom sheet with the reply input
-                          showModalBottomSheet(
-                            context: context,
-                            isScrollControlled: true,
-                            builder: (context) {
-                              return Padding(
-                                padding: EdgeInsets.only(
-                                  bottom: MediaQuery.of(context).viewInsets.bottom,
-                                ),
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Padding(
-                                      padding: const EdgeInsets.all(16.0),
-                                      child: Text(
-                                        '回复 ${floor}楼',
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            },
-                          );
+                          _showReplyBottomSheet(context);
                         },
                       );
                     },
@@ -145,114 +132,224 @@ class ReplyItem extends StatelessWidget {
           return const SizedBox.shrink();
         }
 
-        return Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            PopupMenuButton<String>(
-              icon: const Icon(Icons.more_vert, size: 20),
-              itemBuilder: (context) => [
-                const PopupMenuItem(
+        // 使用 CustomPopupMenuButton
+        return CustomPopupMenuButton<String>(
+          // --- 自定义外观 ---
+          icon: Icons.more_vert, // 保持垂直点点点
+          iconSize: 18,
+          iconColor: Colors.grey[600],
+          padding: const EdgeInsets.all(0), // 紧凑
+          tooltip: '回复操作',
+          elevation: 3,
+          splashRadius: 16,
+
+          // --- 核心逻辑 ---
+          onSelected: (value) {
+            // onSelected 逻辑不变
+            switch (value) {
+              case 'edit':
+                _handleEditReply(context, reply);
+                break;
+              case 'delete':
+                _handleDeleteReply(context, reply);
+                break;
+            }
+          },
+          // 4. 美化 itemBuilder 中的 PopupMenuItem
+          itemBuilder: (context) {
+            final List<PopupMenuEntry<String>> items = [];
+
+            // 只有作者才能编辑
+            if (isAuthor) {
+              items.add(
+                PopupMenuItem<String>(
                   value: 'edit',
-                  child: Text('编辑'),
+                  height: 40,
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]),
+                      const SizedBox(width: 10),
+                      const Text('编辑'),
+                    ],
+                  ),
                 ),
-                const PopupMenuItem(
-                  value: 'delete',
-                  child: Text('删除'),
+              );
+            }
+
+            // 作者或管理员都能删除
+            if (isAuthor && isAdmin) { // 如果既是作者又是管理员，加个分隔线
+              items.add(const PopupMenuDivider(height: 1));
+            }
+
+            // 删除选项 (作者或管理员)
+            items.add(
+              PopupMenuItem<String>(
+                value: 'delete',
+                height: 40,
+                child: Row(
+                  children: [
+                    Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
+                    const SizedBox(width: 10),
+                    Text('删除', style: TextStyle(color: Colors.red[700])),
+                  ],
                 ),
-              ],
-              onSelected: (value) {
-                switch (value) {
-                  case 'edit':
-                    _handleEditReply(context, reply);
-                    break;
-                  case 'delete':
-                    _handleDeleteReply(context, reply);
-                    break;
-                }
-              },
-            ),
-          ],
+              ),
+            );
+
+            return items;
+          },
         );
       },
     );
   }
 
+  // 使用可复用的EditDialog
   Future<void> _handleEditReply(BuildContext context, Reply reply) async {
-    try {
-      final newContent = await showDialog<String>(
-        context: context,
-        builder: (context) {
-          final textController = TextEditingController(text: reply.content);
-          return AlertDialog(
-            title: const Text('编辑回复'),
-            content: TextField(
-              controller: textController,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: '输入新的回复内容',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('取消'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.of(context).pop(textController.text),
-                child: const Text('保存'),
-              ),
-            ],
-          );
-        },
-      );
+    EditDialog.show(
+      context: context,
+      title: '编辑回复',
+      initialText: reply.content,
+      hintText: '输入新的回复内容',
+      maxLines: 4,
+      onSave: (newContent) async {
+        try {
+          await _forumService.updateReply(reply.id, newContent);
 
-      if (newContent != null && newContent.trim().isNotEmpty) {
-        await _forumService.updateReply(reply.id, newContent);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('回复编辑成功')),
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('编辑失败：$e')),
-      );
-    }
+          // 通知父组件刷新
+          if (onReplyChanged != null) {
+            onReplyChanged!();
+          }
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('回复编辑成功')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('编辑失败：$e')),
+            );
+          }
+        }
+      },
+    );
   }
 
+  // 使用可复用的ConfirmDialog
   Future<void> _handleDeleteReply(BuildContext context, Reply reply) async {
-    final confirm = await showDialog<bool>(
+    CustomConfirmDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这个回复吗？删除后不可恢复。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
+      title: '删除回复',
+      message: '确定要删除这个回复吗？删除后不可恢复。',
+      confirmButtonText: '删除',
+      confirmButtonColor: Colors.red,
+      onConfirm: () async {
+        try {
+          await _forumService.deleteReply(reply.id);
 
-    if (confirm == true) {
-      try {
-        await _forumService.deleteReply(reply.id);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('回复删除成功')),
+          // 通知父组件刷新
+          if (onReplyChanged != null) {
+            onReplyChanged!();
+          }
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('回复删除成功')),
+            );
+          }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('删除失败：$e')),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  // 使用可复用的TextInputField组件显示回复底部表单
+  void _showReplyBottomSheet(BuildContext context) {
+    final textController = TextEditingController();
+    bool isSubmitting = false;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      '回复 ${floor}楼',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  TextInputField(
+                    controller: textController,
+                    hintText: '写下你的回复...',
+                    submitButtonText: '回复',
+                    isSubmitting: isSubmitting,
+                    maxLines: 3,
+                    onSubmitted: (text) async {
+                      if (text.trim().isEmpty) return;
+
+                      // 设置提交状态
+                      setState(() {
+                        isSubmitting = true;
+                      });
+
+                      try {
+                        // 这里根据实际API调整，假设有一个回复特定楼层的接口
+                        await _forumService.addReply(reply.postId, text,parentId: reply.id);
+
+                        // 关闭底部表单
+                        NavigationUtils.pop(context);
+
+                        // 通知父组件刷新
+                        if (onReplyChanged != null) {
+                          onReplyChanged!();
+                        }
+
+                        // 显示成功消息
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('回复成功')),
+                          );
+                        }
+                      } catch (e) {
+                        // 恢复提交状态
+                        setState(() {
+                          isSubmitting = false;
+                        });
+
+                        // 显示错误消息
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('回复失败：$e')),
+                          );
+                        }
+                      }
+                    },
+                  ),
+                ],
+              ),
+            );
+          },
         );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败：$e')),
-        );
-      }
-    }
+      },
+    );
   }
 }

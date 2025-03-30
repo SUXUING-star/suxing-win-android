@@ -24,8 +24,8 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
     );
   }
 
-  Future<List<Game>> _loadGames() async {
-    // 使用优化的getHotGames方法，利用Redis缓存
+  Future<List<Game>> _loadGames(String? tag) async {
+    // 热门游戏可能不需要标签筛选，但仍需要保持函数签名一致
     return await _gameService.getHotGames().first;
   }
 }

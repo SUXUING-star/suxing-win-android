@@ -1,6 +1,7 @@
 // Create a new file: lib/widgets/components/screen/game/navigation/game_navigation_section.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 
@@ -82,7 +83,7 @@ class _GameNavigationSectionState extends State<GameNavigationSection> {
     if (widget.onNavigate != null) {
       widget.onNavigate!(gameId);
     } else {
-      Navigator.pushReplacementNamed(
+      NavigationUtils.pushReplacementNamed(
         context,
         '/games/detail',
         arguments: gameId,

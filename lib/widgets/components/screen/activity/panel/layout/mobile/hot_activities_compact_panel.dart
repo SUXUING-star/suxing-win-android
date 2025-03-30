@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../utils/activity_utils.dart';
 
 class HotActivitiesCompactPanel extends StatelessWidget {
@@ -177,7 +178,7 @@ class HotActivitiesCompactPanel extends StatelessWidget {
   }
 
   void _navigateToUserProfile(BuildContext context, String userId) {
-    Navigator.push(
+    NavigationUtils.push(
       context,
       MaterialPageRoute(
         builder: (context) => OpenProfileScreen(userId: userId),

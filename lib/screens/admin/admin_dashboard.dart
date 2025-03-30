@@ -9,7 +9,7 @@ import 'widgets/user_management.dart';
 import 'widgets/ip_management.dart';
 import 'widgets/maintenance_management.dart';
 import 'widgets/announcement_management.dart'; // 导入公告管理组件
-import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
 
 class AdminDashboard extends StatefulWidget {
   const AdminDashboard({Key? key}) : super(key: key);

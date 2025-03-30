@@ -6,9 +6,9 @@ import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../services/main/game/collection/game_collection_service.dart';
 import '../../../utils/device/device_utils.dart';
-import '../../../widgets/common/appbar/custom_app_bar.dart';
-import '../../../widgets/components/screen/profile/error_widget.dart';
-import '../../../widgets/components/screen/profile/login_prompt_widget.dart';
+import '../../../widgets/ui/appbar/custom_app_bar.dart';
+import '../../../widgets/ui/common/error_widget.dart';
+import '../../../widgets/ui/common/login_prompt_widget.dart';
 import '../../../widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart';
 import '../../../widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
 

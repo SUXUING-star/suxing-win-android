@@ -1,11 +1,12 @@
-// lib/widgets/components/screen/activity/activity_detail_content.dart
-
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:intl/intl.dart';
+import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保 ActivityComment 也在此或单独导入
+
+// 导入独立的 Section 组件
+import 'sections/activity_info_section.dart';
+import 'sections/activity_description_section.dart';
+import 'sections/activity_target_section.dart';
+import 'sections/activity_comments_section.dart';
 
 class ActivityDetailContent extends StatelessWidget {
   final UserActivity activity;
@@ -16,6 +17,8 @@ class ActivityDetailContent extends StatelessWidget {
   final Function(String) onCommentDeleted;
   final Function(ActivityComment) onCommentLikeToggled;
   final VoidCallback onActivityUpdated;
+  final VoidCallback? onEditActivity;
+  final VoidCallback? onDeleteActivity;
 
   const ActivityDetailContent({
     Key? key,
@@ -27,225 +30,205 @@ class ActivityDetailContent extends StatelessWidget {
     required this.onCommentDeleted,
     required this.onCommentLikeToggled,
     required this.onActivityUpdated,
+    this.onEditActivity,
+    this.onDeleteActivity,
   }) : super(key: key);
 
-  Widget _buildMobileLayout(BuildContext context) {
-    return Column(
-      children: [
-        // 活动卡片和评论区
-        Expanded(
-          child: ListView(
-            controller: scrollController,
-            padding: const EdgeInsets.all(16),
-            children: [
-              // 活动卡片 - 不需要自己的背景，因为已经在Card里面了
-              ActivityCard(
-                activity: activity,
-                isAlternate: false,
-                isInDetailView: true,
-                onUpdated: onActivityUpdated,
-                hasOwnBackground: false, // 不需要自己的背景
-              ),
-
-
-              const SizedBox(height: 16),
-
-
-              // 评论区标题
-              Row(
-                children: [
-                  const Icon(Icons.comment, size: 20),
-                  const SizedBox(width: 8),
-                  Text(
-                    '评论 (${activity.commentsCount})',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ],
-              ),
-
-              const Divider(),
-
-              // 评论列表
-              if (isLoadingComments && comments.isEmpty)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(16.0),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              else if (comments.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Center(
-                    child: Text(
-                      '暂无评论，发表第一条评论吧',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ),
-                )
-              else
-                AnimationLimiter(
-                  child: Column(
-                    children: List.generate(
-                      comments.length,
-                          (index) => AnimationConfiguration.staggeredList(
-                        position: index,
-                        duration: const Duration(milliseconds: 375),
-                        child: SlideAnimation(
-                          verticalOffset: 50.0,
-                          child: FadeInAnimation(
-                            child: ActivityCommentItem(
-                              comment: comments[index],
-                              activityId: activity.id,
-                              isAlternate: false,
-                              onLikeToggled: onCommentLikeToggled,
-                              onCommentDeleted: onCommentDeleted,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
+  // --- Section 构建器 (保持不变，用于包裹各个 Section Widget) ---
+  Widget _buildSectionWrapper({
+    required BuildContext context,
+    required String title,
+    required Widget child,
+    EdgeInsets padding = const EdgeInsets.all(16),
+    EdgeInsets margin = const EdgeInsets.only(bottom: 16),
+    double opacity = 0.9,
+    Color backgroundColor = Colors.white,
+  }) {
+    final theme = Theme.of(context);
+    // ... (wrapper 实现不变) ...
+    return Opacity(
+      opacity: opacity,
+      child: Container(
+        margin: margin,
+        padding: padding,
+        decoration: BoxDecoration(
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor,
+                    borderRadius: BorderRadius.circular(2),
                   ),
                 ),
+                const SizedBox(width: 8),
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            child, // 将传入的 Section Widget 放在这里
+          ],
+        ),
+      ),
+    );
+  }
 
-              // 底部留白，确保评论输入框不会挡住内容
-              const SizedBox(height: 100),
-            ],
+  // --- Mobile Layout (排列 Section Widgets) ---
+  Widget _buildMobileLayout(BuildContext context) {
+    final NumberFormat compactFormatter = NumberFormat.compact();
+    final bool isDesktop = false;
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+
+    return ListView(
+      controller: scrollController,
+      padding: const EdgeInsets.all(16),
+      children: [
+        _buildSectionWrapper(
+          context: context,
+          title: activity.metadata?['title'] ?? '动态信息',
+          padding: sectionPadding,
+          child: ActivityInfoSection( // 使用导入的公共类
+            activity: activity,
+            onEditActivity: onEditActivity,
+            onDeleteActivity: onDeleteActivity,
+            isDesktop: isDesktop,
           ),
         ),
-
-        // 评论输入框 (固定在底部)
-        Container(
-          color: Theme.of(context).scaffoldBackgroundColor,
-          padding: const EdgeInsets.all(8.0),
-          child: ActivityCommentInput(
-            onSubmit: onAddComment,
-            isAlternate: false,
-            hintText: '添加评论...',
+        if (activity.content.isNotEmpty)
+          _buildSectionWrapper(
+            context: context,
+            title: '详细描述',
+            padding: sectionPadding,
+            child: ActivityDescriptionSection( // 使用导入的公共类
+              activity: activity,
+              isDesktop: isDesktop,
+            ),
+          ),
+        if (activity.targetType != null && activity.target != null)
+          _buildSectionWrapper(
+            context: context,
+            title: activity.targetType == 'game' ? '游戏信息' :
+            activity.targetType == 'download' ? '下载链接' :
+            '相关内容',
+            padding: sectionPadding,
+            child: ActivityTargetSection( // 使用导入的公共类
+              activity: activity,
+              isDesktop: isDesktop,
+            ),
+          ),
+        _buildSectionWrapper(
+          context: context,
+          title: '评论 (${compactFormatter.format(activity.commentsCount)})',
+          padding: sectionPadding,
+          child: ActivityCommentsSection( // 使用导入的公共类
+            activityId: activity.id,
+            comments: comments,
+            isLoadingComments: isLoadingComments,
+            onAddComment: onAddComment,
+            onCommentDeleted: onCommentDeleted,
+            onCommentLikeToggled: onCommentLikeToggled,
+            isDesktop: isDesktop,
           ),
         ),
+        const SizedBox(height: 80),
       ],
     );
   }
 
+  // --- Desktop Layout (排列 Section Widgets) ---
   Widget _buildDesktopLayout(BuildContext context) {
+    final NumberFormat compactFormatter = NumberFormat.compact();
+    final bool isDesktop = true;
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+
     return SingleChildScrollView(
       controller: scrollController,
       padding: const EdgeInsets.all(24.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 左侧：活动卡片
+          // 左侧
           Expanded(
             flex: 5,
-            child: Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: ActivityCard(
-                  activity: activity,
-                  isAlternate: false,
-                  isInDetailView: true,
-                  onUpdated: onActivityUpdated,
-                  hasOwnBackground: false, // 不需要自己的背景
+            child: Column(
+              children: [
+                _buildSectionWrapper(
+                  context: context,
+                  title: activity.metadata?['title'] ?? '动态信息',
+                  padding: sectionPadding,
+                  margin: const EdgeInsets.only(bottom: 24),
+                  child: ActivityInfoSection( // 使用导入的公共类
+                    activity: activity,
+                    onEditActivity: onEditActivity,
+                    onDeleteActivity: onDeleteActivity,
+                    isDesktop: isDesktop,
+                  ),
                 ),
-              ),
+                if (activity.content.isNotEmpty)
+                  _buildSectionWrapper(
+                    context: context,
+                    title: '详细描述',
+                    padding: sectionPadding,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: ActivityDescriptionSection( // 使用导入的公共类
+                      activity: activity,
+                      isDesktop: isDesktop,
+                    ),
+                  ),
+                if (activity.targetType != null && activity.target != null)
+                  _buildSectionWrapper(
+                    context: context,
+                    title: activity.targetType == 'game' ? '游戏信息' :
+                    activity.targetType == 'download' ? '下载链接' :
+                    '相关内容',
+                    padding: sectionPadding,
+                    margin: const EdgeInsets.only(bottom: 24),
+                    child: ActivityTargetSection( // 使用导入的公共类
+                      activity: activity,
+                      isDesktop: isDesktop,
+                    ),
+                  ),
+              ],
             ),
           ),
-
           const SizedBox(width: 24),
-
-          // 右侧：评论区
+          // 右侧
           Expanded(
             flex: 4,
-            child: Card(
-              elevation: 1,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 评论区标题
-                    Row(
-                      children: [
-                        const Icon(Icons.comment, size: 20),
-                        const SizedBox(width: 8),
-                        Text(
-                          '评论 (${activity.commentsCount})',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const Divider(height: 24),
-
-                    // 评论输入框
-                    ActivityCommentInput(
-                      onSubmit: onAddComment,
-                      isAlternate: false,
-                      hintText: '添加评论...',
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    // 评论列表
-                    Container(
-                      constraints: const BoxConstraints(
-                        maxHeight: 600, // 限制最大高度
-                      ),
-                      child: isLoadingComments && comments.isEmpty
-                          ? const Center(
-                        child: Padding(
-                          padding: EdgeInsets.all(16.0),
-                          child: CircularProgressIndicator(),
-                        ),
-                      )
-                          : comments.isEmpty
-                          ? const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Center(
-                          child: Text(
-                            '暂无评论，发表第一条评论吧',
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ),
-                      )
-                          : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: comments.length,
-                        itemBuilder: (context, index) {
-                          return ActivityCommentItem(
-                            comment: comments[index],
-                            activityId: activity.id,
-                            isAlternate: false,
-                            onLikeToggled: onCommentLikeToggled,
-                            onCommentDeleted: onCommentDeleted,
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
+            child: _buildSectionWrapper(
+              context: context,
+              title: '评论 (${compactFormatter.format(activity.commentsCount)})',
+              margin: EdgeInsets.zero,
+              padding: sectionPadding,
+              child: ActivityCommentsSection( // 使用导入的公共类
+                activityId: activity.id,
+                comments: comments,
+                isLoadingComments: isLoadingComments,
+                onAddComment: onAddComment,
+                onCommentDeleted: onCommentDeleted,
+                onCommentLikeToggled: onCommentLikeToggled,
+                isDesktop: isDesktop,
               ),
             ),
           ),
@@ -256,9 +239,7 @@ class ActivityDetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 判断是否为桌面端布局
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
     return isDesktop ? _buildDesktopLayout(context) : _buildMobileLayout(context);
   }
 }

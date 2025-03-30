@@ -1,4 +1,4 @@
-// lib/widgets/forum/tag_filter.dart
+// lib/widgets/components/screen/forum/tag_filter.dart
 import 'package:flutter/material.dart';
 import '../../../../utils/font/font_config.dart';
 

@@ -9,11 +9,11 @@ import '../../widgets/common/toaster/toaster.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/components/form/linkform/link_form_dialog.dart';
 import '../../widgets/components/form/toolform/tool_form_dialog.dart';
-import '../../widgets/common/appbar/custom_app_bar.dart';
+import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/linkstools/links_section.dart';
 import '../../widgets/components/screen/linkstools/tools_section.dart';
-import '../../widgets/components/common/loading_widget.dart';
-import '../../widgets/components/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
+import '../../widgets/ui/common/error_widget.dart';
 
 class LinksToolsScreen extends StatefulWidget {
   @override

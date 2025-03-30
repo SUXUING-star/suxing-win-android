@@ -1,130 +1,90 @@
-// lib/widgets/form/gameform/field/cover_image_field.dart
+// lib/widgets/components/form/gameform/field/cover_image_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../../../services/common/file_upload_service.dart';
+// 确认导入 AppButton
+import '../../../../ui/buttons/app_button.dart';
+// 其他必要的 import
+import '../../../../../services/common/upload/file_upload_service.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../common/image/safe_cached_image.dart';
-import 'image_url_dialog.dart';
+import '../../../../ui/image/safe_cached_image.dart';
+import 'dialogs/image_url_dialog.dart';
+
 
 class CoverImageField extends StatelessWidget {
-  final String? coverImageUrl;
-  final ValueChanged<String?> onChanged;
-  final bool isLoading;
-  final ValueChanged<bool> onLoadingChanged;
+  final dynamic coverImageSource;
+  final ValueChanged<dynamic> onChanged;
+  final bool isLoading; // 父组件加载状态
 
   const CoverImageField({
     Key? key,
-    this.coverImageUrl,
+    this.coverImageSource,
     required this.onChanged,
     required this.isLoading,
-    required this.onLoadingChanged,
   }) : super(key: key);
 
   Future<void> _pickCoverImage(BuildContext context) async {
+    if (isLoading) return;
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1200,
-      maxHeight: 1200,
-      imageQuality: 85,
-    );
-
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image != null) {
-      try {
-        onLoadingChanged(true);
-
-        // 上传新图片时传递旧图片URL，以便后端删除旧图片
-        final coverUrl = await FileUpload.uploadImage(
-          File(image.path),
-          folder: 'games/covers',
-          maxWidth: 1200,
-          maxHeight: 1200,
-          quality: 85,
-          oldImageUrl: coverImageUrl, // 传递旧图片URL
-        );
-        onChanged(coverUrl);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('上传图片失败：$e')),
-          );
-        }
-      } finally {
-        onLoadingChanged(false);
-      }
+      onChanged(image);
     }
   }
 
   Future<void> _showUrlDialog(BuildContext context) async {
-    // 不传递initialUrl，这样就不会显示原来的路径
+    if (isLoading) return;
+    final currentUrl = coverImageSource is String ? coverImageSource as String : '';
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => ImageUrlDialog(initialUrl: ''),
+      builder: (context) => ImageUrlDialog(initialUrl: currentUrl),
     );
-
-    if (result != null) {
-      // 如果用户输入了新的URL，并且存在旧的URL，尝试删除旧图片
-      if (coverImageUrl != null && coverImageUrl!.isNotEmpty) {
-        // 只有当新旧URL不同时才删除旧图片
-        if (result != coverImageUrl) {
-          try {
-            // 设置loading状态
-            onLoadingChanged(true);
-
-            // 删除旧图片
-            await FileUpload.deleteFile(coverImageUrl!);
-
-            // 更新URL
-            onChanged(result);
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('删除旧图片失败，但新URL已更新')),
-              );
-            }
-          } finally {
-            onLoadingChanged(false);
-          }
-        }
-      } else {
-        // 如果没有旧图片，直接更新URL
-        onChanged(result);
-      }
+    if (result != null && result != currentUrl) {
+      onChanged(result);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double verticalSpacing = DeviceUtils.isAndroidLandscape(context) ? 4.0 : 8.0;
-    final double fontSize = DeviceUtils.isAndroidLandscape(context) ? 14.0 : 16.0;
+    final bool isLandscape = DeviceUtils.isLandscape(context);
+    final double verticalSpacing = isLandscape ? 4.0 : 8.0;
+    final double fontSize = isLandscape ? 14.0 : 16.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          '封面图片',
-          style: TextStyle(fontSize: fontSize),
-        ),
+        Text('封面图片', style: TextStyle(fontSize: fontSize)),
         SizedBox(height: verticalSpacing),
-
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // 让按钮自动分配空间可能更好看
+          // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : () => _pickCoverImage(context),
-              icon: Icon(Icons.upload_file),
-              label: Text('上传本地图片'),
+            // --- 使用 AppButton 替换本地图片按钮 ---
+            Expanded( // 使用 Expanded 让按钮填充可用空间
+              child: AppButton(
+                icon: const Icon(Icons.upload_file), // 传入图标
+                text: '本地图片',
+                // 注意 onPressed 需要一个无参数回调
+                onPressed: () => _pickCoverImage(context),
+                isDisabled: isLoading, // 根据父组件状态禁用
+                isPrimaryAction: true,
+              ),
             ),
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : () => _showUrlDialog(context),
-              icon: Icon(Icons.link),
-              label: Text('输入图片链接'),
+            const SizedBox(width: 12), // 按钮间距
+
+            // --- 使用 AppButton 替换图片链接按钮 ---
+            Expanded( // 使用 Expanded
+              child: AppButton(
+                icon: const Icon(Icons.link), // 传入图标
+                text: '图片链接',
+                onPressed: () => _showUrlDialog(context),
+                isDisabled: isLoading,
+                isPrimaryAction: true,
+              ),
             ),
           ],
         ),
         SizedBox(height: verticalSpacing),
-
         AspectRatio(
           aspectRatio: 16 / 9,
           child: Container(
@@ -140,35 +100,39 @@ class CoverImageField extends StatelessWidget {
   }
 
   Widget _buildCoverPreview(BuildContext context) {
-    if (isLoading) {
-      return Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (coverImageUrl == null || coverImageUrl!.isEmpty) {
-      return Center(
+    // ... (_buildCoverPreview 方法保持不变) ...
+    final source = coverImageSource;
+    if (source == null || (source is String && source.isEmpty)) {
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.image, size: 48),
-            Text('请选择或输入封面图片'),
-          ],
+          children: [ Icon(Icons.image_outlined, size: 48, color: Colors.grey), Text('请添加封面图片') ],
         ),
       );
     }
-
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SafeCachedImage(
-        imageUrl: coverImageUrl!.startsWith('http')
-            ? coverImageUrl!
-            : 'uploads/games/covers/${coverImageUrl!.split('/').last}',
+    Widget imageWidget;
+    if (source is XFile) {
+      imageWidget = Image.file(
+        File(source.path),
         fit: BoxFit.cover,
-        onError: (url, error) {
-          print('封面图片预览加载失败: $url, 错误: $error');
+        errorBuilder: (context, error, stackTrace) {
+          print("本地封面预览错误: ${source.path}, $error");
+          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
-      ),
+      );
+    } else if (source is String) {
+      final imageUrl = source;
+      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${FileUpload.baseUrl}/$imageUrl';
+      imageWidget = SafeCachedImage(
+        imageUrl: displayUrl,
+        fit: BoxFit.cover,
+      );
+    } else {
+      imageWidget = const Center(child: Icon(Icons.help_outline, size: 48));
+    }
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(7.0),
+      child: imageWidget,
     );
   }
 }

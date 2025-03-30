@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
@@ -21,6 +22,8 @@ class ActivityCard extends StatefulWidget {
   final bool isInDetailView; // 是否在详情页面中显示
   final Function(UserActivity)? onActivityTap; // 点击活动的回调
   final bool hasOwnBackground; // 是否有自己的背景色（用于详情页避免重叠）
+  final VoidCallback? onEdit;     // <--- 确保有这个
+  final VoidCallback? onDelete;   // <--- 确保有这个
 
   const ActivityCard({
     Key? key,
@@ -29,6 +32,8 @@ class ActivityCard extends StatefulWidget {
     this.onUpdated,
     this.isInDetailView = false,
     this.onActivityTap,
+    this.onEdit,     // <--- 接收
+    this.onDelete,   // <--- 接收
     this.hasOwnBackground = true,
   }) : super(key: key);
 
@@ -121,89 +126,6 @@ class _ActivityCardState extends State<ActivityCard> {
     }
   }
 
-  void _handleEdit() async {
-    HapticFeedback.mediumImpact();
-
-    final result = await showDialog<Map<String, dynamic>>(
-      context: context,
-      builder: (context) => ActivityEditDialog(
-        initialContent: _activity.content,
-        metadata: _activity.metadata,
-      ),
-    );
-
-    if (result != null) {
-      final success = await _activityService.updateActivity(
-          _activity.id,
-          result['content'],
-          result['metadata']
-      );
-
-      if (success) {
-        // 加载更新后的活动
-        final updatedActivity = await _activityService.getActivityDetail(_activity.id);
-        if (updatedActivity != null && mounted) {
-          setState(() {
-            _activity = updatedActivity;
-          });
-
-          if (widget.onUpdated != null) {
-            widget.onUpdated!();
-          }
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('动态已更新')),
-          );
-        }
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('更新失败，请稍后重试')),
-        );
-      }
-    }
-  }
-
-// 处理活动删除
-  void _handleDelete() async {
-    HapticFeedback.heavyImpact();
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('删除动态'),
-        content: const Text('确定要删除这条动态吗？此操作无法撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('删除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final success = await _activityService.deleteActivity(_activity.id);
-
-      if (success && mounted) {
-        if (widget.onUpdated != null) {
-          widget.onUpdated!();
-        }
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('动态已删除')),
-        );
-      } else if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('删除失败，请稍后重试')),
-        );
-      }
-    }
-  }
-
   // 处理点赞
   Future<void> _handleLike() async {
     HapticFeedback.lightImpact();
@@ -291,7 +213,7 @@ class _ActivityCardState extends State<ActivityCard> {
 
   // 导航到用户个人资料页
   void _navigateToUserProfile(String userId) {
-    Navigator.push(
+    NavigationUtils.push(
       context,
       MaterialPageRoute(
         builder: (context) => OpenProfileScreen(userId: userId),
@@ -330,6 +252,8 @@ class _ActivityCardState extends State<ActivityCard> {
           activityType: _activity.type,
           isAlternate: widget.isAlternate,
           cardHeight: _cardHeight * 0.8, // 缩小字体比例
+          onEdit: widget.onEdit,     // <--- 传递给 Header
+          onDelete: widget.onDelete, // <--- 传递给 Header
         ),
 
         SizedBox(height: 12 * _cardHeight),

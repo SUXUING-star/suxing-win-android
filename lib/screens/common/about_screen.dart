@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
@@ -32,8 +33,8 @@ class AboutScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('关于宿星茶会'),
+      appBar: CustomAppBar(
+        title: '关于宿星茶会',
       ),
       body: SingleChildScrollView(
         child: Container(

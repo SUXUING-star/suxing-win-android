@@ -1,11 +1,12 @@
 // lib/widgets/components/form/announcementform/field/image_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'dart:io';
-import '../../../../../services/common/file_upload_service.dart';
+import '../../../../../services/common/upload/file_upload_service.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../common/image/safe_cached_image.dart';
-import '../../gameform/field/image_url_dialog.dart';
+import '../../../../ui/image/safe_cached_image.dart';
+import '../../gameform/field/dialogs/image_url_dialog.dart';
 
 class AnnouncementImageField extends StatelessWidget {
   final String? imageUrl;
@@ -199,11 +200,11 @@ class AnnouncementImageField extends StatelessWidget {
         content: Text('确定要删除此图片吗？此操作不可撤销。'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
+            onPressed: () => NavigationUtils.of(context).pop(false),
             child: Text('取消'),
           ),
           TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
+            onPressed: () => NavigationUtils.of(context).pop(true),
             child: Text('删除', style: TextStyle(color: Colors.red)),
           ),
         ],

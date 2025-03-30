@@ -1,7 +1,8 @@
 // lib/widgets/components/screen/profile/desktop_menu_grid.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../../utils/font/font_config.dart';
-import '../section/profile_menu_list.dart';
+import '../models/profile_menu_item.dart';
 
 class DesktopMenuGrid extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
@@ -88,6 +89,11 @@ class DesktopMenuGrid extends StatelessWidget {
         'background': Colors.white.withOpacity(0.9), // 淡蓝色
         'icon': Color(0xFF1E90FF), // 道奇蓝
       },
+      '我的游戏': {
+        'background': Colors.white.withOpacity(0.9), // 淡蓝色
+        'icon': Colors.redAccent, // 红
+      },
+
       '我的收藏': {
         'background': Colors.white.withOpacity(0.9),
         'icon': Color(0xFFFF69B4), // 热粉色
@@ -130,7 +136,7 @@ class DesktopMenuGrid extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: item.onTap ?? () => Navigator.pushNamed(context, item.route),
+        onTap: item.onTap ?? () => NavigationUtils.pushNamed(context, item.route),
         child: Container(
           decoration: BoxDecoration(
             color: colorScheme['background'],

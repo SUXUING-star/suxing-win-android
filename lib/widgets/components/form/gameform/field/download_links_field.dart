@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import '../../../../../models/game/game.dart';
 
 class DownloadLinksField extends StatelessWidget {
@@ -173,15 +175,19 @@ class DownloadLinksField extends StatelessWidget {
             Text('下载链接'),
             Row(
               children: [
-                TextButton.icon(
+                AppButton(
                   onPressed: () => _quickAddFromClipboard(context),
                   icon: Icon(Icons.paste),
-                  label: Text('快速添加'),
+                  text: '快速添加',
+                  isMini: true,
+                  isPrimaryAction: true,
                 ),
-                TextButton.icon(
+                AppButton(
                   onPressed: () => _addDownloadLink(context),
                   icon: Icon(Icons.add),
-                  label: Text('添加链接'),
+                  text: '添加链接',
+                  isMini: true,
+                  isPrimaryAction: true,
                 ),
               ],
             ),
