@@ -2,6 +2,7 @@
 这是我的一个独立开发的项目，基于flutter开发的跨平台应用。
 
 **目前正在奋力开发ing.......**
+~~快了快了~~
 
 **宿星茶会**，打造一个分享与交流galgame的平台。
 
@@ -15,6 +16,8 @@ web版出于js十分垃圾的安全机制不想再额外开发web版了，如果
 （web版有打算用severless来做一个新的）
 
 曾经的网页版：[宿星茶会](https://www.suxing.site/)
+
+预定发布页: [发布页（测试）](https://xingsu.fun/)
 
 # 使用(using)
 
@@ -30,25 +33,17 @@ Android版并没有经过其他平台分发，仅在此处发布，使用手机�
 
 本项目的大致架构如下
 
-Flutter(ui层&服务端交互层&本地缓存)-->Go(实际业务处理层&redis/内存缓存处理)-->Mongodb
+Flutter(ui层&服务端交互层&本地缓存)-->Go(实际业务处理层&redis等缓存处理)-->Mongodb
 
 (Flutter构建Windows底层是cpp文件构建，main.cpp会启动flutter应用。
 
 构建Android底层是kotlin&java文件,mainactity.kt会启动flutter应用)
-
-~~(至于为什么要用mongodb因为比较懒，而且两边平台好适配)~~
 
 如果你想要研究本项目的源码，你需要拥有以下配置
 ```json
 {
     "server1": "..., //服务端(go/nodejs/java...)",
     "server2": "..., //其他代理服务",
-    "database": { 
-      "user":"...:..., //用户名",
-      "password":"..., // 密码",
-      "collection":"..., // 数据库",
-      "other":"..., // 其他"
-    },
     "email": { 
       "...":"xxxx"
     },
@@ -59,6 +54,8 @@ Flutter(ui层&服务端交互层&本地缓存)-->Go(实际业务处理层&redis/
 }
 ```
 除上述配置之外，你还需要有应用打包的安全配置，如加密配置等。
+
+ui构建基本都是flutter原装的ui，有些需要复用的做了封装。
 
 
 

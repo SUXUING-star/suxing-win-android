@@ -1,5 +1,6 @@
 // lib/widgets/components/badge/layout/message_badge.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../services/main/message/message_service.dart';
 import '../../../../screens/message/message_screen.dart';
 
@@ -17,7 +18,7 @@ class MessageBadge extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            Navigator.push(
+            NavigationUtils.push(
               context,
               MaterialPageRoute(builder: (context) => MessageScreen()),
             );

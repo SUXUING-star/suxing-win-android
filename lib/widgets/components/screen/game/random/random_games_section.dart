@@ -19,23 +19,21 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
   final GameService _gameService = GameService();
   List<Game> _randomGames = [];
   bool _isLoading = true;
-  bool _isMounted = false;
 
   @override
   void initState() {
     super.initState();
-    _isMounted = true;
     _loadRandomGames();
   }
 
   @override
   void dispose() {
-    _isMounted = false;
     super.dispose();
   }
 
   Future<void> _loadRandomGames() async {
-    if (!_isMounted) return;
+    // 使用内建的 mounted 属性
+    if (!mounted) return; // 检查是否挂载
 
     setState(() {
       _isLoading = true;
@@ -47,14 +45,16 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
         excludeId: widget.currentGameId,
       );
 
-      if (!_isMounted) return;
+      // ----> 关键修改点 (用 mounted 替换 _isMounted) <----
+      if (!mounted) return; // 在 await 后、setState 前检查
 
       setState(() {
         _randomGames = games;
         _isLoading = false;
       });
     } catch (e) {
-      if (!_isMounted) return;
+      // ----> 关键修改点 (用 mounted 替换 _isMounted) <----
+      if (!mounted) return; // 在 catch 块内的 setState 前检查
 
       setState(() {
         _isLoading = false;
@@ -62,7 +62,6 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
       print('Error loading random games: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
@@ -143,7 +142,6 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
                   margin: EdgeInsets.only(right: index < _randomGames.length - 1 ? cardMargin : 0),
                   child: RandomGameCard(
                     game: _randomGames[index],
-                    isMounted: _isMounted,
                   ),
                 );
               },

@@ -6,8 +6,6 @@ import '../../widgets/components/badge/layout/checkin_badge.dart';
 import '../../widgets/components/badge/layout/update_button.dart';
 import '../../widgets/components/badge/layout/message_badge.dart';
 import '../../widgets/components/indicators/announcement_indicator.dart';
-import '../../widgets/components/indicators/network_status_indicator.dart';
-
 class DesktopSidebarMobileButtons extends StatelessWidget {
   const DesktopSidebarMobileButtons({Key? key}) : super(key: key);
 
@@ -44,12 +42,6 @@ class DesktopSidebarMobileButtons extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 网络状态指示器
-          _buildIndicatorButton(
-            context,
-            child: NetworkStatusIndicator(onReconnect: null),
-          ),
-          SizedBox(height: 16),
 
           // 更新按钮
           _buildIndicatorButton(

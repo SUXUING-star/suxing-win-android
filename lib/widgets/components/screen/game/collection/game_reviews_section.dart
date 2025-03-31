@@ -50,16 +50,25 @@ class GameReviewSectionState extends State<GameReviewSection> {
   }
 
   Future<void> _loadReviews() async {
+    // 检查 _hasMoreReviews 和 _page 的逻辑保持不变
     if (!_hasMoreReviews && _page > 1) return;
 
-    try {
+    // 初始加载状态设置可以在 await 前，通常没问题
+    // 但为了绝对安全，也可以加上 mounted 判断，虽然这里出错概率小
+    if (mounted) { // 可以考虑在这里也加一层保护
       setState(() {
         _isLoading = true;
         _hasError = false;
       });
+    } else {
+      return; // 如果在设置初始状态时就已经 unmounted，直接返回
+    }
 
+
+    try {
       final reviews = await _collectionService.getGameReviews(widget.game.id);
       print('游戏评价API响应: $reviews'); // 调试输出
+      if (!mounted) return; // 在 await 后、setState 前检查
 
       setState(() {
         if (_page == 1) {
@@ -74,13 +83,14 @@ class GameReviewSectionState extends State<GameReviewSection> {
       });
     } catch (e) {
       print('加载评价失败: $e');
+      if (!mounted) return; // 在 catch 块内的 setState 前检查
+
       setState(() {
         _isLoading = false;
         _hasError = true;
       });
     }
   }
-
   @override
   Widget build(BuildContext context) {
     return Card(

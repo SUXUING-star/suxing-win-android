@@ -1,134 +1,87 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 确认路径正确
 import 'package:suxingchahui/widgets/ui/buttons/warning_button.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import '../../../../../../models/user/user.dart';
-import '../../../../../../utils/font/font_config.dart';
-import '../../experience/exp_progress_badge.dart';
-import '../../level/level_progress_bar.dart';
+import 'package:suxingchahui/widgets/ui/image/editable_user_avatar.dart'; // 确认路径正确
+
 
 class DesktopProfileCard extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;
-  final VoidCallback onAvatarTap;
   final VoidCallback onLogout;
+  // 这两个回调由 EditableUserAvatar 内部处理后触发，父级 (ProfileScreen) 监听
+  final Function(bool) onUploadStateChanged;
+  final Function() onUploadSuccess;
 
   const DesktopProfileCard({
     Key? key,
     required this.user,
     required this.onEditProfile,
-    required this.onAvatarTap,
     required this.onLogout,
+    required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
+    required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // --- 响应式布局变量 ---
     final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallScreen = screenWidth < 1000;
+    final bool isSmallScreen = screenWidth < 1000; // 调整阈值以适应你的设计
 
-    final avatarSize = isSmallScreen ? 100.0 : 120.0;
-    final iconSize = isSmallScreen ? 16.0 : 20.0;
-    final badgeSize = isSmallScreen ? 32.0 : 38.0;
+    final double avatarRadius = isSmallScreen ? 50.0 : 60.0; // 头像半径
+    final double badgeSize = isSmallScreen ? 32.0 : 38.0;    // 经验徽章大小
 
     final double buttonIconSize = isSmallScreen ? 18 : 20;
     final double buttonFontSize = isSmallScreen ? 14 : 16;
     final EdgeInsets buttonPadding = EdgeInsets.symmetric(
         horizontal: isSmallScreen ? 16 : 24,
-        vertical: isSmallScreen ? 8 : 12
-    );
-
-    // Check if avatar URL is valid and not empty
-    final bool hasValidAvatar = user.avatar != null && user.avatar!.trim().isNotEmpty;
+        vertical: isSmallScreen ? 8 : 12);
+    // --- 结束 响应式布局变量 ---
 
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SingleChildScrollView(
+      child: SingleChildScrollView( // 允许内容在极端情况下滚动
         child: Padding(
           padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center, // 内容居中对齐
+            mainAxisSize: MainAxisSize.min, // Column 高度自适应内容
             children: [
-              // Avatar section with experience badge
+              // --- 头像和经验徽章区域 ---
               Stack(
-                clipBehavior: Clip.none,
+                clipBehavior: Clip.none, // 允许徽章溢出到 Card 外部一点
                 alignment: Alignment.center,
                 children: [
-                  // Main avatar container with shadow and background
-                  GestureDetector(
-                    onTap: onAvatarTap, // Keep GestureDetector here for the whole area
-                    child: Stack( // Inner Stack for Avatar + Camera Icon
-                      children: [
-                        Container(
-                          width: avatarSize,
-                          height: avatarSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            // Keep a background color for placeholder/error state visual consistency
-                            color: Colors.grey.shade200,
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.1),
-                                blurRadius: 8,
-                                offset: Offset(0, 3),
-                              ),
-                            ],
-                          ),
-                          // *** Use ClipOval + SafeCachedImage or Icon ***
-                          child: ClipOval(
-                            child: hasValidAvatar
-                                ? SafeCachedImage(
-                              // Use a key based on URL to force reload if URL changes
-                              key: ValueKey(user.avatar!),
-                              imageUrl: user.avatar!,
-                              width: avatarSize,
-                              height: avatarSize,
-                              fit: BoxFit.cover,
-                              // Let SafeCachedImage handle placeholder/error
-                            )
-                                : Center( // Fallback Icon if no valid avatar
-                              child: Icon(
-                                Icons.person_outline, // Using outline for slightly different look
-                                size: avatarSize * 0.6, // Adjust icon size
-                                color: Colors.grey.shade500,
-                              ),
-                            ),
-                          ),
-                        ),
-                        // Camera icon for avatar update
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            padding: EdgeInsets.all(isSmallScreen ? 4 : 6),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).primaryColor,
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 2),
-                            ),
-                            child: Icon(Icons.camera_alt, color: Colors.white, size: iconSize),
-                          ),
-                        ),
-                      ],
-                    ),
+                  // 使用新封装的可编辑头像组件
+                  EditableUserAvatar(
+                    user: user,
+                    radius: avatarRadius, // 控制头像大小
+                    onUploadStateChanged: onUploadStateChanged, // 将回调传递下去
+                    onUploadSuccess: onUploadSuccess,         // 将回调传递下去
+                    iconBackgroundColor: Theme.of(context).primaryColor, // 编辑图标背景色
+                    // 可以根据需要定制其他颜色或图标
                   ),
 
-                  // Experience progress badge
+                  // 经验进度徽章 (位置可能需要根据头像大小微调)
                   Positioned(
-                    top: -badgeSize * 0.2,
-                    right: -badgeSize * 0.2,
+                    // 使用相对头像半径的位置，更灵活
+                    top: -avatarRadius * 0.2, // 稍微向上偏移
+                    right: -avatarRadius * 0.2, // 稍微向右偏移
                     child: ExpProgressBadge(
                       size: badgeSize,
                       backgroundColor: Theme.of(context).primaryColor,
-                      isDesktop: true,
+                      isDesktop: true, // 传递桌面端标识（如果需要特殊逻辑）
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: isSmallScreen ? 16 : 24),
+              SizedBox(height: isSmallScreen ? 16 : 24), // 头像下方间距
 
-              // User info
+              // --- 用户信息区域 ---
               Text(
                 user.username,
                 style: TextStyle(
@@ -138,11 +91,11 @@ class DesktopProfileCard extends StatelessWidget {
                   fontFamilyFallback: FontConfig.fontFallback,
                 ),
                 textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
+                overflow: TextOverflow.ellipsis, // 超长时显示省略号
               ),
               SizedBox(height: 8),
               Text(
-                user.email,
+                user.email, // 注意：邮箱可能涉及隐私，考虑是否显示或部分显示
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: isSmallScreen ? 14 : 16,
@@ -154,27 +107,29 @@ class DesktopProfileCard extends StatelessWidget {
               ),
               SizedBox(height: 16),
 
-              // Level progress bar
+              // --- 等级进度条 ---
               LevelProgressBar(
                 user: user,
+                // 可以根据 isSmallScreen 调整宽度
                 width: isSmallScreen ? 240 : 280,
               ),
               SizedBox(height: isSmallScreen ? 16 : 20),
 
-              // Use the new FunctionalButton
+              // --- 功能按钮区域 ---
+              // 编辑资料按钮
               FunctionalButton(
-                onPressed: onEditProfile,
+                onPressed: onEditProfile, // 使用传入的回调
                 icon: Icons.edit,
                 label: '编辑资料',
                 iconSize: buttonIconSize,
                 fontSize: buttonFontSize,
                 padding: buttonPadding,
               ),
-              SizedBox(height: isSmallScreen ? 16 : 20),
+              SizedBox(height: isSmallScreen ? 16 : 20), // 按钮间距
 
-              // Use the new WarningButton
+              // 退出登录按钮
               WarningButton(
-                onPressed: onLogout,
+                onPressed: onLogout, // 使用传入的回调
                 icon: Icons.exit_to_app,
                 label: '退出登录',
                 iconSize: buttonIconSize,

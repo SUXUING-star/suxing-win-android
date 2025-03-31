@@ -5,7 +5,6 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
-import '../../../services/main/history/post_history_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -28,7 +27,6 @@ class PostDetailScreen extends StatefulWidget {
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
   final ForumService _forumService = ForumService();
-  final PostHistoryService _postHistoryService = PostHistoryService();
   final TextEditingController _replyController = TextEditingController();
   Post? _post;
   String? _error;
@@ -60,8 +58,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         _post = post;
         _isLoading = false;
       });
-
-      await _postHistoryService.addPostHistory(widget.postId);
     } catch (e) {
       setState(() {
         _error = e.toString();

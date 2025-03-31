@@ -1,87 +1,22 @@
-// Create a new file: lib/widgets/components/screen/game/navigation/game_navigation_section.dart
-
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../services/main/game/game_service.dart';
 
-class GameNavigationSection extends StatefulWidget {
-  final String currentGameId;
+class GameNavigationSection extends StatelessWidget { // <--- 改为 StatelessWidget
+  final String currentGameId; // 仍然需要知道当前 ID 以避免导航到自身（虽然不太可能）
+  final Map<String, dynamic>? navigationInfo; // <--- 新增：接收导航信息
   final Function(String gameId)? onNavigate;
 
   const GameNavigationSection({
     Key? key,
     required this.currentGameId,
+    this.navigationInfo, // <--- 接收导航信息
     this.onNavigate,
   }) : super(key: key);
 
-  @override
-  _GameNavigationSectionState createState() => _GameNavigationSectionState();
-}
-
-class _GameNavigationSectionState extends State<GameNavigationSection> {
-  final GameService _gameService = GameService();
-  Map<String, String>? _navigationData;
-  Map<String, Game?>? _navigationGames;
-  bool _isLoading = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadNavigationData();
-  }
-
-  @override
-  void didUpdateWidget(GameNavigationSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.currentGameId != oldWidget.currentGameId) {
-      _loadNavigationData();
-    }
-  }
-
-  Future<void> _loadNavigationData() async {
-    try {
-      setState(() {
-        _isLoading = true;
-      });
-
-      // Get navigation IDs
-      final navData = await _gameService.getGameNavigation(widget.currentGameId);
-
-      if (navData != null) {
-        setState(() {
-          _navigationData = navData;
-        });
-
-        // Pre-fetch game details for previews
-        _navigationGames = {};
-
-        if (navData.containsKey('previousId') && navData['previousId']!.isNotEmpty) {
-          _navigationGames!['previousId'] = await _gameService.getGameById(navData['previousId']!);
-        }
-
-        if (navData.containsKey('nextId') && navData['nextId']!.isNotEmpty) {
-          _navigationGames!['nextId'] = await _gameService.getGameById(navData['nextId']!);
-        }
-
-        if (mounted) {
-          setState(() {});
-        }
-      }
-    } catch (e) {
-      print('Error loading navigation data: $e');
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _navigateToGame(String gameId) {
-    if (widget.onNavigate != null) {
-      widget.onNavigate!(gameId);
+  // 导航方法保持不变
+  void _navigateToGame(BuildContext context, String gameId) {
+    if (onNavigate != null) {
+      onNavigate!(gameId);
     } else {
       NavigationUtils.pushReplacementNamed(
         context,
@@ -91,81 +26,84 @@ class _GameNavigationSectionState extends State<GameNavigationSection> {
     }
   }
 
-  Widget _buildNavigationButton({
+  // 修改: 构建导航按钮，直接使用 navigationInfo
+  Widget _buildNavigationButton(BuildContext context, {
     required bool isPrevious,
-    required String? gameId,
-    required Game? game,
   }) {
+    // 从 navigationInfo 中安全地获取 ID 和 Title
+    final gameId = navigationInfo?[isPrevious ? 'previousId' : 'nextId'] as String?;
+    final gameTitle = navigationInfo?[isPrevious ? 'previousTitle' : 'nextTitle'] as String?;
+
+    // 如果没有对应的导航游戏 ID，则返回占位
     if (gameId == null || gameId.isEmpty) {
-      return const SizedBox.shrink();
+      return Expanded(child: SizedBox.shrink());
     }
 
-    final icon = isPrevious ? Icons.arrow_back : Icons.arrow_forward;
+    final icon = isPrevious ? Icons.arrow_back_ios_new : Icons.arrow_forward_ios; // 使用更现代的图标
     final label = isPrevious ? '上一篇' : '下一篇';
+    final alignment = isPrevious ? CrossAxisAlignment.start : CrossAxisAlignment.end;
+    final mainAxisAlignmentRow = isPrevious ? MainAxisAlignment.start : MainAxisAlignment.end;
+    final textAlign = isPrevious ? TextAlign.left : TextAlign.right;
 
     return Expanded(
       child: Card(
+        margin: EdgeInsets.zero, // 去掉 Card 的默认外边距
         clipBehavior: Clip.antiAlias,
-        elevation: 2,
+        elevation: 1, // 稍微降低阴影
+        shape: RoundedRectangleBorder( // 添加圆角
+          borderRadius: BorderRadius.circular(8),
+        ),
         child: InkWell(
-          onTap: () => _navigateToGame(gameId),
-          child: Row(
-            mainAxisAlignment: isPrevious
-                ? MainAxisAlignment.start
-                : MainAxisAlignment.end,
-            children: [
-              if (isPrevious)
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Icon(icon, size: 24),
-                ),
-              if (game != null)
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Column(
-                      crossAxisAlignment: isPrevious
-                          ? CrossAxisAlignment.start
-                          : CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          label,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          game.title,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: isPrevious ? TextAlign.left : TextAlign.right,
-                        ),
-                      ],
-                    ),
+          onTap: () => _navigateToGame(context, gameId),
+          child: Padding( // 在 InkWell 内部添加 Padding
+            padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 10.0),
+            child: Row(
+              mainAxisAlignment: mainAxisAlignmentRow,
+              children: [
+                // 图标在左（上一篇）
+                if (isPrevious)
+                  Padding(
+                    padding: const EdgeInsets.only(right: 8.0), // 图标和文字间距
+                    child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), // 调整大小和颜色
                   ),
-                )
-              else
+
+                // 文字部分
                 Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12.0),
-                    child: Text(
-                      label,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                      textAlign: isPrevious ? TextAlign.left : TextAlign.right,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: alignment,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: 11, // 稍小
+                          color: Colors.grey[600], // 柔和的颜色
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        gameTitle?.isNotEmpty == true ? gameTitle! : label,
+                        style: TextStyle(
+                          fontWeight: FontWeight.w600, // 调整粗细
+                          fontSize: 14, // 稍大
+                          color: Theme.of(context).textTheme.bodyLarge?.color,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: textAlign,
+                      ),
+                    ],
                   ),
                 ),
-              if (!isPrevious)
-                Padding(
-                  padding: const EdgeInsets.all(12.0),
-                  child: Icon(icon, size: 24),
-                ),
-            ],
+
+                // 图标在右（下一篇）
+                if (!isPrevious)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0), // 图标和文字间距
+                    child: Icon(icon, size: 18, color: Theme.of(context).colorScheme.primary), // 调整大小和颜色
+                  ),
+              ],
+            ),
           ),
         ),
       ),
@@ -174,44 +112,26 @@ class _GameNavigationSectionState extends State<GameNavigationSection> {
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.symmetric(vertical: 20),
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    // 修改: 检查 navigationInfo 是否有效
+    final bool hasPrevious = navigationInfo?['previousId'] != null && (navigationInfo!['previousId'] as String? ?? '').isNotEmpty;
+    final bool hasNext = navigationInfo?['nextId'] != null && (navigationInfo!['nextId'] as String? ?? '').isNotEmpty;
 
-    if (_navigationData == null ||
-        (_navigationData!['previousId']?.isEmpty ?? true) &&
-            (_navigationData!['nextId']?.isEmpty ?? true)) {
+    // 如果没有导航信息，则不显示
+    if (navigationInfo == null || (!hasPrevious && !hasNext)) {
       return const SizedBox.shrink();
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4.0, bottom: 8.0),
-
-        ),
-        Row(
-          children: [
-            _buildNavigationButton(
-              isPrevious: true,
-              gameId: _navigationData?['previousId'],
-              game: _navigationGames?['previousId'],
-            ),
-            const SizedBox(width: 12),
-            _buildNavigationButton(
-              isPrevious: false,
-              gameId: _navigationData?['nextId'],
-              game: _navigationGames?['nextId'],
-            ),
-          ],
-        ),
-      ],
+    // 构建导航按钮区域
+    return Padding( // 添加外层 Padding 控制与其他 Section 的间距
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: Row(
+        children: [
+          _buildNavigationButton(context, isPrevious: true),
+          if (hasPrevious && hasNext)
+            const SizedBox(width: 16), // 增加按钮间距
+          _buildNavigationButton(context, isPrevious: false),
+        ],
+      ),
     );
   }
 }

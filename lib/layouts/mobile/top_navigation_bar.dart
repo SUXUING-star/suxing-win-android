@@ -58,9 +58,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // 添加网络状态指示器
-        _buildNetworkStatusIndicator(context, verticalPadding),
-        const SizedBox(width: 8),
         // 添加公告指示器
         _buildAnnouncementIndicator(context, verticalPadding),
         const SizedBox(width: 8),
@@ -90,18 +87,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     return SizedBox.shrink();
   }
 
-  // 添加网络状态指示器构建方法
-  Widget _buildNetworkStatusIndicator(BuildContext context, double padding) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: padding),
-        child: const NetworkStatusIndicator(
-          onReconnect: null, // 可以添加重连回调
-        ),
-      ),
-    );
-  }
 
   // 添加公告指示器构建方法
   Widget _buildAnnouncementIndicator(BuildContext context, double padding) {

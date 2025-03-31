@@ -1,6 +1,7 @@
 // lib/widgets/components/badge/layout/checkin_badge.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../services/main/user/user_checkin_service.dart';
 import '../../../../screens/checkin/checkin_screen.dart';
 
@@ -16,7 +17,7 @@ class CheckInBadge extends StatelessWidget {
           builder: (context, hasCheckedToday, child) {
             return GestureDetector(
               onTap: () {
-                Navigator.push(
+                NavigationUtils.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => CheckInScreen(),

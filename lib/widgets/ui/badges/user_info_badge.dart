@@ -7,7 +7,7 @@ import '../../../../services/main/user/user_service.dart';
 import '../../../../screens/profile/open_profile_screen.dart';
 // 确保这些路径也正确
 import '../image/safe_user_avatar.dart';
-import '../../components/button/follow_user_button.dart';
+import 'follow_user_button.dart';
 
 
 class UserInfoBadge extends StatelessWidget {
@@ -53,6 +53,7 @@ class UserInfoBadge extends StatelessWidget {
         final avatarUrl = userInfo['avatar'];
         final experience = userInfo['experience'] ?? 0;
         final level = userInfo['level'] ?? 1;
+        final bool? initialIsFollowing = userInfo['isFollowing'] as bool?; // 可能为 null
 
         return FutureBuilder<String?>(
             future: _userService.currentUserId, // 这个 Future 也可能重复执行
@@ -154,6 +155,8 @@ class UserInfoBadge extends StatelessWidget {
                         userId: userId,
                         mini: mini,
                         showIcon: !mini,
+                        // 传递初始关注状态
+                        initialIsFollowing: initialIsFollowing,
                       ),
                     ],
                   ],

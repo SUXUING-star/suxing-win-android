@@ -2,17 +2,21 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../../../services/main/update/update_service.dart';
-import '../../dialogs/update/force_update_dialog.dart';
+import '../../dialogs/update/force_update_dialog.dart'; // 保留，用于强制更新
 
 class UpdateButton extends StatelessWidget {
   const UpdateButton({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    // ... (build method remains the same) ...
     return Consumer<UpdateService>(
       builder: (context, updateService, _) {
+        // ... (unchanged part) ...
         if (updateService.isChecking) {
           return SizedBox(
             width: 24,
@@ -50,9 +54,18 @@ class UpdateButton extends StatelessWidget {
     );
   }
 
+  // --- Helper function to format changelog for the message ---
+  String _formatChangelogMessage(List<String>? changelog) {
+    if (changelog == null || changelog.isEmpty) {
+      return ''; // 没有更新日志时返回空字符串
+    }
+    // 添加标题和项目符号
+    return '\n\n更新内容:\n${changelog.map((change) => '• $change').join('\n')}';
+  }
+
   Future<void> _handleUpdateTap(BuildContext context, UpdateService updateService) async {
     if (!updateService.updateAvailable) {
-      // 手动检查更新
+      // 手动检查更新 (保持不变)
       await updateService.checkForUpdates();
       if (!updateService.updateAvailable && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -63,13 +76,13 @@ class UpdateButton extends StatelessWidget {
     }
 
     if (updateService.forceUpdate) {
-      // 显示强制更新对话框
+      // 强制更新：仍然使用 ForceUpdateDialog (保持不变)
       if (context.mounted) {
         showDialog(
           context: context,
-          barrierDismissible: false, // 禁止点击外部关闭
+          barrierDismissible: false,
           builder: (context) => ForceUpdateDialog(
-            currentVersion: updateService.latestVersion ?? '',
+            currentVersion: updateService.currentVersion ?? '', // 确保传递 currentVersion
             latestVersion: updateService.latestVersion ?? '',
             updateMessage: updateService.updateMessage,
             changelog: updateService.changelog,
@@ -78,50 +91,71 @@ class UpdateButton extends StatelessWidget {
         );
       }
     } else {
-      // 显示普通更新对话框
+      // --- 非强制更新：使用 CustomConfirmDialog ---
       if (context.mounted) {
-        showDialog(
+        // 准备对话框消息，包含版本号和格式化的更新日志
+        final messageContent =
+            '发现新版本 ${updateService.latestVersion}。${_formatChangelogMessage(updateService.changelog)}';
+
+        CustomConfirmDialog.show(
           context: context,
-          builder: (context) => AlertDialog(
-            title: Text('发现新版本'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('是否更新到新版本 ${updateService.latestVersion}？'),
-                if (updateService.changelog != null &&
-                    updateService.changelog!.isNotEmpty) ...[
-                  SizedBox(height: 16),
-                  Text('更新内容：'),
-                  ...updateService.changelog!.map((change) => Padding(
-                    padding: EdgeInsets.only(left: 8, top: 4),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• '),
-                        Expanded(child: Text(change)),
-                      ],
-                    ),
-                  )),
-                ],
-              ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text('稍后'),
-              ),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context);
-                  if (updateService.updateUrl != null) {
-                    await launchUrl(Uri.parse(updateService.updateUrl!));
+          title: '发现新版本', // 对话框标题
+          message: messageContent, // 对话框消息 (包含更新日志)
+          confirmButtonText: '更新', // 确认按钮文字
+          cancelButtonText: '稍后', // 取消按钮文字
+          confirmButtonColor: Colors.blue, // 确认按钮颜色 (蓝色适用于普通更新)
+          iconData: Icons.system_update_outlined, // 使用更新相关的图标
+          iconColor: Colors.blue,          // 图标颜色
+
+          // --- 确认回调：执行更新操作 ---
+          onConfirm: () async {
+            // CustomConfirmDialog 会显示加载状态，但打开链接通常很快，
+            // 加载状态可能一闪而过。主要目标是执行动作。
+            if (!context.mounted) return; // 检查 context 是否仍然有效
+
+            // 1. 手动关闭对话框 (因为 onConfirm 结束后 CustomConfirmDialog 不会自动关闭)
+            Navigator.pop(context);
+
+            // 2. 尝试启动更新链接
+            if (updateService.updateUrl != null) {
+              final uri = Uri.parse(updateService.updateUrl!);
+              try {
+                // 尝试使用外部应用打开链接
+                if (await canLaunchUrl(uri)) {
+                  await launchUrl(uri, mode: LaunchMode.externalApplication);
+                } else {
+                  print('无法启动 URL: ${updateService.updateUrl}');
+                  if (context.mounted) { // 再次检查
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('无法打开更新链接')),
+                    );
                   }
-                },
-                child: Text('更新'),
-              ),
-            ],
-          ),
+                }
+              } catch (e) {
+                print('启动 URL 时出错: $e');
+                if (context.mounted) { // 再次检查
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('打开更新链接时出错')),
+                  );
+                }
+              }
+            } else {
+              print('更新 URL 为空');
+              if (context.mounted) { // 再次检查
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('未找到有效的更新链接')),
+                );
+              }
+            }
+          },
+
+          // onCancel 回调通常不需要，因为默认就是关闭对话框
+          // onCancel: () {
+          //   print('用户选择稍后更新');
+          // },
+
+          // 其他参数可以根据需要调整，例如动画效果
+          // transitionCurve: Curves.fastOutSlowIn,
         );
       }
     }

@@ -1,16 +1,20 @@
 // lib/widgets/game/collection/game_collection_section.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_collection.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../widgets/components/screen/game/collection/game_collection_button.dart';
 
 class GameCollectionSection extends StatefulWidget {
   final Game game;
-  final Function? onCollectionChanged; // 保留回调
+  final GameCollectionItem? initialCollectionStatus;
+  final Function()? onCollectionChanged; // 父级（GameDetailContent）的回调
 
   const GameCollectionSection({
     Key? key,
     required this.game,
-    this.onCollectionChanged,
+    this.initialCollectionStatus, // 接收
+    this.onCollectionChanged,     // 接收
+
   }) : super(key: key);
 
   @override
@@ -21,6 +25,10 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
   @override
   void initState() {
     super.initState();
+  }
+  // --- 修改：当按钮状态改变时，调用从父级传来的回调 ---
+  void _handleButtonCollectionChanged() {
+    widget.onCollectionChanged?.call(); // 直接调用 widget 的回调
   }
 
   @override
@@ -79,10 +87,12 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                   ),
                 ),
                 Spacer(),
-                // 添加回调到收藏按钮
+                // --- 传递状态和回调给 GameCollectionButton ---
                 GameCollectionButton(
                   game: widget.game,
-                  onCollectionChanged: _onCollectionChanged,
+                  initialCollectionStatus: widget.initialCollectionStatus, // 传递状态
+                  onCollectionChanged: _handleButtonCollectionChanged, // 传递内部处理回调
+                  compact: false, // Section 里通常用非 compact 样式
                 ),
               ],
             ),

@@ -7,13 +7,11 @@ import '../../../../ui/image/safe_cached_image.dart';
 class RandomGameCard extends StatelessWidget {
   final Game game;
   final VoidCallback? onTap;
-  final bool isMounted;
 
   const RandomGameCard({
     Key? key,
     required this.game,
     this.onTap,
-    required this.isMounted,
   }) : super(key: key);
 
   @override
@@ -72,9 +70,7 @@ class RandomGameCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 memCacheWidth: 320,
                 onError: (url, error) {
-                  if (isMounted) {
-                    print('随机游戏图片加载失败: $url, 错误: $error');
-                  }
+                  print('随机游戏图片加载失败: $url, 错误: $error');
                 },
               ),
 

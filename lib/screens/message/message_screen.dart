@@ -1,321 +1,576 @@
-// lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/routes/app_routes.dart'; // 需要 AppRoutes 常量
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import '../../services/main/message/message_service.dart';
 import '../../models/message/message.dart';
-import '../../models/message/message_type.dart';
+import '../../models/message/message_type.dart'; // 需要 MessageTypeInfo
 import '../../utils/device/device_utils.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/message/message_detail.dart';
-import '../../widgets/components/screen/message/message_tabs.dart';
+import '../../widgets/components/screen/message/message_list.dart';
 import '../../widgets/components/screen/message/message_desktop_layout.dart';
+// 确保引入了所有可能的导航目标页面
 import '../game/detail/game_detail_screen.dart';
 import '../forum/post/post_detail_screen.dart';
+import '../profile/open_profile_screen.dart';
+import '../common/route_error_screen.dart'; // 用于导航失败提示
 
+/// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
   @override
   _MessageScreenState createState() => _MessageScreenState();
 }
 
-class _MessageScreenState extends State<MessageScreen> with SingleTickerProviderStateMixin {
+class _MessageScreenState extends State<MessageScreen> {
   final MessageService _messageService = MessageService();
-  bool _isLoading = true;
-  bool _allMessagesRead = false;
+  bool _isLoading = true; // 是否正在加载数据
+  bool _allMessagesRead = false; // 是否所有消息都已读
 
-  // 分组消息存储
+  // 存储按类型分组的消息列表
   Map<String, List<Message>> _groupedMessages = {};
+  // 存储排序后的消息类型 key
+  List<String> _sortedTypeKeys = [];
 
-  // Tab控制器
-  late TabController _tabController;
-
-  // Tab标签
-  late List<String> _tabLabels;
-
-  // 桌面布局控制
+  // 控制桌面端右侧详情面板的显示
   bool _showMessageDetails = false;
+  // 当前在详情面板中显示的消息
   Message? _selectedMessage;
+
+  // 存储 ExpansionTile 的展开状态 (key: typeKey, value: isExpanded)
+  final Map<String, bool> _expansionState = {};
 
   @override
   void initState() {
     super.initState();
-
-    // 初始化Tab标签
-    _tabLabels = [
-      '全部',
-      '帖子回复',
-      '评论回复',
-      '关注通知',  // 新增
-    ];
-
-    // 初始化TabController
-    _tabController = TabController(
-        length: _tabLabels.length,
-        vsync: this
-    );
-
-    _loadGroupedMessages();
+    _loadGroupedMessages(); // 初始化时加载消息
   }
 
   @override
   void dispose() {
-    // 确保页面关闭时取消订阅流和释放TabController
-    _messageService.disposeMessageStream();
-    _tabController.dispose();
+    _messageService.disposeMessageStream(); // 清理消息流监听器
     super.dispose();
   }
 
-  // 加载分组消息
+  /// 加载并处理分组消息
   Future<void> _loadGroupedMessages() async {
-    setState(() {
-      _isLoading = true;
-    });
+    if (!mounted) return; // 如果页面已销毁，则不执行
+    setState(() { _isLoading = true; }); // 开始加载，显示加载指示器
 
     try {
-      // 获取最新分组消息
+      // 调用服务获取分组消息
       final groupedMessages = await _messageService.getGroupedMessagesOnce();
+      if (!mounted) return; // 获取数据后再次检查页面是否还在
 
-      setState(() {
-        _groupedMessages = groupedMessages;
+      // 对每个分组内部的消息按时间倒序排序 (最新的在前)
+      groupedMessages.forEach((key, messages) {
+        messages.sort((a, b) => b.displayTime.compareTo(a.displayTime));
+      });
 
-        // 检查是否所有消息都已读
-        bool allRead = true;
-        groupedMessages.forEach((key, messages) {
-          for (var message in messages) {
-            if (!message.isRead) {
-              allRead = false;
-              break;
-            }
-          }
+      // 对消息类型进行排序 (这里按类型的显示名称排序)
+      final sortedKeys = groupedMessages.keys.toList()
+        ..sort((a, b) {
+          // 使用 MessageTypeInfo.fromString 将 key 转换为枚举
+          MessageType typeA = MessageTypeInfo.fromString(a);
+          MessageType typeB = MessageTypeInfo.fromString(b);
+          // 按显示名称的字母顺序排序
+          return typeA.displayName.compareTo(typeB.displayName);
         });
 
+      // 初始化或保留 ExpansionTile 的展开状态
+      for (var key in sortedKeys) {
+        if (!_expansionState.containsKey(key)) { // 只初始化一次
+          // 默认展开第一个分组，或者包含未读消息的分组
+          bool shouldExpand = (sortedKeys.first == key) ||
+              (groupedMessages[key]?.any((m) => !m.isRead) ?? false);
+          _expansionState[key] = shouldExpand;
+        }
+      }
+
+      // 更新状态
+      setState(() {
+        _groupedMessages = groupedMessages;
+        _sortedTypeKeys = sortedKeys;
+        _checkAllMessagesReadStatus(); // 检查全局已读状态
+        _isLoading = false; // 加载完成
+      });
+    } catch (e, stackTrace) {
+      print('加载分组消息失败: $e\n$stackTrace');
+      if (!mounted) return;
+      setState(() { _isLoading = false; }); // 加载失败也要结束加载状态
+      // 显示错误提示
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('加载消息失败: $e')),
+      );
+    }
+  }
+
+  /// 检查是否所有消息都已读，并更新 _allMessagesRead 状态
+  void _checkAllMessagesReadStatus() {
+    bool allRead = true;
+    // 使用 for...in 循环遍历 keys，允许内部 break
+    for (var key in _groupedMessages.keys) {
+      // 使用 for...in 循环遍历 messages，允许内部 break
+      for (var message in _groupedMessages[key]!) {
+        if (!message.isRead) {
+          allRead = false;
+          break; // 找到一个未读，内层循环结束
+        }
+      }
+      if (!allRead) {
+        break; // 找到一个未读，外层循环也结束
+      }
+    }
+
+    // 仅当状态变化时才调用 setState，避免不必要的重绘
+    if (mounted && _allMessagesRead != allRead) {
+      setState(() {
         _allMessagesRead = allRead;
-        _isLoading = false;
-      });
-    } catch (e) {
-      print('加载分组消息失败: $e');
-      setState(() {
-        _isLoading = false;
       });
     }
   }
 
-  // 标记所有消息为已读
+  /// 获取指定类型下的未读消息数量
+  int _getUnreadCountForType(String typeKey) {
+    return _groupedMessages[typeKey]?.where((m) => !m.isRead).length ?? 0;
+  }
+
+  /// 标记所有消息为已读
   Future<void> _markAllAsRead() async {
+    if (_allMessagesRead || !mounted) return; // 如果已全部已读或页面已销毁，则不操作
+
+    // 可选：添加一个加载指示器或禁用按钮，防止重复点击
+    // setState(() { /* 显示加载状态 */ });
+
     try {
-      await _messageService.markAllAsRead();
-
-      // 重新加载消息列表
+      await _messageService.markAllAsRead(); // 调用 API
+      // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
-
-      // 显示成功提示
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已将所有消息标记为已读'))
-      );
-    } catch (e) {
-      print('标记所有消息为已读失败: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失败: $e'))
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已将所有消息标记为已读')),
+        );
+      }
+    } catch (e, stackTrace) {
+      print('标记所有消息为已读失败: $e\n$stackTrace');
+      if (mounted) {
+        // 标记失败时，也建议重新加载以获取真实状态
+        await _loadGroupedMessages();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('标记已读操作失败，请重试: $e')),
+        );
+      }
+    } finally {
+      // 可选：结束加载状态
+      // if (mounted) setState(() { /* 结束加载状态 */ });
     }
   }
 
+  /// 处理消息列表项被点击的事件
   void _handleMessageTap(Message message) async {
-    print('消息类型: ${message.type}, gameId: ${message.gameId}, postId: ${message.postId}');
+    if (!mounted) return;
+    print('处理点击消息: ID=${message.id}, Type=${message.type}, isRead=${message.isRead}');
 
-    // 在桌面端，只显示详情面板
+    bool needsStateUpdate = false; // 是否需要更新 UI (例如移除未读标记)
+    Message messageForUi = message; // 用于后续操作的消息对象 (可能被更新)
+
+    // 步骤 1: 如果消息未读，标记为已读 (本地乐观更新 + 远程 API调用)
+    if (!message.isRead) {
+      try {
+        // 在 groupedMessages 中找到这条消息并更新它
+        String? targetKey;
+        int? targetIndex;
+        for (var key in _groupedMessages.keys) {
+          final list = _groupedMessages[key]!;
+          final index = list.indexWhere((m) => m.id == message.id);
+          if (index != -1) {
+            targetKey = key;
+            targetIndex = index;
+            break;
+          }
+        }
+
+        if (targetKey != null && targetIndex != null) {
+          // 使用 copyWith 创建新对象，标记为已读
+          final updatedMessage = message.copyWith(isRead: true, readTime: DateTime.now());
+          // 更新 groupedMessages 中的对象
+          _groupedMessages[targetKey]![targetIndex] = updatedMessage;
+          messageForUi = updatedMessage; // 后续使用更新后的对象
+          needsStateUpdate = true; // 标记需要更新 UI
+          print('本地标记已读成功: ID=${message.id}');
+
+          // 如果详情面板显示的是这条消息，也同步更新
+          if (_selectedMessage?.id == message.id) {
+            _selectedMessage = updatedMessage;
+          }
+
+          // 异步调用 API 在后端标记已读 (不需要 await，避免阻塞 UI)
+          _messageService.markAsRead(message.id).then((_) {
+            print('远程标记已读成功: ID=${message.id}');
+            // 可以在这里再次检查全局已读状态，确保精确
+            if (mounted) _checkAllMessagesReadStatus();
+          }).catchError((e, stackTrace) {
+            // 远程标记失败的处理
+            print('远程标记已读失败: ID=${message.id}, Error: $e\n$stackTrace');
+            // 简单处理：可以提示用户，或者让下次刷新来同步状态
+            // 注意：不建议在这里回滚本地状态，可能导致 UI 闪烁
+            if (mounted) {
+              // ScaffoldMessenger.of(context).showSnackBar(
+              //   SnackBar(content: Text('与服务器同步已读状态时出错')),
+              // );
+            }
+          });
+
+        } else {
+          // 如果在列表中找不到消息（理论上不应发生），记录警告并尝试直接调用 API
+          print("警告: 未在 _groupedMessages 中找到要标记已读的消息 ID: ${message.id}");
+          await _messageService.markAsRead(message.id); // 尝试直接调用
+          _loadGroupedMessages(); // 作为后备，重新加载列表
+        }
+      } catch (e, stackTrace) {
+        print("处理标记已读时本地发生错误: $e\n$stackTrace");
+        // 本地处理错误（例如 copyWith 失败？）
+      }
+    }
+
+    // 步骤 2: 如果状态有更新，则刷新 UI
+    if (needsStateUpdate && mounted) {
+      setState(() {}); // 重绘列表项，移除未读标记等
+      _checkAllMessagesReadStatus(); // 重新检查全局已读状态
+    }
+
+    // 步骤 3: 根据平台执行操作 (显示详情或导航)
     if (DeviceUtils.isDesktop) {
+      // 桌面端：更新右侧详情面板
       setState(() {
-        _selectedMessage = message;
+        _selectedMessage = messageForUi; // 显示（可能已更新的）消息详情
         _showMessageDetails = true;
       });
+    } else {
+      // 移动端：直接尝试导航到关联页面
+      _performNavigation(messageForUi);
+    }
+  }
 
-      // 标记为已读
-      if (!message.isRead) {
-        await _messageService.markAsRead(message.id);
-        // 重新加载消息以更新状态
-        _loadGroupedMessages();
+  /// 执行导航到消息关联页面的操作
+  void _performNavigation(Message message) {
+    if (!mounted) return;
+    // 从消息模型获取导航所需信息
+    final navigationInfo = message.navigationDetails;
+
+    if (navigationInfo != null) {
+      // 如果有导航信息，则执行导航
+      print('导航到路由: ${navigationInfo.routeName}, 参数: ${navigationInfo.arguments}');
+      NavigationUtils.pushNamed(
+        context,
+        navigationInfo.routeName, // 使用模型提供的路由名称
+        arguments: navigationInfo.arguments, // 使用模型提供的参数
+      ).catchError((e, stackTrace) {
+        // 处理导航过程中可能发生的错误 (例如路由不存在或参数错误)
+        print("导航失败: Route=${navigationInfo.routeName}, Args=${navigationInfo.arguments}, Error: $e\n$stackTrace");
+        if (mounted) {
+          // 可以显示一个通用的错误提示页面或 SnackBar
+          // NavigationUtils.push(context, MaterialPageRoute(builder: (_) => RouteErrorScreen.genericError(onAction: () => Navigator.pop(context))));
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('无法打开目标页面，请稍后重试。')),
+          );
+        }
+      });
+    } else {
+      // 如果没有导航信息，提示用户
+      print("消息 (ID: ${message.id}, Type: ${message.messageType.name}) 没有可导航的目标。");
+      if (!DeviceUtils.isDesktop && mounted) {
+        _showUnsupportedNavigationDialog(); // 移动端显示弹窗提示
       }
-      return;
-    }
-
-    // 移动端行为：跳转到相应页面
-    // 先标记为已读
-    if (!message.isRead) {
-      await _messageService.markAsRead(message.id);
-      // 重新加载消息以更新状态
-      _loadGroupedMessages();
-    }
-
-    _navigateToMessageTarget(message);
-  }
-
-  void _navigateToMessageTarget(Message message) {
-    // 修改类型判断逻辑，兼容不同格式的类型值
-    // 对于评论回复类型
-    bool isCommentReply = message.type.toLowerCase().contains("comment") ||
-        message.type == MessageType.commentReply.toString();
-
-    // 对于帖子回复类型
-    bool isPostReply = message.type.toLowerCase().contains("post") ||
-        message.type == MessageType.postReply.toString();
-
-    // 对于关注通知类型
-    bool isFollowNotification = message.type.toLowerCase().contains("follow") ||
-        message.type == MessageType.followNotification.toString();
-
-    // 根据消息类型跳转到相应页面
-    if (isCommentReply && message.gameId != null) {
-      NavigationUtils.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => GameDetailScreen(gameId: message.gameId!),
-        ),
-      );
-    } else if (isPostReply && message.postId != null) {
-      NavigationUtils.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => PostDetailScreen(postId: message.postId!),
-        ),
-      );
-    } else if (isFollowNotification && message.senderId.isNotEmpty) {
-      // 关注通知跳转到用户个人页面
-      NavigationUtils.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OpenProfileScreen(userId: message.senderId),
-        ),
-      );
+      // 桌面端，如果详情面板没打开，确保打开它
+      else if (DeviceUtils.isDesktop && mounted && !_showMessageDetails) {
+        setState(() {
+          _selectedMessage = message;
+          _showMessageDetails = true;
+        });
+      }
     }
   }
 
-  // 显示删除确认对话框
-  void _showDeleteDialog(Message message) {
+  /// 显示不支持导航的提示对话框 (移动端)
+  void _showUnsupportedNavigationDialog() {
+    if (!mounted) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('删除消息'),
-        content: Text('确定要删除这条消息吗？'),
+        title: Text('提示'),
+        content: Text('此消息没有可查看的关联页面。'),
         actions: [
           TextButton(
-            onPressed: () => NavigationUtils.pop(context),
-            child: Text('取消'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await _messageService.deleteMessage(message.id);
-              NavigationUtils.pop(context);
-
-              // 如果当前选中的消息被删除，关闭详情面板
-              if (_selectedMessage?.id == message.id) {
-                setState(() {
-                  _selectedMessage = null;
-                  _showMessageDetails = false;
-                });
-              }
-
-              // 重新加载消息
-              _loadGroupedMessages();
-            },
-            child: Text('删除'),
+            onPressed: () => Navigator.of(context).pop(),
+            child: Text('好的'),
           ),
         ],
       ),
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    // 如果是桌面环境，使用DesktopLayout
-    if (DeviceUtils.isDesktop) {
-      return _buildDesktopLayout();
+  /// 显示删除确认对话框
+  void _showDeleteDialog(Message message) {
+    if (!mounted) return;
+
+    // 使用 CustomConfirmDialog.show 静态方法来显示对话框
+    CustomConfirmDialog.show(
+      context: context,
+      title: '确认删除', // 对话框标题
+      message: '确定要删除这条消息吗？此操作无法撤销。', // 对话框消息
+      confirmButtonText: '删除', // 确认按钮文本
+      confirmButtonColor: Colors.red, // 确认按钮颜色 (红色表示危险操作)
+      iconData: Icons.delete_outline, // 使用删除相关的图标
+      iconColor: Colors.red,          // 图标颜色与按钮匹配
+
+      // --- 关键：提供 onConfirm 回调 ---
+      // 这个回调是一个异步函数，执行实际的删除操作
+      onConfirm: () async {
+        // CustomConfirmDialog 会在执行此回调时显示加载指示器
+        if (!mounted) return; // 再次检查 mounted 状态，以防万一
+
+        try {
+          // 调用服务执行删除操作
+          await _messageService.deleteMessage(message.id);
+          if (!mounted) return; // 异步操作后再次检查
+
+          // --- 删除成功 ---
+          // 1. 关闭对话框 (重要：在异步操作成功后手动关闭)
+          //    因为 CustomConfirmDialog 将关闭责任交给了 onConfirm
+          Navigator.of(context).pop();
+
+          // 2. 如果删除的是当前详情页显示的消息，关闭详情面板 (桌面端)
+          if (_selectedMessage?.id == message.id) {
+            setState(() {
+              _selectedMessage = null;
+              _showMessageDetails = false;
+            });
+          }
+
+          // 3. 重新加载消息列表以反映删除
+          await _loadGroupedMessages();
+
+          // 4. 显示成功提示 (检查 mounted)
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('消息已删除'), duration: Duration(seconds: 2)),
+            );
+          }
+
+        } catch (e, stackTrace) {
+          print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
+          if (!mounted) return; // 异步操作后再次检查
+
+          // 2. 显示错误提示
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('删除失败: $e')),
+          );
+
+          // 重新抛出异常，虽然在这个场景下可能不需要上层处理
+          // rethrow;
+        }
+        // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
+      },
+    );
+  }
+  /// 构建主内容区域 (包含可折叠的消息分组列表)
+  Widget _buildMessageContent() {
+    // 加载状态
+    if (_isLoading) {
+      return LoadingWidget();
     }
 
-    // 移动端使用普通布局
-    return _buildMobileLayout();
+    // 空状态
+    if (_groupedMessages.isEmpty) {
+      return RefreshIndicator( // 即使为空也允许下拉刷新
+        onRefresh: _loadGroupedMessages,
+        child: LayoutBuilder( // 使用 LayoutBuilder 获取可用高度
+            builder: (context, constraints) {
+              return SingleChildScrollView( // 使用 SingleChildScrollView 配合 AlwaysScrollableScrollPhysics
+                physics: AlwaysScrollableScrollPhysics(),
+                child: Container(
+                  height: constraints.maxHeight, // 占据父容器高度，确保能触发下拉
+                  alignment: Alignment.center,
+                  child: Text(
+                    '暂无任何消息',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                ),
+              );
+            }
+        ),
+      );
+    }
+
+    // 正常显示列表
+    return RefreshIndicator(
+      onRefresh: _loadGroupedMessages, // 下拉刷新回调
+      child: ListView.builder(
+        // physics: AlwaysScrollableScrollPhysics(), // 确保内容不足一屏也能滚动和触发刷新
+        itemCount: _sortedTypeKeys.length, // 列表项数量为分组数量
+        itemBuilder: (context, index) {
+          final typeKey = _sortedTypeKeys[index]; // 当前分组的类型 key
+          final messagesForType = _groupedMessages[typeKey] ?? []; // 当前分组的消息列表
+          // if (messagesForType.isEmpty) return SizedBox.shrink(); // 如果某分组为空，不渲染 (可选)
+
+          // 使用 MessageTypeInfo 解析类型 key 获取显示信息
+          final messageType = MessageTypeInfo.fromString(typeKey);
+          final typeDisplayName = messageType.displayName; // 分组标题
+          final unreadCount = _getUnreadCountForType(typeKey); // 未读数量
+
+          // 使用 ExpansionTile 实现可折叠的分组
+          return ExpansionTile(
+            key: PageStorageKey(typeKey), // 使用 key 保持折叠状态
+            // 使用 _expansionState 控制初始展开状态
+            initiallyExpanded: _expansionState[typeKey] ?? false,
+            // 当展开/折叠状态改变时，更新 _expansionState
+            onExpansionChanged: (isExpanded) {
+              if (mounted) {
+                setState(() { _expansionState[typeKey] = isExpanded; });
+              }
+            },
+            // 分组标题行
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 标题和角标两端对齐
+              children: [
+                Expanded( // 让标题文本可伸缩，避免溢出
+                  child: Text(
+                    typeDisplayName, // 显示分组名称
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    overflow: TextOverflow.ellipsis, // 超长时显示省略号
+                  ),
+                ),
+                // 如果有未读消息，显示红色角标
+                if (unreadCount > 0)
+                  Padding(
+                    padding: const EdgeInsets.only(left: 8.0), // 与标题保持距离
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent, // 角标背景色
+                        borderRadius: BorderRadius.circular(12), // 圆角
+                      ),
+                      child: Text(
+                        '$unreadCount', // 显示未读数量
+                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            childrenPadding: EdgeInsets.zero, // 移除 ExpansionTile 内部的默认边距
+            tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), // 自定义标题区域的内边距
+            backgroundColor: Colors.grey[50], // 展开时的背景色
+            collapsedBackgroundColor: Colors.white, // 折叠时的背景色
+            iconColor: Theme.of(context).primaryColor, // 折叠图标颜色
+            collapsedIconColor: Colors.grey[600], // 展开图标颜色
+            // 折叠内容：显示该分组的消息列表
+            children: [
+              // 如果分组内没有消息，显示提示文本
+              if (messagesForType.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+                  child: Center(child: Text('此类消息暂无内容', style: TextStyle(color: Colors.grey))),
+                )
+              // 否则，显示 MessageList
+              else
+                MessageList(
+                  messages: messagesForType, // 传递消息列表
+                  onMessageTap: _handleMessageTap, // 传递点击回调
+                  selectedMessage: _selectedMessage, // 传递选中消息（用于高亮）
+                  isCompact: DeviceUtils.isDesktop, // 桌面端使用紧凑模式
+                ),
+            ],
+          );
+        },
+        padding: EdgeInsets.only(bottom: 16.0), // 列表底部留白
+      ),
+    );
   }
 
-  // 桌面布局
+  /// 构建整体页面结构 (区分移动端和桌面端)
+  @override
+  Widget build(BuildContext context) {
+    // 根据设备类型选择不同的布局
+    if (DeviceUtils.isDesktop) {
+      return _buildDesktopLayout();
+    } else {
+      return _buildMobileLayout();
+    }
+  }
+
+  /// 构建桌面端布局
   Widget _buildDesktopLayout() {
-    return MessageDesktopLayout(
+    return MessageDesktopLayout( // 使用左右分栏布局
       title: '消息中心',
-      actions: [
-        // 只在有未读消息时显示"全部标为已读"按钮
+      actions: [ // AppBar 上的操作按钮
+        // 仅当有未读消息时显示 "全部标为已读" 按钮
         if (!_allMessagesRead)
           IconButton(
             icon: Icon(Icons.done_all),
             tooltip: '全部标为已读',
             onPressed: _markAllAsRead,
           ),
+        // 添加刷新按钮
+        IconButton(
+          icon: Icon(Icons.refresh),
+          tooltip: '刷新',
+          onPressed: _loadGroupedMessages, // 点击时重新加载数据
+        ),
       ],
-      bottom: TabBar(
-        controller: _tabController,
-        tabs: _tabLabels.map((label) => Tab(text: label)).toList(),
-        indicatorColor: Colors.white,
-      ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : MessageTabs(
-        groupedMessages: _groupedMessages,
-        tabController: _tabController,
-        tabLabels: _tabLabels,
-        messageService: _messageService,
-        onMessageTap: _handleMessageTap,
-        selectedMessage: _selectedMessage,
-        onRefresh: _loadGroupedMessages,
-        isCompact: false,
-      ),
-      // 右侧面板：消息详情
+      // 左侧主内容区域
+      body: _buildMessageContent(),
+      // 右侧详情面板内容
       rightPanel: _showMessageDetails && _selectedMessage != null
           ? MessageDetail(
-        message: _selectedMessage!,
+        message: _selectedMessage!, // 传递选中的消息
+        // 关闭详情面板的回调
         onClose: () {
-          setState(() {
-            _showMessageDetails = false;
-            _selectedMessage = null;
-          });
+          if (mounted) {
+            setState(() {
+              _showMessageDetails = false;
+              _selectedMessage = null; // 清除选中状态
+            });
+          }
         },
+        // 删除按钮的回调
         onDelete: () => _showDeleteDialog(_selectedMessage!),
-        onViewDetail: _navigateToMessageTarget,
+        // "查看关联" 按钮的回调
+        onViewDetail: (message) {
+          _performNavigation(message); // 在详情面板点击时也执行导航
+        },
       )
-          : null,
+          : null, // 如果没有选中消息，则右侧面板为 null
+      // 控制右侧面板是否可见
       rightPanelVisible: _showMessageDetails && _selectedMessage != null,
     );
   }
 
-  // 移动端布局
+  /// 构建移动端布局
   Widget _buildMobileLayout() {
     return Scaffold(
+      // 使用自定义 AppBar
       appBar: CustomAppBar(
         title: '消息中心',
-        actions: [
-          // 只在有未读消息时显示"全部标为已读"按钮
+        actions: [ // AppBar 上的操作按钮
           if (!_allMessagesRead)
             IconButton(
               icon: Icon(Icons.done_all),
               tooltip: '全部标为已读',
               onPressed: _markAllAsRead,
             ),
+          IconButton(
+            icon: Icon(Icons.refresh),
+            tooltip: '刷新',
+            onPressed: _loadGroupedMessages,
+          ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: _tabLabels.map((label) => Tab(text: label)).toList(),
-          indicatorColor: Colors.white,
-        ),
+        // 移动端不需要 bottom TabBar 了
       ),
-      body: _isLoading
-          ? Center(child: CircularProgressIndicator())
-          : MessageTabs(
-        groupedMessages: _groupedMessages,
-        tabController: _tabController,
-        tabLabels: _tabLabels,
-        messageService: _messageService,
-        onMessageTap: _handleMessageTap,
-        selectedMessage: _selectedMessage,
-        onRefresh: _loadGroupedMessages,
-        isCompact: false,
-      ),
+      // 主体内容
+      body: _buildMessageContent(),
     );
   }
 }

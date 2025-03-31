@@ -49,11 +49,22 @@ class DesktopMenuGrid extends StatelessWidget {
             Flexible(
               child: LayoutBuilder(
                 builder: (context, constraints) {
-                  double childAspectRatio = screenWidth < 800 ? 1.3 : 1.5;
+                  // constraints.maxWidth 是 GridView 可用的最大宽度
+                  double maxCrossAxisExtent;
+                  // 可以根据屏幕宽度设定不同的期望子项宽度
+                  if (screenWidth < 800) {
+                    maxCrossAxisExtent = 180; // 小屏幕时，期望每个格子宽一点，列数少
+                  } else if (screenWidth < 1200) {
+                    maxCrossAxisExtent = 200; // 中等屏幕
+                  } else {
+                    maxCrossAxisExtent = 220; // 大屏幕时，期望每个格子宽一点
+                  }
+                  // 宽高比也可以动态计算，或者保持固定
+                  double childAspectRatio = 1.4; // 可以尝试固定或也根据 screenWidth 调整
 
                   return GridView.builder(
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                      maxCrossAxisExtent: maxCrossAxisExtent, // 指定子项最大宽度
                       childAspectRatio: childAspectRatio,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
@@ -61,7 +72,9 @@ class DesktopMenuGrid extends StatelessWidget {
                     itemCount: menuItems.length,
                     itemBuilder: (context, index) {
                       final item = menuItems[index];
-                      return _buildMenuCard(context, item, screenWidth);
+                      // 这里仍然可以根据 screenWidth 或 constraints.maxWidth / crossAxisCount (如果能拿到)
+                      // 来调整 _buildMenuCard 内部的元素大小，但会更复杂
+                      return _buildMenuCard(context, item, screenWidth); // 暂时还用 screenWidth
                     },
                   );
                 },
@@ -75,9 +88,9 @@ class DesktopMenuGrid extends StatelessWidget {
 
   Widget _buildMenuCard(BuildContext context, ProfileMenuItem item, double screenWidth) {
     final bool isSmallScreen = screenWidth < 800;
-    final double iconSize = isSmallScreen ? 22 : 28;
-    final double containerSize = isSmallScreen ? 48 : 60;
-    final double fontSize = isSmallScreen ? 13 : 15;
+    final double iconSize = isSmallScreen ? 17 : 28;
+    final double containerSize = isSmallScreen ? 36 : 60;
+    final double fontSize = isSmallScreen ? 10 : 15;
 
     // 为每个菜单项定义独特的颜色方案
     final Map<String, Map<String, Color>> menuColorScheme = {

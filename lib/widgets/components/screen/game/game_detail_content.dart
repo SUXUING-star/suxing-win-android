@@ -1,5 +1,5 @@
-// Updated version of lib/widgets/components/screen/game/game_detail_content.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_collection.dart';
 import '../../../../models/game/game.dart';
 import 'header/game_header.dart';
 import 'description/game_description.dart';
@@ -13,12 +13,18 @@ import 'navigation/game_navigation_section.dart'; // Import the new navigation s
 
 class GameDetailContent extends StatefulWidget {
   final Game game;
-  final Function(String)? onNavigate; // Add this callback
+  final Function(String)? onNavigate; // 保持导航回调
+  final GameCollectionItem? initialCollectionStatus;
+  final Function()? onCollectionChanged;
+  final Map<String, dynamic>? navigationInfo; // <--- 新增：接收导航信息
 
   const GameDetailContent({
     Key? key,
     required this.game,
-    this.onNavigate, // Add this parameter
+    this.onNavigate,
+    this.initialCollectionStatus,
+    this.onCollectionChanged,
+    this.navigationInfo, // <--- 新增构造函数参数
   }) : super(key: key);
 
   @override
@@ -26,14 +32,15 @@ class GameDetailContent extends StatefulWidget {
 }
 
 class _GameDetailContentState extends State<GameDetailContent> {
-  // 创建一个全局键来引用GameReviewSection
   final GlobalKey<GameReviewSectionState> _reviewSectionKey = GlobalKey<GameReviewSectionState>();
 
-  // 当收藏状态改变时刷新评价部分
-  void _refreshReviews() {
+  // 内部处理收藏变化的回调 (保持不变)
+  void _handleCollectionChangedInternal() {
     _reviewSectionKey.currentState?.refresh();
+    widget.onCollectionChanged?.call();
   }
 
+  // 修改：Mobile Layout, 传递 navigationInfo 给 GameNavigationSection
   Widget _buildMobileLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -42,10 +49,11 @@ class _GameDetailContentState extends State<GameDetailContent> {
         GameDescription(game: widget.game),
         GameCollectionSection(
           game: widget.game,
-          onCollectionChanged: _refreshReviews, // 添加回调
+          initialCollectionStatus: widget.initialCollectionStatus,
+          onCollectionChanged: _handleCollectionChangedInternal,
         ),
         GameReviewSection(
-          key: _reviewSectionKey, // 添加key
+          key: _reviewSectionKey,
           game: widget.game,
         ),
         GameImages(game: widget.game),
@@ -53,57 +61,48 @@ class _GameDetailContentState extends State<GameDetailContent> {
         CommentsSection(gameId: widget.game.id),
         const Divider(height: 8),
         RandomGamesSection(currentGameId: widget.game.id),
-        // Add the navigation section at the bottom
         const SizedBox(height: 24),
         const Divider(height: 8),
         const SizedBox(height: 16),
         GameNavigationSection(
           currentGameId: widget.game.id,
+          navigationInfo: widget.navigationInfo, // <--- 传递导航信息
           onNavigate: widget.onNavigate,
         ),
+        const SizedBox(height: 16), // 在底部增加一些空间
       ],
     );
   }
 
+  // 修改：Desktop Layout, 传递 navigationInfo 给 GameNavigationSection
   Widget _buildDesktopLayout() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // 主要内容区域
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 左侧列
-            Expanded(
+            Expanded( // 左侧列
               flex: 2,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 4/3,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: GameCoverImage(imageUrl: widget.game.coverImage),
-                    ),
-                  ),
+                  AspectRatio(aspectRatio: 4/3, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: GameCoverImage(imageUrl: widget.game.coverImage),),),
                   const SizedBox(height: 24),
                   GameImages(game: widget.game),
                   const SizedBox(height: 24),
                   GameCollectionSection(
                     game: widget.game,
-                    onCollectionChanged: _refreshReviews,
+                    initialCollectionStatus: widget.initialCollectionStatus,
+                    onCollectionChanged: _handleCollectionChangedInternal,
                   ),
                   const SizedBox(height: 24),
-                  GameReviewSection(
-                    key: _reviewSectionKey,
-                    game: widget.game,
-                  ),
+                  GameReviewSection(key: _reviewSectionKey, game: widget.game),
                 ],
               ),
             ),
             const SizedBox(width: 32),
-            // 右侧列
-            Expanded(
+            Expanded( // 右侧列
               flex: 3,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -118,21 +117,15 @@ class _GameDetailContentState extends State<GameDetailContent> {
             ),
           ],
         ),
-
-        // 底部推荐游戏区域
-        const SizedBox(height: 24),
-        const Divider(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24), const Divider(), const SizedBox(height: 16),
         RandomGamesSection(currentGameId: widget.game.id),
-
-        // Add the navigation section at the very bottom
-        const SizedBox(height: 32),
-        const Divider(),
-        const SizedBox(height: 16),
+        const SizedBox(height: 32), const Divider(), const SizedBox(height: 16),
         GameNavigationSection(
-          currentGameId: widget.game.id,
-          onNavigate: widget.onNavigate,
+            currentGameId: widget.game.id,
+            navigationInfo: widget.navigationInfo, // <--- 传递导航信息
+            onNavigate: widget.onNavigate
         ),
+        const SizedBox(height: 16), // 在底部增加一些空间
       ],
     );
   }
@@ -140,12 +133,12 @@ class _GameDetailContentState extends State<GameDetailContent> {
   @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
-    return SingleChildScrollView(
-      child: Padding(
-        padding: EdgeInsets.all(isDesktop ? 24.0 : 16.0),
-        child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
-      ),
+    // 使用 ValueKey 包含 gameId，确保 Game 对象变化时重建
+    // 移除 SingleChildScrollView，因为 GameDetailScreen 已经处理了滚动
+    return Padding(
+      key: ValueKey('game_detail_content_${widget.game.id}'), // Key 依然有用
+      padding: EdgeInsets.all(isDesktop ? 0 : 16.0), // 桌面布局由父级控制 Padding
+      child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
     );
   }
 }

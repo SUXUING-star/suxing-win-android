@@ -10,17 +10,14 @@ import '../../models/user/user.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
 import '../../services/main/user/user_service.dart';
-import '../../services/common/upload/rate_limited_file_upload.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/profile/layout/mobile/mobile_profile_header.dart';
 import '../../widgets/components/screen/profile/layout/mobile/mobile_profile_menu_list.dart';
 import '../../widgets/components/screen/profile/layout/desktop/desktop_profile_card.dart';
 import '../../widgets/components/screen/profile/layout/desktop/desktop_menu_grid.dart';
-import '../../widgets/components/dialogs/limiter/avatar_rate_limit_dialog.dart';
 import '../../widgets/ui/common/error_widget.dart';
 import '../../widgets/ui/common/login_prompt_widget.dart';
-import '../../widgets/ui/common/loading_widget.dart';
 import '../../widgets/ui/dialogs/edit_dialog.dart'; // 统一的编辑对话框
 import '../../widgets/ui/dialogs/confirm_dialog.dart'; // 引入新的确认对话框
 
@@ -81,64 +78,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       });
     }
   }
-
-  Future<void> _pickAndUploadAvatar() async {
-    // 选择和上传头像的逻辑保持不变
-    try {
-      final XFile? pickedFile = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
-
-      if (pickedFile != null) {
-        setState(() {
-          _isLoading = true;
-        });
-
-        // 使用限速上传服务
-        final avatarUrl = await RateLimitedFileUpload.uploadAvatar(
-          File(pickedFile.path),
-          maxWidth: 800,
-          maxHeight: 800,
-          quality: 85,
-          oldAvatarUrl: _user?.avatar,
-        );
-
-        await _userService.updateUserProfile(avatar: avatarUrl);
-        await _loadUserProfile(); // 重新加载确保头像更新
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('头像更新成功')),
-          );
-        }
-      }
-    } catch (e) {
-      if (mounted) {
-        // 检查是否为速率限制错误
-        final errorMsg = e.toString();
-        if (errorMsg.contains('头像上传速率超限')) {
-          // 解析剩余时间并显示对话框
-          final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
-          showAvatarRateLimitDialog(context, remainingSeconds);
-        } else {
-          // 显示常规错误消息
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('上传头像失败：$e')),
-          );
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
   // 解析错误信息中的剩余秒数，保持不变
   int parseRemainingSecondsFromError(String errorMsg) {
     final RegExp regex = RegExp(r'(\d+)');
@@ -319,6 +258,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ];
     return menuItems;
   }
+  void _handleUploadStateChanged(bool isLoading) {
+    print("ProfileScreen: Upload state changed to $isLoading");
+    // 使用 mounted 检查确保 Widget 仍然存在于树中
+    if (mounted) {
+      setState(() {
+        // 更新 ProfileScreen 的加载状态
+        // 这会覆盖 _loadUserProfile 设置的 false 状态（如果上传发生在加载之后）
+        // 或被 _loadUserProfile 的 finally 覆盖（如果加载发生在上传之后）
+        _isLoading = isLoading;
+      });
+    }
+  }
+
+  // 当 EditableUserAvatar 成功完成上传和 API 调用后调用此方法
+  Future<void> _handleUploadSuccess() async {
+    print("ProfileScreen: Upload succeeded, reloading profile...");
+    // 使用 mounted 检查
+    if (mounted) {
+      // 重新加载用户配置文件以显示更新后的头像
+      // _loadUserProfile 内部会处理自己的 loading 状态
+      await _loadUserProfile();
+    }
+  }
+  // --- 结束 新增回调处理 ---
+
 
   @override
   Widget build(BuildContext context) {
@@ -350,54 +314,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 构建桌面布局
   Widget _buildDesktopContent(BuildContext context, AuthProvider authProvider) {
-    // 加载状态
-    if (_isLoading) {
-      return LoadingWidget();
-    }
-
-    // 错误状态
+    // --- 错误和登录状态检查 (保持不变) ---
     if (_error != null) {
-      return CustomErrorWidget( // 使用 components/screen/profile 下的错误组件
-        errorMessage: _error!,
-        onRetry: _refreshProfile,
-      );
+      return CustomErrorWidget(errorMessage: _error!, onRetry: _refreshProfile);
     }
-
-    // 未登录或用户数据为空状态
     if (_user == null) {
       if (!authProvider.isLoggedIn) {
-        return LoginPromptWidget(isDesktop: true); // 桌面版登录提示
+        return LoginPromptWidget(isDesktop: true);
       }
-      // 如果已登录但 _user 仍为 null，可能是数据加载问题，显示加载中
-      return LoadingWidget();
+      // 如果已登录但 _user 为 null，可能是初始加载中，由外层 LoadingWidget 处理
+      // 或者表示一个错误状态，上面的 _error 会处理
+      return Container(); // 或者一个更明确的空状态提示
     }
+    // --- 结束 错误和登录状态检查 ---
 
     // --- 正常显示用户数据 ---
     final user = _user!;
     final menuItems = _getMenuItems();
 
     return Padding(
-      padding: const EdgeInsets.all(24.0), // 桌面端增加外边距
+      padding: const EdgeInsets.all(24.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // 左侧面板 - 用户资料卡片
           Expanded(
-            flex: 1, // 控制宽度比例
-            child: DesktopProfileCard(
+            flex: 1,
+            child: DesktopProfileCard( // 使用 DesktopProfileCard
               user: user,
-              onEditProfile: () => _showEditProfileDialog(user), // 编辑用户名
-              onAvatarTap: _pickAndUploadAvatar, // 更换头像
-              onLogout: () => _showLogoutDialog(context, authProvider), // 调用更新后的退出方法
+              onEditProfile: () => _showEditProfileDialog(user),
+              onLogout: () => _showLogoutDialog(context, authProvider),
+              // --- 传递回调函数 ---
+              onUploadStateChanged: _handleUploadStateChanged,
+              onUploadSuccess: _handleUploadSuccess,
+              // --- 结束 传递回调函数 ---
             ),
           ),
-
-          SizedBox(width: 24), // 面板间距
-
+          SizedBox(width: 24),
           // 右侧面板 - 菜单网格
           Expanded(
-            flex: 2, // 控制宽度比例
-            child: DesktopMenuGrid(menuItems: menuItems), // 菜单项网格
+            flex: 2,
+            child: DesktopMenuGrid(menuItems: menuItems),
           ),
         ],
       ),
@@ -406,40 +363,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // 构建移动端布局
   Widget _buildMobileContent(BuildContext context, AuthProvider authProvider) {
-    // 加载状态
-    if (_isLoading) {
-      return LoadingWidget();
-    }
-
-    // 错误状态
+    // --- 错误和登录状态检查 (保持不变) ---
     if (_error != null) {
-      return CustomErrorWidget( // 使用 components/screen/profile 下的错误组件
-        errorMessage: _error!,
-        onRetry: _refreshProfile,
-      );
+      return CustomErrorWidget(errorMessage: _error!, onRetry: _refreshProfile);
     }
-
-    // 未登录或用户数据为空状态
     if (_user == null) {
       if (!authProvider.isLoggedIn) {
-        return LoginPromptWidget(); // 移动版登录提示
+        return LoginPromptWidget();
       }
-      return LoadingWidget();
+      return Container(); // 等待外层 LoadingWidget 或错误处理
     }
+    // --- 结束 错误和登录状态检查 ---
 
     // --- 正常显示用户数据 ---
     final user = _user!;
 
-    return SingleChildScrollView( // 允许内容滚动
-      physics: AlwaysScrollableScrollPhysics(), // 即使内容不满一屏也允许下拉刷新
+    return SingleChildScrollView(
+      physics: AlwaysScrollableScrollPhysics(),
       child: Column(
         children: [
           // 移动端头部信息
-          MobileProfileHeader(
+          MobileProfileHeader( // 使用 MobileProfileHeader
             user: user,
-            onEditProfile: () => _showEditProfileDialog(user), // 编辑用户名
-            onAvatarTap: _pickAndUploadAvatar, // 更换头像
+            onEditProfile: () => _showEditProfileDialog(user),
             onLogout: () => _showLogoutDialog(context, authProvider),
+            // --- 传递回调函数 ---
+            onUploadStateChanged: _handleUploadStateChanged,
+            onUploadSuccess: _handleUploadSuccess,
+            // --- 结束 传递回调函数 ---
           ),
           // 移动端菜单列表
           MobileProfileMenuList(

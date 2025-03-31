@@ -12,7 +12,7 @@ import '../../widgets/ui/image/safe_user_avatar.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/components/screen/profile/open/mobile/profile_game_card.dart';
 import '../../widgets/components/screen/profile/open/mobile/profile_post_card.dart';
-import '../../widgets/components/button/follow_user_button.dart';
+import '../../widgets/ui/badges/follow_user_button.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
