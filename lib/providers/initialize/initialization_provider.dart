@@ -1,5 +1,6 @@
 // lib/providers/initialize/initialization_provider.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import '../../widgets/common/startup/initialization_screen.dart';
 
 class InitializationProvider extends ChangeNotifier {

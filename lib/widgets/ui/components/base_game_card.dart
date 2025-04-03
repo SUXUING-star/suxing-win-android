@@ -1,11 +1,9 @@
-// lib/widgets/components/screen/common/card/base_game_card.dart
+// lib/widgets/ui/components/base_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/image/safe_cached_image.dart';
-import '../../../../../routes/app_routes.dart';
-
+import '../../../models/game/game.dart';
+import '../../../utils/device/device_utils.dart';
+import '../image/safe_cached_image.dart';
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 ///
 /// 该类实现了横向和网格两种布局模式的游戏卡片，子类可以通过重写特定方法来定制行为

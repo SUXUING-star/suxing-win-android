@@ -1,4 +1,4 @@
-// lib/widgets/components/common/loading_widget.dart
+// lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 

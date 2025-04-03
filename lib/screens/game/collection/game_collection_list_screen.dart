@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 
 import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
@@ -24,7 +25,8 @@ class GameCollectionListScreen extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _GameCollectionListScreenState createState() => _GameCollectionListScreenState();
+  _GameCollectionListScreenState createState() =>
+      _GameCollectionListScreenState();
 }
 
 class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
@@ -71,7 +73,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           status = 'all'; // Consider a more robust way to handle "all"
           break;
         default:
-          status = widget.collectionType;  // Should not normally happen
+          status = widget.collectionType; // Should not normally happen
       }
 
       final games = await _collectionService.getUserGamesByStatus(status);
@@ -79,7 +81,6 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
         _games = games;
         _isLoading = false;
       });
-
     } catch (e) {
       setState(() {
         _errorMessage = '加载收藏游戏失败：$e';
@@ -108,18 +109,18 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
   Widget _buildContent() {
     if (_errorMessage != null) {
       if (_errorMessage == '请先登录后再查看收藏') {
-        return CustomErrorWidget(
-          errorMessage: _errorMessage,
-          onRetry: () {
-            NavigationUtils.pushReplacementNamed(context, AppRoutes.login);
-          }
-        );
+        return InlineErrorWidget(
+            errorMessage: _errorMessage,
+            onRetry: () {
+              NavigationUtils.pushReplacementNamed(context, AppRoutes.login);
+            });
       }
-      return CustomErrorWidget(errorMessage: _errorMessage, onRetry: _refreshData);
+      return InlineErrorWidget(
+          errorMessage: _errorMessage, onRetry: _refreshData);
     }
 
     if (_isLoading) {
-      return LoadingWidget.fullScreen(); // Use consistent loading widget
+      return LoadingWidget.inline(); // Use consistent loading widget
     }
 
     if (_games.isEmpty) {
@@ -176,11 +177,11 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           SizedBox(height: 16),
           Text(message),
           SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
-            },
-            child: Text('发现游戏'),
+          FunctionalButton(
+            onPressed: () => NavigationUtils.pushReplacementNamed(
+                context, AppRoutes.gamesList),
+            label: '发现游戏',
+            icon: Icons.find_in_page_outlined,
           ),
         ],
       ),

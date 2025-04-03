@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/custom_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
@@ -176,42 +179,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
-  // 使用可复用的确认对话框
-  Future<void> _handleToggleLock(BuildContext context) async {
-    final statusText = _post?.status == PostStatus.locked ? '解锁' : '锁定';
-
-    // 使用ConfirmDialog
-    CustomConfirmDialog.show(
-      context: context,
-      title: '$statusText帖子',
-      message: '确定要$statusText这个帖子吗？',
-      confirmButtonText: '确定',
-      confirmButtonColor: Colors.blue,
-      onConfirm: () async {
-        try {
-          await _forumService.togglePostLock(widget.postId);
-
-          // 标记有交互操作
-          _hasInteraction = true;
-
-          await _loadPost();
-
-          // 显示成功消息
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('帖子已$statusText')),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('$statusText失败: ${e.toString()}')),
-            );
-          }
-        }
-      },
-    );
-  }
 
   // 处理编辑帖子
   Future<void> _handleEditPost(BuildContext context) async {
@@ -233,34 +200,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop || DeviceUtils.isWeb || DeviceUtils.isTablet(context);
+    final bool isDesktop = DeviceUtils.isDesktop ||
+        DeviceUtils.isWeb ||
+        DeviceUtils.isTablet(context);
 
     // 使用新的加载和错误组件
     if (_isLoading) {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
-        body: LoadingWidget.fullScreen(message: '正在加载帖子...'),
+        body: LoadingWidget.inline(message: '正在加载帖子...'),
       );
     }
 
     if (_error != null) {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
-        body: CustomErrorWidget(
-          errorMessage: _error!,
+        body: InlineErrorWidget(
+          errorMessage: '加载错误',
           onRetry: _loadPost,
-          title: '加载错误',
         ),
       );
     }
 
     if (_post == null) {
-      return Scaffold(
-        appBar: CustomAppBar(title: '帖子详情'),
-        body: NotFoundErrorWidget(
-          message: '请求的帖子不存在',
-          onBack: () => NavigationUtils.pop(context),
-        ),
+      return NotFoundErrorWidget(
+        message: '请求的帖子不存在',
+        onBack: () => NavigationUtils.pop(context),
       );
     }
 
@@ -275,63 +240,84 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         onRefresh: _refreshPost,
         child: isDesktop
             ? DesktopLayout(
-          post: _post!,
-          postId: widget.postId,
-          replyInput: PostReplyInput(
-            post: _post,
-            controller: _replyController,
-            onSubmitReply: _submitReply,
-            isSubmitting: _isSubmitting,
-            isDesktopLayout: true,
-          ),
-          // 传递交互成功回调
-          onInteractionSuccess: _handleInteractionSuccess,
-        )
+                post: _post!,
+                postId: widget.postId,
+                replyInput: PostReplyInput(
+                  post: _post,
+                  controller: _replyController,
+                  onSubmitReply: _submitReply,
+                  isSubmitting: _isSubmitting,
+                  isDesktopLayout: true,
+                ),
+                // 传递交互成功回调
+                onInteractionSuccess: _handleInteractionSuccess,
+              )
             : MobileLayout(
-          post: _post!,
-          postId: widget.postId,
-          // 传递交互成功回调
-          onInteractionSuccess: _handleInteractionSuccess,
-        ),
+                post: _post!,
+                postId: widget.postId,
+                // 传递交互成功回调
+                onInteractionSuccess: _handleInteractionSuccess,
+              ),
       ),
+      // --- 添加 FAB 组 ---
+      floatingActionButton: _post != null
+          ? _buildPostActionButtonsGroup(context, _post!)
+          : null, // 如果 post 为 null，不显示按钮
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
       bottomNavigationBar: isDesktop
           ? null
           : PostReplyInput(
-        post: _post,
-        controller: _replyController,
-        onSubmitReply: _submitReply,
-        isSubmitting: _isSubmitting,
-        isDesktopLayout: false,
-      ),
+              post: _post,
+              controller: _replyController,
+              onSubmitReply: _submitReply,
+              isSubmitting: _isSubmitting,
+              isDesktopLayout: false,
+            ),
     );
   }
 
   Widget _buildMoreMenu() {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
-        if (!auth.isLoggedIn) return const SizedBox.shrink();
+        if (!auth.isLoggedIn || _post == null) return const SizedBox.shrink();
 
-        return PopupMenuButton<String>(
-          itemBuilder: (context) => [
-            if (auth.currentUser?.id == _post?.authorId)
-              const PopupMenuItem(
-                value: 'edit',
-                child: Text('编辑'),
-              ),
-            if (auth.currentUser?.id == _post?.authorId ||
-                auth.currentUser?.isAdmin == true)
-              const PopupMenuItem(
-                value: 'delete',
-                child: Text('删除'),
-              ),
-            if (auth.currentUser?.isAdmin == true)
-              PopupMenuItem(
+        final bool canEdit = auth.currentUser?.id == _post!.authorId;
+        final bool canDelete = canEdit || auth.currentUser?.isAdmin == true;
+        final bool canToggleLock =
+            auth.currentUser?.isAdmin == true; // 假设只有管理员能锁定/解锁
+
+        // 检查是否有任何操作可用
+        if (!canEdit && !canDelete && !canToggleLock) {
+          return const SizedBox.shrink();
+        }
+
+        return CustomPopupMenuButton<String>(
+          // <--- 使用 CustomPopupMenuButton
+          icon: Icons.more_vert, // 可以保持默认或自定义
+          tooltip: '更多选项',
+          itemBuilder: (context) {
+            final items = <PopupMenuEntry<String>>[];
+
+            if (canEdit) {
+              items.add(const PopupMenuItem(value: 'edit', child: Text('编辑')));
+            }
+            if (canDelete) {
+              items
+                  .add(const PopupMenuItem(value: 'delete', child: Text('删除')));
+            }
+            if (canToggleLock) {
+              // 添加分割线，如果前面有内容
+              if (items.isNotEmpty) {
+                items.add(const PopupMenuDivider());
+              }
+              items.add(PopupMenuItem(
                 value: 'toggle_lock',
-                child: Text(
-                  _post?.status == PostStatus.locked ? '解锁帖子' : '锁定帖子',
-                ),
-              ),
-          ],
+                child:
+                    Text(_post!.status == PostStatus.locked ? '解锁帖子' : '锁定帖子'),
+              ));
+            }
+            return items;
+          },
           onSelected: (value) async {
             switch (value) {
               case 'edit':
@@ -340,11 +326,74 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
               case 'delete':
                 await _handleDeletePost(context);
                 break;
-              case 'toggle_lock':
-                await _handleToggleLock(context);
-                break;
             }
           },
+        );
+      },
+    );
+  }
+
+  // 在 _PostDetailScreenState 类内部添加
+  Widget _buildPostActionButtonsGroup(BuildContext context, Post post) {
+    return Consumer<AuthProvider>(
+      builder: (context, auth, _) {
+        // 检查是否登录以及帖子数据是否存在
+        if (!auth.isLoggedIn || _post == null) {
+          return const SizedBox.shrink(); // 未登录或无数据则不显示按钮
+        }
+
+        final bool canEdit = auth.currentUser?.id == post.authorId;
+        final bool canDelete = canEdit || auth.currentUser?.isAdmin == true;
+
+        // 如果没有任何权限，也不显示按钮组
+        if (!canEdit && !canDelete) {
+          return const SizedBox.shrink();
+        }
+
+        // 为按钮定义 Hero Tags
+        final String editHeroTag = 'postEditFab_${post.id}';
+        final String deleteHeroTag = 'postDeleteFab_${post.id}';
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
+          child: FloatingActionButtonGroup(
+            spacing: 16.0,
+            alignment: MainAxisAlignment.end,
+            children: [
+              // --- 编辑按钮 ---
+              if (canEdit)
+                GenericFloatingActionButton(
+                  heroTag: editHeroTag,
+                  mini: true, // 使用小尺寸
+                  tooltip: '编辑帖子',
+                  icon: Icons.edit,
+                  onPressed: _isLoading
+                      ? null
+                      : () => _handleEditPost(context), // 加载中禁用
+                  backgroundColor: Colors.white,
+                  foregroundColor: Theme.of(context).colorScheme.primary,
+                ),
+
+              // --- 删除按钮 ---
+              if (canDelete)
+                GenericFloatingActionButton(
+                  heroTag: deleteHeroTag,
+                  mini: true, // 使用小尺寸
+                  tooltip: '删除帖子',
+                  icon: Icons.delete_forever,
+                  // 使用 isLoading 状态来控制按钮是否显示加载指示器和禁用
+                  isLoading: _isLoading, // 在执行删除操作时，此按钮会显示加载状态
+                  onPressed: _isLoading
+                      ? null
+                      : () => _handleDeletePost(context), // 加载中禁用
+                  backgroundColor: Colors.red[400], // 删除用红色背景
+                  foregroundColor: Colors.white, // 白色图标
+                ),
+
+              // --- 注意：锁定/解锁功能未包含在此 FAB 组中 ---
+              // 如果需要，可以作为第三个按钮添加，同样需要权限判断和回调
+            ],
+          ),
         );
       },
     );

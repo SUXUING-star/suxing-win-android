@@ -1,6 +1,7 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import '../../services/main/user/user_service.dart';
 import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
@@ -204,12 +205,10 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         SizedBox(height: 24),
 
                         // 重置密码按钮
-                        ElevatedButton(
+                        FunctionalButton(
                           onPressed: _resetPassword,
-                          child: Text('重置密码'),
-                          style: ElevatedButton.styleFrom(
-                            minimumSize: Size(double.infinity, 48),
-                          ),
+                          label: '重置密码',
+                          isEnabled: !_isLoading,
                         ),
                       ],
                     ),

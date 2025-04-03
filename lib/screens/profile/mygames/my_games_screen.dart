@@ -2,6 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../models/game/game.dart'; // 确保这里引用的是你正确的模型路径
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
@@ -178,7 +182,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
         onRefresh: _loadInitialGames, // Pull to refresh loads page 1
         child: _buildBody(),
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: GenericFloatingActionButton(
         onPressed: () async {
           // Navigate and potentially refresh list after returning
           final result =
@@ -188,7 +192,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             _loadInitialGames();
           }
         },
-        child: Icon(Icons.add),
+        icon: Icons.add,
         tooltip: '提交新游戏',
       ),
     );
@@ -196,31 +200,13 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
   Widget _buildBody() {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return LoadingWidget.inline();
     }
 
     if (_hasError) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, color: Colors.red, size: 60),
-            SizedBox(height: 16),
-            Text('加载失败', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: Text(_errorMessage,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey)),
-            ),
-            SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: _loadInitialGames,
-              child: Text('重试'),
-            ),
-          ],
-        ),
+      return InlineErrorWidget(
+        onRetry: _loadInitialGames,
+        errorMessage: _errorMessage,
       );
     }
 
@@ -235,13 +221,13 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             SizedBox(height: 8),
             Text('点击右下角按钮创建您的第一个游戏吧！', style: TextStyle(color: Colors.grey)),
             SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () {
-                NavigationUtils.pushNamed(context, AppRoutes.addGame)
-                    .then((_) => _loadInitialGames());
-              },
-              child: Text('创建新游戏'),
-            ),
+            FunctionalButton(
+                onPressed: () {
+                  NavigationUtils.pushNamed(context, AppRoutes.addGame)
+                      .then((_) => _loadInitialGames());
+                },
+                label: '创建新游戏',
+                icon: Icons.videogame_asset_rounded),
           ],
         ),
       );

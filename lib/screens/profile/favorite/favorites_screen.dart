@@ -58,7 +58,6 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
         children: [
           // 游戏收藏标签页 - 使用原有布局
           GameFavoritesTab(),
-
           // 帖子收藏标签页 - 新布局
           PostFavoritesTab(),
         ],

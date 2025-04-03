@@ -1,9 +1,10 @@
 // lib/screens/profile/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import '../../../routes/app_routes.dart';
-import '../../../services/main/history/game_history_service.dart';
-import '../../../services/main/history/post_history_service.dart';
+
 import '../../../services/main/user/user_service.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -57,13 +58,13 @@ class ClearHistoryEvent extends SettingsEvent {}
 // BLoC
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final UserService _userService;
-  final GameHistoryService _gameHistoryService;
-  final PostHistoryService _postHistoryService;
+  final GameService _gameService;
+  final ForumService _postService;
 
   SettingsBloc(
       this._userService,
-      this._gameHistoryService,
-      this._postHistoryService
+      this._gameService,
+      this._postService
       ) : super(SettingsState()) {
     on<ToggleNotificationsEvent>(_onToggleNotifications);
     on<ToggleDarkModeEvent>(_onToggleDarkMode);
@@ -88,8 +89,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           loadingMessage: '正在清除浏览历史...'
       ));
 
-      _gameHistoryService.clearGameHistory();
-      _postHistoryService.clearPostHistory();
+      _gameService.clearGameHistory();
+      _postService.clearPostHistory();
 
       emit(state.copyWith(
           isLoading: false,
@@ -119,8 +120,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     super.initState();
     _settingsBloc = SettingsBloc(
       context.read<UserService>(),
-      context.read<GameHistoryService>(),
-      context.read<PostHistoryService>(),
+      context.read<GameService>(),
+      context.read<ForumService>(),
     );
   }
 

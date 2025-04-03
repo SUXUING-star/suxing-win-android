@@ -48,6 +48,7 @@ class Post {
   factory Post.fromJson(Map<String, dynamic> json) {
     // 处理 MongoDB 的 _id 字段
     String postId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
+    final userActions = json['userActions'] as Map<String, dynamic>?; // 后端返回时嵌套在 post 对象里
 
     return Post(
       id: postId,
@@ -70,7 +71,9 @@ class Post {
             (e) => e.toString().split('.').last == json['status'],
         orElse: () => PostStatus.active,
       ),
-      // 交互状态字段默认为 false，将在获取帖子详情时单独设置
+      isLiked: userActions?['liked'] ?? false,
+      isAgreed: userActions?['agreed'] ?? false,
+      isFavorited: userActions?['favorited'] ?? false,
     );
   }
 
@@ -88,6 +91,9 @@ class Post {
       'favoriteCount': favoriteCount, // 新增：收藏数
       'tags': tags,
       'status': status.toString().split('.').last,
+      'isLiked': isLiked,
+      'isAgreed': isAgreed,
+      'isFavorited': isFavorited,
     };
   }
 
@@ -127,6 +133,7 @@ class Post {
       isLiked: isLiked ?? this.isLiked,
       isAgreed: isAgreed ?? this.isAgreed,
       isFavorited: isFavorited ?? this.isFavorited,
+
     );
   }
 }

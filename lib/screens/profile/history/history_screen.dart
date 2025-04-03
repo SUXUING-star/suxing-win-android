@@ -1,8 +1,9 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../services/main/history/game_history_service.dart';
-import '../../../services/main/history/post_history_service.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
@@ -14,8 +15,8 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
-  final GameHistoryService _gameHistoryService = GameHistoryService();
-  final PostHistoryService _postHistoryService = PostHistoryService();
+  final GameService _gameService = GameService();
+  final ForumService _forumService = ForumService();
 
   TabController? _tabController;
   String? _error;
@@ -86,7 +87,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
     try {
       // 只获取游戏历史数据
-      await _gameHistoryService.getGameHistoryWithDetails(1, 10);
+      await _gameService.getGameHistoryWithDetails(1, 10);
       setState(() {
         _gameHistoryLoaded = true;
         _error = null;
@@ -114,7 +115,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
     try {
       // 只获取帖子历史数据
-      await _postHistoryService.getPostHistoryWithDetails(1, 10);
+      await _forumService.getPostHistoryWithDetails(1, 10);
       setState(() {
         _postHistoryLoaded = true;
         _error = null;
@@ -172,20 +173,8 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   }
 
   Widget _buildErrorContent() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red),
-          SizedBox(height: 16),
-          Text(_error!),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadInitialTab,
-            child: Text('重新加载'),
-          ),
-        ],
-      ),
+    return InlineErrorWidget(
+      onRetry: _loadInitialTab,
     );
   }
 
@@ -208,13 +197,13 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           GameHistoryTab(
             isLoaded: _gameHistoryLoaded,
             onLoad: _loadGameHistory,
-            gameHistoryService: _gameHistoryService,
+            gameService: _gameService,
           ),
           // 帖子历史标签页 - 使用组件拆分提高性能
           PostHistoryTab(
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
-            postHistoryService: _postHistoryService,
+            forumService: _forumService,
           ),
         ],
       ),

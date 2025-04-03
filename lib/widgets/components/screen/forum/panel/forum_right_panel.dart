@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/forum/panel/forum_right_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../models/stats/tag_stat.dart';
 import '../../../../../services/main/forum/stats/forum_stats_service.dart';
@@ -26,9 +27,12 @@ class ForumRightPanel extends StatelessWidget {
     // 获取统计数据
     final List<TagStat> tagStats = _statsService.getTagStatistics(currentPosts);
     final int uniqueTagsCount = _statsService.getUniqueTagsCount(currentPosts);
-    final int uniqueAuthorsCount = _statsService.getUniqueAuthorsCount(currentPosts);
-    final List<Post> mostDiscussedPosts = _statsService.getMostDiscussedPosts(currentPosts, limit: 3);
-    final List<Post> mostViewedPosts = _statsService.getMostViewedPosts(currentPosts, limit: 3);
+    final int uniqueAuthorsCount =
+        _statsService.getUniqueAuthorsCount(currentPosts);
+    final List<Post> mostDiscussedPosts =
+        _statsService.getMostDiscussedPosts(currentPosts, limit: 3);
+    final List<Post> mostViewedPosts =
+        _statsService.getMostViewedPosts(currentPosts, limit: 3);
 
     // 面板宽度
     final panelWidth = DeviceUtils.getSidePanelWidth(context);
@@ -84,13 +88,11 @@ class ForumRightPanel extends StatelessWidget {
                         ],
                       ),
                       SizedBox(height: 16),
-
                       _buildTagsStats(context, tagStats),
                       SizedBox(height: 16),
-
-                      _buildTopPostsSection(context, '讨论最热', mostDiscussedPosts),
+                      _buildTopPostsSection(
+                          context, '讨论最热', mostDiscussedPosts),
                       SizedBox(height: 16),
-
                       _buildTopPostsSection(context, '浏览最多', mostViewedPosts),
                     ],
                   ),
@@ -103,7 +105,8 @@ class ForumRightPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCard(BuildContext context, String title, List<StatsItem> items) {
+  Widget _buildStatsCard(
+      BuildContext context, String title, List<StatsItem> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -195,72 +198,82 @@ class ForumRightPanel extends StatelessWidget {
         SizedBox(height: 8),
         tagStats.isEmpty
             ? Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Text(
-              '暂无标签数据',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ),
-        )
-            : Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: tagStats.map((stat) {
-            final isSelected = selectedTag == stat.name;
-
-            return Container(
-              decoration: BoxDecoration(
-                color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: InkWell(
-                onTap: onTagSelected != null ? () => onTagSelected!(stat.name) : null,
-                borderRadius: BorderRadius.circular(16),
                 child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        stat.name,
-                        style: TextStyle(
-                          color: isSelected ? Colors.white : Colors.blue,
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(width: 4),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.white.withOpacity(0.3) : Colors.blue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          '${stat.count}',
-                          style: TextStyle(
-                            color: isSelected ? Colors.white : Colors.blue,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 10,
-                          ),
-                        ),
-                      ),
-                    ],
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Text(
+                    '暂无标签数据',
+                    style: TextStyle(
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                    ),
                   ),
                 ),
+              )
+            : Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: tagStats.map((stat) {
+                  final isSelected = selectedTag == stat.name;
+
+                  return Container(
+                    decoration: BoxDecoration(
+                      color: isSelected
+                          ? Colors.blue
+                          : Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: InkWell(
+                      onTap: onTagSelected != null
+                          ? () => onTagSelected!(stat.name)
+                          : null,
+                      borderRadius: BorderRadius.circular(16),
+                      child: Padding(
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              stat.name,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : Colors.blue,
+                                fontSize: 12,
+                              ),
+                            ),
+                            SizedBox(width: 4),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                  horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: isSelected
+                                    ? Colors.white.withOpacity(0.3)
+                                    : Colors.blue.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '${stat.count}',
+                                style: TextStyle(
+                                  color:
+                                      isSelected ? Colors.white : Colors.blue,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 10,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
               ),
-            );
-          }).toList(),
-        ),
         Divider(height: 16),
       ],
     );
   }
 
-  Widget _buildTopPostsSection(BuildContext context, String title, List<Post> posts) {
+  Widget _buildTopPostsSection(
+      BuildContext context, String title, List<Post> posts) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,21 +287,14 @@ class ForumRightPanel extends StatelessWidget {
         ),
         SizedBox(height: 8),
         posts.isEmpty
-            ? Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Text(
-              '暂无帖子数据',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-          ),
-        )
+            ? EmptyStateWidget(
+                message: '暂无帖子数据',
+                iconData: Icons.post_add_outlined,
+              )
             : Column(
-          children: posts.map((post) => _buildPostItem(context, post)).toList(),
-        ),
+                children:
+                    posts.map((post) => _buildPostItem(context, post)).toList(),
+              ),
       ],
     );
   }
@@ -359,7 +365,6 @@ class ForumRightPanel extends StatelessWidget {
                   ),
                   Spacer(),
                   // 用户简称或匿名
-
                 ],
               ),
             ],

@@ -30,7 +30,10 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   String? _error;
   bool _isLoading = false;
   int _currentPage = 1;
-  bool _hasMoreData = true;
+  int _totalPages = 1; // 添加总页数状态
+  final int _limit = 10; // 假设每页加载10条，应与 Service 和后端一致
+  bool _hasMoreData = true; // 这个可以根据 totalPages 计算
+
 
   @override
   void initState() {
@@ -54,69 +57,77 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
     }
   }
 
-  Future<void> _loadFavoritePosts() async {
+  Future<void> _loadFavoritePosts({bool isRefresh = false}) async {
     if (_isLoading) return;
 
     setState(() {
       _isLoading = true;
-      _error = null;
+      if (isRefresh) {
+        _error = null;
+        _currentPage = 1; // 刷新时重置页码
+        _favoritePosts = []; // 刷新时清空列表
+      }
     });
 
     try {
-      final posts = await _forumService.getUserFavoritePosts(page: 1);
+      // --- 调用返回 Map 的 Service 方法 ---
+      final result = await _forumService.getUserFavoritePostsPage(
+          page: _currentPage, limit: _limit);
+
+      // --- 从 Map 中提取数据 ---
+      final List<Post> fetchedPosts = result['posts'] as List<Post>? ?? [];
+      final Map<String, dynamic> pagination = result['pagination'] as Map<String, dynamic>? ?? {};
+
+      final int serverPage = pagination['page'] ?? _currentPage;
+      final int serverTotalPages = pagination['pages'] ?? 1;
 
       if (mounted) {
         setState(() {
-          _favoritePosts = posts;
-          _currentPage = 1;
-          _hasMoreData = posts.length >= 10; // 假设每页10条
+          if (isRefresh) {
+            _favoritePosts = fetchedPosts; // 刷新：直接替换
+          } else {
+            _favoritePosts.addAll(fetchedPosts); // 加载更多：追加
+          }
+          _currentPage = serverPage;
+          _totalPages = serverTotalPages;
+          _hasMoreData = _currentPage < _totalPages; // 根据返回的总页数判断
           _isLoading = false;
+          _error = null; // 加载成功清除错误
         });
       }
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
-          _favoritePosts = [];
+          _error = '加载收藏失败: $e';
+          // 刷新失败时保持列表为空，加载更多失败时列表保持不变
+          if (isRefresh) {
+            _favoritePosts = [];
+            _hasMoreData = false; // 无法加载，认为没有更多数据
+          }
           _isLoading = false;
         });
+        // 可以选择性地用 SnackBar 提示加载更多失败
+        if (!isRefresh) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('加载更多收藏失败: $e')),
+          );
+        }
       }
     }
   }
 
   Future<void> _loadMorePosts() async {
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      final nextPage = _currentPage + 1;
-      final morePosts = await _forumService.getUserFavoritePosts(page: nextPage);
-
-      if (mounted) {
-        setState(() {
-          if (morePosts.isNotEmpty) {
-            _favoritePosts.addAll(morePosts);
-            _currentPage = nextPage;
-            _hasMoreData = morePosts.length >= 10;
-          } else {
-            _hasMoreData = false;
-          }
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载更多失败: $e')),
-        );
-      }
+    // 直接调用 _loadFavoritePosts，它内部会处理页码增加和追加逻辑
+    // 但需要确保它不是作为 isRefresh 调用
+    // 并且只在还有更多数据时调用
+    if (_hasMoreData && !_isLoading) {
+      // 页码在 _loadFavoritePosts 内部根据 _currentPage 状态获取
+      // 但是我们需要先递增页码的概念
+      // 所以这里稍微调整下逻辑，直接在 loadFavoritePosts 里处理追加
+      setState(() {
+        _currentPage++; // 准备加载下一页
+      });
+      await _loadFavoritePosts(isRefresh: false); // 调用加载，标记为非刷新
     }
   }
 

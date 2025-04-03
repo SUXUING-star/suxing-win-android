@@ -314,3 +314,40 @@ class GameWithCollection {
     };
   }
 }
+class GroupedGameCollections {
+  final List<GameWithCollection> wantToPlay;
+  final List<GameWithCollection> playing;
+  final List<GameWithCollection> played;
+  final GameCollectionCounts counts;
+
+  GroupedGameCollections({
+    required this.wantToPlay,
+    required this.playing,
+    required this.played,
+    required this.counts,
+  });
+
+  // *** 必须实现 toJson ***
+  Map<String, dynamic> toJson() => {
+    'wantToPlay': wantToPlay.map((gwc) => gwc.toJson()).toList(), // 假设 GameWithCollection 有 toJson
+    'playing': playing.map((gwc) => gwc.toJson()).toList(),
+    'played': played.map((gwc) => gwc.toJson()).toList(),
+    'counts': counts.toJson(), // 假设 GameCollectionCounts 有 toJson
+  };
+
+  // *** 必须实现 fromJson ***
+  factory GroupedGameCollections.fromJson(Map<String, dynamic> json) {
+    return GroupedGameCollections(
+      wantToPlay: (json['wantToPlay'] as List<dynamic>)
+          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>)) // 假设 GameWithCollection 有 fromJson
+          .toList(),
+      playing: (json['playing'] as List<dynamic>)
+          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      played: (json['played'] as List<dynamic>)
+          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>))
+          .toList(),
+      counts: GameCollectionCounts.fromJson(json['counts'] as Map<String, dynamic>), // 假设 GameCollectionCounts 有 fromJson
+    );
+  }
+}

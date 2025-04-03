@@ -1,6 +1,7 @@
-// lib/widgets/components/common/login_prompt_widget.dart
+// lib/widgets/ui/common/login_prompt_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import '../../../utils/font/font_config.dart';
 import '../../../routes/app_routes.dart';
 
@@ -54,24 +55,11 @@ class LoginPromptWidget extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 32),
-              ElevatedButton(
+              FunctionalButton(
                 onPressed: () {
                   NavigationUtils.pushNamed(context, AppRoutes.login);
                 },
-                style: ElevatedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 48, vertical: 12),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  '立即登录',
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontFamilyFallback: FontConfig.fontFallback,
-                  ),
-                ),
+                label: '立即登录',
               ),
             ],
           ),
@@ -86,7 +74,8 @@ class LoginPromptWidget extends StatelessWidget {
       child: Center(
         child: Card(
           elevation: 3,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
             width: 500,
             padding: EdgeInsets.all(40),
@@ -124,24 +113,11 @@ class LoginPromptWidget extends StatelessWidget {
                 Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    ElevatedButton(
+                    FunctionalButton(
                       onPressed: () {
                         NavigationUtils.pushNamed(context, AppRoutes.login);
                       },
-                      style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      child: Text(
-                        '立即登录',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontFamily: FontConfig.defaultFontFamily,
-                          fontFamilyFallback: FontConfig.fontFallback,
-                        ),
-                      ),
+                      label: '立即登录',
                     ),
                     SizedBox(width: 16),
                     OutlinedButton(
@@ -149,7 +125,8 @@ class LoginPromptWidget extends StatelessWidget {
                         Navigator.pushNamed(context, AppRoutes.register);
                       },
                       style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 40, vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),

@@ -5,11 +5,14 @@ import 'reply_item.dart';
 
 class ReplyList extends StatelessWidget {
   final List<Comment> replies;
+  final String gameId;
   final VoidCallback? onReplyChanged; // 添加回调函数
+
 
   const ReplyList({
     Key? key,
     required this.replies,
+    required this.gameId,
     this.onReplyChanged, // 初始化回调
   }) : super(key: key);
 
@@ -22,6 +25,7 @@ class ReplyList extends StatelessWidget {
       itemBuilder: (context, index) => ReplyItem(
         reply: replies[index],
         onReplyChanged: onReplyChanged, // 传递回调
+        gameId : gameId,
       ),
     );
   }

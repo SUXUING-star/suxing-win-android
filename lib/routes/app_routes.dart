@@ -1,45 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
+import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../screens/home/home_screen.dart';
-import '../screens/common/notfound_screen.dart';
-import '../screens/common/about_screen.dart';
-import '../screens/auth/login_screen.dart';
-import '../screens/auth/register_screen.dart';
-import '../screens/auth/forgot_password_screen.dart';
-import '../screens/auth/reset_password_screen.dart';
-import '../screens/game/detail/game_detail_screen.dart';
-import '../screens/game/list/hot_games_screen.dart';
-import '../screens/game/list/latest_games_screen.dart';
-import '../screens/game/list/games_list_screen.dart';
-import '../screens/game/collection/game_collection_list_screen.dart';
-import '../screens/game/edit/add_game_screen.dart';
-import '../screens/game/edit/edit_game_screen.dart';
-import '../screens/linkstools/linkstools_screen.dart';
-import '../screens/profile/profile_screen.dart';
-import '../screens/profile/open_profile_screen.dart';
-import '../models/game/game.dart';
-import '../models/activity/user_activity.dart';
-import '../models/post/post.dart';
-import '../screens/forum/forum_screen.dart';
-import '../screens/forum/post/post_detail_screen.dart';
-import '../screens/forum/post/create_post_screen.dart';
-import '../screens/forum/post/edit_post_screen.dart';
-import '../screens/profile/history/history_screen.dart';
-import '../screens/profile/myposts/my_posts_screen.dart';
-import '../screens/profile/favorite/favorites_screen.dart';
-import '../screens/profile/settings/settings_screen.dart';
-import '../screens/profile/mygames/my_games_screen.dart';
-import '../screens/admin/admin_dashboard.dart';
-import '../screens/ai/gemini_chat_screen.dart';
-import '../screens/checkin/checkin_screen.dart';
-import '../screens/profile/follow/user_follows_screen.dart';
-import '../screens/activity/activity_feed_screen.dart';
-import '../screens/activity/activity_detail_screen.dart';
-import '../screens/activity/activity_alternating_feed_screen.dart';
-import '../layouts/main_layout.dart';
-// Import the new route error screen
-import '../screens/common/route_error_screen.dart';
+import 'package:suxingchahui/screens/home/home_screen.dart';
+import 'package:suxingchahui/screens/common/notfound_screen.dart';
+import 'package:suxingchahui/screens/common/about_screen.dart';
+import 'package:suxingchahui/screens/auth/login_screen.dart';
+import 'package:suxingchahui/screens/auth/register_screen.dart';
+import 'package:suxingchahui/screens/auth/forgot_password_screen.dart';
+import 'package:suxingchahui/screens/auth/reset_password_screen.dart';
+import 'package:suxingchahui/screens/game/detail/game_detail_screen.dart';
+import 'package:suxingchahui/screens/game/list/hot_games_screen.dart';
+import 'package:suxingchahui/screens/game/list/latest_games_screen.dart';
+import 'package:suxingchahui/screens/game/list/games_list_screen.dart';
+import 'package:suxingchahui/screens/game/collection/game_collection_list_screen.dart';
+import 'package:suxingchahui/screens/game/edit/add_game_screen.dart';
+import 'package:suxingchahui/screens/game/edit/edit_game_screen.dart';
+import 'package:suxingchahui/screens/linkstools/linkstools_screen.dart';
+import 'package:suxingchahui/screens/profile/profile_screen.dart';
+import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/screens/forum/forum_screen.dart';
+import 'package:suxingchahui/screens/forum/post/post_detail_screen.dart';
+import 'package:suxingchahui/screens/forum/post/create_post_screen.dart';
+import 'package:suxingchahui/screens/forum/post/edit_post_screen.dart';
+import 'package:suxingchahui/screens/profile/history/history_screen.dart';
+import 'package:suxingchahui/screens/profile/myposts/my_posts_screen.dart';
+import 'package:suxingchahui/screens/profile/favorite/favorites_screen.dart';
+import 'package:suxingchahui/screens/profile/settings/settings_screen.dart';
+import 'package:suxingchahui/screens/profile/mygames/my_games_screen.dart';
+import 'package:suxingchahui/screens/admin/admin_dashboard.dart';
+import 'package:suxingchahui/screens/checkin/checkin_screen.dart';
+import 'package:suxingchahui/screens/profile/follow/user_follows_screen.dart';
+import 'package:suxingchahui/screens/activity/activity_feed_screen.dart';
+import 'package:suxingchahui/screens/activity/activity_detail_screen.dart';
+import 'package:suxingchahui/screens/activity/activity_alternating_feed_screen.dart';
+import 'package:suxingchahui/layouts/main_layout.dart';
+import 'package:suxingchahui/screens/common/route_error_screen.dart';
 
 class AppRoutes {
   // 路由常量 (虽然不再直接使用，但保留以供参考)
@@ -55,6 +53,7 @@ class AppRoutes {
   static const String gamesList = '/games';
   static const String externalLinks = '/links';
   static const String profile = '/profile';
+  static const String searchGame = '/search-game';
   static const String openProfile = '/open-profile';
   static const String addGame = '/game/add';
   static const String editGame = '/game/edit';
@@ -74,41 +73,38 @@ class AppRoutes {
   static const String editPost = '/forum/post/edit';
   static const String adminDashboard = '/admin';
   static const String tags = '/tags';
-  static const String aiChat = '/ai-chat';
   static const String checkin = '/checkin';
   static const String userFollows = '/user-follows';
   static const String activityFeed = '/activity-feed';
   static const String userActivities = '/user-activities';
   static const String activityDetail = '/activity/detail';
 
-
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
     switch (routeName) {
-
-    // 在 app_routes.dart 中更新根路由的处理
+      // 在 app_routes.dart 中更新根路由的处理
       case '/':
-      // 检查是否有传递标签索引参数
+        // 检查是否有传递标签索引参数
         if (settings.arguments != null) {
           print("AppRoutes: 接收到主页面导航参数: ${settings.arguments}");
 
           if (settings.arguments is Map<String, dynamic> &&
-              (settings.arguments as Map<String, dynamic>).containsKey('tab_index')) {
+              (settings.arguments as Map<String, dynamic>)
+                  .containsKey('tab_index')) {
             // 获取标签索引
-            final int tabIndex = (settings.arguments as Map<String, dynamic>)['tab_index'] as int;
+            final int tabIndex = (settings.arguments
+                as Map<String, dynamic>)['tab_index'] as int;
             print("AppRoutes: 将设置主页面标签索引为: $tabIndex");
 
             // 返回主页面并在下一帧设置标签索引
-            return MaterialPageRoute(
-                builder: (context) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    print("AppRoutes: 主页面构建完成，现在设置标签索引: $tabIndex");
-                    MainLayout.navigateTo(tabIndex);
-                  });
-                  return HomeScreen();
-                }
-            );
+            return MaterialPageRoute(builder: (context) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                print("AppRoutes: 主页面构建完成，现在设置标签索引: $tabIndex");
+                NavigationUtils.navigateToHome(context, tabIndex: tabIndex);
+              });
+              return HomeScreen();
+            });
           }
         }
 
@@ -136,7 +132,8 @@ class AppRoutes {
         final String email = arguments;
         return MaterialPageRoute(
             builder: (_) => ResetPasswordScreen(email: email));
-
+      case '/search-game':
+        return MaterialPageRoute(builder: (_) => SearchGameScreen());
       case '/game/detail':
         final arguments = settings.arguments;
         String? gameId;
@@ -158,8 +155,7 @@ class AppRoutes {
         }
         // 此时 gameId 一定非空，可以安全地传递给 GameDetailScreen
         return MaterialPageRoute(
-            builder: (_) => GameDetailScreen(gameId: gameId)
-        );
+            builder: (_) => GameDetailScreen(gameId: gameId));
       case '/games':
         return MaterialPageRoute(builder: (_) => GamesListScreen());
       case '/hot-games':
@@ -172,7 +168,8 @@ class AppRoutes {
       case '/profile':
         return MaterialPageRoute(builder: (_) => ProfileScreen());
       case '/open-profile':
-        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
+        if (settings.arguments is! String ||
+            (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
               resourceType: '用户',
@@ -181,7 +178,8 @@ class AppRoutes {
           );
         }
         final String userId = settings.arguments as String;
-        return MaterialPageRoute(builder: (_) => OpenProfileScreen(userId: userId));
+        return MaterialPageRoute(
+            builder: (_) => OpenProfileScreen(userId: userId));
 
       case '/game/add':
         return MaterialPageRoute(builder: (_) => AddGameScreen());
@@ -215,7 +213,8 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => ActivityFeedScreen());
 
       case '/user-activities':
-        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
+        if (settings.arguments is! String ||
+            (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
               resourceType: '用户',
@@ -311,7 +310,8 @@ class AppRoutes {
         final String? tag = settings.arguments as String?;
         return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
       case '/forum/post':
-        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
+        if (settings.arguments is! String ||
+            (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
               resourceType: '帖子',
@@ -325,7 +325,8 @@ class AppRoutes {
       case '/forum/post/create':
         return MaterialPageRoute(builder: (_) => CreatePostScreen());
       case '/forum/post/edit':
-        if (settings.arguments is! String || (settings.arguments as String).isEmpty) {
+        if (settings.arguments is! String ||
+            (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
               resourceType: '帖子',
@@ -334,7 +335,8 @@ class AppRoutes {
           );
         }
         final String postId = settings.arguments as String;
-        return MaterialPageRoute(builder: (_) => EditPostScreen(postId: postId));
+        return MaterialPageRoute(
+            builder: (_) => EditPostScreen(postId: postId));
       case '/admin':
         return MaterialPageRoute(builder: (_) => AdminDashboard());
       case '/my-games':
@@ -349,7 +351,8 @@ class AppRoutes {
           );
         }
 
-        final Map<String, dynamic> args = settings.arguments as Map<String, dynamic>;
+        final Map<String, dynamic> args =
+            settings.arguments as Map<String, dynamic>;
 
         if (args['userId'] == null || args['username'] == null) {
           return MaterialPageRoute(
@@ -366,11 +369,6 @@ class AppRoutes {
             username: args['username'],
             initialShowFollowing: args['initialShowFollowing'] ?? true,
           ),
-        );
-      case aiChat:
-        return MaterialPageRoute(
-          builder: (_) => const GeminiChatScreen(),
-          settings: settings,
         );
       default:
         return MaterialPageRoute(

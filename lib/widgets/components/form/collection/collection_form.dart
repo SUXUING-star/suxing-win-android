@@ -1,24 +1,24 @@
-// lib/widgets/components/form/collection_form.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import '../../../../models/game/game_collection.dart';
 
 class CollectionForm extends StatefulWidget {
   final String gameId;
   final String initialStatus;
   final String? initialNotes;
-  final String? initialReview;  // Add initialReview field
+  final String? initialReview;
   final double? initialRating;
   final bool showRemoveButton;
   final Function() onCancel;
   final Function() onRemove;
-  final Function(String status, String? notes, String? review, double? rating) onSubmit;  // Update callback to include review
+  final Function(String status, String? notes, String? review, double? rating) onSubmit;
 
   const CollectionForm({
     Key? key,
     required this.gameId,
     required this.initialStatus,
     this.initialNotes,
-    this.initialReview,  // Add this parameter
+    this.initialReview,
     this.initialRating,
     required this.showRemoveButton,
     required this.onCancel,
@@ -33,10 +33,11 @@ class CollectionForm extends StatefulWidget {
 class _CollectionFormState extends State<CollectionForm> {
   late String _selectedStatus;
   late TextEditingController _notesController;
-  late TextEditingController _reviewController;  // Add controller for review
+  late TextEditingController _reviewController;
   double? _rating;
   bool _showRating = false;
-  bool _showReview = false;  // Additional flag for review
+  bool _showReview = false;
+  bool _isSubmitting = false; //  添加提交状态
 
   @override
   void initState() {
@@ -45,16 +46,17 @@ class _CollectionFormState extends State<CollectionForm> {
         ? GameCollectionStatus.wantToPlay
         : widget.initialStatus;
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
-    _reviewController = TextEditingController(text: widget.initialReview ?? '');  // Initialize review controller
+    _reviewController = TextEditingController(text: widget.initialReview ?? '');
     _rating = widget.initialRating;
     _showRating = _selectedStatus == GameCollectionStatus.played;
-    _showReview = _selectedStatus == GameCollectionStatus.played;  // Only show review for played games
+    _showReview = _selectedStatus == GameCollectionStatus.played;
+    _isSubmitting = false; // 初始化提交状态
   }
 
   @override
   void dispose() {
     _notesController.dispose();
-    _reviewController.dispose();  // Dispose review controller
+    _reviewController.dispose();
     super.dispose();
   }
 
@@ -71,7 +73,7 @@ class _CollectionFormState extends State<CollectionForm> {
           const SizedBox(height: 16),
           if (_showRating) _buildRatingInput(),
           if (_showRating) const SizedBox(height: 16),
-          if (_showReview) _buildReviewInput(),  // Add review input
+          if (_showReview) _buildReviewInput(),
           if (_showReview) const SizedBox(height: 16),
           _buildActionButtons(),
         ],
@@ -127,7 +129,7 @@ class _CollectionFormState extends State<CollectionForm> {
           setState(() {
             _selectedStatus = status;
             _showRating = status == GameCollectionStatus.played;
-            _showReview = status == GameCollectionStatus.played;  // Update review visibility
+            _showReview = status == GameCollectionStatus.played;
           });
         },
         child: Container(
@@ -187,7 +189,6 @@ class _CollectionFormState extends State<CollectionForm> {
     );
   }
 
-  // Add review input widget
   Widget _buildReviewInput() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,35 +274,64 @@ class _CollectionFormState extends State<CollectionForm> {
   }
 
   Widget _buildActionButtons() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.end,
-      children: [
-        if (widget.showRemoveButton)
-          TextButton(
-            onPressed: widget.onRemove,
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+    return Padding(
+      padding: const EdgeInsets.only(top: 24.0), //  给按钮区域添加一些上边距，更美观
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, //  调整按钮的 MainAxisAlignment
+        children: [
+          // 删除收藏按钮 (红色主题)
+          if (widget.showRemoveButton)
+            Theme( //  使用 Theme 组件包裹删除按钮，设置红色主题
+              data: Theme.of(context).copyWith(
+                colorScheme: Theme.of(context).colorScheme.copyWith(
+                  primary: Colors.red.shade700, //  设置 primaryColor 为红色
+                ),
+              ),
+              child: FunctionalButton(
+                onPressed: widget.onRemove,
+                label: '删除收藏',
+                icon: Icons.delete_outline,
+              ),
             ),
-            child: const Text('删除收藏'),
+          //  如果不需要删除按钮，则留空，不需要 Spacer() 占位
+          if (!widget.showRemoveButton)
+            const SizedBox.shrink(),
+
+          //  右侧的 取消 和 保存 按钮
+          Row(
+            children: [
+              FunctionalButton(
+                onPressed: widget.onCancel,
+                label: '取消',
+                icon: Icons.cancel_outlined,
+              ),
+              const SizedBox(width: 12),
+              FunctionalButton(
+                onPressed: _handleSubmit, //  调用 _handleSubmit 方法处理提交
+                label: '保存',
+                icon: Icons.save_outlined,
+                isLoading: _isSubmitting, //  传递加载状态
+              ),
+            ],
           ),
-        const Spacer(),
-        TextButton(
-          onPressed: widget.onCancel,
-          child: const Text('取消'),
-        ),
-        const SizedBox(width: 8),
-        ElevatedButton(
-          onPressed: () {
-            widget.onSubmit(
-              _selectedStatus,
-              _notesController.text.trim(),
-              _reviewController.text.trim(),  // Pass review text to callback
-              _rating,
-            );
-          },
-          child: const Text('保存'),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  //  处理表单提交的方法
+  Future<void> _handleSubmit() async {
+    setState(() { _isSubmitting = true; }); //  设置提交状态为加载中
+    try {
+      await Future.delayed(const Duration(milliseconds: 500)); // 模拟提交延迟
+      widget.onSubmit(
+        _selectedStatus,
+        _notesController.text.trim(),
+        _reviewController.text.trim(),
+        _rating,
+      );
+    } finally {
+      setState(() { _isSubmitting = false; }); //  提交完成后，取消加载状态
+    }
   }
 }

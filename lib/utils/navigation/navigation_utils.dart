@@ -1,5 +1,7 @@
 // lib/utils/navigation/navigation_utils.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import '../../app.dart';
 import '../../layouts/main_layout.dart';
 import 'dart:async';
@@ -81,11 +83,30 @@ class NavigationUtils {
   /// 清除所有路由并导航到首页(指定标签页)
   static void navigateToHome(BuildContext context, {int tabIndex = 0}) {
     _safeCallSync(() {
-      // 1. 清除所有路由直到首页
-      of(context, rootNavigator: true).popUntil((route) => route.isFirst);
+      final navigator = mainNavigatorKey.currentState;
+      if (navigator == null) {
+        print("NavigationUtils Error: mainNavigatorKey.currentState is null in navigateToHome.");
+        return;
+      }
 
-      // 2. 设置首页标签
-      MainLayout.navigateTo(tabIndex);
+      // 1. 清除所有路由直到第一个路由
+      navigator.popUntil((route) => route.isFirst);
+
+      // 2. *** 更新 SidebarProvider 的状态 ***
+      //    使用 mainNavigatorKey.currentContext! 来获取一个有效的、在 Provider 之下的 context
+      final providerContext = mainNavigatorKey.currentContext;
+      if (providerContext != null) {
+        try {
+          Provider.of<SidebarProvider>(providerContext, listen: false)
+              .setCurrentIndex(tabIndex);
+        } catch (e) {
+          print("NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");
+          // 可能 providerContext 不在 MultiProvider 之下，检查你的 Widget 树结构
+        }
+      } else {
+        print("NavigationUtils Error: mainNavigatorKey.currentContext is null in navigateToHome, cannot update SidebarProvider.");
+      }
+
     });
   }
 

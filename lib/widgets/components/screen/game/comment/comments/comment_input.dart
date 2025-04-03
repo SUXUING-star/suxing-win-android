@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/game/comment/comment_input_updated.dart
 import 'package:flutter/material.dart';
-import '../../../../../../services/main/game/comment/comment_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import '../../../../dialogs/limiter/rate_limit_dialog.dart';
 import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
 
@@ -19,7 +19,7 @@ class CommentInput extends StatefulWidget {
 }
 
 class _CommentInputState extends State<CommentInput> {
-  final CommentService _commentService = CommentService();
+  final GameService _commentService = GameService();
   bool _isSubmitting = false;
 
   Future<void> _submitComment(String comment) async {

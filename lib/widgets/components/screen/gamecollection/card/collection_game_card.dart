@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/game/collection/card/collection_game_card.dart
 import 'package:flutter/material.dart';
 import '../../../../../../models/game/game.dart';
-import '../../common/card/base_game_card.dart';
+import '../../../../ui/components/base_game_card.dart';
 
 /// 为游戏收藏屏幕专门设计的卡片组件
 class CollectionGameCard extends BaseGameCard {

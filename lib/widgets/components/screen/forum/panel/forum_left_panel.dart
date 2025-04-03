@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/forum/panel/forum_left_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
 
 class ForumLeftPanel extends StatelessWidget {
@@ -47,7 +48,6 @@ class ForumLeftPanel extends StatelessWidget {
                           fontSize: 14,
                         ),
                       ),
-
                       if (selectedTag != '全部')
                         Expanded(
                           child: Row(
@@ -56,7 +56,8 @@ class ForumLeftPanel extends StatelessWidget {
                               InkWell(
                                 onTap: () => onTagSelected('全部'),
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(12),
@@ -64,7 +65,8 @@ class ForumLeftPanel extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.close, size: 12, color: Colors.white),
+                                      Icon(Icons.close,
+                                          size: 12, color: Colors.white),
                                       SizedBox(width: 4),
                                       Text(
                                         '清除',
@@ -101,26 +103,9 @@ class ForumLeftPanel extends StatelessWidget {
 
   Widget _buildTagsGrid(BuildContext context) {
     if (tags.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              Icon(
-                Icons.label_off,
-                size: 32,
-                color: Colors.grey[400],
-              ),
-              SizedBox(height: 8),
-              Text(
-                '没有可用的标签',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateWidget(
+        iconData: Icons.label_off,
+        message: '没有可用的标签',
       );
     }
 
@@ -156,7 +141,8 @@ class ForumLeftPanel extends StatelessWidget {
                       tag,
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.blue,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,

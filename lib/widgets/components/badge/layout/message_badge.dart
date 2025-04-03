@@ -12,7 +12,7 @@ class MessageBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<int>(
-      stream: _messageService.getUnreadCount(),
+      stream: _messageService.getUnreadCountStream(),
       builder: (context, snapshot) {
         final unreadCount = snapshot.data ?? 0;
 

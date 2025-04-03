@@ -98,6 +98,7 @@ class _ReplyListState extends State<ReplyList> {
                             reply: topReply,
                             floor: index + 1,
                             onReplyChanged: widget.onReplyChanged,
+                            postId: widget.postId,
                           ),
                           // 渲染嵌套回复
                           if (children.isNotEmpty)
@@ -112,6 +113,7 @@ class _ReplyListState extends State<ReplyList> {
                                       reply: nestedReply,
                                       floor: 0, // 楼中楼不显示楼层
                                       onReplyChanged: widget.onReplyChanged,
+                                      postId: widget.postId,
                                     ),
                                   );
                                 }).toList(),

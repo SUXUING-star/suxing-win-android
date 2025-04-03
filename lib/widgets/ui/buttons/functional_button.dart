@@ -4,7 +4,7 @@ import '../../../../utils/font/font_config.dart'; // 确认路径正确
 class FunctionalButton extends StatelessWidget {
   final VoidCallback onPressed;
   final String label;
-  final IconData icon;
+  final IconData? icon; // 变为可选类型 IconData?
   final double iconSize;
   final double fontSize;
   final EdgeInsetsGeometry padding;
@@ -15,7 +15,7 @@ class FunctionalButton extends StatelessWidget {
     Key? key,
     required this.onPressed,
     required this.label,
-    required this.icon,
+    this.icon, // 去掉 required，现在是可选的
     this.iconSize = 18.0,
     this.fontSize = 15.0,
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
@@ -26,60 +26,88 @@ class FunctionalButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Color primaryColor = Theme.of(context).colorScheme.primary;
-    // --- 使用 withAlpha() 设置背景透明度 ---
-    // 0.15 opacity ≈ 38 alpha (0-255)
     final int backgroundAlpha = (255 * 0.15).round();
     final Color buttonBackgroundColor = primaryColor.withAlpha(backgroundAlpha);
-    final Color buttonForegroundColor = primaryColor; // 文字和图标保持原色
+    final Color buttonForegroundColor = primaryColor;
 
-    // 禁用状态的颜色（可以保持之前的灰色或也用带alpha的灰色）
-    final Color disabledBackgroundColor = Colors.grey.shade200.withAlpha(150); // 例如：半透明灰色
+    final Color disabledBackgroundColor = Colors.grey.shade200.withAlpha(150);
     final Color disabledForegroundColor = Colors.grey.shade400;
 
-    return ElevatedButton.icon(
-      onPressed: isEnabled && !isLoading ? onPressed : null,
-      icon: isLoading
-          ? SizedBox(
-        width: iconSize,
-        height: iconSize,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: buttonForegroundColor,
-        ),
-      )
-          : Icon(icon, size: iconSize, color: isEnabled ? buttonForegroundColor : disabledForegroundColor),
-      label: Text(
-        label,
-        style: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily,
-          fontFamilyFallback: FontConfig.fontFallback,
-          fontSize: fontSize,
-          color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
-          fontWeight: FontWeight.w600,
-        ),
+    // --- 统一处理 onPressed 回调 ---
+    final VoidCallback? effectiveOnPressed = isEnabled && !isLoading ? onPressed : null;
+
+    // --- 统一处理按钮样式 ---
+    final ButtonStyle buttonStyle = ElevatedButton.styleFrom(
+      backgroundColor: isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
+      foregroundColor: isEnabled ? buttonForegroundColor : disabledForegroundColor, // foregroundColor 会影响 Text 和 Icon (如果未单独设置颜色)
+      disabledForegroundColor: disabledForegroundColor,
+      disabledBackgroundColor: disabledBackgroundColor,
+      elevation: 0,
+      padding: padding,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
       ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
-        foregroundColor: buttonForegroundColor, // 这个会被 disabledForegroundColor 覆盖
-        disabledForegroundColor: disabledForegroundColor,
-        disabledBackgroundColor: disabledBackgroundColor,
-        elevation: 0,
-        padding: padding,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        // (可选) 点击效果
-        // overlayColor: MaterialStateProperty.resolveWith<Color?>(
-        //   (Set<MaterialState> states) {
-        //     if (states.contains(MaterialState.pressed)) {
-        //        // 按下时可以用更深的 alpha 或不同颜色
-        //       return primaryColor.withAlpha((255 * 0.25).round());
-        //     }
-        //     return null;
-        //   },
-        // ),
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    );
+
+    // --- 创建 Label Widget ---
+    // 确保 Text 颜色根据 isEnabled 状态变化
+    final Widget labelWidget = Text(
+      label,
+      style: TextStyle(
+        fontFamily: FontConfig.defaultFontFamily,
+        fontFamilyFallback: FontConfig.fontFallback,
+        fontSize: fontSize,
+        // 这里显式设置颜色，确保禁用时颜色正确，不受 foregroundColor 影响
+        color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
+        fontWeight: FontWeight.w600,
       ),
     );
+
+    // --- 根据是否有 icon 选择不同的 Button 类型 ---
+    if (icon != null) {
+      // --- 有 Icon 时，使用 ElevatedButton.icon ---
+      return ElevatedButton.icon(
+        onPressed: effectiveOnPressed,
+        icon: isLoading
+            ? SizedBox(
+          width: iconSize,
+          height: iconSize,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            // 加载指示器颜色也应根据状态变化
+            color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
+          ),
+        )
+        // icon! 是安全的，因为我们已经检查过 icon != null
+            : Icon(icon!, size: iconSize, color: isEnabled ? buttonForegroundColor : disabledForegroundColor),
+        label: labelWidget,
+        style: buttonStyle,
+      );
+    } else {
+      // --- 没有 Icon 时，使用 ElevatedButton ---
+      return ElevatedButton(
+        onPressed: effectiveOnPressed,
+        style: buttonStyle,
+        child: isLoading
+            ? Row( // 如果需要在没有图标时，加载中也显示指示器
+          mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
+          children: [
+            SizedBox(
+              // 让加载指示器大小和文字差不多
+              width: fontSize,
+              height: fontSize,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
+              ),
+            ),
+            const SizedBox(width: 8), // 指示器和文字之间的间距
+            labelWidget,
+          ],
+        )
+            : labelWidget, // 不加载时只显示文字
+      );
+    }
   }
 }

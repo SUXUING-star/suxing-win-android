@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/game/comment/replies/reply_item_updated.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import '../../../../../../models/comment/comment.dart';
-import '../../../../../../services/main/game/comment/comment_service.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../../../../../ui/badges/user_info_badge.dart';
@@ -12,10 +12,12 @@ import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路�
 
 class ReplyItem extends StatefulWidget {
   final Comment reply;
+  final String gameId;
   final VoidCallback? onReplyChanged;
 
   const ReplyItem({
     Key? key,
+    required this.gameId,
     required this.reply,
     this.onReplyChanged,
   }) : super(key: key);
@@ -25,19 +27,20 @@ class ReplyItem extends StatefulWidget {
 }
 
 class _ReplyItemState extends State<ReplyItem> {
-  final CommentService _commentService = CommentService();
+  final GameService _gameService = GameService();
   // _isDeleting 状态现在由 ConfirmDialog 内部处理加载状态，可以考虑移除
   // bool _isDeleting = false; // 可以移除
 
   // 2. 修改 _buildReplyActions 方法
-  Widget _buildReplyActions(BuildContext context, Comment reply) {
+  Widget _buildReplyActions(
+      BuildContext context, String gameId, Comment reply) {
     // return PopupMenuButton<String>(...); // 旧代码
 
     // 使用 CustomPopupMenuButton
     return CustomPopupMenuButton<String>(
       // --- 自定义外观 ---
-      icon: Icons.more_vert,     // 使用垂直的点点点
-      iconSize: 18,               // 尺寸可以小一些
+      icon: Icons.more_vert, // 使用垂直的点点点
+      iconSize: 18, // 尺寸可以小一些
       iconColor: Colors.grey[600], // 图标颜色
       padding: const EdgeInsets.all(0), // 减少内边距，更紧凑
       tooltip: '回复选项',
@@ -49,10 +52,10 @@ class _ReplyItemState extends State<ReplyItem> {
         // onSelected 逻辑保持不变
         switch (value) {
           case 'edit':
-            _showEditDialog(context, reply);
+            _showEditDialog(context, gameId, reply);
             break;
           case 'delete':
-            _showDeleteDialog(context, reply);
+            _showDeleteDialog(context, gameId, reply);
             break;
         }
       },
@@ -111,7 +114,7 @@ class _ReplyItemState extends State<ReplyItem> {
   }
 
   // _showEditDialog 方法保持不变
-  void _showEditDialog(BuildContext context, Comment reply) {
+  void _showEditDialog(BuildContext context, String gameId, Comment reply) {
     EditDialog.show(
       context: context,
       title: '编辑回复',
@@ -119,7 +122,7 @@ class _ReplyItemState extends State<ReplyItem> {
       hintText: '编辑回复内容...',
       onSave: (text) async {
         try {
-          await _commentService.updateComment(reply.id, text);
+          await _gameService.updateComment(gameId, reply.id, text);
           widget.onReplyChanged?.call(); // 使用 ?.call()
           if (context.mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -138,7 +141,7 @@ class _ReplyItemState extends State<ReplyItem> {
   }
 
   // _showDeleteDialog 方法保持不变 (内部的 setState 可以移除)
-  void _showDeleteDialog(BuildContext context, Comment reply) {
+  void _showDeleteDialog(BuildContext context, String gameId, Comment reply) {
     CustomConfirmDialog.show(
       context: context,
       title: '删除回复',
@@ -151,7 +154,7 @@ class _ReplyItemState extends State<ReplyItem> {
           // 不再需要 setState 来管理 _isDeleting
           // setState(() { _isDeleting = true; });
 
-          await _commentService.deleteComment(reply.id);
+          await _gameService.deleteComment(gameId, reply.id);
           widget.onReplyChanged?.call(); // 使用 ?.call()
 
           if (context.mounted) {
@@ -185,14 +188,14 @@ class _ReplyItemState extends State<ReplyItem> {
       padding: const EdgeInsets.only(bottom: 8), // 给内容下方加点内边距
       decoration: BoxDecoration(
           border: Border(
-            bottom: BorderSide(color: Colors.grey.shade200, width: 0.8), // 添加底部分隔线
-          )
-      ),
+        bottom: BorderSide(color: Colors.grey.shade200, width: 0.8), // 添加底部分隔线
+      )),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.only(top: 8, left: 16, right: 8), // 调整右边距适应按钮
+            padding:
+                const EdgeInsets.only(top: 8, left: 16, right: 8), // 调整右边距适应按钮
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center, // 尝试垂直居中对齐
               children: [
@@ -206,7 +209,8 @@ class _ReplyItemState extends State<ReplyItem> {
                 ),
                 const SizedBox(width: 8), // 用户名和日期之间加点间距
                 Text(
-                  DateTimeFormatter.formatRelative(widget.reply.createTime) + // 使用相对时间
+                  DateTimeFormatter.formatRelative(
+                          widget.reply.createTime) + // 使用相对时间
                       (widget.reply.isEdited ? ' (已编辑)' : ''),
                   style: TextStyle(
                     fontSize: 11, // 字体再小一点
@@ -214,12 +218,13 @@ class _ReplyItemState extends State<ReplyItem> {
                   ),
                 ),
                 // 将修改后的按钮放在这里
-                _buildReplyActions(context, widget.reply),
+                _buildReplyActions(context, widget.gameId, widget.reply),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 4.0), // 调整内容区域边距
+            padding: const EdgeInsets.only(
+                left: 16.0, right: 16.0, top: 4.0, bottom: 4.0), // 调整内容区域边距
             child: Text(widget.reply.content),
           ),
         ],

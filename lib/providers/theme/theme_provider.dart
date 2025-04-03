@@ -1,6 +1,6 @@
 // lib/providers/theme_provider.dart
 import 'package:flutter/material.dart';
-import '../../utils/font/font_config.dart';  // 引入 FontConfig
+import '../../utils/font/font_config.dart'; // 引入 FontConfig
 
 class ThemeProvider extends ChangeNotifier {
   ThemeMode _themeMode = ThemeMode.system;
@@ -99,7 +99,8 @@ class ThemeProvider extends ChangeNotifier {
       primarySwatch: Colors.blue,
       primaryColor: Colors.blue.shade300,
       scaffoldBackgroundColor: Colors.transparent,
-      fontFamily: FontConfig.defaultFontFamily,  // 设置全局默认字体
+      fontFamily: FontConfig.defaultFontFamily, // 设置全局默认字体
+      cardColor: Colors.white,
     );
 
     return baseTheme.copyWith(
@@ -153,9 +154,7 @@ class ThemeProvider extends ChangeNotifier {
 
   // 暗色主题
   ThemeData get darkTheme {
-    final baseTheme = ThemeData.dark().copyWith(
-
-    );
+    final baseTheme = ThemeData.dark().copyWith();
 
     return baseTheme.copyWith(
       primaryColor: Colors.white,

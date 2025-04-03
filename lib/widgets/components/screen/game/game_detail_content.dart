@@ -1,30 +1,33 @@
+// lib/widgets/components/screen/game/game_detail_content.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/collection_change_result.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
-import '../../../../models/game/game.dart';
-import 'header/game_header.dart';
-import 'description/game_description.dart';
-import 'image/game_images.dart';
-import 'comment/comments_section.dart';
-import 'random/random_games_section.dart';
-import 'coverImage/game_cover_image.dart';
-import 'collection/game_collection_section.dart';
-import 'collection/game_reviews_section.dart';
-import 'navigation/game_navigation_section.dart'; // Import the new navigation section
+import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_section.dart';
+// 引入 GameReviewSection 本身及其 State 类（确保路径和 State 类名与你改好的版本一致）
+import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart';
+import 'package:suxingchahui/widgets/components/screen/game/comment/comments_section.dart';
+import 'package:suxingchahui/widgets/components/screen/game/coverImage/game_cover_image.dart'; // 确认这个是你原来的引用
+import 'package:suxingchahui/widgets/components/screen/game/description/game_description.dart';
+import 'package:suxingchahui/widgets/components/screen/game/header/game_header.dart';
+import 'package:suxingchahui/widgets/components/screen/game/image/game_images.dart'; // 确认这个是你原来的引用
+import 'package:suxingchahui/widgets/components/screen/game/navigation/game_navigation_section.dart';
+import 'package:suxingchahui/widgets/components/screen/game/random/random_games_section.dart';
 
 class GameDetailContent extends StatefulWidget {
-  final Game game;
-  final Function(String)? onNavigate; // 保持导航回调
+  final Game game; // 父组件传递的游戏对象
+  final Function(String)? onNavigate;
   final GameCollectionItem? initialCollectionStatus;
-  final Function()? onCollectionChanged;
-  final Map<String, dynamic>? navigationInfo; // <--- 新增：接收导航信息
+  final Function(CollectionChangeResult)? onCollectionChanged;
+  final Map<String, dynamic>? navigationInfo;
 
   const GameDetailContent({
     Key? key,
     required this.game,
     this.onNavigate,
     this.initialCollectionStatus,
-    this.onCollectionChanged,
-    this.navigationInfo, // <--- 新增构造函数参数
+    this.onCollectionChanged, // *** 保持新签名 ***
+    this.navigationInfo,
   }) : super(key: key);
 
   @override
@@ -34,111 +37,141 @@ class GameDetailContent extends StatefulWidget {
 class _GameDetailContentState extends State<GameDetailContent> {
   final GlobalKey<GameReviewSectionState> _reviewSectionKey = GlobalKey<GameReviewSectionState>();
 
-  // 内部处理收藏变化的回调 (保持不变)
-  void _handleCollectionChangedInternal() {
-    _reviewSectionKey.currentState?.refresh();
-    widget.onCollectionChanged?.call();
+  // *** 2. 修改内部回调处理函数以接收新的结果类型，并加入 refresh() 调用 (这是必要的逻辑改动) ***
+  void _handleCollectionChangedInternal(CollectionChangeResult result) { // <--- 接收结果对象
+    // --- 触发 GameReviewSection 刷新 ---
+    if (_reviewSectionKey.currentState != null) {
+      _reviewSectionKey.currentState!.refresh(); // <--- 必要逻辑：调用 refresh 方法
+    } else {
+      print('GameDetailContent (${widget.game.id}): _reviewSectionKey.currentState is null. Cannot refresh reviews section.');
+    }
+
+    // --- 调用父组件 (GameDetailScreen) 的回调，传递整个结果对象 ---
+    widget.onCollectionChanged?.call(result); // <--- 传递结果对象
   }
 
-  // 修改：Mobile Layout, 传递 navigationInfo 给 GameNavigationSection
+  // --- _buildMobileLayout 严格按照原始布局 ---
   Widget _buildMobileLayout() {
+    // --- 保持你原来的 Column 结构和子 Widget 顺序 ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GameHeader(game: widget.game),
-        GameDescription(game: widget.game),
+        GameHeader(game: widget.game), // 原来的
+        GameDescription(game: widget.game), // 原来的
+        // 传递更新后的回调签名给 GameCollectionSection (这是逻辑需要)
         GameCollectionSection(
           game: widget.game,
           initialCollectionStatus: widget.initialCollectionStatus,
-          onCollectionChanged: _handleCollectionChangedInternal,
+          onCollectionChanged: _handleCollectionChangedInternal, // 传递内部处理函数
         ),
+        // *** 3. 将 Key 赋给 GameReviewSection (这是必要的逻辑改动) ***
         GameReviewSection(
-          key: _reviewSectionKey,
+          key: _reviewSectionKey, // <--- 必要逻辑：设置 Key
           game: widget.game,
         ),
-        GameImages(game: widget.game),
-        const Divider(height: 8),
-        CommentsSection(gameId: widget.game.id),
-        const Divider(height: 8),
-        RandomGamesSection(currentGameId: widget.game.id),
-        const SizedBox(height: 24),
-        const Divider(height: 8),
-        const SizedBox(height: 16),
-        GameNavigationSection(
+        GameImages(game: widget.game), // 原来的
+        const Divider(height: 8), // 原来的 Divider 和 height
+        CommentsSection(gameId: widget.game.id), // 原来的
+        const Divider(height: 8), // 原来的 Divider 和 height
+        RandomGamesSection(currentGameId: widget.game.id), // 原来的
+        const SizedBox(height: 24), // 原来的 SizedBox 和 height
+        const Divider(height: 8), // 原来的 Divider 和 height
+        const SizedBox(height: 16), // 原来的 SizedBox 和 height
+        GameNavigationSection( // 原来的
           currentGameId: widget.game.id,
-          navigationInfo: widget.navigationInfo, // <--- 传递导航信息
+          navigationInfo: widget.navigationInfo,
           onNavigate: widget.onNavigate,
         ),
-        const SizedBox(height: 16), // 在底部增加一些空间
+        const SizedBox(height: 16), // 原来的 SizedBox 和 height
       ],
     );
   }
 
-  // 修改：Desktop Layout, 传递 navigationInfo 给 GameNavigationSection
+  // --- _buildDesktopLayout 严格按照原始布局 ---
   Widget _buildDesktopLayout() {
+    // --- 保持你原来的 Column/Row 结构、Expanded flex、子 Widget 顺序、SizedBox、Divider ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        Row( // 原来的 Row
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded( // 左侧列
-              flex: 2,
-              child: Column(
+            // 左侧列 (原来的 Expanded 和 flex)
+            Expanded(
+              flex: 2, // 保持原来的 flex
+              child: Column( // 原来的 Column
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AspectRatio(aspectRatio: 4/3, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: GameCoverImage(imageUrl: widget.game.coverImage),),),
-                  const SizedBox(height: 24),
-                  GameImages(game: widget.game),
-                  const SizedBox(height: 24),
+                  // 保持原来的 AspectRatio, ClipRRect, GameCoverImage
+                  AspectRatio(
+                    aspectRatio: 4 / 3, // 保持原来的 aspectRatio
+                    child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12), // 保持原来的 borderRadius
+                        child: GameCoverImage(imageUrl: widget.game.coverImage)
+                    ),
+                  ),
+                  const SizedBox(height: 24), // 原来的 SizedBox
+                  GameImages(game: widget.game), // 原来的
+                  const SizedBox(height: 24), // 原来的 SizedBox
+                  // 传递更新后的回调签名给 GameCollectionSection (逻辑需要)
                   GameCollectionSection(
                     game: widget.game,
                     initialCollectionStatus: widget.initialCollectionStatus,
                     onCollectionChanged: _handleCollectionChangedInternal,
                   ),
-                  const SizedBox(height: 24),
-                  GameReviewSection(key: _reviewSectionKey, game: widget.game),
+                  const SizedBox(height: 24), // 原来的 SizedBox
+                  // *** 3. 将 Key 赋给 GameReviewSection (这是必要的逻辑改动) ***
+                  GameReviewSection(
+                      key: _reviewSectionKey, // <--- 必要逻辑：设置 Key
+                      game: widget.game
+                  ),
                 ],
               ),
             ),
-            const SizedBox(width: 32),
-            Expanded( // 右侧列
-              flex: 3,
-              child: Column(
+            const SizedBox(width: 32), // 原来的 SizedBox
+            // 右侧列 (原来的 Expanded 和 flex)
+            Expanded(
+              flex: 3, // 保持原来的 flex
+              child: Column( // 原来的 Column
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GameHeader(game: widget.game),
-                  const SizedBox(height: 24),
-                  GameDescription(game: widget.game),
-                  const SizedBox(height: 24),
-                  CommentsSection(gameId: widget.game.id),
+                  GameHeader(game: widget.game), // 原来的
+                  const SizedBox(height: 24), // 原来的 SizedBox
+                  GameDescription(game: widget.game), // 原来的
+                  const SizedBox(height: 24), // 原来的 SizedBox
+                  CommentsSection(gameId: widget.game.id), // 原来的
                 ],
               ),
             ),
           ],
         ),
-        const SizedBox(height: 24), const Divider(), const SizedBox(height: 16),
-        RandomGamesSection(currentGameId: widget.game.id),
-        const SizedBox(height: 32), const Divider(), const SizedBox(height: 16),
-        GameNavigationSection(
+        const SizedBox(height: 24), // 原来的 SizedBox
+        const Divider(), // 原来的 Divider
+        const SizedBox(height: 16), // 原来的 SizedBox
+        RandomGamesSection(currentGameId: widget.game.id), // 原来的
+        const SizedBox(height: 32), // 原来的 SizedBox
+        const Divider(), // 原来的 Divider
+        const SizedBox(height: 16), // 原来的 SizedBox
+        GameNavigationSection( // 原来的
             currentGameId: widget.game.id,
-            navigationInfo: widget.navigationInfo, // <--- 传递导航信息
+            navigationInfo: widget.navigationInfo,
             onNavigate: widget.onNavigate
         ),
-        const SizedBox(height: 16), // 在底部增加一些空间
+        const SizedBox(height: 16), // 原来的 SizedBox
       ],
     );
   }
 
+  // --- build 方法 严格按照原始逻辑 ---
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    // 使用 ValueKey 包含 gameId，确保 Game 对象变化时重建
-    // 移除 SingleChildScrollView，因为 GameDetailScreen 已经处理了滚动
+    final isDesktop = MediaQuery.of(context).size.width >= 1024; // 原来的判断
+    // 使用 ValueKey (你原来就有，保持)
+    // Padding 的 all(16.0) 或 0 的逻辑也保持不变
     return Padding(
-      key: ValueKey('game_detail_content_${widget.game.id}'), // Key 依然有用
-      padding: EdgeInsets.all(isDesktop ? 0 : 16.0), // 桌面布局由父级控制 Padding
-      child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(),
+      key: ValueKey('game_detail_content_${widget.game.id}'), // 保持原来的 Key 逻辑
+      padding: EdgeInsets.all(isDesktop ? 0 : 16.0), // 保持原来的 Padding 逻辑
+      child: isDesktop ? _buildDesktopLayout() : _buildMobileLayout(), // 保持原来的选择逻辑
     );
   }
 }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import '../../services/main/user/user_checkin_service.dart';
 import '../../services/main/user/user_level_service.dart';
 import '../../models/user/user_checkin.dart';
@@ -235,36 +236,25 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
         expGained = int.tryParse(result['experienceGained'].toString()) ?? 0;
       }
     }
+    final int consecutiveDays = result['consecutiveCheckIn'] ?? 1;
+
+    final String message = '恭喜您完成今日签到！\n'
+        '获得 +$expGained 经验值\n'
+        '当前连续签到: $consecutiveDays 天';
 
     // 创建成功对话框
-    showDialog(
+    CustomConfirmDialog.show(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('签到成功'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text('恭喜您完成今日签到！'),
-            SizedBox(height: 8),
-            Text(
-              '获得 +$expGained 经验值',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).primaryColor,
-              ),
-            ),
-            SizedBox(height: 8),
-            Text('连续签到: ${result['consecutiveCheckIn'] ?? 1}天'),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => NavigationUtils.of(context).pop(),
-            child: Text('确定'),
-          ),
-        ],
-      ),
+      title: '签到成功！🎉', // 可以加点 emoji
+      message: message, // 使用上面构建的消息字符串
+      iconData: Icons.check_circle_outline, // 使用成功图标
+      iconColor: Colors.green, // 设置图标颜色为绿色
+      confirmButtonText: '知道了', // 将确认按钮文本改为更符合场景的
+      confirmButtonColor: Theme.of(context).primaryColor, // 确认按钮颜色使用主题色
+      onConfirm: () async {
+      },
+      barrierDismissible: true, // 允许点击外部关闭对话框
+
     );
   }
 
@@ -322,7 +312,7 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
         children: [
           // 处理加载和错误状态
           if (_isLoading)
-            LoadingWidget.fullScreen(message: '正在加载签到数据...'),
+            LoadingWidget.inline(message: '正在加载签到数据...'),
 
           if (_errorMessage != null)
             CustomErrorWidget(

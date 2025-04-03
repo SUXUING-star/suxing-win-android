@@ -1,9 +1,9 @@
 // lib/widgets/layouts/desktop/desktop_sidebar.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../providers/navigation/sidebar_provider.dart';
 import '../../app.dart';
-import '../main_layout.dart';
 import 'desktop_sidebar_nav_item.dart';
 import 'desktop_sidebar_buttons.dart';
 import 'desktop_sidebar_user_profile.dart';
@@ -49,24 +49,12 @@ class DesktopSidebar extends StatelessWidget {
 
   // 导航到指定页面
   void _navigateToMainScreen(BuildContext context, int index) {
-    print("桌面侧边栏: 导航到标签索引 $index");
+    print("桌面侧边栏: 请求导航到标签索引 $index");
 
-    // 更新侧边栏提供者
+    // 1. *** 更新 SidebarProvider 的状态 ***
     Provider.of<SidebarProvider>(context, listen: false).setCurrentIndex(index);
 
-    // 设置主布局索引
-    MainLayout.navigateTo(index);
-
-    // 使用全局导航器
-    final navigator = mainNavigatorKey.currentState;
-
-    if (navigator != null) {
-      // 返回到首页
-      navigator.popUntil((route) => route.isFirst);
-      print("桌面侧边栏: 已返回到主页面");
-    } else {
-      print("桌面侧边栏: 未找到导航器实例");
-    }
+    NavigationUtils.navigateToHome(context,tabIndex: index);
   }
 
   @override

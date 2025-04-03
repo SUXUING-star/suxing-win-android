@@ -14,12 +14,14 @@ import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路�
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
+  final String postId;
   final int floor;
   final ForumService _forumService = ForumService();
   final VoidCallback? onReplyChanged;
 
   ReplyItem({
     Key? key,
+    required this.postId,
     required this.reply,
     required this.floor,
     this.onReplyChanged,
@@ -148,10 +150,10 @@ class ReplyItem extends StatelessWidget {
             // onSelected 逻辑不变
             switch (value) {
               case 'edit':
-                _handleEditReply(context, reply);
+                _handleEditReply(context ,postId, reply);
                 break;
               case 'delete':
-                _handleDeleteReply(context, reply);
+                _handleDeleteReply(context ,postId , reply);
                 break;
             }
           },
@@ -204,7 +206,7 @@ class ReplyItem extends StatelessWidget {
   }
 
   // 使用可复用的EditDialog
-  Future<void> _handleEditReply(BuildContext context, Reply reply) async {
+  Future<void> _handleEditReply(BuildContext context ,String postId, Reply reply) async {
     EditDialog.show(
       context: context,
       title: '编辑回复',
@@ -213,7 +215,7 @@ class ReplyItem extends StatelessWidget {
       maxLines: 4,
       onSave: (newContent) async {
         try {
-          await _forumService.updateReply(reply.id, newContent);
+          await _forumService.updateReply(postId,reply.id, newContent);
 
           // 通知父组件刷新
           if (onReplyChanged != null) {
@@ -237,7 +239,7 @@ class ReplyItem extends StatelessWidget {
   }
 
   // 使用可复用的ConfirmDialog
-  Future<void> _handleDeleteReply(BuildContext context, Reply reply) async {
+  Future<void> _handleDeleteReply(BuildContext context, String postId, Reply reply) async {
     CustomConfirmDialog.show(
       context: context,
       title: '删除回复',
@@ -246,7 +248,7 @@ class ReplyItem extends StatelessWidget {
       confirmButtonColor: Colors.red,
       onConfirm: () async {
         try {
-          await _forumService.deleteReply(reply.id);
+          await _forumService.deleteReply(postId,reply.id);
 
           // 通知父组件刷新
           if (onReplyChanged != null) {

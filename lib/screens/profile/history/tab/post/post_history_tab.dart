@@ -1,19 +1,19 @@
 // lib/screens/profile/tab/post_history_tab.dart
 import 'package:flutter/material.dart';
-import '../../../../../services/main/history/post_history_service.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import './card/post_history_card.dart'; // Import the new widget
 
 // 帖子历史标签页 - 优化UI显示
 class PostHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
-  final PostHistoryService postHistoryService;
+  final ForumService forumService;
 
   const PostHistoryTab({
     Key? key,
     required this.isLoaded,
     required this.onLoad,
-    required this.postHistoryService,
+    required this.forumService,
   }) : super(key: key);
 
   @override
@@ -57,7 +57,7 @@ class _PostHistoryTabState extends State<PostHistoryTab> with AutomaticKeepAlive
     });
 
     try {
-      final results = await widget.postHistoryService.getPostHistoryWithDetails(_page, _pageSize);
+      final results = await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
 
       setState(() {
         // 安全地处理帖子历史数据
@@ -101,7 +101,7 @@ class _PostHistoryTabState extends State<PostHistoryTab> with AutomaticKeepAlive
     try {
       // 加载下一页
       _page++;
-      final results = await widget.postHistoryService.getPostHistoryWithDetails(_page, _pageSize);
+      final results = await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
 
       // 安全地处理新的帖子历史数据
       List<Map<String, dynamic>> newItems = [];

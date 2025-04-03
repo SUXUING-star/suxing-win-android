@@ -1,80 +1,69 @@
-// lib/widgets/components/screen/game/collection/layout/mobile_collection_layout.dart
+// lib/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../models/game/game_collection.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../card/collection_game_card.dart';
+import '../../../../../models/game/game_collection.dart'; // 确保路径正确
+import '../../../../../utils/navigation/navigation_utils.dart'; // 确保路径正确
+import '../../../../../routes/app_routes.dart'; // 确保路径正确
+import '../card/collection_game_card.dart'; // 确保路径正确
 
-/// 移动设备游戏收藏展示布局 - 瀑布流版本
-///
-/// 实现标签页式布局的内容区域，使用瀑布流显示游戏卡片
-class MobileCollectionLayout extends StatefulWidget {
+/// 移动设备游戏收藏展示布局 - 只负责展示列表
+/// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
+class MobileCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
   final List<GameWithCollection> games;
-  final Function onRefresh;
   final String collectionType;
 
   const MobileCollectionLayout({
     Key? key,
     required this.games,
-    required this.onRefresh,
     required this.collectionType,
+    // *** 移除 onRefresh 参数 ***
   }) : super(key: key);
 
   @override
-  _MobileCollectionLayoutState createState() => _MobileCollectionLayoutState();
-}
-
-class _MobileCollectionLayoutState extends State<MobileCollectionLayout> {
-  @override
   Widget build(BuildContext context) {
-    if (widget.games.isEmpty) {
-      return _buildEmptyState();
+    if (games.isEmpty) {
+      // *** 空状态 UI 保持不变 ***
+      return _buildEmptyState(context);
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await widget.onRefresh();
-      },
-      // 使用MasonryGridView实现瀑布流布局
-      child: Padding(
-        padding: EdgeInsets.all(8),
-        // 对于横向布局的卡片，使用普通的ListView而不是瀑布流
-        child: ListView.builder(
-          padding: EdgeInsets.all(8),
-          itemCount: widget.games.length,
-          itemBuilder: (context, index) {
-            final gameWithCollection = widget.games[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: CollectionGameCard(
-                game: gameWithCollection.game,
-                collectionStatus: gameWithCollection.collection.status,
-              ),
-            );
-          },
-        ),
+    // *** 移除 RefreshIndicator ***
+    // 直接返回 Padding 和 ListView
+    return Padding(
+      // 可以根据需要调整内边距
+      padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+      child: ListView.builder(
+        // physics: const AlwaysScrollableScrollPhysics(), // 如果需要即使内容不足也允许滚动触发父级刷新
+        padding: const EdgeInsets.only(top: 8.0, bottom: 8.0), // 列表本身的内边距
+        itemCount: games.length,
+        itemBuilder: (context, index) {
+          final gameWithCollection = games[index];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0), // 卡片间距
+            // *** 调用 CollectionGameCard 显示卡片 (不变) ***
+            child: CollectionGameCard(
+              game: gameWithCollection.game,
+              collectionStatus: gameWithCollection.collection.status,
+            ),
+          );
+        },
       ),
     );
   }
 
-  // 对于横向卡片，我们不再需要计算列数
-
-  // 构建空状态视图
-  Widget _buildEmptyState() {
+  // 构建空状态视图 (保持不变)
+  Widget _buildEmptyState(BuildContext context) {
     String message;
     IconData icon;
 
-    switch (widget.collectionType) {
-      case 'wantToPlay':
+    switch (collectionType) {
+      case GameCollectionStatus.wantToPlay: // 使用常量
         message = '还没有想玩的游戏';
         icon = Icons.star_border;
         break;
-      case 'playing':
+      case GameCollectionStatus.playing:
         message = '还没有在玩的游戏';
         icon = Icons.videogame_asset;
         break;
-      case 'played':
+      case GameCollectionStatus.played:
         message = '还没有玩过的游戏';
         icon = Icons.check_circle;
         break;
@@ -88,14 +77,15 @@ class _MobileCollectionLayoutState extends State<MobileCollectionLayout> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, size: 48, color: Colors.grey),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           Text(message),
-          SizedBox(height: 24),
+          const SizedBox(height: 24),
           ElevatedButton(
             onPressed: () {
+              // 跳转逻辑不变
               NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
             },
-            child: Text('发现游戏'),
+            child: const Text('发现游戏'),
           ),
         ],
       ),

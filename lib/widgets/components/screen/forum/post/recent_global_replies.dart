@@ -1,8 +1,9 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/global_reply_item.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/post/post.dart';
-import '../../../../../services/main/forum/global_replies_service.dart';
 import '../../../../../screens/forum/post/post_detail_screen.dart';
 import '../../../../../screens/profile/open_profile_screen.dart';
 import '../../../../../utils/device/device_utils.dart';
@@ -18,7 +19,7 @@ class RecentGlobalReplies extends StatefulWidget {
 }
 
 class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
-  final GlobalRepliesService _globalRepliesService = GlobalRepliesService();
+  final ForumService _forumService = ForumService();
   late Stream<List<GlobalReplyItem>> _repliesStream;
   bool _isLoading = true;
 
@@ -26,20 +27,29 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   void initState() {
     super.initState();
     print('Initializing RecentGlobalReplies widget with limit: ${widget.limit}');
-    _initStream();
-  }
-
-  void _initStream() {
-    _isLoading = true;
-    _repliesStream = _globalRepliesService.getRecentGlobalReplies(limit: widget.limit);
+    // 直接在 initState 中获取 Stream
+    _repliesStream = _forumService.getRecentGlobalReplies(limit: widget.limit);
   }
 
   @override
   void dispose() {
-    print('Disposing RecentGlobalReplies widget');
-    _globalRepliesService.cancelTimer(widget.limit);
+    print('Disposing RecentGlobalReplies widget for limit: ${widget.limit}');
     super.dispose();
   }
+  // 主动刷新的方法
+  void _handleRefresh() {
+    print('Manual refresh requested for limit: ${widget.limit}');
+    // 调用 service 的 refresh 方法
+    //_forumService.refresh(limit: widget.limit);
+    // 注意：UI 不会立即更新，需要等待 Stream 发出新数据
+    // 可以考虑显示一个短暂的加载指示器，但这会增加复杂性
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('正在刷新...'), duration: Duration(seconds: 1)),
+    );
+  }
+
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -84,12 +94,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 // 添加刷新按钮
                 IconButton(
                   icon: Icon(Icons.refresh, size: 20, color: Colors.grey[600]),
-                  onPressed: () {
-                    setState(() {
-                      _isLoading = true;
-                      _initStream();
-                    });
-                  },
+                  // 调用新的刷新方法
+                  onPressed: _handleRefresh, // <--- 修改这里
                   tooltip: '刷新最新活跃',
                 ),
               ],
@@ -125,12 +131,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                         Text('加载失败: ${snapshot.error}'),
                         const SizedBox(height: 16),
                         ElevatedButton(
-                          onPressed: () {
-                            setState(() {
-                              _isLoading = true;
-                              _initStream();
-                            });
-                          },
+                          onPressed: _handleRefresh, // 重试也调用刷新
                           child: const Text('重试'),
                         ),
                       ],

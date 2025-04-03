@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../utils/device/device_utils.dart';
-import '../../screens/search/search_screen.dart';
+import '../../screens/search/search_game_screen.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
@@ -120,7 +120,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
         child: InkWell(
           onTap: () => NavigationUtils.push(
             context,
-            MaterialPageRoute(builder: (context) => SearchScreen()),
+            MaterialPageRoute(builder: (context) => SearchGameScreen()),
           ),
           borderRadius: BorderRadius.circular(20),
           child: Container(

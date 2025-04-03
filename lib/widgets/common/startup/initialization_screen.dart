@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'dart:io'; // For Platform
 import 'dart:math'; // For Random
 import '../../../utils/font/font_config.dart';
@@ -221,8 +222,3 @@ class _InitializationScreenState extends State<InitializationScreen> {
   }
 }
 
-enum InitializationStatus {
-  inProgress,
-  error,
-  completed,
-}

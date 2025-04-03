@@ -1,5 +1,7 @@
-// lib/widgets/components/common/error_widget.dart
+// lib/widgets/ui/common/error_widget.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
 class CustomErrorWidget extends StatelessWidget {
   final String? errorMessage;
@@ -15,7 +17,7 @@ class CustomErrorWidget extends StatelessWidget {
     this.errorMessage,
     this.onRetry,
     this.icon = Icons.error_outline,
-    this.title = '错误',
+    this.title = '发生意外错误',
     this.retryText = '重新加载',
     this.iconSize = 48.0,
     this.iconColor = Colors.red,
@@ -24,7 +26,7 @@ class CustomErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: CustomAppBar(title: title),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -41,12 +43,9 @@ class CustomErrorWidget extends StatelessWidget {
                 ),
               if (onRetry != null) ...[
                 const SizedBox(height: 24),
-                ElevatedButton(
+                FunctionalTextButton(
                   onPressed: onRetry,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text(retryText),
+                  label:retryText,
                 ),
               ],
             ],
@@ -94,12 +93,9 @@ class InlineErrorWidget extends StatelessWidget {
             ),
           if (onRetry != null) ...[
             const SizedBox(height: 16),
-            ElevatedButton(
+            FunctionalTextButton(
               onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-              child: Text(retryText),
+              label: retryText,
             ),
           ],
         ],

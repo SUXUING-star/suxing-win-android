@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/game/comment/comment_list.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import '../../../../../../models/comment/comment.dart';
-import '../../../../../../services/main/game/comment/comment_service.dart';
 import 'comment_item.dart';
 
 class CommentList extends StatefulWidget {
@@ -19,7 +19,7 @@ class CommentList extends StatefulWidget {
 }
 
 class _CommentListState extends State<CommentList> {
-  final CommentService _commentService = CommentService();
+  final GameService _commentService = GameService();
   // 使用ValueNotifier来强制刷新评论列表
   final ValueNotifier<DateTime> _internalRefreshTrigger = ValueNotifier(DateTime.now());
   late Stream<List<Comment>> _commentsStream;

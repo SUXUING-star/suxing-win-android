@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/routes/app_routes.dart'; // 需要 AppRoutes 常量
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import '../../services/main/message/message_service.dart';
@@ -11,11 +11,6 @@ import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/message/message_detail.dart';
 import '../../widgets/components/screen/message/message_list.dart';
 import '../../widgets/components/screen/message/message_desktop_layout.dart';
-// 确保引入了所有可能的导航目标页面
-import '../game/detail/game_detail_screen.dart';
-import '../forum/post/post_detail_screen.dart';
-import '../profile/open_profile_screen.dart';
-import '../common/route_error_screen.dart'; // 用于导航失败提示
 
 /// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
@@ -49,7 +44,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   void dispose() {
-    _messageService.disposeMessageStream(); // 清理消息流监听器
+    _messageService.dispose(); // 清理消息流监听器
     super.dispose();
   }
 
@@ -139,10 +134,6 @@ class _MessageScreenState extends State<MessageScreen> {
   /// 标记所有消息为已读
   Future<void> _markAllAsRead() async {
     if (_allMessagesRead || !mounted) return; // 如果已全部已读或页面已销毁，则不操作
-
-    // 可选：添加一个加载指示器或禁用按钮，防止重复点击
-    // setState(() { /* 显示加载状态 */ });
-
     try {
       await _messageService.markAllAsRead(); // 调用 API
       // 成功后重新加载数据以确保同步
@@ -367,129 +358,114 @@ class _MessageScreenState extends State<MessageScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('删除失败: $e')),
           );
-
-          // 重新抛出异常，虽然在这个场景下可能不需要上层处理
-          // rethrow;
         }
         // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
       },
     );
   }
   /// 构建主内容区域 (包含可折叠的消息分组列表)
+  /// 构建主内容区域 (包含可折叠的消息分组列表或空状态)
   Widget _buildMessageContent() {
     // 加载状态
-    if (_isLoading) {
-      return LoadingWidget();
+    if (_isLoading && _groupedMessages.isEmpty) {
+      return Center(child: LoadingWidget());
     }
 
-    // 空状态
-    if (_groupedMessages.isEmpty) {
-      return RefreshIndicator( // 即使为空也允许下拉刷新
-        onRefresh: _loadGroupedMessages,
-        child: LayoutBuilder( // 使用 LayoutBuilder 获取可用高度
-            builder: (context, constraints) {
-              return SingleChildScrollView( // 使用 SingleChildScrollView 配合 AlwaysScrollableScrollPhysics
-                physics: AlwaysScrollableScrollPhysics(),
-                child: Container(
-                  height: constraints.maxHeight, // 占据父容器高度，确保能触发下拉
-                  alignment: Alignment.center,
-                  child: Text(
-                    '暂无任何消息',
-                    style: TextStyle(fontSize: 16, color: Colors.grey),
-                  ),
-                ),
-              );
-            }
-        ),
-      );
-    }
-
-    // 正常显示列表
     return RefreshIndicator(
-      onRefresh: _loadGroupedMessages, // 下拉刷新回调
-      child: ListView.builder(
-        // physics: AlwaysScrollableScrollPhysics(), // 确保内容不足一屏也能滚动和触发刷新
-        itemCount: _sortedTypeKeys.length, // 列表项数量为分组数量
+      onRefresh: _loadGroupedMessages,
+      child: _groupedMessages.isEmpty && !_isLoading
+      // 情况一：数据为空且加载完成
+          ? LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            child: Container(
+              constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight),
+              alignment: Alignment.center,
+              child: EmptyStateWidget(
+                message: '暂无任何消息',
+                iconData: Icons.mark_as_unread_outlined,
+              ),
+            ),
+          );
+        },
+      )
+      // 情况二：数据不为空，显示消息列表
+          : ListView.builder(
+        // ... (ListView.builder 内容不变) ...
+        itemCount: _sortedTypeKeys.length,
         itemBuilder: (context, index) {
-          final typeKey = _sortedTypeKeys[index]; // 当前分组的类型 key
-          final messagesForType = _groupedMessages[typeKey] ?? []; // 当前分组的消息列表
-          // if (messagesForType.isEmpty) return SizedBox.shrink(); // 如果某分组为空，不渲染 (可选)
-
-          // 使用 MessageTypeInfo 解析类型 key 获取显示信息
+          // ... ExpansionTile 等列表项逻辑 ...
+          final typeKey = _sortedTypeKeys[index];
+          final messagesForType = _groupedMessages[typeKey] ?? [];
           final messageType = MessageTypeInfo.fromString(typeKey);
-          final typeDisplayName = messageType.displayName; // 分组标题
-          final unreadCount = _getUnreadCountForType(typeKey); // 未读数量
+          final typeDisplayName = messageType.displayName;
+          final unreadCount = _getUnreadCountForType(typeKey);
 
-          // 使用 ExpansionTile 实现可折叠的分组
           return ExpansionTile(
-            key: PageStorageKey(typeKey), // 使用 key 保持折叠状态
-            // 使用 _expansionState 控制初始展开状态
+            key: PageStorageKey(typeKey),
             initiallyExpanded: _expansionState[typeKey] ?? false,
-            // 当展开/折叠状态改变时，更新 _expansionState
             onExpansionChanged: (isExpanded) {
               if (mounted) {
                 setState(() { _expansionState[typeKey] = isExpanded; });
               }
             },
-            // 分组标题行
             title: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // 标题和角标两端对齐
+              // ... title Row 内容 ...
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Expanded( // 让标题文本可伸缩，避免溢出
+                Expanded(
                   child: Text(
-                    typeDisplayName, // 显示分组名称
+                    typeDisplayName,
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis, // 超长时显示省略号
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
-                // 如果有未读消息，显示红色角标
                 if (unreadCount > 0)
                   Padding(
-                    padding: const EdgeInsets.only(left: 8.0), // 与标题保持距离
+                    padding: const EdgeInsets.only(left: 8.0),
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                       decoration: BoxDecoration(
-                        color: Colors.redAccent, // 角标背景色
-                        borderRadius: BorderRadius.circular(12), // 圆角
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(
-                        '$unreadCount', // 显示未读数量
+                        '$unreadCount',
                         style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
               ],
             ),
-            childrenPadding: EdgeInsets.zero, // 移除 ExpansionTile 内部的默认边距
-            tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), // 自定义标题区域的内边距
-            backgroundColor: Colors.grey[50], // 展开时的背景色
-            collapsedBackgroundColor: Colors.white, // 折叠时的背景色
-            iconColor: Theme.of(context).primaryColor, // 折叠图标颜色
-            collapsedIconColor: Colors.grey[600], // 展开图标颜色
-            // 折叠内容：显示该分组的消息列表
+            childrenPadding: EdgeInsets.zero,
+            tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+            backgroundColor: Colors.grey[50],
+            collapsedBackgroundColor: Colors.white,
+            iconColor: Theme.of(context).primaryColor,
+            collapsedIconColor: Colors.grey[600],
             children: [
-              // 如果分组内没有消息，显示提示文本
+              // ... children 内容 (MessageList 或空分组提示) ...
               if (messagesForType.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
                   child: Center(child: Text('此类消息暂无内容', style: TextStyle(color: Colors.grey))),
                 )
-              // 否则，显示 MessageList
               else
                 MessageList(
-                  messages: messagesForType, // 传递消息列表
-                  onMessageTap: _handleMessageTap, // 传递点击回调
-                  selectedMessage: _selectedMessage, // 传递选中消息（用于高亮）
-                  isCompact: DeviceUtils.isDesktop, // 桌面端使用紧凑模式
+                  messages: messagesForType,
+                  onMessageTap: _handleMessageTap,
+                  selectedMessage: _selectedMessage,
+                  isCompact: DeviceUtils.isDesktop,
                 ),
             ],
           );
         },
-        padding: EdgeInsets.only(bottom: 16.0), // 列表底部留白
+        padding: EdgeInsets.only(bottom: 16.0),
       ),
     );
   }
-
   /// 构建整体页面结构 (区分移动端和桌面端)
   @override
   Widget build(BuildContext context) {

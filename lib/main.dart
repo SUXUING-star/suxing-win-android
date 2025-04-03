@@ -1,4 +1,4 @@
-import 'package:flutter/gestures.dart';
+
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
@@ -8,9 +8,6 @@ import 'services/main/restart/restart_service.dart';
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 尝试禁用某些手势追踪
-  GestureBinding.instance.resamplingEnabled = false;
 
   // 如果是桌面平台，初始化窗口管理器
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {

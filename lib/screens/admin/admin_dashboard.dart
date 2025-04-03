@@ -37,7 +37,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         const UserManagement(),
         const AnnouncementManagement(), // 添加公告管理页面
         const MaintenanceManagement(),
-
         const IPManagement(),
       ];
     }
@@ -91,12 +90,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
         return '链接管理';
       case 3:
         return '用户管理';
-
       case 4:
         return '公告管理'; // 添加公告管理标题
       case 5:
         return '系统维护';
-
       case 6:
         return 'IP管理';
       default:

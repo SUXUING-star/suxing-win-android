@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/common/toaster/toaster.dart';
@@ -49,10 +50,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return Scaffold(
-        appBar: CustomAppBar(title: '编辑帖子'),
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return LoadingWidget();
     }
 
     if (_post == null) {

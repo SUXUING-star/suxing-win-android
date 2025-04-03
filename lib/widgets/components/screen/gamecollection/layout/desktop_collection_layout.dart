@@ -1,53 +1,44 @@
-// lib/widgets/components/screen/game/collection/layout/desktop_collection_layout.dart
+// lib/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../models/game/game_collection.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../card/collection_game_card.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import '../../../../../models/game/game_collection.dart'; // 确保路径正确
+import '../../../../../utils/navigation/navigation_utils.dart'; // 确保路径正确
+import '../../../../../routes/app_routes.dart'; // 确保路径正确
+import '../card/collection_game_card.dart'; // 确保路径正确
 
-/// 桌面设备游戏收藏展示布局 - 瀑布流版本
-///
-/// 实现并排式列布局，每列独立显示一种收藏类型的游戏
-class DesktopCollectionLayout extends StatefulWidget {
+/// 桌面设备游戏收藏展示布局 - 只负责展示列表
+/// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
+class DesktopCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
   final List<GameWithCollection> games;
-  final Function onRefresh;
   final String collectionType;
-  final String title;
+  final String title; // 标题现在可以包含数量，由父组件传入
   final IconData icon;
 
   const DesktopCollectionLayout({
     Key? key,
     required this.games,
-    required this.onRefresh,
     required this.collectionType,
-    required this.title,
+    required this.title, // 直接接收完整标题
     required this.icon,
+    // *** 移除 onRefresh 参数 ***
   }) : super(key: key);
 
-  @override
-  _DesktopCollectionLayoutState createState() => _DesktopCollectionLayoutState();
-}
-
-class _DesktopCollectionLayoutState extends State<DesktopCollectionLayout> {
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 列标题
+        // 列标题 (保持不变，但标题内容由外部传入)
         _buildColumnHeader(),
-
-        SizedBox(height: 12),
-
+        const SizedBox(height: 12),
         // 游戏列表内容
         Expanded(
-          child: _buildGamesList(),
+          child: _buildGamesList(context),
         ),
       ],
     );
   }
 
-  // 构建列标题
+  // 构建列标题 (保持不变)
   Widget _buildColumnHeader() {
     return Card(
       elevation: 2,
@@ -61,124 +52,101 @@ class _DesktopCollectionLayoutState extends State<DesktopCollectionLayout> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
-              widget.icon,
+              icon,
               color: _getStatusColor(),
               size: 20,
             ),
-            SizedBox(width: 8),
-            Text(
-              widget.title,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: _getStatusColor(),
+            const SizedBox(width: 8),
+            // *** 直接使用传入的 title ***
+            Flexible( // 使用 Flexible 防止标题过长溢出
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: _getStatusColor(),
+                ),
+                overflow: TextOverflow.ellipsis, // 溢出时显示省略号
               ),
             ),
-            if (widget.games.isNotEmpty) ...[
+            // 数量显示已包含在 title 中，可以移除这里的 Badge
+            /*
+            if (games.isNotEmpty) ...[
               SizedBox(width: 8),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  widget.games.length.toString(),
-                  style: TextStyle(
-                    color: _getStatusColor(),
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-              ),
+              Container( ... ),
             ],
+            */
           ],
         ),
       ),
     );
   }
 
-  // 构建游戏列表 - 使用瀑布流
-  Widget _buildGamesList() {
-    if (widget.games.isEmpty) {
-      return _buildEmptyState();
+  // 构建游戏列表
+  Widget _buildGamesList(BuildContext context) {
+    if (games.isEmpty) {
+      // *** 空状态 UI 保持不变 ***
+      return _buildEmptyState(context);
     }
 
-    return RefreshIndicator(
-      onRefresh: () async {
-        await widget.onRefresh();
+    // *** 移除 RefreshIndicator ***
+    // 直接返回 ListView
+    return ListView.builder(
+      padding: const EdgeInsets.all(8), // 内边距
+      itemCount: games.length,
+      itemBuilder: (context, index) {
+        final gameWithCollection = games[index];
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0), // 卡片间距
+          // *** 调用 CollectionGameCard 显示卡片 (不变) ***
+          child: CollectionGameCard(
+            game: gameWithCollection.game,
+            collectionStatus: gameWithCollection.collection.status,
+          ),
+        );
       },
-      // 对于横向布局的卡片，使用普通的ListView
-      child: ListView.builder(
-        padding: EdgeInsets.all(8),
-        itemCount: widget.games.length,
-        itemBuilder: (context, index) {
-          final gameWithCollection = widget.games[index];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: CollectionGameCard(
-              game: gameWithCollection.game,
-              collectionStatus: gameWithCollection.collection.status,
-            ),
-          );
-        },
-      ),
     );
   }
 
-  // 根据收藏类型获取对应颜色
+  // 根据收藏类型获取对应颜色 (保持不变)
   Color _getStatusColor() {
-    switch (widget.collectionType) {
-      case 'wantToPlay':
-        return Colors.blue;
-      case 'playing':
-        return Colors.green;
-      case 'played':
-        return Colors.purple;
-      default:
-        return Colors.grey;
+    switch (collectionType) {
+      case GameCollectionStatus.wantToPlay: return Colors.blue;
+      case GameCollectionStatus.playing: return Colors.green;
+      case GameCollectionStatus.played: return Colors.purple;
+      default: return Colors.grey;
     }
   }
 
-  // 构建空状态视图
-  Widget _buildEmptyState() {
+  // 构建空状态视图 (保持不变)
+  Widget _buildEmptyState(BuildContext context) {
     String message;
-
-    switch (widget.collectionType) {
-      case 'wantToPlay':
-        message = '还没有想玩的游戏';
-        break;
-      case 'playing':
-        message = '还没有在玩的游戏';
-        break;
-      case 'played':
-        message = '还没有玩过的游戏';
-        break;
-      default:
-        message = '还没有收藏任何游戏';
+    switch (collectionType) {
+      case GameCollectionStatus.wantToPlay: message = '还没有想玩的游戏'; break;
+      case GameCollectionStatus.playing: message = '还没有在玩的游戏'; break;
+      case GameCollectionStatus.played: message = '还没有玩过的游戏'; break;
+      default: message = '还没有收藏任何游戏';
     }
 
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(widget.icon, size: 40, color: Colors.grey),
-          SizedBox(height: 16),
+          Icon(icon, size: 40, color: Colors.grey),
+          const SizedBox(height: 16),
           Text(
             message,
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[600]),
           ),
-          SizedBox(height: 16),
-          ElevatedButton(
+          const SizedBox(height: 16),
+          FunctionalButton(
+            label: '发现游戏',
             onPressed: () {
+              // 跳转逻辑不变
               NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
             },
-            style: ElevatedButton.styleFrom(
-              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              textStyle: TextStyle(fontSize: 14),
-            ),
-            child: Text('发现游戏'),
+            icon: Icons.search_rounded,
           ),
         ],
       ),

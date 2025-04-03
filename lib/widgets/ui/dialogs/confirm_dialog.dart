@@ -108,7 +108,7 @@ class _CustomConfirmDialogState extends State<CustomConfirmDialog> {
       // 如果 onConfirm 异步操作完成后，此 Widget 仍然挂载（即对话框未被关闭）
       // 并且需要在这里关闭，可以取消下一行的注释。
       // 但通常建议在 onConfirm 回调内部处理导航/关闭逻辑。
-      // if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context);
 
     } catch (e) {
       // 如果确认操作抛出异常

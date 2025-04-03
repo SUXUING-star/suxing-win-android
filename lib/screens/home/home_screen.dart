@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:visibility_detector/visibility_detector.dart';
 import '../../widgets/components/loading/loading_route_observer.dart';
 import '../../widgets/components/screen/home/android/home_hot.dart';
 import '../../widgets/components/screen/home/android/home_latest.dart';
@@ -24,27 +25,25 @@ class _HomeScreenState extends State<HomeScreen> {
   // 最小刷新间隔 - 5分钟
   static const Duration _minRefreshInterval = Duration(minutes: 5);
 
-  // 追踪是否第一次初始化
-  bool _isFirstLoad = true;
+  // --- 懒加载状态 ---
+  bool _isInitialized = false; // 是否已初始化（首次加载）
+  bool _isVisible = false;     // 当前是否可见
+  // --- 结束懒加载状态 ---
 
-  // 错误处理
   String? _errorMessage;
-  bool _isLoading = true;
+  bool _isLoading = false; // 这个仍然用于刷新和加载过程中的状态
 
   @override
   void initState() {
     super.initState();
-
-    // 初始化游戏数据流 - 懒加载方式
-    _initGameStreams();
+    // --- 不在这里加载数据 ---
+    // _initGameStreams();
   }
 
   // 初始化游戏数据流
-  void _initGameStreams() {
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+  void _loadData() {
+    // 不再需要在这里设置 _isLoading = true，因为 _triggerInitialLoad 或 _refreshData 会处理
+    // setState(() { _isLoading = true; _errorMessage = null; });
 
     try {
       // 使用缓存优先的流
@@ -54,23 +53,38 @@ class _HomeScreenState extends State<HomeScreen> {
       // 设置刷新时间
       _lastRefreshTime = DateTime.now();
 
-      setState(() {
-        _isLoading = false;
-      });
+      // 确保 setState 在 mounted 状态下调用
+      if (mounted) {
+        setState(() {
+          _isLoading = false; // 加载完成
+        });
+      }
     } catch (e) {
+      if (mounted) {
+        setState(() {
+          _errorMessage = '加载数据失败：${e.toString()}';
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  // --- 新增：触发首次加载的方法 ---
+  void _triggerInitialLoad() {
+    // 保证只加载一次，并且是在可见时加载
+    if (_isVisible && !_isInitialized) {
+      print("HomeScreen is now visible and not initialized. Loading data...");
       setState(() {
-        _errorMessage = '加载数据失败：${e.toString()}';
-        _isLoading = false;
+        _isInitialized = true; // 标记为已初始化
+        _isLoading = true;     // 开始加载，显示 Loading
+        _errorMessage = null;
       });
+      _loadData(); // 调用实际加载数据的方法
     }
   }
 
   // 判断是否应该刷新数据
   bool _shouldRefresh() {
-    if (_isFirstLoad) {
-      _isFirstLoad = false;
-      return false; // 首次加载不需要强制刷新
-    }
 
     // 如果从未刷新过，则应该刷新
     if (_lastRefreshTime == null) {
@@ -82,77 +96,94 @@ class _HomeScreenState extends State<HomeScreen> {
     return now.difference(_lastRefreshTime!) >= _minRefreshInterval;
   }
 
-  // 刷新数据的方法
+  // 刷新数据的方法 (逻辑微调)
   Future<void> _refreshData() async {
-    final loadingObserver = NavigationUtils.of(context)
-        .widget.observers
-        .whereType<LoadingRouteObserver>()
-        .first;
+    // final loadingObserver = NavigationUtils.of(context) // loadingObserver 可选
+    //     .widget.observers
+    //     .whereType<LoadingRouteObserver>()
+    //     .first;
+
+    if (!mounted) return; // 检查 mounted
 
     setState(() {
-      _isLoading = true;
+      _isLoading = true; // 开始刷新，显示 Loading
       _errorMessage = null;
     });
 
     try {
-      // 检查是否应该强制刷新
       final shouldForceRefresh = _shouldRefresh();
 
       if (shouldForceRefresh) {
         print('主页：强制刷新数据');
-
-        // 重新初始化数据流
-        setState(() {
-          _hotGamesStream = null;
-          _latestGamesStream = null;
-        });
-
-        // 等待一小段时间确保缓存清除完成
-        await Future.delayed(Duration(milliseconds: 200));
-
-        // 重新获取数据
-        _hotGamesStream = _gameService.getHotGames();
-        _latestGamesStream = _gameService.getLatestGames();
+        // 强制刷新时，直接调用 _loadData 获取新数据流
+        _loadData(); // _loadData 内部会处理 stream 的重新获取和状态更新
         _lastRefreshTime = DateTime.now();
       } else {
         print('主页：使用缓存数据，不强制刷新');
-        // 如果不强制刷新，只需轻微刷新UI
+        // 如果不强制刷新，只需结束 loading 状态
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _isLoading = false;
+          });
         }
       }
     } catch (e) {
-      setState(() {
-        _errorMessage = '刷新数据失败：${e.toString()}';
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _errorMessage = '刷新数据失败：${e.toString()}';
+          _isLoading = false; // 刷新失败也要结束 loading
+        });
+      }
     }
+    // finally 块不再需要设置 _isLoading = false，因为成功和失败路径都处理了
   }
-
   @override
   Widget build(BuildContext context) {
-    // 加载状态处理
-    if (_isLoading) {
+    return VisibilityDetector(
+      key: Key('home_screen_visibility'), // 给个 Key
+      onVisibilityChanged: (visibilityInfo) {
+        final wasVisible = _isVisible;
+        _isVisible = visibilityInfo.visibleFraction > 0;
+        // 如果从不可见到可见，尝试触发加载
+        if (!wasVisible && _isVisible) {
+          _triggerInitialLoad();
+        }
+      },
+      child: _buildContent(), // 把实际内容抽出来
+    );
+  }
+
+  // --- 抽出实际的页面内容构建逻辑 ---
+  Widget _buildContent() {
+    // 1. 如果还未初始化（即从未加载过），显示占位符或初始 Loading
+    if (!_isInitialized) {
       return Scaffold(
-        body: LoadingWidget.fullScreen(message: '正在加载首页...'),
+        // 可以只显示一个简单的 Loading，或者根据你的 UI 设计来
+        body: LoadingWidget.inline(message: '等待加载首页...'),
       );
     }
 
-    // 错误状态处理
-    if (_errorMessage != null) {
+    // 2. 如果正在加载（包括首次加载或刷新）
+    if (_isLoading) {
+      // 如果已有内容，可以在内容上层叠 Loading，否则显示全屏 Loading
+      // 这里简单处理，直接显示 Loading
       return Scaffold(
+        body: LoadingWidget.inline(message: '正在加载首页...'),
+      );
+    }
+
+    // 3. 如果加载出错
+    if (_errorMessage != null) {
+      return Scaffold( // 确保有 Scaffold 包裹
         body: CustomErrorWidget(
           errorMessage: _errorMessage!,
-          onRetry: _initGameStreams,
+          onRetry: _loadData, // 出错重试时直接调用 _loadData
           title: '加载失败',
         ),
       );
     }
 
-    // 正常显示内容
+    // 4. 正常显示内容
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshData,
@@ -161,9 +192,11 @@ class _HomeScreenState extends State<HomeScreen> {
           child: Column(
             children: [
               HomeBanner(),
-              // 传入已初始化的流，避免重复创建
-              HomeHot(gamesStream: _hotGamesStream),
-              HomeLatest(gamesStream: _latestGamesStream),
+              // 确保 Stream 不为 null 再传递
+              if (_hotGamesStream != null)
+                HomeHot(gamesStream: _hotGamesStream),
+              if (_latestGamesStream != null)
+                HomeLatest(gamesStream: _latestGamesStream),
             ],
           ),
         ),

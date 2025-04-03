@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import '../../../utils/device/device_utils.dart';
 import 'blocs/my_posts_bloc.dart';
 import 'blocs/my_posts_event.dart';
@@ -45,7 +49,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final loadingObserver = NavigationUtils.of(context)
-            .widget.observers
+            .widget
+            .observers
             .whereType<LoadingRouteObserver>()
             .first;
 
@@ -73,7 +78,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
   Future<void> _refreshPosts() async {
     final loadingObserver = NavigationUtils.of(context)
-        .widget.observers
+        .widget
+        .observers
         .whereType<LoadingRouteObserver>()
         .first;
 
@@ -87,6 +93,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -110,9 +117,10 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
             );
           },
         ),
-        floatingActionButton: FloatingActionButton(
-          onPressed: () => NavigationUtils.pushNamed(context, AppRoutes.createPost),
-          child: Icon(Icons.add),
+        floatingActionButton: GenericFloatingActionButton(
+          onPressed: () =>
+              NavigationUtils.pushNamed(context, AppRoutes.createPost),
+          icon:Icons.add,
           tooltip: '发布新帖',
         ),
       ),
@@ -123,44 +131,21 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     final bool isDesktop = DeviceUtils.isDesktop;
 
     if (state.isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return LoadingWidget.inline();
     }
 
     if (state.userId == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.login, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('请先登录'),
-            SizedBox(height: 24),
-            ElevatedButton(
-              onPressed: () => NavigationUtils.pushNamed(context, AppRoutes.login),
-              child: Text('去登录'),
-            ),
-          ],
-        ),
-      );
+      return LoginPromptWidget();
     }
 
     if (state.posts.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.post_add, size: 48, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('暂无发帖'),
-          ],
-        ),
-      );
+      return EmptyStateWidget(message: '暂无发帖', iconData: Icons.mail_outline);
     }
 
     return PostGridView(
       posts: state.posts,
       scrollController: _scrollController,
-      isDesktopLayout: false,  // 保持原有的列表样式
+      isDesktopLayout: false, // 保持原有的列表样式
     );
   }
 }

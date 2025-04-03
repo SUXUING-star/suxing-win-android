@@ -1,7 +1,7 @@
 // lib/screens/common/route_error_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import '../../routes/app_routes.dart';
 
 /// A unified screen to handle all route navigation errors
@@ -96,7 +96,7 @@ class RouteErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(errorTitle)),
+      appBar: CustomAppBar(title: errorTitle),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24.0),

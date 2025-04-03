@@ -11,7 +11,7 @@ class LoadingRouteObserver extends NavigatorObserver {
   DateTime? _loadingStartTime;
 
   LoadingRouteObserver._internal({
-    this.minLoadingDuration = const Duration(milliseconds: 300),
+    this.minLoadingDuration = const Duration(milliseconds: 100),
   }) : isLoading = ValueNotifier<bool>(false);
 
   @override

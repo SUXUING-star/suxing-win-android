@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
 import 'widgets/components/loading/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
 import 'widgets/components/loading/loading_screen.dart';
-
 import './routes/app_routes.dart';
 import 'wrapper/platform_wrapper.dart';
 import 'wrapper/maintenance_wrapper.dart';
@@ -71,11 +71,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // When app resumes from background, refresh network status
     if (state == AppLifecycleState.resumed) {
       // Delay a bit to let network state stabilize
       Future.delayed(Duration(milliseconds: 500), () {
-        // Use the stored reference instead
         _networkManager?.getNetworkStatus(); // Trigger network status update
       });
     }
@@ -92,43 +90,48 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
               : const Color(0xFFB3E5FC);
 
           return MaterialApp(
-              navigatorKey: mainNavigatorKey,
-              title: '宿星茶会（跨平台版）',
-              theme: themeProvider.lightTheme,
-              darkTheme: themeProvider.darkTheme,
-              themeMode: themeProvider.themeMode,
-              debugShowCheckedModeBanner: false,
-              navigatorObservers: [widget.loadingRouteObserver],
-              builder: (context, child) {
-                return MaintenanceWrapper( // Add this wrapper
-                  child: Stack(
-                    children: [
-                      AppBackground(
+            navigatorKey: mainNavigatorKey,
+            title: '宿星茶会（跨平台版）',
+            theme: themeProvider.lightTheme,
+            darkTheme: themeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
+            debugShowCheckedModeBanner: false,
+            navigatorObservers: [widget.loadingRouteObserver],
+            builder: (context, child) {
+              return MaintenanceWrapper(
+                // Add this wrapper
+                child: Stack(
+                  children: [
+                    AppBackground(
+                      // 背景层
+                      child: MouseTrailEffect(
+                        // <--- 在这里套上特效
+                        particleColor: particleColor, // <--- 把计算好的颜色传进去
                         child: Navigator(
-                          onGenerateRoute: (settings) =>
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    PlatformWrapper(
-                                      child: child ?? Container(),
-                                    ),
-                              ),
+                          // <--- 把原来的 Navigator 作为特效的 child
+                          onGenerateRoute: (settings) => MaterialPageRoute(
+                            builder: (_) => PlatformWrapper(
+                              child: child ?? Container(),
+                            ),
+                          ),
                         ),
                       ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: widget.loadingRouteObserver.isLoading,
-                        builder: (context, isLoading, _) {
-                          return LoadingScreen(
-                            isLoading: isLoading,
-                            message: isLoading ? '加载中...' : null,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-              home: MainLayout(),
-              onGenerateRoute: AppRoutes.onGenerateRoute,
+                    ),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: widget.loadingRouteObserver.isLoading,
+                      builder: (context, isLoading, _) {
+                        return LoadingScreen(
+                          isLoading: isLoading,
+                          message: isLoading ? '加载中...' : null,
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
+            home: MainLayout(),
+            onGenerateRoute: AppRoutes.onGenerateRoute,
           );
         },
       ),

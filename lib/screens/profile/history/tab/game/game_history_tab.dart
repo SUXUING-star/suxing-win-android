@@ -1,6 +1,6 @@
 // lib/screens/profile/tab/game_history_tab.dart
 import 'package:flutter/material.dart';
-import '../../../../../services/main/history/game_history_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import '../../../../../utils/device/device_utils.dart';
 import './layout/game_history_grid_card.dart';  // 导入网格布局卡片
 import './card/game_history_list_card.dart';  // 导入列表布局卡片
@@ -10,13 +10,13 @@ import './card/game_history_list_card.dart';  // 导入列表布局卡片
 class GameHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
-  final GameHistoryService gameHistoryService;
+  final GameService gameService;
 
   const GameHistoryTab({
     Key? key,
     required this.isLoaded,
     required this.onLoad,
-    required this.gameHistoryService,
+    required this.gameService,
   }) : super(key: key);
 
   @override
@@ -60,7 +60,7 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
     });
 
     try {
-      final results = await widget.gameHistoryService.getGameHistoryWithDetails(_page, _pageSize);
+      final results = await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
 
       setState(() {
         // 安全地处理游戏历史数据
@@ -104,7 +104,7 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
     try {
       // 加载下一页
       _page++;
-      final results = await widget.gameHistoryService.getGameHistoryWithDetails(_page, _pageSize);
+      final results = await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
 
       // 安全地处理新的游戏历史数据
       List<Map<String, dynamic>> newItems = [];

@@ -1,6 +1,7 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
@@ -22,47 +23,98 @@ class GameCollectionScreen extends StatefulWidget {
 class _GameCollectionScreenState extends State<GameCollectionScreen>
     with SingleTickerProviderStateMixin {
   final GameCollectionService _collectionService = GameCollectionService();
-
-  // Tab控制器
   late TabController _tabController;
 
-  // 存储游戏数据和加载状态
+  // --- 状态管理 (不变) ---
   Map<String, List<GameWithCollection>> _gameCollections = {
-    'wantToPlay': [],
-    'playing': [],
-    'played': [],
+    GameCollectionStatus.wantToPlay: [],
+    GameCollectionStatus.playing: [],
+    GameCollectionStatus.played: [],
   };
-
-  Map<String, bool> _isLoading = {
-    'wantToPlay': true,
-    'playing': true,
-    'played': true,
+  bool _isLoading = true;
+  String? _error;
+  Map<String, int> _tabCounts = {
+    GameCollectionStatus.wantToPlay: 0,
+    GameCollectionStatus.playing: 0,
+    GameCollectionStatus.played: 0,
   };
-
-  Map<String, String?> _errors = {
-    'wantToPlay': null,
-    'playing': null,
-    'played': null,
-  };
-
-  // 记录每列游戏数量
-  final Map<String, int> _tabCounts = {
-    'wantToPlay': 0,
-    'playing': 0,
-    'played': 0,
-  };
-
-  // 存储是否为桌面布局
   bool _isDesktopLayout = false;
+
+  // *** 新增：用于跟踪上一次的登录状态 ***
+  bool? _previousIsLoggedIn;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    print("GameCollectionScreen initState");
 
-    // 初始加载所有数据
-    _loadAllCollections();
+    // *** initState 中不应直接访问 Provider (如果 listen: true)，但可以 listen: false ***
+    // *** 这里改为在 didChangeDependencies 中首次加载 ***
+    // _loadDataIfNeeded(); // 不在这里加载，移到 didChangeDependencies
   }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    print("GameCollectionScreen didChangeDependencies");
+
+    // *** 这是监听 Provider 变化和进行初始加载的正确地方 ***
+    final authProvider = Provider.of<AuthProvider>(context); // 获取实例，但不监听 build
+    final currentIsLoggedIn = authProvider.isLoggedIn;
+
+    print("didChangeDependencies: currentIsLoggedIn=$currentIsLoggedIn, _previousIsLoggedIn=$_previousIsLoggedIn");
+
+    // --- 处理登录状态变化 ---
+    // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
+    // 且当前登录状态与上次不同时，才处理变化
+    if (_previousIsLoggedIn != null && currentIsLoggedIn != _previousIsLoggedIn) {
+      print("登录状态发生变化: $_previousIsLoggedIn -> $currentIsLoggedIn");
+      if (currentIsLoggedIn) {
+        // 刚登录，触发数据加载
+        print("用户已登录，调用 _loadData");
+        _loadData(); // 重新加载数据
+      } else {
+        // 刚登出，清空数据并显示提示
+        print("用户已登出，清空数据并设置错误状态");
+        if (mounted) { // 确保 widget 仍然挂载
+          // ** 不直接 setState，而是设置状态变量，让 build 方法去处理 UI **
+          // setState(() {
+          //   _isLoading = false;
+          //   _error = '请先登录后再查看收藏';
+          //   _clearData();
+          // });
+          // 设置状态变量，build 会根据这些变量来渲染
+          _isLoading = false;
+          _error = '请先登录后再查看收藏';
+          _clearData();
+          // 调用 setState({}) 只是为了触发一次 build 来反映这些变化
+          if(mounted) setState(() {});
+        }
+      }
+    }
+    // --- 首次加载逻辑 ---
+    // 如果 _previousIsLoggedIn 是 null，表示这是第一次运行 didChangeDependencies
+    // 或者是因为其他依赖变化（理论上这里只有 AuthProvider）
+    else if (_previousIsLoggedIn == null) {
+      print("首次运行 didChangeDependencies 或依赖初始化");
+      if (currentIsLoggedIn) {
+        print("用户已登录，执行首次数据加载");
+        _loadData(); // 首次加载数据
+      } else {
+        print("用户未登录，设置初始状态");
+        _isLoading = false;
+        _error = '请先登录后再查看收藏';
+        _clearData();
+        // 调用 setState({}) 触发 build
+        if(mounted) setState(() {});
+      }
+    }
+
+    // *** 更新上一次的登录状态 ***
+    _previousIsLoggedIn = currentIsLoggedIn;
+  }
+
 
   @override
   void dispose() {
@@ -70,124 +122,156 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     super.dispose();
   }
 
-  // 加载所有收藏数据
-  Future<void> _loadAllCollections() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  // --- 数据加载方法 (保持不变，但调用时机改变) ---
+  Future<void> _loadData({bool forceRefresh = false}) async {
+    if (!mounted) return;
+    // 移除 !forceRefresh && _isLoading 的判断，因为调用时机已在外部控制
+    // if (!forceRefresh && _isLoading) return;
 
-    // 检查用户是否登录
+    final authProvider = Provider.of<AuthProvider>(context, listen: false); // listen: false 因为不希望 build 因此重绘
+    // ** 再次检查登录状态，因为可能是异步调用 **
     if (!authProvider.isLoggedIn) {
-      _setErrorForAll('请先登录后再查看收藏');
+      print("_loadData: 用户未登录，取消加载");
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = '请先登录后再查看收藏';
+          _clearData();
+        });
+      }
       return;
     }
 
-    // 加载三种类型的收藏
-    await Future.wait([
-      _loadCollection('wantToPlay'),
-      _loadCollection('playing'),
-      _loadCollection('played'),
-    ]);
-
-    // 更新计数
+    print("_loadData: 开始加载数据 (forceRefresh=$forceRefresh)");
     if (mounted) {
       setState(() {
-        for (var key in _gameCollections.keys) {
-          _tabCounts[key] = _gameCollections[key]?.length ?? 0;
-        }
+        _isLoading = true;
+        _error = null;
       });
     }
-  }
-
-  // 加载特定类型的收藏
-  Future<void> _loadCollection(String collectionType) async {
-    if (!mounted) return;
-
-    setState(() {
-      _isLoading[collectionType] = true;
-      _errors[collectionType] = null;
-    });
 
     try {
-      // 获取状态对应的值
-      String status;
-      switch (collectionType) {
-        case 'wantToPlay':
-          status = GameCollectionStatus.wantToPlay;
-          break;
-        case 'playing':
-          status = GameCollectionStatus.playing;
-          break;
-        case 'played':
-          status = GameCollectionStatus.played;
-          break;
-        default:
-          status = collectionType;
-      }
-
-      // 加载游戏数据
-      final games = await _collectionService.getUserGamesByStatus(status);
-
+      final groupedData = await _collectionService.getAllUserGamesGrouped(forceRefresh: forceRefresh);
       if (mounted) {
-        setState(() {
-          _gameCollections[collectionType] = games;
-          _isLoading[collectionType] = false;
-          _tabCounts[collectionType] = games.length;
-        });
+        if (groupedData != null) {
+          setState(() {
+            _gameCollections[GameCollectionStatus.wantToPlay] = groupedData.wantToPlay;
+            _gameCollections[GameCollectionStatus.playing] = groupedData.playing;
+            _gameCollections[GameCollectionStatus.played] = groupedData.played;
+            _tabCounts[GameCollectionStatus.wantToPlay] = groupedData.counts.wantToPlay;
+            _tabCounts[GameCollectionStatus.playing] = groupedData.counts.playing;
+            _tabCounts[GameCollectionStatus.played] = groupedData.counts.played;
+            _isLoading = false;
+            _error = null;
+          });
+          print("_loadData: 数据加载成功");
+        } else {
+          setState(() {
+            _isLoading = false;
+            _error = '加载收藏数据失败 (null response)';
+            _clearData();
+          });
+          print("_loadData: 加载失败 (null response)");
+        }
       }
     } catch (e) {
-      print('Load collection games error: $e');
+      print('!!! _loadData error: $e');
       if (mounted) {
         setState(() {
-          _errors[collectionType] = '加载收藏游戏失败：$e';
-          _isLoading[collectionType] = false;
+          _isLoading = false;
+          _error = '加载收藏失败: $e';
+          _clearData();
         });
       }
     }
   }
 
-  // 为所有收藏类型设置错误信息
-  void _setErrorForAll(String error) {
-    setState(() {
-      for (var key in _errors.keys) {
-        _errors[key] = error;
-        _isLoading[key] = false;
-      }
-    });
+  // 清空数据的辅助方法
+  void _clearData() {
+    _gameCollections = { GameCollectionStatus.wantToPlay: [], GameCollectionStatus.playing: [], GameCollectionStatus.played: [], };
+    _tabCounts = { GameCollectionStatus.wantToPlay: 0, GameCollectionStatus.playing: 0, GameCollectionStatus.played: 0, };
   }
 
-  // 刷新指定类型的收藏
-  Future<void> _refreshCollection(String collectionType) async {
-    await _loadCollection(collectionType);
+
+  // 下拉刷新 (保持不变)
+  Future<void> _handleRefresh() async {
+    print(">>> 执行下拉刷新...");
+    await _loadData(forceRefresh: true);
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    print("GameCollectionScreen build");
+    // *** 不再需要在这里监听 AuthProvider 或处理登录状态变化 ***
+    // final authProvider = context.watch<AuthProvider>();
+    // WidgetsBinding.instance.addPostFrameCallback((_) { ... }); // *** 移除这整块 ***
+
+    // 直接使用当前状态变量来决定显示什么
+    final authProvider = Provider.of<AuthProvider>(context, listen: false); // 获取实例用于判断
+    final isLoggedIn = authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
+
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
-
-    // 确定布局类型
     _isDesktopLayout = isDesktop && screenSize.width > 900;
-
-    // 先检查用户是否登录
-    if (!authProvider.isLoggedIn) {
-      return Scaffold(
-        appBar: CustomAppBar(title: '我的游戏'),
-        body: LoginPromptWidget(isDesktop: _isDesktopLayout),
-      );
-    }
 
     return Scaffold(
       appBar: CustomAppBar(
         title: '我的游戏',
       ),
-      body: _isDesktopLayout ? _buildDesktopLayout() : _buildMobileLayout(),
+      // *** 直接调用 _buildBody，依赖当前的状态变量 ***
+      body: _buildBody(isLoggedIn), // 传递当前获取的登录状态
     );
   }
 
+  // 构建 Body (逻辑基本不变，依赖状态变量)
+  Widget _buildBody(bool isLoggedIn) {
+    print("_buildBody: isLoading=$_isLoading, error=$_error, isLoggedIn=$isLoggedIn");
+    // 1. 未登录
+    if (!isLoggedIn && _error == '请先登录后再查看收藏') { // 明确检查错误信息
+      print("_buildBody: 显示登录提示");
+      return LoginPromptWidget(isDesktop: _isDesktopLayout);
+    }
+
+    // 2. 初始加载
+    if (_isLoading && _gameCollections.values.every((list) => list.isEmpty) && _error == null) {
+      print("_buildBody: 显示初始加载指示器");
+      return LoadingWidget.inline(message: "正在加载收藏数据");
+    }
+
+    // 3. 加载出错
+    if (_error != null && _error != '请先登录后再查看收藏') {
+      return RefreshIndicator(
+        onRefresh: _handleRefresh,
+        child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Container(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight), // 确保至少占满
+                  alignment: Alignment.center,
+                  child: InlineErrorWidget(
+                    errorMessage: _error,
+                  ),
+                ),
+              );
+            }
+        ),
+      );
+    }
+
+    // 4. 显示正常内容 (即使 _isLoading 为 true，只要有旧数据也显示，并允许刷新)
+    print("_buildBody: 显示收藏列表");
+    return RefreshIndicator(
+      onRefresh: _handleRefresh,
+      child: _isDesktopLayout ? _buildDesktopLayout() : _buildMobileLayout(),
+    );
+  }
+
+  // 构建 Mobile 布局
   Widget _buildMobileLayout() {
+    // *** RefreshIndicator 在 _buildBody 中处理，这里直接返回 Column ***
     return Column(
       children: [
-        // 顶部标签栏
         TabBar(
           controller: _tabController,
           labelColor: Theme.of(context).primaryColor,
@@ -195,28 +279,38 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           indicatorColor: Theme.of(context).primaryColor,
           tabs: [
             Tab(
-              icon: Icon(Icons.star_border),
-              text: '想玩${_tabCounts['wantToPlay']! > 0 ? ' ${_tabCounts['wantToPlay']}' : ''}',
+              icon: const Icon(Icons.star_border),
+              // *** 使用常量作为 key 访问计数 ***
+              text: '想玩${_tabCounts[GameCollectionStatus.wantToPlay]! > 0 ? ' ${_tabCounts[GameCollectionStatus.wantToPlay]}' : ''}',
             ),
             Tab(
-              icon: Icon(Icons.videogame_asset),
-              text: '在玩${_tabCounts['playing']! > 0 ? ' ${_tabCounts['playing']}' : ''}',
+              icon: const Icon(Icons.videogame_asset),
+              text: '在玩${_tabCounts[GameCollectionStatus.playing]! > 0 ? ' ${_tabCounts[GameCollectionStatus.playing]}' : ''}',
             ),
             Tab(
-              icon: Icon(Icons.check_circle),
-              text: '玩过${_tabCounts['played']! > 0 ? ' ${_tabCounts['played']}' : ''}',
+              icon: const Icon(Icons.check_circle),
+              text: '玩过${_tabCounts[GameCollectionStatus.played]! > 0 ? ' ${_tabCounts[GameCollectionStatus.played]}' : ''}',
             ),
           ],
         ),
-
-        // 内容区域 - 使用Expanded确保TabBarView填充剩余空间
         Expanded(
+          // TabBarView 本身不支持直接下拉刷新，需要 RefreshIndicator 包裹在外面
           child: TabBarView(
             controller: _tabController,
             children: [
-              _buildTabContent('wantToPlay'),
-              _buildTabContent('playing'),
-              _buildTabContent('played'),
+              // *** 调用简化的 MobileCollectionLayout，不再传递 onRefresh ***
+              MobileCollectionLayout(
+                games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
+                collectionType: GameCollectionStatus.wantToPlay,
+              ),
+              MobileCollectionLayout(
+                games: _gameCollections[GameCollectionStatus.playing] ?? [],
+                collectionType: GameCollectionStatus.playing,
+              ),
+              MobileCollectionLayout(
+                games: _gameCollections[GameCollectionStatus.played] ?? [],
+                collectionType: GameCollectionStatus.played,
+              ),
             ],
           ),
         ),
@@ -224,210 +318,42 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     );
   }
 
-  Widget _buildTabContent(String collectionType) {
-    // 加载中状态
-    if (_isLoading[collectionType] == true) {
-      return Center(child: CircularProgressIndicator());
-    }
-
-    // 错误状态
-    if (_errors[collectionType] != null) {
-      return _buildErrorWidget(
-        _errors[collectionType]!,
-            () => _refreshCollection(collectionType),
-      );
-    }
-
-    // 正常显示游戏列表
-    return MobileCollectionLayout(
-      games: _gameCollections[collectionType] ?? [],
-      onRefresh: () => _refreshCollection(collectionType),
-      collectionType: collectionType,
-    );
-  }
-
+  // 构建 Desktop 布局
   Widget _buildDesktopLayout() {
+    // *** RefreshIndicator 在 _buildBody 中处理 ***
+    // 如果希望桌面端也能下拉刷新，需要让 Row 可滚动，例如包在 ListView 中
+    // 这里假设桌面端不需要下拉刷新，RefreshIndicator 主要对移动端生效
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // 想玩的游戏
           Expanded(
-            child: _buildDesktopColumn(
-              'wantToPlay',
-              '想玩的游戏',
-              Icons.star_border,
+            // *** 调用简化的 DesktopCollectionLayout，不再传递 onRefresh ***
+            child: DesktopCollectionLayout(
+              games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
+              collectionType: GameCollectionStatus.wantToPlay,
+              title: '想玩的游戏 (${_tabCounts[GameCollectionStatus.wantToPlay]})', // 标题中直接显示数量
+              icon: Icons.star_border,
             ),
           ),
           const SizedBox(width: 16),
-
-          // 在玩的游戏
           Expanded(
-            child: _buildDesktopColumn(
-              'playing',
-              '在玩的游戏',
-              Icons.videogame_asset,
+            child: DesktopCollectionLayout(
+              games: _gameCollections[GameCollectionStatus.playing] ?? [],
+              collectionType: GameCollectionStatus.playing,
+              title: '在玩的游戏 (${_tabCounts[GameCollectionStatus.playing]})',
+              icon: Icons.videogame_asset,
             ),
           ),
           const SizedBox(width: 16),
-
-          // 玩过的游戏
           Expanded(
-            child: _buildDesktopColumn(
-              'played',
-              '玩过的游戏',
-              Icons.check_circle,
+            child: DesktopCollectionLayout(
+              games: _gameCollections[GameCollectionStatus.played] ?? [],
+              collectionType: GameCollectionStatus.played,
+              title: '玩过的游戏 (${_tabCounts[GameCollectionStatus.played]})',
+              icon: Icons.check_circle,
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDesktopColumn(String collectionType, String title, IconData icon) {
-    // 加载中状态
-    if (_isLoading[collectionType] == true) {
-      return _buildLoadingColumn(title, icon);
-    }
-
-    // 错误状态
-    if (_errors[collectionType] != null) {
-      return _buildErrorColumn(collectionType, title, icon);
-    }
-
-    // 正常显示游戏列表
-    return DesktopCollectionLayout(
-      games: _gameCollections[collectionType] ?? [],
-      onRefresh: () => _refreshCollection(collectionType),
-      collectionType: collectionType,
-      title: title,
-      icon: icon,
-    );
-  }
-
-  // 桌面布局的加载中列
-  Widget _buildLoadingColumn(String title, IconData icon) {
-    return Column(
-      children: [
-        // 列标题
-        Card(
-          elevation: 2,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.grey, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        SizedBox(height: 12),
-
-        // 加载指示器
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('加载中...', style: TextStyle(color: Colors.grey)),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 桌面布局的错误列
-  Widget _buildErrorColumn(String collectionType, String title, IconData icon) {
-    return Column(
-      children: [
-        // 列标题
-        Card(
-          elevation: 2,
-          margin: EdgeInsets.zero,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, color: Colors.grey, size: 20),
-                SizedBox(width: 8),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-
-        SizedBox(height: 12),
-
-        // 错误信息
-        Expanded(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.error_outline, size: 40, color: Colors.red),
-                SizedBox(height: 16),
-                Text(
-                  _errors[collectionType] ?? '未知错误',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.red[700]),
-                ),
-                SizedBox(height: 16),
-                ElevatedButton(
-                  onPressed: () => _refreshCollection(collectionType),
-                  child: Text('重试'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 构建错误状态
-  Widget _buildErrorWidget(String message, VoidCallback onRetry) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red),
-          SizedBox(height: 16),
-          Text(message),
-          SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            child: Text('重试'),
           ),
         ],
       ),

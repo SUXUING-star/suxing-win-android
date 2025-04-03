@@ -1,6 +1,8 @@
 // lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import '../../services/main/user/cache/account_cache_service.dart';
 import '../../utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
@@ -54,7 +56,8 @@ class _LoginScreenState extends State<LoginScreen> {
     if (accounts.isEmpty) return;
 
     // 获取账号图标按钮的位置
-    final RenderBox? renderBox = _emailFieldKey.currentContext?.findRenderObject() as RenderBox?;
+    final RenderBox? renderBox =
+        _emailFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
 
     // 计算按钮在屏幕中的位置
@@ -127,7 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // 登录成功后跳转到首页
       if (mounted) {
-        NavigationUtils.navigateToHome(context,tabIndex: 0);
+        NavigationUtils.navigateToHome(context, tabIndex: 0);
       }
     } catch (e) {
       if (mounted) {
@@ -170,8 +173,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     '欢迎回来',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                   const SizedBox(height: 24),
 
@@ -199,10 +202,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       // 添加账号选择按钮
                       suffixIcon: _accountCache.getAllAccounts().isNotEmpty
                           ? IconButton(
-                        icon: Icon(Icons.account_circle),
-                        tooltip: '选择已保存的账号',
-                        onPressed: _showAccountBubbleMenu,
-                      )
+                              icon: Icon(Icons.account_circle),
+                              tooltip: '选择已保存的账号',
+                              onPressed: _showAccountBubbleMenu,
+                            )
                           : null,
                     ),
                     keyboardType: TextInputType.emailAddress,
@@ -222,11 +225,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       labelText: '密码',
                       prefixIcon: Icon(Icons.lock),
                       suffixIcon: IconButton(
-                        icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility
-                        ),
+                        icon: Icon(_obscurePassword
+                            ? Icons.visibility_off
+                            : Icons.visibility),
                         onPressed: () => setState(() {
                           _obscurePassword = !_obscurePassword;
                         }),
@@ -254,39 +255,27 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       Text('记住账号'),
                       const Spacer(),
-                      TextButton(
-                        onPressed: () => NavigationUtils.pushNamed(
-                            context,
-                            '/forgot-password'
-                        ),
-                        child: Text('忘记密码?'),
-                      ),
+                      FunctionalTextButton(
+                          onPressed: () => NavigationUtils.pushNamed(
+                              context, '/forgot-password'),
+                          label: '忘记密码?'),
                     ],
                   ),
                   const SizedBox(height: 24),
 
                   // 登录按钮
-                  ElevatedButton(
-                    onPressed: _isLoading ? null : _login,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: _isLoading
-                        ? CircularProgressIndicator()
-                        : Text('登录'),
+                  FunctionalButton(
+                    onPressed: _login,
+                    label: '登录',
+                    isEnabled: !_isLoading,
                   ),
                   const SizedBox(height: 16),
 
                   // 注册跳转
-                  TextButton(
-                    onPressed: () => NavigationUtils.pushNamed(
-                        context,
-                        '/register'
-                    ),
-                    child: Text('还没有账号？立即注册'),
+                  FunctionalTextButton(
+                    onPressed: () =>
+                        NavigationUtils.pushNamed(context, '/register'),
+                    label: '还没有账号？立即注册',
                   ),
                 ],
               ),
