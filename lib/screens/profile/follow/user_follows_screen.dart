@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../utils/device/device_utils.dart';
 import '../../../widgets/components/screen/profile/follow/responsive_follows_layout.dart';
 
@@ -26,7 +25,7 @@ class UserFollowsScreen extends StatefulWidget {
 class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final UserFollowService _followService = UserFollowService();
-  final LoadingRouteObserver _loadingObserver = LoadingRouteObserver();
+
 
   List<Map<String, dynamic>> _followings = [];
   List<Map<String, dynamic>> _followers = [];

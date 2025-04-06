@@ -1,6 +1,9 @@
 // lib/screens/admin/widgets/game_management.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../models/game/game.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
@@ -270,9 +273,7 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
 
           // 再次检查 widget 是否仍然挂载
           if (!mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('游戏删除成功')),
-          );
+          AppSnackBar.showSuccess(context, '游戏 "${game.title}" 删除成功');
         },
         // onCancel 是可选的，如果取消时不需要特殊处理，可以不传
         // onCancel: () {
@@ -285,9 +286,7 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
       // 捕获 onConfirm 中可能抛出的异常 (例如 _gameService.deleteGame 失败)
       // ConfirmDialog 内部会 rethrow 异常
       if (mounted) { // 检查 widget 是否仍然挂载
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败：$e')),
-        );
+        AppSnackBar.showError(context, '删除失败：${e.toString()}');
       } else {
         print('删除失败，但 widget 已卸载: $e');
       }
@@ -297,7 +296,7 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
   // 原有的待审核游戏列表构建方法
   Widget _buildPendingGamesList() {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return LoadingWidget.inline(message: "正在加载待审核数据",);
     }
 
     if (_pendingGames.isEmpty) {
@@ -390,7 +389,7 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
   // 原有的被拒绝游戏列表构建方法
   Widget _buildRejectedGamesList() {
     if (_isLoading) {
-      return Center(child: CircularProgressIndicator());
+      return LoadingWidget.inline(message: "正在加载数据");
     }
 
     if (_rejectedGames.isEmpty) {
@@ -572,13 +571,11 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
                     Navigator.of(context).pop();
                   },
                 ),
-                ElevatedButton(
-                  child: Text('提交'),
+                FunctionalTextButton(
+                  label: '提交',
                   onPressed: () {
                     if (!approveSelected && comment.trim().isEmpty) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('拒绝时必须提供原因')),
-                      );
+                      AppSnackBar.showWarning(context, '拒绝时必须填写原因');
                       return;
                     }
 
@@ -602,17 +599,14 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
   void _reviewGame(Game game, String status, String comment) async {
     try {
       await _gameService.reviewGame(game.id, status, comment);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('游戏审核成功')),
-      );
+      final message = status == 'approved' ? '游戏 "${game.title}" 已批准' : '游戏 "${game.title}" 已拒绝';
+      AppSnackBar.showSuccess(context, message); // 审核操作本身成功，所以用 Success
       setState(() {
         _isLoading = true;
       });
       await _loadData();
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('审核失败: $e')),
-      );
+      AppSnackBar.showError(context, '审核操作失败: ${e.toString()}');
     }
   }
 }

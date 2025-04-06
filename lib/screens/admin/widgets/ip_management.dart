@@ -1,6 +1,7 @@
 // lib/screens/admin/widgets/ip_management.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/denfence/defence_service.dart';
 
 class IPManagement extends StatefulWidget {
@@ -50,9 +51,7 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
 
   Future<void> _addToBlacklist(String ip) async {
     if (ip.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入有效的IP地址')),
-      );
+      AppSnackBar.showWarning(context,'请输入有效的IP地址');
       return;
     }
 
@@ -60,14 +59,10 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
     try {
       await _defenceService.addToBlacklist(ip);
       _blacklistIpController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已添加到黑名单: $ip')),
-      );
+      AppSnackBar.showSuccess(context,'已添加到黑名单: $ip');
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context,'操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -75,9 +70,7 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
 
   Future<void> _addToWhitelist(String ip) async {
     if (ip.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('请输入有效的IP地址')),
-      );
+      AppSnackBar.showWarning(context,'请输入有效的IP地址');
       return;
     }
 
@@ -85,14 +78,10 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
     try {
       await _defenceService.addToWhitelist(ip);
       _ipController.clear();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已添加到白名单: $ip')),
-      );
+      AppSnackBar.showSuccess(context,'已添加到白名单: $ip');
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context,'操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -102,14 +91,10 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
     setState(() => _isLoading = true);
     try {
       await _defenceService.removeFromWhitelist(ip);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已从白名单移除: $ip')),
-      );
+      AppSnackBar.showSuccess(context,'已从白名单移除: $ip');
       setState(() {});
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context,'操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }

@@ -1,8 +1,8 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/forum/forum_service.dart';
-import '../../../widgets/common/toaster/toaster.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
 import '../../../widgets/components/form/postform/field/post_guidelines.dart';
 import '../../../widgets/components/form/postform/config/post_taglists.dart';
@@ -42,12 +42,10 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
     try {
       setState(() => _isSubmitting = true);
       await _forumService.createPost(data.title, data.content, data.tags);
-      Toaster.success(context, "发布帖子成功！");
+      AppSnackBar.showSuccess(context, "编辑成功");
       NavigationUtils.pop(context);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      AppSnackBar.showError(context,'编辑失败: ${e.toString()}');
     } finally {
       setState(() => _isSubmitting = false);
     }

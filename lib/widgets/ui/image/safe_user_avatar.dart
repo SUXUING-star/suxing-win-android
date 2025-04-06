@@ -1,5 +1,8 @@
 // lib/widgets/ui/image/safe_user_avatar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../services/main/user/user_service.dart';
 import 'safe_cached_image.dart';
 import '../../../screens/profile/open_profile_screen.dart';
@@ -57,7 +60,7 @@ class SafeUserAvatar extends StatefulWidget {
 }
 
 class _SafeUserAvatarState extends State<SafeUserAvatar> {
-  final UserService _userService = UserService();
+  UserService get _userService  => UserService();
   bool _isLoading = false;
   String? _avatarUrl;
   String? _username;
@@ -127,11 +130,10 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
   /// 导航到用户个人资料页
   void _navigateToProfile(BuildContext context) {
     if (widget.userId != null) {
-      Navigator.push(
+      NavigationUtils.pushNamed(
         context,
-        MaterialPageRoute(
-          builder: (context) => OpenProfileScreen(userId: widget.userId!),
-        ),
+        AppRoutes.openProfile,
+        arguments: widget.userId,
       );
     }
   }
@@ -152,18 +154,7 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
           shape: BoxShape.circle,
           color: widget.backgroundColor ?? Colors.grey.shade200,
         ),
-        child: Center(
-          child: SizedBox(
-            width: widget.radius,
-            height: widget.radius,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).primaryColor.withOpacity(0.5),
-              ),
-            ),
-          ),
-        ),
+        child: LoadingWidget.inline()
       );
     } else if (_avatarUrl != null) {
       // 有头像URL的情况

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入依赖 (需要 ActivityComment)
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 导入依赖
-import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart'; // 导入依赖
+import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入依赖
 
 class ActivityCommentsSection extends StatelessWidget { // 公共类
   final String activityId;
@@ -52,14 +53,9 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
         child: Center(child: CircularProgressIndicator()),
       );
     } else if (comments.isEmpty && !isLoadingComments) {
-      commentList = const Padding(
-        padding: EdgeInsets.symmetric(vertical: 32.0),
-        child: Center(
-          child: Text(
-            '暂无评论，发表第一条评论吧',
-            style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-          ),
-        ),
+      commentList = EmptyStateWidget(
+        message: '暂无评论，发表第一条评论吧',
+        iconData: Icons.chat_outlined,
       );
     } else {
       commentList = ListView.builder(

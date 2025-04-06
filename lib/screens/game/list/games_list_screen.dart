@@ -116,39 +116,28 @@ class _GamesListScreenState extends State<GamesListScreen> {
           _isPaginating = false;    // *** 必须重置 ***
         });
       } else {
-        print(">>> SUCCESS but component unmounted.");
         _totalPages = newTotalPages; // Update internal value if needed
       }
 
-      print(">>> _loadGames SUCCESS END");
       return games;
 
     } catch (e, s) { // 加上 StackTrace 好排查
-      print(">>> ERROR in _loadGames: $e");
-      print(">>> Stack Trace: $s"); // 打印堆栈信息！
+
 
       // --- 更新状态 (失败) ---
       if (mounted) {
-        print(">>> ERROR: Updating state.");
         setState(() {
           _errorMessage = '加载失败: $e';
-          print(">>> ERROR: Setting _isLoading = false, _isPaginating = false");
           _isLoading = false;       // *** 必须重置 ***
           _isPaginating = false;    // *** 必须重置 ***
-          // 考虑错误时是否重置页码或总页数
-          // _totalPages = 1; // 或者保持旧值？根据你的逻辑定
         });
       } else {
-        print(">>> ERROR but component unmounted.");
       }
-      print(">>> _loadGames ERROR END");
-      // 抛出异常让 BaseGameListScreen 处理 UI 显示（如果它需要的话）
       throw e;
     }
   }
   // --- 刷新数据 ---
   Future<void> _refreshData() async {
-    print("Refresh triggered. Resetting to page 1 and forcing reload.");
     if (_isLoading) return; // 防止重复触发
 
     setState(() {
@@ -161,18 +150,14 @@ class _GamesListScreenState extends State<GamesListScreen> {
   // --- 翻页逻辑 ---
   Future<void> _goToPreviousPage() async {
     // 打印检查条件
-    print("Attempting Previous Page: currentPage=$_currentPage, totalPages=$_totalPages, isLoading=$_isLoading, isPaginating=$_isPaginating");
     if (_currentPage > 1 && !_isLoading && !_isPaginating) { // 严格检查 isLoading 和 isPaginating
-      print(">>> Condition met for Previous Page. CurrentPage before: $_currentPage");
       setState(() {
         // _isPaginating = true; // 在 _loadGames 里根据 key 判断设置更稳妥，这里可以不设
         _currentPage--;
         // 确保 key 真的改变了，加个时间戳
         _loadTriggerKey = ValueKey('page_${_currentPage}_manual_${DateTime.now().millisecondsSinceEpoch}');
-        print(">>> Set new key: ${_loadTriggerKey.value}. CurrentPage after: $_currentPage");
       });
     } else {
-      print(">>> Condition NOT met for Previous Page.");
     }
   }
   // 排序对话框

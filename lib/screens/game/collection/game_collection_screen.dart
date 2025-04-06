@@ -1,6 +1,7 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 import '../../../models/game/game_collection.dart';
@@ -63,12 +64,14 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     final authProvider = Provider.of<AuthProvider>(context); // 获取实例，但不监听 build
     final currentIsLoggedIn = authProvider.isLoggedIn;
 
-    print("didChangeDependencies: currentIsLoggedIn=$currentIsLoggedIn, _previousIsLoggedIn=$_previousIsLoggedIn");
+    print(
+        "didChangeDependencies: currentIsLoggedIn=$currentIsLoggedIn, _previousIsLoggedIn=$_previousIsLoggedIn");
 
     // --- 处理登录状态变化 ---
     // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
     // 且当前登录状态与上次不同时，才处理变化
-    if (_previousIsLoggedIn != null && currentIsLoggedIn != _previousIsLoggedIn) {
+    if (_previousIsLoggedIn != null &&
+        currentIsLoggedIn != _previousIsLoggedIn) {
       print("登录状态发生变化: $_previousIsLoggedIn -> $currentIsLoggedIn");
       if (currentIsLoggedIn) {
         // 刚登录，触发数据加载
@@ -77,7 +80,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
       } else {
         // 刚登出，清空数据并显示提示
         print("用户已登出，清空数据并设置错误状态");
-        if (mounted) { // 确保 widget 仍然挂载
+        if (mounted) {
+          // 确保 widget 仍然挂载
           // ** 不直接 setState，而是设置状态变量，让 build 方法去处理 UI **
           // setState(() {
           //   _isLoading = false;
@@ -89,7 +93,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           _error = '请先登录后再查看收藏';
           _clearData();
           // 调用 setState({}) 只是为了触发一次 build 来反映这些变化
-          if(mounted) setState(() {});
+          if (mounted) setState(() {});
         }
       }
     }
@@ -107,14 +111,13 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
         _error = '请先登录后再查看收藏';
         _clearData();
         // 调用 setState({}) 触发 build
-        if(mounted) setState(() {});
+        if (mounted) setState(() {});
       }
     }
 
     // *** 更新上一次的登录状态 ***
     _previousIsLoggedIn = currentIsLoggedIn;
   }
-
 
   @override
   void dispose() {
@@ -128,7 +131,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     // 移除 !forceRefresh && _isLoading 的判断，因为调用时机已在外部控制
     // if (!forceRefresh && _isLoading) return;
 
-    final authProvider = Provider.of<AuthProvider>(context, listen: false); // listen: false 因为不希望 build 因此重绘
+    final authProvider = Provider.of<AuthProvider>(context,
+        listen: false); // listen: false 因为不希望 build 因此重绘
     // ** 再次检查登录状态，因为可能是异步调用 **
     if (!authProvider.isLoggedIn) {
       print("_loadData: 用户未登录，取消加载");
@@ -151,15 +155,20 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     }
 
     try {
-      final groupedData = await _collectionService.getAllUserGamesGrouped(forceRefresh: forceRefresh);
+      final groupedData = await _collectionService.getAllUserGamesGrouped(
+          forceRefresh: forceRefresh);
       if (mounted) {
         if (groupedData != null) {
           setState(() {
-            _gameCollections[GameCollectionStatus.wantToPlay] = groupedData.wantToPlay;
-            _gameCollections[GameCollectionStatus.playing] = groupedData.playing;
+            _gameCollections[GameCollectionStatus.wantToPlay] =
+                groupedData.wantToPlay;
+            _gameCollections[GameCollectionStatus.playing] =
+                groupedData.playing;
             _gameCollections[GameCollectionStatus.played] = groupedData.played;
-            _tabCounts[GameCollectionStatus.wantToPlay] = groupedData.counts.wantToPlay;
-            _tabCounts[GameCollectionStatus.playing] = groupedData.counts.playing;
+            _tabCounts[GameCollectionStatus.wantToPlay] =
+                groupedData.counts.wantToPlay;
+            _tabCounts[GameCollectionStatus.playing] =
+                groupedData.counts.playing;
             _tabCounts[GameCollectionStatus.played] = groupedData.counts.played;
             _isLoading = false;
             _error = null;
@@ -188,10 +197,17 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   // 清空数据的辅助方法
   void _clearData() {
-    _gameCollections = { GameCollectionStatus.wantToPlay: [], GameCollectionStatus.playing: [], GameCollectionStatus.played: [], };
-    _tabCounts = { GameCollectionStatus.wantToPlay: 0, GameCollectionStatus.playing: 0, GameCollectionStatus.played: 0, };
+    _gameCollections = {
+      GameCollectionStatus.wantToPlay: [],
+      GameCollectionStatus.playing: [],
+      GameCollectionStatus.played: [],
+    };
+    _tabCounts = {
+      GameCollectionStatus.wantToPlay: 0,
+      GameCollectionStatus.playing: 0,
+      GameCollectionStatus.played: 0,
+    };
   }
-
 
   // 下拉刷新 (保持不变)
   Future<void> _handleRefresh() async {
@@ -207,8 +223,10 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     // WidgetsBinding.instance.addPostFrameCallback((_) { ... }); // *** 移除这整块 ***
 
     // 直接使用当前状态变量来决定显示什么
-    final authProvider = Provider.of<AuthProvider>(context, listen: false); // 获取实例用于判断
-    final isLoggedIn = authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
+    final authProvider =
+        Provider.of<AuthProvider>(context, listen: false); // 获取实例用于判断
+    final isLoggedIn =
+        authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
 
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
@@ -225,37 +243,30 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   // 构建 Body (逻辑基本不变，依赖状态变量)
   Widget _buildBody(bool isLoggedIn) {
-    print("_buildBody: isLoading=$_isLoading, error=$_error, isLoggedIn=$isLoggedIn");
+    print(
+        "_buildBody: isLoading=$_isLoading, error=$_error, isLoggedIn=$isLoggedIn");
     // 1. 未登录
-    if (!isLoggedIn && _error == '请先登录后再查看收藏') { // 明确检查错误信息
+    if (!isLoggedIn && _error == '请先登录后再查看收藏') {
+      // 明确检查错误信息
       print("_buildBody: 显示登录提示");
       return LoginPromptWidget(isDesktop: _isDesktopLayout);
     }
 
     // 2. 初始加载
-    if (_isLoading && _gameCollections.values.every((list) => list.isEmpty) && _error == null) {
+    if (_isLoading &&
+        _gameCollections.values.every((list) => list.isEmpty) &&
+        _error == null) {
       print("_buildBody: 显示初始加载指示器");
       return LoadingWidget.inline(message: "正在加载收藏数据");
     }
 
     // 3. 加载出错
     if (_error != null && _error != '请先登录后再查看收藏') {
-      return RefreshIndicator(
-        onRefresh: _handleRefresh,
-        child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Container(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight), // 确保至少占满
-                  alignment: Alignment.center,
-                  child: InlineErrorWidget(
-                    errorMessage: _error,
-                  ),
-                ),
-              );
-            }
-        ),
+      return InlineErrorWidget(
+        errorMessage: _error,
+        onRetry: () {
+          NavigationUtils.navigateToLogin(context);
+        },
       );
     }
 
@@ -281,15 +292,18 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
             Tab(
               icon: const Icon(Icons.star_border),
               // *** 使用常量作为 key 访问计数 ***
-              text: '想玩${_tabCounts[GameCollectionStatus.wantToPlay]! > 0 ? ' ${_tabCounts[GameCollectionStatus.wantToPlay]}' : ''}',
+              text:
+                  '想玩${_tabCounts[GameCollectionStatus.wantToPlay]! > 0 ? ' ${_tabCounts[GameCollectionStatus.wantToPlay]}' : ''}',
             ),
             Tab(
               icon: const Icon(Icons.videogame_asset),
-              text: '在玩${_tabCounts[GameCollectionStatus.playing]! > 0 ? ' ${_tabCounts[GameCollectionStatus.playing]}' : ''}',
+              text:
+                  '在玩${_tabCounts[GameCollectionStatus.playing]! > 0 ? ' ${_tabCounts[GameCollectionStatus.playing]}' : ''}',
             ),
             Tab(
               icon: const Icon(Icons.check_circle),
-              text: '玩过${_tabCounts[GameCollectionStatus.played]! > 0 ? ' ${_tabCounts[GameCollectionStatus.played]}' : ''}',
+              text:
+                  '玩过${_tabCounts[GameCollectionStatus.played]! > 0 ? ' ${_tabCounts[GameCollectionStatus.played]}' : ''}',
             ),
           ],
         ),
@@ -333,7 +347,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
             child: DesktopCollectionLayout(
               games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
               collectionType: GameCollectionStatus.wantToPlay,
-              title: '想玩的游戏 (${_tabCounts[GameCollectionStatus.wantToPlay]})', // 标题中直接显示数量
+              title:
+                  '想玩的游戏 (${_tabCounts[GameCollectionStatus.wantToPlay]})', // 标题中直接显示数量
               icon: Icons.star_border,
             ),
           ),

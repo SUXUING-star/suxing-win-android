@@ -1,5 +1,7 @@
 // lib/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import '../../../../../models/game/game_collection.dart'; // 确保路径正确
 import '../../../../../utils/navigation/navigation_utils.dart'; // 确保路径正确
 import '../../../../../routes/app_routes.dart'; // 确保路径正确
@@ -52,42 +54,29 @@ class MobileCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
   // 构建空状态视图 (保持不变)
   Widget _buildEmptyState(BuildContext context) {
     String message;
-    IconData icon;
-
     switch (collectionType) {
-      case GameCollectionStatus.wantToPlay: // 使用常量
+      case GameCollectionStatus.wantToPlay:
         message = '还没有想玩的游戏';
-        icon = Icons.star_border;
         break;
       case GameCollectionStatus.playing:
         message = '还没有在玩的游戏';
-        icon = Icons.videogame_asset;
         break;
       case GameCollectionStatus.played:
         message = '还没有玩过的游戏';
-        icon = Icons.check_circle;
         break;
       default:
         message = '还没有收藏任何游戏';
-        icon = Icons.collections_bookmark;
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(message),
-          const SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () {
-              // 跳转逻辑不变
-              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
-            },
-            child: const Text('发现游戏'),
-          ),
-        ],
+    return EmptyStateWidget(
+      message: message,
+      action: FunctionalButton(
+        label: '发现游戏',
+        onPressed: () {
+          // 跳转逻辑不变
+          NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
+        },
+        icon: Icons.search_rounded,
       ),
     );
   }

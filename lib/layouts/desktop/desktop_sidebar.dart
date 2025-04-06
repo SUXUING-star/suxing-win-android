@@ -49,11 +49,7 @@ class DesktopSidebar extends StatelessWidget {
 
   // 导航到指定页面
   void _navigateToMainScreen(BuildContext context, int index) {
-    print("桌面侧边栏: 请求导航到标签索引 $index");
-
-    // 1. *** 更新 SidebarProvider 的状态 ***
     Provider.of<SidebarProvider>(context, listen: false).setCurrentIndex(index);
-
     NavigationUtils.navigateToHome(context,tabIndex: index);
   }
 

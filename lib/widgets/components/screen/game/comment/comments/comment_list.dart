@@ -1,6 +1,9 @@
 // lib/widgets/components/screen/game/comment/comment_list.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../../models/comment/comment.dart';
 import 'comment_item.dart';
 
@@ -21,7 +24,8 @@ class CommentList extends StatefulWidget {
 class _CommentListState extends State<CommentList> {
   final GameService _commentService = GameService();
   // 使用ValueNotifier来强制刷新评论列表
-  final ValueNotifier<DateTime> _internalRefreshTrigger = ValueNotifier(DateTime.now());
+  final ValueNotifier<DateTime> _internalRefreshTrigger =
+      ValueNotifier(DateTime.now());
   late Stream<List<Comment>> _commentsStream;
 
   @override
@@ -67,16 +71,23 @@ class _CommentListState extends State<CommentList> {
             stream: _commentsStream,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
-                return Center(child: Text('加载评论失败：${snapshot.error}'));
+                return InlineErrorWidget(
+                    errorMessage: '加载评论失败：${snapshot.error}');
               }
 
               if (!snapshot.hasData) {
-                return const Center(child: CircularProgressIndicator());
+                return LoadingWidget.inline(
+                  size: 10,
+                  message: "正在加载评论",
+                );
               }
 
               final comments = snapshot.data!;
               if (comments.isEmpty) {
-                return const Center(child: Text('暂无评论'));
+                return EmptyStateWidget(
+                  message: '暂无评论',
+                  iconData: Icons.maps_ugc_outlined,
+                );
               }
 
               return Padding(
@@ -94,7 +105,6 @@ class _CommentListState extends State<CommentList> {
               );
             },
           );
-        }
-    );
+        });
   }
 }

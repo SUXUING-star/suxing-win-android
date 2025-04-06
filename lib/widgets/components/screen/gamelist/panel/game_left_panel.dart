@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/gamelist/panel/game_left_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/device/device_utils.dart';
 
@@ -48,7 +49,6 @@ class GameLeftPanel extends StatelessWidget {
                           fontSize: 14,
                         ),
                       ),
-
                       if (selectedTag != null)
                         Expanded(
                           child: Row(
@@ -57,7 +57,8 @@ class GameLeftPanel extends StatelessWidget {
                               InkWell(
                                 onTap: () => onTagSelected(selectedTag!),
                                 child: Container(
-                                  padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                  padding: EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 2),
                                   decoration: BoxDecoration(
                                     color: Colors.white.withOpacity(0.3),
                                     borderRadius: BorderRadius.circular(12),
@@ -65,7 +66,8 @@ class GameLeftPanel extends StatelessWidget {
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
-                                      Icon(Icons.close, size: 12, color: Colors.white),
+                                      Icon(Icons.close,
+                                          size: 12, color: Colors.white),
                                       SizedBox(width: 4),
                                       Text(
                                         '清除',
@@ -102,26 +104,11 @@ class GameLeftPanel extends StatelessWidget {
 
   Widget _buildTagsGrid(BuildContext context) {
     if (tags.isEmpty) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            children: [
-              Icon(
-                Icons.label_off,
-                size: 32,
-                color: Colors.grey[400],
-              ),
-              SizedBox(height: 8),
-              Text(
-                '没有可用的标签',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
-          ),
-        ),
+      return EmptyStateWidget(
+        message: '没有可用的标签',
+        iconData: Icons.label_off,
+        iconSize: 32,
+        iconColor: Colors.grey[400],
       );
     }
 
@@ -157,7 +144,8 @@ class GameLeftPanel extends StatelessWidget {
                       tag.name,
                       style: TextStyle(
                         color: isSelected ? Colors.white : Colors.blue,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                         fontSize: 12,
                       ),
                       overflow: TextOverflow.ellipsis,
@@ -166,7 +154,9 @@ class GameLeftPanel extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: isSelected ? Colors.white.withOpacity(0.3) : Colors.blue.withOpacity(0.1),
+                      color: isSelected
+                          ? Colors.white.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(

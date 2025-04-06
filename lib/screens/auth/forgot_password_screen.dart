@@ -5,9 +5,9 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // <--- 引入 ElevatedButton 封装
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // <--- 引入 TextButton 封装
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/email/email_service.dart';
 import 'dart:async';
-import '../../widgets/common/toaster/toaster.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/ui/common/loading_widget.dart';
 
@@ -28,7 +28,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   bool _isSendingCode = false;
   bool _isVerifying = false;
 
-  // ... (dispose, _startTimer, _sendVerificationCode, _verifyCode 方法保持不变) ...
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -59,8 +59,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final email = _emailController.text;
     if (email.isEmpty || !email.contains('@')) {
       setState(() => _error = '请输入有效的邮箱地址');
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text('请输入有效的邮箱地址'), backgroundColor: Colors.orange));
+      AppSnackBar.showWarning(context, '请输入有效的邮箱地址');
       return;
     }
 
@@ -70,7 +69,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      await EmailService.requestVerificationCode(_emailController.text, 'reset');
+      await EmailService.requestVerificationCode(
+          _emailController.text, 'reset');
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -79,13 +79,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _codeSent = true;
           _error = null;
         });
-        Toaster.success(context, "验证码已发送至您的邮箱，请去查看！");
+        AppSnackBar.showSuccess(context, "验证码已发送至您的邮箱，请去查看！");
       });
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '发送验证码失败: ${e.toString()}');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_error!), backgroundColor: Colors.red));
+      AppSnackBar.showError(context, _error!);
     } finally {
       if (mounted) {
         setState(() => _isSendingCode = false);
@@ -97,8 +96,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_formKey.currentState!.validate()) return;
     if (!_codeSent) {
       setState(() => _error = '请先获取验证码');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('请先获取验证码'), backgroundColor: Colors.orange));
+      AppSnackBar.showWarning(context, _error!);
       return;
     }
 
@@ -113,18 +111,16 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       if (isCodeValid) {
-        NavigationUtils.pushReplacementNamed(
-            context, '/reset-password', arguments: _emailController.text);
+        NavigationUtils.pushReplacementNamed(context, '/reset-password',
+            arguments: _emailController.text);
       } else {
         setState(() => _error = '验证码错误或已过期');
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_error!), backgroundColor: Colors.red));
+        AppSnackBar.showError(context,_error!);
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '验证码校验时发生错误: ${e.toString()}');
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(_error!), backgroundColor: Colors.red));
+      AppSnackBar.showError(context,_error!);
     } finally {
       if (mounted) {
         setState(() => _isVerifying = false);
@@ -139,9 +135,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     final String loadingMessage = '请稍候...';
 
     // --- 计算发送按钮的标签和状态 ---
-    final String sendButtonLabel = _codeSent
-        ? (_countDown > 0 ? '${_countDown}s' : '重新发送')
-        : '发送验证码';
+    final String sendButtonLabel =
+        _codeSent ? (_countDown > 0 ? '${_countDown}s' : '重新发送') : '发送验证码';
     // 发送按钮是否可用：不在加载中 且 倒计时结束
     final bool isSendButtonEnabled = !isOverallLoading && _countDown <= 0;
 
@@ -153,9 +148,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       appBar: CustomAppBar(title: '找回密码'),
       body: Stack(
         children: [
-          Opacity(opacity: 0.6, child: Container(width: double.infinity, height: double.infinity)),
+          Opacity(
+              opacity: 0.6,
+              child:
+                  Container(width: double.infinity, height: double.infinity)),
           // 加载状态处理 (保持不变)
-          if (isOverallLoading) LoadingWidget.fullScreen(message: loadingMessage),
+          if (isOverallLoading)
+            LoadingWidget.fullScreen(message: loadingMessage),
 
           Center(
             child: ConstrainedBox(
@@ -173,36 +172,45 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('找回密码', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87)),
+                        Text('找回密码',
+                            style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black87)),
                         SizedBox(height: 16),
-                        Text('通过邮箱重置您的密码', style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        Text('通过邮箱重置您的密码',
+                            style: TextStyle(fontSize: 16, color: Colors.grey)),
                         SizedBox(height: 24),
 
-
-                         // 显示错误信息 - 使用自定义错误组件
-                         if (_error != null)
-                           Padding(
-                             padding: const EdgeInsets.only(bottom: 16.0),
-                             child: InlineErrorWidget(
-                               errorMessage: _error!,
-                               icon: Icons.error_outline,
-                               retryText: '重试',
-                               iconColor: Colors.red,
-                               onRetry: () {
-                                 setState(() {
-                                   _error = null;
-                                 });
-                               },
-                             ),
-                           ),
+                        // 显示错误信息 - 使用自定义错误组件
+                        if (_error != null)
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 16.0),
+                            child: InlineErrorWidget(
+                              errorMessage: _error!,
+                              icon: Icons.error_outline,
+                              retryText: '重试',
+                              iconColor: Colors.red,
+                              onRetry: () {
+                                setState(() {
+                                  _error = null;
+                                });
+                              },
+                            ),
+                          ),
 
                         // 邮箱输入 (保持不变, 使用 isOverallLoading 控制 enabled)
                         TextFormField(
                           controller: _emailController,
                           enabled: !isOverallLoading, // 使用整体加载状态
-                          decoration: InputDecoration(labelText: '邮箱', border: OutlineInputBorder(), prefixIcon: Icon(Icons.email)),
+                          decoration: InputDecoration(
+                              labelText: '邮箱',
+                              border: OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email)),
                           validator: (value) {
-                            if (value == null || value.isEmpty || !value.contains('@')) return '请输入有效的邮箱地址';
+                            if (value == null ||
+                                value.isEmpty ||
+                                !value.contains('@')) return '请输入有效的邮箱地址';
                             return null;
                           },
                         ),
@@ -213,11 +221,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           TextFormField(
                             controller: _codeController,
                             enabled: !isOverallLoading, // 使用整体加载状态
-                            decoration: InputDecoration(labelText: '验证码', border: OutlineInputBorder(), prefixIcon: Icon(Icons.code)),
+                            decoration: InputDecoration(
+                                labelText: '验证码',
+                                border: OutlineInputBorder(),
+                                prefixIcon: Icon(Icons.code)),
                             keyboardType: TextInputType.number,
                             validator: (value) {
                               if (!_codeSent) return null;
-                              if (value == null || value.isEmpty) return '请输入验证码';
+                              if (value == null || value.isEmpty)
+                                return '请输入验证码';
                               if (value.length != 6) return '验证码应为6位数字';
                               return null;
                             },
@@ -228,7 +240,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         Row(
                           children: [
                             Expanded(
-                              child: FunctionalButton( // <--- 替换发送/重发按钮
+                              child: FunctionalButton(
+                                // <--- 替换发送/重发按钮
                                 onPressed: _sendVerificationCode,
                                 label: sendButtonLabel, // 使用计算好的标签
                                 isLoading: _isSendingCode, // 传递发送的加载状态
@@ -241,11 +254,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                             if (_codeSent) ...[
                               SizedBox(width: 16),
                               Expanded(
-                                child: FunctionalButton( // <--- 替换验证按钮
+                                child: FunctionalButton(
+                                  // <--- 替换验证按钮
                                   onPressed: _verifyCode,
                                   label: '验证',
                                   isLoading: _isVerifying, // 传递验证的加载状态
-                                  isEnabled: isVerifyButtonEnabled, // 传递计算好的可用状态
+                                  isEnabled:
+                                      isVerifyButtonEnabled, // 传递计算好的可用状态
                                   // padding: EdgeInsets.symmetric(vertical: 14),
                                 ),
                               ),
@@ -255,7 +270,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         SizedBox(height: 16),
 
                         // --- 使用新的 FunctionalTextButton 添加返回按钮 ---
-                        FunctionalTextButton( // <--- 添加返回按钮
+                        FunctionalTextButton(
+                          // <--- 添加返回按钮
                           onPressed: () => NavigationUtils.pop(context),
                           label: '返回登录',
                           isEnabled: !isOverallLoading, // 加载时禁用

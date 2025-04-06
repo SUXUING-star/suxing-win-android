@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/common/toaster/toaster.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/toaster/toaster.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -42,7 +43,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
-    print("GameDetailScreen (${widget.gameId}): initState called");
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (widget.gameId != null) {
       // *** 这里是改动：调用加载前，直接设置 _isLoading = true ***
@@ -67,8 +67,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void didUpdateWidget(GameDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.gameId != widget.gameId) {
-      print(
-          "GameDetailScreen (${widget.gameId}): gameId changed, reloading details with status");
 
       // *** 这里是改动：调用加载前，用 setState 设置 _isLoading = true ***
       setState(() {
@@ -182,14 +180,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   // 增加游戏浏览次数
   void _incrementViewCount() {
     if (widget.gameId != null) {
-      print("GameDetailScreen (${widget.gameId}): Incrementing view count.");
       _gameService.incrementGameView(widget.gameId!);
     }
   }
 
   void _handleCollectionStateChangedInButton(CollectionChangeResult result) {
-    print(
-        'GameDetailScreen (${widget.gameId}): Received CollectionChangeResult. Status: ${result.newStatus?.status}, Deltas: ${result.countDeltas}');
 
     if (mounted && _game != null) {
       // 确保已挂载且 _game 对象存在
@@ -205,9 +200,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         totalCollections: currentGame.totalCollections + (deltas['total'] ?? 0),
         updateTime: DateTime.now(), // 可选：更新 updateTime 以反映本地状态变化
       );
-
-      print(
-          'GameDetailScreen (${widget.gameId}): Calculated new counts using copyWith - Want: ${updatedGame.wantToPlayCount}, Playing: ${updatedGame.playingCount}, Played: ${updatedGame.playedCount}, Total: ${updatedGame.totalCollections}');
 
       // 2. 使用 setState 更新状态
       setState(() {
@@ -227,7 +219,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // 保持前置检查
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
     if (!_authProvider.isLoggedIn) {
-      Toaster.show(context, message: '请先登录', isError: true);
+      AppSnackBar.showWarning(context, '请先登录');
       NavigationUtils.pushNamed(context, AppRoutes.login);
       return;
     }
@@ -246,13 +238,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           _isLiked = newIsLikedStatus; // 直接更新点赞状态
         });
-        Toaster.show(context, message: newIsLikedStatus ? '点赞成功' : '已取消点赞');
+        AppSnackBar.showSuccess(context,newIsLikedStatus ? '点赞成功' : '已取消点赞');
       }
     } catch (e) {
       if (mounted) {
-        Toaster.show(context,
-            message: '操作失败: ${e.toString().split(':').last.trim()}',
-            isError: true);
+        AppSnackBar.showError(context, '操作失败: ${e.toString().split(':').last.trim()}');
       }
     } finally {
       // *** 结束按钮 loading ***
@@ -480,9 +470,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Widget build(BuildContext context) {
     // 初始 ID 检查
     if (widget.gameId == null) {
-      return Scaffold(
-          appBar: AppBar(title: Text('错误')),
-          body: Center(child: Text('无效的游戏 ID')));
+      return CustomErrorWidget(errorMessage: '无效的游戏 ID');
     }
 
     // --- Loading / Error / Content 构建逻辑 ---
@@ -502,8 +490,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       }
       if (_error == 'pending_approval') {
         return Scaffold(
-          appBar: AppBar(
-            title: Text('游戏详情'),
+          appBar: CustomAppBar(
+            title: '游戏详情',
             leading: IconButton(
               icon: Icon(Icons.arrow_back),
               onPressed: () => NavigationUtils.pop(context),
@@ -543,7 +531,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     // 如果 _game 为 null 但不在加载也没错误，显示错误
     if (_game == null) {
-      return CustomErrorWidget(title: '错误', errorMessage: '无法加载游戏数据');
+      return InlineErrorWidget(errorMessage: '无法加载游戏数据');
     }
 
     // --- 正常渲染游戏内容 ---
@@ -554,18 +542,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---
     if (_isLoading && _game != null) {
       // 正在刷新且有旧数据
-      bodyContent = Stack(
-        children: [
-          IgnorePointer(child: Opacity(opacity: 0.5, child: bodyContent)),
-          Positioned.fill(
-              child: Container(
-                  // 使用半透明颜色，避免完全遮挡
-                  color: Theme.of(context)
-                      .scaffoldBackgroundColor
-                      .withOpacity(0.3),
-                  child: Center(child: CircularProgressIndicator()))),
-        ],
-      );
+      bodyContent = LoadingWidget.inline(message: "正在加载数据");
     }
     // --- ---
 

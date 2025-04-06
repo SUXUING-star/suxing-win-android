@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
-import '../../common/toaster/toaster.dart';
+import '../../ui/toaster/toaster.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class InAppBrowserPage extends StatefulWidget {

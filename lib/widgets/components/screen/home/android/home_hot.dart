@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'dart:async';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
@@ -122,7 +125,9 @@ class _HomeHotState extends State<HomeHot> {
         return;
       }
 
-      if (!_pageController.hasClients || _cachedGames == null || _cachedGames!.isEmpty) {
+      if (!_pageController.hasClients ||
+          _cachedGames == null ||
+          _cachedGames!.isEmpty) {
         return;
       }
 
@@ -161,12 +166,7 @@ class _HomeHotState extends State<HomeHot> {
   Widget build(BuildContext context) {
     // 显示加载状态
     if (_isLoading && _cachedGames == null) {
-      return Container(
-        height: containerHeight,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return LoadingWidget.fullScreen(message: "正在加载");
     }
 
     // 显示错误
@@ -176,7 +176,11 @@ class _HomeHotState extends State<HomeHot> {
 
     // 没有数据
     if (_cachedGames == null || _cachedGames!.isEmpty) {
-      return _buildEmptyState('暂无热门游戏');
+      return EmptyStateWidget(
+          message: '暂无热门游戏',
+          iconData: Icons.inbox_outlined,
+          iconSize: 40,
+          iconColor: Colors.grey);
     }
 
     // 显示游戏列表
@@ -209,8 +213,10 @@ class _HomeHotState extends State<HomeHot> {
                     builder: (context, constraints) {
                       // 根据可用宽度计算实际可以显示的卡片数量
                       double availableWidth = constraints.maxWidth;
-                      int actualCardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
-                      actualCardsPerPage = actualCardsPerPage < 1 ? 1 : actualCardsPerPage;
+                      int actualCardsPerPage =
+                          (availableWidth / (cardWidth + cardMargin)).floor();
+                      actualCardsPerPage =
+                          actualCardsPerPage < 1 ? 1 : actualCardsPerPage;
 
                       // 创建卡片列表
                       List<Widget> cardWidgets = [];
@@ -269,23 +275,27 @@ class _HomeHotState extends State<HomeHot> {
         children: [
           _buildNavigationButton(
             icon: Icons.arrow_back_ios,
-            onPressed: _currentPage > 0 ? () {
-              _pageController.previousPage(
-                duration: Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
-              );
-            } : null,
+            onPressed: _currentPage > 0
+                ? () {
+                    _pageController.previousPage(
+                      duration: Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
             buttonSize: buttonSize,
             iconSize: iconSize,
           ),
           _buildNavigationButton(
             icon: Icons.arrow_forward_ios,
-            onPressed: _currentPage < totalPages - 1 ? () {
-              _pageController.nextPage(
-                duration: Duration(milliseconds: 800),
-                curve: Curves.easeInOut,
-              );
-            } : null,
+            onPressed: _currentPage < totalPages - 1
+                ? () {
+                    _pageController.nextPage(
+                      duration: Duration(milliseconds: 800),
+                      curve: Curves.easeInOut,
+                    );
+                  }
+                : null,
             buttonSize: buttonSize,
             iconSize: iconSize,
           ),
@@ -391,34 +401,11 @@ class _HomeHotState extends State<HomeHot> {
   }
 
   Widget _buildError(String message) {
-    return Container(
-      height: containerHeight, // 更新错误状态的容器高度
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 40, color: Colors.red),
-            SizedBox(height: 16),
-            Text(message),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String message) {
-    return Container(
-      height: containerHeight, // 更新空状态的容器高度
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined, size: 40, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(message, style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      ),
+    return InlineErrorWidget(
+      icon: Icons.error_outline,
+      iconSize: 40,
+      iconColor: Colors.red,
+      errorMessage: message,
     );
   }
 }

@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import '../../../../../models/game/game_collection.dart'; // 确保路径正确
 import '../../../../../utils/navigation/navigation_utils.dart'; // 确保路径正确
 import '../../../../../routes/app_routes.dart'; // 确保路径正确
@@ -8,7 +9,8 @@ import '../card/collection_game_card.dart'; // 确保路径正确
 
 /// 桌面设备游戏收藏展示布局 - 只负责展示列表
 /// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
-class DesktopCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
+class DesktopCollectionLayout extends StatelessWidget {
+  // 改为 StatelessWidget
   final List<GameWithCollection> games;
   final String collectionType;
   final String title; // 标题现在可以包含数量，由父组件传入
@@ -58,7 +60,8 @@ class DesktopCollectionLayout extends StatelessWidget { // 改为 StatelessWidge
             ),
             const SizedBox(width: 8),
             // *** 直接使用传入的 title ***
-            Flexible( // 使用 Flexible 防止标题过长溢出
+            Flexible(
+              // 使用 Flexible 防止标题过长溢出
               child: Text(
                 title,
                 style: TextStyle(
@@ -111,10 +114,14 @@ class DesktopCollectionLayout extends StatelessWidget { // 改为 StatelessWidge
   // 根据收藏类型获取对应颜色 (保持不变)
   Color _getStatusColor() {
     switch (collectionType) {
-      case GameCollectionStatus.wantToPlay: return Colors.blue;
-      case GameCollectionStatus.playing: return Colors.green;
-      case GameCollectionStatus.played: return Colors.purple;
-      default: return Colors.grey;
+      case GameCollectionStatus.wantToPlay:
+        return Colors.blue;
+      case GameCollectionStatus.playing:
+        return Colors.green;
+      case GameCollectionStatus.played:
+        return Colors.purple;
+      default:
+        return Colors.grey;
     }
   }
 
@@ -122,33 +129,28 @@ class DesktopCollectionLayout extends StatelessWidget { // 改为 StatelessWidge
   Widget _buildEmptyState(BuildContext context) {
     String message;
     switch (collectionType) {
-      case GameCollectionStatus.wantToPlay: message = '还没有想玩的游戏'; break;
-      case GameCollectionStatus.playing: message = '还没有在玩的游戏'; break;
-      case GameCollectionStatus.played: message = '还没有玩过的游戏'; break;
-      default: message = '还没有收藏任何游戏';
+      case GameCollectionStatus.wantToPlay:
+        message = '还没有想玩的游戏';
+        break;
+      case GameCollectionStatus.playing:
+        message = '还没有在玩的游戏';
+        break;
+      case GameCollectionStatus.played:
+        message = '还没有玩过的游戏';
+        break;
+      default:
+        message = '还没有收藏任何游戏';
     }
 
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 40, color: Colors.grey),
-          const SizedBox(height: 16),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-          const SizedBox(height: 16),
-          FunctionalButton(
-            label: '发现游戏',
-            onPressed: () {
-              // 跳转逻辑不变
-              NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
-            },
-            icon: Icons.search_rounded,
-          ),
-        ],
+    return EmptyStateWidget(
+      message: message,
+      action: FunctionalButton(
+        label: '发现游戏',
+        onPressed: () {
+          // 跳转逻辑不变
+          NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
+        },
+        icon: Icons.search_rounded,
       ),
     );
   }

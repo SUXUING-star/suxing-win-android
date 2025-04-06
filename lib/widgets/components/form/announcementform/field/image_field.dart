@@ -1,110 +1,84 @@
-// lib/widgets/components/form/announcementform/field/image_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 暂时不用
 import 'dart:io';
-import '../../../../../services/common/upload/file_upload_service.dart';
+// 移除 FileUpload import，不再直接上传
+// import '../../../../../services/common/upload/file_upload_service.dart';
+import '../../../../../services/common/upload/file_upload_service.dart'; // 需要 baseUrl for preview
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
-import '../../gameform/field/dialogs/image_url_dialog.dart';
+import '../../gameform/field/dialogs/image_url_dialog.dart'; // 复用 URL 对话框
+import '../../../../ui/snackbar/app_snackbar.dart'; // 使用 AppSnackBar
 
 class AnnouncementImageField extends StatelessWidget {
-  final String? imageUrl;
-  final ValueChanged<String> onImageUrlChanged;
-  final bool isLoading;
-  final ValueChanged<bool> onLoadingChanged;
+  // final String? imageUrl; // 不再直接接收 URL，而是接收图片源
+  final dynamic imageSource; // 可以是 XFile, String (URL), or null
+  final ValueChanged<dynamic> onImageSourceChanged; // 回调 XFile, String, or null
+  // 移除 isLoading 和 onLoadingChanged
+  // final bool isLoading;
+  // final ValueChanged<bool> onLoadingChanged;
 
   const AnnouncementImageField({
     Key? key,
-    this.imageUrl,
-    required this.onImageUrlChanged,
-    required this.isLoading,
-    required this.onLoadingChanged,
+    required this.imageSource,
+    required this.onImageSourceChanged,
+    // this.imageUrl, // 移除
+    // required this.isLoading, // 移除
+    // required this.onLoadingChanged, // 移除
   }) : super(key: key);
 
   Future<void> _pickImage(BuildContext context) async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
       source: ImageSource.gallery,
-      maxWidth: 1200,
+      maxWidth: 1200, // 限制大小可以在选择时进行，也可在上传时
       maxHeight: 800,
       imageQuality: 85,
     );
-
     if (image != null) {
-      try {
-        onLoadingChanged(true);
-
-        // 上传新图片时传递旧图片URL，以便后端删除旧图片
-        final uploadedUrl = await FileUpload.uploadImage(
-          File(image.path),
-          folder: 'announcements/images',
-          maxWidth: 1200,
-          maxHeight: 800,
-          quality: 85,
-          oldImageUrl: imageUrl, // 传递旧图片URL
-        );
-        onImageUrlChanged(uploadedUrl);
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('上传图片失败：$e')),
-          );
-        }
-      } finally {
-        onLoadingChanged(false);
-      }
+      onImageSourceChanged(image); // 回调 XFile
     }
   }
 
   Future<void> _showUrlDialog(BuildContext context) async {
-    // 不传递initialUrl，这样就不会显示原来的路径
+    final currentUrl = imageSource is String ? imageSource as String : '';
     final result = await showDialog<String>(
       context: context,
-      builder: (context) => ImageUrlDialog(initialUrl: ''),
+      // 复用 ImageUrlDialog
+      builder: (context) => ImageUrlDialog(initialUrl: currentUrl),
     );
 
-    if (result != null && result.isNotEmpty) {
-      // 如果用户输入了新的URL，并且存在旧的URL，尝试删除旧图片
-      if (imageUrl != null && imageUrl!.isNotEmpty) {
-        // 只有当新旧URL不同时才删除旧图片
-        if (result != imageUrl) {
-          try {
-            // 设置loading状态
-            onLoadingChanged(true);
-
-            // 删除旧图片
-            await FileUpload.deleteFile(imageUrl!);
-
-            // 更新URL
-            onImageUrlChanged(result);
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('删除旧图片失败，但新URL已更新')),
-              );
-            }
-          } finally {
-            onLoadingChanged(false);
-          }
-        }
-      } else {
-        // 如果没有旧图片，直接更新URL
-        onImageUrlChanged(result);
+    // 如果用户输入了内容（包括空字符串，表示清空）
+    if (result != null) {
+      if (result.trim().isNotEmpty && result.trim() != currentUrl) {
+        // 输入了有效且不同的 URL
+        onImageSourceChanged(result.trim()); // 回调 String URL
+      } else if (result.trim().isEmpty && currentUrl.isNotEmpty) {
+        // 输入了空字符串，且之前有 URL，表示清空
+        onImageSourceChanged(null); // 回调 null
       }
+      // 如果输入相同或无效的空URL，则不回调
+    }
+    // 如果用户取消对话框 (result is null)，不执行任何操作
+  }
+
+  void _clearImage(BuildContext context) {
+    if (imageSource != null) {
+      onImageSourceChanged(null); // 回调 null 清除图片源
+      AppSnackBar.showSuccess(context, '图片已清除'); // 反馈
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final double verticalSpacing = DeviceUtils.isAndroidLandscape(context) ? 4.0 : 8.0;
-    final double fontSize = DeviceUtils.isAndroidLandscape(context) ? 14.0 : 16.0;
+    final double verticalSpacing = DeviceUtils.isDesktop ? 8.0 : 6.0; // 调整间距
+    final double fontSize = DeviceUtils.isDesktop ? 16.0 : 14.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          '公告图片',
+          '公告图片 (可选)',
           style: TextStyle(
             fontWeight: FontWeight.bold,
             fontSize: fontSize,
@@ -113,118 +87,119 @@ class AnnouncementImageField extends StatelessWidget {
         SizedBox(height: verticalSpacing),
 
         Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          // 使用 Expanded 让按钮均分布局更佳
           children: [
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : () => _pickImage(context),
-              icon: Icon(Icons.upload_file),
-              label: Text('上传本地图片'),
+            Expanded(
+              child: ElevatedButton.icon(
+                // onPressed: isLoading ? null : () => _pickImage(context), // 移除 isLoading 判断
+                onPressed: () => _pickImage(context),
+                icon: const Icon(Icons.upload_file),
+                label: const Text('本地图片'),
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+              ),
             ),
-            ElevatedButton.icon(
-              onPressed: isLoading ? null : () => _showUrlDialog(context),
-              icon: Icon(Icons.link),
-              label: Text('输入图片链接'),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ElevatedButton.icon(
+                // onPressed: isLoading ? null : () => _showUrlDialog(context), // 移除 isLoading 判断
+                onPressed: () => _showUrlDialog(context),
+                icon: const Icon(Icons.link),
+                label: const Text('图片链接'),
+                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+              ),
             ),
           ],
         ),
         SizedBox(height: verticalSpacing),
 
+        // 预览区域
         AspectRatio(
           aspectRatio: 16 / 9,
           child: Container(
             decoration: BoxDecoration(
-              border: Border.all(color: Colors.grey),
+              border: Border.all(color: Colors.grey.shade400),
               borderRadius: BorderRadius.circular(8),
+              color: Colors.grey.shade100, // 添加背景色
             ),
+            // 调用新的预览方法
             child: _buildImagePreview(context),
           ),
         ),
         SizedBox(height: 8),
-        Text(
-          '添加图片可以让您的公告更加生动，留空则不显示图片。',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.grey,
-            fontStyle: FontStyle.italic,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Expanded(
+              child: Text(
+                '添加图片让公告更生动。',
+                style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            // 仅当有图片源时显示删除按钮
+            if (imageSource != null)
+              TextButton.icon(
+                // onPressed: isLoading ? null : () => _confirmDeleteImage(context), // 移除 isLoading 判断
+                // 直接调用清除方法，不再需要确认对话框，因为还没上传
+                onPressed: () => _clearImage(context),
+                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                label: const Text('清除图片', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                style: TextButton.styleFrom(padding: EdgeInsets.zero),
+              ),
+          ],
         ),
-        if (imageUrl != null && imageUrl!.isNotEmpty)
-          TextButton.icon(
-            onPressed: isLoading ? null : () {
-              _confirmDeleteImage(context);
-            },
-            icon: Icon(Icons.delete, color: Colors.red),
-            label: Text('删除图片', style: TextStyle(color: Colors.red)),
-          ),
       ],
     );
   }
 
+  // 新的预览方法，处理 XFile 和 String
   Widget _buildImagePreview(BuildContext context) {
-    if (isLoading) {
-      return Center(
-        child: CircularProgressIndicator(),
-      );
-    }
+    final source = imageSource;
 
-    if (imageUrl == null || imageUrl!.isEmpty) {
-      return Center(
+    if (source == null) {
+      return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.image, size: 48, color: Colors.grey),
+            Icon(Icons.image_outlined, size: 48, color: Colors.grey),
             SizedBox(height: 8),
-            Text('请选择或输入公告图片', style: TextStyle(color: Colors.grey)),
+            Text('无图片', style: TextStyle(color: Colors.grey)),
           ],
         ),
       );
     }
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(8),
-      child: SafeCachedImage(
-        imageUrl: imageUrl!,
+    Widget imageWidget;
+    if (source is XFile) {
+      // 预览本地文件
+      imageWidget = Image.file(
+        File(source.path),
         fit: BoxFit.cover,
-        onError: (url, error) {
-          print('公告图片预览加载失败: $url, 错误: $error');
+        errorBuilder: (context, error, stackTrace) {
+          print("本地图片预览错误: ${source.path}, $error");
+          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
-      ),
-    );
-  }
-
-  Future<void> _confirmDeleteImage(BuildContext context) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('确认删除'),
-        content: Text('确定要删除此图片吗？此操作不可撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => NavigationUtils.of(context).pop(false),
-            child: Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => NavigationUtils.of(context).pop(true),
-            child: Text('删除', style: TextStyle(color: Colors.red)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true && imageUrl != null && imageUrl!.isNotEmpty) {
-      try {
-        onLoadingChanged(true);
-        await FileUpload.deleteFile(imageUrl!);
-        onImageUrlChanged('');
-      } catch (e) {
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除图片失败：$e')),
-          );
-        }
-      } finally {
-        onLoadingChanged(false);
-      }
+      );
+    } else if (source is String && source.isNotEmpty) {
+      // 预览网络 URL
+      final imageUrl = source;
+      // 确保 URL 完整 (假设 FileUpload.baseUrl 已定义)
+      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${FileUpload.baseUrl}/$imageUrl';
+      imageWidget = SafeCachedImage(
+        imageUrl: displayUrl,
+        fit: BoxFit.cover,
+      );
+    } else {
+      // 无效的源或空字符串
+      return const Center(child: Icon(Icons.help_outline, size: 48, color: Colors.grey));
     }
+
+    // 添加圆角裁剪
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(7.0), // 稍微小于容器的圆角
+      child: imageWidget,
+    );
   }
+
+// _confirmDeleteImage 方法不再需要，因为清除是即时的，没有实际删除服务器文件
 }

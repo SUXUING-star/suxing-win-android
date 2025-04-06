@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/game/comment/comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
@@ -124,15 +124,12 @@ class _CommentItemState extends State<CommentItem> {
           await _commentService.updateComment(gameId, comment.id, text);
           widget.onCommentChanged?.call();
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('评论已更新')),
-            );
+            AppSnackBar.showSuccess(context, '评论已更新');
+
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('编辑评论失败：$e')),
-            );
+            AppSnackBar.showError(context, '编辑评论失败：$e');
           }
         }
       },
@@ -156,15 +153,11 @@ class _CommentItemState extends State<CommentItem> {
           widget.onCommentChanged?.call();
 
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('评论已删除')),
-            );
+            AppSnackBar.showSuccess(context,'评论已删除');
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('删除评论失败：$e')),
-            );
+            AppSnackBar.showError(context,'删除评论失败：$e');
           }
           rethrow; // 重新抛出以便外部捕获（如果需要）
         }

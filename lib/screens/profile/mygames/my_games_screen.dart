@@ -2,10 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../models/game/game.dart'; // 确保这里引用的是你正确的模型路径
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
@@ -72,12 +78,12 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      print('加载我的游戏失败 (Initial): $e');
       setState(() {
         _isLoading = false;
         _hasError = true;
         _errorMessage = '加载我的游戏列表失败: $e';
       });
+      AppSnackBar.showError(context, '加载失败，请稍后重试');
     }
   }
 
@@ -119,10 +125,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       // Optionally show a snackbar or allow retry
       setState(() {
         _isFetchingMore = false;
-        // Keep existing games, maybe show error briefly
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载更多失败'), duration: Duration(seconds: 2)),
-        );
+        AppSnackBar.showWarning(context, '加载更多失败');
       });
     }
   }
@@ -135,41 +138,66 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
   }
 
-  // --- Actions ---
 
-  Future<void> _resubmitGame(Game game) async {
-    if (game.approvalStatus != 'rejected') return; // Safety check
 
+  Future<void> _handleResubmit(Game game) async {
+    // 使用 CustomConfirmDialog 进行确认
+    await CustomConfirmDialog.show( // 或者 showConfirm，取决于你的实现
+      context: context,
+      title: '确认重新提交？',
+      message: '您确定要将《${game.title}》重新提交审核吗？',
+      confirmButtonText: '重新提交',
+      confirmButtonColor: Colors.blue,
+      iconData: Icons.help_outline,
+      iconColor: Colors.blue,
+      onConfirm: () async {
+        // 用户确认后，调用实际的提交逻辑
+        await _executeResubmit(game);
+      },
+      // onCancel 不提供，默认关闭对话框
+    );
+  }
+
+  /// 2. 执行实际的重新提交逻辑 (被 onConfirm 调用)
+  Future<void> _executeResubmit(Game game) async {
+    // 检查状态，虽然理论上按钮只在 rejected 时显示
+    if (game.approvalStatus != 'rejected') return;
+
+    // 这里可以加一个 Loading 状态，但确认对话框自带了，所以可能不需要
     try {
       await _gameService.resubmitGame(game.id);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('《${game.title}》已重新提交审核')),
-      );
-      // Refresh the entire list to reflect the status change potentially
-      _loadInitialGames();
+      if (!mounted) return; // 检查 context 是否有效
+
+      // 使用 AppSnackBar 显示成功信息
+      AppSnackBar.showSuccess(context, '《${game.title}》已重新提交审核');
+
+      // 刷新列表以更新状态
+      await _loadInitialGames(); // 使用 await 确保刷新完成后再继续
+
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('重新提交失败: $e')),
-      );
+      if (!mounted) return; // 检查 context 是否有效
+      print('重新提交失败: $e');
+      // 使用 AppSnackBar 显示错误信息
+      AppSnackBar.showError(context, '重新提交失败: $e');
     }
   }
 
   // --- UI Building ---
 
-  // Helper to get display properties based on status
-  Map<String, dynamic> _getStatusDisplay(String? status) {
-    switch (status?.toLowerCase()) {
-      case 'pending':
-        return {'text': '审核中', 'color': Colors.orange};
-      case 'approved':
-        return {'text': '已通过', 'color': Colors.green};
-      case 'rejected':
-        return {'text': '已拒绝', 'color': Colors.red};
-      default:
-        // Handle null or unexpected status
-        return {'text': '未知', 'color': Colors.grey};
-    }
+  /// 3. 显示拒绝原因 -> 弹出信息对话框
+  void _showReviewCommentDialog(String comment) {
+    // 使用 CustomInfoDialog 显示信息
+    CustomInfoDialog.show(
+      context: context,
+      title: '拒绝原因',
+      message: comment, // 将拒绝原因作为消息显示
+      iconData: Icons.comment_outlined, // 可以用评论相关的图标
+      iconColor: Colors.orange,        // 橙色或红色系
+      closeButtonText: '知道了',
+      // onClose 回调可以留空，如果不需要关闭后执行特定操作
+    );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -192,6 +220,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             _loadInitialGames();
           }
         },
+
         icon: Icons.add,
         tooltip: '提交新游戏',
       ),
@@ -203,192 +232,77 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       return LoadingWidget.inline();
     }
 
+    // 使用 _errorMessage 来显示具体的错误信息
     if (_hasError) {
       return InlineErrorWidget(
         onRetry: _loadInitialGames,
-        errorMessage: _errorMessage,
+        errorMessage: _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',
       );
     }
 
     if (_myGames.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.gamepad_outlined, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('您还没有提交过游戏', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 8),
-            Text('点击右下角按钮创建您的第一个游戏吧！', style: TextStyle(color: Colors.grey)),
-            SizedBox(height: 24),
-            FunctionalButton(
-                onPressed: () {
-                  NavigationUtils.pushNamed(context, AppRoutes.addGame)
-                      .then((_) => _loadInitialGames());
-                },
-                label: '创建新游戏',
-                icon: Icons.videogame_asset_rounded),
-          ],
-        ),
+      return EmptyStateWidget(
+        message: '您还没有提交过游戏',
+        action: FunctionalTextButton(
+            onPressed: () {
+              NavigationUtils.pushNamed(context, AppRoutes.addGame)
+                  .then((result) { // 修改为 .then 处理返回
+                if (result == true && mounted) { // 检查返回结果和 mounted
+                  _loadInitialGames();
+                }
+              });
+            },
+            label: '创建新游戏',
+            icon: Icons.videogame_asset_rounded),
       );
     }
 
-    // Use ListView + GridView.builder for pagination indicator
+    // ListView + GridView 结构保持不变
     return ListView(
         controller: _scrollController,
         padding: EdgeInsets.all(8),
         children: [
           GridView.builder(
-            shrinkWrap: true, // Important for ListView nesting
-            physics:
-                NeverScrollableScrollPhysics(), // Disable GridView's own scrolling
+            shrinkWrap: true,
+            physics: NeverScrollableScrollPhysics(),
             gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 250, // Max width for each card
-              childAspectRatio:
-                  0.70, // Adjust aspect ratio to fit status/buttons
+              maxCrossAxisExtent: 250,
+              childAspectRatio: 0.70, // 可能需要微调以适应 Overlay
               crossAxisSpacing: 8,
               mainAxisSpacing: 12,
             ),
             itemCount: _myGames.length,
             itemBuilder: (context, index) {
               final game = _myGames[index];
-              return _buildGameCard(game);
+              return _buildGameCard(game); // 调用重构后的卡片构建方法
             },
           ),
-          // Loading indicator at the bottom
           if (_isFetchingMore)
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Center(child: CircularProgressIndicator()),
-            ),
+            Padding( // 给加载更多加一点边距
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: LoadingWidget.inline(message: "加载更多..."),
+            )
         ]);
   }
 
+  /// 构建游戏卡片 (现在使用 GameStatusOverlay)
   Widget _buildGameCard(Game game) {
-    final statusInfo = _getStatusDisplay(game.approvalStatus);
-    final bool isRejected = game.approvalStatus?.toLowerCase() == 'rejected';
-    final bool showComment = isRejected &&
-        game.reviewComment != null &&
-        game.reviewComment!.isNotEmpty;
-
     return Stack(
       children: [
-        // Base card content
+        // 基础卡片内容
         BaseGameCard(
           game: game,
-          showTags: true, // Or false based on your preference
+          showTags: true,
           maxTags: 1,
-          // Adjust padding if needed to make space for overlays
         ),
 
-        // Status Badge
-        Positioned(
-          top: 6,
-          left: 6,
-          child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-            decoration: BoxDecoration(
-                color: (statusInfo['color'] as Color).withOpacity(0.85),
-                borderRadius: BorderRadius.circular(12),
-                boxShadow: [
-                  // Optional subtle shadow
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
-                  )
-                ]),
-            child: Text(
-              statusInfo['text'],
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 10, // Slightly smaller font size
-              ),
-            ),
-          ),
+        // 游戏状态、评论、操作按钮的 Overlay
+        GameStatusOverlay(
+          game: game,
+          // 传递处理函数引用
+          onResubmit: () => _handleResubmit(game),
+          onShowReviewComment: _showReviewCommentDialog,
         ),
-
-        // Resubmit Button (Only for rejected)
-        if (isRejected)
-          Positioned(
-            bottom: 8,
-            right: 8,
-            child: Tooltip(
-              // Add tooltip
-              message: '重新提交审核',
-              child: FloatingActionButton.small(
-                heroTag: 'resubmit_${game.id}', // Unique heroTag
-                onPressed: () => _resubmitGame(game),
-                backgroundColor: Colors.blue.shade600,
-                child: Icon(Icons.refresh, size: 18), // Slightly larger icon
-              ),
-            ),
-          ),
-
-        // Review Comment Overlay (Only for rejected with comment)
-        if (showComment)
-          Positioned(
-            // Adjust position to avoid overlapping the resubmit button too much
-            bottom:
-                isRejected ? 55 : 8, // Lift up if resubmit button is present
-            left: 8,
-            right: 8,
-            child: GestureDetector(
-              // Allow tapping to potentially show full comment
-              onTap: () {
-                showDialog(
-                  context: context,
-                  builder: (context) => AlertDialog(
-                    title: Text('拒绝原因'),
-                    content:
-                        SingleChildScrollView(child: Text(game.reviewComment!)),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('关闭'),
-                      ),
-                    ],
-                  ),
-                );
-              },
-              child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-                decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.shade200, width: 0.5),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
-                      )
-                    ]),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min, // Fit content
-                  children: [
-                    Text(
-                      '拒绝原因:',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade800,
-                        fontSize: 11,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      game.reviewComment!,
-                      style: TextStyle(fontSize: 10, color: Colors.black87),
-                      maxLines: 2, // Show preview
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
       ],
     );
   }

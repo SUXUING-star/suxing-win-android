@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/user/cache/account_cache_service.dart';
 import '../../utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
@@ -130,7 +131,9 @@ class _LoginScreenState extends State<LoginScreen> {
 
       // 登录成功后跳转到首页
       if (mounted) {
+        const String successMessage = "登录成功~🎉";
         NavigationUtils.navigateToHome(context, tabIndex: 0);
+        AppSnackBar.showSuccess(context, successMessage);
       }
     } catch (e) {
       if (mounted) {
@@ -138,6 +141,10 @@ class _LoginScreenState extends State<LoginScreen> {
           _errorMessage = '登录失败：${e.toString()}';
           _isLoading = false;
         });
+        if (_errorMessage != null){
+          AppSnackBar.showError(context, _errorMessage!);
+        }
+
       }
     }
   }

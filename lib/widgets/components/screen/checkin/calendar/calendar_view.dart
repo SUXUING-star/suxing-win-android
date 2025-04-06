@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/checkin/calendar_view.dart
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 确保已添加到 pubspec.yaml
+import 'package:intl/intl.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 确保已添加到 pubspec.yaml
 
 class CalendarView extends StatelessWidget {
   final int selectedYear;
@@ -37,30 +38,6 @@ class CalendarView extends StatelessWidget {
       }
     }
     // --- 漏签天数计算结束 ---
-
-    // --- !!! 解决【容器底部溢出】的关键提示 !!! ---
-    // 如果你看到整个日历卡片底部有黄色和黑色的溢出条纹，
-    // 错误信息类似 "A RenderFlex overflowed by XX pixels on the bottom..."
-    // 这【几乎总是】因为你把这个 CalendarView Widget 放在了一个【不可滚动】的父布局里
-    // (例如，直接放在 Column 或 Container 中，而它们的高度不够)。
-    //
-    // >> 解决方法：找到你使用 <CalendarView ... /> 的那个文件 <<
-    // >> 用 SingleChildScrollView 包裹住包含 CalendarView 的那个 Column 或布局 <<
-    //
-    // 示例:
-    // body: SingleChildScrollView( // <--- 添加这个
-    //   child: Padding(
-    //     padding: const EdgeInsets.all(16.0),
-    //     child: Column(
-    //       children: [
-    //         // ... 其他 Widget
-    //         CalendarView(...), // <--- 你的日历在这里
-    //         // ... 其他 Widget
-    //       ],
-    //     ),
-    //   ),
-    // )
-    // --- !!! 关键提示结束 !!! ---
 
     return Card(
       elevation: 2,
@@ -180,12 +157,7 @@ class CalendarView extends StatelessWidget {
 
             // --- 日历网格部分 (Loading 或 Grid) ---
             monthlyData == null
-                ? const Center( // 加载中状态
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 48.0), // 给加载动画一些垂直空间
-                child: CircularProgressIndicator(),
-              ),
-            )
+                ? LoadingWidget.inline()
                 : _buildCalendarGrid(context), // 显示日历网格
             // --- 日历网格部分结束 ---
           ],

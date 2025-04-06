@@ -57,7 +57,7 @@ class GenericFloatingActionButton extends StatelessWidget {
     required this.icon,
     this.tooltip,
     this.heroTag,
-    this.backgroundColor,
+    this.backgroundColor = Colors.white,
     this.foregroundColor,
     this.loadingIndicatorColor,
     this.isLoading = false,

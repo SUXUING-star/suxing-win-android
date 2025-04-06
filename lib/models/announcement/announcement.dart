@@ -180,4 +180,43 @@ class AnnouncementFull {
       createdBy: '',
     );
   }
+// 添加 copyWith 方法
+  AnnouncementFull copyWith({
+    String? id,
+    String? title,
+    String? content,
+    String? type,
+    // 使用 Object? 包装 imageUrl，以便区分 null（显式设置为空）和未提供（保持不变）
+    // 但简单起见，直接用 String? 也可以，需要在调用处处理 null 逻辑
+    String? imageUrl,
+    bool clearImageUrl = false, // 添加标志位明确清除图片
+    String? actionUrl,
+    bool clearActionUrl = false,
+    String? actionText,
+    bool clearActionText = false,
+    DateTime? createdAt,
+    int? priority,
+    bool? isActive,
+    DateTime? startDate,
+    DateTime? endDate,
+    List<String>? targetUsers,
+    String? createdBy,
+  }) {
+    return AnnouncementFull(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      content: content ?? this.content,
+      type: type ?? this.type,
+      imageUrl: clearImageUrl ? null : (imageUrl ?? this.imageUrl),
+      actionUrl: clearActionUrl ? null : (actionUrl ?? this.actionUrl),
+      actionText: clearActionText ? null : (actionText ?? this.actionText),
+      createdAt: createdAt ?? this.createdAt,
+      priority: priority ?? this.priority,
+      isActive: isActive ?? this.isActive,
+      startDate: startDate ?? this.startDate,
+      endDate: endDate ?? this.endDate,
+      targetUsers: targetUsers ?? this.targetUsers,
+      createdBy: createdBy ?? this.createdBy,
+    );
+  }
 }

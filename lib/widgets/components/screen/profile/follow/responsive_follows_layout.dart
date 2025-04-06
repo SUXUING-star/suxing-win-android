@@ -1,6 +1,8 @@
 // lib/widgets/components/screen/profile/responsive_follows_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
@@ -69,8 +71,8 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                   child: Text(
                     '关注 ${followings.length}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Expanded(
@@ -98,8 +100,8 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                   child: Text(
                     '粉丝 ${followers.length}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Expanded(
@@ -148,12 +150,12 @@ class ResponsiveFollowsLayout extends StatelessWidget {
 
   // 列表容器（带刷新功能）
   Widget _buildListContainer(
-      BuildContext context, {
-        required bool isLoading,
-        required List<Map<String, dynamic>> users,
-        required bool isFollowing,
-        required VoidCallback onRefresh,
-      }) {
+    BuildContext context, {
+    required bool isLoading,
+    required List<Map<String, dynamic>> users,
+    required bool isFollowing,
+    required VoidCallback onRefresh,
+  }) {
     if (isLoading) {
       return _buildLoadingView();
     }
@@ -169,43 +171,21 @@ class ResponsiveFollowsLayout extends StatelessWidget {
 
   // 加载中视图
   Widget _buildLoadingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('正在加载...', style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
+    return LoadingWidget.inline(
+      message: '正在加载...',
+      color: Colors.grey[600],
+      size: 12,
     );
   }
 
   // 错误视图
   Widget _buildErrorView(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
-          SizedBox(height: 16),
-          Text(
-            errorMessage ?? '发生错误',
-            style: TextStyle(color: Colors.red[700]),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: 24),
-          ElevatedButton(
-            onPressed: () => onRefresh(),
-            child: Text('重试'),
-          ),
-        ],
-      ),
-    );
+    return InlineErrorWidget(onRetry: onRefresh,errorMessage: '发生错误');
   }
 
   // 用户列表视图
-  Widget _buildUserList(BuildContext context, List<Map<String, dynamic>> users, {required bool isFollowing}) {
+  Widget _buildUserList(BuildContext context, List<Map<String, dynamic>> users,
+      {required bool isFollowing}) {
     if (users.isEmpty) {
       return Center(
         child: Column(
@@ -284,7 +264,8 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (user['bio'] != null && user['bio'].toString().isNotEmpty)
+                        if (user['bio'] != null &&
+                            user['bio'].toString().isNotEmpty)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
                             child: Text(

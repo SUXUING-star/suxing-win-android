@@ -1,6 +1,7 @@
 // lib/widgets/components/button/follow_user_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -184,12 +185,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     if (!_mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('请先登录'),
-          action: SnackBarAction(label: '去登录', onPressed: () => NavigationUtils.pushNamed(context, 'login')),
-        ),
-      );
+      AppSnackBar.showInfo(context, '请先登录');
       return;
     }
     if (_isLoading) return; // 防止重复点击
@@ -219,16 +215,12 @@ class _FollowUserButtonState extends State<FollowUserButton> {
         widget.onFollowChanged?.call();
       } else {
         setState(() { _isLoading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(_isFollowing ? '取消关注失败' : '关注失败'))
-        );
+        AppSnackBar.showError(context, _isFollowing ? '取消关注失败' : '关注失败');
       }
     } catch (e) {
       if (_mounted) {
         setState(() { _isLoading = false; });
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('操作失败: ${e.toString()}')),
-        );
+        AppSnackBar.showError(context,'操作失败: ${e.toString()}');
       }
     }
   }

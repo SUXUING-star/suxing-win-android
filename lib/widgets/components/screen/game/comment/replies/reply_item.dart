@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
@@ -124,16 +125,14 @@ class _ReplyItemState extends State<ReplyItem> {
         try {
           await _gameService.updateComment(gameId, reply.id, text);
           widget.onReplyChanged?.call(); // 使用 ?.call()
+
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('回复已更新')),
-            );
+            AppSnackBar.showSuccess(context, '回复已更新');
           }
         } catch (e) {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('编辑回复失败：$e')),
-            );
+            AppSnackBar.showError(context, '编辑回复失败：$e');
+
           }
         }
       },

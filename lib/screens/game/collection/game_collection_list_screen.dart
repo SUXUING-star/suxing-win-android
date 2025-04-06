@@ -10,7 +10,7 @@ import '../../../routes/app_routes.dart';
 import '../../../services/main/game/collection/game_collection_service.dart';
 import '../../../utils/device/device_utils.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/components/screen/game/card/game_card.dart';
+import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../../widgets/ui/common/error_widget.dart'; // Import error widgets
 import '../../../widgets/ui/common/loading_widget.dart'; // Import loading widgets
 
@@ -138,7 +138,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       itemCount: _games.length,
       itemBuilder: (context, index) {
         final item = _games[index];
-        return GameCard(
+        return BaseGameCard(
           game: item.game,
         );
       },

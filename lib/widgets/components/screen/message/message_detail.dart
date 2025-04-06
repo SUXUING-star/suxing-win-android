@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // 用于时间格式化
 import 'package:suxingchahui/models/message/message_type.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import '../../../../models/message/message.dart';
 
 /// 消息详情展示 Widget (通常用于桌面端的右侧面板)
@@ -59,11 +60,8 @@ class MessageDetail extends StatelessWidget {
 
   /// 构建详情页的头部 AppBar
   Widget _buildHeader(BuildContext context) {
-    return AppBar(
-      title: Text('消息详情', style: TextStyle(fontSize: 18, color: Colors.black87)),
-      backgroundColor: Colors.grey[50], // 使用浅灰色背景
-      elevation: 0.5, // 添加轻微阴影增加层次感
-      automaticallyImplyLeading: false, // 不自动添加返回按钮
+    return CustomAppBar(
+      title: '消息详情',
       actions: [
         IconButton(
           icon: Icon(Icons.close, color: Colors.grey[700]), // 关闭图标

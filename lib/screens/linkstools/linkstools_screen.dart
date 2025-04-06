@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 import '../../services/main/linktool/link_tool_service.dart';
 import '../../models/linkstools/link.dart';
 import '../../models/linkstools/tool.dart';
-import '../../widgets/common/toaster/toaster.dart'; // 假设 Toaster 存在
+import '../../widgets/ui/toaster/toaster.dart'; // 假设 Toaster 存在
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/components/form/linkform/link_form_dialog.dart'; // 假设 LinkFormDialog 存在
 import '../../widgets/components/form/toolform/tool_form_dialog.dart'; // 假设 ToolFormDialog 存在
@@ -228,11 +228,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   Widget _buildLinksToolsContent(bool isAdmin, bool isDesktop) {
     // State 1: Not yet initialized (Waiting for visibility or initial load failed silently)
     if (!_isInitialized && !_isLoadingData) {
-      return Center(child: LoadingWidget(message: "等待加载..."));
+      return LoadingWidget.inline(message: "等待加载...");
     }
     // State 2: Loading initial data or refreshing
     else if (_isLoadingData) {
-      return Center(child: LoadingWidget(message: "正在加载工具和链接..."));
+      return LoadingWidget.inline(message: "正在加载工具和链接...");
     }
     // State 3: Error occurred
     else if (_errorMessage != null) {

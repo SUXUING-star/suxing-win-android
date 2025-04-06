@@ -1,6 +1,7 @@
 // lib/widgets/components/indicators/announcement_indicator.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../services/main/announcement/announcement_service.dart';
 import '../dialogs/announcement/announcement_dialog.dart';
 import '../../../providers/auth/auth_provider.dart';
@@ -134,9 +135,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
 
       if (unreadAnnouncements.isEmpty) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('没有未读公告')),
-          );
+         AppSnackBar.showInfo(context,'没有未读公告');
         }
         return;
       }
@@ -169,9 +168,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
 
       // 如果遇到错误，显示提示
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('加载公告失败，请稍后再试')),
-        );
+        AppSnackBar.showError(context,'加载公告失败，请稍后再试');
       }
     }
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 import 'random_game_card.dart';
@@ -65,12 +66,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const SizedBox(
-        height: 100,
-        child: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
+      return LoadingWidget.inline(size: 10,);
     }
 
     if (_randomGames.isEmpty) {

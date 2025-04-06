@@ -117,9 +117,6 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
     }
 
     // Scroll listener removed
-
-    print(
-        "BaseGameListScreen (${widget.title}) initState: Initialized state, waiting for visibility.");
   }
 
   @override
@@ -131,7 +128,6 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   @override
   void dispose() {
     // Scroll related cleanup removed
-    print("BaseGameListScreen (${widget.title}) dispose: Cleaned up.");
     super.dispose();
   }
 
@@ -159,21 +155,14 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
       {bool isInitialLoad = false, bool isRefresh = false}) async {
     // Prevent concurrent loads (except for refresh)
     if (_isLoading && !isRefresh) {
-      print(
-          "BaseGameListScreen (${widget.title}): Load skipped, already loading.");
       return;
     }
     // Prevent loading if not initialized (unless triggered by initial load or refresh)
     if (!_isInitialized && !isInitialLoad && !isRefresh) {
-      print(
-          "BaseGameListScreen (${widget.title}): Load skipped, not initialized and not initial/refresh trigger.");
       return;
     }
 
     if (!mounted) return; // Check if widget is still in the tree
-
-    print(
-        "BaseGameListScreen (${widget.title}): Loading games... (isInitialLoad: $isInitialLoad, isRefresh: $isRefresh)");
 
     // Set loading state
     setState(() {
@@ -211,8 +200,6 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
       // Update UI state with the new data
       setState(() {
         // Always replace the list, as pagination is handled externally
-        print(
-            "BaseGameListScreen (${widget.title}): Load/Refresh successful, received ${newGames.length} games for the current page/tag.");
         _games = newGames; // Replace the games list
         _isLoading = false; // End loading state
       });
@@ -238,8 +225,6 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   Future<void> _refreshData() async {
     // Prevent refresh if already loading or unmounted
     if (!mounted || _isLoading) {
-      print(
-          "BaseGameListScreen (${widget.title}): Refresh skipped (unmounted or already loading).");
       return;
     }
     print("BaseGameListScreen (${widget.title}): Refresh triggered.");
@@ -276,7 +261,8 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
         try {
           // 调用 GameService 的方法
           await _gameService.invalidateTagRelatedCaches([_selectedTag!]);
-          print("BaseGameListScreen (${widget.title}): Invalidated cache for tag '$_selectedTag'.");
+          print(
+              "BaseGameListScreen (${widget.title}): Invalidated cache for tag '$_selectedTag'.");
         } catch (e) {
           print("Error invalidating tag cache via GameService: $e");
         }
@@ -306,12 +292,8 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
       setState(() {
         // 限制数量的逻辑保持不变
         _topTags = tags.take(50).toList();
-        print(
-            "BaseGameListScreen (${widget.title}): Top tags loaded (${_topTags.length}).");
       });
-    } catch (e) {
-      print('BaseGameListScreen (${widget.title}): Load top tags error: $e');
-    }
+    } catch (e) {}
   }
 
   // --- Handle Tag Selection ---
@@ -697,19 +679,30 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   // --- Build the Game List (ListView or GridView) ---
   Widget _buildContentList({
     required bool isDesktop,
-    bool actuallyShowLeftPanel =
-        false, // Pass panel state for potential card adjustments
+    bool actuallyShowLeftPanel = false,
     bool actuallyShowRightPanel = false,
   }) {
+    // --- 如果列表为空，显示空状态 ---
+    if (_games.isEmpty) {
+      if (!_isLoading && _errorMessage == null) {
+        return _buildEmptyState(context);
+      }
+      return const SizedBox.shrink();
+    }
+
+    // --- 正常构建 GridView (无占位符) ---
     final bool withPanels =
         isDesktop && (actuallyShowLeftPanel || actuallyShowRightPanel);
-    // Calculate grid parameters (columns, aspect ratio)
     final cardsPerRow = DeviceUtils.calculateCardsPerRow(context,
         withPanels: withPanels,
         leftPanelVisible: actuallyShowLeftPanel,
         rightPanelVisible: actuallyShowRightPanel);
-    final useCompactMode = cardsPerRow > 3 ||
-        (cardsPerRow == 3 && withPanels); // Example compactness logic
+
+    if (cardsPerRow <= 0) {
+      return InlineErrorWidget(errorMessage: "发生渲染错误");
+    }
+
+    final useCompactMode = cardsPerRow > 3 || (cardsPerRow == 3 && withPanels);
     final cardRatio = withPanels
         ? DeviceUtils.calculateGameListCardRatio(
             context, actuallyShowLeftPanel, actuallyShowRightPanel,
@@ -717,31 +710,38 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
         : DeviceUtils.calculateSimpleCardRatio(context,
             showTags: widget.showTagSelection);
 
+    // --- 直接使用实际游戏数量 ---
+    final int actualItemCount = _games.length;
+
     return GridView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.all(12),
-        // Define grid structure
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: cardsPerRow,
           childAspectRatio: cardRatio,
-          crossAxisSpacing: 8, // Horizontal spacing
-          mainAxisSpacing: 16, // Vertical spacing
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 16,
         ),
-        itemCount: _games.length, // Item count is just the number of games
+        // --- itemCount 使用实际数量 ---
+        itemCount: actualItemCount,
         itemBuilder: (context, index) {
           final game = _games[index];
-          // Build the card for the grid item
+          // --- 正常构建卡片 ---
           return widget.customCardBuilder != null
               ? widget.customCardBuilder!(game)
               : BaseGameCard(
+                  key: ValueKey(game.id), // 添加 Key
                   game: game,
-                  isGridItem: true, // Indicate it's for a grid
+                  isGridItem: true,
                   adaptForPanels: withPanels,
                   showTags: widget.showTagSelection,
                   showCollectionStats: true,
-                  forceCompact: useCompactMode, // Apply compactness
-                  maxTags: useCompactMode
-                      ? 1
-                      : (withPanels ? 1 : 2), // Adjust tags shown
+                  forceCompact: useCompactMode,
+                  maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
+                  // *** 把点击事件传递给卡片 ***
+                  // 注意：BaseGameCard 内部已经处理了 onTap 跳转，这里不需要再包一层 InkWell 或 GestureDetector
+                  // 如果你的 BaseGameCard 没有处理 onTap，你需要在这里加上：
+                  // onTap: () => widget.onItemTap?.call(game),
                 );
         });
   }
@@ -749,29 +749,17 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   // --- Build Loading State Widget ---
   Widget _buildLoading(String message) {
     // Centered loading indicator with message
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0), // Padding around the widget
-        // Use your custom LoadingWidget or a standard CircularProgressIndicator
-        child: LoadingWidget(message: message),
-      ),
-    );
+    return LoadingWidget.inline(message: message);
   }
 
   // --- Build Error State Widget ---
   Widget _buildError(String message) {
     // Centered error message with a retry button
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        // Use your custom error widget or build one here
-        child: InlineErrorWidget(
-          // Assuming InlineErrorWidget exists
-          errorMessage: message, // Specific error message
-          // Retry action should trigger a refresh
-          onRetry: () => _loadGames(isRefresh: true),
-        ),
-      ),
+    return InlineErrorWidget(
+      // Assuming InlineErrorWidget exists
+      errorMessage: message, // Specific error message
+      // Retry action should trigger a refresh
+      onRetry: () => _loadGames(isRefresh: true),
     );
   }
 

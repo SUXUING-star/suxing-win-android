@@ -1,37 +1,40 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-
+// --- 导入【外部】统一的动画组件 ---
+import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
+// --- 导入骨架屏和其他相关组件 ---
 class LoadingWidget extends StatefulWidget {
   final String? message;
-  final Color? color;
-  final double size;
+  final Color? color; // 动画颜色 (优先使用)
+  final double size;  // 内联模式动画大小 & 覆盖卡片模式动画大小 (现在用同一个控制)
   final bool isOverlay;
   final bool isDismissible;
   final Widget? child;
   final double opacity;
+  // 可以考虑为 overlay 单独添加 size 参数，但按“不大改”原则，暂时共用 size
 
   const LoadingWidget({
     Key? key,
     this.message,
     this.color,
-    this.size = 32.0,
+    this.size = 32.0, // 默认大小调整为通用大小
     this.isOverlay = false,
     this.isDismissible = false,
     this.child,
-    this.opacity = 0.2,
+    this.opacity = 0.3, // 覆盖背景透明度提高一点点
   }) : super(key: key);
 
-  /// 创建一个内联加载指示器，适用于页面中的小区域
+  /// 创建一个内联加载指示器
   factory LoadingWidget.inline({
     String? message,
     Color? color,
-    double size = 24.0,
+    double size = 24.0, // 内联可以小一点
   }) {
     return LoadingWidget(
       message: message,
       color: color,
-      size: size,
+      size: size, // 传递内联特定大小
       isOverlay: false,
     );
   }
@@ -41,7 +44,8 @@ class LoadingWidget extends StatefulWidget {
     String? message,
     Color? color,
     bool isDismissible = false,
-    double opacity = 0.2,
+    double opacity = 0.3,
+    double size = 40.0, // 全屏覆盖可以大一点
   }) {
     return LoadingWidget(
       message: message,
@@ -49,6 +53,7 @@ class LoadingWidget extends StatefulWidget {
       isOverlay: true,
       isDismissible: isDismissible,
       opacity: opacity,
+      size: size, // 传递全屏特定大小
     );
   }
 
@@ -58,7 +63,8 @@ class LoadingWidget extends StatefulWidget {
     String? message,
     Color? color,
     bool isDismissible = false,
-    double opacity = 0.2,
+    double opacity = 0.3,
+    double size = 32.0, // 内容覆盖用默认大小或中等大小
   }) {
     return LoadingWidget(
       message: message,
@@ -67,6 +73,7 @@ class LoadingWidget extends StatefulWidget {
       isDismissible: isDismissible,
       child: child,
       opacity: opacity,
+      size: size, // 传递内容覆盖特定大小
     );
   }
 
@@ -74,54 +81,40 @@ class LoadingWidget extends StatefulWidget {
   State<LoadingWidget> createState() => _LoadingWidgetState();
 }
 
-class _LoadingWidgetState extends State<LoadingWidget>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
+// ** 这个 State 现在不再需要 AnimationController 了 **
+class _LoadingWidgetState extends State<LoadingWidget> {
+  // late AnimationController _controller; // <--- 不再需要！
 
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
+  // @override void initState() { ... _controller = ... } // <--- 不再需要！
+  // @override void dispose() { _controller.dispose(); ... } // <--- 不再需要！
 
   @override
   Widget build(BuildContext context) {
+    // **颜色处理：优先 widget.color，否则主题色**
     final Color loadingColor = widget.color ?? Theme.of(context).primaryColor;
 
-    // 内联加载指示器
+    // 内部结构和逻辑保持不变
     if (!widget.isOverlay) {
+      // **调用内联构建，使用【外部】动画**
       return _buildInlineLoading(loadingColor);
     }
-
-    // 覆盖加载指示器
+    // **调用覆盖构建，使用【外部】动画**
     return _buildOverlayLoading(loadingColor);
   }
 
+  // 内联加载构建方法，【使用 ModernLoadingAnimation】
   Widget _buildInlineLoading(Color color) {
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: CustomPaint(
-              painter: _LoadingPainter(
-                animation: _controller,
-                color: color,
-              ),
-            ),
+          // --- 直接使用外部统一动画组件 ---
+          ModernLoadingAnimation(
+            size: widget.size, // 使用 widget 的 size 控制
+            color: color,      // 使用计算好的颜色
+            // strokeWidth: ..., // 可以按需传递，或使用动画组件的默认值
           ),
-          if (widget.message != null) ...[
+          if (widget.message != null && widget.message!.isNotEmpty) ...[
             const SizedBox(height: 8),
             Text(
               widget.message!,
@@ -138,11 +131,14 @@ class _LoadingWidgetState extends State<LoadingWidget>
     );
   }
 
+  // 覆盖加载构建方法，【内部卡片使用 ModernLoadingAnimation】
   Widget _buildOverlayLoading(Color color) {
     Widget overlay = Material(
       type: MaterialType.transparency,
       child: GestureDetector(
-        onTap: widget.isDismissible ? () => NavigationUtils.pop(context) : null,
+        onTap: widget.isDismissible ? () {
+          try { if (Navigator.canPop(context)) { Navigator.pop(context); } } catch (e) { print("Error dismissing overlay: $e"); }
+        } : null,
         child: Container(
           color: Colors.black.withOpacity(widget.opacity),
           child: Center(
@@ -155,6 +151,7 @@ class _LoadingWidgetState extends State<LoadingWidget>
                   scale: 0.9 + (0.1 * value),
                   child: Opacity(
                     opacity: value,
+                    // **构建卡片，传入最终颜色，内部将使用 ModernLoadingAnimation**
                     child: _buildLoadingCard(color),
                   ),
                 );
@@ -165,54 +162,47 @@ class _LoadingWidgetState extends State<LoadingWidget>
       ),
     );
 
-    // 如果有子Widget，则覆盖在其上方
     if (widget.child != null) {
       return Stack(
         children: [
           widget.child!,
-          overlay,
+          Positioned.fill(child: overlay),
         ],
       );
     }
-
     return overlay;
   }
 
+  // 加载卡片构建方法，【使用 ModernLoadingAnimation】
   Widget _buildLoadingCard(Color color) {
+    // 卡片内文字颜色，可以简单处理，比如根据主题亮度
+    final textColor = Theme.of(context).brightness == Brightness.dark
+        ? Colors.white.withOpacity(0.8)
+        : Colors.black.withOpacity(0.7);
+
     return Container(
       width: 120,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor.withOpacity(0.95),
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            spreadRadius: 0,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        boxShadow: [ BoxShadow( color: Colors.black.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4),),],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          SizedBox(
-            width: widget.size,
-            height: widget.size,
-            child: CustomPaint(
-              painter: _LoadingPainter(
-                animation: _controller,
-                color: color,
-              ),
-            ),
+          // --- 直接使用外部统一动画组件 ---
+          ModernLoadingAnimation(
+            size: widget.size, // 卡片内动画大小也由 widget.size 控制 (按“不大改”原则)
+            color: color,      // 使用传入的颜色
+            // strokeWidth: ..., // 可以按需传递，或使用动画组件的默认值
           ),
-          if (widget.message != null) ...[
+          if (widget.message != null && widget.message!.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(
               widget.message!,
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
+                color: textColor, // 使用计算的文字颜色
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
               ),
@@ -227,206 +217,3 @@ class _LoadingWidgetState extends State<LoadingWidget>
   }
 }
 
-// 骨架屏加载组件
-class SkeletonLoading extends StatefulWidget {
-  final double width;
-  final double height;
-  final double borderRadius;
-  final Color? baseColor;
-  final Color? highlightColor;
-
-  const SkeletonLoading({
-    Key? key,
-    this.width = double.infinity,
-    this.height = 16,
-    this.borderRadius = 4,
-    this.baseColor,
-    this.highlightColor,
-  }) : super(key: key);
-
-  @override
-  State<SkeletonLoading> createState() => _SkeletonLoadingState();
-}
-
-class _SkeletonLoadingState extends State<SkeletonLoading>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      duration: const Duration(milliseconds: 1500),
-      vsync: this,
-    )..repeat();
-
-    _animation = Tween<double>(begin: -2, end: 2).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOutSine),
-    );
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final Color baseColor = widget.baseColor ??
-        (Theme.of(context).brightness == Brightness.light
-            ? Colors.grey.shade300
-            : Colors.grey.shade700);
-
-    final Color highlightColor = widget.highlightColor ??
-        (Theme.of(context).brightness == Brightness.light
-            ? Colors.grey.shade100
-            : Colors.grey.shade600);
-
-    return AnimatedBuilder(
-      animation: _animation,
-      builder: (context, child) {
-        return Container(
-          width: widget.width,
-          height: widget.height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(widget.borderRadius),
-            gradient: LinearGradient(
-              begin: Alignment(_animation.value, 0),
-              end: Alignment(-_animation.value, 0),
-              colors: [
-                baseColor,
-                highlightColor,
-                baseColor,
-              ],
-              stops: const [0.1, 0.5, 0.9],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}
-
-// 列表占位加载组件
-class ListPlaceholderLoading extends StatelessWidget {
-  final int itemCount;
-  final double itemHeight;
-  final EdgeInsetsGeometry padding;
-  final bool hasImage;
-  final bool hasTitle;
-  final bool hasSubtitle;
-  final double spacing;
-
-  const ListPlaceholderLoading({
-    Key? key,
-    this.itemCount = 5,
-    this.itemHeight = 80,
-    this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-    this.hasImage = true,
-    this.hasTitle = true,
-    this.hasSubtitle = true,
-    this.spacing = 8,
-  }) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView.builder(
-      padding: padding,
-      itemCount: itemCount,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemBuilder: (context, index) => Padding(
-        padding: EdgeInsets.only(bottom: index == itemCount - 1 ? 0 : spacing),
-        child: _buildListItem(context),
-      ),
-    );
-  }
-
-  Widget _buildListItem(BuildContext context) {
-    return Container(
-      height: itemHeight,
-      padding: const EdgeInsets.all(8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8),
-        color: Theme.of(context).cardColor,
-      ),
-      child: Row(
-        children: [
-          if (hasImage) ...[
-            SkeletonLoading(
-              width: itemHeight - 16,
-              height: itemHeight - 16,
-              borderRadius: 8,
-            ),
-            SizedBox(width: spacing),
-          ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (hasTitle) ...[
-                  SkeletonLoading(
-                    width: 200,
-                    height: 16,
-                    borderRadius: 4,
-                  ),
-                  SizedBox(height: spacing),
-                ],
-                if (hasSubtitle) ...[
-                  SkeletonLoading(
-                    width: 150,
-                    height: 12,
-                    borderRadius: 4,
-                  ),
-                  SizedBox(height: spacing / 2),
-                  SkeletonLoading(
-                    width: 100,
-                    height: 12,
-                    borderRadius: 4,
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// 自定义加载动画绘制器
-class _LoadingPainter extends CustomPainter {
-  final Animation<double> animation;
-  final Color color;
-
-  _LoadingPainter({required this.animation, required this.color}) : super(repaint: animation);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final Paint paint = Paint()
-      ..color = color.withOpacity(0.2)
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke
-      ..strokeCap = StrokeCap.round;
-
-    // 绘制背景圆环
-    canvas.drawCircle(size.center(Offset.zero), size.width / 2.2, paint);
-
-    // 绘制动态圆弧
-    paint.color = color;
-    final double startAngle = animation.value * 2 * 3.14159;
-    canvas.drawArc(
-      Rect.fromCircle(center: size.center(Offset.zero), radius: size.width / 2.2),
-      startAngle,
-      3.14159,
-      false,
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
-}

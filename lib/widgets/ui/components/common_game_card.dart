@@ -7,7 +7,7 @@ import '../image/safe_cached_image.dart';
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 ///
 /// 该类实现了横向和网格两种布局模式的游戏卡片，子类可以通过重写特定方法来定制行为
-class BaseGameCard extends StatelessWidget {
+class CommonGameCard extends StatelessWidget {
   final Game game;
   final bool isGridItem;
   final bool adaptForPanels;
@@ -15,7 +15,7 @@ class BaseGameCard extends StatelessWidget {
   final int maxTags;
   final bool forceCompact;
 
-  const BaseGameCard({
+  const CommonGameCard({
     Key? key,
     required this.game,
     this.isGridItem = true,

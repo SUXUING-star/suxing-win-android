@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/user/user_checkin_service.dart';
 import '../../services/main/user/user_level_service.dart';
 import '../../models/user/user_checkin.dart';
@@ -212,9 +213,8 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
     } catch (e) {
       print('签到失败: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('签到失败: ${e.toString().replaceAll('Exception: ', '')}')),
-        );
+        final String _errorMessage ='签到失败: ${e.toString().replaceAll('Exception: ', '')}';
+        AppSnackBar.showError(context,_errorMessage);
       }
     } finally {
       if (mounted) {

@@ -132,41 +132,29 @@ class AuthProvider with ChangeNotifier {
   }
 
   // *** 改回原来的 signOut 接口，不需要 BuildContext ***
+  // In AuthProvider
   Future<void> signOut() async {
-    // 可能需要一个加载状态，但暂时移除，保持接口干净
-    // _isRefreshing = true;
-    // notifyListeners();
     try {
-      // *** 这里是关键改动 ***
-      // 尝试直接创建 AnnouncementService 实例来调用 reset
-      // 这假设 AnnouncementService 的 reset 方法不依赖于特定的实例状态
-      // 并且 AnnouncementService 可以被这样实例化。
-      // 如果 AnnouncementService 是单例或需要 Provider 注入，这可能需要调整。
-      // 这是一个常见的折衷方案，以避免修改 signOut 接口。
-      try {
-        final announcementService = AnnouncementService(); // 直接创建实例
-        await announcementService.reset();
-        print("AuthProvider: AnnouncementService reset called successfully.");
-      } catch (e) {
-        print("AuthProvider: Failed to reset AnnouncementService during sign out: $e");
-        // 这个失败通常不应该阻止登出流程
-      }
-
-      // 继续执行登出
+      // 完全委托给 UserService 处理登出逻辑和事件发布
       await _userService.signOut();
-      _userProfileSubscription?.cancel(); // 取消监听
-      _userProfileSubscription = null;
-      _currentUser = null; // 清除本地用户状态
 
-    } catch (e) {
-      print("AuthProvider: Error during sign out: $e");
-      // 即使 UserService 的 signOut 失败，也要确保本地状态被清除
+      // UserService 处理完后，AuthProvider 清理自身状态
       _userProfileSubscription?.cancel();
       _userProfileSubscription = null;
       _currentUser = null;
+      print("AuthProvider: State cleared after successful user service sign out.");
+
+    } catch (e) {
+      print("AuthProvider: Error during sign out delegation: $e");
+      // 即使 userService.signOut 失败，也要清理本地 Auth 状态
+      _userProfileSubscription?.cancel();
+      _userProfileSubscription = null;
+      _currentUser = null;
+      print("AuthProvider: State cleared despite error during sign out delegation.");
+      // 可以选择性地 rethrow(e) 或处理错误
     } finally {
-      // _isRefreshing = false; // 如果使用加载状态，在这里结束
-      notifyListeners(); // 最终通知 UI 用户已登出
+      // 最终确保通知 UI 更新
+      notifyListeners();
     }
   }
 

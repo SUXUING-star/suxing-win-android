@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
 import '../../models/game/game.dart';
 import '../../services/main/game/game_service.dart';
 import '../../services/main/user/user_service.dart';
@@ -10,7 +11,6 @@ import 'package:provider/provider.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/components/loading/loading_route_observer.dart';
 import 'dart:async';
-import '../../widgets/ui/components/base_game_card.dart'; // <--- Add this import
 
 class SearchGameScreen extends StatefulWidget {
   @override
@@ -244,9 +244,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     // Check login status for displaying history
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
-      return Center(
-        child: LoginPromptWidget(),
-      );
+      return  LoginPromptWidget();
     }
 
 
@@ -324,7 +322,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         return Padding(
           // Add padding below each card for spacing within the list
           padding: const EdgeInsets.only(bottom: 12.0), // Increased spacing
-          child: BaseGameCard(
+          child: CommonGameCard(
             game: game,
             isGridItem: false, // Use the list (horizontal) layout
             showTags: true,    // Show tags in the card (default is true)

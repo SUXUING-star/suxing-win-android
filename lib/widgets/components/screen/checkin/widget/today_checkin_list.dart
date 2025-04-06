@@ -1,6 +1,8 @@
 // lib/widgets/components/screen/checkin/today_checkin_list.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/user/user_checkin.dart';
 import '../../../../../services/main/user/user_checkin_service.dart';
 import '../../../../ui/badges/user_info_badge.dart';
@@ -104,31 +106,12 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
 
   Widget _buildContent() {
     if (_isLoading) {
-      return Container(
-        height: 100,
-        alignment: Alignment.center,
-        child: CircularProgressIndicator(),
-      );
+      return LoadingWidget.inline();
     }
 
     if (_checkInList == null || _checkInList!.users.isEmpty) {
-      return Container(
-        height: 100,
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.event_busy, size: 24, color: Colors.grey),
-            SizedBox(height: 8),
-            Text(
-              '今天还没有用户签到',
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+      return EmptyStateWidget(
+        message: '今天还没有用户签到',
       );
     }
 

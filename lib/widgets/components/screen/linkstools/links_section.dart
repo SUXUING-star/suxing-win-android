@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../models/linkstools/link.dart';
 import '../../../../services/main/linktool/link_tool_service.dart';
 import '../../form/linkform/link_form_dialog.dart';
-import '../../../common/toaster/toaster.dart';
+import '../../../ui/toaster/toaster.dart';
 
 class LinksSection extends StatelessWidget {
   final List<Link> links;

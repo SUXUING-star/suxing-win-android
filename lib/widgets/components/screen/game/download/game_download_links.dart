@@ -2,9 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
-import '../../../../common/toaster/toaster.dart';
+import '../../../../ui/toaster/toaster.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../providers/auth/auth_provider.dart';
 
@@ -77,9 +79,9 @@ class GameDownloadLinks extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 16),
-            ElevatedButton(
+            FunctionalTextButton(
               onPressed: () => _navigateToLogin(context),
-              child: const Text('登录'),
+              label: '登录'
             ),
           ],
         ),
@@ -102,16 +104,16 @@ class GameDownloadLinks extends StatelessWidget {
         mode: LaunchMode.externalApplication,
       );
     } else {
-      Toaster.show(context, message: '无法打开外部链接', isError: true);
+      AppSnackBar.showError(context, '无法打开外部链接');
     }
   }
 
   void _copyToClipboard(BuildContext context, String? text) {
     if (text != null) {
       Clipboard.setData(ClipboardData(text: text));
-      Toaster.show(context, message: '链接已复制到剪贴板');
+      AppSnackBar.showSuccess(context, '链接已复制到剪贴板');
     } else {
-      Toaster.show(context, message: '复制失败，链接为空', isError: true);
+      AppSnackBar.showError(context, '复制失败，链接为空');
     }
   }
 }

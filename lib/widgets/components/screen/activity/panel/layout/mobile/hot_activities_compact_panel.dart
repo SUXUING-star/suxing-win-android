@@ -3,6 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart';
 import '../../../utils/activity_utils.dart';
 
 class HotActivitiesCompactPanel extends StatelessWidget {
@@ -131,39 +135,29 @@ class HotActivitiesCompactPanel extends StatelessWidget {
   // 紧凑的活动列表
   Widget _buildCompactActivitiesList(BuildContext context) {
     if (isLoading) {
-      return Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Center(child: CircularProgressIndicator()),
-      );
+      return LoadingWidget.inline(size: 12,);
     }
 
     if (hasError) {
-      return Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Text(errorMessage),
-      );
+      return InlineErrorWidget(errorMessage: errorMessage);
     }
 
     if (hotActivities.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(12.0),
-        child: Text('暂无热门动态'),
-      );
+      return EmptyStateWidget(message: '暂无热门动态');
     }
 
     return Column(
       children: hotActivities.map((activity) {
         final username = activity.user?['username'] ?? '未知用户';
         final activityDescription = ActivityUtils.getActivityDescription(activity);
-
+        final avatarUrl = activity.user?['avatar'] as String?; // 确保类型为 String?
         return ListTile(
-          leading: CircleAvatar(
-            backgroundImage: activity.user?['avatar'] != null
-                ? NetworkImage(activity.user?['avatar'])
-                : null,
-            child: activity.user?['avatar'] == null
-                ? Text(username[0].toUpperCase())
-                : null,
+          leading: SafeUserAvatar(
+            userId: activity.userId,
+            avatarUrl: avatarUrl, // 直接传递可能为 null 的 URL
+            username: username, // 用于生成占位符
+            radius: 20, // ListTile 默认的头像大小半径
+            enableNavigation: false, // ListTile 已经处理了导航
           ),
           title: Text(username, style: TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text(

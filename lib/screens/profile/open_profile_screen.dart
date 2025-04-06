@@ -1,6 +1,9 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import '../../services/main/forum/forum_service.dart';
@@ -23,7 +26,8 @@ class OpenProfileScreen extends StatefulWidget {
   _OpenProfileScreenState createState() => _OpenProfileScreenState();
 }
 
-class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTickerProviderStateMixin {
+class _OpenProfileScreenState extends State<OpenProfileScreen>
+    with SingleTickerProviderStateMixin {
   final UserService _userService = UserService();
   final ForumService _forumService = ForumService();
   final GameService _gameService = GameService();
@@ -69,7 +73,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
       }
 
       // 加载用户帖子
-      final userPosts = await _forumService.getRecentUserPosts(widget.userId, limit: 5);
+      final userPosts =
+          await _forumService.getRecentUserPosts(widget.userId, limit: 5);
 
       // 加载用户发布的游戏
       final userGames = await _gameService.getGamesPaginated(
@@ -118,38 +123,12 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
 
   Widget _buildBody(bool isDesktop) {
     if (_isLoading) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('正在加载用户资料...', style: TextStyle(color: Colors.grey[600])),
-          ],
-        ),
-      );
+      return LoadingWidget.inline(message: '正在加载用户资料...');
     }
 
     if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
-            SizedBox(height: 16),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red[700]),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadUserProfile,
-              child: Text('重新加载'),
-            ),
-          ],
-        ),
-      );
+      return InlineErrorWidget(onRetry: _loadUserProfile,errorMessage: _error,);
+
     }
 
     return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
@@ -224,8 +203,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
                 Text(
                   _user?.username ?? '',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                        fontWeight: FontWeight.bold,
+                      ),
                 ),
                 SizedBox(width: 8),
                 Container(
@@ -270,8 +249,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
             Text(
               '创建于 ${_formatDate(_user?.createTime)}',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+                    color: Colors.grey[600],
+                  ),
             ),
 
             SizedBox(height: 12),
@@ -415,20 +394,12 @@ class _OpenProfileScreenState extends State<OpenProfileScreen> with SingleTicker
   }
 
   Widget _buildEmptyState(String message, IconData icon) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 48, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            message,
-            style: TextStyle(color: Colors.grey[600]),
-          ),
-        ],
-      ),
+    return EmptyStateWidget(
+      message: "啥也没有啊",
+      iconData: icon,
     );
   }
+
   Widget _buildUserStatistics() {
     if (_user == null) return SizedBox.shrink();
 

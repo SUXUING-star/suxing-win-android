@@ -1,6 +1,7 @@
 // lib/screens/activity/activity_feed_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // <--- 引入 VisibilityDetector
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
@@ -74,7 +75,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // 添加滚动监听器用于分页加载 (但只在初始化后才真正工作)
     _scrollController.addListener(_scrollListener);
 
-    print("ActivityFeedScreen (${widget.title}) initState: Initialized, waiting for visibility.");
   }
 
   @override
@@ -82,7 +82,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     _refreshAnimationController.dispose();
-    print("ActivityFeedScreen (${widget.title}) dispose: Cleaned up.");
     super.dispose();
   }
 
@@ -90,7 +89,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void _triggerInitialLoad() {
     // 仅在 Widget 变得可见且尚未初始化时执行
     if (_isVisible && !_isInitialized) {
-      print("ActivityFeedScreen (${widget.title}): Now visible and not initialized. Triggering initial load.");
       // 标记为已初始化，防止重复触发
       _isInitialized = true;
       // 调用实际加载方法，标记为首次加载
@@ -102,23 +100,19 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Future<void> _loadActivities({bool isInitialLoad = false, bool isRefresh = false}) async {
     // 防止重复加载（刷新操作除外）
     if (_isLoadingData && !isRefresh) {
-      print("ActivityFeedScreen (${widget.title}): Load skipped, already loading initial/refresh data.");
       return;
     }
     // 必须是初始化过的（或者由首次加载/刷新触发）才能继续
     if (!_isInitialized && !isInitialLoad && !isRefresh) {
-      print("ActivityFeedScreen (${widget.title}): Load skipped, not initialized and not triggered by initial/refresh.");
       return;
     }
     // 如果正在加载更多，不允许同时进行首次/刷新加载
     if (_isLoadingMore) {
-      print("ActivityFeedScreen (${widget.title}): Load skipped, currently loading more.");
       return;
     }
 
     if (!mounted) return; // 检查 Widget 是否还在树中
 
-    print("ActivityFeedScreen (${widget.title}): Loading activities... (isInitialLoad: $isInitialLoad, isRefresh: $isRefresh)");
 
     // 设置加载状态
     setState(() {
@@ -225,9 +219,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       print('ActivityFeedScreen (${widget.title}): Load more activities error: $e\nStackTrace: $s');
       if (!mounted) return;
       // 加载更多失败通常只提示，不设置全局错误状态
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加载更多失败: $e')),
-      );
+     AppSnackBar.showError(context,'加载更多失败: $e');
       setState(() {
         _isLoadingMore = false; // 结束加载更多状态
       });
@@ -351,22 +343,18 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Widget _buildBodyContent() {
     // State 1: Not initialized (Waiting for visibility or initial load failed silently)
     if (!_isInitialized && !_isLoadingData) {
-      return Center(child: LoadingWidget(message: "等待加载动态..."));
+      return LoadingWidget.inline(message: "等待加载动态...");
     }
     // State 2: Loading initial data or refreshing, and the list is currently empty
     else if (_isLoadingData && _activities.isEmpty) {
-      return Center(child: LoadingWidget(message: "正在加载动态..."));
+      return LoadingWidget.inline(message: "正在加载动态...");
     }
     // State 3: Error occurred, and the list is empty
     else if (_error.isNotEmpty && _activities.isEmpty) {
       // 使用你的 ErrorWidget，或者自定义一个
-      return Center(
-        child: CustomErrorWidget( // Assuming CustomErrorWidget exists
-          title: "加载失败",
+      return InlineErrorWidget( // Assuming CustomErrorWidget exists
           errorMessage: _error,
-          onRetry: () => _loadActivities(isRefresh: true), // Retry triggers refresh
-        ),
-      );
+          onRetry: () => _loadActivities(isRefresh: true));
     }
     // State 4: Data is ready (list might be populated or empty), or loading more
     else {

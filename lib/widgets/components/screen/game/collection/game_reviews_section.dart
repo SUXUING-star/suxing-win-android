@@ -3,7 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart'; // 确认路径正确
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart'; // 确认路径正确
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 确认路径正确
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确认路径正确
 
 class GameReviewSection extends StatefulWidget {
   final Game game;
@@ -23,7 +27,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   final GameCollectionService _collectionService = GameCollectionService();
   List<Map<String, dynamic>> _reviews = [];
   bool _isLoading = true;
-  // bool _hasError = false; // 保留原来的 boolean 标记错误状态
   String? _error; // 或者用 String? 存储错误信息，选择一种与你原代码一致的方式
   int _page = 1;
   final int _pageSize = 5; // 保持你原来设定的分页大小
@@ -32,7 +35,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   @override
   void initState() {
     super.initState();
-    print("GameReviewSection (${widget.game.id}): initState - calling _loadReviews");
     // _loadReviews(); // 保持原来的调用方式
     _loadReviews(isInitialLoad: true); // 传递一个标志，首次加载
   }
@@ -41,7 +43,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
   void didUpdateWidget(GameReviewSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.game.id != widget.game.id) {
-      print("GameReviewSection (${widget.game.id}): gameId changed, resetting and calling _loadReviews");
+
       // 重置状态，保持你原来的方式
       setState(() {
         _reviews = []; // 清空
@@ -68,7 +70,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
       });
       _loadReviews(); // 开始加载数据
     } else {
-      print("GameReviewSection (${widget.game.id}): refresh() called but widget is unmounted.");
+
     }
   }
 
@@ -92,7 +94,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
       final reviews = await _collectionService.getGameReviews(widget.game.id, page: _page);
       // final reviews = await _collectionService.getGameReviews(widget.game.id); // 如果你的 Service 不支持分页，就用这个
 
-      print('GameReviewSection (${widget.game.id}): API response received count: ${reviews.length}'); // 调试输出
+
       if (!mounted) return; // 在 await 后、setState 前检查
 
       setState(() {
@@ -115,7 +117,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
         _error = null; // 如果用 String? 标记，在这里清空
       });
     } catch (e, s) { // 捕获异常和堆栈
-      print('GameReviewSection (${widget.game.id}): Error loading reviews: $e\n$s');
       if (!mounted) return; // 在 catch 块内的 setState 前检查
 
       setState(() {
@@ -125,9 +126,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
           _error = e.toString(); // 记录错误信息
         } else {
           // 加载更多失败，可以选择性地显示提示，例如用 SnackBar
-          ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('加载更多评价失败'), duration: Duration(seconds: 2))
-          );
+         AppSnackBar.showError(context,'加载更多评价失败');
           // 或者什么都不做，让用户可以再次尝试点击加载更多
         }
       });
@@ -137,7 +136,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   // --- build 方法及其子方法保持你原来的结构和样式 ---
   @override
   Widget build(BuildContext context) {
-    // --- 严格使用你原来的 Card 结构 ---
     return Card(
       elevation: 1, // 保持原来的 elevation
       margin: const EdgeInsets.only(bottom: 16), // 保持原来的 margin
@@ -158,10 +156,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
               _buildLoadMoreButton(),
             // 可选：如果正在加载“更多”，可以在底部显示一个小的指示器，不影响Card结构
             if (_isLoading && _page > 1)
-              Padding(
-                padding: const EdgeInsets.only(top: 16.0),
-                child: Center(child: SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))),
-              ),
+              LoadingWidget.inline(size: 16,)
           ],
         ),
       ),
@@ -171,8 +166,16 @@ class GameReviewSectionState extends State<GameReviewSection> {
   Widget _buildHeader() {
     // --- 严格使用你原来的 Header Row 结构和样式 ---
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        Container(
+          width: 4,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Theme.of(context).primaryColor,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: 8),
         Text(
           '玩家评价', // 保持原来的文本
           style: TextStyle( // 保持原来的 TextStyle
@@ -180,10 +183,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
             fontWeight: FontWeight.bold,
           ),
         ),
+        SizedBox(width: 8),
         // 保持原来的显示条数逻辑和样式
         if (_reviews.isNotEmpty)
           Text(
-            '${_reviews.length} 条评价',
+            '共${_reviews.length} 条评价',
             style: TextStyle(
               color: Colors.grey[600],
               fontSize: 14,
@@ -198,44 +202,21 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
     // 1. 首次加载时的 Loading (保持原来的 Center + Padding + Indicator)
     if (_isLoading && _page == 1) { // 改为判断 _page == 1 来确定是否首次加载
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24.0), // 保持原来的 Padding
-          child: CircularProgressIndicator(), // 保持原来的 Indicator
-        ),
-      );
+      return LoadingWidget.inline();
     }
 
     // 2. 加载出错时的显示 (根据你用 _hasError 还是 _error 判断)
     // if (_hasError && _reviews.isEmpty) { // 如果你用 boolean
     if (_error != null && _reviews.isEmpty) { // 如果你用 String?
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0), // 保持原来的 Padding
-          child: Column( // 保持原来的 Column 结构
-            mainAxisSize: MainAxisSize.min, // 让Column只占据需要的高度
-            children: [
-              Text('加载评价时出错'), // 保持原来的文本
-              // Text('加载评价失败: $_error'), // 如果想显示具体错误
-              TextButton.icon( // 保持原来的 TextButton
-                icon: const Icon(Icons.refresh),
-                label: const Text('重试'),
-                onPressed: refresh, // 调用 refresh 方法
-              ),
-            ],
-          ),
-        ),
+      return InlineErrorWidget(
+        errorMessage: '加载评价时出错',
+        onRetry: refresh, // 调用 refresh 方法
       );
     }
 
     // 3. 没有评价时的显示 (保持原来的 Center + Padding + Text)
     if (_reviews.isEmpty && !_isLoading) { // 确保不是在加载中才显示“暂无”
-      return const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24.0), // 保持原来的 Padding
-          child: Text('暂无玩家评价'), // 保持原来的文本
-        ),
-      );
+      return EmptyStateWidget(message: '暂无玩家评价');
     }
 
     // 4. 显示评价列表 (保持原来的 ListView.separated)

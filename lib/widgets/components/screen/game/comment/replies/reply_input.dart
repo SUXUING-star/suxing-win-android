@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/comment/replies/reply_input.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../dialogs/limiter/rate_limit_dialog.dart';
 import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
 
@@ -46,12 +47,7 @@ class _ReplyInputState extends State<ReplyInput> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('回复已提交'),
-            duration: Duration(seconds: 2),
-          ),
-        );
+        AppSnackBar.showSuccess(context, '回复已提交');
       }
     } catch (e) {
       if (mounted) {
@@ -62,13 +58,7 @@ class _ReplyInputState extends State<ReplyInput> {
           final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
           showRateLimitDialog(context, remainingSeconds);
         } else {
-          // 显示常规错误消息
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('回复评论失败: ${e.toString()}'),
-              duration: Duration(seconds: 2),
-            ),
-          );
+          AppSnackBar.showError(context, '回复评论失败: ${e.toString()}');
         }
       }
     } finally {

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import '../../widgets/components/loading/loading_route_observer.dart';
 import '../../widgets/components/screen/home/android/home_hot.dart';
 import '../../widgets/components/screen/home/android/home_latest.dart';
 import '../../widgets/components/screen/home/android/home_banner.dart';
@@ -174,12 +173,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
     // 3. 如果加载出错
     if (_errorMessage != null) {
-      return Scaffold( // 确保有 Scaffold 包裹
-        body: CustomErrorWidget(
+      return CustomErrorWidget(
           errorMessage: _errorMessage!,
           onRetry: _loadData, // 出错重试时直接调用 _loadData
           title: '加载失败',
-        ),
       );
     }
 

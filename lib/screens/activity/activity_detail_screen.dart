@@ -16,6 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ActivityDetailScreen extends StatefulWidget {
   final String activityId;
@@ -34,7 +35,6 @@ class ActivityDetailScreen extends StatefulWidget {
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   final UserActivityService _activityService = UserActivityService();
   UserActivity? _activity;
-  List<ActivityComment> _comments = [];
   bool _isLoading = true;
   bool _isLoadingComments = false;
   String _error = '';
@@ -59,7 +59,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         _activity = widget.activity;
         _isLoading = false;
       });
-      _loadComments();
     } else {
       _loadActivity();
     }
@@ -101,9 +100,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           _error = '未能加载活动详情';
         }
       });
-      if (activity != null) {
-        _loadComments();
-      }
     } catch (e) {
       setStateIfMounted(() {
         _error = '加载活动详情失败: $e';
@@ -114,30 +110,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
   Future<void> _refreshActivity() async {
     await _loadActivity();
-  }
-
-  Future<void> _loadComments() async {
-    if (_isLoadingComments || _activity == null) return;
-
-    setStateIfMounted(() {
-      _isLoadingComments = true;
-      // _currentPage = 1;
-    });
-
-    try {
-      final comments =
-          await _activityService.getActivityComments(_activity!.id);
-      setStateIfMounted(() {
-        _comments = comments;
-        _isLoadingComments = false;
-        // _totalCommentPages = 1; // 假设只有一页
-      });
-    } catch (e) {
-      setStateIfMounted(() {
-        if (_error.isEmpty) _error = '加载评论失败: $e';
-        _isLoadingComments = false;
-      });
-    }
   }
 
   Future<void> _handleLike() async {
@@ -164,9 +136,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         _activity!.likesCount = currentLikesCount;
       });
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('操作失败，请稍后重试')),
-        );
+        AppSnackBar.showError(context, '操作失败，请稍后重试');
       }
     }
   }
@@ -178,7 +148,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           await _activityService.commentOnActivity(_activity!.id, content);
       if (comment != null) {
         setStateIfMounted(() {
-          _comments.insert(0, comment);
+          _activity!.comments.insert(0, comment);
           _activity!.commentsCount += 1;
           _refreshCounter++; // 强制刷新
         });
@@ -189,11 +159,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-              content: Text(
-                  '评论失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}')),
-        );
+        AppSnackBar.showError(context,
+            '评论失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
       }
     }
   }
@@ -201,30 +168,31 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   void _shareActivity() {
     if (_activity == null) return;
     final String shareText =
-        '来自速星茶会的动态：${_activity!.content}\n\n来自用户：${_activity!.user?['username'] ?? '未知用户'}';
+        '来自宿星茶会的动态：${_activity!.content}\n\n来自用户：${_activity!.user?['username'] ?? '未知用户'}';
     Share.share(shareText);
   }
 
   void _handleCommentDeleted(String commentId) {
     setStateIfMounted(() {
-      _comments.removeWhere((comment) => comment.id == commentId);
-      if (_activity != null) {
-        _activity!.commentsCount =
-            _activity!.commentsCount > 0 ? _activity!.commentsCount - 1 : 0;
-        _refreshCounter++; // 强制刷新评论数
-      }
+      _activity!.comments.removeWhere((comment) => comment.id == commentId);
+      _activity!.commentsCount = _activity!.comments.length; // 更新评论总数
+      _refreshCounter++; // 强制刷新UI
     });
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('评论已删除')),
-      );
+      AppSnackBar.showSuccess(context, '评论已删除');
     }
   }
 
-  void _handleCommentLikeToggled(ActivityComment comment) {
-    // 状态已经在 ActivityCommentItem 更新，这里只需触发 setState 刷新活动的总评论点赞（如果需要）
+  void _handleCommentLikeToggled(ActivityComment updatedComment) {
+    if (_activity == null) return;
     setStateIfMounted(() {
-      _refreshCounter++; // 简单强制刷新
+      // 在 _activity!.comments 中找到对应的评论并替换
+      final index =
+          _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
+      if (index != -1) {
+        _activity!.comments[index] = updatedComment; // 使用更新后的对象替换旧的
+        _refreshCounter++; // 强制刷新UI以显示更新的点赞状态/数量
+      }
     });
   }
 
@@ -238,9 +206,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     if (!authProvider.isLoggedIn ||
         authProvider.currentUserId != _activity!.userId) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('您没有权限编辑此动态')),
-        );
+        AppSnackBar.showError(context, '您没有权限编辑此动态');
       }
       return;
     }
@@ -259,14 +225,15 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
           try {
             // 调用服务更新活动
-            final success =
-                await _activityService.updateActivity(_activity!.id, newText);
+            final success = await _activityService.updateActivity(
+                _activity!.id, newText, _activity!.metadata);
 
             if (success) {
               // 更新本地状态
               setStateIfMounted(() {
                 final currentActivity = _activity!;
                 // 创建一个新的 UserActivity 实例，复制旧数据并更新字段
+
                 _activity = UserActivity(
                   id: currentActivity.id,
                   userId: currentActivity.userId,
@@ -289,31 +256,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 _refreshCounter++; // 强制刷新UI
               });
               if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('动态更新成功')),
-                );
+                AppSnackBar.showSuccess(context, '动态更新成功');
               }
             } else {
               throw Exception('Update failed');
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(
-                        '更新失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}')),
-              );
+              AppSnackBar.showError(context,
+                  '更新失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
             }
             // 重新抛出，让 EditDialog 的调用者知道出错了（如果需要）
             rethrow;
           }
         },
       );
-    } catch (e) {
-      // EditDialog 内部或 onSave 抛出的错误
-      debugPrint("Error showing or saving edit dialog: $e");
-      // 这里可以再加一个 SnackBar，如果 EditDialog 内部没有处理的话
-    }
+    } catch (e) {}
   }
 
   // --- 删除活动处理 ---
@@ -328,9 +286,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
     if (!canDelete) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('您没有权限删除此动态')),
-        );
+        AppSnackBar.showError(context, '您没有权限删除此动态');
       }
       return;
     }
@@ -354,20 +310,15 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               if (mounted) {
                 // 删除成功后，关闭当前页面
                 Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('动态已删除')),
-                );
+                AppSnackBar.showSuccess(context, '动态已删除');
               }
             } else {
               throw Exception('Deletion failed');
             }
           } catch (e) {
             if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                    content: Text(
-                        '删除失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}')),
-              );
+              AppSnackBar.showError(context,
+                  '删除失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
             }
             rethrow;
           }
@@ -383,18 +334,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     setStateIfMounted(() {
       _refreshCounter++;
     });
-  }
-
-  void _navigateToUserProfile(String userId) {
-    if (mounted) {
-      // 检查 mounted 状态
-      NavigationUtils.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => OpenProfileScreen(userId: userId),
-        ),
-      );
-    }
   }
 
   @override
@@ -416,7 +355,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         child: ActivityDetailContent(
           key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
           activity: _activity!,
-          comments: _comments,
+          comments: _activity!.comments,
           isLoadingComments: _isLoadingComments,
           scrollController: _scrollController,
           onAddComment: _addComment,

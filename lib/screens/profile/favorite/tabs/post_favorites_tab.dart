@@ -1,5 +1,6 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/post/post.dart';
 import '../../../../services/main/forum/forum_service.dart';
 import '../../../../widgets/components/screen/forum/card/post_grid_view.dart';
@@ -106,12 +107,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
           }
           _isLoading = false;
         });
-        // 可以选择性地用 SnackBar 提示加载更多失败
-        if (!isRefresh) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('加载更多收藏失败: $e')),
-          );
-        }
       }
     }
   }
@@ -134,6 +129,43 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   Future<void> refreshPosts() async {
     return _loadFavoritePosts();
   }
+  // --- 新增：处理 PostCard 的删除（取消收藏）请求 ---
+  Future<void> _handleUnfavoritePost(String postId) async {
+    print("PostFavoritesTab: Handling unfavorite request for $postId");
+    // 不显示确认对话框，直接取消收藏
+    try {
+      // 调用 Service 取消收藏 (toggle 会自动处理状态)
+      final success = await _forumService.togglePostFavorite(postId);
+
+      if (success && mounted) {
+        AppSnackBar.showSuccess(context, '已取消收藏');
+        // 优化：从列表中移除，而不是完全刷新
+        setState(() {
+          _favoritePosts.removeWhere((post) => post.id.toString() == postId);
+          // 如果当前页空了，并且还有上一页，可以考虑返回上一页？或者保持当前页等下次加载。
+          // 简单起见，只移除。或者直接调用 refreshPosts()。
+        });
+        // 可选：调用 refreshPosts() 保证数据完全同步，但会重新加载整页
+        // await refreshPosts();
+      } else if (!success && mounted) {
+        AppSnackBar.showWarning(context, '取消收藏状态未改变');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showError(context, '取消收藏失败: $e');
+      }
+    }
+  }
+
+  // --- 新增：处理 PostCard 的编辑请求 ---
+  void _handleEditPostRequest(Post post) {
+    // 在收藏夹里编辑帖子通常是不允许的，应该引导用户去原帖编辑
+    print("PostFavoritesTab: Edit requested for ${post.id}, showing info message.");
+    AppSnackBar.showInfo(context, '请在帖子详情或我的帖子中进行编辑');
+    // 或者可以考虑跳转到帖子详情页
+    // NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -185,18 +217,20 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
     // 显示帖子列表/网格
     return RefreshIndicator(
-      onRefresh: refreshPosts,
+      onRefresh: refreshPosts, // 下拉刷新回调
       child: PostGridView(
         posts: _favoritePosts,
         scrollController: _scrollController,
-        isLoading: _isLoading,
+        isLoading: _isLoading && _hasMoreData, // 只有加载更多时才传递 isLoading
         hasMoreData: _hasMoreData,
-        onLoadMore: _loadMorePosts,
-        isDesktopLayout: isDesktop,
+        // onLoadMore: _loadMorePosts, // PostGridView 不直接使用 onLoadMore 回调
+        isDesktopLayout: isDesktop, // 根据设备类型判断布局
+        // --- 传递实现好的回调函数 ---
+        onDeleteAction: _handleUnfavoritePost,
+        onEditAction: _handleEditPostRequest,
       ),
     );
   }
-
   @override
   bool get wantKeepAlive => true;
 }

@@ -1,6 +1,8 @@
 // lib/widgets/components/screen/profile/experience/exp_progress_badge.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../../../services/main/user/user_service.dart';
 import 'exp_badge_widget.dart';
 import 'dialog/exp_dialog_content.dart';
@@ -87,43 +89,12 @@ class _ExpProgressBadgeState extends State<ExpProgressBadge> {
 
   // 加载中指示器
   Widget _buildLoadingIndicator() {
-    final bgColor = widget.backgroundColor ?? Theme.of(context).primaryColor;
-
-    return SizedBox(
-      width: widget.size,
-      height: widget.size,
-      child: CircularProgressIndicator(
-        strokeWidth: 2.0,
-        valueColor: AlwaysStoppedAnimation<Color>(bgColor),
-      ),
-    );
+    return LoadingWidget.inline();
   }
 
   // 错误指示器
   Widget _buildErrorIndicator() {
-    return GestureDetector(
-      onTap: _loadProgressData,
-      child: Container(
-        width: widget.size,
-        height: widget.size,
-        decoration: BoxDecoration(
-          color: Colors.grey.shade300,
-          shape: BoxShape.circle,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.1),
-              blurRadius: 2,
-              offset: Offset(0, 1),
-            ),
-          ],
-        ),
-        child: Icon(
-          Icons.refresh,
-          color: Colors.grey.shade700,
-          size: widget.size * 0.6,
-        ),
-      ),
-    );
+    return InlineErrorWidget();
   }
 
   // 显示经验值进度详情对话框

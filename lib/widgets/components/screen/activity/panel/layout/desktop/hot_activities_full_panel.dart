@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../stats/activity_stats_card.dart';
 import '../../stats/hot_activities_list.dart';
 
@@ -80,7 +81,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
               // 热门动态列表
               Expanded(
                 child: isLoading
-                    ? Center(child: CircularProgressIndicator())
+                    ? LoadingWidget.inline(size: 12,)
                     : hasError
                     ? Center(child: Text(errorMessage))
                     : HotActivitiesList(

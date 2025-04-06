@@ -3,6 +3,8 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要�
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/message/message_service.dart';
 import '../../models/message/message.dart';
 import '../../models/message/message_type.dart'; // 需要 MessageTypeInfo
@@ -95,9 +97,7 @@ class _MessageScreenState extends State<MessageScreen> {
       if (!mounted) return;
       setState(() { _isLoading = false; }); // 加载失败也要结束加载状态
       // 显示错误提示
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加载消息失败: $e')),
-      );
+      AppSnackBar.showError(context,'加载消息失败: $e');
     }
   }
 
@@ -139,18 +139,14 @@ class _MessageScreenState extends State<MessageScreen> {
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已将所有消息标记为已读')),
-        );
+        AppSnackBar.showSuccess(context,'已将所有消息标记为已读');
       }
     } catch (e, stackTrace) {
       print('标记所有消息为已读失败: $e\n$stackTrace');
       if (mounted) {
         // 标记失败时，也建议重新加载以获取真实状态
         await _loadGroupedMessages();
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('标记已读操作失败，请重试: $e')),
-        );
+        AppSnackBar.showError(context,'标记已读操作失败，请重试: $e');
       }
     } finally {
       // 可选：结束加载状态
@@ -161,8 +157,6 @@ class _MessageScreenState extends State<MessageScreen> {
   /// 处理消息列表项被点击的事件
   void _handleMessageTap(Message message) async {
     if (!mounted) return;
-    print('处理点击消息: ID=${message.id}, Type=${message.type}, isRead=${message.isRead}');
-
     bool needsStateUpdate = false; // 是否需要更新 UI (例如移除未读标记)
     Message messageForUi = message; // 用于后续操作的消息对象 (可能被更新)
 
@@ -198,18 +192,14 @@ class _MessageScreenState extends State<MessageScreen> {
 
           // 异步调用 API 在后端标记已读 (不需要 await，避免阻塞 UI)
           _messageService.markAsRead(message.id).then((_) {
-            print('远程标记已读成功: ID=${message.id}');
             // 可以在这里再次检查全局已读状态，确保精确
             if (mounted) _checkAllMessagesReadStatus();
           }).catchError((e, stackTrace) {
             // 远程标记失败的处理
-            print('远程标记已读失败: ID=${message.id}, Error: $e\n$stackTrace');
             // 简单处理：可以提示用户，或者让下次刷新来同步状态
             // 注意：不建议在这里回滚本地状态，可能导致 UI 闪烁
             if (mounted) {
-              // ScaffoldMessenger.of(context).showSnackBar(
-              //   SnackBar(content: Text('与服务器同步已读状态时出错')),
-              // );
+
             }
           });
 
@@ -263,9 +253,7 @@ class _MessageScreenState extends State<MessageScreen> {
         if (mounted) {
           // 可以显示一个通用的错误提示页面或 SnackBar
           // NavigationUtils.push(context, MaterialPageRoute(builder: (_) => RouteErrorScreen.genericError(onAction: () => Navigator.pop(context))));
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('无法打开目标页面，请稍后重试。')),
-          );
+          AppSnackBar.showError(context,'无法打开目标页面，请稍后重试。');
         }
       });
     } else {
@@ -289,15 +277,12 @@ class _MessageScreenState extends State<MessageScreen> {
     if (!mounted) return;
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text('提示'),
-        content: Text('此消息没有可查看的关联页面。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: Text('好的'),
-          ),
-        ],
+      builder: (context) => CustomInfoDialog(
+        title: '提示',
+        message: '此消息没有可查看的关联页面。',
+        onClose: () => Navigator.of(context).pop(),
+        closeButtonText: "好的",
+
       ),
     );
   }
@@ -345,9 +330,7 @@ class _MessageScreenState extends State<MessageScreen> {
 
           // 4. 显示成功提示 (检查 mounted)
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('消息已删除'), duration: Duration(seconds: 2)),
-            );
+            AppSnackBar.showSuccess(context,'消息已删除');
           }
 
         } catch (e, stackTrace) {
@@ -355,9 +338,8 @@ class _MessageScreenState extends State<MessageScreen> {
           if (!mounted) return; // 异步操作后再次检查
 
           // 2. 显示错误提示
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败: $e')),
-          );
+          AppSnackBar.showError(context,'删除失败: $e');
+
         }
         // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
       },
@@ -368,7 +350,7 @@ class _MessageScreenState extends State<MessageScreen> {
   Widget _buildMessageContent() {
     // 加载状态
     if (_isLoading && _groupedMessages.isEmpty) {
-      return Center(child: LoadingWidget());
+      return LoadingWidget.inline();
     }
 
     return RefreshIndicator(

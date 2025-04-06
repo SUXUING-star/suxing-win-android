@@ -5,6 +5,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
@@ -46,26 +47,60 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _loadPost() async {
+
+
     try {
       setState(() {
         _isLoading = true;
         _error = null;
+        // 可选：重置 _post 为 null，以显示加载指示器，取决于你的UI设计
+        // _post = null;
       });
 
+      // 1. 获取帖子数据
       final post = await _forumService.getPost(widget.postId);
-      if (post == null) {
-        throw Exception('帖子不存在');
+
+      // --- 增加浏览量逻辑 Start ---
+      if (post != null && mounted) {
+        // 2. 在成功获取到帖子 *之后*，尝试增加浏览量
+        //    这里使用 try-catch 包裹，即使增加浏览量失败，也不影响帖子详情的展示
+        try {
+          // 调用服务层的方法，注意：这里是异步调用，但我们不一定需要 await 它完成，
+          // 可以让它在后台执行，避免阻塞 UI。
+          // 如果需要确保浏览量增加成功才算完成加载，则使用 await。
+          // 通常“增加浏览量”失败了也不是关键错误，所以可以不 await。
+          _forumService.incrementPostView(widget.postId);
+        } catch (viewError) {
+
+          // 这里可以选择是否给用户提示，通常不需要
+          // AppSnackBar.showWarning(context, '无法记录浏览量，但不影响查看');
+        }
+      }
+      // --- 增加浏览量逻辑 End ---
+
+
+      // 3. 更新 UI 状态 (在获取帖子和尝试增加浏览量之后)
+      if (mounted) { // 异步操作后必须检查 mounted
+        setState(() {
+          if (post == null) {
+            _error = '帖子不存在或已被删除';
+            _post = null; // 确保 post 为 null，以便后续显示错误或 Not Found
+          } else {
+            _post = post;
+          }
+          _isLoading = false;
+        });
       }
 
-      setState(() {
-        _post = post;
-        _isLoading = false;
-      });
     } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
+      print("PostDetailScreen: Error loading post ${widget.postId}: $e");
+      if (mounted) {
+        setState(() {
+          _error = '加载帖子失败: ${e.toString()}';
+          _isLoading = false;
+          _post = null; // 加载失败，清空帖子数据
+        });
+      }
     }
   }
 
@@ -123,13 +158,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       await _refreshPost();
 
       // Show confirmation
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('回复成功')),
-      );
+      AppSnackBar.showSuccess(context,'回复成功');
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      AppSnackBar.showError(context, e.toString());
     } finally {
       setState(() {
         _isSubmitting = false;
@@ -162,18 +193,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           NavigationUtils.pop(context, true);
 
           // 显示成功消息
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('帖子已删除')),
-          );
+          AppSnackBar.showSuccess(context,'帖子已删除');
         } catch (e) {
           // 取消加载状态
           setState(() {
             _isLoading = false;
           });
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('删除失败: ${e.toString()}')),
-          );
+          AppSnackBar.showError(context, '删除失败：${e.toString()}');
         }
       },
     );
@@ -195,6 +222,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (result == true) {
       _hasInteraction = true;
       await _refreshPost();
+
     }
   }
 

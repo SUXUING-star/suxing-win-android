@@ -2,8 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/user/user_service.dart';
-import '../../widgets/common/toaster/toaster.dart';
+import '../../widgets/ui/toaster/toaster.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/ui/common/error_widget.dart';
 import '../../widgets/ui/common/loading_widget.dart';
@@ -49,14 +50,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _passwordController.text,
       );
 
-      Toaster.success(context, "重置密码成功，用新的密码进行登录吧！");
+      AppSnackBar.showSuccess(context, "重置密码成功，用新的密码进行登录吧！");
 
       NavigationUtils.pushReplacementNamed(context, '/login');
     } catch (e) {
       setState(() {
         _error = '重置密码失败：${e.toString()}';
       });
-      Toaster.error(context, "重置密码失败");
+      AppSnackBar.showError(context, "重置密码失败");
     } finally {
       setState(() {
         _isLoading = false;
@@ -83,7 +84,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
           // 加载状态
           if (_isLoading)
-            LoadingWidget.fullScreen(message: '正在重置密码...'),
+            LoadingWidget.inline(message: '正在重置密码...'),
 
           // 重置密码表单 - 添加最大宽度约束
           Center(
@@ -127,10 +128,9 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
                         if (_error != null)
                           Padding(
                             padding: const EdgeInsets.only(bottom: 16.0),
-                            child: CustomErrorWidget(
-                              errorMessage: _error!,
+                            child: InlineErrorWidget(
+                              errorMessage: _error! ??'重置密码错误',
                               icon: Icons.error_outline,
-                              title: '重置密码错误',
                               retryText: '重试',
                               iconColor: Colors.red,
                               onRetry: () {

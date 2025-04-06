@@ -10,7 +10,6 @@ import 'package:suxingchahui/widgets/components/screen/activity/button/activity_
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
-import '../dialog/activity_edit_dialog.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;

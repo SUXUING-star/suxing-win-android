@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/form/gameform/game_form.dart';
-import '../../../widgets/common/toaster/toaster.dart';
+import '../../../widgets/ui/toaster/toaster.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // <--- 导入你的自定义对话框
 
 class EditGameScreen extends StatelessWidget {
@@ -25,7 +26,6 @@ class EditGameScreen extends StatelessWidget {
         children: [
           // 添加审核通知信息框 (保持不变)
           Container(
-            // ... (保持不变) ...
             margin: EdgeInsets.all(16),
             padding: EdgeInsets.all(16),
             decoration: BoxDecoration(
@@ -53,12 +53,11 @@ class EditGameScreen extends StatelessWidget {
               onSubmit: (Game updatedGame) async {
                 try {
                   await _gameService.updateGame(updatedGame);
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                  Toaster.success(context, '游戏修改成功');
+                  AppSnackBar.showSuccess(context, "修改成功");
                   // 显示审核通知对话框 (使用新的方法)
                   _showReviewNoticeDialog(context); // <--- 调用更新后的方法
                 } catch (e) {
-                  Toaster.error(context, '修改失败：$e');
+                  AppSnackBar.showError(context,'修改失败: ${e.toString()}');
                 }
               },
             ),

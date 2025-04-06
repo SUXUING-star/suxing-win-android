@@ -3,6 +3,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 假设你的导航工具在这里
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../services/main/user/user_service.dart';
 import '../../../services/main/user/user_ban_service.dart';
@@ -107,9 +111,7 @@ class _UserManagementState extends State<UserManagement> {
                                 // 确保选择的时间不早于当前时间
                                 if (endTime!.isBefore(DateTime.now())) {
                                   endTime = DateTime.now().add(Duration(minutes: 5)); // 或给个最小默认值
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('解封时间不能早于当前时间'))
-                                  );
+                                 AppSnackBar.showError(context,'解封时间不能早于当前时间');
                                 }
                               });
                             }
@@ -131,23 +133,17 @@ class _UserManagementState extends State<UserManagement> {
             // 只有在不 loading 时才响应
             onPressed: _loading ? null : () async {
               if (reasonController.text.trim().isEmpty) {
-                ScaffoldMessenger.of(rootContext).showSnackBar(
-                  SnackBar(content: Text('请输入封禁原因')),
-                );
+                AppSnackBar.showWarning(context,'请输入封禁原因');
                 return;
               }
               // 确保选择了时间（如果不是永久）
               if (!isPermanent && endTime == null) {
-                ScaffoldMessenger.of(rootContext).showSnackBar(
-                  SnackBar(content: Text('请选择解封时间')),
-                );
+                AppSnackBar.showWarning(context,'请选择解封时间');
                 return;
               }
               // 确保时间有效
               if (!isPermanent && endTime != null && endTime!.isBefore(DateTime.now())) {
-                ScaffoldMessenger.of(rootContext).showSnackBar(
-                  SnackBar(content: Text('解封时间不能早于当前时间')),
-                );
+                AppSnackBar.showWarning(context,'解封时间不能早于当前时间');
                 return;
               }
 
@@ -163,15 +159,11 @@ class _UserManagementState extends State<UserManagement> {
                 NavigationUtils.pop(dialogContext);
                 if (mounted) {
                   _refreshUserList();
-                  ScaffoldMessenger.of(rootContext).showSnackBar(
-                    SnackBar(content: Text('用户 ${user['username']} 已被封禁')),
-                  );
+                 AppSnackBar.showSuccess(context,'用户 ${user['username']} 已被封禁');
                 }
               } catch (e) {
                 if (mounted) {
-                  ScaffoldMessenger.of(rootContext).showSnackBar(
-                    SnackBar(content: Text('封禁失败：$e')),
-                  );
+                  AppSnackBar.showError(context,'封禁失败：$e');
                 }
               } finally {
                 if (mounted) setState(() => _loading = false);
@@ -204,15 +196,11 @@ class _UserManagementState extends State<UserManagement> {
                 NavigationUtils.pop(dialogContext);
                 if(mounted) {
                   _refreshUserList();
-                  ScaffoldMessenger.of(rootContext).showSnackBar(
-                    SnackBar(content: Text('已解除用户 ${user['username']} 的封禁')),
-                  );
+                  AppSnackBar.showSuccess(context,'已解除用户 ${user['username']} 的封禁');
                 }
               } catch (e) {
                 if(mounted) {
-                  ScaffoldMessenger.of(rootContext).showSnackBar(
-                    SnackBar(content: Text('操作失败：$e')),
-                  );
+                  AppSnackBar.showError(context,'操作失败：$e');
                 }
               } finally {
                 if (mounted) setState(() => _loading = false);
@@ -242,13 +230,14 @@ class _UserManagementState extends State<UserManagement> {
       future: _userService.getAllUsers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
+          return LoadingWidget.inline();
         }
         if (snapshot.hasError) {
-          return Center(child: Text('加载用户列表失败: ${snapshot.error}\n请尝试下拉刷新。'));
+          return InlineErrorWidget(errorMessage: '加载用户列表失败: ${snapshot.error}\n请尝试下拉刷新。');
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('没有用户数据'));
+          return EmptyStateWidget(
+              message: '没有用户数据');
         }
 
         final users = snapshot.data!;
@@ -355,15 +344,11 @@ class _UserManagementState extends State<UserManagement> {
                                   await _userService.updateUserAdminStatus(userId, value); // 使用 userId
                                   _refreshUserList(); // 刷新整个列表
                                   if(mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('用户 ${user['username']} 已${value ? '设置' : '取消'}管理员'), duration: Duration(seconds: 1)),
-                                    );
+                                    AppSnackBar.showSuccess(context,('用户 ${user['username']} 已${value ? '设置' : '取消'}管理员'));
                                   }
                                 } catch (e) {
                                   if(mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('操作失败: $e')),
-                                    );
+                                    AppSnackBar.showError(context,'操作失败: $e');
                                   }
                                 } finally {
                                   if (mounted) setState(() => _loading = false);

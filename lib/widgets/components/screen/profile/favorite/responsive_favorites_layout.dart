@@ -1,5 +1,8 @@
 // lib/widgets/components/screen/game/favorite/responsive_favorites_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../utils/device/device_utils.dart';
 import 'favorite_game_card.dart';
@@ -48,81 +51,15 @@ class ResponsiveFavoritesLayout extends StatelessWidget {
   }
 
   Widget _buildLoadingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('正在加载收藏游戏...', style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
+    return LoadingWidget.inline(message: '正在加载收藏游戏...', size: 12);
   }
 
   Widget _buildErrorView(String error) {
-    return Center(
-      child: RefreshIndicator(
-        onRefresh: () async {
-          onRefresh();
-        },
-        child: ListView(
-          physics: AlwaysScrollableScrollPhysics(),
-          children: [
-            SizedBox(height: 100),
-            Icon(Icons.error_outline, size: 48, color: Colors.red),
-            SizedBox(height: 16),
-            Text(
-              error,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.red[700]),
-            ),
-            SizedBox(height: 16),
-            Center(
-              child: ElevatedButton(
-                onPressed: onRefresh,
-                child: Text('重新加载'),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return InlineErrorWidget(onRetry: onRefresh, errorMessage: '重新加载');
   }
 
   Widget _buildEmptyView() {
-    return Center(
-      child: RefreshIndicator(
-        onRefresh: () async {
-          onRefresh();
-        },
-        child: ListView(
-          physics: AlwaysScrollableScrollPhysics(),
-          children: [
-            SizedBox(height: 100),
-            Icon(Icons.favorite_border, size: 64, color: Colors.grey[400]),
-            SizedBox(height: 16),
-            Text(
-              '暂无收藏的游戏',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey[600],
-              ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              '您可以通过点击游戏详情页中的红心图标来收藏游戏',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return EmptyStateWidget(message: '暂无收藏的游戏');
   }
 
   // 列表布局 - 适用于移动设备

@@ -2,10 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
-import '../../../widgets/common/toaster/toaster.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
 import '../../../widgets/components/form/postform/config/post_taglists.dart';
 
@@ -41,23 +42,19 @@ class _EditPostScreenState extends State<EditPostScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加载帖子数据失败: $e')),
-      );
+      AppSnackBar.showError(context,'加载帖子数据失败: ${e.toString()}');
+
     }
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return LoadingWidget();
+      return LoadingWidget.fullScreen(message: "正在加载数据");
     }
 
     if (_post == null) {
-      return Scaffold(
-        appBar: CustomAppBar(title: '编辑帖子'),
-        body: Center(child: Text('无法加载帖子数据')),
-      );
+      return CustomErrorWidget(title: '无法加载帖子数据');
     }
 
     return PostForm(
@@ -78,12 +75,10 @@ class _EditPostScreenState extends State<EditPostScreen> {
     try {
       setState(() => _isSubmitting = true);
       await _forumService.updatePost(_post!.id, data.title, data.content, data.tags);
-      Toaster.success(context, "编辑帖子成功！");
+      AppSnackBar.showSuccess(context, "编辑成功");
       NavigationUtils.pop(context, true);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.toString())),
-      );
+      AppSnackBar.showError(context,'编辑失败: ${e.toString()}');
     } finally {
       setState(() => _isSubmitting = false);
     }

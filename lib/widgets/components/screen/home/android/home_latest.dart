@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -185,17 +188,22 @@ class _HomeLatestState extends State<HomeLatest> {
   Widget _buildGameList(BuildContext context) {
     // 显示加载状态
     if (_isLoading) {
-      return _buildLoading();
+      return LoadingWidget.inline();
     }
 
     // 显示错误
     if (_errorMessage != null) {
-      return _buildError(_errorMessage!);
+      return InlineErrorWidget(
+          errorMessage: _errorMessage!, onRetry: _loadGames);
     }
 
     // 没有数据
     if (_cachedGames == null || _cachedGames!.isEmpty) {
-      return _buildEmptyState('暂无最新游戏');
+      return EmptyStateWidget(
+          message: '暂无最新游戏',
+          iconData: Icons.inbox_outlined,
+          iconSize: 40,
+          iconColor: Colors.grey);
     }
 
     // 显示游戏列表
@@ -304,58 +312,6 @@ class _HomeLatestState extends State<HomeLatest> {
                   ),
                 ),
               ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildError(String message) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 40, color: Colors.red),
-            SizedBox(height: 16),
-            Text(
-              message,
-              style: TextStyle(color: Colors.grey[600]),
-            ),
-            SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadGames,
-              child: Text('重试'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoading() {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(String message) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.inbox_outlined, size: 40, color: Colors.grey),
-            SizedBox(height: 16),
-            Text(
-              message,
-              style: TextStyle(color: Colors.grey[600]),
             ),
           ],
         ),

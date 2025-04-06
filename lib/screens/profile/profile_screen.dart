@@ -1,6 +1,7 @@
 // lib/screens/profile/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // <--- 引入懒加载库
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/layout/models/profile_menu_item.dart';
@@ -45,14 +46,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    // --- 不在 initState 中加载数据 ---
-    print("ProfileScreen initState: Initialized, waiting for visibility.");
+
   }
 
   @override
   void dispose() {
-    // 如果有 Controller 或 Listener 需要在这里 dispose
-    print("ProfileScreen dispose: Cleaned up.");
+
     super.dispose();
   }
 
@@ -60,8 +59,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _triggerInitialLoad() {
     // 仅在 Widget 变得可见且尚未初始化时执行
     if (_isVisible && !_isInitialized) {
-      print(
-          "ProfileScreen: Now visible and not initialized. Triggering initial load.");
+
       // 标记为已初始化（即使加载失败也算初始化过一次）
       // 注意：在 _loadUserProfile 开始时再标记 _isLoadingData = true
       _isInitialized = true;
@@ -73,14 +71,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _loadUserProfile() async {
     // 防止重复加载
     if (_isLoadingData) {
-      print("ProfileScreen: Load skipped, already loading profile data.");
       return;
     }
 
     // 检查是否登录
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
-      print("ProfileScreen: User not logged in. Skipping profile load.");
       // 如果未登录，也算“初始化”完成（显示登录提示），但没有加载数据
       if (mounted && !_isInitialized) {
         // 确保在 build 循环外更新状态
@@ -93,7 +89,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     if (!mounted) return; // 检查 Widget 是否还在树中
 
-    print("ProfileScreen: Loading user profile...");
     setState(() {
       _isLoadingData = true; // 开始加载
       _error = null; // 清除旧错误
@@ -111,11 +106,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _user = user; // 保存用户数据
         _isLoadingData = false; // 加载完成
-        print("ProfileScreen: Load successful. User: ${_user?.username}");
       });
     } catch (e, s) {
-      // 捕获错误和堆栈
-      print('ProfileScreen: Load profile error: $e\nStackTrace: $s');
       if (!mounted) return;
       setState(() {
         _error = '加载个人信息失败: $e'; // 设置错误信息
@@ -129,19 +121,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _refreshProfile() async {
     // 防止重复刷新
     if (_isLoadingData) {
-      print("ProfileScreen: Refresh skipped, already loading.");
       return;
     }
     if (!mounted) return;
 
-    print("ProfileScreen: Refresh triggered.");
 
     // (可选) 清除相关缓存
     try {
       await _userService.clearExperienceProgressCache();
-      print("ProfileScreen: Experience cache cleared.");
     } catch (e) {
-      print("ProfileScreen: Error clearing cache during refresh: $e");
     }
 
     // 直接调用加载方法来刷新
@@ -174,8 +162,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // 简单验证
           if (newUsername.trim().isEmpty) {
             if (mounted)
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text('用户名不能为空')));
+              AppSnackBar.showWarning(context, '用户名不能为空');
+
             return;
           }
           if (newUsername.trim() == user.username) {
@@ -188,13 +176,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
           await _loadUserProfile();
 
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('用户名更新成功')));
+            AppSnackBar.showSuccess(context, '用户名更新成功');
+
           }
         } catch (e) {
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('更新失败：$e')));
+            AppSnackBar.showError(context, '更新失败：$e');
+
           }
         }
       },
@@ -210,16 +198,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         await launchUrl(uri, mode: LaunchMode.externalApplication); // 在外部浏览器打开
       } else {
         if (mounted) {
-          // 异步操作后检查 mounted
-          ScaffoldMessenger.of(context)
-              .showSnackBar(SnackBar(content: Text('无法打开反馈页面')));
+          AppSnackBar.showError(context, '无法打开反馈页面');
         }
       }
     } catch (e) {
       if (mounted) {
-        // 异步操作后检查 mounted
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('打开反馈页面时出错：$e')));
+        AppSnackBar.showError(context, '打开反馈页面时出错：$e');
       }
     }
   }
@@ -428,36 +412,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // State 1: 用户未登录
     if (!authProvider.isLoggedIn) {
-      // 即使 _isInitialized 为 true，只要未登录就显示登录提示
-      print("ProfileScreen Build: User not logged in, showing LoginPrompt.");
       return LoginPromptWidget(isDesktop: useDesktopLayout); // 显示登录提示组件
     }
 
     // State 2: 尚未初始化 (等待 VisibilityDetector 触发首次加载)
     if (!_isInitialized) {
-      print("ProfileScreen Build: Not initialized, showing Loading.");
-      return Center(child: LoadingWidget(message: "等待加载个人信息..."));
+      return LoadingWidget.inline(message: "等待加载个人信息...");
     }
 
     // State 3: 正在加载数据 (首次加载或刷新中)
     if (_isLoadingData) {
-      print("ProfileScreen Build: Loading data, showing Loading.");
-      // 如果已有旧数据 _user != null，可以考虑显示旧数据+加载指示器，体验更好
-      // 这里简单处理，直接显示 Loading
-      return Center(child: LoadingWidget(message: "正在加载个人信息..."));
+      return LoadingWidget.inline(message: "正在加载个人信息...");
     }
 
     // State 4: 加载出错
     if (_error != null) {
       print("ProfileScreen Build: Error occurred, showing ErrorWidget.");
-      return Center(
-        // 居中显示错误信息
-        child: CustomErrorWidget(
-          // 或者 InlineErrorWidget
-          title: "加载失败",
-          errorMessage: _error!,
-          onRetry: _refreshProfile, // 重试按钮触发刷新
-        ),
+      return InlineErrorWidget(
+        errorMessage: _error!,
+        onRetry: _refreshProfile, // 重试按钮触发刷新)
       );
     }
 
@@ -466,8 +439,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       print(
           "ProfileScreen Build: User data is null after load, showing ErrorWidget.");
       return Center(
-        child: CustomErrorWidget(
-          title: "错误",
+        child: InlineErrorWidget(
           errorMessage: "无法获取用户信息，请稍后重试。",
           onRetry: _refreshProfile,
         ),

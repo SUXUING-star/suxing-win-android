@@ -2,6 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+// 1. 导入 CachedNetworkImageProvider
+import 'package:cached_network_image/cached_network_image.dart';
+// 2. 导入你的 URL 工具类 (如果 SafeCachedImage 里的 UrlUtils 在别处)
+import 'package:suxingchahui/utils/network/url_utils.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+// 3. 不再需要导入 SafeCachedImage 了
+// import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class ImagePreviewScreen extends StatefulWidget {
   final List<String> images;
@@ -45,27 +52,43 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
           '${currentIndex + 1}/${widget.images.length}',
           style: TextStyle(color: Colors.white),
         ),
+        // 可选：添加关闭按钮
+        leading: IconButton(
+          icon: Icon(Icons.close),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
       ),
       body: PhotoViewGallery.builder(
         scrollPhysics: const BouncingScrollPhysics(),
         builder: (BuildContext context, int index) {
+          // 4. 获取原始 URL
+          final String imageUrl = widget.images[index];
+          // 5. 使用你的 URL 工具类处理 URL (重要！)
+          final String safeUrl = UrlUtils.getSafeUrl(imageUrl);
+
           return PhotoViewGalleryPageOptions(
-            imageProvider: NetworkImage(widget.images[index]),
+            // 6. 直接使用 CachedNetworkImageProvider
+            imageProvider: CachedNetworkImageProvider(safeUrl),
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 2,
+            // 可选：如果你想在 PhotoView 层面处理英雄动画 tag
+            // heroAttributes: PhotoViewHeroAttributes(tag: safeUrl + index.toString()), // 确保 tag 唯一
           );
         },
         itemCount: widget.images.length,
-        loadingBuilder: (context, event) => Center(
-          child: CircularProgressIndicator(),
-        ),
+        // 7. PhotoViewGallery 自带 loadingBuilder，会使用这里的
+        loadingBuilder: (context, event) {
+          return LoadingWidget.inline();
+        },
         pageController: pageController,
         onPageChanged: (index) {
           setState(() {
             currentIndex = index;
           });
         },
+        // 可选：背景装饰，默认就是黑的，但可以明确设置
+        backgroundDecoration: BoxDecoration(color: Colors.black),
       ),
     );
   }
