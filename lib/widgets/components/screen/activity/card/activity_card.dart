@@ -1,28 +1,37 @@
-// lib/widgets/components/screen/activity/card/activity_card.dart
+import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/screens/profile/open_profile_screen.dart'; // 需要用户 Profile 页面
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
-import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
+import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart'; // 引入 SafeUserAvatar
 
 class ActivityCard extends StatefulWidget {
   final UserActivity activity;
-  final bool isAlternate; // 是否交替布局（用于左右交错）
-  final VoidCallback? onUpdated; // 更新回调
-  final bool isInDetailView; // 是否在详情页面中显示
-  final Function(UserActivity)? onActivityTap; // 点击活动的回调
-  final bool hasOwnBackground; // 是否有自己的背景色（用于详情页避免重叠）
-  final VoidCallback? onEdit;     // <--- 确保有这个
-  final VoidCallback? onDelete;   // <--- 确保有这个
+  final bool isAlternate;
+  final VoidCallback? onUpdated;
+  final bool isInDetailView;
+  final Function(UserActivity)? onActivityTap;
+  final bool hasOwnBackground;
+
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
+  final VoidCallback? onLike;
+  final VoidCallback? onUnlike;
+  final FutureOr<ActivityComment?> Function(String activityId, String content)? onAddComment;
+  final FutureOr<void> Function(String activityId, String commentId)? onDeleteComment; // 修改这里！
+  final FutureOr<void> Function(String activityId, String commentId)? onLikeComment;   // 修改这里！
+  final FutureOr<void> Function(String activityId, String commentId)? onUnlikeComment; // 修改这里！
 
   const ActivityCard({
     Key? key,
@@ -31,9 +40,15 @@ class ActivityCard extends StatefulWidget {
     this.onUpdated,
     this.isInDetailView = false,
     this.onActivityTap,
-    this.onEdit,     // <--- 接收
-    this.onDelete,   // <--- 接收
     this.hasOwnBackground = true,
+    this.onEdit,
+    this.onDelete,
+    this.onLike,
+    this.onUnlike,
+    this.onAddComment,
+    this.onDeleteComment,
+    this.onLikeComment,
+    this.onUnlikeComment,
   }) : super(key: key);
 
   @override
@@ -42,11 +57,12 @@ class ActivityCard extends StatefulWidget {
 
 class _ActivityCardState extends State<ActivityCard> {
   late UserActivity _activity;
-  bool _isAlternate =false;
-  final UserActivityService _activityService = UserActivityService();
+  bool _isAlternate = false;
   bool _showComments = false;
-  late double _cardHeight; // 控制卡片高度
-  late double _cardWidth; // 控制卡片宽度
+  late double _cardHeight;
+  late double _cardWidth;
+  final TextEditingController _commentController = TextEditingController();
+  bool _isSubmittingComment = false;
 
   @override
   void initState() {
@@ -56,316 +72,171 @@ class _ActivityCardState extends State<ActivityCard> {
     _initializeCardProperties();
   }
 
-  // 初始化卡片属性（保留原有的卡片高度和宽度计算逻辑）
-  void _initializeCardProperties() {
-    final random = math.Random(widget.activity.id.hashCode);
-
-    final bool hasContent = _activity.content.isNotEmpty;
-    final bool hasTarget = _activity.targetType != null;
-    final bool hasComments = _activity.comments.isNotEmpty;
-
-    // 高度计算
-    double minHeight = 1.0;
-    double maxHeight = 1.5;
-
-    if (hasContent && hasTarget) {
-      minHeight = 1.0;
-      maxHeight = 1.8;
-    } else if (hasContent) {
-      minHeight = 0.9;
-      maxHeight = 1.5;
-    } else if (hasTarget) {
-      minHeight = 1.0;
-      maxHeight = 1.4;
-    } else {
-      minHeight = 0.8;
-      maxHeight = 1.2;
-    }
-
-    // 根据内容长度增加高度变化
-    double contentLengthFactor = 0;
-    if (hasContent) {
-      contentLengthFactor = math.min(
-          _activity.content.length / 200, // 假设200字符为满分
-          0.3 // 最多增加0.3的高度系数
-      );
-    }
-
-    _cardHeight = minHeight + random.nextDouble() * (maxHeight - minHeight) + contentLengthFactor;
-
-    // 添加宽度计算，让卡片宽度也有变化，更像聊天气泡
-    // 宽度会根据内容长度和类型有所变化
-    double widthBase = 0.75; // 基础宽度，屏幕的75%
-    double widthVariation = 0.2; // 最大变化量，屏幕的20%
-
-    // 根据内容长度调整宽度
-    double contentWidthFactor = 0;
-    if (hasContent) {
-      contentWidthFactor = math.min(
-          _activity.content.length / 300, // 假设300字符为满分
-          0.15 // 最多增加0.15的宽度系数
-      );
-    }
-
-    _cardWidth = widthBase + random.nextDouble() * widthVariation + contentWidthFactor;
-
-    // 如果在详情页中，则宽度设为更大的值
-    if (widget.isInDetailView) {
-      _cardWidth = 0.95;
-    }
-  }
-
-
   @override
   void didUpdateWidget(ActivityCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.activity != widget.activity) {
-      _activity = widget.activity;
-      _initializeCardProperties();
+    if (widget.activity.id != oldWidget.activity.id ||
+        widget.activity.updateTime != oldWidget.activity.updateTime) {
+      setState(() => _activity = widget.activity);
+    }
+    if (widget.isAlternate != oldWidget.isAlternate) {
+      setState(() => _isAlternate = widget.isAlternate);
     }
   }
 
-  // 处理点赞
-  Future<void> _handleLike() async {
+  @override
+  void dispose() {
+    _commentController.dispose();
+    super.dispose();
+  }
+
+  void _initializeCardProperties() {
+    final random = math.Random(widget.activity.id.hashCode);
+    final bool hasContent = _activity.content.isNotEmpty;
+    final bool hasTarget = _activity.targetType != null;
+    double minHeight = 1.0, maxHeight = 1.5;
+    if (hasContent && hasTarget) { minHeight = 1.0; maxHeight = 1.8; }
+    else if (hasContent) { minHeight = 0.9; maxHeight = 1.5; }
+    else if (hasTarget) { minHeight = 1.0; maxHeight = 1.4; }
+    else { minHeight = 0.8; maxHeight = 1.2; }
+    double contentLengthFactor = hasContent ? math.min(_activity.content.length / 200, 0.3) : 0;
+    _cardHeight = minHeight + random.nextDouble() * (maxHeight - minHeight) + contentLengthFactor;
+    double widthBase = 0.75, widthVariation = 0.2;
+    double contentWidthFactor = hasContent ? math.min(_activity.content.length / 300, 0.15) : 0;
+    _cardWidth = widthBase + random.nextDouble() * widthVariation + contentWidthFactor;
+    if (widget.isInDetailView) _cardWidth = 0.95;
+  }
+
+  void _handleLike() {
+    if (widget.onLike == null && widget.onUnlike == null) return;
     HapticFeedback.lightImpact();
+    final originalLikedState = _activity.isLiked;
+    final originalLikesCount = _activity.likesCount;
+    setState(() { _activity.isLiked = !originalLikedState; _activity.likesCount += _activity.isLiked ? 1 : -1; if (_activity.likesCount < 0) _activity.likesCount = 0; });
+    try { if (_activity.isLiked) { widget.onLike?.call(); } else { widget.onUnlike?.call(); } widget.onUpdated?.call(); }
+    catch (e) { if (mounted) { setState(() { _activity.isLiked = originalLikedState; _activity.likesCount = originalLikesCount; }); } }
+  }
 
-    bool success;
+  void _handleComment() { HapticFeedback.mediumImpact(); setState(() => _showComments = !_showComments); }
 
-    if (_activity.isLiked) {
-      success = await _activityService.unlikeActivity(_activity.id);
-      if (success) {
+  // --- 这个方法现在由 ActivityCommentInput 的 onSubmit 调用 ---
+  Future<void> _addComment(String content) async { // <--- 接收 String content
+    // content 由 ActivityCommentInput 传递进来，已经 trim 过了
+    if (content.isEmpty || _isSubmittingComment) return;
+    if (widget.onAddComment == null) {
+      if (mounted) AppSnackBar.showError(context, '无法添加评论');
+      return;
+    }
+
+    HapticFeedback.lightImpact();
+    setState(() => _isSubmittingComment = true); // 开始提交状态
+
+    try {
+      // --- 调用父级传递的 onAddComment 回调，传入 activityId 和 content ---
+      final newComment = await widget.onAddComment!(_activity.id, content);
+      if (newComment != null && mounted) {
         setState(() {
-          _activity.isLiked = false;
-          _activity.likesCount -= 1;
+          // 评论成功，更新计数，展开评论区
+          _activity.commentsCount += 1;
+          _showComments = true;
+          // 不再需要清空 controller，由 ActivityCommentInput 内部处理
         });
+        widget.onUpdated?.call(); // 通知父级（可选）
+        // 可以在这里或父级显示成功提示
+        // AppSnackBar.showSuccess(context, '评论成功');
+      } else if (mounted) {
+        // 父级返回 null 可能表示失败
+        throw Exception("添加评论失败"); // 抛出异常以便 catch 处理
       }
-    } else {
-      success = await _activityService.likeActivity(_activity.id);
-      if (success) {
-        setState(() {
-          _activity.isLiked = true;
-          _activity.likesCount += 1;
-        });
-      }
-    }
-
-    if (!success) {
+    } catch (e) {
+      if (mounted) AppSnackBar.showError(context, '评论失败: $e');
+    } finally {
+      // --- 无论成功失败，结束提交状态 ---
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('操作失败，请稍后重试')),
-        );
-      }
-    }
-
-    if (widget.onUpdated != null) {
-      widget.onUpdated!();
-    }
-  }
-
-  // 处理评论切换
-  void _handleComment() {
-    HapticFeedback.mediumImpact();
-
-    setState(() {
-      _showComments = !_showComments;
-    });
-  }
-
-  // 添加评论
-  Future<void> _addComment(String content) async {
-    if (content.trim().isEmpty) return;
-
-    final comment = await _activityService.commentOnActivity(_activity.id, content);
-    if (comment != null) {
-      setState(() {
-        _activity.comments.add(comment);
-        _activity.commentsCount += 1;
-      });
-
-      if (widget.onUpdated != null) {
-        widget.onUpdated!();
-      }
-    } else {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('评论失败，请稍后重试')),
-        );
+        setState(() => _isSubmittingComment = false);
       }
     }
   }
 
-  // 删除评论
-  void _handleCommentDeleted(String commentId) {
-    setState(() {
-      _activity.comments.removeWhere((comment) => comment.id == commentId);
-      _activity.commentsCount = _activity.commentsCount > 0 ? _activity.commentsCount - 1 : 0;
-    });
-
-    if (widget.onUpdated != null) {
-      widget.onUpdated!();
-    }
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('评论已删除')),
-    );
-  }
-
-  // 导航到用户个人资料页
+  // --- 导航到用户 Profile ---
   void _navigateToUserProfile(String userId) {
-    NavigationUtils.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OpenProfileScreen(userId: userId),
-      ),
-    );
+    // 这个方法之前写的是空的，现在补全
+    print("Navigating to user profile: $userId");
+    NavigationUtils.push(context, MaterialPageRoute(builder: (context) => OpenProfileScreen(userId: userId)));
   }
 
-  // 处理活动卡片点击
   void _handleActivityTap() {
-    // 如果在详情页内，或者没有提供点击回调，则不执行任何操作
     if (widget.isInDetailView || widget.onActivityTap == null) return;
-
-    // 触发轻度触觉反馈
     HapticFeedback.selectionClick();
-
-    // 调用回调，传递活动数据
-    widget.onActivityTap!(_activity);
+    widget.onActivityTap!(widget.activity);
   }
 
   @override
   Widget build(BuildContext context) {
-    // 获取屏幕宽度用于计算卡片宽度
     final screenWidth = MediaQuery.of(context).size.width;
     final calculatedWidth = screenWidth * _cardWidth;
 
-    // 内容部分的Widget
+    // --- 内容 Widget (传递 edit/delete 给 Header) ---
     Widget contentWidget = Column(
-      crossAxisAlignment: widget.isAlternate
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
+      crossAxisAlignment: _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
-        // 使用ActivityHeader组件
         ActivityHeader(
-          user: _activity.user,
-          createTime: _activity.createTime,
-          activityType: _activity.type,
-          isAlternate: widget.isAlternate,
-          cardHeight: _cardHeight * 0.8, // 缩小字体比例
-          onEdit: widget.onEdit,     // <--- 传递给 Header
-          onDelete: widget.onDelete, // <--- 传递给 Header
+          user: _activity.user, createTime: _activity.createTime, updateTime: _activity.updateTime,
+          isEdited: _activity.isEdited, activityType: _activity.type, isAlternate: _isAlternate,
+          cardHeight: _cardHeight,
+          onEdit: widget.onEdit,
+          onDelete: widget.onDelete,
         ),
-
         SizedBox(height: 12 * _cardHeight),
-
-
-        // 内容文本
         if (_activity.content.isNotEmpty)
           Container(
             width: double.infinity,
-            alignment: widget.isAlternate
-                ? Alignment.centerRight
-                : Alignment.centerLeft,
-            child: Text(
-              _activity.content,
-              style: TextStyle(fontSize: 14 * math.sqrt(_cardHeight * 0.7)), // 调小字体大小
-              textAlign: widget.isAlternate ? TextAlign.right : TextAlign.left,
-            ),
+            alignment: _isAlternate ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(_activity.content, style: TextStyle(fontSize: 14 * math.sqrt(_cardHeight * 0.7)), textAlign: _isAlternate ? TextAlign.right : TextAlign.left),
           ),
-
-        // 使用ActivityTarget组件
         if (_activity.targetType != null) ...[
           SizedBox(height: 12 * _cardHeight),
-          ActivityTarget(
-            target: _activity.target,
-            targetType: _activity.targetType,
-            isAlternate: widget.isAlternate,
-            cardHeight: _cardHeight * 0.8, // 缩小比例
-          ),
+          ActivityTarget(target: _activity.target, targetType: _activity.targetType, isAlternate: _isAlternate, cardHeight: _cardHeight),
         ],
-        // 添加导航至目标组件
-        ActivityTargetNavigation(
-          activity: _activity,
-          isAlternate: _isAlternate,
-        ),
-
-
-
+        ActivityTargetNavigation(activity: _activity, isAlternate: _isAlternate),
         SizedBox(height: 16 * _cardHeight),
-
-        // 使用ActivityActionButtons组件
         ActivityActionButtons(
-          isLiked: _activity.isLiked,
-          likesCount: _activity.likesCount,
-          commentsCount: _activity.commentsCount,
-          isAlternate: widget.isAlternate,
-          cardHeight: _cardHeight * 0.8, // 缩小比例
+          isLiked: _activity.isLiked, likesCount: _activity.likesCount, commentsCount: _activity.commentsCount,
+          isAlternate: _isAlternate, cardHeight: _cardHeight,
           onLike: _handleLike,
           onComment: _handleComment,
         ),
-
-        // 评论区域
         if (_showComments || _activity.comments.isNotEmpty) ...[
-          const Divider(height: 24),
+          const Divider(height: 24, indent: 16, endIndent: 16, thickness: 0.5),
           _buildComments(),
         ]
       ],
     );
 
-    // 如果不需要自己的背景（在详情页里的卡片），则直接返回内容
+    // --- 卡片包装 ---
     if (!widget.hasOwnBackground) {
-      return MouseRegion(
-        cursor: SystemMouseCursors.click,
-        child: GestureDetector(
-          onTap: _handleActivityTap,
-          child: contentWidget,
-        ),
+      // 详情页中的卡片可能不需要额外的点击区域和背景
+      return Padding( // 添加一些内边距，模拟卡片效果
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
+        child: contentWidget,
       );
     }
-
-    // 否则用卡片包装内容，保持原有的左右交错排列
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      // 根据是否为交替布局（左右交错）调整对齐方式
-      alignment: widget.isAlternate ? Alignment.centerRight : Alignment.centerLeft,
-      padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 4 * _cardHeight,
-      ),
+      duration: const Duration(milliseconds: 300), margin: const EdgeInsets.symmetric(vertical: 8),
+      alignment: _isAlternate ? Alignment.centerRight : Alignment.centerLeft,
+      padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4 * _cardHeight),
       child: MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: _handleActivityTap,
           child: Container(
-            width: calculatedWidth,
-            constraints: BoxConstraints(
-              maxWidth: screenWidth * 0.95, // 最大不超过屏幕宽度的95%
-              minWidth: screenWidth * 0.6,  // 最小不小于屏幕宽度的60%
-            ),
+            width: calculatedWidth, constraints: BoxConstraints(maxWidth: screenWidth * 0.95, minWidth: screenWidth * 0.6),
             child: Card(
-              elevation: 1, // 减小阴影
-              margin: EdgeInsets.zero,
-              // 使用更圆润的边角，增加气泡效果
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(widget.isAlternate ? 20 : 4),
-                  topRight: Radius.circular(widget.isAlternate ? 4 : 20),
-                  bottomLeft: const Radius.circular(20),
-                  bottomRight: const Radius.circular(20),
-                ),
-              ),
+              elevation: 1, margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(_isAlternate ? 20 : 4), topRight: Radius.circular(_isAlternate ? 4 : 20), bottomLeft: const Radius.circular(20), bottomRight: const Radius.circular(20))),
               child: Container(
                 padding: EdgeInsets.all(16 * math.sqrt(_cardHeight)),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(widget.isAlternate ? 20 : 4),
-                    topRight: Radius.circular(widget.isAlternate ? 4 : 20),
-                    bottomLeft: const Radius.circular(20),
-                    bottomRight: const Radius.circular(20),
-                  ),
-                  // 去掉渐变，使用单色背景
-                  color: Colors.white,
-                ),
+                decoration: BoxDecoration(borderRadius: BorderRadius.only(topLeft: Radius.circular(_isAlternate ? 20 : 4), topRight: Radius.circular(_isAlternate ? 4 : 20), bottomLeft: const Radius.circular(20), bottomRight: const Radius.circular(20)), color: Colors.white),
                 child: contentWidget,
               ),
             ),
@@ -375,79 +246,66 @@ class _ActivityCardState extends State<ActivityCard> {
     );
   }
 
-  // 构建评论区
+  // --- 构建评论区 (完整实现) ---
   Widget _buildComments() {
-    return Column(
-      crossAxisAlignment: widget.isAlternate
-          ? CrossAxisAlignment.end
-          : CrossAxisAlignment.start,
-      children: [
-        if (_activity.comments.isNotEmpty) ...[
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * _cardHeight),
-            child: Text(
-              '评论 (${_activity.comments.length})',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14 * math.sqrt(_cardHeight * 0.7), // 调小字体大小
-              ),
-            ),
-          ),
-          ...List.generate(
-            _activity.comments.length > 3 && !_showComments
-                ? 3
-                : _activity.comments.length,
-                (index) => ActivityCommentItem(
-              comment: _activity.comments[index],
-              activityId: _activity.id,
-              isAlternate: widget.isAlternate,
-              onLikeToggled: (comment) {
-                setState(() {
-                  // 评论已在ActivityCommentItem中更新
-                });
-                if (widget.onUpdated != null) {
-                  widget.onUpdated!();
-                }
+    return Padding(
+      padding: const EdgeInsets.only(top: 8.0),
+      child: Column(
+        crossAxisAlignment: _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          // --- 显示评论列表 ---
+          if (_activity.comments.isNotEmpty)
+            ListView.builder(
+              physics: const NeverScrollableScrollPhysics(),
+              shrinkWrap: true,
+              itemCount: _activity.comments.length > 3 && !_showComments ? 3 : _activity.comments.length,
+              itemBuilder: (context, index) {
+                final comment = _activity.comments[index];
+                return ActivityCommentItem(
+                  key: ValueKey(comment.id),
+                  comment: comment,
+                  activityId: _activity.id,
+                  isAlternate: _isAlternate,
+                  // --- 传递评论的操作回调 ---
+                  onLike: widget.onLikeComment != null ? () => widget.onLikeComment!(_activity.id, comment.id) : null,
+                  onUnlike: widget.onUnlikeComment != null ? () => widget.onUnlikeComment!(_activity.id, comment.id) : null,
+                  // --- 注意：这里是 ActivityCommentItem 自己的删除回调，它会调用父级 (ActivityCard) 的 onDeleteComment ---
+                  // --- 而 ActivityCard 的 onDeleteComment 回调最终会调用 ActivityFeedScreen 的 _handleDeleteComment ---
+                  onCommentDeleted: widget.onDeleteComment != null ? () => widget.onDeleteComment!(_activity.id, comment.id) : null,
+                );
               },
-              onCommentDeleted: _handleCommentDeleted,
             ),
-          ),
 
-          // 显示查看更多按钮
+          // --- 查看更多按钮 ---
           if (_activity.comments.length > 3 && !_showComments)
-            TextButton(
-              onPressed: () => setState(() => _showComments = true),
-              child: Text(
-                '查看更多评论...',
-                style: TextStyle(fontSize: 14 * math.sqrt(_cardHeight * 0.7)),
+            Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: TextButton(
+                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size(50, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                onPressed: () => setState(() => _showComments = true),
+                child: Text('查看全部 ${_activity.commentsCount} 条评论...', style: TextStyle(fontSize: 13, color: Theme.of(context).primaryColor)),
               ),
             ),
 
-          // 只有当显示评论区时才显示评论输入框
+          // --- 评论输入框 ---
           if (_showComments)
-            ActivityCommentInput(
-              onSubmit: _addComment,
-              isAlternate: widget.isAlternate,
-            ),
-        ] else if (_showComments) ...[
-          // 没有评论但显示评论区
-          Padding(
-            padding: EdgeInsets.only(bottom: 8 * _cardHeight),
-            child: Text(
-              '暂无评论，发表第一条评论吧',
-              style: TextStyle(
-                fontSize: 14 * math.sqrt(_cardHeight * 0.7),
-                color: Colors.grey.shade600,
-                fontStyle: FontStyle.italic,
+            Padding(
+              padding: const EdgeInsets.only(top: 12.0),
+              child: ActivityCommentInput(
+                onSubmit: _addComment, // 调用 _addComment 方法
+                isSubmitting: _isSubmittingComment,
+                isAlternate: _isAlternate,
               ),
             ),
-          ),
-          ActivityCommentInput(
-            onSubmit: _addComment,
-            isAlternate: widget.isAlternate,
-          ),
+
+          // --- 如果没有评论但展开了评论区 ---
+          if (_activity.comments.isEmpty && _showComments)
+            Padding(
+              padding: const EdgeInsets.only(top: 12.0, bottom: 8.0),
+              child: Text('暂无评论，快来抢沙发吧~', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+            ),
         ],
-      ],
+      ),
     );
   }
-}
+} // _ActivityCardState 类结束

@@ -1,162 +1,171 @@
 // lib/widgets/components/screen/game/collection/game_reviews_section.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart'; // 确认路径正确
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart'; // 确认路径正确
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 确认路径正确
+import 'package:intl/intl.dart'; // 需要 intl 来格式化数字
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class GameReviewSection extends StatefulWidget {
   final Game game;
 
   const GameReviewSection({
-    Key? key, // 接受 Key
+    Key? key,
     required this.game,
-  }) : super(key: key); // 传递 Key 给 super
+  }) : super(key: key);
 
   @override
-  // State 类名改为公开，并且去掉下划线
   GameReviewSectionState createState() => GameReviewSectionState();
 }
 
-// State 类名改为公开，去掉下划线
 class GameReviewSectionState extends State<GameReviewSection> {
   final GameCollectionService _collectionService = GameCollectionService();
   List<Map<String, dynamic>> _reviews = [];
   bool _isLoading = true;
-  String? _error; // 或者用 String? 存储错误信息，选择一种与你原代码一致的方式
+  String? _error;
   int _page = 1;
-  final int _pageSize = 5; // 保持你原来设定的分页大小
-  bool _hasMoreReviews = true; // 保持你原来判断是否有更多数据的逻辑
+  final int _pageSize = 5;
+  bool _hasMoreReviews = true;
 
   @override
   void initState() {
     super.initState();
-    // _loadReviews(); // 保持原来的调用方式
-    _loadReviews(isInitialLoad: true); // 传递一个标志，首次加载
+    _loadReviews(isInitialLoad: true);
   }
 
   @override
   void didUpdateWidget(GameReviewSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.game.id != widget.game.id) {
-
-      // 重置状态，保持你原来的方式
-      setState(() {
-        _reviews = []; // 清空
-        _page = 1;    // 页码归1
-        _isLoading = true; // 显示加载
-        _error = null; // 清除错误
-        _hasMoreReviews = true; // 重新假设有更多
-      });
-      _loadReviews(); // 加载新游戏的数据
+      print(
+          "GameReviewSection (${widget.game.id}): Game ID changed. Refreshing...");
+      refresh();
+    }
+    // 如果 game 对象本身发生变化（例如父组件更新了评分），也需要 setState 来更新 UI
+    // 这里简单比较 rating 和 ratingCount，更复杂的比较可以覆盖更多字段
+    if (widget.game.rating != oldWidget.game.rating ||
+        widget.game.ratingCount != oldWidget.game.ratingCount) {
+      print(
+          "GameReviewSection (${widget.game.id}): Game rating data changed. Triggering UI rebuild.");
+      if (mounted) {
+        setState(() {}); // 触发 UI 重建以显示新的评分
+      }
     }
   }
 
-  // --- 公开的刷新方法 ---
   void refresh() {
     print("GameReviewSection (${widget.game.id}): refresh() called.");
-    // 检查 mounted 避免在已卸载的 Widget 上调用 setState
     if (mounted) {
       setState(() {
-        _page = 1; // 重置到第一页
-        _reviews = []; // 清空旧数据
-        _isLoading = true; // 开始加载，显示 Loading
-        _error = null; // 清除之前的错误状态
-        _hasMoreReviews = true; // 假设可能有更多数据
+        _page = 1;
+        _reviews = [];
+        _isLoading = true;
+        _error = null;
+        _hasMoreReviews = true;
       });
-      _loadReviews(); // 开始加载数据
+      _loadReviews(isInitialLoad: true);
     } else {
-
+      print(
+          "GameReviewSection (${widget.game.id}): refresh() called but widget is not mounted.");
     }
   }
 
   Future<void> _loadReviews({bool isInitialLoad = false}) async {
-    // 防止重复加载或在没有更多数据时加载 (保持原有逻辑)
     if (_isLoading && !isInitialLoad) return;
-    if (!_hasMoreReviews && _page > 1) return;
+    if (!_hasMoreReviews && !isInitialLoad) return;
 
-
-    // 开始加载前设置状态（如果需要，并检查 mounted）
-    if (mounted && !isInitialLoad) { // 只有非首次加载时，在这里设置 Loading
-      setState(() { _isLoading = true; _error = null; });
+    if (!isInitialLoad && mounted) {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+      });
     } else if (!mounted) {
-      return; // Widget 已卸载
+      return;
     }
 
-
     try {
-      print("GameReviewSection (${widget.game.id}): Fetching reviews page $_page...");
-      // *** 调用 Service 时传递分页参数 ***
-      final reviews = await _collectionService.getGameReviews(widget.game.id, page: _page);
-      // final reviews = await _collectionService.getGameReviews(widget.game.id); // 如果你的 Service 不支持分页，就用这个
+      final reviews = await _collectionService.getGameReviews(widget.game.id,
+          page: _page, limit: _pageSize);
 
-
-      if (!mounted) return; // 在 await 后、setState 前检查
+      if (!mounted) return;
 
       setState(() {
-        // 恢复你原来的分页逻辑
         final fetchedList = List<Map<String, dynamic>>.from(reviews);
         if (_page == 1) {
-          _reviews = fetchedList; // 第一页直接赋值
+          _reviews = fetchedList;
         } else {
-          _reviews.addAll(fetchedList); // 其他页追加
+          _reviews.addAll(fetchedList);
         }
-
-        // 恢复你原来的判断逻辑
         _hasMoreReviews = fetchedList.length >= _pageSize;
-        _isLoading = false; // 加载完成
-        if(_hasMoreReviews) { // 如果返回的数量等于或超过分页大小，认为可能有更多，页码+1
-          _page++;
-        }
-
-        // _hasError = false; // 如果用 boolean 标记错误，在这里重置
-        _error = null; // 如果用 String? 标记，在这里清空
+        _isLoading = false;
+        _error = null;
+        // 页码增加移到 _loadMoreReviews 或成功加载后
+        // if (_hasMoreReviews) { _page++; } // 不在这里增加
       });
-    } catch (e, s) { // 捕获异常和堆栈
-      if (!mounted) return; // 在 catch 块内的 setState 前检查
-
+    } catch (e, s) {
+      print(
+          'GameReviewSection (${widget.game.id}): Error loading reviews page $_page: $e\n$s');
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
-        // _hasError = true; // 如果用 boolean 标记
-        if (_page == 1) { // 只在第一页失败时设置错误状态，避免覆盖已有数据
-          _error = e.toString(); // 记录错误信息
+        if (_page == 1) {
+          _error = '加载评价失败: ${e.toString()}';
+          _reviews = [];
         } else {
-          // 加载更多失败，可以选择性地显示提示，例如用 SnackBar
-         AppSnackBar.showError(context,'加载更多评价失败');
-          // 或者什么都不做，让用户可以再次尝试点击加载更多
+          AppSnackBar.showError(context, '加载更多评价失败');
+          _hasMoreReviews = false;
         }
       });
     }
   }
 
-  // --- build 方法及其子方法保持你原来的结构和样式 ---
+  void _loadMoreReviews() {
+    if (!_isLoading && _hasMoreReviews) {
+      print(
+          "GameReviewSection (${widget.game.id}): Loading more reviews (Page ${_page + 1})...");
+      setState(() {
+        _page++; // 在请求前增加页码
+      });
+      _loadReviews();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 1, // 保持原来的 elevation
-      margin: const EdgeInsets.only(bottom: 16), // 保持原来的 margin
-      shape: RoundedRectangleBorder( // 保持原来的 shape
+      elevation: 1,
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12.0),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0), // 保持原来的 padding
+        padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(), // 保持原来的 Header
-            const SizedBox(height: 16), // 保持原来的间距
-            _buildContent(), // 保持原来的 Content 构建逻辑
-            // 保持原来的“加载更多”按钮显示逻辑
-            // 这里确保 _isLoading 检查只影响加载更多按钮本身，不影响已加载列表的显示
-            if (_hasMoreReviews && _reviews.isNotEmpty) // 稍微优化：仅当有内容且有更多时才显示加载按钮
-              _buildLoadMoreButton(),
-            // 可选：如果正在加载“更多”，可以在底部显示一个小的指示器，不影响Card结构
+            _buildHeader(),
+            const SizedBox(height: 12), // 标题和评分之间的间距
+
+            // *** 在这里加上平均评分显示区域 ***
+            _buildAverageRatingDisplay(), // <--- 新增调用
+
+            const SizedBox(height: 16), // 评分和内容列表之间的间距
+            Divider(color: Colors.grey[200], height: 1), // 分割线
+            const SizedBox(height: 8), // 分割线和内容之间的间距
+
+            _buildContent(), // 显示评价列表或状态信息
+
+            // 加载更多按钮逻辑不变
+            if (_hasMoreReviews && !_isLoading) _buildLoadMoreButton(),
             if (_isLoading && _page > 1)
-              LoadingWidget.inline(size: 16,)
+              Padding(
+                padding: const EdgeInsets.only(top: 16.0),
+                child: Center(child: LoadingWidget.inline(size: 20)),
+              ),
           ],
         ),
       ),
@@ -164,7 +173,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   }
 
   Widget _buildHeader() {
-    // --- 严格使用你原来的 Header Row 结构和样式 ---
     return Row(
       children: [
         Container(
@@ -175,136 +183,197 @@ class GameReviewSectionState extends State<GameReviewSection> {
             borderRadius: BorderRadius.circular(2),
           ),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8),
         Text(
-          '玩家评价', // 保持原来的文本
-          style: TextStyle( // 保持原来的 TextStyle
+          '玩家评价',
+          style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.grey[850],
           ),
         ),
-        SizedBox(width: 8),
-        // 保持原来的显示条数逻辑和样式
-        if (_reviews.isNotEmpty)
-          Text(
-            '共${_reviews.length} 条评价',
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 14,
-            ),
-          ),
+        // 注意：这里的评论条数显示逻辑移到 _buildAverageRatingDisplay 中，与评分一起显示
+        // const SizedBox(width: 8),
+        // if (_reviews.isNotEmpty && !(_isLoading && _page == 1))
+        //   Text(
+        //     '共${_reviews.length} 条',
+        //     style: TextStyle(
+        //       color: Colors.grey[600],
+        //       fontSize: 14,
+        //     ),
+        //   ),
       ],
     );
   }
 
+  // *** 新增：构建平均评分显示的 Widget ***
+  Widget _buildAverageRatingDisplay() {
+    final game = widget.game; // 直接用 widget.game 获取最新数据
+    final bool hasRating = game.ratingCount > 0;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween, // 让评分居左，数量居右
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        // 左侧：显示星星和平均分
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Icon(Icons.star_rate_rounded,
+                color: Colors.amber, size: 22), // 用圆角的星星图标
+            const SizedBox(width: 6),
+            if (hasRating)
+              Text.rich(
+                TextSpan(
+                  children: [
+                    TextSpan(
+                      text: game.rating.toStringAsFixed(1), // 显示一位小数
+                      style: TextStyle(
+                        fontSize: 20, // 突出显示分数
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    TextSpan(
+                      text: ' / 10',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              Text(
+                '暂无评分',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+          ],
+        ),
+        // 右侧：显示评分人数和评论总数
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            if (hasRating) // 只有有人评分才显示评分人数
+              Text(
+                '基于 ${game.ratingCount} 份评分',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+            // 评论总数显示 (如果列表加载完成且不为空)
+            if (_reviews.isNotEmpty && !(_isLoading && _page == 1))
+              Padding(
+                padding:
+                    EdgeInsets.only(top: hasRating ? 4.0 : 0), // 如果有评分，稍微加点间距
+                child: Text(
+                  '${_reviews.length} 条评价', // 显示当前已加载的评价数
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+  // *** 平均评分显示区域结束 ***
+
   Widget _buildContent() {
-    // --- 严格根据你原来的逻辑构建内容区域 ---
-
-    // 1. 首次加载时的 Loading (保持原来的 Center + Padding + Indicator)
-    if (_isLoading && _page == 1) { // 改为判断 _page == 1 来确定是否首次加载
-      return LoadingWidget.inline();
+    // 这里的逻辑不变
+    if (_isLoading && _page == 1) {
+      return LoadingWidget.inline(message: '正在加载评价...');
     }
-
-    // 2. 加载出错时的显示 (根据你用 _hasError 还是 _error 判断)
-    // if (_hasError && _reviews.isEmpty) { // 如果你用 boolean
-    if (_error != null && _reviews.isEmpty) { // 如果你用 String?
-      return InlineErrorWidget(
-        errorMessage: '加载评价时出错',
-        onRetry: refresh, // 调用 refresh 方法
-      );
+    if (_error != null && _page == 1) {
+      return InlineErrorWidget(errorMessage: _error!, onRetry: refresh);
     }
-
-    // 3. 没有评价时的显示 (保持原来的 Center + Padding + Text)
-    if (_reviews.isEmpty && !_isLoading) { // 确保不是在加载中才显示“暂无”
-      return EmptyStateWidget(message: '暂无玩家评价');
+    if (_reviews.isEmpty && !_isLoading) {
+      return const EmptyStateWidget(message: '暂无玩家评价，快来抢沙发吧！');
     }
-
-    // 4. 显示评价列表 (保持原来的 ListView.separated)
     return ListView.separated(
-      shrinkWrap: true, // 保持 shrinkWrap
-      physics: const NeverScrollableScrollPhysics(), // 保持 physics
-      itemCount: _reviews.length, // 保持 itemCount
-      separatorBuilder: (context, index) => const Divider(), // 保持原来的 Divider
-      itemBuilder: (context, index) => _buildReviewItem(_reviews[index]), // 调用你原来的 Item 构建方法
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _reviews.length,
+      separatorBuilder: (context, index) =>
+          Divider(color: Colors.grey[200], height: 1),
+      itemBuilder: (context, index) => _buildReviewItem(_reviews[index]),
     );
   }
 
-  // --- _buildReviewItem 保持你原来的实现和样式 ---
   Widget _buildReviewItem(Map<String, dynamic> review) {
-    // 提取数据逻辑尽量保持，只做必要的 null safety 检查
-    final user = review['user'] as Map<String, dynamic>? ?? {}; // 安全获取 user map
-    final userId = user['userId']?.toString() ?? ''; // 安全获取 userId
-    // 同样安全获取 updateTime, rating, reviewText
+    // 这个方法内部逻辑不变
+    final user = review['user'] as Map<String, dynamic>? ?? {};
+    final userId = user['userId']?.toString() ?? '';
     DateTime? updateTime;
-    final updateTimeString = review['updateTime'] as String?;
+    final updateTimeString = review['updateTime']?.toString();
     if (updateTimeString != null) {
-      try { updateTime = DateTime.parse(updateTimeString).toLocal(); } catch (_) {}
+      try {
+        updateTime = DateTime.parse(updateTimeString).toLocal();
+      } catch (_) {}
     }
     final dynamic rawRating = review['rating'];
     final double? rating = (rawRating is num) ? rawRating.toDouble() : null;
-    final String reviewText = review['review'] as String? ?? '';
-
+    final String reviewText = review['review']?.toString() ?? '';
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0), // 保持原来的 Padding
+      padding: const EdgeInsets.symmetric(vertical: 12.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 保持原来的 UserInfoBadge
-              UserInfoBadge(
-                userId: userId, // 传递安全获取的 userId
-                showFollowButton: false, // 保持你的设置
-                mini: true, // 保持你的设置
+              Expanded(
+                child: UserInfoBadge(
+                  userId: userId,
+                  showFollowButton: false,
+                  mini: true,
+                ),
               ),
-              // 保持原来的时间显示
+              const SizedBox(width: 8),
               if (updateTime != null)
                 Text(
                   DateTimeFormatter.formatRelative(updateTime),
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
             ],
           ),
-          // 保持原来的评分显示逻辑和样式
+          // 单条评价里的星级显示可以保持不变，或者也改成 5 星制
           if (rating != null)
             Padding(
-              padding: const EdgeInsets.only(top: 8.0),
+              padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
               child: Row(
-                crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐星星和数字
-                children: [
-                  Icon(
-                    Icons.star, // 用实心星星
-                    size: 18,
-                    color: Colors.amber, // 标准黄色
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    // 显示为 X.Y / 10 格式
-                    '${rating.toStringAsFixed(1)}/10',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      // fontSize: 14, // 可以稍微调整字体大小
-                    ),
-                  ),
-                ],
-              ),
+                  children: List.generate(5, (index) {
+                double starValue = rating / 2;
+                IconData starIcon;
+                Color starColor = Colors.amber;
+                if (index < starValue.floor()) {
+                  starIcon = Icons.star;
+                } else if (index < starValue && (starValue - index) >= 0.25) {
+                  starIcon = Icons.star_half;
+                } else {
+                  starIcon = Icons.star_border;
+                  starColor = Colors.grey[400]!;
+                }
+                return Icon(starIcon, size: 16, color: starColor); // 单条评论里星星小一点
+              })),
             ),
-          // 保持原来的评价文本显示逻辑和样式
-          if (reviewText.isNotEmpty) // 确保 reviewText 不为空字符串
+          if (reviewText.isNotEmpty)
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
                 reviewText,
-                style: TextStyle( // 保持原来的 TextStyle
-                  fontSize: 14,
-                  color: Colors.grey[800],
-                  height: 1.4, // 可以调整行高让阅读更舒适
-                ),
+                style: TextStyle(
+                    fontSize: 14, color: Colors.grey[800], height: 1.4),
               ),
             ),
         ],
@@ -312,27 +381,24 @@ class GameReviewSectionState extends State<GameReviewSection> {
     );
   }
 
-  // --- _buildLoadMoreButton 保持你原来的实现和样式 ---
   Widget _buildLoadMoreButton() {
+    // 这个方法逻辑不变
     return Center(
       child: Padding(
-        padding: const EdgeInsets.only(top: 16.0), // 保持原来的 Padding
+        padding: const EdgeInsets.only(top: 16.0),
         child: TextButton(
-          onPressed: _isLoading ? null : _loadReviews, // 加载中则禁用
-          child: _isLoading && _page > 1 // 只在加载更多时显示 Loading 状态
-              ? Row( // 保持原来的 Loading Row 结构
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              ),
-              const SizedBox(width: 8),
-              Text('加载中...'), // 保持原来的文本
-            ],
-          )
-              : Text('加载更多'), // 保持原来的文本
+          onPressed:
+              _isLoading ? null : _loadMoreReviews, // 调用 _loadMoreReviews
+          child: _isLoading && _page > 1
+              ? Row(mainAxisSize: MainAxisSize.min, children: [
+                  SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2)),
+                  const SizedBox(width: 8),
+                  Text('加载中...'),
+                ])
+              : Text('加载更多评价'), // 文本可以改一下
         ),
       ),
     );

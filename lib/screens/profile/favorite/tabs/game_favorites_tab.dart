@@ -1,5 +1,6 @@
 // lib/screens/profile/tabs/game_favorites_tab.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/game/game.dart';
 import '../../../../services/main/game/game_service.dart';
 import '../../../../widgets/components/screen/profile/favorite/responsive_favorites_layout.dart';
@@ -70,9 +71,7 @@ class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepA
       await _loadFavoriteGames();
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('取消收藏失败: $e')),
-        );
+        AppSnackBar.showError(context, '取消收藏失败: $e');
       }
     }
   }

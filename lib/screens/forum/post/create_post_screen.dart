@@ -1,6 +1,5 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
@@ -43,7 +42,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
       setState(() => _isSubmitting = true);
       await _forumService.createPost(data.title, data.content, data.tags);
       AppSnackBar.showSuccess(context, "编辑成功");
-      NavigationUtils.pop(context);
+      Navigator.pop(context);
     } catch (e) {
       AppSnackBar.showError(context,'编辑失败: ${e.toString()}');
     } finally {

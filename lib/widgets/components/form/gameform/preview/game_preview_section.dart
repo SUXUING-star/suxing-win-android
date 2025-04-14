@@ -1,107 +1,190 @@
-// lib/widgets/form/gameform/preview/game_preview_section.dart
 import 'package:flutter/material.dart';
-import 'game_preview.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import '../../../../../../models/game/game.dart';
+// 注意: 确保这里的路径是正确的
+import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart'; // <--- 确认路径
+import '../../../../../../utils/font/font_config.dart';
 
-class GamePreviewSection extends StatefulWidget {
-  final TextEditingController titleController;
-  final TextEditingController summaryController;
-  final String? coverImageUrl;
-  final List<String> selectedCategories;
-  final List<String> selectedTags;
-  final double rating;
+class GamePreviewScreen extends StatelessWidget {
+  final Game game;
 
-  const GamePreviewSection({
+  const GamePreviewScreen({
     Key? key,
-    required this.titleController,
-    required this.summaryController,
-    required this.coverImageUrl,
-    required this.selectedCategories,
-    required this.selectedTags,
-    required this.rating,
+    required this.game,
   }) : super(key: key);
 
   @override
-  _GamePreviewSectionState createState() => _GamePreviewSectionState();
-}
-
-class _GamePreviewSectionState extends State<GamePreviewSection> {
-  bool _showPreview = true;
-
-  @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    return isDesktop
+        ? _buildDesktopLayout(context)
+        : _buildMobileLayout(context);
+  }
 
-    return Card(
-      elevation: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildDesktopLayout(BuildContext context) {
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: '预览: ${game.title}',
+        actions: [
+          TextButton.icon(
+            icon: Icon(Icons.arrow_back),
+            label: Text('返回编辑'),
+            onPressed: () => NavigationUtils.of(context).pop(),
+            style: TextButton.styleFrom(foregroundColor: Colors.white),
+          ),
+        ],
+      ),
+      body: Column(
         children: [
-          // Header with toggle
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  '卡片预览',
-                  style: TextStyle(
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
+          // Preview banner
+          Container(
+            width: double.infinity,
+            color: Colors.amber.withOpacity(0.2),
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: Text(
+                '预览模式 - 这是您保存后的游戏详情页效果预览',
+                style: TextStyle(
+                  fontFamily: FontConfig.defaultFontFamily,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
                 ),
-                Switch(
-                  value: _showPreview,
-                  onChanged: (value) {
-                    setState(() {
-                      _showPreview = value;
-                    });
-                  },
-                ),
-              ],
+              ),
             ),
           ),
-
-          if (_showPreview)
-            Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isDesktop ? 24.0 : 16.0,
-                vertical: 8.0,
-              ),
-              child: GamePreview.fromFormData(
-                titleController: widget.titleController,
-                summaryController: widget.summaryController,
-                coverImageUrl: widget.coverImageUrl,
-                selectedCategories: widget.selectedCategories,
-                selectedTags: widget.selectedTags,
-                rating: widget.rating,
+          // Use the actual game detail content widget with Expanded to fill available space
+          Expanded(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                // --- 传递 isPreviewMode: true ---
+                child: GameDetailContent(
+                  game: game,
+                  isPreviewMode: true, // <--- 在预览屏设置此值为 true
+                ),
               ),
             ),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).pop(),
+        label: Text('返回继续编辑'),
+        icon: Icon(Icons.edit),
+      ),
+    );
+  }
 
-          // Preview info text
-          if (_showPreview)
-            Padding(
-              padding: EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Text(
-                    '此简易预览仅展示基本卡片样式。要查看完整的游戏详情页面预览效果，请使用页面底部的"预览游戏详情"按钮。',
-                    style: TextStyle(
-                      fontFamily: FontConfig.defaultFontFamily,
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                      fontStyle: FontStyle.italic,
+  Widget _buildMobileLayout(BuildContext context) {
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverAppBar(
+            expandedHeight: 300,
+            pinned: true,
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                game.title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 3.0,
+                      color: Color.fromARGB(255, 0, 0, 0),
                     ),
-                    textAlign: TextAlign.center,
+                  ],
+                ),
+              ),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (game.coverImage.isNotEmpty)
+                    Image.network(
+                      game.coverImage,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.grey[300],
+                          child: Center(
+                            child: Icon(
+                              Icons.image_not_supported,
+                              size: 48,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        );
+                      },
+                    )
+                  else
+                    Container(
+                      color: Colors.grey[300],
+                      child: Center(
+                        child: Icon(
+                          Icons.image,
+                          size: 48,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ),
+                  const DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black54,
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
             ),
-
-          SizedBox(height: 8),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                },
+              ),
+            ],
+          ),
+          SliverToBoxAdapter(
+            child: Container(
+              width: double.infinity,
+              color: Colors.amber.withOpacity(0.2),
+              padding: EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: Text(
+                  '预览模式 - 实时预览效果',
+                  style: TextStyle(
+                    fontFamily: FontConfig.defaultFontFamily,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SliverPadding(
+            padding: const EdgeInsets.only(bottom: 80),
+            sliver: SliverToBoxAdapter(
+              // --- 传递 isPreviewMode: true ---
+              child: GameDetailContent(
+                game: game,
+                isPreviewMode: true, // <--- 在预览屏设置此值为 true
+              ),
+            ),
+          ),
         ],
+      ),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () => Navigator.of(context).pop(),
+        label: Text('返回编辑'),
+        icon: Icon(Icons.edit),
       ),
     );
   }

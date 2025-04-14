@@ -1,6 +1,7 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../widgets/components/screen/game/game_detail_content.dart';
 import '../../../../../../utils/font/font_config.dart';
@@ -23,8 +24,8 @@ class GamePreviewScreen extends StatelessWidget {
 
   Widget _buildDesktopLayout(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('预览: ${game.title}'),
+      appBar: CustomAppBar(
+        title: '预览: ${game.title}',
         actions: [
           TextButton.icon(
             icon: Icon(Icons.arrow_back),

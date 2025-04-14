@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import '../../widgets/components/screen/home/android/home_hot.dart';
-import '../../widgets/components/screen/home/android/home_latest.dart';
-import '../../widgets/components/screen/home/android/home_banner.dart';
+import '../../widgets/components/screen/home/section/home_hot.dart';
+import '../../widgets/components/screen/home/section/home_latest.dart';
+import '../../widgets/components/screen/home/section/home_banner.dart';
 import '../../models/game/game.dart';
 import '../../services/main/game/game_service.dart';
 import '../../widgets/ui/common/loading_widget.dart';

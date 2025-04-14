@@ -4,10 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 引入 Provider
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/activity_detail_content.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 引入 AuthProvider
@@ -173,28 +171,48 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   void _handleCommentDeleted(String commentId) {
-    setStateIfMounted(() {
-      _activity!.comments.removeWhere((comment) => comment.id == commentId);
-      _activity!.commentsCount = _activity!.comments.length; // 更新评论总数
-      _refreshCounter++; // 强制刷新UI
-    });
-    if (mounted) {
-      AppSnackBar.showSuccess(context, '评论已删除');
-    }
+    // 这里是父级处理删除逻辑的地方，通常会调用 Service
+    print("ActivityDetailScreen: Handling delete request for comment $commentId");
+    // --- 这里应该调用 Service 删除，并处理 UI 更新 (移除) ---
+    // 这个方法现在由 ActivityCommentItem -> ActivityCommentsSection -> 这里 最终调用
+    // 之前在 ActivityFeedScreen 的实现是正确的，应该类似：
+    CustomConfirmDialog.show(
+        context: context, title: "确认删除", message: "确定删除这条评论吗？",
+        confirmButtonText: "删除", confirmButtonColor: Colors.red,
+        iconData: Icons.delete_outline, iconColor: Colors.red,
+        onConfirm: () async {
+          print("Delete comment confirmed for $commentId");
+          try {
+            final success = await _activityService.deleteComment(_activity!.id, commentId);
+            if (success && mounted) {
+              // --- 从本地列表移除评论并更新计数 ---
+              setStateIfMounted(() {
+                _activity!.comments.removeWhere((c) => c.id == commentId);
+                _activity!.commentsCount = _activity!.comments.length;
+                _refreshCounter++; // 强制 UI 刷新
+              });
+              AppSnackBar.showSuccess(context, '评论已删除');
+            } else if (mounted) {
+              throw Exception("删除评论失败");
+            }
+          } catch (e) { if (mounted) AppSnackBar.showError(context, '删除失败: $e'); rethrow; }
+        }
+    );
   }
 
   void _handleCommentLikeToggled(ActivityComment updatedComment) {
     if (_activity == null) return;
     setStateIfMounted(() {
       // 在 _activity!.comments 中找到对应的评论并替换
-      final index =
-          _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
+      final index = _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
       if (index != -1) {
         _activity!.comments[index] = updatedComment; // 使用更新后的对象替换旧的
-        _refreshCounter++; // 强制刷新UI以显示更新的点赞状态/数量
+        // 不需要强制刷新计数器了，因为 Service 调用 -> 缓存失效 -> 监听器刷新 会处理
+        // _refreshCounter++;
       }
     });
   }
+
 
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {

@@ -61,6 +61,17 @@ class GameStatsWidget extends StatelessWidget {
             fontSize: 12,
             showBackground: false,
           ),
+          if (showCollectionStats && game.rating >0)...[
+            SizedBox(width: 12),
+            StatItemWidget(
+              icon: Icons.star,
+              value: game.rating.toString(),
+              color: Colors.lightGreen.shade400,
+              iconSize: 14,
+              fontSize: 12,
+              showBackground: false,
+            ),
+          ]
         ],
       ],
     );
@@ -90,7 +101,7 @@ class GameStatsWidget extends StatelessWidget {
             icon: Icons.thumb_up,
             value: game.likeCount.toString(),
             color: Colors.pink.shade300,
-            iconSize: 12,
+            iconSize: 10,
             fontSize: 10,
             showBackground: true,
           ),
@@ -102,23 +113,35 @@ class GameStatsWidget extends StatelessWidget {
             icon: Icons.remove_red_eye_outlined,
             value: game.viewCount.toString(),
             color: Colors.lightBlue.shade400,
-            iconSize: 12,
+            iconSize: 10,
             fontSize: 10,
             showBackground: true,
           ),
 
           // 添加收藏统计（如果开启）
           if (showCollectionStats && game.totalCollections > 0) ...[
-            SizedBox(width: 8),
+            SizedBox(width: 6),
             StatItemWidget(
               icon: Icons.bookmark,
               value: game.totalCollections.toString(),
               color: Colors.lightGreen.shade500,
-              iconSize: 12,
+              iconSize: 10,
               fontSize: 10,
               showBackground: true,
             ),
+
           ],
+          // if (showCollectionStats && game.rating >0)...[
+          //   SizedBox(width: 6),
+          //   StatItemWidget(
+          //     icon: Icons.star,
+          //     value: game.rating.toString(),
+          //     color: Colors.lightGreen.shade500,
+          //     iconSize: 10,
+          //     fontSize: 10,
+          //     showBackground: true,
+          //   ),
+          // ]
         ],
       ),
     );

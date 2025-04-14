@@ -1,6 +1,5 @@
-// lib/widgets/components/button/follow_user_button.dart
+// lib/widgets/ui/buttons/follow_user_button.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../providers/auth/auth_provider.dart';

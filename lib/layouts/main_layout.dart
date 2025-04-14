@@ -64,9 +64,8 @@ class _MainLayoutState extends State<MainLayout> {
     });
   }
 
-  // 确保网络管理器已初始化 (保持不变)
+  // 确保网络管理器已初始化
   Future<void> _ensureNetworkManagerInitialized() async {
-    // ... 省略具体实现 ...
     try {
       final networkManager = Provider.of<NetworkManager>(context, listen: false);
       if (!networkManager.isInitialized) {
@@ -77,9 +76,8 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
-  // 检查公告方法 (保持不变)
+  // 检查公告方法
   Future<void> _checkAnnouncements() async {
-    // ... 省略具体实现 ...
     try {
       if (!mounted) return;
 
@@ -108,7 +106,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   // 检查封禁状态 (保持不变)
   Future<void> _checkBanStatus() async {
-    // ... 省略具体实现 ...
     try {
       final userId = await _userService.currentUserId;
       if (userId != null) {
@@ -129,7 +126,6 @@ class _MainLayoutState extends State<MainLayout> {
 
   // 检查更新 (保持不变)
   Future<void> _checkForUpdates() async {
-    // ... 省略具体实现 ...
     if (!mounted) return;
 
     final updateService = Provider.of<UpdateService>(context, listen: false);
@@ -157,9 +153,8 @@ class _MainLayoutState extends State<MainLayout> {
       // *** 用户已登录，更新 SidebarProvider 以导航到 Profile 页 (索引 5) ***
       Provider.of<SidebarProvider>(context, listen: false).setCurrentIndex(5);
     } else {
-      // *** 用户未登录，使用 NavigationUtils 导航到登录页 ***
-      // 注意：这里假设 '/login' 路由会 push 一个新的页面，而不是替换 MainLayout
-      NavigationUtils.pushNamed(context, '/login');
+
+      NavigationUtils.navigateToLogin(context);
     }
   }
 

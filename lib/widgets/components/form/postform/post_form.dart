@@ -1,7 +1,9 @@
 // lib/widgets/forum/post_form.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/app.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 确保路径正确
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../utils/device/device_utils.dart'; // 确保路径正确
 import '../../../../utils/font/font_config.dart'; // 确保路径正确
 
@@ -54,6 +56,7 @@ class _PostFormState extends State<PostForm> {
   late TextEditingController _contentController;
   late List<String> _selectedTags;
   final _formKey = GlobalKey<FormState>();
+
   // Optional: Key for Scaffold if needed for ScaffoldMessenger or drawers
   // final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -77,7 +80,9 @@ class _PostFormState extends State<PostForm> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    final screenSize = MediaQuery
+        .of(context)
+        .size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width >= 960;
 
@@ -108,10 +113,14 @@ class _PostFormState extends State<PostForm> {
   }
 
   // --- Desktop Layout ---
-  Widget _buildDesktopLayout(BuildContext context) { // Context is fine here
-    final screenSize = MediaQuery.of(context).size;
+  Widget _buildDesktopLayout(BuildContext context) {
+    // Context is fine here
+    final screenSize = MediaQuery
+        .of(context)
+        .size;
     // *** FIX HERE: Use kToolbarHeight directly ***
-    final double availableHeight = screenSize.height - kToolbarHeight - 48; // 48 = 24 top + 24 bottom padding
+    final double availableHeight = screenSize.height - kToolbarHeight -
+        48; // 48 = 24 top + 24 bottom padding
 
     return Padding(
       padding: const EdgeInsets.all(24),
@@ -134,7 +143,8 @@ class _PostFormState extends State<PostForm> {
                       const SizedBox(height: 24),
                       _buildTitleField(),
                       const SizedBox(height: 24),
-                      _buildTagsSection(), // Pass context if it needs it for ScaffoldMessenger
+                      _buildTagsSection(),
+                      // Pass context if it needs it for ScaffoldMessenger
                       const SizedBox(height: 32),
                       const Divider(),
                       const SizedBox(height: 16),
@@ -166,7 +176,8 @@ class _PostFormState extends State<PostForm> {
                       const SizedBox(height: 24),
                       _buildContentField(),
                       const SizedBox(height: 32),
-                      _buildSubmitButton(), // Pass context if it needs it for ScaffoldMessenger
+                      _buildSubmitButton(),
+                      // Pass context if it needs it for ScaffoldMessenger
                     ],
                   ),
                 ),
@@ -179,7 +190,8 @@ class _PostFormState extends State<PostForm> {
   }
 
   // --- Mobile Layout ---
-  Widget _buildMobileLayout(BuildContext context) { // Context is fine here
+  Widget _buildMobileLayout(BuildContext context) {
+    // Context is fine here
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -239,7 +251,9 @@ class _PostFormState extends State<PostForm> {
       ),
       maxLength: 100,
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
+        if (value == null || value
+            .trim()
+            .isEmpty) {
           return '请输入标题';
         }
         return null;
@@ -247,7 +261,8 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  Widget _buildTagsSection() { // Pass context IF showing Snackbar here
+  Widget _buildTagsSection() {
+    // Pass context IF showing Snackbar here
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -274,14 +289,21 @@ class _PostFormState extends State<PostForm> {
                 ),
               ),
               selected: isSelected,
-              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
-              checkmarkColor: Theme.of(context).primaryColor,
+              selectedColor: Theme
+                  .of(context)
+                  .primaryColor
+                  .withOpacity(0.2),
+              checkmarkColor: Theme
+                  .of(context)
+                  .primaryColor,
               backgroundColor: Colors.grey.shade200,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(
                   color: isSelected
-                      ? Theme.of(context).primaryColor
+                      ? Theme
+                      .of(context)
+                      .primaryColor
                       : Colors.grey.shade300,
                   width: 1,
                 ),
@@ -338,7 +360,9 @@ class _PostFormState extends State<PostForm> {
       minLines: DeviceUtils.isDesktop ? 10 : 8,
       maxLength: 5000,
       validator: (value) {
-        if (value == null || value.trim().isEmpty) {
+        if (value == null || value
+            .trim()
+            .isEmpty) {
           return '请输入内容';
         }
         return null;
@@ -346,10 +370,12 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  Widget _buildSubmitButton() { // Pass context IF showing Snackbar here
+  Widget _buildSubmitButton() {
+    // Pass context IF showing Snackbar here
     return Center(
       child: AppButton(
-        onPressed: widget.isSubmitting ? null : _submit, // Call _submit directly
+        onPressed: widget.isSubmitting ? null : _submit,
+        // Call _submit directly
         text: _effectiveSubmitButtonText,
         isPrimaryAction: true,
       ),
@@ -430,39 +456,28 @@ class _PostFormState extends State<PostForm> {
 
   // --- Form Submission Logic ---
 
-  void _submit() { // No need to pass context if ScaffoldMessenger calls use the build context
-    FocusScope.of(context).unfocus();
+  void _submit() {
+    FocusScope.of(context).unfocus(); // 收起键盘
 
+    // 1. 检查标题和内容是否有效
     if (!_formKey.currentState!.validate()) {
-      // Context here is the _PostFormState's context, usually fine for ScaffoldMessenger
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('请检查表单内容是否填写完整'),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      return;
+      AppSnackBar.showWarning(context, '请检查表单内容是否填写完整');
+      return; // 无效则停止提交
     }
 
+    // 2. 检查标签是否已选择 (关键改动)
     if (_selectedTags.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('请至少选择一个标签'),
-          backgroundColor: Colors.orangeAccent,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      // Decide if tags are mandatory
-      // return;
+      AppSnackBar.showWarning(context, '请至少选择一个标签');
+      return; // <---- 把这里的注释去掉！强制要求至少选一个标签才能提交
     }
 
+    // 3. 如果上面都通过了，才准备数据并提交
     final data = PostFormData(
       title: _titleController.text.trim(),
       content: _contentController.text.trim(),
       tags: _selectedTags,
     );
 
-    widget.onSubmit(data);
+    widget.onSubmit(data); // 调用外部传入的提交函数，发送请求
   }
 }

@@ -1,6 +1,7 @@
 // lib/widgets/components/indicators/announcement_indicator.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../services/main/announcement/announcement_service.dart';
 import '../dialogs/announcement/announcement_dialog.dart';
@@ -68,8 +69,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (_lastCheckTime != null) {
       final timeSinceLastCheck = DateTime.now().difference(_lastCheckTime!);
       if (timeSinceLastCheck < _minCheckInterval) {
-        print('公告指示器: 距离上次检查只过了 ${timeSinceLastCheck
-            .inSeconds} 秒，跳过本次检查');
+        print('公告指示器: 距离上次检查只过了 ${timeSinceLastCheck.inSeconds} 秒，跳过本次检查');
         return;
       }
     }
@@ -77,8 +77,8 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     _isCheckingAnnouncements = true;
 
     try {
-      final announcementService = Provider.of<AnnouncementService>(
-          context, listen: false);
+      final announcementService =
+          Provider.of<AnnouncementService>(context, listen: false);
 
       // 确保服务已初始化
       if (!announcementService.isInitialized) {
@@ -129,20 +129,20 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (!mounted) return;
 
     try {
-      final announcementService = Provider.of<AnnouncementService>(
-          context, listen: false);
+      final announcementService =
+          Provider.of<AnnouncementService>(context, listen: false);
       final unreadAnnouncements = announcementService.getUnreadAnnouncements();
 
       if (unreadAnnouncements.isEmpty) {
         if (mounted) {
-         AppSnackBar.showInfo(context,'没有未读公告');
+          AppSnackBar.showInfo(context, '没有未读公告');
         }
         return;
       }
 
       // 使用静态变量跟踪正在显示的公告，避免重复显示
       if (_isShowingAnnouncement) {
-        print('公告指示器: 已有公告正在显示，跳过');
+        //print('公告指示器: 已有公告正在显示，跳过');
         return;
       }
 
@@ -168,7 +168,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
 
       // 如果遇到错误，显示提示
       if (mounted) {
-        AppSnackBar.showError(context,'加载公告失败，请稍后再试');
+        AppSnackBar.showError(context, '加载公告失败，请稍后再试');
       }
     }
   }
@@ -201,7 +201,6 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
         },
       );
     } catch (e) {
-      print('显示下一条公告失败: $e');
       _isShowingAnnouncement = false;
     }
   }
@@ -213,13 +212,11 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
         // 如果是loading状态显示loading指示器
         if (service.isLoading) {
           return SizedBox(
-            width: 24,
-            height: 24,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              color: Colors.white,
-            ),
-          );
+              width: 24,
+              height: 24,
+              child: LoadingWidget.inline(
+                size: 12,
+              ));
         }
 
         // 如果有未读公告，显示未读数量指示器
@@ -304,7 +301,8 @@ class AnnouncementChecker {
       _isChecking = true;
 
       try {
-        final service = Provider.of<AnnouncementService>(context, listen: false);
+        final service =
+            Provider.of<AnnouncementService>(context, listen: false);
 
         // 确保初始化完成
         if (!service.isInitialized) {

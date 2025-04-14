@@ -7,7 +7,7 @@ import '../../../../services/main/user/user_service.dart';
 import '../../../../screens/profile/open_profile_screen.dart';
 // 确保这些路径也正确
 import '../image/safe_user_avatar.dart';
-import 'follow_user_button.dart';
+import '../buttons/follow_user_button.dart';
 
 
 class UserInfoBadge extends StatelessWidget {

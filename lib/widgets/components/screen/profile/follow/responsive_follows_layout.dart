@@ -6,7 +6,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
-import '../../../../ui/badges/follow_user_button.dart';
+import '../../../../ui/buttons/follow_user_button.dart';
 
 class ResponsiveFollowsLayout extends StatelessWidget {
   final TabController tabController;

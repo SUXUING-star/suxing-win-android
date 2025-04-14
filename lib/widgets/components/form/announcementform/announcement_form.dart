@@ -81,7 +81,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             ? _originalImageUrl
             : null;
 
-        print("准备上传新图片... 旧 URL (如替换): $oldUrlToReplace");
+        //print("准备上传新图片... 旧 URL (如替换): $oldUrlToReplace");
         finalImageUrl = await FileUpload.uploadImage(
           fileToUpload,
           folder: 'announcements', // 指定文件夹
@@ -90,21 +90,21 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           quality: 85,
           oldImageUrl: oldUrlToReplace,
         );
-        print("新图片上传成功，URL: $finalImageUrl");
+        //print("新图片上传成功，URL: $finalImageUrl");
 
       } else if (_imageSource is String && (_imageSource as String).isNotEmpty) {
         // 2. 使用的是 URL 字符串
         finalImageUrl = _imageSource as String;
-        print("使用提供的 URL: $finalImageUrl");
+        //print("使用提供的 URL: $finalImageUrl");
 
       } else {
         // 3. 图片源是 null 或空字符串，表示无图片或已清除
         finalImageUrl = null;
         // 如果是编辑模式且之前有图片，后端需要处理删除逻辑
         if (widget.announcement.id.isNotEmpty && _originalImageUrl != null) {
-          print("图片已被清除，将提交 null URL。后端应处理删除原图: $_originalImageUrl");
+         //print("图片已被清除，将提交 null URL。后端应处理删除原图: $_originalImageUrl");
         } else {
-          print("未设置图片或图片为空。");
+          //print("未设置图片或图片为空。");
         }
       }
       // --- 图片处理结束 ---

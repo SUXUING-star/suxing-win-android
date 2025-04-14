@@ -45,8 +45,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     super.initState();
     _authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (widget.gameId != null) {
-      // *** 这里是改动：调用加载前，直接设置 _isLoading = true ***
-      // 因为 initState 不会立即触发 build，直接改成员变量就行
       _isLoading = true;
       _loadGameDetailsWithStatus(); // 原有的调用
       _incrementViewCount(); // 原有的调用
@@ -185,34 +183,84 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   void _handleCollectionStateChangedInButton(CollectionChangeResult result) {
-
-    if (mounted && _game != null) {
-      // 确保已挂载且 _game 对象存在
-      // 1. 使用 copyWith 创建一个新的 Game 对象，并应用增量 (前端补偿计数值)
-      final Game currentGame = _game!;
-      final Map<String, int> deltas = result.countDeltas;
-
-      final Game updatedGame = currentGame.copyWith(
-        // *** 只修改需要变化的字段 ***
-        wantToPlayCount: currentGame.wantToPlayCount + (deltas['want'] ?? 0),
-        playingCount: currentGame.playingCount + (deltas['playing'] ?? 0),
-        playedCount: currentGame.playedCount + (deltas['played'] ?? 0),
-        totalCollections: currentGame.totalCollections + (deltas['total'] ?? 0),
-        updateTime: DateTime.now(), // 可选：更新 updateTime 以反映本地状态变化
-      );
-
-      // 2. 使用 setState 更新状态
-      setState(() {
-        _collectionStatus = result.newStatus; // 更新收藏状态对象
-        _game = updatedGame; // *** 更新游戏对象，包含补偿后的计数值 ***
-        _refreshCounter++; // 增加计数器，确保依赖 _game 的子组件重建
-      });
-    } else {
-      print(
-          'GameDetailScreen (${widget.gameId}): Cannot apply collection change, component unmounted or game data is null.');
+    // 1. 安全检查
+    if (!mounted || _game == null) {
+      print('GameDetailScreen (${widget.gameId}): Cannot handle collection change, component unmounted or game data is null.');
+      return;
     }
-  }
 
+    print('GameDetailScreen (${widget.gameId}): Received collection change from button. New status: ${result.newStatus?.status}. Applying frontend compensation.');
+
+    // 2. 获取当前状态和变化信息
+    final Game currentGame = _game!;
+    final Map<String, int> countDeltas = result.countDeltas; // 收藏计数增量 (来自按钮的回调)
+    final GameCollectionItem? newCollectionItem = result.newStatus;
+    final GameCollectionItem? oldCollectionItem = _collectionStatus; // 使用屏幕 State 中记录的旧状态
+
+    // 3. 计算评分的 Delta (前端计算)
+    double deltaRatingSum = 0;
+    int deltaRatingCount = 0;
+    final oldStatusString = oldCollectionItem?.status;
+    final newStatusString = newCollectionItem?.status;
+    final oldRatingValue = oldCollectionItem?.rating;
+    final newRatingValue = newCollectionItem?.rating;
+
+    bool oldHadRating = oldStatusString == GameCollectionStatus.played && oldRatingValue != null;
+    bool newHasRating = newStatusString == GameCollectionStatus.played && newRatingValue != null;
+
+    if (!oldHadRating && newHasRating) {
+      deltaRatingSum = newRatingValue!;
+      deltaRatingCount = 1;
+    } else if (oldHadRating && newHasRating) {
+      if (oldRatingValue! != newRatingValue!) {
+        deltaRatingSum = newRatingValue! - oldRatingValue!;
+      }
+    } else if (oldHadRating && !newHasRating) {
+      deltaRatingSum = -oldRatingValue!;
+      deltaRatingCount = -1;
+    }
+
+    // 4. 计算补偿后的新评分统计数据和平均分
+    final int newRatingCount = (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
+    final double newTotalRatingSum = (newRatingCount == 0) ? 0.0 : (currentGame.totalRatingSum + deltaRatingSum);
+
+    // *** 在前端计算平均分 ***
+    double newAverageRating = 0.0;
+    if (newRatingCount > 0) {
+      newAverageRating = newTotalRatingSum / newRatingCount;
+      // 保留一位小数 (可选)
+      newAverageRating = (newAverageRating * 10).round() / 10;
+    }
+    // 限制在 0 到 10 之间 (可选，增加健壮性)
+    newAverageRating = newAverageRating.clamp(0.0, 10.0);
+
+
+    // 5. 使用 copyWith 创建包含所有补偿后数据的新 Game 对象
+    final Game updatedGame = currentGame.copyWith(
+      // 补偿收藏计数
+      wantToPlayCount: (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0)).clamp(0, 1000000),
+      playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0)).clamp(0, 1000000),
+      playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0)).clamp(0, 1000000),
+      totalCollections: (currentGame.totalCollections + (countDeltas['total'] ?? 0)).clamp(0, 1000000),
+      // *** 补偿评分相关字段 ***
+      ratingCount: newRatingCount,
+      totalRatingSum: newTotalRatingSum,
+      rating: newAverageRating, // *** 使用前端计算的新平均分 ***
+      // *** 更新时间戳（使用模型中已有的 updateTime 和 ratingUpdateTime） ***
+      updateTime: DateTime.now(), // 更新游戏整体更新时间
+      // 如果评分有变化，更新 ratingUpdateTime，否则保持原来的值
+      ratingUpdateTime: (deltaRatingCount != 0 || deltaRatingSum != 0) ? DateTime.now() : currentGame.ratingUpdateTime,
+      // *** 不再有 collectionUpdateTime 这个字段 ***
+    );
+
+    // 6. 使用 setState 更新状态
+    setState(() {
+      _collectionStatus = result.newStatus; // 更新收藏按钮状态
+      _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
+      _refreshCounter++; // 强制子组件重建
+      print("GameDetailScreen (${widget.gameId}): Frontend compensation applied. New Rating: ${updatedGame.rating}, New RatingCount: ${updatedGame.ratingCount}, New Want: ${updatedGame.wantToPlayCount}");
+    });
+  }
   // *** 核心改动：处理点赞切换的回调函数 ***
   // *** 这个函数需要完全替换掉你原来的 _handleToggleLike ***
   Future<void> _handleToggleLike() async {

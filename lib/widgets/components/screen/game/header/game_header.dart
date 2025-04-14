@@ -162,6 +162,14 @@ class GameHeader extends StatelessWidget {
                 Text('${game.totalCollections} 人收藏', style: textStyle),
               ],
             ),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.star_border_outlined, size: 16, color: Colors.grey[600]),
+                SizedBox(width: 4),
+                Text('评分值${game.rating}', style: textStyle),
+              ],
+            ),
           ],
         ),
         SizedBox(height: 8),
@@ -172,10 +180,9 @@ class GameHeader extends StatelessWidget {
             Text('发布于 ${DateTimeFormatter.formatTimeAgo(game.createTime)}', style: textStyle),
             SizedBox(width: 4),
             Text('编辑于 ${DateTimeFormatter.formatTimeAgo(game.updateTime)}', style: textStyle),
-
           ],
-
         ),
+
       ],
     );
   }

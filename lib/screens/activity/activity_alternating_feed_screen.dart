@@ -7,6 +7,8 @@ import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_type_filter.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class ActivityAlternatingFeedScreen extends StatefulWidget {
   final String? userId; // 可选用户ID，如果提供则显示该用户的动态
@@ -15,7 +17,7 @@ class ActivityAlternatingFeedScreen extends StatefulWidget {
   const ActivityAlternatingFeedScreen({
     Key? key,
     this.userId,
-    this.title = '动态流',
+    this.title = '我的动态',
   }) : super(key: key);
 
   @override
@@ -161,9 +163,6 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
       setState(() {
         _isLoadingMore = false;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('加载更多内容失败: $e')),
-      );
     }
   }
 
@@ -175,8 +174,8 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
+      appBar: CustomAppBar(
+        title: widget.title,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -190,9 +189,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
 
   Widget _buildBody() {
     if (_isLoading && _activities.isEmpty) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
+      return LoadingWidget.inline();
     }
 
     if (_error.isNotEmpty && _activities.isEmpty) {

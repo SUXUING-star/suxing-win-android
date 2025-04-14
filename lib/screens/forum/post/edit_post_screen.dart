@@ -54,20 +54,41 @@ class _EditPostScreenState extends State<EditPostScreen> {
     }
 
     if (_post == null) {
+      // 保持这个检查
       return CustomErrorWidget(title: '无法加载帖子数据');
     }
 
+    // 安全地处理 postIdInfo
+    String displayPostId = "无效ID"; // 默认值
+    if (_post!.id != null && _post!.id.isNotEmpty) { // 增加非空和非空字符串检查
+      displayPostId = _post!.id.length >= 8
+          ? _post!.id.substring(0, 8) + '...'
+          : _post!.id; // 如果 ID 不足8位，显示完整 ID
+    }
+
+    // 安全地处理 updatetimeInfo (虽然不太可能出错，但也加上)
+    String displayUpdateTime = "未知时间";
+    try { // 使用 try-catch 更保险，因为 toString() 和 substring() 都可能意外出错
+      displayUpdateTime = _post!.updateTime.toString().length >= 16
+          ? _post!.updateTime.toString().substring(0, 16)
+          : _post!.updateTime.toString();
+    } catch(e) {
+      print("Error formatting updateTime: $e");
+      // 保留默认值 "未知时间"
+    }
+
+
     return PostForm(
       title: '编辑帖子',
-      initialTitle: _post!.title,
+      initialTitle: _post!.title, // 这些也最好有非空检查，但如果 ID 为空，它们可能也为空
       initialContent: _post!.content,
-      initialTags: List.from(_post!.tags),
+      initialTags: List.from(_post!.tags ?? []), // 处理 tags 可能为 null 的情况
       availableTags: _availableTags,
       isSubmitting: _isSubmitting,
       onSubmit: _submitEdit,
       submitButtonText: '保存修改',
-      postIdInfo: _post!.id.substring(0, 8) + '...',
-      updatetimeInfo: _post!.updateTime.toString().substring(0, 16),
+      postIdInfo: displayPostId,          // <-- 使用安全处理后的 ID
+      updatetimeInfo: displayUpdateTime, // <-- 使用安全处理后的时间
     );
   }
 

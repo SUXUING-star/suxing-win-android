@@ -87,7 +87,6 @@ class AppRoutes {
       case '/':
         // 检查是否有传递标签索引参数
         if (settings.arguments != null) {
-          print("AppRoutes: 接收到主页面导航参数: ${settings.arguments}");
 
           if (settings.arguments is Map<String, dynamic> &&
               (settings.arguments as Map<String, dynamic>)

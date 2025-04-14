@@ -8,6 +8,7 @@ class ActivityCommentInput extends StatefulWidget {
   final bool isAlternate; // 是否交替布局
   final String hintText;
   final bool isLocked; // 是否锁定状态
+  final bool isSubmitting;
 
   const ActivityCommentInput({
     Key? key,
@@ -15,6 +16,7 @@ class ActivityCommentInput extends StatefulWidget {
     this.isAlternate = false,
     this.hintText = '发表评论...',
     this.isLocked = false, // 默认为未锁定
+    this.isSubmitting = false,
   }) : super(key: key);
 
   @override
@@ -22,25 +24,27 @@ class ActivityCommentInput extends StatefulWidget {
 }
 
 class _ActivityCommentInputState extends State<ActivityCommentInput> {
-  bool _isSubmitting = false;
+
+  @override
+  void dispose() {
+    // --- 不再需要释放 Controller ---
+    // _controller.dispose();
+    super.dispose();
+  }
 
   void _handleSubmit(String comment) {
+    // 检查外部传入的提交状态
+    if (widget.isSubmitting) return;
+
+    // CommentInputField 内部应该已经处理了 trim 和空检查
+    // 但为保险起见可以再检查一次
     if (comment.isEmpty) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    // --- 直接调用外部 onSubmit ---
+    widget.onSubmit(comment);
 
-    try {
-      widget.onSubmit(comment);
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +52,7 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
     return CommentInputField(
       hintText: widget.hintText,
       submitButtonText: '发送',
-      isSubmitting: _isSubmitting,
+      isSubmitting: widget.isSubmitting,
       onSubmit: _handleSubmit,
       maxLines: 3,
       // --- 2. Replace the custom Card with LoginPrompt ---

@@ -79,6 +79,7 @@ class Post {
 
   Map<String, dynamic> toJson() {
     return {
+      'id': id,
       'title': title,
       'content': content,
       'authorId': authorId,

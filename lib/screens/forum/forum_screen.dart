@@ -1,30 +1,32 @@
 // lib/screens/forum/forum_screen.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
-import 'package:mongo_dart/mongo_dart.dart'
-    as mongo; // For ObjectId check if needed
+// import 'package:hive/hive.dart'; // 不直接用 Hive
 import 'package:provider/provider.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart'; // Ensure import
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:visibility_detector/visibility_detector.dart'; // <--- 引入懒加载库
+import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart'; // 引入分页控件
+import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
 import '../../models/post/post.dart';
 import '../../services/main/forum/forum_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../routes/app_routes.dart';
-import '../../widgets/components/loading/loading_route_observer.dart'; // 可选：全局加载指示器
-import '../../widgets/components/form/postform/config/post_taglists.dart'; // 标签列表
+import '../../widgets/components/loading/loading_route_observer.dart';
+import '../../widgets/components/form/postform/config/post_taglists.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/forum/card/post_card.dart'; // 帖子卡片
-import '../../widgets/components/screen/forum/tag_filter.dart'; // 移动端标签过滤器
-import '../../widgets/components/screen/forum/panel/forum_right_panel.dart'; // 右侧面板
-import '../../widgets/components/screen/forum/panel/forum_left_panel.dart'; // 左侧面板
-import '../../widgets/ui/common/error_widget.dart'; // <--- 引入错误提示 Widget
-import '../../widgets/ui/common/loading_widget.dart'; // <--- 引入加载提示 Widget
+import '../../widgets/components/screen/forum/card/post_card.dart';
+import '../../widgets/components/screen/forum/tag_filter.dart';
+import '../../widgets/components/screen/forum/panel/forum_right_panel.dart';
+import '../../widgets/components/screen/forum/panel/forum_left_panel.dart';
+import '../../widgets/ui/common/error_widget.dart';
+import '../../widgets/ui/common/loading_widget.dart';
 
 class ForumScreen extends StatefulWidget {
-  final String? tag; // 可选的初始标签
+  final String? tag;
 
   const ForumScreen({Key? key, this.tag}) : super(key: key);
 
@@ -32,217 +34,390 @@ class ForumScreen extends StatefulWidget {
   _ForumScreenState createState() => _ForumScreenState();
 }
 
-// --- 添加 WidgetsBindingObserver 以监听 App 生命周期 ---
 class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   final ForumService _forumService = ForumService();
-  final List<String> _tags = PostTagLists.filterTags; // 固定的标签列表
-  String _selectedTag = '全部'; // 当前选中的标签
-  List<Post>? _posts; // 当前页的帖子列表 (可为 null)
-  String? _errorMessage; // 错误信息
+  final List<String> _tags = PostTagLists.filterTags;
+  String _selectedTag = '全部';
+  List<Post>? _posts;
+  String? _errorMessage;
 
-  // --- 分页状态 ---
   int _currentPage = 1;
   int _totalPages = 1;
-  final int _limit = 10; // 每页数量
+  final int _limit = 10;
 
-  // --- 懒加载与加载状态 ---
-  bool _isInitialized = false; // 是否已完成首次加载尝试
-  bool _isVisible = false; // 当前 Widget 是否可见
-  bool _isLoadingData = false; // 是否正在加载（首次/刷新/翻页时都会触发，用于锁定操作）
-  bool _isLoadingPage = false; // 专用于 PaginationControls 的加载状态显示
-  // --- 结束懒加载状态 ---
+  // --- 状态变量 ---
+  bool _isVisible = false; // Widget 是否可见
+  bool _isLoadingData = false; // 是否正在执行加载操作 (API 调用或强制刷新)
+  bool _isInitialized = false; // 是否已尝试过首次加载
+  bool _needsRefresh = false; // 是否需要在变为可见或后台恢复时刷新
 
-  // 使用简易 RefreshController 处理下拉刷新完成状态
   final RefreshController _refreshController = RefreshController();
 
-  // UI 控制状态
   bool _showLeftPanel = true;
   bool _showRightPanel = true;
 
-  // 路由观察者和后台刷新标记
-  LoadingRouteObserver? _routeObserver; // 可选，用于全局加载提示
-  bool _needsRefresh = false; // App 从后台恢复时是否需要刷新
+  LoadingRouteObserver? _routeObserver;
 
-  // 屏幕宽度阈值 (不变)
+  // --- 缓存监听 ---
+  StreamSubscription<dynamic>? _cacheSubscription;
+  String _currentWatchIdentifier = ''; // 用于标识当前监听的参数组合
+
+  // --- Debounce Timer ---
+  Timer? _refreshDebounceTimer;
+
   static const double _hideRightPanelThreshold = 950.0;
   static const double _hideLeftPanelThreshold = 750.0;
 
   @override
   void initState() {
     super.initState();
-    // 初始化选中标签
     if (widget.tag != null && _tags.contains(widget.tag!)) {
       _selectedTag = widget.tag!;
     }
-    WidgetsBinding.instance.addObserver(this); // 注册 App 生命周期监听
-    print(
-        "ForumScreen initState: Initialized, selectedTag: $_selectedTag, waiting for visibility.");
-    // --- 不在 initState 中加载数据 ---
+    WidgetsBinding.instance.addObserver(this);
+    print("ForumScreen initState: Tag=$_selectedTag");
+    // 不在此处加载，依赖 VisibilityDetector
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 获取 LoadingRouteObserver (如果使用了全局加载提示)
     final observers = NavigationUtils.of(context).widget.observers;
     _routeObserver = observers.whereType<LoadingRouteObserver>().firstOrNull;
-    // --- 不在此处触发初始加载 ---
+    print("ForumScreen didChangeDependencies");
+    // Maybe trigger load if visible here? Or rely solely on VisibilityDetector
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this); // 移除监听
-    _refreshController.dispose(); // 清理 Controller
+    print("ForumScreen dispose: Tag=$_selectedTag");
+    _stopWatchingCache(); // 停止监听
+    WidgetsBinding.instance.removeObserver(this);
+    _refreshController.dispose();
+    _refreshDebounceTimer?.cancel(); // 取消 debounce timer
     super.dispose();
   }
 
-  // --- App 生命周期监听回调 (不变) ---
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed && _needsRefresh) {
-      _refreshData(); // 执行刷新
-      _needsRefresh = false; // 重置标记
+    if (state == AppLifecycleState.resumed) {
+      print("ForumScreen: App resumed.");
+      // 如果需要刷新，并且当前可见，则刷新
+      if (_needsRefresh && _isVisible) {
+        print(
+            "ForumScreen: Needs refresh on resume and visible, triggering refresh.");
+        // 使用 Debounce 避免过于频繁的刷新
+        _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
+        _needsRefresh = false; // 重置标记
+      } else if (_isVisible) {
+        // 如果只是恢复且可见，也检查一下
+        print(
+            "ForumScreen: App resumed and visible, checking for potential refresh.");
+        _refreshDataIfNeeded(reason: "App Resumed");
+      }
+      // 如果恢复时不可见，则在 VisibilityDetector 变为可见时处理 _needsRefresh
     } else if (state == AppLifecycleState.paused) {
-      _needsRefresh = true; // 标记需要刷新
+      print("ForumScreen: App paused.");
+      _needsRefresh = true; // App 进入后台，标记下次回来时需要检查刷新
     }
   }
 
-  // --- 核心：触发首次数据加载 ---
-  void _triggerInitialLoad() {
-    // 仅在 Widget 变得可见且尚未初始化时执行
-    if (_isVisible && !_isInitialized) {
-      _isInitialized = true; // 标记为已初始化，防止重复触发
-      // 调用加载方法，标记为首次加载
-      _loadPosts(page: 1, isInitialLoad: true);
-    }
-  }
-
-  // --- 清除缓存并刷新 (可选功能，逻辑不变) ---
-  Future<void> _clearCacheAndRefresh() async {
-    try {
-      final tag = _selectedTag == '全部' ? null : _selectedTag;
-      print("ForumScreen: Clearing cache for tag: $tag");
-      await _forumService.clearForumCache(tag);
-      if (mounted) {
-        AppSnackBar.showSuccess(context, '缓存已清除');
-      }
-      // 缓存清除后，由 refreshData 触发重新加载
-      _refreshData();
-    } catch (e) {
-      print('清除缓存失败: $e');
-      if (mounted) {
-        AppSnackBar.showError(context, '清除缓存失败: $e');
-      }
-    }
-  }
-
-  // --- 加载帖子数据（核心方法，支持分页和懒加载）---
+  // --- 核心加载逻辑 ---
   Future<void> _loadPosts(
       {required int page,
       bool isInitialLoad = false,
       bool isRefresh = false}) async {
-    // 防止并发加载
-    if (_isLoadingData) {
+    // 防止在加载过程中重复触发（除非是强制刷新）
+    if (_isLoadingData && !isRefresh) {
+      print("ForumScreen _loadPosts: Skipped, already loading page $page.");
       return;
     }
-    // 必须初始化过，或是由 initialLoad/refresh 触发
-    if (!_isInitialized && !isInitialLoad && !isRefresh) {
-      return;
-    }
+    if (!mounted) return;
 
-    if (!mounted) return; // 检查 Widget 是否还在树中
+    print(
+        "ForumScreen _loadPosts: Loading page $page. Initial: $isInitialLoad, Refresh: $isRefresh");
+    _isInitialized = true; // 标记已尝试加载
 
-    // 设置加载状态
+    // --- 设置加载状态，触发 UI 重建显示 Loading ---
+    // 只有在首次加载、强制刷新或分页时才清空旧数据并显示 Loading
+    // 缓存事件触发的刷新，我们希望尽量平滑过渡
     setState(() {
-      _isLoadingData = true; // 标记核心加载开始
-      // 如果是翻页，同时标记分页控件的加载状态
-      if (!isInitialLoad && !isRefresh) {
-        _isLoadingPage = true;
+      _isLoadingData = true;
+      _errorMessage = null; // 清除旧错误
+      if (isInitialLoad || isRefresh || _posts == null) {
+        // 首次加载、刷新、或之前就没有数据时，清空
+        print("ForumScreen _loadPosts: Clearing posts to show loading state.");
+        _posts = null;
       }
-      // 首次加载或刷新时，清除错误并将帖子设为 null 以显示 Loading
-      if (isInitialLoad || isRefresh) {
-        _errorMessage = null;
-        _posts = null; // 清空帖子以显示 Loading
-      }
-      // 翻页时不清除 _posts 和 _errorMessage，避免闪烁，错误在 PaginationControls 处理
+      // 分页加载时，不清空 _posts，让旧数据显示，只在分页控件显示 loading
+      // _isLoadingPage = (page != _currentPage && !isRefresh); // 这个状态似乎多余了
     });
 
-    // (可选) 显示全局加载指示器（仅在首次或刷新时）
-    if (isInitialLoad || isRefresh) {
-      _routeObserver?.showLoading();
-    }
+    // 只有强制刷新或首次加载（且无缓存）时显示全局路由 Loading
+    final bool showRouteLoading =
+        isRefresh || (isInitialLoad && _posts == null);
+    if (showRouteLoading) _routeObserver?.showLoading();
 
+    // --- 调用 Service 获取数据 ---
     try {
-      // --- 调用 Service 获取分页数据 ---
       final result = await _forumService.getPostsPage(
         tag: _selectedTag == '全部' ? null : _selectedTag,
         page: page,
         limit: _limit,
       );
 
-      if (!mounted) return; // 异步后检查
+      if (!mounted) return; // 获取数据后检查组件是否还在
 
-      // 解析结果
-      final List<Post> fetchedPosts = result['posts'] ?? [];
-      final Map<String, dynamic> pagination = result['pagination'] ?? {};
+      // --- *** 处理结果并强制 setState *** ---
+      if (result != null) {
+        final List<Post> fetchedPosts = result['posts'] ?? [];
+        final Map<String, dynamic> pagination = result['pagination'] ?? {};
+        final int serverPage = pagination['page'] ?? page;
+        final int serverTotalPages = pagination['pages'] ?? 1;
 
-      // 更新状态
-      setState(() {
-        _posts = fetchedPosts; // **替换**为当前页的数据
-        _currentPage = pagination['page'] ?? page; // 使用后端返回的页码
-        _totalPages = pagination['pages'] ?? 1; // 使用后端返回的总页数
-        _errorMessage = null; // 加载成功，清除错误
+        // *** 无论如何，获取到数据后就调用 setState 更新状态 ***
+        setState(() {
+          _posts = fetchedPosts;
+          _currentPage = serverPage; // 使用服务器返回的页码
+          _totalPages = serverTotalPages;
+          _errorMessage = null; // 清除错误
+          print(
+              "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts?.length}");
+        });
 
-        print(
-            "ForumScreen: Loaded page: $_currentPage / $_totalPages. Posts count: ${_posts?.length}");
-      });
+        // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
+        _startOrUpdateWatchingCache();
+      } else {
+        // 如果 service 返回 null (例如内部解析错误)
+        throw Exception("ForumService returned null data.");
+      }
     } catch (e, s) {
-      // 捕获错误
-      print('ForumScreen: Load posts error (page $page): $e\nStackTrace: $s');
+      print('ForumScreen _loadPosts: Error (page $page): $e\nStackTrace: $s');
       if (!mounted) return;
+      // *** 出错也要 setState 更新错误信息 ***
       setState(() {
-        _errorMessage = '加载帖子失败 (第 $page 页): $e';
-        // 如果是首次/刷新失败，保持 _posts 为空以显示错误页
+        _errorMessage = '加载帖子失败: $e';
+        // 如果是首次加载或刷新出错，清空帖子列表
         if (isInitialLoad || isRefresh) {
-          _posts = []; // 确保列表为空
+          _posts = []; // 显示空/错误状态
           _currentPage = 1;
           _totalPages = 1;
         }
-        // 如果是翻页失败，_posts 保持不变，错误信息会传递给 PaginationControls 或在底部显示
+        // 分页出错，可以选择保留旧数据，只显示错误信息
       });
+      // 出错时停止监听？可以考虑，避免无效监听
+      // _stopWatchingCache();
     } finally {
-      // 结束加载状态
       if (mounted) {
+        // *** 加载结束（无论成功失败）都要 setState 更新加载状态 ***
         setState(() {
-          _isLoadingData = false; // 结束核心加载
-          _isLoadingPage = false; // 结束分页控件加载状态
+          _isLoadingData = false;
         });
-        // (可选) 隐藏全局加载指示器
-        if (isInitialLoad || isRefresh) {
-          _routeObserver?.hideLoading();
-          // 如果是下拉刷新，通知 RefreshController 完成
-          if (isRefresh) {
-            _refreshController.refreshCompleted();
-          }
-        }
+        if (showRouteLoading) _routeObserver?.hideLoading();
+        if (isRefresh) _refreshController.refreshCompleted();
       }
     }
   }
 
-  // --- 刷新数据 (调用 _loadPosts) ---
+  // --- 刷新数据 (调用 _loadPosts 强制刷新第一页) ---
   Future<void> _refreshData() async {
-    // 防止重复刷新
-    if (_isLoadingData) {
-      //print("ForumScreen: Refresh skipped, already loading.");
-      return;
-    }
+    if (_isLoadingData) return;
     if (!mounted) return;
-    //print("ForumScreen: Refresh triggered.");
-    // 直接调用加载第一页，并标记为刷新
+    print("ForumScreen: Refresh triggered, loading page 1 forcefully.");
+    setState(() {
+      _currentPage = 1; // 重置到第一页
+      // _totalPages = 1; // 可以在加载成功后更新
+    });
     await _loadPosts(page: 1, isRefresh: true);
   }
 
-  // --- UI 切换方法 (逻辑不变) ---
+  // --- 触发首次加载 (仅在未初始化时调用) ---
+  void _triggerInitialLoad() {
+    if (!_isInitialized && !_isLoadingData) {
+      print("ForumScreen: Triggering initial load (page 1).");
+      _loadPosts(page: 1, isInitialLoad: true); // 加载第一页
+    } else if (!_isLoadingData && _posts == null) {
+      print("ForumScreen: Initialized but no posts, triggering reload.");
+      // 如果初始化了但没数据（可能上次失败），也重新加载
+      _loadPosts(page: 1, isInitialLoad: true, isRefresh: true);
+    }
+  }
+
+  // --- 开始/更新监听缓存 ---
+  void _startOrUpdateWatchingCache() {
+    final String newWatchIdentifier = "${_selectedTag}_${_currentPage}";
+    if (_cacheSubscription != null &&
+        _currentWatchIdentifier == newWatchIdentifier) {
+      // print("ForumScreen: Watch identifier hasn't changed ($newWatchIdentifier). Keeping current subscription.");
+      return;
+    }
+
+    _stopWatchingCache(); // 停止旧的
+    _currentWatchIdentifier = newWatchIdentifier;
+    print(
+        "ForumScreen: Starting/Updating cache watch for Identifier: $_currentWatchIdentifier");
+
+    try {
+      _cacheSubscription = _forumService
+          .watchForumPageChanges(
+        tag: _selectedTag == '全部' ? null : _selectedTag,
+        page: _currentPage,
+        limit: _limit,
+      )
+          .listen(
+        (dynamic event) {
+          // --- *** 监听到变化后的核心处理 *** ---
+          print(
+              "ForumScreen: Cache change detected for $_currentWatchIdentifier. Event: ${event?.runtimeType}");
+          if (_isVisible) {
+            print(
+                "ForumScreen: Visible, triggering debounced refresh due to cache change.");
+            // 使用 Debounce 避免短时间内多次无效的刷新
+            _refreshDataIfNeeded(reason: "Cache Changed");
+          } else {
+            print(
+                "ForumScreen: Not visible, marking for refresh on next visibility/resume.");
+            _needsRefresh = true; // 标记需要刷新
+          }
+        },
+        onError: (Object error, StackTrace stackTrace) {
+          print(
+              "ForumScreen: Error listening to cache changes ($_currentWatchIdentifier): $error\n$stackTrace");
+          _stopWatchingCache();
+        },
+        onDone: () {
+          print(
+              "ForumScreen: Cache watch stream done ($_currentWatchIdentifier).");
+          // 如果是当前监听结束，清空标识符
+          if (_currentWatchIdentifier == newWatchIdentifier) {
+            _currentWatchIdentifier = '';
+          }
+        },
+        cancelOnError: true,
+      );
+    } catch (e) {
+      print(
+          "ForumScreen: Failed to start watching cache ($_currentWatchIdentifier): $e");
+      _currentWatchIdentifier = ''; // 出错清空
+    }
+  }
+
+  // --- 停止监听缓存 ---
+  void _stopWatchingCache() {
+    if (_cacheSubscription != null) {
+      print(
+          "ForumScreen: Stopping cache watch (Identifier: $_currentWatchIdentifier).");
+      _cacheSubscription!.cancel();
+      _cacheSubscription = null;
+      // Optionally clear identifier immediately
+      // _currentWatchIdentifier = '';
+    }
+  }
+
+  // --- Debounced 刷新 ---
+  void _refreshDataIfNeeded({required String reason}) {
+    // if (_isLoadingData) { // Debounce 期间也可能 isLoadingData=true，允许覆盖 timer
+    //   print("ForumScreen: Refresh skipped (already loading data), triggered by: $reason");
+    //   return;
+    // }
+    if (!mounted) return;
+
+    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+      // 稍微加长 debounce 时间
+      if (mounted && _isVisible && !_isLoadingData) {
+        // 确保执行时可见且不在加载
+        print(
+            "ForumScreen: Debounced refresh executing, triggered by: $reason");
+        // --- *** Debounce 后强制刷新当前页 *** ---
+        _loadPosts(page: _currentPage, isRefresh: true);
+      } else if (mounted) {
+        print(
+            "ForumScreen: Debounced refresh skipped (not visible or already loading). Triggered by: $reason");
+        if (!_isVisible) _needsRefresh = true; // 如果是因为不可见而跳过，还是要标记
+      }
+    });
+  }
+
+  // --- 处理标签选择 ---
+  void _onTagSelected(String tag) {
+    if (_selectedTag == tag || _isLoadingData) return;
+    print("ForumScreen: Tag selected: $tag");
+    setState(() {
+      _selectedTag = tag;
+      _currentPage = 1; // 重置到第一页
+      _totalPages = 1;
+      _posts = null; // 清空旧数据，准备显示 Loading
+      _errorMessage = null;
+      _isInitialized = false; // 重置初始化状态
+      _needsRefresh = false; // 清除刷新标记
+      _isLoadingData = false; // 确保不在加载状态
+    });
+    // 停止旧标签的监听
+    _stopWatchingCache();
+    // 如果当前可见，立即触发新标签的加载
+    if (_isVisible) {
+      print(
+          "ForumScreen: Tag changed and visible, triggering initial load for new tag.");
+      _triggerInitialLoad(); // 这会调用 _loadPosts(isInitialLoad: true)
+    }
+  }
+
+  // --- 翻页逻辑 ---
+  void _goToNextPage() {
+    if (_currentPage < _totalPages && !_isLoadingData) {
+      print("ForumScreen: Going to next page (${_currentPage + 1})");
+      // 先停止当前页的监听
+      _stopWatchingCache();
+      setState(() {
+        _currentPage++;
+        _posts = null; // 清空帖子以显示 Loading
+        _errorMessage = null;
+      });
+      // 加载新页，非强制刷新
+      _loadPosts(page: _currentPage, isInitialLoad: false, isRefresh: false);
+    }
+  }
+
+  void _goToPreviousPage() {
+    if (_currentPage > 1 && !_isLoadingData) {
+      print("ForumScreen: Going to previous page (${_currentPage - 1})");
+      // 先停止当前页的监听
+      _stopWatchingCache();
+      setState(() {
+        _currentPage--;
+        _posts = null; // 清空帖子以显示 Loading
+        _errorMessage = null;
+      });
+      // 加载新页，非强制刷新
+      _loadPosts(page: _currentPage, isInitialLoad: false, isRefresh: false);
+    }
+  }
+
+  // --- 导航到帖子详情页 ---
+  void _navigateToPostDetail(Post post) async {
+    _stopWatchingCache(); // 进入详情页前停止监听列表
+    print(
+        "ForumScreen: Navigating to detail for post ${post.id}, stopped watching list cache.");
+
+    await NavigationUtils.pushNamed(context, AppRoutes.postDetail,
+        arguments: post.id);
+
+    // 从详情页返回
+    print("ForumScreen: Returned from detail.");
+    if (mounted) {
+      // 重新启动监听并检查是否需要刷新
+      _startOrUpdateWatchingCache(); // 监听返回时的当前页
+      if (_isVisible) {
+        // 只有可见时才检查刷新
+        print(
+            "ForumScreen: Returned from detail and visible, checking for refresh.");
+        _refreshDataIfNeeded(reason: "Returned From Detail");
+      }
+    }
+  }
+
+  // --- 其他 UI 相关方法保持不变 ---
   void _toggleRightPanel() {
     setState(() {
       _showRightPanel = !_showRightPanel;
@@ -255,36 +430,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     });
   }
 
-  // --- 处理标签选择 (重置状态并加载) ---
-  void _onTagSelected(String tag) {
-    // 防止重复选择或在加载时切换
-    if (_selectedTag == tag || _isLoadingData) return;
-    //print("ForumScreen: Tag selected: $tag");
-    setState(() {
-      _selectedTag = tag;
-      _isInitialized = false; // 重置初始化状态，强制重新加载
-      _isVisible = false; // 重置可见状态
-      _posts = null; // 清空帖子以显示 Loading
-      _errorMessage = null; // 清除错误
-      _currentPage = 1; // 重置到第一页
-      _totalPages = 1;
-      _isLoadingData = false; // 重置加载锁
-      _isLoadingPage = false;
-    });
-    // 使用 microtask 尝试立即触发加载（如果仍然可见）
-    Future.microtask(() {
-      if (mounted && _isVisible) {
-        _triggerInitialLoad();
-      }
-    });
-  }
-
-  // --- 判断是否为桌面布局 (逻辑不变) ---
   bool _isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width > 600; // 阈值可调整
+    return MediaQuery.of(context).size.width > 600;
   }
 
-  // --- 导航到创建帖子页面 (逻辑不变，刷新后回第一页) ---
   void _navigateToCreatePost() async {
     final result =
         await NavigationUtils.pushNamed(context, AppRoutes.createPost);
@@ -294,7 +443,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
   }
 
-  // --- 新增：处理来自 PostCard 的删除请求 ---
   Future<void> _handleDeletePostFromCard(String postId) async {
     print("ForumScreen: Received delete request for post $postId from card.");
     // 使用确认对话框，确保用户意图
@@ -322,83 +470,24 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     );
   }
 
-// --- 新增：处理来自 PostCard 的编辑请求 ---
   void _handleEditPostFromCard(Post post) async {
-    print("ForumScreen: Received edit request for post ${post.id} from card.");
     // 直接导航到编辑页面
     final result = await NavigationUtils.pushNamed(
       context,
       AppRoutes.editPost,
-      arguments: post, // 传递整个 Post 对象给编辑页
+      arguments: post.id, // 传递整个 Post 对象给编辑页
     );
 
     // 如果编辑成功，刷新当前页
     if (result == true && mounted) {
-      print("ForumScreen: Edit successful, refreshing current page.");
       // 刷新当前页数据，而不是回到第一页
       _loadPosts(page: _currentPage, isRefresh: true);
-    }
-  }
-
-  // --- 导航到帖子详情页 (增加浏览量逻辑) ---
-  void _navigateToPostDetail(Post post) async {
-    // 2. 执行导航
-    print("ForumScreen: Navigating to post detail for ${post.id}");
-    final result = await NavigationUtils.pushNamed(
-        context, AppRoutes.postDetail,
-        arguments: post.id // 传递帖子 ID
-        );
-
-    // 3. 处理从详情页返回的结果
-    if (!mounted) return; // 返回后检查 mounted
-
-    if (result == true) {
-      // 通用成功标记？可能需要刷新
-      print(
-          "ForumScreen: Returned from detail with generic success, refreshing data...");
-      _refreshData();
-    } else if (result is Map) {
-      if (result['deleted'] == true) {
-        // 帖子被删除了
-        print("ForumScreen: Post deleted from detail, refreshing data...");
-        _refreshData(); // 刷新整个列表（回到第一页）
-      } else if (result['updated'] == true) {
-        // 帖子被更新了
-        print(
-            "ForumScreen: Post updated from detail, refreshing current page...");
-        // 刷新当前页数据，而不是回到第一页
-        _loadPosts(page: _currentPage, isRefresh: true); // 标记为刷新以重新获取
-      }
-    }
-  }
-
-  // --- 翻页逻辑 ---
-  void _goToNextPage() {
-    // 必须有下一页，并且当前不在加载中
-    if (_currentPage < _totalPages && !_isLoadingData) {
-      print("ForumScreen: Going to next page (${_currentPage + 1})");
-      _loadPosts(page: _currentPage + 1); // 加载下一页
-    } else {
-      print(
-          "ForumScreen: Cannot go to next page (currentPage: $_currentPage, totalPages: $_totalPages, isLoading: $_isLoadingData)");
-    }
-  }
-
-  void _goToPreviousPage() {
-    // 必须不是第一页，并且当前不在加载中
-    if (_currentPage > 1 && !_isLoadingData) {
-      print("ForumScreen: Going to previous page (${_currentPage - 1})");
-      _loadPosts(page: _currentPage - 1); // 加载上一页
-    } else {
-      print(
-          "ForumScreen: Cannot go to previous page (currentPage: $_currentPage, isLoading: $_isLoadingData)");
     }
   }
 
   // --- 主构建方法 ---
   @override
   Widget build(BuildContext context) {
-    // 获取布局和颜色信息 (不变)
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = _isDesktop(context);
     final bool canShowLeftPanelBasedOnWidth =
@@ -413,26 +502,41 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     final Color disabledColor = Colors.white54;
     final Color enabledColor = Colors.white;
 
-    // 使用 VisibilityDetector 包裹 Scaffold
+    print(
+        "ForumScreen build: Tag=$_selectedTag, Page=$_currentPage, IsLoading=$_isLoadingData, IsVisible=$_isVisible, Posts=${_posts?.length}, Error=$_errorMessage");
+
     return VisibilityDetector(
-      key: Key('forum_screen_visibility'), // 唯一 Key
+      // *** 使用 Tag 和 Page 作为 Key，确保切换时重建 VisibilityDetector 状态 ***
+      key: Key('forum_screen_visibility_${_selectedTag}_$_currentPage'),
       onVisibilityChanged: (VisibilityInfo info) {
         final bool currentlyVisible = info.visibleFraction > 0;
         if (currentlyVisible != _isVisible) {
-          Future.microtask(() {
-            // 安全地更新状态
-            if (mounted) {
-              setState(() {
-                _isVisible = currentlyVisible;
-              });
-            } else {
-              _isVisible = currentlyVisible;
+          print(
+              "ForumScreen Visibility Changed: now ${currentlyVisible ? 'Visible' : 'Hidden'} (Tag: $_selectedTag, Page: $_currentPage)");
+          _isVisible = currentlyVisible;
+          if (mounted) setState(() {}); // 更新可见状态
+
+          if (_isVisible) {
+            // --- 变为可见 ---
+            _triggerInitialLoad(); // 确保首次加载被触发（如果还没加载过）
+            _startOrUpdateWatchingCache(); // 启动或更新监听
+            // 如果需要刷新（例如后台回来，或缓存事件发生时不可见）
+            if (_needsRefresh) {
+              print(
+                  "ForumScreen: Became visible and needs refresh, triggering refresh.");
+              _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
+              _needsRefresh = false; // 重置标记
+            } else if (_isInitialized && _posts == null && !_isLoadingData) {
+              // 如果初始化过但没数据（可能上次加载失败），也尝试重新加载
+              print(
+                  "ForumScreen: Became visible, initialized but no posts, triggering reload.");
+              _loadPosts(page: _currentPage, isRefresh: true);
             }
-            // 如果变为可见，尝试触发初始加载
-            if (_isVisible) {
-              _triggerInitialLoad();
-            }
-          });
+          } else {
+            // --- 变为不可见 ---
+            _stopWatchingCache(); // 停止监听
+            _refreshDebounceTimer?.cancel(); // 取消可能存在的 debounce
+          }
         }
       },
       child: Scaffold(
@@ -490,68 +594,72 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         // Body 使用 Column 包含 Filter(Mobile)/Content/Pagination
         body: Column(
           children: [
-            // 移动端标签过滤器
             if (!isDesktop)
               TagFilter(
                 tags: _tags,
                 selectedTag: _selectedTag,
-                onTagSelected: _onTagSelected, // 绑定回调
+                onTagSelected: _onTagSelected,
               ),
-            // 主内容区域，需要 Expanded
             Expanded(
               child: _buildBodyContent(
                   isDesktop, actuallyShowLeftPanel, actuallyShowRightPanel),
             ),
-            // 分页控件
-            PaginationControls(
-              currentPage: _currentPage,
-              totalPages: _totalPages,
-              isLoading: _isLoadingPage, // 使用分页加载状态
-              onPreviousPage: _goToPreviousPage, // 绑定上一页回调
-              onNextPage: _goToNextPage, // 绑定下一页回调
-            ),
+            // 分页控件: 数据加载完成，帖子非null，且总页数大于1时显示
+            if (!_isLoadingData && _posts != null && _totalPages > 1)
+              PaginationControls(
+                currentPage: _currentPage,
+                totalPages: _totalPages,
+                isLoading: false, // 控件本身不显示加载状态了
+                onPreviousPage: _goToPreviousPage,
+                onNextPage: _goToNextPage,
+              ),
           ],
         ),
       ),
     );
   }
 
-  // --- 构建 Body 内容 (根据状态显示 Loading/Error/List) ---
+  // --- 构建 Body 内容 ---
   Widget _buildBodyContent(
       bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
-    // State 1: Not initialized
-    if (!_isInitialized && !_isLoadingData) {
-      print("ForumScreen Body: Not initialized, showing Loading.");
-      return LoadingWidget.inline(message: "等待加载论坛...");
-    }
-    // State 2: Loading initial data or refreshing, and list is currently null/empty
-    else if (_isLoadingData && (_posts == null || _posts!.isEmpty)) {
-      print("ForumScreen Body: Loading initial/refresh, showing Loading.");
-      return LoadingWidget.inline(message: '正在加载帖子...');
-    }
-    // State 3: Error occurred, and list is null/empty (initial/refresh error)
-    else if (_errorMessage != null && (_posts == null || _posts!.isEmpty)) {
-      print("ForumScreen Body: Error and no data, showing ErrorWidget.");
+    print(
+        "ForumScreen _buildBodyContent: IsLoading=$_isLoadingData, Error=$_errorMessage, Posts=${_posts?.length}");
+    // 1. 如果出错，并且没有帖子数据显示（或者帖子为空）
+    if (_errorMessage != null && (_posts == null || _posts!.isEmpty)) {
+      print("  -> Showing ErrorWidget");
       return Center(
-        // 居中显示错误
         child: InlineErrorWidget(
-          // 或 InlineErrorWidget
           errorMessage: _errorMessage!,
-          // 重试总是加载第一页并视为刷新
-          onRetry: () => _loadPosts(page: 1, isRefresh: true),
+          onRetry: () =>
+              _loadPosts(page: _currentPage, isRefresh: true), // 重试当前页
         ),
       );
     }
-    // State 4: Data is ready (list might be populated or empty), or pagination error occurred
-    else {
-      print(
-          "ForumScreen Body: Data ready or pagination error, building layout.");
-      // 构建桌面或移动端布局
-      // 注意：RefreshIndicator 现在只包裹移动端的列表，桌面端不直接包裹 Row
+
+    // 2. 如果正在加载，并且没有旧帖子数据显示 (_posts 为 null)
+    if (_isLoadingData && _posts == null) {
+      print("  -> Showing LoadingWidget (initial/page change)");
+      return LoadingWidget.inline(message: '正在加载帖子...');
+    }
+
+    // 3. 如果加载完成，但帖子列表为空
+    if (!_isLoadingData && _posts != null && _posts!.isEmpty) {
+      return EmptyStateWidget(message: "啥也没有"); // 调用独立的空状态构建方法
+    }
+
+    // 4. 如果有帖子数据（无论是否正在后台加载刷新）
+    if (_posts != null && _posts!.isNotEmpty) {
+      print("  -> Building Layout with posts");
+      // 构建主布局，列表构建函数内部会处理 _posts!
       return isDesktop
           ? _buildDesktopLayout(actuallyShowLeftPanel, actuallyShowRightPanel)
-          : _buildMobileLayout(); // 移动布局内部处理 RefreshIndicator
+          : _buildMobileLayout();
     }
+
+    // 5. 其他情况（理论上不应到达，例如 _posts 为 null 但不在加载也没错误）
+    print("  -> Fallback: Showing initial loading prompt or empty SizedBox");
+    // 可能是在初始化但还不可见，或者状态异常
+    return LoadingWidget.inline(message: "等待加载..."); // 或者 SizedBox.shrink()
   }
 
   // --- 构建桌面布局 (Row + Panels + List) ---
@@ -602,80 +710,32 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       bool actuallyShowRightPanel = false]) {
     // 安全检查：如果 _posts 是 null (理论上在调用此方法前已被处理，但加一层保险)
     if (_posts == null) {
-      print("ForumScreen PostsList: Safety check failed, _posts is null.");
-      // 可以返回一个错误提示或空的 SizedBox
-      return const Center(child: Text("内部错误：帖子数据丢失"));
-      // return const SizedBox.shrink();
+      print(
+          "ForumScreen _buildPostsList: Error - _posts is null unexpectedly!");
+      return InlineErrorWidget(errorMessage: "无法构建帖子列表");
     }
 
-    // 处理空列表状态 (加载完成但无数据)
-    if (_posts!.isEmpty && !_isLoadingData) {
-      // 确保不是在加载过程中判断为空
-      print("ForumScreen PostsList: List is empty, showing empty state.");
-      // 可以使用之前的 InlineErrorWidget 或专门的空状态组件
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            // 使用 Column 组织图标和文字
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.forum_outlined, size: 60, color: Colors.grey[400]),
-              SizedBox(height: 16),
-              Text(
-                _selectedTag == '全部' ? '论坛暂无帖子' : '“$_selectedTag”分类下暂无帖子',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 20),
-              // 提供刷新或发布按钮
-              TextButton.icon(
-                icon: Icon(Icons.refresh),
-                label: Text("刷新试试"),
-                onPressed: _refreshData,
-              ),
-              Consumer<AuthProvider>(
-                  builder: (ctx, auth, _) => auth.isLoggedIn
-                      ? TextButton.icon(
-                          icon: Icon(Icons.add),
-                          label: Text("发布一篇"),
-                          onPressed: _navigateToCreatePost)
-                      : SizedBox.shrink()),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // --- 构建实际的列表或网格 ---
-    print(
-        "ForumScreen PostsList: Building list/grid with ${_posts!.length} items.");
     final listOrGridWidget = isDesktop
-        ? _buildDesktopPostsGrid(
-            actuallyShowLeftPanel,
-            actuallyShowRightPanel,
-            onDeleteAction: _handleDeletePostFromCard, // <--- 传递删除回调
-            onEditAction: _handleEditPostFromCard, // <--- 传递编辑回调
-          )
+        ? _buildDesktopPostsGrid(actuallyShowLeftPanel, actuallyShowRightPanel,
+            onDeleteAction: _handleDeletePostFromCard,
+            onEditAction: _handleEditPostFromCard)
         : _buildMobilePostsList(
-            onDeleteAction: _handleDeletePostFromCard, // <--- 传递删除回调
-            onEditAction: _handleEditPostFromCard, // <--- 传递编辑回调
-          );
+            onDeleteAction: _handleDeletePostFromCard,
+            onEditAction: _handleEditPostFromCard);
 
-    // --- RefreshIndicator 只包裹移动端的列表 ---
     return isDesktop
-        ? listOrGridWidget // 桌面版不加顶层 RefreshIndicator (如果需要可以加)
+        ? listOrGridWidget
         : RefreshIndicator(
-            key: ValueKey(_selectedTag), // Key 变化时会重建 RefreshIndicator 状态
-            onRefresh: _refreshData, // 绑定下拉刷新回调
-            child: listOrGridWidget, // 包裹移动端列表
+            key: ValueKey(_selectedTag),
+            onRefresh: _refreshData,
+            child: listOrGridWidget,
           );
   }
 
   // --- 构建移动端帖子列表 (ListView) ---
   Widget _buildMobilePostsList({
     required Future<void> Function(String postId) onDeleteAction, // 接收回调
-    required void Function(Post post) onEditAction,            // 接收回调
+    required void Function(Post post) onEditAction, // 接收回调
   }) {
     // Safety check (already done in _buildPostsList, but good practice)
     if (_posts == null) return const SizedBox.shrink();
@@ -697,7 +757,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
               post: post,
               isDesktopLayout: false, // 明确是移动端布局
               onDeleteAction: onDeleteAction, // <--- 传递给 PostCard
-              onEditAction: onEditAction,     // <--- 传递给 PostCard
+              onEditAction: onEditAction, // <--- 传递给 PostCard
               // 可能需要添加 onUpdated 回调等
             ),
           ),
@@ -708,12 +768,11 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 构建桌面端帖子网格 (MasonryGridView) ---
   Widget _buildDesktopPostsGrid(
-      bool actuallyShowLeftPanel,
-      bool actuallyShowRightPanel,
-      {
-        required Future<void> Function(String postId) onDeleteAction, // 接收回调
-        required void Function(Post post) onEditAction,            // 接收回调
-      }) {
+    bool actuallyShowLeftPanel,
+    bool actuallyShowRightPanel, {
+    required Future<void> Function(String postId) onDeleteAction, // 接收回调
+    required void Function(Post post) onEditAction, // 接收回调
+  }) {
     // Safety check
     if (_posts == null) return const SizedBox.shrink();
 
@@ -740,13 +799,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           post: post,
           isDesktopLayout: true, // 明确是桌面布局
           onDeleteAction: onDeleteAction, // <--- 传递给 PostCard
-          onEditAction: onEditAction,     // <--- 传递给 PostCard
+          onEditAction: onEditAction, // <--- 传递给 PostCard
           // 可能需要 onUpdated 等回调
         );
       },
     );
   }
 }
+// End of _ForumScreenState
 
 // --- RefreshController 类 (保持不变) ---
 class RefreshController {

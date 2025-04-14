@@ -1,16 +1,28 @@
-// lib/screens/admin/widgets/game_management.dart
+import 'dart:async'; // For Future
 import 'package:flutter/material.dart';
+// *** 确保这些 import 路径是正确的 ***
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../models/game/game.dart';
+import '../../../models/tag/tag.dart'; // 如果面板需要
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../game/edit/edit_game_screen.dart';
 import '../../game/edit/add_game_screen.dart';
+// *** 确保这里引用的是重构后的 BaseGameListScreen (没有 _isVisible, 接收 Future) ***
 import '../../game/list/base_game_list_screen.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // 导入 ConfirmDialog
+import '../../../widgets/ui/dialogs/confirm_dialog.dart';
+import '../../../widgets/ui/dialogs/edit_dialog.dart'; // 现在是 TextInputDialog
+import '../../../widgets/ui/common/empty_state_widget.dart';
+// Panel imports (如果需要)
+// import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
+// import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
+import '../../../utils/check/admin_check.dart'; // AdminCheck
+import '../../../utils/device/device_utils.dart'; // DeviceUtils
+import '../../../widgets/ui/appbar/custom_app_bar.dart'; // CustomAppBar
+import '../../../widgets/ui/components/pagination_controls.dart'; // PaginationControls
 
 class GameManagement extends StatefulWidget {
   const GameManagement({Key? key}) : super(key: key);
@@ -19,102 +31,291 @@ class GameManagement extends StatefulWidget {
   State<GameManagement> createState() => _GameManagementState();
 }
 
-class _GameManagementState extends State<GameManagement> with SingleTickerProviderStateMixin {
+// *** 移除 WidgetsBindingObserver，因为 BaseGameListScreen 不再依赖 visibility ***
+class _GameManagementState extends State<GameManagement>
+    with SingleTickerProviderStateMixin {
   final GameService _gameService = GameService();
-  // 添加状态变量跟踪是否需要刷新
-  bool _needRefresh = true;
-  // 添加一个key来触发FutureBuilder的重新构建
-  final GlobalKey _futureBuilderKey = GlobalKey();
-
-  // 添加TabController
   late TabController _tabController;
 
-  // 添加状态变量
-  bool _isLoading = false;
+  // State for Pending and Rejected tabs
+  bool _isLoadingPendingRejected = false;
   List<Game> _pendingGames = [];
   List<Game> _rejectedGames = [];
+  String? _pendingRejectedError;
+
+  // *** 修改：_allGamesFuture 的初始化 ***
+  late Future<List<Game>> _allGamesFuture;
+
+  // --- 不再需要面板状态，因为 BaseGameListScreen 不再管理它们 ---
+  // bool _showLeftPanel = true;
+  // bool _showRightPanel = true;
+  // List<Tag> _availableTags = [];
 
   @override
   void initState() {
     super.initState();
-    // 初始化标签控制器 - 3个标签：游戏管理、待审核游戏、被拒绝游戏
     _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(() {
-      // 当标签切换时刷新数据
-      if (!_tabController.indexIsChanging) {
-        setState(() {
-          _needRefresh = true;
-          _isLoading = true;
-        });
-        _loadData();
-      }
-    });
+    _tabController.addListener(_handleTabChange);
 
-    // 初始加载数据
-    _loadData();
-  }
+    // *** 正确初始化 Future：直接赋值，不要 await ***
+    _allGamesFuture = _loadAllGames();
 
-  Future<void> _loadData() async {
-    if (!_isLoading) return;
+    // _loadTagsForPanels(); // 如果其他 Tab 需要 Tags 再加载
 
-    try {
-      switch (_tabController.index) {
-        case 0: // 游戏管理标签 - 使用原有方法，不需要额外处理
-          break;
-        case 1: // 待审核游戏标签
-          final result = await _gameService.getPendingGamesWithInfo(
-            page: 1,
-            pageSize: 100,
-          );
-          if (mounted) {
-            setState(() {
-              _pendingGames = result['games'];
-              _isLoading = false;
-            });
-          }
-          break;
-        case 2: // 被拒绝游戏标签
-          final result = await _gameService.getUserRejectedGamesWithInfo(
-            page: 1,
-            pageSize: 100,
-          );
-          if (mounted) {
-            setState(() {
-              _rejectedGames = result['games'];
-              _isLoading = false;
-            });
-          }
-          break;
-      }
-    } catch (e) {
-      print('加载数据失败: $e');
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+    // Load data for the initially selected tab if it's not the first one
+    if (_tabController.index != 0) {
+      _loadPendingOrRejectedData();
     }
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_handleTabChange);
     _tabController.dispose();
     super.dispose();
   }
 
+  /// Handles tab changes.
+  void _handleTabChange() {
+    // ... (Tab change logic remains the same) ...
+    if (_tabController.indexIsChanging) return;
+    if (mounted) {
+      if (_tabController.index == 1 || _tabController.index == 2) {
+        bool needsLoad = (_tabController.index == 1 &&
+                (_pendingGames.isEmpty || _pendingRejectedError != null)) ||
+            (_tabController.index == 2 &&
+                (_rejectedGames.isEmpty || _pendingRejectedError != null));
+        if (needsLoad && !_isLoadingPendingRejected) {
+          _loadPendingOrRejectedData();
+        }
+      }
+    }
+  }
+
+  // === Data Loading ===
+
+  // Future<void> _loadTagsForPanels() async { /* ... */ } // Keep if needed for other tabs
+
+  /// Loads data for Pending or Rejected tabs. **(Complete)**
+  Future<void> _loadPendingOrRejectedData() async {
+    if (!mounted || _isLoadingPendingRejected) return;
+    setState(() {
+      _isLoadingPendingRejected = true;
+      _pendingRejectedError = null;
+    });
+    try {
+      if (_tabController.index == 1) {
+        final result =
+            await _gameService.getPendingGamesWithInfo(page: 1, pageSize: 100);
+        if (mounted)
+          setState(() {
+            _pendingGames = result['games'];
+          });
+      } else if (_tabController.index == 2) {
+        final result = await _gameService.getUserRejectedGamesWithInfo(
+            page: 1, pageSize: 100);
+        if (mounted)
+          setState(() {
+            _rejectedGames = result['games'];
+          });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _pendingRejectedError = '加载数据失败: $e';
+          if (_tabController.index == 1) _pendingGames = [];
+          if (_tabController.index == 2) _rejectedGames = [];
+        });
+      }
+    } finally {
+      if (mounted)
+        setState(() {
+          _isLoadingPendingRejected = false;
+        });
+    }
+  }
+
+  /// Returns a Future to load all games. **(Complete)**
+  Future<List<Game>> _loadAllGames() async {
+    // This method now simply returns the Future, no state changes here
+    try {
+      final result = await _gameService.getGamesPaginatedWithInfo(
+        page: 1,
+        pageSize: 200,
+        sortBy: 'createTime',
+        descending: true,
+      );
+      return result['games'] as List<Game>;
+    } catch (e) {
+      // Rethrow for FutureBuilder to catch
+      throw Exception('加载游戏管理列表失败: $e');
+    }
+  }
+
+  /// Refreshes the "All Games" tab. **(Complete)**
+  Future<void> _refreshAllGames() async {
+    if (!mounted) return;
+    // Create a new Future instance to trigger FutureBuilder update
+    setState(() {
+      _allGamesFuture = _loadAllGames();
+    });
+  }
+
+  // === Actions ===
+
+  /// Handles deleting a game. **(Complete)**
+  Future<void> _handleDeleteGame(String gameId, String gameTitle) async {
+    await CustomConfirmDialog.show(
+        context: context,
+        title: '确认删除',
+        message: '确定要删除游戏 "$gameTitle" 吗？此操作不可恢复！',
+        confirmButtonText: '删除',
+        confirmButtonColor: Colors.red,
+        iconData: Icons.delete_forever,
+        iconColor: Colors.red,
+        onConfirm: () async {
+          try {
+            await _gameService.deleteGame(gameId);
+            if (mounted) {
+              AppSnackBar.showSuccess(context, '游戏已删除');
+              _refreshAllGames();
+              if (_tabController.index == 1 || _tabController.index == 2) {
+                _loadPendingOrRejectedData();
+              }
+            }
+          } catch (e) {
+            if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+            rethrow;
+          }
+        });
+  }
+
+  /// Handles editing a game. **(Complete)**
+  Future<void> _handleEditGame(Game game) async {
+    final result = await NavigationUtils.push(context,
+        MaterialPageRoute(builder: (context) => EditGameScreen(game: game)));
+    if (result == true && mounted) {
+      _refreshAllGames();
+      if (_tabController.index == 1 || _tabController.index == 2) {
+        _loadPendingOrRejectedData();
+      }
+    }
+  }
+
+  /// Handles adding a game. **(Complete)**
+  void _handleAddGame() {
+    NavigationUtils.push(
+      context,
+      MaterialPageRoute(builder: (context) => AddGameScreen()),
+    ).then((added) {
+      if (added == true && mounted) {
+        _refreshAllGames();
+      }
+    });
+  }
+
+  /// Handles the review action (approve/reject). **(Complete)**
+  Future<void> _handleReviewAction(Game game, bool approve) async {
+    if (approve) {
+      // --- Approve Case: Use CustomConfirmDialog directly ---
+      await CustomConfirmDialog.show(
+        context: context,
+        title: '确认批准',
+        message: '确定要批准游戏 "${game.title}" 吗？',
+        confirmButtonText: '批准',
+        confirmButtonColor: Colors.green,
+        iconData: Icons.check_circle_outline,
+        iconColor: Colors.green,
+        onConfirm: () async {
+          // Directly call the API helper which handles errors and refreshes
+          await _reviewGameApiCall(game.id, 'approved', '');
+        },
+      );
+    } else {
+      // --- Reject Case: Use EditDialog first to get the reason ---
+      // *** Call EditDialog.show and provide the REQUIRED onSave callback ***
+      await EditDialog.show( // Await the Future<void> returned by EditDialog.show
+        context: context,
+        title: '输入拒绝原因',
+        initialText: '',       // Start with empty text
+        hintText: '请详细说明拒绝的原因...',
+        saveButtonText: '下一步', // Button text for getting reason
+        maxLines: 3,
+        iconData: Icons.comment_outlined,
+        // *** Provide the onSave callback as required by EditDialog.show ***
+        onSave: (String reason) async {
+          // This code block executes *after* the user presses "下一步" in EditDialog
+          // AND the internal validation (non-empty) passes.
+
+          if (reason.trim().isEmpty) {
+            // This check is technically redundant if EditDialog's internal validation
+            // (via BaseInputDialog -> Form) works correctly, but acts as a safeguard.
+            // If EditDialog allowed saving empty, show warning and stop.
+            if(mounted) AppSnackBar.showWarning(context, '必须填写拒绝原因');
+            // We need a way for onSave to signal failure *without* throwing an unhandled exception
+            // if possible. If EditDialog's underlying BaseInputDialog handles onConfirm returning null
+            // to keep the dialog open, we could return null or throw a specific validation exception.
+            // For now, assume EditDialog closes on valid input only.
+            return; // Stop further processing
+          }
+
+          // --- Got a valid reason, now show the FINAL confirmation dialog ---
+          // This await needs to be INSIDE the onSave callback logic
+          await CustomConfirmDialog.show(
+            context: context,
+            title: '确认拒绝',
+            message: '确定要以原因 "${reason.trim()}" 拒绝游戏 "${game.title}" 吗？',
+            confirmButtonText: '确认拒绝',
+            confirmButtonColor: Colors.red,
+            iconData: Icons.cancel_outlined,
+            iconColor: Colors.red,
+            onConfirm: () async {
+              // When the *final* confirmation is pressed, call the API helper
+              await _reviewGameApiCall(game.id, 'rejected', reason.trim());
+            },
+          );
+          // --- End of CustomConfirmDialog call ---
+
+        }, // --- End of onSave callback for EditDialog ---
+      );
+      // The Future<void> returned by EditDialog.show completes when the dialog
+      // is closed (either by Save+onSave completing, Cancel, or barrier dismiss).
+      // If onSave throws an error, that error will propagate here.
+      // We generally don't need to 'await' the result specifically unless
+      // we need to know *how* it closed, which we don't in this case.
+    }
+  }
+
+  /// Internal helper to call the review API. **(Complete)**
+  Future<void> _reviewGameApiCall(
+      String gameId, String status, String comment) async {
+    try {
+      await _gameService.reviewGame(gameId, status, comment);
+      if (mounted) {
+        AppSnackBar.showSuccess(
+            context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');
+        _loadPendingOrRejectedData();
+        if (status == 'approved') {
+          _refreshAllGames();
+        }
+      }
+    } catch (e) {
+      if (mounted) AppSnackBar.showError(context, '审核操作失败: $e');
+    }
+  }
+
+  // === Build Methods ===
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // 只保留TabBar，不使用AppBar
         TabBar(
           controller: _tabController,
           tabs: [
             Tab(text: '游戏管理'),
-            Tab(text: '待审核游戏'),
-            Tab(text: '被拒绝游戏'),
+            Tab(text: '待审核 (${_pendingGames.length})'),
+            Tab(text: '被拒绝 (${_rejectedGames.length})'),
           ],
-          // 调整TabBar样式以适应非AppBar环境
           labelColor: Theme.of(context).primaryColor,
           unselectedLabelColor: Colors.grey,
           indicatorColor: Theme.of(context).primaryColor,
@@ -122,29 +323,18 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
         Expanded(
           child: TabBarView(
             controller: _tabController,
+            physics: const NeverScrollableScrollPhysics(),
             children: [
-              // 游戏管理标签内容 - 使用 BaseGameListScreen
+              // 1. All Games Tab (Uses NEW BaseGameListScreen)
               _buildAllGamesTab(),
-
-              // 待审核游戏标签内容
+              // 2. Pending Games Tab
               RefreshIndicator(
-                onRefresh: () async {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  await _loadData();
-                },
+                onRefresh: _loadPendingOrRejectedData,
                 child: _buildPendingGamesList(),
               ),
-
-              // 被拒绝游戏标签内容
+              // 3. Rejected Games Tab
               RefreshIndicator(
-                onRefresh: () async {
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  await _loadData();
-                },
+                onRefresh: _loadPendingOrRejectedData,
                 child: _buildRejectedGamesList(),
               ),
             ],
@@ -153,196 +343,64 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
       ],
     );
   }
-  Future<List<Game>> _loadGames(String? tag) async {
-    final games = await _gameService.getGamesPaginated(
-      page: 1,
-      pageSize: 100,
-      sortBy: 'createTime',
-      descending: true,
-    );
-    return games;
-  }
-  // 使用 BaseGameListScreen 构建所有游戏标签
+
+  /// Builds the "All Games" tab using the refactored BaseGameListScreen. **(Complete)**
   Widget _buildAllGamesTab() {
     return BaseGameListScreen(
-      title: '游戏管理',
-      useScaffold: false, // 不使用内置的 Scaffold
-      loadGamesFunction: _loadGames,
-      refreshFunction: () async {
-        setState(() {
-          _needRefresh = true;
-        });
-      },
-      emptyStateMessage: '暂无游戏数据',
-      showAddButton: true,
-      onAddPressed: () {
-        NavigationUtils.push(
-          context,
-          MaterialPageRoute(builder: (context) => AddGameScreen()),
-        ).then((_) {
-          // 当从添加游戏页面返回时刷新列表
-          setState(() {
-            _needRefresh = true;
-          });
-        });
-      },
-      // 自定义卡片构建函数，添加编辑和删除按钮
-      customCardBuilder: (game) => _buildGameCard(game),
+      // Use a simple ValueKey, or manage a GlobalKey if external control is needed
+      key: ValueKey(
+          'all_games_management_${_allGamesFuture.hashCode}'), // Key changes when Future changes
+      title: '游戏管理 (All)',
+      useScaffold: false,
+      gamesFuture: _allGamesFuture, // Pass the Future
+      onRefreshTriggered: _refreshAllGames, // Pass the refresh callback
+      emptyStateMessage: '没有找到任何游戏',
+      showAddButton: false, // Add button managed externally if needed
+      onAddPressed: _handleAddGame,
+      onDeleteGameAction: (gameId) =>
+          _handleDeleteGame(gameId, "该游戏"), // Need title
+      customCardBuilder: (game) => _buildGameCardWithAdminActions(game),
+      showTagSelection: false,
+      showPanelToggles: false, // BaseGameListScreen no longer manages panels
     );
   }
 
-  // 使用BaseGameCard构建游戏卡片
-  Widget _buildGameCard(Game game) {
-    return Stack(
-      children: [
-        BaseGameCard(
-          game: game,
-          showTags: true,
-          maxTags: 1,
-        ),
-        // 右上角添加编辑和删除按钮
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Row(
-            children: [
-              CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.7),
-                radius: 16,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 18,
-                  icon: Icon(Icons.edit, color: Colors.blue),
-                  onPressed: () {
-                    NavigationUtils.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => EditGameScreen(game: game),
-                      ),
-                    ).then((_) {
-                      setState(() {
-                        _needRefresh = true;
-                      });
-                    });
-                  },
-                ),
-              ),
-              SizedBox(width: 4),
-              CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.7),
-                radius: 16,
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  iconSize: 18,
-                  icon: Icon(Icons.delete, color: Colors.red),
-                  onPressed: () => _showDeleteConfirmation(game),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Future<void> _showDeleteConfirmation(Game game) async {
-    try {
-      // 调用可复用的 ConfirmDialog.show 方法
-      await CustomConfirmDialog.show(
-        context: context,
-        title: '确认删除',
-        message: '确定要删除游戏 "${game.title}" 吗？此操作不可恢复！', // 消息可以更明确
-        confirmButtonText: '删除',
-        confirmButtonColor: Colors.red, // 保持删除按钮为红色
-        cancelButtonText: '取消',
-        // 将原本在 if (confirmed == true) 块中的逻辑放到 onConfirm 回调中
-        onConfirm: () async {
-          // 注意：ConfirmDialog 内部已经处理了 Navigator.pop(context)
-          // 这里直接执行删除操作即可
-
-          // 检查 widget 是否仍然挂载，尤其是在异步操作之后
-          if (!mounted) return;
-
-          await _gameService.deleteGame(game.id);
-
-          // 再次检查 widget 是否仍然挂载
-          if (!mounted) return;
-          setState(() {
-            _needRefresh = true; // 触发列表刷新
-          });
-
-          // 再次检查 widget 是否仍然挂载
-          if (!mounted) return;
-          AppSnackBar.showSuccess(context, '游戏 "${game.title}" 删除成功');
-        },
-        // onCancel 是可选的，如果取消时不需要特殊处理，可以不传
-        // onCancel: () {
-        //   print('用户取消了删除');
-        // },
-      );
-      // 如果 ConfirmDialog.show 成功完成（即 onConfirm 没有抛出异常），
-      // 则删除操作及其后续的 setState 和 SnackBar 已经执行完毕。
-    } catch (e) {
-      // 捕获 onConfirm 中可能抛出的异常 (例如 _gameService.deleteGame 失败)
-      // ConfirmDialog 内部会 rethrow 异常
-      if (mounted) { // 检查 widget 是否仍然挂载
-        AppSnackBar.showError(context, '删除失败：${e.toString()}');
-      } else {
-        print('删除失败，但 widget 已卸载: $e');
-      }
-    }
-  }
-
-  // 原有的待审核游戏列表构建方法
+  /// Builds the list/grid for "Pending Games". **(Complete, No Center)**
   Widget _buildPendingGamesList() {
-    if (_isLoading) {
-      return LoadingWidget.inline(message: "正在加载待审核数据",);
+    if (_isLoadingPendingRejected && _pendingGames.isEmpty) {
+      return LoadingWidget.inline(message: "正在加载待审核..."); // No Center
     }
-
-    if (_pendingGames.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.check_circle_outline, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('没有待审核的游戏', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 8),
-            Text('所有游戏都已审核完成', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
+    if (_pendingRejectedError != null && _pendingGames.isEmpty) {
+      return InlineErrorWidget(
+          errorMessage: _pendingRejectedError!,
+          onRetry: _loadPendingOrRejectedData); // No Center
     }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text('共有 ${_pendingGames.length} 个游戏等待审核',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-
-        Expanded(
-          child: GridView.builder(
-            padding: EdgeInsets.all(8),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 250,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _pendingGames.length,
-            itemBuilder: (context, index) {
-              final game = _pendingGames[index];
-              return _buildPendingGameCard(game);
-            },
-          ),
-        ),
-      ],
+    if (!_isLoadingPendingRejected &&
+        _pendingRejectedError == null &&
+        _pendingGames.isEmpty) {
+      return EmptyStateWidget(
+        iconData: Icons.check_circle_outline,
+        iconSize: 64,
+        iconColor: Colors.grey,
+        message: '没有待审核的游戏',
+      ); // EmptyStateWidget handles centering
+    }
+    return GridView.builder(
+      padding: EdgeInsets.all(8),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 250,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _pendingGames.length,
+      physics: AlwaysScrollableScrollPhysics(),
+      itemBuilder: (context, index) =>
+          _buildPendingGameCard(_pendingGames[index]),
     );
   }
 
-  // 构建待审核游戏卡片
+  /// Builds card for pending game with review actions. **(Complete)**
   Widget _buildPendingGameCard(Game game) {
     return Stack(
       children: [
@@ -351,7 +409,6 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
           showTags: true,
           maxTags: 1,
         ),
-        // 待审核标记
         Positioned(
           top: 8,
           left: 8,
@@ -363,79 +420,84 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
             ),
             child: Text(
               '待审核',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12),
             ),
           ),
         ),
-        // 右上角添加审核按钮
         Positioned(
           top: 8,
           right: 8,
-          child: CircleAvatar(
-            backgroundColor: Colors.white.withOpacity(0.7),
-            radius: 16,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              iconSize: 18,
-              icon: Icon(Icons.check_circle, color: Colors.green),
-              onPressed: () => _showReviewDialog(game),
-            ),
+          child: Row(
+            children: [
+              CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.8),
+                radius: 16,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  icon: Icon(Icons.check_circle, color: Colors.green),
+                  tooltip: '批准',
+                  onPressed: () => _handleReviewAction(game, true),
+                ),
+              ),
+              SizedBox(width: 4),
+              CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.8),
+                radius: 16,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  icon: Icon(Icons.cancel, color: Colors.red),
+                  tooltip: '拒绝',
+                  onPressed: () => _handleReviewAction(game, false),
+                ),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  // 原有的被拒绝游戏列表构建方法
+  /// Builds the list/grid for "Rejected Games". **(Complete, No Center)**
   Widget _buildRejectedGamesList() {
-    if (_isLoading) {
-      return LoadingWidget.inline(message: "正在加载数据");
+    if (_isLoadingPendingRejected && _rejectedGames.isEmpty) {
+      return LoadingWidget.inline(message: "正在加载被拒绝..."); // No Center
     }
-
-    if (_rejectedGames.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.block, size: 64, color: Colors.grey),
-            SizedBox(height: 16),
-            Text('没有被拒绝的游戏', style: TextStyle(fontSize: 18)),
-            SizedBox(height: 8),
-            Text('目前没有被拒绝的游戏', style: TextStyle(color: Colors.grey)),
-          ],
-        ),
-      );
+    if (_pendingRejectedError != null && _rejectedGames.isEmpty) {
+      return InlineErrorWidget(
+          errorMessage: _pendingRejectedError!,
+          onRetry: _loadPendingOrRejectedData); // No Center
     }
-
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Text('共有 ${_rejectedGames.length} 个游戏被拒绝',
-              style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-
-        Expanded(
-          child: GridView.builder(
-            padding: EdgeInsets.all(8),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 250,
-              childAspectRatio: 0.75,
-              crossAxisSpacing: 8,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _rejectedGames.length,
-            itemBuilder: (context, index) {
-              final game = _rejectedGames[index];
-              return _buildRejectedGameCard(game);
-            },
-          ),
-        ),
-      ],
+    if (!_isLoadingPendingRejected &&
+        _pendingRejectedError == null &&
+        _rejectedGames.isEmpty) {
+      return EmptyStateWidget(
+        iconData: Icons.block,
+        iconSize: 64,
+        iconColor: Colors.grey,
+        message: '没有被拒绝的游戏',
+      ); // EmptyStateWidget handles centering
+    }
+    return GridView.builder(
+      padding: EdgeInsets.all(8),
+      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+        maxCrossAxisExtent: 250,
+        childAspectRatio: 0.75,
+        crossAxisSpacing: 8,
+        mainAxisSpacing: 12,
+      ),
+      itemCount: _rejectedGames.length,
+      physics: AlwaysScrollableScrollPhysics(),
+      itemBuilder: (context, index) =>
+          _buildRejectedGameCard(_rejectedGames[index]),
     );
   }
 
-  // 构建被拒绝游戏卡片
+  /// Builds card for a rejected game. **(Complete)**
   Widget _buildRejectedGameCard(Game game) {
     return Stack(
       children: [
@@ -444,7 +506,6 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
           showTags: true,
           maxTags: 1,
         ),
-        // 被拒绝标记
         Positioned(
           top: 8,
           left: 8,
@@ -456,11 +517,13 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
             ),
             child: Text(
               '已拒绝',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 12),
             ),
           ),
         ),
-        // 显示拒绝原因
         if (game.reviewComment != null && game.reviewComment!.isNotEmpty)
           Positioned(
             bottom: 60,
@@ -500,113 +563,36 @@ class _GameManagementState extends State<GameManagement> with SingleTickerProvid
     );
   }
 
-  // 显示审核对话框
-  void _showReviewDialog(Game game) {
-    bool approveSelected = true;
-    String comment = '';
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              title: Text('审核游戏'),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('游戏: ${game.title}'),
-                    SizedBox(height: 16),
-
-                    Row(
-                      children: [
-                        Expanded(
-                          child: RadioListTile<bool>(
-                            title: Text('通过'),
-                            value: true,
-                            groupValue: approveSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                approveSelected = value!;
-                              });
-                            },
-                          ),
-                        ),
-                        Expanded(
-                          child: RadioListTile<bool>(
-                            title: Text('拒绝'),
-                            value: false,
-                            groupValue: approveSelected,
-                            onChanged: (value) {
-                              setState(() {
-                                approveSelected = value!;
-                              });
-                            },
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    SizedBox(height: 16),
-
-                    TextField(
-                      decoration: InputDecoration(
-                        labelText: approveSelected ? '审核意见 (可选)' : '拒绝原因 (必填)',
-                        border: OutlineInputBorder(),
-                      ),
-                      maxLines: 3,
-                      onChanged: (value) {
-                        comment = value;
-                      },
-                    ),
-                  ],
+  /// Builds card for the "All Games" tab with admin actions. **(Complete)**
+  Widget _buildGameCardWithAdminActions(Game game) {
+    return Stack(
+      children: [
+        BaseGameCard(
+          game: game,
+          showTags: true,
+          maxTags: 1,
+        ),
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Row(
+            children: [
+              // Delete Button Only (Edit is via card tap)
+              CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.7),
+                radius: 16,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  icon: Icon(Icons.delete, color: Colors.red),
+                  onPressed: () => _handleDeleteGame(game.id, game.title),
+                  tooltip: '删除',
                 ),
               ),
-              actions: [
-                TextButton(
-                  child: Text('取消'),
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                ),
-                FunctionalTextButton(
-                  label: '提交',
-                  onPressed: () {
-                    if (!approveSelected && comment.trim().isEmpty) {
-                      AppSnackBar.showWarning(context, '拒绝时必须填写原因');
-                      return;
-                    }
-
-                    Navigator.of(context).pop();
-                    _reviewGame(
-                        game,
-                        approveSelected ? 'approved' : 'rejected',
-                        comment
-                    );
-                  },
-                ),
-              ],
-            );
-          },
-        );
-      },
+            ],
+          ),
+        ),
+      ],
     );
   }
-
-  // 审核游戏方法
-  void _reviewGame(Game game, String status, String comment) async {
-    try {
-      await _gameService.reviewGame(game.id, status, comment);
-      final message = status == 'approved' ? '游戏 "${game.title}" 已批准' : '游戏 "${game.title}" 已拒绝';
-      AppSnackBar.showSuccess(context, message); // 审核操作本身成功，所以用 Success
-      setState(() {
-        _isLoading = true;
-      });
-      await _loadData();
-    } catch (e) {
-      AppSnackBar.showError(context, '审核操作失败: ${e.toString()}');
-    }
-  }
-}
+} // End of _GameManagementState

@@ -166,7 +166,7 @@ class _HomeHotState extends State<HomeHot> {
   Widget build(BuildContext context) {
     // 显示加载状态
     if (_isLoading && _cachedGames == null) {
-      return LoadingWidget.fullScreen(message: "正在加载");
+      return LoadingWidget.inline(message: "正在加载");
     }
 
     // 显示错误

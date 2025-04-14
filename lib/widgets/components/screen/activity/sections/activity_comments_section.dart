@@ -1,16 +1,19 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入依赖 (需要 ActivityComment)
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 导入依赖
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入依赖
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入依赖
 
 class ActivityCommentsSection extends StatelessWidget { // 公共类
   final String activityId;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
   final Function(String) onAddComment;
-  final Function(String) onCommentDeleted;
-  final Function(ActivityComment) onCommentLikeToggled;
+  final FutureOr<void> Function(String commentId) onCommentDeleted; // 删除接收 commentId
+  final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled; // 点赞切换接收整个 Comment 对象
   final bool isDesktop;
 
   const ActivityCommentsSection({ // 构造函数
@@ -19,8 +22,8 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
     required this.comments,
     required this.isLoadingComments,
     required this.onAddComment,
-    required this.onCommentDeleted,
-    required this.onCommentLikeToggled,
+    required this.onCommentDeleted,    // 保持接收 commentId
+    required this.onCommentLikeToggled, // <--- 改回接收 ActivityComment
     required this.isDesktop,
   }) : super(key: key);
 
@@ -48,9 +51,9 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
     // 评论列表 Widget
     Widget commentList;
     if (isLoadingComments && comments.isEmpty) {
-      commentList = const Padding(
+      commentList = Padding(
         padding: EdgeInsets.symmetric(vertical: 32.0),
-        child: Center(child: CircularProgressIndicator()),
+        child: LoadingWidget.inline(),
       );
     } else if (comments.isEmpty && !isLoadingComments) {
       commentList = EmptyStateWidget(
@@ -63,14 +66,16 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
         physics: const NeverScrollableScrollPhysics(),
         itemCount: comments.length,
         itemBuilder: (context, index) {
+          final comment = comments[index]; // 获取当前评论
           return Padding(
             padding: const EdgeInsets.only(bottom: 12.0),
             child: ActivityCommentItem(
-              comment: comments[index],
+              comment: comment,
               activityId: activityId,
               isAlternate: false,
-              onLikeToggled: onCommentLikeToggled,
-              onCommentDeleted: onCommentDeleted,
+              onLike: () => onCommentLikeToggled(comment),
+              onUnlike: () => onCommentLikeToggled(comment),
+              onCommentDeleted: () => onCommentDeleted(comment.id), // 传递
             ),
           );
         },

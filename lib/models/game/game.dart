@@ -24,6 +24,9 @@ class Game {
   final String? reviewComment;  // Admin feedback if rejected
   final DateTime? reviewedAt;   // When the game was reviewed
   final String? reviewedBy;     // Admin who reviewed the game
+  final double totalRatingSum;
+  final int ratingCount;
+  final DateTime? ratingUpdateTime; // 评分最后更新时间
 
   // 新增收藏统计字段
   final int wantToPlayCount;
@@ -55,6 +58,9 @@ class Game {
     this.playingCount = 0,
     this.playedCount = 0,
     this.totalCollections = 0,
+    this.totalRatingSum = 0.0,
+    this.ratingCount = 0,
+    this.ratingUpdateTime,
     this.approvalStatus,
     this.reviewComment,
     this.reviewedAt,
@@ -62,43 +68,27 @@ class Game {
   }) : this.tags = tags ?? [];
 
   factory Game.fromJson(Map<String, dynamic> json) {
-    // Safely handle different ID formats
-    String gameId = '';
-    if (json['_id'] != null) {
-      gameId = json['_id'] is ObjectId
-          ? json['_id'].toHexString()
-          : json['_id'].toString();
-    } else if (json['id'] != null) {
-      gameId = json['id'].toString();
+    // Helper functions (保持你原来的，确认它们能处理 null 和类型转换)
+    String parseId(dynamic idValue) {
+      if (idValue == null) return '';
+      return idValue is ObjectId ? idValue.toHexString() : idValue.toString();
     }
 
-    // Safely handle different authorId formats
-    String authorId = '';
-    if (json['authorId'] != null) {
-      authorId = json['authorId'] is ObjectId
-          ? json['authorId'].toHexString()
-          : json['authorId'].toString();
-    }
-
-    // Parse download links safely
     List<DownloadLink> parseDownloadLinks(dynamic links) {
-      if (links == null) return [];
-      if (links is List) {
-        try {
-          return links.map((link) =>
-          link is Map<String, dynamic>
-              ? DownloadLink.fromJson(link)
-              : DownloadLink(id: '', title: '', description: '', url: '')
-          ).toList();
-        } catch (e) {
-          print('Error parsing download links: $e');
-          return [];
-        }
+      if (links == null || links is! List) return [];
+      try {
+        return links
+            .map((link) => link is Map<String, dynamic>
+            ? DownloadLink.fromJson(link)
+            : null) // Handle non-map items
+            .whereType<DownloadLink>() // Filter out nulls
+            .toList();
+      } catch (e) {
+        print('Error parsing download links: $e');
+        return [];
       }
-      return [];
     }
 
-    // Parse tags safely
     List<String> parseTags(dynamic tags) {
       if (tags == null) return [];
       if (tags is List) {
@@ -110,41 +100,61 @@ class Game {
         }
       }
       if (tags is String) {
-        // Handle case where tags might be a comma-separated string
         return tags.split(',').map((tag) => tag.trim()).toList();
       }
       return [];
     }
 
-    // Parse dates safely
     DateTime parseDateTime(dynamic dateValue) {
-      if (dateValue == null) return DateTime.now();
+      if (dateValue == null) return DateTime.now(); // Or throw error?
       if (dateValue is DateTime) return dateValue;
-
+      if (dateValue is Timestamp) { // 处理 MongoDB Timestamp 类型
+        // Timestamp 包含 seconds 和 incrementing counter
+        // 从 seconds 创建 DateTime
+        return DateTime.fromMillisecondsSinceEpoch(dateValue.seconds * 1000);
+      }
       try {
+        // 尝试解析 ISO 8601 字符串
         return DateTime.parse(dateValue.toString());
       } catch (e) {
-        print('Error parsing date: $e');
-        return DateTime.now();
+        print('Error parsing date $dateValue: $e');
+        // 尝试解析数字（毫秒时间戳）
+        final millis = int.tryParse(dateValue.toString());
+        if (millis != null) {
+          return DateTime.fromMillisecondsSinceEpoch(millis);
+        }
+        return DateTime.now(); // Fallback
       }
     }
 
-    // Parse int values safely
     int parseIntSafely(dynamic value) {
       if (value == null) return 0;
       if (value is int) return value;
+      if (value is double) return value.toInt(); // Handle double
+      return int.tryParse(value.toString()) ?? 0;
+    }
 
+    double parseDoubleSafely(dynamic value) {
+      if (value == null) return 0.0;
+      if (value is double) return value;
+      if (value is int) return value.toDouble();
+      return double.tryParse(value.toString()) ?? 0.0;
+    }
+
+    DateTime? parseNullableDateTime(dynamic dateValue) {
+      if (dateValue == null) return null;
+      // Use the robust parseDateTime logic
       try {
-        return int.tryParse(value.toString()) ?? 0;
-      } catch (e) {
-        print('Error parsing int: $e');
-        return 0;
+        return parseDateTime(dateValue);
+      } catch(_) {
+        return null;
       }
     }
 
+
     return Game(
-      id: gameId,
-      authorId: authorId,
+      id: parseId(json['_id'] ?? json['id']), // Handle both _id and id
+      authorId: parseId(json['authorId']),
       title: json['title']?.toString() ?? '',
       summary: json['summary']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
@@ -152,7 +162,8 @@ class Game {
       images: (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       category: json['category']?.toString() ?? '',
       tags: parseTags(json['tags']),
-      rating: (json['rating'] != null) ? double.tryParse(json['rating'].toString()) ?? 0.0 : 0.0,
+      // rating: 已经是计算好的平均分
+      rating: parseDoubleSafely(json['rating']),
       createTime: parseDateTime(json['createTime']),
       updateTime: parseDateTime(json['updateTime']),
       viewCount: parseIntSafely(json['viewCount']),
@@ -160,22 +171,26 @@ class Game {
       likedBy: (json['likedBy'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
       downloadLinks: parseDownloadLinks(json['downloadLinks']),
       musicUrl: json['musicUrl']?.toString(),
-      lastViewedAt: json['lastViewedAt'] != null ? parseDateTime(json['lastViewedAt']) : null,
-      // 解析收藏统计字段
+      lastViewedAt: parseNullableDateTime(json['lastViewedAt']),
       wantToPlayCount: parseIntSafely(json['wantToPlayCount']),
       playingCount: parseIntSafely(json['playingCount']),
       playedCount: parseIntSafely(json['playedCount']),
       totalCollections: parseIntSafely(json['totalCollections']),
+      // *** 解析新增字段 ***
+      totalRatingSum: parseDoubleSafely(json['totalRatingSum']),
+      ratingCount: parseIntSafely(json['ratingCount']),
+      ratingUpdateTime: parseNullableDateTime(json['ratingUpdateTime']),
+      // --- 审核字段 ---
       approvalStatus: json['approvalStatus']?.toString(),
       reviewComment: json['reviewComment']?.toString(),
-      reviewedAt: json['reviewedAt'] != null ? parseDateTime(json['reviewedAt']) : null,
-      reviewedBy: json['reviewedBy']?.toString(),
+      reviewedAt: parseNullableDateTime(json['reviewedAt']),
+      reviewedBy: parseId(json['reviewedBy']), // 解析 reviewedBy ID
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
-      'id': id, // Use 'id' instead of '_id' for consistency with backend API
+      // '_id': id, // 通常API交互用 'id'
+      'id': id,
       'authorId': authorId,
       'title': title,
       'summary': summary,
@@ -184,7 +199,7 @@ class Game {
       'images': images,
       'category': category,
       'tags': tags,
-      'rating': rating,
+      'rating': rating, // 平均分
       'createTime': createTime.toIso8601String(),
       'updateTime': updateTime.toIso8601String(),
       'viewCount': viewCount,
@@ -193,18 +208,23 @@ class Game {
       'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl,
       'lastViewedAt': lastViewedAt?.toIso8601String(),
-      // 添加收藏统计字段
       'wantToPlayCount': wantToPlayCount,
       'playingCount': playingCount,
       'playedCount': playedCount,
       'totalCollections': totalCollections,
+      // *** 添加新增字段到 JSON ***
+      'totalRatingSum': totalRatingSum,
+      'ratingCount': ratingCount,
+      'ratingUpdateTime': ratingUpdateTime?.toIso8601String(),
+      // --- 审核字段 ---
       'approvalStatus': approvalStatus,
       'reviewComment': reviewComment,
       'reviewedAt': reviewedAt?.toIso8601String(),
-      'reviewedBy': reviewedBy,
+      'reviewedBy': reviewedBy, // 发送 reviewedBy ID
     };
   }
 
+  // copyWith 方法也要加上新字段
   Game copyWith({
     String? id,
     String? authorId,
@@ -228,6 +248,10 @@ class Game {
     int? playingCount,
     int? playedCount,
     int? totalCollections,
+    // *** 添加 copyWith 参数 ***
+    double? totalRatingSum,
+    int? ratingCount,
+    DateTime? ratingUpdateTime,
     String? approvalStatus,
     String? reviewComment,
     DateTime? reviewedAt,
@@ -256,6 +280,10 @@ class Game {
       playingCount: playingCount ?? this.playingCount,
       playedCount: playedCount ?? this.playedCount,
       totalCollections: totalCollections ?? this.totalCollections,
+      // *** 使用 copyWith 参数 ***
+      totalRatingSum: totalRatingSum ?? this.totalRatingSum,
+      ratingCount: ratingCount ?? this.ratingCount,
+      ratingUpdateTime: ratingUpdateTime ?? this.ratingUpdateTime,
       approvalStatus: approvalStatus ?? this.approvalStatus,
       reviewComment: reviewComment ?? this.reviewComment,
       reviewedAt: reviewedAt ?? this.reviewedAt,

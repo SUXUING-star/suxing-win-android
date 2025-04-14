@@ -1,79 +1,114 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 // --- 导入【外部】统一的动画组件 ---
-import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
-// --- 导入骨架屏和其他相关组件 ---
+import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart'; // 确保这个导入路径正确
+
+// (NavigationUtils import - if needed, keep it)
+// import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+
+
 class LoadingWidget extends StatefulWidget {
   final String? message;
   final Color? color; // 动画颜色 (优先使用)
-  final double size;  // 内联模式动画大小 & 覆盖卡片模式动画大小 (现在用同一个控制)
-  final bool isOverlay;
+  final double size;  // 动画大小 (内联和覆盖卡片模式现在用同一个控制)
+  final bool isOverlay; // 决定是内联显示还是覆盖显示
+  // --- Overlay specific params ---
   final bool isDismissible;
-  final Widget? child;
-  final double opacity;
-  // 可以考虑为 overlay 单独添加 size 参数，但按“不大改”原则，暂时共用 size
+  final Widget? child; // For overlay mode on top of specific content
+  final double overlayOpacity; // Renamed from opacity for clarity
+  final Color? overlayCardColor; // Specific color for the overlay card background
+  final Color? overlayTextColor; // Specific color for text inside the overlay card
+  final EdgeInsets overlayCardPadding;
+  final double overlayCardBorderRadius;
+  final double overlayCardWidth;
 
   const LoadingWidget({
     Key? key,
     this.message,
     this.color,
-    this.size = 32.0, // 默认大小调整为通用大小
+    this.size = 32.0, // Default size for animation
     this.isOverlay = false,
+    // --- Overlay defaults ---
     this.isDismissible = false,
     this.child,
-    this.opacity = 0.3, // 覆盖背景透明度提高一点点
+    this.overlayOpacity = 0.4, // Slightly increased default opacity for better visibility
+    this.overlayCardColor, // Default will be Theme.of(context).cardColor
+    this.overlayTextColor, // Default will be calculated based on card color
+    this.overlayCardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24), // Adjusted padding
+    this.overlayCardBorderRadius = 12.0,
+    this.overlayCardWidth = 130.0, // Adjusted width
   }) : super(key: key);
 
-  /// 创建一个内联加载指示器
+  /// 创建一个内联加载指示器 (动画 + 可选文字，无背景容器)
   factory LoadingWidget.inline({
     String? message,
     Color? color,
-    double size = 24.0, // 内联可以小一点
+    double size = 24.0, // 内联默认小一点
   }) {
     return LoadingWidget(
       message: message,
       color: color,
-      size: size, // 传递内联特定大小
-      isOverlay: false,
+      size: size,
+      isOverlay: false, // 明确是内联
     );
   }
 
-  /// 创建一个覆盖整个页面的加载指示器
+  /// 创建一个覆盖整个页面的加载指示器 (带背景卡片)
   factory LoadingWidget.fullScreen({
-    String? message,
+    String? message = "加载中...", // Add default message
     Color? color,
     bool isDismissible = false,
-    double opacity = 0.3,
-    double size = 40.0, // 全屏覆盖可以大一点
+    double opacity = 0.4,
+    double size = 36.0, // Full screen animation slightly larger
+    Color? cardColor,
+    Color? textColor,
+    EdgeInsets cardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+    double cardBorderRadius = 12.0,
+    double cardWidth = 130.0,
   }) {
     return LoadingWidget(
       message: message,
       color: color,
-      isOverlay: true,
+      size: size,
+      isOverlay: true, // 明确是覆盖
       isDismissible: isDismissible,
-      opacity: opacity,
-      size: size, // 传递全屏特定大小
+      overlayOpacity: opacity,
+      overlayCardColor: cardColor,
+      overlayTextColor: textColor,
+      overlayCardPadding: cardPadding,
+      overlayCardBorderRadius: cardBorderRadius,
+      overlayCardWidth: cardWidth,
+      // child is null for full screen
     );
   }
 
-  /// 创建一个覆盖在特定内容上的加载指示器
+  /// 创建一个覆盖在特定内容上的加载指示器 (带背景卡片)
   factory LoadingWidget.overlay({
     required Widget child,
-    String? message,
+    String? message = "加载中...", // Add default message
     Color? color,
     bool isDismissible = false,
-    double opacity = 0.3,
-    double size = 32.0, // 内容覆盖用默认大小或中等大小
+    double opacity = 0.4,
+    double size = 32.0, // Overlay on content default size
+    Color? cardColor,
+    Color? textColor,
+    EdgeInsets cardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+    double cardBorderRadius = 12.0,
+    double cardWidth = 130.0,
   }) {
     return LoadingWidget(
       message: message,
       color: color,
-      isOverlay: true,
+      size: size,
+      isOverlay: true, // 明确是覆盖
       isDismissible: isDismissible,
-      child: child,
-      opacity: opacity,
-      size: size, // 传递内容覆盖特定大小
+      child: child, // Pass the child to overlay
+      overlayOpacity: opacity,
+      overlayCardColor: cardColor,
+      overlayTextColor: textColor,
+      overlayCardPadding: cardPadding,
+      overlayCardBorderRadius: cardBorderRadius,
+      overlayCardWidth: cardWidth,
     );
   }
 
@@ -81,46 +116,43 @@ class LoadingWidget extends StatefulWidget {
   State<LoadingWidget> createState() => _LoadingWidgetState();
 }
 
-// ** 这个 State 现在不再需要 AnimationController 了 **
 class _LoadingWidgetState extends State<LoadingWidget> {
-  // late AnimationController _controller; // <--- 不再需要！
-
-  // @override void initState() { ... _controller = ... } // <--- 不再需要！
-  // @override void dispose() { _controller.dispose(); ... } // <--- 不再需要！
 
   @override
   Widget build(BuildContext context) {
-    // **颜色处理：优先 widget.color，否则主题色**
+    // 决定动画颜色：优先 widget.color，否则主题色
     final Color loadingColor = widget.color ?? Theme.of(context).primaryColor;
 
-    // 内部结构和逻辑保持不变
     if (!widget.isOverlay) {
-      // **调用内联构建，使用【外部】动画**
+      // **【改动点】调用修改后的内联构建，现在不带背景容器**
       return _buildInlineLoading(loadingColor);
     }
-    // **调用覆盖构建，使用【外部】动画**
+    // **调用覆盖构建，内部使用带背景的卡片**
     return _buildOverlayLoading(loadingColor);
   }
 
-  // 内联加载构建方法，【使用 ModernLoadingAnimation】
-  Widget _buildInlineLoading(Color color) {
-    return Center(
+  // **【改动点】内联加载构建方法 - 改回简单版本 (无背景容器)**
+  Widget _buildInlineLoading(Color loadingColor) {
+    // 内联文字颜色：可以简单使用次要文字颜色
+    final Color textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey[600]!;
+
+    return Center( // 使用 Center 确保在可用空间内居中
       child: Column(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // 让 Column 包裹内容
         children: [
           // --- 直接使用外部统一动画组件 ---
           ModernLoadingAnimation(
             size: widget.size, // 使用 widget 的 size 控制
-            color: color,      // 使用计算好的颜色
-            // strokeWidth: ..., // 可以按需传递，或使用动画组件的默认值
+            color: loadingColor, // 使用计算好的颜色
           ),
+          // --- 如果有消息，显示文字 ---
           if (widget.message != null && widget.message!.isNotEmpty) ...[
-            const SizedBox(height: 8),
+            const SizedBox(height: 8), // 动画和文字之间的间距
             Text(
               widget.message!,
               style: TextStyle(
-                color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.7),
-                fontSize: 14,
+                color: textColor, // 使用计算的文字颜色
+                fontSize: 13, // 内联文字可以小一点
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
@@ -131,28 +163,34 @@ class _LoadingWidgetState extends State<LoadingWidget> {
     );
   }
 
-  // 覆盖加载构建方法，【内部卡片使用 ModernLoadingAnimation】
-  Widget _buildOverlayLoading(Color color) {
-    Widget overlay = Material(
+  // 覆盖加载构建方法 (基本不变，使用 _buildLoadingCard)
+  Widget _buildOverlayLoading(Color loadingColor) {
+    Widget overlayContent = Material( // Use Material for transparency and ink effects if needed later
       type: MaterialType.transparency,
-      child: GestureDetector(
-        onTap: widget.isDismissible ? () {
-          try { if (Navigator.canPop(context)) { Navigator.pop(context); } } catch (e) { print("Error dismissing overlay: $e"); }
-        } : null,
-        child: Container(
-          color: Colors.black.withOpacity(widget.opacity),
-          child: Center(
-            child: TweenAnimationBuilder<double>(
+      child: Container(
+        // Background dimming effect
+        color: Colors.black.withOpacity(widget.overlayOpacity),
+        child: Center(
+          child: GestureDetector( // Wrap card with GestureDetector for dismissible
+            onTap: widget.isDismissible ? () {
+              // Safely attempt to pop the route
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+            } : null,
+            // Prevent taps falling through to underlying content when not dismissible
+            behavior: HitTestBehavior.opaque,
+            child: TweenAnimationBuilder<double>( // Fade-in and scale animation
               tween: Tween(begin: 0.0, end: 1.0),
-              duration: const Duration(milliseconds: 200),
+              duration: const Duration(milliseconds: 250), // Slightly longer duration
               curve: Curves.easeOutCubic,
               builder: (context, value, child) {
                 return Transform.scale(
                   scale: 0.9 + (0.1 * value),
                   child: Opacity(
                     opacity: value,
-                    // **构建卡片，传入最终颜色，内部将使用 ModernLoadingAnimation**
-                    child: _buildLoadingCard(color),
+                    // **构建包含背景、动画和文字的卡片**
+                    child: _buildLoadingCard(loadingColor),
                   ),
                 );
               },
@@ -162,58 +200,72 @@ class _LoadingWidgetState extends State<LoadingWidget> {
       ),
     );
 
+    // If child is provided, stack the overlay on top
     if (widget.child != null) {
       return Stack(
         children: [
           widget.child!,
-          Positioned.fill(child: overlay),
+          Positioned.fill(child: overlayContent),
         ],
       );
     }
-    return overlay;
+    // Otherwise, return the overlay content directly (for full screen)
+    return overlayContent;
   }
 
-  // 加载卡片构建方法，【使用 ModernLoadingAnimation】
-  Widget _buildLoadingCard(Color color) {
-    // 卡片内文字颜色，可以简单处理，比如根据主题亮度
-    final textColor = Theme.of(context).brightness == Brightness.dark
-        ? Colors.white.withOpacity(0.8)
-        : Colors.black.withOpacity(0.7);
+  // 加载卡片构建方法 (用于 Overlay 模式，保持带背景容器的样式)
+  Widget _buildLoadingCard(Color loadingColor) {
+    // 卡片背景色：优先 widget 参数，否则用主题卡片色
+    final Color cardBgColor = widget.overlayCardColor ?? Theme.of(context).cardColor;
+    // 卡片内文字颜色：优先 widget 参数，否则根据背景亮度计算
+    final Color textColor = widget.overlayTextColor ??
+        (ThemeData.estimateBrightnessForColor(cardBgColor) == Brightness.dark
+            ? Colors.white.withOpacity(0.85)
+            : Colors.black.withOpacity(0.75));
 
     return Container(
-      width: 120,
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+      width: widget.overlayCardWidth, // Use parameter for width
+      padding: widget.overlayCardPadding, // Use parameter for padding
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor.withOpacity(0.95),
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [ BoxShadow( color: Colors.black.withOpacity(0.1), blurRadius: 12, offset: const Offset(0, 4),),],
+        color: cardBgColor.withOpacity(0.95), // Apply slight transparency to card background
+        borderRadius: BorderRadius.circular(widget.overlayCardBorderRadius), // Use parameter for radius
+        boxShadow: [ // Subtle shadow
+          BoxShadow(
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // --- 直接使用外部统一动画组件 ---
+          // --- 动画 ---
           ModernLoadingAnimation(
-            size: widget.size, // 卡片内动画大小也由 widget.size 控制 (按“不大改”原则)
-            color: color,      // 使用传入的颜色
-            // strokeWidth: ..., // 可以按需传递，或使用动画组件的默认值
+            size: widget.size, // Use widget's size for animation inside card
+            color: loadingColor,
           ),
+          // --- 文字 (如果提供) ---
           if (widget.message != null && widget.message!.isNotEmpty) ...[
-            const SizedBox(height: 12),
+            const SizedBox(height: 12), // Spacing between animation and text
             Text(
               widget.message!,
               style: TextStyle(
-                color: textColor, // 使用计算的文字颜色
-                fontSize: 14,
+                color: textColor,
+                fontSize: 14, // Standard text size for card
                 fontWeight: FontWeight.w500,
               ),
               textAlign: TextAlign.center,
-              maxLines: 2,
+              maxLines: 3, // Allow slightly more lines for messages
               overflow: TextOverflow.ellipsis,
             ),
           ],
+          // If no message, maybe add a minimal vertical space to maintain card height?
+          // Or let the card shrink if preferred. Current behavior shrinks.
+          // if (widget.message == null || widget.message!.isEmpty)
+          //   const SizedBox(height: 4), // Example placeholder space
         ],
       ),
     );
   }
 }
-

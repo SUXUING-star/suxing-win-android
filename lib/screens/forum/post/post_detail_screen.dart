@@ -53,8 +53,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       setState(() {
         _isLoading = true;
         _error = null;
-        // 可选：重置 _post 为 null，以显示加载指示器，取决于你的UI设计
-        // _post = null;
       });
 
       // 1. 获取帖子数据
@@ -66,14 +64,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         //    这里使用 try-catch 包裹，即使增加浏览量失败，也不影响帖子详情的展示
         try {
           // 调用服务层的方法，注意：这里是异步调用，但我们不一定需要 await 它完成，
-          // 可以让它在后台执行，避免阻塞 UI。
-          // 如果需要确保浏览量增加成功才算完成加载，则使用 await。
-          // 通常“增加浏览量”失败了也不是关键错误，所以可以不 await。
           _forumService.incrementPostView(widget.postId);
         } catch (viewError) {
 
-          // 这里可以选择是否给用户提示，通常不需要
-          // AppSnackBar.showWarning(context, '无法记录浏览量，但不影响查看');
         }
       }
       // --- 增加浏览量逻辑 End ---
@@ -215,7 +208,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     final result = await NavigationUtils.pushNamed(
       context,
       AppRoutes.editPost,
-      arguments: _post,
+      arguments: widget.postId,
     );
 
     // 如果编辑成功，刷新页面

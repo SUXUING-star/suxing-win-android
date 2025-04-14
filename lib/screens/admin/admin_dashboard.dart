@@ -1,6 +1,7 @@
 // lib/screens/admin/admin_dashboard.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import '../../providers/auth/auth_provider.dart';
 import 'widgets/game_management.dart';
 import 'widgets/tool_management.dart';
@@ -49,11 +50,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final authProvider = Provider.of<AuthProvider>(context);
 
     if (!authProvider.isAdmin) {
-      return const Scaffold(
-        body: Center(
-          child: Text('无权限访问管理界面'),
-        ),
-      );
+      return CustomErrorWidget(title: "权限错误",errorMessage: "你不是管理员无法查看此页面");
     }
 
     final isSuperAdmin = authProvider.isSuperAdmin;

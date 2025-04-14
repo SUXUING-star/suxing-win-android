@@ -6,6 +6,7 @@ import 'package:suxingchahui/models/user/user.dart'; // 引入 User 模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 引入上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 引入安全图片加载
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'modern_crop_dialog.dart';
 
 class EditableUserAvatar extends StatelessWidget {
@@ -61,9 +62,7 @@ class EditableUserAvatar extends StatelessWidget {
 
         // 上传和更新成功
         if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('头像更新成功')),
-          );
+          AppSnackBar.showSuccess(context, '头像更新成功');
         }
         onUploadSuccess(); // 通知父组件成功，父组件负责刷新
 
@@ -73,16 +72,12 @@ class EditableUserAvatar extends StatelessWidget {
           // 简化错误处理：显示通用消息或速率限制消息
           final errorMsg = e.toString();
           if (errorMsg.contains('头像上传速率超限')) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('头像上传过于频繁，请稍后再试。')),
-            );
+            AppSnackBar.showWarning(context, '头像上传过于频繁，请稍后再试。');
             // 如果需要显示之前的 RateLimitDialog，需要确保能访问到它
             // final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
             // showAvatarRateLimitDialog(context, remainingSeconds);
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('上传头像失败: ${e.toString()}')),
-            );
+            AppSnackBar.showError(context, '上传头像失败: ${e.toString()}');
           }
         }
       } finally {

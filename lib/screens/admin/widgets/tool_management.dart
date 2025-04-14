@@ -1,6 +1,9 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/linktool/link_tool_service.dart';
 import '../../../models/linkstools/tool.dart';
 import '../../../widgets/components/form/toolform/tool_form_dialog.dart';
@@ -56,13 +59,14 @@ class _ToolManagementState extends State<ToolManagement> {
                     onPressed: _isLoading ? null : _showAddToolDialog,
                     icon: _isLoading
                         ? SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor:
+                                  AlwaysStoppedAnimation<Color>(Colors.white),
+                            ),
+                          )
                         : const Icon(Icons.add),
                     label: Text(_isLoading ? '处理中...' : '添加工具'),
                   ),
@@ -71,35 +75,40 @@ class _ToolManagementState extends State<ToolManagement> {
                   child: tools.isEmpty
                       ? Center(child: Text('暂无工具数据'))
                       : ListView.builder(
-                    itemCount: tools.length,
-                    itemBuilder: (context, index) {
-                      final tool = tools[index];
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: ListTile(
-                          leading: const Icon(Icons.build),
-                          title: Text(tool.name),
-                          subtitle: Text(tool.description),
-                          trailing: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                icon: const Icon(Icons.edit),
-                                onPressed: _isLoading ? null : () => _showEditToolDialog(tool),
+                          itemCount: tools.length,
+                          itemBuilder: (context, index) {
+                            final tool = tools[index];
+                            return Card(
+                              margin: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
                               ),
-                              IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: _isLoading ? null : () => _showDeleteConfirmation(tool),
+                              child: ListTile(
+                                leading: const Icon(Icons.build),
+                                title: Text(tool.name),
+                                subtitle: Text(tool.description),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: const Icon(Icons.edit),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () => _showEditToolDialog(tool),
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete,
+                                          color: Colors.red),
+                                      onPressed: _isLoading
+                                          ? null
+                                          : () => _showDeleteConfirmation(tool),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
                 ),
               ],
             ),
@@ -218,15 +227,12 @@ class _ToolManagementState extends State<ToolManagement> {
           title: const Text('确认删除'),
           content: Text('确定要删除工具"${tool.name}"吗？'),
           actions: [
-            TextButton(
-              onPressed: () => NavigationUtils.pop(context, false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => NavigationUtils.pop(context, true),
-              child: const Text('删除'),
-              style: TextButton.styleFrom(foregroundColor: Colors.red),
-            ),
+            FunctionalTextButton(
+                onPressed: () => NavigationUtils.pop(context, false),
+                label: '取消'),
+            FunctionalButton(
+                onPressed: () => NavigationUtils.pop(context, true),
+                label: '删除'),
           ],
         ),
       );
@@ -239,16 +245,11 @@ class _ToolManagementState extends State<ToolManagement> {
           _refreshData();
 
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('工具删除成功')),
-            );
+            AppSnackBar.showSuccess(context, '工具删除成功');
           }
         } catch (e) {
-          print('删除工具错误: $e');
           if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('删除失败：$e')),
-            );
+            AppSnackBar.showError(context, '删除失败：$e');
           }
         }
       }

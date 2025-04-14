@@ -1,74 +1,123 @@
+// lib/widgets/components/screen/game/collection/game_collection_section.dart
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_button.dart';
 
-
+// *** 改成 StatefulWidget ***
 class GameCollectionSection extends StatefulWidget {
-  final Game game; // 父组件传递的游戏对象，包含统计数字
+  final Game game;
   final GameCollectionItem? initialCollectionStatus;
-  // *** 修改回调签名 ***
   final Function(CollectionChangeResult)? onCollectionChanged;
 
   const GameCollectionSection({
     Key? key,
     required this.game,
     this.initialCollectionStatus,
-    this.onCollectionChanged, // *** 新签名 ***
+    this.onCollectionChanged,
   }) : super(key: key);
 
   @override
+  // *** 创建 State ***
   _GameCollectionSectionState createState() => _GameCollectionSectionState();
 }
 
 class _GameCollectionSectionState extends State<GameCollectionSection> {
+  // *** 在 State 中保存计数 ***
+  late int _wantToPlayCount;
+  late int _playingCount;
+  late int _playedCount;
+  late int _totalCollections;
+  // 保存评分，虽然不在这个组件显示，但 game 对象可能变化
+  late double _rating;
+  late int _ratingCount;
 
-  // *** 修改内部回调处理函数以接收新的结果类型 ***
-  void _handleButtonCollectionChanged(CollectionChangeResult result) {
-    // 直接调用 widget 的回调，将结果对象向上传递
-    widget.onCollectionChanged?.call(result); // <--- 传递结果对象
-    print('GameCollectionSection (${widget.game.id}): Relayed CollectionChangeResult upwards.');
-  }
 
   @override
   void initState() {
     super.initState();
-    print('GameCollectionSection (${widget.game.id}): Initialized with game counts - Want: ${widget.game.wantToPlayCount}, Playing: ${widget.game.playingCount}, Played: ${widget.game.playedCount}, Total: ${widget.game.totalCollections}');
+    // *** 初始化 State 中的计数值 ***
+    _updateCountsFromWidget();
+    print('GameCollectionSection (${widget.game.id}): Initialized state counts - Want: $_wantToPlayCount, Playing: $_playingCount, Played: $_playedCount, Total: $_totalCollections, Rating: $_rating');
   }
 
   @override
   void didUpdateWidget(GameCollectionSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 观察父组件传递的数据变化
-    if (widget.game.id != oldWidget.game.id) {
-      print('GameCollectionSection (${widget.game.id}): Game ID changed.');
-    }
-    if (widget.initialCollectionStatus != oldWidget.initialCollectionStatus) {
-      print('GameCollectionSection (${widget.game.id}): Received new initialCollectionStatus from parent: ${widget.initialCollectionStatus?.status}');
-    }
-    // 观察 Game 对象中的计数值是否变化
-    if (widget.game.wantToPlayCount != oldWidget.game.wantToPlayCount ||
-        widget.game.playingCount != oldWidget.game.playingCount ||
-        widget.game.playedCount != oldWidget.game.playedCount ||
-        widget.game.totalCollections != oldWidget.game.totalCollections) {
-      print('GameCollectionSection (${widget.game.id}): Received new game counts from parent - Want: ${widget.game.wantToPlayCount}, Playing: ${widget.game.playingCount}, Played: ${widget.game.playedCount}, Total: ${widget.game.totalCollections}');
+    // *** 如果父级传入的 game 对象变了 (ID 变了或者统计数据变了)，更新 State ***
+    if (widget.game != oldWidget.game) {
+      print('GameCollectionSection (${widget.game.id}): Game object updated from parent. Syncing state counts.');
+      // 只有在外部 game 对象确实变化时才用 setState 更新内部状态
+      // 避免按钮回调触发的 setState 和这里的 setState 冲突
+      if(widget.game.wantToPlayCount != _wantToPlayCount ||
+          widget.game.playingCount != _playingCount ||
+          widget.game.playedCount != _playedCount ||
+          widget.game.totalCollections != _totalCollections ||
+          widget.game.rating != _rating ||
+          widget.game.ratingCount != _ratingCount
+      ) {
+        setState(() {
+          _updateCountsFromWidget();
+        });
+      }
+
     }
   }
+
+  // 辅助方法：从 widget.game 更新 state 变量
+  void _updateCountsFromWidget() {
+    _wantToPlayCount = widget.game.wantToPlayCount;
+    _playingCount = widget.game.playingCount;
+    _playedCount = widget.game.playedCount;
+    _totalCollections = widget.game.totalCollections;
+    _rating = widget.game.rating;
+    _ratingCount = widget.game.ratingCount;
+  }
+
+
+  // *** 修改内部回调处理函数 ***
+  void _handleButtonCollectionChanged(CollectionChangeResult result) {
+    print('GameCollectionSection (${widget.game.id}): Button callback received. New status: ${result.newStatus?.status}. Deltas: ${result.countDeltas}');
+
+    // *** 1. 前端补偿：直接更新本组件 State 中的计数值 ***
+    final deltas = result.countDeltas;
+    setState(() {
+      _wantToPlayCount += (deltas['want'] ?? 0);
+      _playingCount += (deltas['playing'] ?? 0);
+      _playedCount += (deltas['played'] ?? 0);
+      _totalCollections += (deltas['total'] ?? 0);
+      // 确保计数不为负
+      if (_wantToPlayCount < 0) _wantToPlayCount = 0;
+      if (_playingCount < 0) _playingCount = 0;
+      if (_playedCount < 0) _playedCount = 0;
+      if (_totalCollections < 0) _totalCollections = 0;
+      print('GameCollectionSection (${widget.game.id}): State counts updated (frontend compensation) - Want: $_wantToPlayCount, Playing: $_playingCount, Played: $_playedCount, Total: $_totalCollections');
+    });
+
+    // *** 2. 调用 widget 的回调，通知父级（或其他监听者）状态已改变 ***
+    //    父级（GameDetailContent）会用这个结果来判断是否需要刷新 ReviewSection
+    widget.onCollectionChanged?.call(result);
+    print('GameCollectionSection (${widget.game.id}): Relayed CollectionChangeResult upwards.');
+  }
+
 
   // 构建 UI 的主方法 (build)
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-
-    // 使用传递进来的 widget.game 对象来显示统计数字
-    final currentGame = widget.game;
+    // *** 使用 State 中的计数值来显示 ***
+    // 格式化评分，显示一位小数，如果评分为0则显示 "N/A" 或 "0.0"
+    final formattedRating = _rating > 0
+        ? NumberFormat('0.0').format(_rating)
+        : (_ratingCount > 0 ? '0.0' : 'N/A');
 
     return Opacity(
       opacity: 0.95,
       child: Container(
-        margin: EdgeInsets.symmetric(vertical: 8),
-        padding: EdgeInsets.all(16),
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
@@ -76,7 +125,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
             BoxShadow(
               color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
-              offset: Offset(0, 2),
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -95,65 +144,75 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                     borderRadius: BorderRadius.circular(2),
                   ),
                 ),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  '收藏此游戏',
+                  '收藏与评分',
                   style: TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: Colors.grey[800],
                   ),
                 ),
-                Spacer(),
-                // *** 传递更新后的回调签名给按钮 ***
+                const Spacer(),
+                // *** 传递 game 对象 和 回调 ***
                 GameCollectionButton(
-                  game: currentGame, // 总是使用最新的 game 对象
+                  game: widget.game, // 按钮仍然需要原始 game 对象来获取 ID 等信息
                   initialCollectionStatus: widget.initialCollectionStatus,
                   onCollectionChanged: _handleButtonCollectionChanged, // 传递内部处理函数
                   compact: false,
                 ),
               ],
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
 
-            // 统计数字行 (直接使用 currentGame 的计数值)
+            // --- 统计数字行 (使用 State 中的计数值) ---
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 _buildStatContainer(
                   context, Icons.star_border, '想玩',
-                  currentGame.wantToPlayCount, // *** 使用 game 对象的计数值 ***
-                  Color(0xFF3D8BFF), Color(0xFFE6F0FF),
+                  _wantToPlayCount, // *** 使用 State 变量 ***
+                  const Color(0xFF3D8BFF), const Color(0xFFE6F0FF),
                 ),
                 _buildStatContainer(
                   context, Icons.sports_esports, '在玩',
-                  currentGame.playingCount, // *** 使用 game 对象的计数值 ***
-                  Color(0xFF4CAF50), Color(0xFFE8F5E9),
+                  _playingCount, // *** 使用 State 变量 ***
+                  const Color(0xFF4CAF50), const Color(0xFFE8F5E9),
                 ),
                 _buildStatContainer(
                   context, Icons.check_circle_outline, '玩过',
-                  currentGame.playedCount, // *** 使用 game 对象的计数值 ***
-                  Color(0xFF9C27B0), Color(0xFFF3E5F5),
+                  _playedCount, // *** 使用 State 变量 ***
+                  const Color(0xFF9C27B0), const Color(0xFFF3E5F5),
+                ),
+                // *** 显示评分 (使用 State 变量 _rating) ***
+                _buildStatContainer(
+                  context, Icons.star, '评分',
+                  formattedRating, // 使用格式化后的评分
+                  Colors.orange.shade700, Colors.orange.shade50,
                 ),
               ],
             ),
-            SizedBox(height: 16),
-            Divider(color: Colors.grey[200]),
-            SizedBox(height: 12),
+            // --- 统计数字行结束 ---
 
-            // 总收藏人数行
+            const SizedBox(height: 16),
+            Divider(color: Colors.grey[200]),
+            const SizedBox(height: 12),
+
+            // 总收藏人数行 (使用 State 中的计数值)
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.people_alt_outlined, size: 18, color: theme.primaryColor.withOpacity(0.7)),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Text(
-                  '总收藏人数: ${currentGame.totalCollections}', // *** 使用 game 对象的计数值 ***
+                  // 使用 State 变量
+                  '总收藏 ${_totalCollections} 人' + (_ratingCount > 0 ? ' / $_ratingCount 人评分' : ''),
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     color: theme.primaryColor.withOpacity(0.9),
                   ),
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),
@@ -163,46 +222,33 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
     );
   }
 
-  // 构建单个统计块的辅助方法 (_buildStatContainer) - 无变化
+  // _buildStatContainer 方法不变，接收 dynamic value
   Widget _buildStatContainer(
       BuildContext context,
       IconData icon,
       String label,
-      int count, // 接收计数值
+      dynamic value,
       Color iconColor,
       Color backgroundColor,
       ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final containerWidth = (screenWidth - 32 - 16 * 3) / 4;
     return Container(
-      width: 90,
-      padding: EdgeInsets.symmetric(vertical: 12, horizontal: 0),
-      decoration: BoxDecoration(
-        color: backgroundColor,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      constraints: BoxConstraints(minWidth: 75, maxWidth: containerWidth > 75 ? containerWidth : 75),
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
+      decoration: BoxDecoration(color: backgroundColor, borderRadius: BorderRadius.circular(8)),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            padding: EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              boxShadow: [
-                BoxShadow(
-                  color: iconColor.withOpacity(0.2),
-                  blurRadius: 4,
-                  offset: Offset(0, 2),
-                ),
-              ],
-            ),
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(color: Colors.white, shape: BoxShape.circle, boxShadow: [BoxShadow(color: iconColor.withOpacity(0.2), blurRadius: 4, offset: const Offset(0, 2))]),
             child: Icon(icon, color: iconColor, size: 24),
           ),
-          SizedBox(height: 8),
-          Text(label, style: TextStyle(color: iconColor, fontWeight: FontWeight.bold, fontSize: 14)),
-          SizedBox(height: 4),
-          Text(
-            count.toString(), // 显示传入的计数值
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]),
-          ),
+          const SizedBox(height: 8),
+          Text(label, style: TextStyle(color: iconColor, fontWeight: FontWeight.bold, fontSize: 14), overflow: TextOverflow.ellipsis),
+          const SizedBox(height: 4),
+          Text(value.toString(), style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.grey[800]), overflow: TextOverflow.ellipsis),
         ],
       ),
     );
