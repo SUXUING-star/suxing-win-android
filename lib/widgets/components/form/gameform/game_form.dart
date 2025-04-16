@@ -1,11 +1,13 @@
-// lib/widgets/form/gameform/game_form.dart
+// lib/widgets/components/form/gameform/game_form.dart
 
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:suxingchahui/services/form/game_form_cache_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'dart:async';
 
@@ -34,7 +36,7 @@ class GameForm extends StatefulWidget {
   _GameFormState createState() => _GameFormState();
 }
 
-class _GameFormState extends State<GameForm> {
+class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _summaryController = TextEditingController();
@@ -54,22 +56,42 @@ class _GameFormState extends State<GameForm> {
   List<String> _selectedCategories = [];
   List<String> _selectedTags = [];
 
+  bool _isDraftRestored = false; // 标记是否已恢复草稿，避免重复询问
+  bool _isSubmitting = false; // 标记是否正在提交，避免在提交时保存草稿
+
   String? _coverImageError;
   String? _categoryError;
 
   @override
   void initState() {
     super.initState();
-    _initializeFormData();
+    WidgetsBinding.instance.addObserver(this); // <--- 注册 observer
+    _initializeFormData(); // 先初始化默认或编辑状态
+    _checkAndRestoreDraft(); // <--- 再检查并恢复草稿
   }
 
   @override
   void dispose() {
+    // 在 dispose 时，如果不是正在提交，则保存草稿
+    if (!_isSubmitting) {
+      _saveDraft(); // <--- 保存草稿
+    }
+    WidgetsBinding.instance.removeObserver(this); // <--- 移除 observer
     _titleController.dispose();
     _summaryController.dispose();
     _descriptionController.dispose();
     _musicUrlController.dispose();
     super.dispose();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // 当应用进入后台或暂停时，保存草稿
+    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
+      if (!_isSubmitting) {
+        _saveDraft(); // <--- 保存草稿
+      }
+    }
   }
 
   void _initializeFormData() {
@@ -112,12 +134,132 @@ class _GameFormState extends State<GameForm> {
     }
   }
 
+
+  // --- 草稿检查与恢复 ---
+  Future<void> _checkAndRestoreDraft() async {
+    // 如果正在编辑游戏，或者已经恢复过草稿，则不再检查
+    if (widget.game != null || _isDraftRestored) return;
+
+    bool hasDraft = await GameFormCacheService().hasDraft();
+    // 必须检查 mounted，妈的异步操作回来页面可能没了
+    if (hasDraft && mounted) {
+      try {
+        await CustomConfirmDialog.show(
+          context: context,
+          title: '恢复草稿',
+          message: '检测到上次未完成的编辑，是否恢复？',
+          confirmButtonText: '恢复',
+          cancelButtonText: '丢弃',
+          onConfirm: () async {
+            await _loadAndApplyDraft();
+            if (mounted) {
+              setState(() {
+                _isDraftRestored = true; // 标记已恢复
+              });
+              AppSnackBar.showSuccess(context, '草稿已恢复');
+            }
+          },
+          onCancel: () async {
+            // 取消恢复，清除旧草稿
+            await GameFormCacheService().clearDraft();
+            print("User chose to discard the draft.");
+          },
+        );
+      } catch (e) {
+        print("Error showing/handling restore draft dialog: $e");
+        if (mounted) {
+          AppSnackBar.showError(context, '处理草稿时出错');
+        }
+        await GameFormCacheService().clearDraft(); // 出错也清掉
+      }
+    }
+  }
+
+  // --- 加载并应用草稿数据 ---
+  Future<void> _loadAndApplyDraft() async {
+    final draft = await GameFormCacheService().loadDraft();
+    if (draft != null && mounted) {
+      setState(() {
+        _titleController.text = draft.title;
+        _summaryController.text = draft.summary;
+        _descriptionController.text = draft.description;
+        _musicUrlController.text = draft.musicUrl ?? '';
+        _selectedCategories = draft.selectedCategories;
+        _selectedTags = draft.selectedTags;
+
+        _downloadLinks = draft.downloadLinks
+            .map((map) => DownloadLink.fromJson(map)) // 草稿存的是Map，要转回来
+            .toList();
+
+        // 只恢复 URL，本地文件丢了就丢了
+        _coverImageSource = draft.coverImageUrl;
+        _gameImagesSources = List<dynamic>.from(draft.gameImageUrls);
+
+        _coverImageError = null; // 清错误提示
+        _categoryError = null;
+      });
+      print("Draft applied to form state.");
+    } else if (draft == null) {
+      print("Could not load draft or draft was null.");
+    }
+  }
+
+  // --- 保存当前表单状态为草稿 ---
+  Future<void> _saveDraft() async {
+    // 表单空或者正在提交，滚蛋，不保存
+    if (_isFormEmpty() || _isSubmitting) {
+      print("Form is empty or submitting, skipping draft save.");
+      return;
+    }
+
+    // 图片只存 URL，XFile 去死吧
+    String? coverImageUrl;
+    if (_coverImageSource is String) {
+      coverImageUrl = _coverImageSource as String;
+    }
+    List<String> gameImageUrls = _gameImagesSources
+        .whereType<String>() // 只搞 String
+        .toList();
+
+    // 创建草稿对象
+    final draft = GameFormDraft(
+      title: _titleController.text.trim(),
+      summary: _summaryController.text.trim(),
+      description: _descriptionController.text.trim(),
+      musicUrl: _musicUrlController.text.trim().isEmpty ? null : _musicUrlController.text.trim(),
+      coverImageUrl: coverImageUrl,
+      gameImageUrls: gameImageUrls,
+      downloadLinks: _downloadLinks.map((link) => link.toJson()).toList(), // 链接存 Map
+      selectedCategories: _selectedCategories,
+      selectedTags: _selectedTags,
+      lastSaved: DateTime.now(),
+    );
+
+    await GameFormCacheService().saveDraft(draft);
+    print("Draft saved on dispose/pause.");
+  }
+
+  // --- 辅助函数：检查表单是不是空的 ---
+  bool _isFormEmpty() {
+    // 简单检查下文本框、图片、链接、分类、标签是不是都没填
+    return _titleController.text.trim().isEmpty &&
+        _summaryController.text.trim().isEmpty &&
+        _descriptionController.text.trim().isEmpty &&
+        _musicUrlController.text.trim().isEmpty &&
+        (_coverImageSource == null || (_coverImageSource is String && (_coverImageSource as String).isEmpty)) && // 检查封面图是不是真没有
+        _gameImagesSources.where((s) => (s is String && s.isNotEmpty) || s is XFile).isEmpty && // 检查截图是不是真没有
+        _downloadLinks.isEmpty &&
+        _selectedCategories.isEmpty &&
+        _selectedTags.isEmpty;
+  }
+
   bool _validateForm() {
     bool isValid = _formKey.currentState?.validate() ?? false;
 
-    if (_coverImageSource == null ||
-        (_coverImageSource is String &&
-            (_coverImageSource as String).isEmpty)) {
+    // 验证封面图 (可能是 String URL 或 XFile)
+    bool hasCover = _coverImageSource != null &&
+        !(_coverImageSource is String && (_coverImageSource as String).isEmpty);
+    if (!hasCover) {
       setState(() {
         _coverImageError = '请添加封面图片';
       });
@@ -142,117 +284,124 @@ class _GameFormState extends State<GameForm> {
     return isValid;
   }
 
+
+
   Future<void> _submitForm() async {
+    // 1. 表单验证，不过关就滚
     if (!_validateForm()) {
       AppSnackBar.showError(context, '请检查表单中的错误并修正');
       return;
     }
 
+    // 2. 设置加载和提交状态
     setState(() {
       _isLoading = true;
+      _isSubmitting = true;
     });
 
-    String? finalCoverImageUrl; // 最终提交给后端的封面图 URL
-    List<String> finalGameImagesUrls = []; // 最终提交给后端的截图 URL 列表
+    // 声明最终要用的变量
+    String? finalCoverImageUrl;
+    List<String> finalGameImagesUrls = []; // *** 初始化为空列表 ***
     String? errorMessage;
 
     try {
-      // 1. 处理封面图片
-      // 检查 _coverImageSource 的类型
-      if (_coverImageSource is XFile) {
-        // 如果是 XFile，表示是新选择/修改的本地文件，需要上传
-        final fileToUpload = File((_coverImageSource as XFile).path);
-        //print("准备上传新的封面图片...");
-        // 调用上传服务，不再传递 oldImageUrl 用于前端删除
+      // ------------------------------------
+      // 3. 处理封面图
+      // ------------------------------------
+      final dynamic currentCoverSource = _coverImageSource;
+
+      if (currentCoverSource is XFile) {
+        // 是新文件？上传它
+        print("上传新封面...");
+        final fileToUpload = File(currentCoverSource.path);
         finalCoverImageUrl = await FileUpload.uploadImage(
           fileToUpload,
           folder: 'games/covers',
-          oldImageUrl: widget.game?.coverImage, // 可选：如果上传服务需要旧URL来替换
+          // 不再传递 oldImageUrl
         );
-        //print("新封面图片上传成功，URL: $finalCoverImageUrl");
-      } else if (_coverImageSource is String &&
-          (_coverImageSource as String).isNotEmpty) {
-        // 如果是 String 且非空，表示用户保留了原来的封面图 URL，或选择了一个已存在的 URL
-        finalCoverImageUrl = _coverImageSource as String;
-        //print("保留现有封面图片 URL: $finalCoverImageUrl");
+        print("新封面URL: $finalCoverImageUrl");
+      } else if (currentCoverSource is String && currentCoverSource.isNotEmpty) {
+        // 是旧 URL？直接用
+        finalCoverImageUrl = currentCoverSource;
+        print("保留封面URL: $finalCoverImageUrl");
       } else {
-        // 如果是 null 或空字符串，表示用户移除了封面图
-        finalCoverImageUrl = ''; // 提交空字符串给后端，表示没有封面图
-        //print("封面图片已被移除");
+        // 啥也不是？那就是空
+        finalCoverImageUrl = ''; // 或者 null，看你后端怎么定义“无图”
+        print("无封面图");
       }
 
-      // 2. 处理游戏截图
-      List<File> screenshotFilesToUpload = []; // 收集需要上传的 XFile
-      List<String> existingScreenshotUrls = []; // 收集保留的 String URL
-      List<int> sourceIndicesOfFiles =
-          []; // 记录 XFile 在 _gameImagesSources 中的原始索引
+      // ------------------------------------
+      // 4. 处理游戏截图
+      // ------------------------------------
+      final List<dynamic> currentImageSources = List.from(_gameImagesSources);
+      final List<File> filesToUpload = [];
+      final List<int> xFileIndices = []; // 记录 XFile 在原列表的索引
 
-      for (int i = 0; i < _gameImagesSources.length; i++) {
-        final source = _gameImagesSources[i];
-        if (source is XFile) {
-          screenshotFilesToUpload.add(File(source.path));
-          sourceIndicesOfFiles.add(i); // 记录这个索引对应的是一个待上传文件
-        } else if (source is String && source.isNotEmpty) {
-          existingScreenshotUrls.add(source); // 收集已存在的有效 URL
+      // 4a. 找出所有新选的本地文件 (XFile)
+      for (int i = 0; i < currentImageSources.length; i++) {
+        if (currentImageSources[i] is XFile) {
+          filesToUpload.add(File((currentImageSources[i] as XFile).path));
+          xFileIndices.add(i);
         }
-        // 忽略 null 或空字符串的情况
       }
 
-      List<String> uploadedScreenshotUrls = []; // 存储新上传成功的 URL
-      if (screenshotFilesToUpload.isNotEmpty) {
-        //print("准备上传 ${screenshotFilesToUpload.length} 张新的游戏截图...");
-        // 调用批量上传服务
-        uploadedScreenshotUrls = await FileUpload.uploadFiles(
-          screenshotFilesToUpload,
+      // 4b. 上传这些新文件 (如果有的话)
+      List<String> uploadedUrls = [];
+      if (filesToUpload.isNotEmpty) {
+        print("上传 ${filesToUpload.length} 张新截图...");
+        uploadedUrls = await FileUpload.uploadFiles(
+          filesToUpload,
           folder: 'games/screenshots',
         );
-        if (uploadedScreenshotUrls.length != screenshotFilesToUpload.length) {
-          throw Exception("上传截图数量与返回URL数量不匹配");
+        if (uploadedUrls.length != filesToUpload.length) {
+          throw Exception("截图上传数量对不上！");
         }
-        //print("新截图上传成功，返回 ${uploadedScreenshotUrls.length} 个 URL.");
+        print("新截图上传成功: $uploadedUrls");
       } else {
-        //print("没有新的游戏截图需要上传。");
+        print("没有新截图需要上传");
       }
 
-      // 3. 构建最终的游戏截图 URL 列表 (保持顺序)
-      // 创建一个与 _gameImagesSources 同样大小的列表，用于按原始顺序填充 URL
-      List<String?> orderedFinalUrls =
-          List<String?>.filled(_gameImagesSources.length, null);
-      int uploadedUrlIndex = 0; // 用于从 uploadedScreenshotUrls 中取值
+      // 4c. 构建最终 URL 列表 (合并旧 URL 和新上传的 URL，保持顺序)
+      int uploadedUrlIndex = 0;
+      // *** 创建一个临时的、允许 null 的列表来按顺序放置 URL ***
+      List<String?> orderedUrlsPlaceholder = List.filled(currentImageSources.length, null);
 
-      for (int i = 0; i < _gameImagesSources.length; i++) {
-        final source = _gameImagesSources[i];
-        if (source is XFile) {
-          // 这个位置原来是 XFile，现在应该填充对应的已上传 URL
-          if (sourceIndicesOfFiles.contains(i) &&
-              uploadedUrlIndex < uploadedScreenshotUrls.length) {
-            orderedFinalUrls[i] = uploadedScreenshotUrls[uploadedUrlIndex++];
+      for (int i = 0; i < currentImageSources.length; i++) {
+        final source = currentImageSources[i];
+        if (xFileIndices.contains(i)) {
+          // 这个位置原来是 XFile，用对应的已上传 URL 填入
+          if (uploadedUrlIndex < uploadedUrls.length) {
+            orderedUrlsPlaceholder[i] = uploadedUrls[uploadedUrlIndex++];
           }
         } else if (source is String && source.isNotEmpty) {
-          // 这个位置原来是 String URL，直接使用
-          orderedFinalUrls[i] = source;
+          // 这个位置是有效的旧 URL，直接使用
+          orderedUrlsPlaceholder[i] = source;
         }
+        // 其他情况（比如 null 或空字符串）保持为 null
       }
-      // 过滤掉可能存在的 null 值（例如，如果上传失败或原始状态就是空的）
-      finalGameImagesUrls = orderedFinalUrls.whereType<String>().toList();
-      print(
-          "最终提交的游戏截图 URL 列表 (${finalGameImagesUrls.length} 个): $finalGameImagesUrls");
 
-      // 4. 构建最终的 Game 对象，使用处理后的图片 URL
+      // *** 过滤掉 null，得到最终的 List<String> ***
+      finalGameImagesUrls = orderedUrlsPlaceholder.whereType<String>().toList();
+      print("最终提交的截图列表 (${finalGameImagesUrls.length} 张): $finalGameImagesUrls");
+
+
+      // ------------------------------------
+      // 5. 构建 Game 对象
+      // ------------------------------------
       final game = Game(
-        id: widget.game?.id ?? mongo.ObjectId().toHexString(), // 保留现有ID或生成新ID
-        authorId: widget.game?.authorId ?? '', // 确保 authorId 有来源
+        id: widget.game?.id ?? mongo.ObjectId().toHexString(),
+        authorId: widget.game?.authorId ?? 'GET_CURRENT_USER_ID()', // TODO: 替换成真实的用户 ID 获取逻辑
         title: _titleController.text.trim(),
         summary: _summaryController.text.trim(),
         description: _descriptionController.text.trim(),
         category: _selectedCategories.join(', '),
-        coverImage: finalCoverImageUrl ?? '', // 使用最终封面URL
-        images: finalGameImagesUrls, // 使用最终截图URL列表
+        coverImage: finalCoverImageUrl ?? '',      // 使用处理后的封面 URL
+        images: finalGameImagesUrls,               // 使用处理后的截图 URL 列表
         tags: _selectedTags,
-        rating: _rating,
+        rating: widget.game?.rating ?? 0.0,
+        createTime: widget.game?.createTime ?? DateTime.now(),
+        updateTime: DateTime.now(),
         viewCount: widget.game?.viewCount ?? 0,
-        createTime: widget.game?.createTime ?? DateTime.now(), // 保留创建时间或用现在
-        updateTime: DateTime.now(), // 标记更新时间 (后端也会更新)
         likeCount: widget.game?.likeCount ?? 0,
         likedBy: widget.game?.likedBy ?? [],
         downloadLinks: _downloadLinks,
@@ -263,21 +412,36 @@ class _GameFormState extends State<GameForm> {
         // 注意: approvalStatus, reviewedAt, reviewedBy 等字段由后端处理，前端不提交
       );
 
-      // 5. 调用外部提交函数，将构建好的 game 对象传递出去
-      //print("准备调用 onSubmit 回调函数...");
+      // ------------------------------------
+      // 6. 调用 onSubmit 回调
+      // ------------------------------------
+      print("提交 Game 对象...");
       widget.onSubmit(game);
-      //print("表单数据已提交！");
+      print("提交完成.");
+
+      // ------------------------------------
+      // 7. 清除本地草稿
+      // ------------------------------------
+      await GameFormCacheService().clearDraft();
+      print("本地草稿已清除.");
+
     } catch (e) {
-      errorMessage = '处理图片或提交表单时出错: $e';
-      print("发生错误: $errorMessage");
+      // ------------------------------------
+      // 8. 错误处理
+      // ------------------------------------
+      errorMessage = '操，提交时出错了: $e';
+      print(errorMessage);
       if (mounted) {
         AppSnackBar.showError(context, errorMessage);
       }
     } finally {
-      // 确保 loading 状态被重置
+      // ------------------------------------
+      // 9. 重置状态
+      // ------------------------------------
       if (mounted) {
         setState(() {
           _isLoading = false;
+          _isSubmitting = false;
         });
       }
     }
@@ -611,23 +775,41 @@ class _GameFormState extends State<GameForm> {
   }
 
   Widget _buildPreviewButton() {
-    String? previewCoverUrl =
-        _coverImageSource is String ? _coverImageSource as String : null;
-    List<String> previewImageUrls =
-        _gameImagesSources.whereType<String>().toList();
+    // 准备给预览组件的数据，预览通常只能显示 URL
 
+    // 1. 处理封面图用于预览
+    String? previewCoverUrl;
+    if (_coverImageSource is String && (_coverImageSource as String).isNotEmpty) {
+      // 如果是有效的 URL 字符串，直接用
+      previewCoverUrl = _coverImageSource as String;
+    }
+    // 如果是 XFile 或 null/空字符串，则不传递 URL 给预览 (预览组件需处理 null 情况)
+
+    // 2. 处理游戏截图用于预览
+    List<String> previewImageUrls = _gameImagesSources
+        .whereType<String>() // 只筛选出 String 类型的 URL
+        .where((url) => url.isNotEmpty) // 确保 URL 非空
+        .toList();
+    // 本地选择的 XFile 不会包含在预览的图片列表中
+
+    // 3. 构建预览按钮，传递处理后的数据
     return GamePreviewButton(
+      // 基本信息控制器
       titleController: _titleController,
       summaryController: _summaryController,
       descriptionController: _descriptionController,
-      coverImageUrl: previewCoverUrl,
-      gameImages: previewImageUrls,
+      // 图像信息 (只传 URL)
+      coverImageUrl: previewCoverUrl,   // 可能为 null
+      gameImages: previewImageUrls,     // 只包含 URL 的列表
+      // 其他信息
       selectedCategories: _selectedCategories,
       selectedTags: _selectedTags,
-      rating: _rating,
+      rating: widget.game?.rating ?? 0.0, // 使用现有评分或默认值
       downloadLinks: _downloadLinks,
-      musicUrl: _musicUrlController.text,
+      musicUrl: _musicUrlController.text.trim(),
       existingGame: widget.game,
+      // 可选: 告知预览组件是否有本地文件未显示
+      // hasLocalImages: _coverImageSource is XFile || _gameImagesSources.any((s) => s is XFile),
     );
   }
 }

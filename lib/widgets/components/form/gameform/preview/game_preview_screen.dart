@@ -169,7 +169,10 @@ class GamePreviewScreen extends StatelessWidget {
           SliverPadding(
             padding: const EdgeInsets.only(bottom: 80),
             sliver: SliverToBoxAdapter(
-              child: GameDetailContent(game: game),
+              child: GameDetailContent(
+                game: game,
+                isPreviewMode: true,
+              ),
             ),
           ),
         ],

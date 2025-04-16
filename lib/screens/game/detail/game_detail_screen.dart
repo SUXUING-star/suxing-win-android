@@ -499,7 +499,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Mobile Layout 构建
-  Widget _buildMobileLayout(Game game) {
+  Widget _buildMobileLayout(Game game , bool isPending) {
     final flexibleSpaceBackground = Stack(
       fit: StackFit.expand,
       children: [
@@ -557,7 +557,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             SliverPadding(
               padding: const EdgeInsets.only(bottom: 80),
               sliver: SliverToBoxAdapter(
-                child: GameDetailContent(
+                child:
+                GameDetailContent(
                   // 传递数据给 Content
                   game: game,
                   initialCollectionStatus: _collectionStatus, // <--- 传递状态
@@ -565,7 +566,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       _handleCollectionStateChangedInButton, // <--- 传递这个函数
                   onNavigate: _handleNavigate,
                   navigationInfo: _navigationInfo,
-                ),
+                  isPreviewMode: isPending,
+                )
+                ,
               ),
             ),
           ],
@@ -579,8 +582,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Desktop Layout 构建
-  Widget _buildDesktopLayout(Game game) {
+  Widget _buildDesktopLayout(Game game,bool isPending) {
     final bool canEdit = _canEditGame(context, game);
+    final bool isPreview= isPending ? true : false;
     return Scaffold(
       appBar: CustomAppBar(
         title: game.title,
@@ -589,6 +593,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               icon: const Icon(Icons.share), onPressed: () {}, tooltip: '分享'),
         ],
       ),
+
       body: SingleChildScrollView(
         key: ValueKey('game_detail_desktop_${widget.gameId}_$_refreshCounter'),
         child: Padding(
@@ -600,6 +605,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 _handleCollectionStateChangedInButton, // <--- 传递这个函数
             onNavigate: _handleNavigate,
             navigationInfo: _navigationInfo,
+            isPreviewMode: isPreview,
           ),
         ),
       ),
@@ -612,6 +618,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   // 主 build 方法
   @override
   Widget build(BuildContext context) {
+    final isPending = _game!.approvalStatus == 'pending';
     // 初始 ID 检查
     if (widget.gameId == null) {
       return CustomErrorWidget(errorMessage: '无效的游戏 ID');
@@ -742,10 +749,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     } else {
       // 正常渲染
       final isDesktop = MediaQuery.of(context).size.width >= 1024;
+
       bodyContent =
-          isDesktop ? _buildDesktopLayout(_game!) : _buildMobileLayout(_game!);
+          isDesktop ? _buildDesktopLayout(_game!,isPending) : _buildMobileLayout(_game!,isPending);
     }
-    if (_game!.approvalStatus == 'pending') {
+    if (isPending) {
       // 如果是 pending，返回 Material -> Column -> [Banner, Expanded(bodyContent)]
       return Material( // 用 Material 做根，保证背景和主题
         child: Column(
