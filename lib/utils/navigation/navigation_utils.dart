@@ -1,191 +1,297 @@
 // lib/utils/navigation/navigation_utils.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import '../../app.dart';
-import '../../layouts/main_layout.dart';
-import 'dart:async';
+import '../../app.dart'; // For mainNavigatorKey
+import '../../routes/app_routes.dart'; // For route constants
 
 /// 全局安全导航器
-/// 使用方式与Navigator完全一致，但确保不会出现GlobalKey冲突
 class NavigationUtils {
   NavigationUtils._();
 
-  /// 获取导航器状态
+  // 定义主 Tab 路由及其对应的索引
+  // *** 确保这里的路由和索引与你的 MainLayout / BottomNavigationBar 完全对应 ***
+  static const Map<String, int> _mainTabRoutes = {
+    AppRoutes.home: 0, // 首页
+    AppRoutes.gamesList: 1, // 游戏列表
+    AppRoutes.forum: 2, // 论坛
+    AppRoutes.activityFeed: 3, // 动态
+    AppRoutes.externalLinks: 4, // 工具链接
+    AppRoutes.profile: 5, // 个人中心 (假设索引为5)
+  };
+
+  static NavigatorState _getRootNavigator() {
+    final navigator = mainNavigatorKey.currentState;
+    if (navigator == null) {
+      throw FlutterError(
+          'NavigationUtils: mainNavigatorKey.currentState is null. Ensure it is attached to MaterialApp.');
+    }
+    return navigator;
+  }
+
   static NavigatorState of(BuildContext context, {bool rootNavigator = false}) {
     if (rootNavigator) {
-      // 如果需要根导航器，返回全局导航器
-      return mainNavigatorKey.currentState!;
+      try {
+        return _getRootNavigator();
+      } catch (e) {
+        // Fallback if root navigator fails, though ideally it shouldn't
+        try {
+          return Navigator.of(context);
+        } catch (fallbackError) {
+          throw FlutterError(
+              'NavigationUtils.of(rootNavigator: true) failed: ${e.toString()}. Fallback Navigator.of(context) also failed: ${fallbackError.toString()}');
+        }
+      }
     } else {
-      // 否则尝试获取最近的导航器（与Navigator.of行为一致）
       try {
         return Navigator.of(context);
       } catch (e) {
-        // 如果无法获取最近的导航器，回退到全局导航器
-        return mainNavigatorKey.currentState!;
+        // Fallback to root navigator if local navigator is not found
+        return _getRootNavigator();
       }
     }
   }
 
-  /// 导航到指定路由
   static Future<T?> push<T>(BuildContext context, Route<T> route) {
-    return _safeCall(() => of(context, rootNavigator: true).push(route));
+    return _safeCall(() => _getRootNavigator().push(route));
   }
 
-  /// 导航到命名路由
-  static Future<T?> pushNamed<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return _safeCall(() => of(context, rootNavigator: true).pushNamed(routeName, arguments: arguments));
+  static Future<T?> pushNamed<T>(BuildContext context, String routeName,
+      {Object? arguments}) {
+    // 1. 检查是否是登录页
+    if (routeName == AppRoutes.login) {
+      bool redirectAfterLogin = false;
+      int? redirectIndex;
+      if (arguments is Map<String, dynamic>) {
+        redirectAfterLogin = arguments['redirect_after_login'] ?? false;
+        redirectIndex = arguments['redirect_index'] as int?;
+      }
+      return navigateToLogin<T>(
+        context,
+        redirectAfterLogin: redirectAfterLogin,
+        redirectIndex: redirectIndex,
+      );
+    }
+    // 2. 检查是否是主 Tab 页
+    else if (_mainTabRoutes.containsKey(routeName)) {
+      final int tabIndex = _mainTabRoutes[routeName]!;
+      // 直接调用 navigateToHome 切换 Tab，不推送新路由
+      navigateToHome(context, tabIndex: tabIndex);
+      // 返回 null Future 以匹配签名
+      return Future.value(null as T?);
+    }
+    // 3. 其他路由正常推送
+    else {
+      return _safeCall(() =>
+          _getRootNavigator().pushNamed<T>(routeName, arguments: arguments));
+    }
   }
 
-  /// 替换当前路由
-  static Future<T?> pushReplacement<T, TO>(BuildContext context, Route<T> route, {TO? result}) {
-    return _safeCall(() => of(context, rootNavigator: true).pushReplacement(route, result: result));
+  static Future<T?> pushReplacement<T, TO>(BuildContext context, Route<T> route,
+      {TO? result}) {
+    return _safeCall(
+        () => _getRootNavigator().pushReplacement(route, result: result));
   }
 
-  /// 替换当前命名路由
-  static Future<T?> pushReplacementNamed<T, TO>(BuildContext context, String routeName, {TO? result, Object? arguments}) {
-    return _safeCall(() => of(context, rootNavigator: true).pushReplacementNamed(routeName, result: result, arguments: arguments));
+  static Future<T?> pushReplacementNamed<T, TO>(
+      BuildContext context, String routeName,
+      {TO? result, Object? arguments}) {
+    // 1. 检查是否是登录页 (替换为登录通常意味着清栈后跳转)
+    if (routeName == AppRoutes.login) {
+      bool redirectAfterLogin = false;
+      int? redirectIndex;
+      if (arguments is Map<String, dynamic>) {
+        redirectAfterLogin = arguments['redirect_after_login'] ?? false;
+        redirectIndex = arguments['redirect_index'] as int?;
+      }
+      // 使用 navigateToLogin 清栈并跳转
+      return navigateToLogin<T>(
+        context,
+        redirectAfterLogin: redirectAfterLogin,
+        redirectIndex: redirectIndex,
+      );
+    }
+    // 2. 检查是否是主 Tab 页
+    else if (_mainTabRoutes.containsKey(routeName)) {
+      final int tabIndex = _mainTabRoutes[routeName]!;
+      // 替换为主 Tab 页，本质上也是切换 Tab
+      navigateToHome(context, tabIndex: tabIndex);
+      // 返回 null Future
+      return Future.value(null as T?);
+    }
+    // 3. 其他路由正常替换
+    else {
+      return _safeCall(() => _getRootNavigator().pushReplacementNamed(routeName,
+          result: result, arguments: arguments));
+    }
   }
 
-  /// 删除所有路由直到某个条件，然后添加新路由
-  static Future<T?> pushAndRemoveUntil<T>(BuildContext context, Route<T> route, RoutePredicate predicate) {
-    return _safeCall(() => of(context, rootNavigator: true).pushAndRemoveUntil(route, predicate));
+  static Future<T?> pushAndRemoveUntil<T>(
+      BuildContext context, Route<T> route, RoutePredicate predicate) {
+    return _safeCall(
+        () => _getRootNavigator().pushAndRemoveUntil(route, predicate));
   }
 
-  /// 删除所有路由直到某个条件，然后添加新命名路由
-  static Future<T?> pushNamedAndRemoveUntil<T>(BuildContext context, String routeName, RoutePredicate predicate, {Object? arguments}) {
-    return _safeCall(() => of(context, rootNavigator: true).pushNamedAndRemoveUntil(routeName, predicate, arguments: arguments));
+  static Future<T?> pushNamedAndRemoveUntil<T>(
+      BuildContext context, String routeName, RoutePredicate predicate,
+      {Object? arguments}) {
+    // 此方法通常用于特殊流程，如登录后跳转、清空栈等，不拦截主 Tab 路由
+    return _safeCall(() => _getRootNavigator()
+        .pushNamedAndRemoveUntil(routeName, predicate, arguments: arguments));
   }
 
-  /// 弹出当前路由，返回结果
   static bool pop<T>(BuildContext context, [T? result]) {
-    final navigator = of(context, rootNavigator: true);
+    final navigator = _getRootNavigator();
     if (!navigator.canPop()) return false;
     _safeCallSync(() => navigator.pop(result));
     return true;
   }
 
-  /// 弹出多个路由直到满足条件
   static void popUntil(BuildContext context, RoutePredicate predicate) {
-    _safeCallSync(() => of(context, rootNavigator: true).popUntil(predicate));
+    _safeCallSync(() => _getRootNavigator().popUntil(predicate));
   }
 
-  /// 判断是否可以弹出路由
   static bool canPop(BuildContext context) {
-    return of(context, rootNavigator: true).canPop();
+    try {
+      return _getRootNavigator().canPop();
+    } catch (e) {
+      return false;
+    }
   }
 
-  /// 弹出到第一个路由(通常是首页)
   static void popToRoot(BuildContext context) {
-    _safeCallSync(() => of(context, rootNavigator: true).popUntil((route) => route.isFirst));
+    _safeCallSync(() => _getRootNavigator().popUntil((route) => route.isFirst));
   }
 
-  /// 清除所有路由并导航到首页(指定标签页)
   static void navigateToHome(BuildContext context, {int tabIndex = 0}) {
+    // 简单的范围检查 (基于 _mainTabRoutes 的大小)
+    if (tabIndex < 0 || tabIndex >= _mainTabRoutes.length) {
+      tabIndex = 0; // 索引无效则重置为 0
+    }
+
     _safeCallSync(() {
       final navigator = mainNavigatorKey.currentState;
-      if (navigator == null) {
-        print("NavigationUtils Error: mainNavigatorKey.currentState is null in navigateToHome.");
-        return;
+      if (navigator == null) return; // _getRootNavigator() 已处理，但再次检查无妨
+
+      // 清除当前路由栈直到根路由 (MainLayout)
+      if (navigator.canPop()) {
+        navigator.popUntil((route) => route.isFirst);
       }
 
-      // 1. 清除所有路由直到第一个路由
-      navigator.popUntil((route) => route.isFirst);
-
-      // 2. *** 更新 SidebarProvider 的状态 ***
-      //    使用 mainNavigatorKey.currentContext! 来获取一个有效的、在 Provider 之下的 context
+      // 更新 SidebarProvider 状态
       final providerContext = mainNavigatorKey.currentContext;
       if (providerContext != null) {
         try {
           Provider.of<SidebarProvider>(providerContext, listen: false)
               .setCurrentIndex(tabIndex);
         } catch (e) {
-          print("NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");
-          // 可能 providerContext 不在 MultiProvider 之下，检查你的 Widget 树结构
+          print(
+              "NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");
         }
       } else {
-        print("NavigationUtils Error: mainNavigatorKey.currentContext is null in navigateToHome, cannot update SidebarProvider.");
+        print(
+            "NavigationUtils Error: mainNavigatorKey.currentContext is null in navigateToHome.");
       }
-
     });
   }
 
-  /// 登录页面导航(保留首页)
-  static Future<T?> navigateToLogin<T>(BuildContext context, {bool redirectAfterLogin = false, int? redirectIndex}) {
-    return pushNamedAndRemoveUntil<T>(
-      context,
-      '/login',
-          (route) => route.isFirst,
+  static Future<T?> navigateToLogin<T>(BuildContext context,
+      {bool redirectAfterLogin = false, int? redirectIndex}) {
+    // 使用 pushNamedAndRemoveUntil 清除到根路由再 push 登录页
+    return _getRootNavigator().pushNamedAndRemoveUntil<T>(
+      AppRoutes.login,
+      (route) => route.isFirst,
       arguments: {
         if (redirectAfterLogin) 'redirect_after_login': true,
         if (redirectIndex != null) 'redirect_index': redirectIndex,
       },
     );
+    // 注意：这里没有使用 _safeCall 包装，因为 pushNamedAndRemoveUntil 内部会处理
+    // 如果需要 _safeCall 的 postFrameCallback 行为，可以像下面这样包装：
+    // return _safeCall(() => _getRootNavigator().pushNamedAndRemoveUntil<T>(...));
   }
 
-  /// 强制清空栈并导航到指定路由
-  static Future<T?> clearStackAndPush<T>(BuildContext context, String routeName, {Object? arguments}) {
-    return pushNamedAndRemoveUntil<T>(
-        context,
-        routeName,
-            (route) => false,
-        arguments: arguments
-    );
+  static Future<T?> clearStackAndPush<T>(BuildContext context, String routeName,
+      {Object? arguments}) {
+    // 此方法明确要清空整个栈，不应拦截主 Tab 页
+    // 如果 routeName 是主 Tab 路由，行为可能会不符合预期（会清空包括 MainLayout 的所有路由）
+    // 开发者使用此方法时应明确目标不是主 Tab 页
+    return _safeCall(() => _getRootNavigator()
+        .pushNamedAndRemoveUntil<T>(routeName, (route) => false, // 清除所有路由
+            arguments: arguments));
   }
 
-  /// 直接使用maybePop，尝试关闭当前页面
   static Future<bool> maybePop<T>(BuildContext context, [T? result]) {
-    return of(context, rootNavigator: true).maybePop(result);
+    try {
+      return _getRootNavigator().maybePop(result);
+    } catch (e) {
+      return Future.value(false);
+    }
   }
 
-  /// 显示登录提示对话框
-  static Future<bool> showLoginDialog(BuildContext context, {String message = '请登录后继续操作', int? redirectIndex}) {
+  static Future<bool> showLoginDialog(BuildContext context,
+      {String message = '请登录后继续操作', int? redirectIndex}) {
+    // 使用 rootNavigator 的 context 显示对话框
+    final rootContext = mainNavigatorKey.currentContext;
+    if (rootContext == null) {
+      print(
+          "NavigationUtils Error: Cannot show login dialog, root context is null.");
+      return Future.value(false); // 无法显示对话框
+    }
     return showDialog<bool>(
-      context: context,
+      context: rootContext,
       builder: (dialogContext) => AlertDialog(
-        title: Text('需要登录'),
+        title: const Text('需要登录'),
         content: Text(message),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: Text('取消'),
+            child: const Text('取消'),
           ),
           TextButton(
             onPressed: () {
               Navigator.of(dialogContext).pop(true);
+              // 使用原始 context 或 rootContext 调用导航均可，navigateToLogin 内部会找到根 navigator
               navigateToLogin(
-                context,
+                context, // 使用调用处的 context
                 redirectAfterLogin: true,
                 redirectIndex: redirectIndex,
               );
             },
-            child: Text('去登录'),
+            child: const Text('去登录'),
           ),
         ],
       ),
     ).then((value) => value ?? false);
   }
 
-  /// 安全执行导航操作，确保不会出现GlobalKey冲突
+  // --- 安全调用包装器 ---
+
   static Future<T> _safeCall<T>(Future<T> Function() navigateFunction) async {
     final completer = Completer<T>();
-
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       try {
+        // 确保 Navigator 存在
+        _getRootNavigator();
         final result = await navigateFunction();
-        completer.complete(result);
-      } catch (e) {
-        completer.completeError(e);
+        if (!completer.isCompleted) completer.complete(result);
+      } catch (e, s) {
+        if (!completer.isCompleted) completer.completeError(e, s);
       }
     });
-
     return completer.future;
   }
 
-  /// 安全执行同步导航操作，确保不会出现GlobalKey冲突
   static void _safeCallSync(Function() navigateFunction) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      navigateFunction();
+      try {
+        // 确保 Navigator 存在
+        _getRootNavigator();
+        navigateFunction();
+      } catch (e, s) {
+        print("NavigationUtils _safeCallSync Error: $e\n$s");
+      }
     });
   }
 }

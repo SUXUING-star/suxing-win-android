@@ -240,7 +240,6 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     if (!forceRefresh && _lastFollowersRefresh != null) {
       final timeSinceLastRefresh = now.difference(_lastFollowersRefresh!);
       if (timeSinceLastRefresh < _minRefreshInterval) {
-        print('粉丝列表刷新太频繁，跳过');
         return;
       }
     }
@@ -265,7 +264,6 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
         });
       }
     } catch (e) {
-      print('刷新粉丝列表失败: $e');
       if (_mounted) {
         setState(() {
           _isLoadingFollowers = false;

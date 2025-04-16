@@ -34,7 +34,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 懒加载核心状态 ---
   bool _isInitialized = false; // 是否已完成首次加载
-  bool _isVisible = false;     // 当前 Widget 是否可见
+  bool _isVisible = false; // 当前 Widget 是否可见
   bool _isLoadingData = false; // 是否正在进行加载操作 (首次或刷新)
   // --- 结束懒加载状态 ---
 
@@ -59,7 +59,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   void _triggerInitialLoad() {
     // 仅在 Widget 变得可见且尚未初始化时执行
     if (_isVisible && !_isInitialized) {
-      print("LinksToolsScreen: Now visible and not initialized. Triggering initial load.");
+      print(
+          "LinksToolsScreen: Now visible and not initialized. Triggering initial load.");
       _isInitialized = true; // 标记为已初始化
       _loadData(); // 调用实际加载方法
     }
@@ -96,9 +97,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         _links = List<Link>.from(results[0] as List? ?? []);
         _tools = List<Tool>.from(results[1] as List? ?? []);
         _isLoadingData = false; // 加载完成
-        print("LinksToolsScreen: Load successful. Links: ${_links?.length}, Tools: ${_tools?.length}");
+        print(
+            "LinksToolsScreen: Load successful. Links: ${_links?.length}, Tools: ${_tools?.length}");
       });
-    } catch (e, s) { // 捕获错误和堆栈
+    } catch (e, s) {
+      // 捕获错误和堆栈
       print('LinksToolsScreen: Load data error: $e\nStackTrace: $s');
       if (!mounted) return;
       setState(() {
@@ -125,7 +128,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     } catch (e) {
       // 显示错误提示
       print("Error launching URL $url: $e");
-      if (mounted) { // 检查 mounted 状态
+      if (mounted) {
+        // 检查 mounted 状态
         Toaster.show(context, message: '打开链接失败: $e', isError: true);
       }
     }
@@ -133,22 +137,26 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 显示添加链接对话框 ---
   void _showAddLinkDialog(BuildContext context) {
-    showDialog<Map<String, dynamic>>( // 指定对话框返回类型
+    showDialog<Map<String, dynamic>>(
+      // 指定对话框返回类型
       context: context,
       builder: (context) => LinkFormDialog(), // 显示你的链接表单对话框
-    ).then((linkData) async { // 处理对话框关闭后的结果
-      if (linkData != null) { // 如果用户保存了数据
+    ).then((linkData) async {
+      // 处理对话框关闭后的结果
+      if (linkData != null) {
+        // 如果用户保存了数据
         try {
           // 将 Map 转换为 Link 对象
           final newLink = Link.fromJson(linkData);
           // 调用 Service 添加链接
           await _linkToolService.addLink(newLink);
-          if(mounted) Toaster.show(context, message: '添加链接成功');
+          if (mounted) Toaster.show(context, message: '添加链接成功');
           // 刷新数据以显示新链接
           await _loadData();
         } catch (e) {
           print("Error adding link: $e");
-          if(mounted) Toaster.show(context, message: '添加链接失败: $e', isError: true);
+          if (mounted)
+            Toaster.show(context, message: '添加链接失败: $e', isError: true);
         }
       }
     });
@@ -156,23 +164,27 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 显示添加工具对话框 ---
   void _showAddToolDialog(BuildContext context) {
-    showDialog<Map<String, dynamic>>( // 指定返回类型
+    showDialog<Map<String, dynamic>>(
+      // 指定返回类型
       context: context,
       barrierDismissible: false, // 禁止点击外部关闭
       builder: (context) => ToolFormDialog(), // 显示你的工具表单对话框
-    ).then((toolData) async { // 处理结果
-      if (toolData != null) { // 如果用户保存了数据
+    ).then((toolData) async {
+      // 处理结果
+      if (toolData != null) {
+        // 如果用户保存了数据
         try {
           // 将 Map 转换为 Tool 对象
           final newTool = Tool.fromJson(toolData);
           // 调用 Service 添加工具
           await _linkToolService.addTool(newTool);
-          if(mounted) Toaster.show(context, message: '添加工具成功');
+          if (mounted) Toaster.show(context, message: '添加工具成功');
           // 刷新数据以显示新工具
           await _loadData();
         } catch (e) {
           print('Error adding tool: $e');
-          if(mounted) Toaster.show(context, message: '添加工具失败: $e', isError: true);
+          if (mounted)
+            Toaster.show(context, message: '添加工具失败: $e', isError: true);
         }
       }
     });
@@ -195,11 +207,17 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
           // 使用 microtask 确保 setState 在 build 之后执行
           Future.microtask(() {
             if (mounted) {
-              setState(() { _isVisible = currentlyVisible; });
-            } else { _isVisible = currentlyVisible; } // 更新变量
+              setState(() {
+                _isVisible = currentlyVisible;
+              });
+            } else {
+              _isVisible = currentlyVisible;
+            } // 更新变量
 
             // 如果变得可见，尝试触发初始加载
-            if (_isVisible) { _triggerInitialLoad(); }
+            if (_isVisible) {
+              _triggerInitialLoad();
+            }
           });
         }
       },
@@ -208,13 +226,14 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         // AppBar 仅在移动端显示
         appBar: isDesktop
             ? null // 桌面端不显示 AppBar
-            : CustomAppBar( // 移动端 AppBar
-          title: '实用工具',
-          actions: [
-            // 仅管理员可见的添加按钮
-            if (isAdmin) ..._buildAdminActions(context),
-          ],
-        ),
+            : CustomAppBar(
+                // 移动端 AppBar
+                title: '实用工具',
+                actions: [
+                  // 仅管理员可见的添加按钮
+                  if (isAdmin) ..._buildAdminActions(context),
+                ],
+              ),
         // Body 部分包含下拉刷新和条件渲染的内容
         body: RefreshIndicator(
           onRefresh: _loadData, // 下拉刷新直接调用加载数据方法
@@ -237,7 +256,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     // State 3: Error occurred
     else if (_errorMessage != null) {
       return Center(
-        child: CustomErrorWidget( // 或者 InlineErrorWidget
+        child: CustomErrorWidget(
+          // 或者 InlineErrorWidget
           // title: '加载失败', // 可选标题
           errorMessage: _errorMessage!,
           onRetry: _loadData, // 重试按钮调用加载数据
@@ -272,7 +292,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     ];
   }
 
-
   // --- 构建桌面端布局 ---
   Widget _buildDesktopLayout(bool isAdmin) {
     // 使用 Row 左右分割布局
@@ -280,21 +299,24 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐
       children: [
         // --- 左侧：常用链接 ---
-        Expanded( // 左侧占据一半空间
-          child: CustomScrollView( // 使用 CustomScrollView 以便未来可能添加 SliverAppBar 等
+        Expanded(
+          // 左侧占据一半空间
+          child: CustomScrollView(
+            // 使用 CustomScrollView 以便未来可能添加 SliverAppBar 等
             slivers: [
               // 区域标题和添加按钮 (桌面版按钮放在标题旁边)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: EdgeInsets.fromLTRB(16, 24, 16, 16), // 内边距
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween, // 标题居左，按钮居右
+                    mainAxisAlignment:
+                        MainAxisAlignment.spaceBetween, // 标题居左，按钮居右
                     children: [
                       Text(
                         '常用链接',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       // 仅管理员可见的添加链接按钮
                       if (isAdmin)
@@ -317,7 +339,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         // --- 中间分割线 ---
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0), // 上下留白
-          child: VerticalDivider( // 垂直分割线
+          child: VerticalDivider(
+            // 垂直分割线
             width: 32, // 分割线宽度（包括左右间距）
             thickness: 1, // 线条粗细
             color: Theme.of(context).dividerColor.withOpacity(0.15), // 颜色和透明度
@@ -327,7 +350,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         ),
 
         // --- 右侧：实用工具 ---
-        Expanded( // 右侧占据另一半空间
+        Expanded(
+          // 右侧占据另一半空间
           child: CustomScrollView(
             slivers: [
               // 区域标题和添加按钮
@@ -340,8 +364,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
                       Text(
                         '实用工具',
                         style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                              fontWeight: FontWeight.bold,
+                            ),
                       ),
                       // 仅管理员可见的添加工具按钮
                       if (isAdmin)
@@ -376,8 +400,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
             child: Text(
               '常用链接',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
         ),
@@ -391,8 +415,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
             child: Text(
               '实用工具',
               style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
         ),
@@ -407,11 +431,15 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     // 检查链接数据是否有效且非空
     if (_links == null || _links!.isEmpty) {
       // 如果没有链接，显示提示信息
-      return SliverToBoxAdapter( // 必须返回 Sliver 类型
+      return SliverToBoxAdapter(
+        // 必须返回 Sliver 类型
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0), // 内边距
-          child: Center( // 居中显示
-            child: InlineErrorWidget( // 使用你的错误/空状态提示 Widget
+          padding: const EdgeInsets.symmetric(
+              horizontal: 16.0, vertical: 32.0), // 内边距
+          child: Center(
+            // 居中显示
+            child: InlineErrorWidget(
+              // 使用你的错误/空状态提示 Widget
               errorMessage: '暂无常用链接',
               icon: Icons.link_off, // 相关图标
               retryText: '刷新试试',
@@ -438,16 +466,15 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     // 检查工具数据是否有效且非空
     if (_tools == null || _tools!.isEmpty) {
       // 如果没有工具，显示提示信息
-      return SliverToBoxAdapter( // 必须返回 Sliver 类型
+      return SliverToBoxAdapter(
+        // 必须返回 Sliver 类型
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
-          child: Center(
-            child: InlineErrorWidget(
-              errorMessage: '暂无实用工具',
-              icon: Icons.build_circle_outlined, // 相关图标
-              retryText: '刷新试试',
-              onRetry: _loadData,
-            ),
+          child: InlineErrorWidget(
+            errorMessage: '暂无实用工具',
+            icon: Icons.build_circle_outlined, // 相关图标
+            retryText: '刷新试试',
+            onRetry: _loadData,
           ),
         ),
       );

@@ -51,7 +51,7 @@ class CollectionDialog extends StatelessWidget {
           child: Padding(
             // 5. 使用 Padding  设置对话框内部边距
             padding: const EdgeInsets.fromLTRB(
-                20.0, 24.0, 20.0, 20.0), //  和 CustomConfirmDialog 相同的边距
+                16.0, 18.0, 18.0, 16.0), //  和 CustomConfirmDialog 相同的边距
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,

@@ -1,18 +1,20 @@
-// lib/widgets/components/screen/game/comment/comment_input_updated.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../dialogs/limiter/rate_limit_dialog.dart';
-import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
+// REMOVED: import 'package:suxingchahui/services/main/game/game_service.dart';
+// REMOVED: import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+// REMOVED: import '../../../../dialogs/limiter/rate_limit_dialog.dart';
+import '../../../../../ui/inputs/comment_input_field.dart'; // Use the shared input field
 
 class CommentInput extends StatefulWidget {
-  final String gameId;
-  final VoidCallback? onCommentAdded;
+  // --- Callback received from Parent (CommentsSection) ---
+  final Future<void> Function(String comment) onCommentAdded;
+  final bool isSubmitting; // Loading state from parent
 
   const CommentInput({
     Key? key,
-    required this.gameId,
-    this.onCommentAdded,
+    required this.onCommentAdded,
+    required this.isSubmitting,
+    // REMOVED: gameId
+    // REMOVED: onCommentAdded (renamed to onCommentAdded)
   }) : super(key: key);
 
   @override
@@ -20,57 +22,35 @@ class CommentInput extends StatefulWidget {
 }
 
 class _CommentInputState extends State<CommentInput> {
-  final GameService _commentService = GameService();
-  bool _isSubmitting = false;
+  // REMOVED: final GameService _commentService = GameService();
+  // REMOVED: bool _isSubmitting = false; (Now passed from parent)
+  final TextEditingController _controller = TextEditingController(); // Keep controller local
 
   Future<void> _submitComment(String comment) async {
-    if (comment.isEmpty) return;
+    if (comment.isEmpty || widget.isSubmitting) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    // Call the parent's handler
+    // Error/Success handling is done in the parent (CommentsSection)
+    await widget.onCommentAdded(comment);
 
-    try {
-      await _commentService.addComment(widget.gameId, comment);
-
-      // 调用刷新回调
-      if (widget.onCommentAdded != null) {
-        widget.onCommentAdded!();
-      }
-
-      if (context.mounted) {
-        AppSnackBar.showSuccess(context, '成功发表评论');
-      }
-    } catch (e) {
-      if (context.mounted) {
-        // 检查是否为速率限制错误
-        final errorMsg = e.toString();
-        if (errorMsg.contains('评论速率超限')) {
-          // 解析剩余时间并显示对话框
-          final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
-          showRateLimitDialog(context, remainingSeconds);
-        } else {
-          // 显示常规错误消息
-          AppSnackBar.showError(context, '发表评论失败: ${e.toString()}');
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+    // Clear input only if submission was handled (might fail)
+    // Parent should ideally signal success/failure, but clearing optimistically is common
+    if (mounted) { // Check if widget is still in the tree
+      _controller.clear(); // Clear the input field after submitting
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- Use the shared CommentInputField ---
     return CommentInputField(
+      controller: _controller, // Pass the local controller
       hintText: '发表评论...',
       submitButtonText: '发表',
-      isSubmitting: _isSubmitting,
-      onSubmit: _submitComment,
+      isSubmitting: widget.isSubmitting, // Use parent's loading state
+      onSubmit: _submitComment, // Pass the local submit handler
       maxLines: 3,
     );
   }
 }
+

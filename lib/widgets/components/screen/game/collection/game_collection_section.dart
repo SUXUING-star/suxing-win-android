@@ -111,7 +111,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
     // 格式化评分，显示一位小数，如果评分为0则显示 "N/A" 或 "0.0"
     final formattedRating = _rating > 0
         ? NumberFormat('0.0').format(_rating)
-        : (_ratingCount > 0 ? '0.0' : 'N/A');
+        : (_ratingCount > 0 ? '0.0' : '暂无');
 
     return Opacity(
       opacity: 0.95,

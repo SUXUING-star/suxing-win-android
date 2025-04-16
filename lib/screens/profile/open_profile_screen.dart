@@ -127,8 +127,10 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     }
 
     if (_error != null) {
-      return InlineErrorWidget(onRetry: _loadUserProfile,errorMessage: _error,);
-
+      return InlineErrorWidget(
+        onRetry: _loadUserProfile,
+        errorMessage: _error,
+      );
     }
 
     return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
@@ -319,7 +321,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildGamesContent() {
     if (_publishedGames == null || _publishedGames!.isEmpty) {
-      return _buildEmptyState('暂无发布的游戏', Icons.videogame_asset);
+      return EmptyStateWidget(
+          message: '暂无发布的游戏', iconData: Icons.videogame_asset);
     }
 
     return SingleChildScrollView(
@@ -330,7 +333,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildPostsContent() {
     if (_recentPosts == null || _recentPosts!.isEmpty) {
-      return _buildEmptyState('暂无发布的帖子', Icons.forum);
+      return EmptyStateWidget(message: '暂无发布的帖子', iconData: Icons.forum);
     }
 
     return SingleChildScrollView(
@@ -390,13 +393,6 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
           child: ProfilePostCard(post: _recentPosts![index]),
         );
       },
-    );
-  }
-
-  Widget _buildEmptyState(String message, IconData icon) {
-    return EmptyStateWidget(
-      message: "啥也没有啊",
-      iconData: icon,
     );
   }
 

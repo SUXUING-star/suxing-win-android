@@ -12,6 +12,7 @@ import '../buttons/login_prompt.dart';
 class CommentInputField extends StatefulWidget {
   // --- 保留必要的参数 ---
   final Function(String) onSubmit;
+  final TextEditingController? controller;
   final String hintText;
   final int maxLines;
   final String submitButtonText; // 按钮文字需要从外部传入
@@ -29,6 +30,7 @@ class CommentInputField extends StatefulWidget {
 
   const CommentInputField({
     Key? key,
+    this.controller,
     required this.onSubmit,
     this.hintText = '发表评论...',
     this.submitButtonText = '发表', // 保留这个
@@ -51,13 +53,30 @@ class CommentInputField extends StatefulWidget {
 }
 
 class _CommentInputFieldState extends State<CommentInputField> {
-  final TextEditingController _controller = TextEditingController();
+  late TextEditingController _controller;
   final FocusNode _focusNode = FocusNode();
+  bool _isInternalController = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.controller == null) {
+      _controller = TextEditingController();
+      _isInternalController = true;
+    } else {
+      _controller = widget.controller!;
+      _isInternalController = false;
+    }
+  }
+
 
   @override
   void dispose() {
-    _controller.dispose();
     _focusNode.dispose();
+    // Only dispose the controller if it was created internally
+    if (_isInternalController) {
+      _controller.dispose();
+    }
     super.dispose();
   }
 
@@ -66,12 +85,11 @@ class _CommentInputFieldState extends State<CommentInputField> {
     if (text.isEmpty || widget.isSubmitting) return;
     _focusNode.unfocus();
     widget.onSubmit(text);
-    _controller.clear();
   }
 
   void _handleCancel() {
     if (widget.isSubmitting) return;
-    _controller.clear();
+    _controller.clear(); // Clear the text on cancel
     _focusNode.unfocus();
     widget.onCancel?.call();
   }

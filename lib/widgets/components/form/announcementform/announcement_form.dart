@@ -66,7 +66,9 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       return;
     }
 
-    setState(() { _isLoading = true; });
+    setState(() {
+      _isLoading = true;
+    });
 
     String? finalImageUrl; // 最终提交的图片 URL
     String? uploadError;
@@ -77,7 +79,8 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         // 1. 需要上传新图片
         final fileToUpload = File((_imageSource as XFile).path);
         // 仅当编辑模式且图片已更改时，传递 oldImageUrl
-        String? oldUrlToReplace = (widget.announcement.id.isNotEmpty && _imageSource != _originalImageUrl)
+        String? oldUrlToReplace = (widget.announcement.id.isNotEmpty &&
+                _imageSource != _originalImageUrl)
             ? _originalImageUrl
             : null;
 
@@ -91,18 +94,17 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           oldImageUrl: oldUrlToReplace,
         );
         //print("新图片上传成功，URL: $finalImageUrl");
-
-      } else if (_imageSource is String && (_imageSource as String).isNotEmpty) {
+      } else if (_imageSource is String &&
+          (_imageSource as String).isNotEmpty) {
         // 2. 使用的是 URL 字符串
         finalImageUrl = _imageSource as String;
         //print("使用提供的 URL: $finalImageUrl");
-
       } else {
         // 3. 图片源是 null 或空字符串，表示无图片或已清除
         finalImageUrl = null;
         // 如果是编辑模式且之前有图片，后端需要处理删除逻辑
         if (widget.announcement.id.isNotEmpty && _originalImageUrl != null) {
-         //print("图片已被清除，将提交 null URL。后端应处理删除原图: $_originalImageUrl");
+          //print("图片已被清除，将提交 null URL。后端应处理删除原图: $_originalImageUrl");
         } else {
           //print("未设置图片或图片为空。");
         }
@@ -121,7 +123,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       // 调用外部提交函数
       print("准备提交公告数据: ${announcementToSubmit.toJson()}"); // 打印 JSON 方便调试
       widget.onSubmit(announcementToSubmit);
-
     } catch (e) {
       // 捕获上传或处理过程中的错误
       uploadError = '处理公告时出错: $e';
@@ -131,11 +132,12 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       }
     } finally {
       if (mounted) {
-        setState(() { _isLoading = false; });
+        setState(() {
+          _isLoading = false;
+        });
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +149,9 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       children: [
         Form(
           key: _formKey,
-          child: useDesktopLayout ? _buildDesktopLayout(context) : _buildMobileLayout(context),
+          child: useDesktopLayout
+              ? _buildDesktopLayout(context)
+              : _buildMobileLayout(context),
         ),
         if (_isLoading) _buildLoadingOverlay(), // 加载遮罩
       ],
@@ -180,7 +184,9 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('展示设置', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text('展示设置',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- DisplaySettingsField ---
@@ -190,28 +196,45 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                             isActive: _formData.isActive,
                             priority: _formData.priority,
                             imageSource: _imageSource, // 传递当前图片源
-                            onStartDateChanged: (date) => setState(() => _formData = _formData.copyWith(startDate: date)),
+                            onStartDateChanged: (date) => setState(() =>
+                                _formData =
+                                    _formData.copyWith(startDate: date)),
                             onEndDateChanged: (date) {
                               if (date.isBefore(_formData.startDate)) {
-                                AppSnackBar.showWarning(context, '结束日期不能早于开始日期');
+                                AppSnackBar.showWarning(
+                                    context, '结束日期不能早于开始日期');
                               } else {
-                                setState(() => _formData = _formData.copyWith(endDate: date));
+                                setState(() => _formData =
+                                    _formData.copyWith(endDate: date));
                               }
                             },
-                            onActiveChanged: (value) => setState(() => _formData = _formData.copyWith(isActive: value)),
-                            onPriorityChanged: (value) => setState(() => _formData = _formData.copyWith(priority: value)),
-                            onImageSourceChanged: _handleImageSourceChange, // 处理图片源变化
+                            onActiveChanged: (value) => setState(() =>
+                                _formData =
+                                    _formData.copyWith(isActive: value)),
+                            onPriorityChanged: (value) => setState(() =>
+                                _formData =
+                                    _formData.copyWith(priority: value)),
+                            onImageSourceChanged:
+                                _handleImageSourceChange, // 处理图片源变化
                           ),
                           const SizedBox(height: 24),
-                          const Text('操作链接 (可选)', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text('操作链接 (可选)',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- ActionField ---
                           ActionField(
                             actionUrl: _formData.actionUrl,
                             actionText: _formData.actionText,
-                            onActionUrlChanged: (value) => setState(() => _formData = _formData.copyWith(actionUrl: value, clearActionUrl: value.isEmpty)),
-                            onActionTextChanged: (value) => setState(() => _formData = _formData.copyWith(actionText: value, clearActionText: value.isEmpty)),
+                            onActionUrlChanged: (value) => setState(() =>
+                                _formData = _formData.copyWith(
+                                    actionUrl: value,
+                                    clearActionUrl: value.isEmpty)),
+                            onActionTextChanged: (value) => setState(() =>
+                                _formData = _formData.copyWith(
+                                    actionText: value,
+                                    clearActionText: value.isEmpty)),
                           ),
                         ],
                       ),
@@ -234,7 +257,9 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('基本信息', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                          const Text('基本信息',
+                              style: TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.bold)),
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- BasicInfoField ---
@@ -242,9 +267,12 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                             title: _formData.title,
                             content: _formData.content,
                             type: _formData.type,
-                            onTitleChanged: (value) => setState(() => _formData = _formData.copyWith(title: value)),
-                            onContentChanged: (value) => setState(() => _formData = _formData.copyWith(content: value)),
-                            onTypeChanged: (value) => setState(() => _formData = _formData.copyWith(type: value)),
+                            onTitleChanged: (value) => setState(() =>
+                                _formData = _formData.copyWith(title: value)),
+                            onContentChanged: (value) => setState(() =>
+                                _formData = _formData.copyWith(content: value)),
+                            onTypeChanged: (value) => setState(() =>
+                                _formData = _formData.copyWith(type: value)),
                           ),
                           const SizedBox(height: 32),
                           Center(child: _buildButtonRow(isEditing)),
@@ -277,9 +305,12 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               title: _formData.title,
               content: _formData.content,
               type: _formData.type,
-              onTitleChanged: (value) => setState(() => _formData = _formData.copyWith(title: value)),
-              onContentChanged: (value) => setState(() => _formData = _formData.copyWith(content: value)),
-              onTypeChanged: (value) => setState(() => _formData = _formData.copyWith(type: value)),
+              onTitleChanged: (value) =>
+                  setState(() => _formData = _formData.copyWith(title: value)),
+              onContentChanged: (value) => setState(
+                  () => _formData = _formData.copyWith(content: value)),
+              onTypeChanged: (value) =>
+                  setState(() => _formData = _formData.copyWith(type: value)),
             ),
           ),
         ),
@@ -294,7 +325,8 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
               isActive: _formData.isActive,
               priority: _formData.priority,
               imageSource: _imageSource,
-              onStartDateChanged: (date) => setState(() => _formData = _formData.copyWith(startDate: date)),
+              onStartDateChanged: (date) => setState(
+                  () => _formData = _formData.copyWith(startDate: date)),
               onEndDateChanged: (date) {
                 if (date.isBefore(_formData.startDate)) {
                   AppSnackBar.showWarning(context, '结束日期不能早于开始日期');
@@ -302,8 +334,10 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                   setState(() => _formData = _formData.copyWith(endDate: date));
                 }
               },
-              onActiveChanged: (value) => setState(() => _formData = _formData.copyWith(isActive: value)),
-              onPriorityChanged: (value) => setState(() => _formData = _formData.copyWith(priority: value)),
+              onActiveChanged: (value) => setState(
+                  () => _formData = _formData.copyWith(isActive: value)),
+              onPriorityChanged: (value) => setState(
+                  () => _formData = _formData.copyWith(priority: value)),
               onImageSourceChanged: _handleImageSourceChange,
             ),
           ),
@@ -316,8 +350,12 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             child: ActionField(
               actionUrl: _formData.actionUrl,
               actionText: _formData.actionText,
-              onActionUrlChanged: (value) => setState(() => _formData = _formData.copyWith(actionUrl: value, clearActionUrl: value.isEmpty)),
-              onActionTextChanged: (value) => setState(() => _formData = _formData.copyWith(actionText: value, clearActionText: value.isEmpty)),
+              onActionUrlChanged: (value) => setState(() => _formData =
+                  _formData.copyWith(
+                      actionUrl: value, clearActionUrl: value.isEmpty)),
+              onActionTextChanged: (value) => setState(() => _formData =
+                  _formData.copyWith(
+                      actionText: value, clearActionText: value.isEmpty)),
             ),
           ),
         ),
@@ -348,19 +386,23 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         // --- 提交按钮 ---
         ElevatedButton.icon(
           icon: _isLoading
-              ? Container( // 替换为加载指示器
-            width: 18,
-            height: 18,
-            margin: const EdgeInsets.only(right: 8),
-            child: const CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-          )
-              : Icon(isEditing ? Icons.save : Icons.add_circle_outline, size: 20),
+              ? Container(
+                  // 替换为加载指示器
+                  width: 18,
+                  height: 18,
+                  margin: const EdgeInsets.only(right: 8),
+                  child: const CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : Icon(isEditing ? Icons.save : Icons.add_circle_outline,
+                  size: 20),
           label: Text(isEditing ? '更新公告' : '创建公告'),
           onPressed: _isLoading ? null : _submitForm, // 调用新的提交方法
           style: ElevatedButton.styleFrom(
             padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
             textStyle: const TextStyle(fontSize: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         ),
       ],

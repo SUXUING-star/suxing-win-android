@@ -19,7 +19,7 @@ import '../../../widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import '../../../widgets/components/screen/gamelist/panel/game_right_panel.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
 
-class BaseGameListScreen extends StatefulWidget {
+class CommonGameListScreen extends StatefulWidget {
   // --- 核心输入参数 ---
   final String title;
   // *** 修改: 接收 Future 或 Stream ***
@@ -56,7 +56,7 @@ class BaseGameListScreen extends StatefulWidget {
   final List<Widget>? additionalActions;
   final Widget Function(Game)? customCardBuilder;
 
-  const BaseGameListScreen({
+  const CommonGameListScreen({
     Key? key,
     required this.title,
     // *** 修改: 接收 Future 或 Stream ***
@@ -87,10 +87,10 @@ class BaseGameListScreen extends StatefulWidget {
         super(key: key);
 
   @override
-  _BaseGameListScreenState createState() => _BaseGameListScreenState();
+  _CommonGameListScreenState createState() => _CommonGameListScreenState();
 }
 
-class _BaseGameListScreenState extends State<BaseGameListScreen> {
+class _CommonGameListScreenState extends State<CommonGameListScreen> {
   // --- 内部控制状态 (保留面板和 TagBar 状态) ---
   String? _selectedTag; // 仅用于 UI 显示同步
   bool _showTagFilter = false;
@@ -110,7 +110,7 @@ class _BaseGameListScreenState extends State<BaseGameListScreen> {
   }
 
   @override
-  void didUpdateWidget(covariant BaseGameListScreen oldWidget) {
+  void didUpdateWidget(covariant CommonGameListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 仅同步 selectedTag UI 显示
     if (widget.selectedTag != oldWidget.selectedTag &&

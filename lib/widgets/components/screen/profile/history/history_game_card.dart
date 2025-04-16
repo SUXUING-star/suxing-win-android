@@ -72,7 +72,7 @@ class HistoryGameCard extends StatelessWidget {
             memCacheWidth: isDesktop ? 240 : 200,
             backgroundColor: Colors.grey[200],
             onError: (url, error) {
-              print('历史游戏卡片图片加载失败: $url, 错误: $error');
+              //print('历史游戏卡片图片加载失败: $url, 错误: $error');
             },
           ),
         ),

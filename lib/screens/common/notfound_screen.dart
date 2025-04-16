@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
 class NotFoundScreen extends StatelessWidget {
   const NotFoundScreen({Key? key}) : super(key: key);
@@ -32,12 +33,11 @@ class NotFoundScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32.0),
-              ElevatedButton(
+              FunctionalTextButton(
                 onPressed: () {
-                  // 使用Navigator.popUntil 来返回到应用的根路由
-                  NavigationUtils.popUntil(context, (route) => route.isFirst);
+                  NavigationUtils.navigateToHome(context);
                 },
-                child: const Text('返回主页'),
+                label: '返回主页'
               ),
             ],
           ),

@@ -1,3 +1,5 @@
+// 这是定制ui游戏卡片
+// lib/widgets/components/screen/game/card/base_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider 判断权限
@@ -96,7 +98,6 @@ class BaseGameCard extends StatelessWidget {
                       top: 8,
                       left: 8,
                       child: GameCategoryTag(category: game.category)), // 类别
-                  // --- !!! 网格布局右上角操作按钮 !!! ---
                   Positioned(
                       top: 4,
                       right: 4,
@@ -272,7 +273,9 @@ class BaseGameCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return CustomPopupMenuButton<String>(
+    return Container(
+      child:
+      CustomPopupMenuButton<String>(
       icon: Icons.more_vert, // 使用垂直点
       iconSize: 20,
       padding: const EdgeInsets.all(4.0), // 减少按钮 padding
@@ -303,6 +306,7 @@ class BaseGameCard extends StatelessWidget {
         }
         return items;
       },
+    ),
     );
   }
 }

@@ -287,7 +287,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12,message: "正在加载")
+            ? LoadingWidget.inline(size:12)
             : Icon(Icons.add_circle_outline, color: theme.primaryColor),
         tooltip: _isLoading ? '处理中...' : '添加收藏',
         onPressed: _isLoading ? null : _showCollectionDialog,
@@ -295,7 +295,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     } else {
       return ElevatedButton.icon(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12,message: "正在加载")
+            ? LoadingWidget.inline(size:12)
             : Icon(Icons.add_circle_outline, color: Colors.white, size: 18),
         label: Text(_isLoading ? '处理中...' : '添加收藏'),
         style: ElevatedButton.styleFrom(

@@ -1,7 +1,6 @@
 import 'dart:io'; // 用于 Platform 和 exit
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 用于 SystemNavigator
-import 'package:provider/provider.dart'; // 用于 MultiProvider 和获取服务
 import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 

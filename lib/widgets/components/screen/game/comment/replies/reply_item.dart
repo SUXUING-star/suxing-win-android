@@ -1,146 +1,91 @@
-// lib/widgets/components/screen/game/comment/replies/reply_item_updated.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+// REMOVED: import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // Keep for dialogs
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../../../../../ui/badges/user_info_badge.dart';
-import '../../../../../ui/dialogs/edit_dialog.dart'; // 导入编辑对话框
-import '../../../../../ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路径正确
+import '../../../../../ui/dialogs/edit_dialog.dart';
+import '../../../../../ui/dialogs/confirm_dialog.dart';
+import '../../../../../ui/buttons/custom_popup_menu_button.dart';
 
-class ReplyItem extends StatefulWidget {
+class ReplyItem extends StatelessWidget { // Can be StatelessWidget if no internal state needed besides dialogs
   final Comment reply;
-  final String gameId;
-  final VoidCallback? onReplyChanged;
+  // --- Callbacks received from Parent (ReplyList) ---
+  final Future<void> Function(String newContent) onUpdate;
+  final Future<void> Function() onDelete;
 
   const ReplyItem({
     Key? key,
-    required this.gameId,
     required this.reply,
-    this.onReplyChanged,
+    required this.onUpdate,
+    required this.onDelete,
+    // REMOVED: gameId
+    // REMOVED: onReplyChanged
   }) : super(key: key);
 
-  @override
-  State<ReplyItem> createState() => _ReplyItemState();
-}
+  // REMOVED: final GameService _gameService = GameService();
 
-class _ReplyItemState extends State<ReplyItem> {
-  final GameService _gameService = GameService();
-  // _isDeleting 状态现在由 ConfirmDialog 内部处理加载状态，可以考虑移除
-  // bool _isDeleting = false; // 可以移除
-
-  // 2. 修改 _buildReplyActions 方法
-  Widget _buildReplyActions(
-      BuildContext context, String gameId, Comment reply) {
-    // return PopupMenuButton<String>(...); // 旧代码
-
-    // 使用 CustomPopupMenuButton
+  // --- Action Buttons (No change needed in structure, only in onSelected) ---
+  Widget _buildReplyActions(BuildContext context, Comment reply) {
     return CustomPopupMenuButton<String>(
-      // --- 自定义外观 ---
-      icon: Icons.more_vert, // 使用垂直的点点点
-      iconSize: 18, // 尺寸可以小一些
-      iconColor: Colors.grey[600], // 图标颜色
-      padding: const EdgeInsets.all(0), // 减少内边距，更紧凑
+      // ... (外观代码不变)
+      icon: Icons.more_vert,
+      iconSize: 18,
+      iconColor: Colors.grey[600],
+      padding: const EdgeInsets.all(0),
       tooltip: '回复选项',
       elevation: 4,
       splashRadius: 16,
 
-      // --- 核心逻辑 ---
-      onSelected: (value) async {
-        // onSelected 逻辑保持不变
+      onSelected: (value) async { // Make async
         switch (value) {
           case 'edit':
-            _showEditDialog(context, gameId, reply);
+            _showEditDialog(context, reply);
             break;
           case 'delete':
-            _showDeleteDialog(context, gameId, reply);
+            _showDeleteDialog(context, reply);
             break;
         }
       },
-      // 3. 增强 itemBuilder 中的 PopupMenuItem
       itemBuilder: (context) {
+        // ... (itemBuilder logic不变)
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final List<PopupMenuEntry<String>> items = [];
-
-        if (!authProvider.isLoggedIn) return items; // 未登录则返回空列表
-
+        if (!authProvider.isLoggedIn) return items;
         bool canEdit = reply.userId == authProvider.currentUser?.id;
         bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
-
-        // 编辑选项
-        if (canEdit) {
-          items.add(
-            PopupMenuItem<String>(
-              value: 'edit',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]),
-                  const SizedBox(width: 10),
-                  const Text('编辑'),
-                ],
-              ),
-            ),
-          );
-        }
-
-        // 如果既能编辑又能删除，添加分隔线
-        if (canEdit && canDelete) {
-          items.add(const PopupMenuDivider(height: 1));
-        }
-
-        // 删除选项
-        if (canDelete) {
-          items.add(
-            PopupMenuItem<String>(
-              value: 'delete',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
-                  const SizedBox(width: 10),
-                  Text('删除', style: TextStyle(color: Colors.red[700])),
-                ],
-              ),
-            ),
-          );
-        }
-
+        // ... (add items based on canEdit/canDelete)
+        if (canEdit) { items.add(PopupMenuItem<String>(value: 'edit', height: 40, child: Row(children: [Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]), const SizedBox(width: 10), const Text('编辑'),],),),); }
+        if (canEdit && canDelete) { items.add(const PopupMenuDivider(height: 1)); }
+        if (canDelete) { items.add(PopupMenuItem<String>(value: 'delete', height: 40, child: Row(children: [Icon(Icons.delete_outline, size: 18, color: Colors.red[700]), const SizedBox(width: 10), Text('删除', style: TextStyle(color: Colors.red[700])),],),),); }
         return items;
       },
     );
   }
 
-  // _showEditDialog 方法保持不变
-  void _showEditDialog(BuildContext context, String gameId, Comment reply) {
+  // --- Dialogs (Call Parent's Callbacks) ---
+  void _showEditDialog(BuildContext context, Comment reply) {
     EditDialog.show(
       context: context,
       title: '编辑回复',
       initialText: reply.content,
       hintText: '编辑回复内容...',
       onSave: (text) async {
+        // --- Call parent's update callback ---
         try {
-          await _gameService.updateComment(gameId, reply.id, text);
-          widget.onReplyChanged?.call(); // 使用 ?.call()
-
-          if (context.mounted) {
-            AppSnackBar.showSuccess(context, '回复已更新');
-          }
+          await onUpdate(text); // Use the passed callback directly
+          // Success is handled higher up
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context, '编辑回复失败：$e');
-
-          }
+          // Error is handled higher up
+          if (context.mounted) AppSnackBar.showError(context, '编辑失败: $e'); // Fallback
         }
       },
     );
   }
 
-  // _showDeleteDialog 方法保持不变 (内部的 setState 可以移除)
-  void _showDeleteDialog(BuildContext context, String gameId, Comment reply) {
+  void _showDeleteDialog(BuildContext context, Comment reply) {
     CustomConfirmDialog.show(
       context: context,
       title: '删除回复',
@@ -148,83 +93,44 @@ class _ReplyItemState extends State<ReplyItem> {
       confirmButtonText: '删除',
       confirmButtonColor: Colors.red,
       onConfirm: () async {
-        // try-catch 块用来捕获 _commentService.deleteComment 的错误
+        // --- Call parent's delete callback ---
         try {
-          // 不再需要 setState 来管理 _isDeleting
-          // setState(() { _isDeleting = true; });
-
-          await _gameService.deleteComment(gameId, reply.id);
-          widget.onReplyChanged?.call(); // 使用 ?.call()
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('回复已删除')),
-            );
-          }
+          await onDelete(); // Use the passed callback directly
+          // Success is handled higher up
         } catch (e) {
-          // 错误处理由 ConfirmDialog.show 外层的 try-catch 处理（如果需要统一处理）
-          // 或者在这里单独处理删除失败的 SnackBar
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('删除回复失败：$e')),
-            );
-          }
-          // 重新抛出异常，如果需要在 ConfirmDialog.show 的调用处捕获
-          rethrow;
+          // Error is handled higher up
+          if (context.mounted) AppSnackBar.showError(context, '删除失败: $e'); // Fallback
         }
-        // finally 块也可以移除，因为 ConfirmDialog 关闭后状态不再重要
       },
-      // onCancel: () { print('取消删除'); } // 如果需要处理取消事件
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // build 方法的主体保持不变
+    // --- Build method structure remains largely the same ---
     return Container(
-      // ... Container 样式 ...
-      margin: const EdgeInsets.only(left: 32, bottom: 8), // 加一点底部间距
-      padding: const EdgeInsets.only(bottom: 8), // 给内容下方加点内边距
-      decoration: BoxDecoration(
-          border: Border(
-        bottom: BorderSide(color: Colors.grey.shade200, width: 0.8), // 添加底部分隔线
-      )),
+      margin: const EdgeInsets.only(left: 32, bottom: 8),
+      padding: const EdgeInsets.only(bottom: 8),
+      decoration: BoxDecoration(border: Border(bottom: BorderSide(color: Colors.grey.shade200, width: 0.8),)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding:
-                const EdgeInsets.only(top: 8, left: 16, right: 8), // 调整右边距适应按钮
+            padding: const EdgeInsets.only(top: 8, left: 16, right: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center, // 尝试垂直居中对齐
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                Expanded(
-                  child: UserInfoBadge(
-                    userId: widget.reply.userId,
-                    showFollowButton: false,
-                    mini: true,
-                    // backgroundColor: Colors.grey[50], // 背景色可能不需要
-                  ),
-                ),
-                const SizedBox(width: 8), // 用户名和日期之间加点间距
-                Text(
-                  DateTimeFormatter.formatRelative(
-                          widget.reply.createTime) + // 使用相对时间
-                      (widget.reply.isEdited ? ' (已编辑)' : ''),
-                  style: TextStyle(
-                    fontSize: 11, // 字体再小一点
-                    color: Colors.grey[600],
-                  ),
-                ),
-                // 将修改后的按钮放在这里
-                _buildReplyActions(context, widget.gameId, widget.reply),
+                Expanded(child: UserInfoBadge(userId: reply.userId, showFollowButton: false, mini: true,),),
+                const SizedBox(width: 8),
+                Text(DateTimeFormatter.formatRelative(reply.createTime) + (reply.isEdited ? ' (已编辑)' : ''), style: TextStyle(fontSize: 11, color: Colors.grey[600],),),
+                // --- Build actions using the instance method ---
+                _buildReplyActions(context, reply),
               ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(
-                left: 16.0, right: 16.0, top: 4.0, bottom: 4.0), // 调整内容区域边距
-            child: Text(widget.reply.content),
+            padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+            child: Text(reply.content),
           ),
         ],
       ),

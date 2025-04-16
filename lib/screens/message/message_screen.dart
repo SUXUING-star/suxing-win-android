@@ -53,7 +53,9 @@ class _MessageScreenState extends State<MessageScreen> {
   /// 加载并处理分组消息
   Future<void> _loadGroupedMessages() async {
     if (!mounted) return; // 如果页面已销毁，则不执行
-    setState(() { _isLoading = true; }); // 开始加载，显示加载指示器
+    setState(() {
+      _isLoading = true;
+    }); // 开始加载，显示加载指示器
 
     try {
       // 调用服务获取分组消息
@@ -77,7 +79,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
       // 初始化或保留 ExpansionTile 的展开状态
       for (var key in sortedKeys) {
-        if (!_expansionState.containsKey(key)) { // 只初始化一次
+        if (!_expansionState.containsKey(key)) {
+          // 只初始化一次
           // 默认展开第一个分组，或者包含未读消息的分组
           bool shouldExpand = (sortedKeys.first == key) ||
               (groupedMessages[key]?.any((m) => !m.isRead) ?? false);
@@ -95,9 +98,11 @@ class _MessageScreenState extends State<MessageScreen> {
     } catch (e, stackTrace) {
       print('加载分组消息失败: $e\n$stackTrace');
       if (!mounted) return;
-      setState(() { _isLoading = false; }); // 加载失败也要结束加载状态
+      setState(() {
+        _isLoading = false;
+      }); // 加载失败也要结束加载状态
       // 显示错误提示
-      AppSnackBar.showError(context,'加载消息失败: $e');
+      AppSnackBar.showError(context, '加载消息失败: $e');
     }
   }
 
@@ -139,14 +144,14 @@ class _MessageScreenState extends State<MessageScreen> {
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
       if (mounted) {
-        AppSnackBar.showSuccess(context,'已将所有消息标记为已读');
+        AppSnackBar.showSuccess(context, '已将所有消息标记为已读');
       }
     } catch (e, stackTrace) {
       print('标记所有消息为已读失败: $e\n$stackTrace');
       if (mounted) {
         // 标记失败时，也建议重新加载以获取真实状态
         await _loadGroupedMessages();
-        AppSnackBar.showError(context,'标记已读操作失败，请重试: $e');
+        AppSnackBar.showError(context, '标记已读操作失败，请重试: $e');
       }
     } finally {
       // 可选：结束加载状态
@@ -178,7 +183,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
         if (targetKey != null && targetIndex != null) {
           // 使用 copyWith 创建新对象，标记为已读
-          final updatedMessage = message.copyWith(isRead: true, readTime: DateTime.now());
+          final updatedMessage =
+              message.copyWith(isRead: true, readTime: DateTime.now());
           // 更新 groupedMessages 中的对象
           _groupedMessages[targetKey]![targetIndex] = updatedMessage;
           messageForUi = updatedMessage; // 后续使用更新后的对象
@@ -198,11 +204,8 @@ class _MessageScreenState extends State<MessageScreen> {
             // 远程标记失败的处理
             // 简单处理：可以提示用户，或者让下次刷新来同步状态
             // 注意：不建议在这里回滚本地状态，可能导致 UI 闪烁
-            if (mounted) {
-
-            }
+            if (mounted) {}
           });
-
         } else {
           // 如果在列表中找不到消息（理论上不应发生），记录警告并尝试直接调用 API
           print("警告: 未在 _groupedMessages 中找到要标记已读的消息 ID: ${message.id}");
@@ -242,23 +245,23 @@ class _MessageScreenState extends State<MessageScreen> {
 
     if (navigationInfo != null) {
       // 如果有导航信息，则执行导航
-      print('导航到路由: ${navigationInfo.routeName}, 参数: ${navigationInfo.arguments}');
+      //print('导航到路由: ${navigationInfo.routeName}, 参数: ${navigationInfo.arguments}');
       NavigationUtils.pushNamed(
         context,
         navigationInfo.routeName, // 使用模型提供的路由名称
         arguments: navigationInfo.arguments, // 使用模型提供的参数
       ).catchError((e, stackTrace) {
         // 处理导航过程中可能发生的错误 (例如路由不存在或参数错误)
-        print("导航失败: Route=${navigationInfo.routeName}, Args=${navigationInfo.arguments}, Error: $e\n$stackTrace");
+        //print("导航失败: Route=${navigationInfo.routeName}, Args=${navigationInfo.arguments}, Error: $e\n$stackTrace");
         if (mounted) {
           // 可以显示一个通用的错误提示页面或 SnackBar
           // NavigationUtils.push(context, MaterialPageRoute(builder: (_) => RouteErrorScreen.genericError(onAction: () => Navigator.pop(context))));
-          AppSnackBar.showError(context,'无法打开目标页面，请稍后重试。');
+          AppSnackBar.showError(context, '无法打开目标页面，请稍后重试。');
         }
       });
     } else {
       // 如果没有导航信息，提示用户
-      print("消息 (ID: ${message.id}, Type: ${message.messageType.name}) 没有可导航的目标。");
+      //print("消息 (ID: ${message.id}, Type: ${message.messageType.name}) 没有可导航的目标。");
       if (!DeviceUtils.isDesktop && mounted) {
         _showUnsupportedNavigationDialog(); // 移动端显示弹窗提示
       }
@@ -274,16 +277,11 @@ class _MessageScreenState extends State<MessageScreen> {
 
   /// 显示不支持导航的提示对话框 (移动端)
   void _showUnsupportedNavigationDialog() {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => CustomInfoDialog(
-        title: '提示',
-        message: '此消息没有可查看的关联页面。',
-        onClose: () => Navigator.of(context).pop(),
-        closeButtonText: "好的",
-
-      ),
+    CustomInfoDialog(
+      title: '提示',
+      message: '此消息没有可查看的关联页面。',
+      onClose: () => Navigator.of(context).pop(),
+      closeButtonText: "好的",
     );
   }
 
@@ -299,7 +297,7 @@ class _MessageScreenState extends State<MessageScreen> {
       confirmButtonText: '删除', // 确认按钮文本
       confirmButtonColor: Colors.red, // 确认按钮颜色 (红色表示危险操作)
       iconData: Icons.delete_outline, // 使用删除相关的图标
-      iconColor: Colors.red,          // 图标颜色与按钮匹配
+      iconColor: Colors.red, // 图标颜色与按钮匹配
 
       // --- 关键：提供 onConfirm 回调 ---
       // 这个回调是一个异步函数，执行实际的删除操作
@@ -330,21 +328,20 @@ class _MessageScreenState extends State<MessageScreen> {
 
           // 4. 显示成功提示 (检查 mounted)
           if (mounted) {
-            AppSnackBar.showSuccess(context,'消息已删除');
+            AppSnackBar.showSuccess(context, '消息已删除');
           }
-
         } catch (e, stackTrace) {
           print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
           if (!mounted) return; // 异步操作后再次检查
 
           // 2. 显示错误提示
-          AppSnackBar.showError(context,'删除失败: $e');
-
+          AppSnackBar.showError(context, '删除失败: $e');
         }
         // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
       },
     );
   }
+
   /// 构建主内容区域 (包含可折叠的消息分组列表)
   /// 构建主内容区域 (包含可折叠的消息分组列表或空状态)
   Widget _buildMessageContent() {
@@ -356,150 +353,159 @@ class _MessageScreenState extends State<MessageScreen> {
     return RefreshIndicator(
       onRefresh: _loadGroupedMessages,
       child: _groupedMessages.isEmpty && !_isLoading
-      // 情况一：数据为空且加载完成
+          // 情况一：数据为空且加载完成
           ? LayoutBuilder(
-        builder: (context, constraints) {
-          return SingleChildScrollView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            child: Container(
-              constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight),
-              alignment: Alignment.center,
-              child: EmptyStateWidget(
-                message: '暂无任何消息',
-                iconData: Icons.mark_as_unread_outlined,
-              ),
-            ),
-          );
-        },
-      )
-      // 情况二：数据不为空，显示消息列表
-          : ListView.builder(
-        // ... (ListView.builder 内容不变) ...
-        itemCount: _sortedTypeKeys.length,
-        itemBuilder: (context, index) {
-          // ... ExpansionTile 等列表项逻辑 ...
-          final typeKey = _sortedTypeKeys[index];
-          final messagesForType = _groupedMessages[typeKey] ?? [];
-          final messageType = MessageTypeInfo.fromString(typeKey);
-          final typeDisplayName = messageType.displayName;
-          final unreadCount = _getUnreadCountForType(typeKey);
-
-          return ExpansionTile(
-            key: PageStorageKey(typeKey),
-            initiallyExpanded: _expansionState[typeKey] ?? false,
-            onExpansionChanged: (isExpanded) {
-              if (mounted) {
-                setState(() { _expansionState[typeKey] = isExpanded; });
-              }
-            },
-            title: Row(
-              // ... title Row 内容 ...
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    typeDisplayName,
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                if (unreadCount > 0)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 8.0),
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: Colors.redAccent,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '$unreadCount',
-                        style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: Container(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    alignment: Alignment.center,
+                    child: EmptyStateWidget(
+                      message: '暂无任何消息',
+                      iconData: Icons.mark_as_unread_outlined,
                     ),
                   ),
-              ],
+                );
+              },
+            )
+          // 情况二：数据不为空，显示消息列表
+          : ListView.builder(
+              itemCount: _sortedTypeKeys.length,
+              itemBuilder: (context, index) {
+                final typeKey = _sortedTypeKeys[index];
+                final messagesForType = _groupedMessages[typeKey] ?? [];
+                final messageType = MessageTypeInfo.fromString(typeKey);
+                final typeDisplayName = messageType.displayName;
+                final unreadCount = _getUnreadCountForType(typeKey);
+
+                return ExpansionTile(
+                  key: PageStorageKey(typeKey),
+                  initiallyExpanded: _expansionState[typeKey] ?? false,
+                  onExpansionChanged: (isExpanded) {
+                    if (mounted) {
+                      setState(() {
+                        _expansionState[typeKey] = isExpanded;
+                      });
+                    }
+                  },
+                  title: Row(
+                    // ... title Row 内容 ...
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          typeDisplayName,
+                          style: TextStyle(
+                              fontWeight: FontWeight.bold, fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      if (unreadCount > 0)
+                        Padding(
+                          padding: const EdgeInsets.only(left: 8.0),
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Text(
+                              '$unreadCount',
+                              style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  childrenPadding: EdgeInsets.zero,
+                  tilePadding:
+                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+                  backgroundColor: Colors.grey[50],
+                  collapsedBackgroundColor: Colors.white,
+                  iconColor: Theme.of(context).primaryColor,
+                  collapsedIconColor: Colors.grey[600],
+                  children: [
+                    // ... children 内容 (MessageList 或空分组提示) ...
+                    if (messagesForType.isEmpty)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 16.0, vertical: 20.0),
+                        child: Center(
+                            child: Text('此类消息暂无内容',
+                                style: TextStyle(color: Colors.grey))),
+                      )
+                    else
+                      MessageList(
+                        messages: messagesForType,
+                        onMessageTap: _handleMessageTap,
+                        selectedMessage: _selectedMessage,
+                        isCompact: DeviceUtils.isDesktop,
+                      ),
+                  ],
+                );
+              },
+              padding: EdgeInsets.only(bottom: 16.0),
             ),
-            childrenPadding: EdgeInsets.zero,
-            tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-            backgroundColor: Colors.grey[50],
-            collapsedBackgroundColor: Colors.white,
-            iconColor: Theme.of(context).primaryColor,
-            collapsedIconColor: Colors.grey[600],
-            children: [
-              // ... children 内容 (MessageList 或空分组提示) ...
-              if (messagesForType.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
-                  child: Center(child: Text('此类消息暂无内容', style: TextStyle(color: Colors.grey))),
-                )
-              else
-                MessageList(
-                  messages: messagesForType,
-                  onMessageTap: _handleMessageTap,
-                  selectedMessage: _selectedMessage,
-                  isCompact: DeviceUtils.isDesktop,
-                ),
-            ],
-          );
-        },
-        padding: EdgeInsets.only(bottom: 16.0),
-      ),
     );
   }
-  /// 构建整体页面结构 (区分移动端和桌面端)
-  @override
-  Widget build(BuildContext context) {
-    // 根据设备类型选择不同的布局
-    if (DeviceUtils.isDesktop) {
-      return _buildDesktopLayout();
-    } else {
-      return _buildMobileLayout();
-    }
+
+  Widget _iconRead() {
+    return IconButton(
+      icon: Icon(Icons.done_all),
+      tooltip: '全部标为已读',
+      onPressed: _markAllAsRead,
+    );
+  }
+
+  Widget _iconRefresh() {
+    return IconButton(
+      icon: Icon(Icons.refresh),
+      tooltip: '刷新',
+      onPressed: _loadGroupedMessages, // 点击时重新加载数据
+    );
   }
 
   /// 构建桌面端布局
   Widget _buildDesktopLayout() {
-    return MessageDesktopLayout( // 使用左右分栏布局
+    return MessageDesktopLayout(
+      // 使用左右分栏布局
       title: '消息中心',
-      actions: [ // AppBar 上的操作按钮
+      actions: [
+        // AppBar 上的操作按钮
         // 仅当有未读消息时显示 "全部标为已读" 按钮
         if (!_allMessagesRead)
-          IconButton(
-            icon: Icon(Icons.done_all),
-            tooltip: '全部标为已读',
-            onPressed: _markAllAsRead,
-          ),
+          _iconRead(),
         // 添加刷新按钮
-        IconButton(
-          icon: Icon(Icons.refresh),
-          tooltip: '刷新',
-          onPressed: _loadGroupedMessages, // 点击时重新加载数据
-        ),
+        _iconRefresh()
       ],
       // 左侧主内容区域
       body: _buildMessageContent(),
       // 右侧详情面板内容
       rightPanel: _showMessageDetails && _selectedMessage != null
           ? MessageDetail(
-        message: _selectedMessage!, // 传递选中的消息
-        // 关闭详情面板的回调
-        onClose: () {
-          if (mounted) {
-            setState(() {
-              _showMessageDetails = false;
-              _selectedMessage = null; // 清除选中状态
-            });
-          }
-        },
-        // 删除按钮的回调
-        onDelete: () => _showDeleteDialog(_selectedMessage!),
-        // "查看关联" 按钮的回调
-        onViewDetail: (message) {
-          _performNavigation(message); // 在详情面板点击时也执行导航
-        },
-      )
+              message: _selectedMessage!, // 传递选中的消息
+              // 关闭详情面板的回调
+              onClose: () {
+                if (mounted) {
+                  setState(() {
+                    _showMessageDetails = false;
+                    _selectedMessage = null; // 清除选中状态
+                  });
+                }
+              },
+              // 删除按钮的回调
+              onDelete: () => _showDeleteDialog(_selectedMessage!),
+              // "查看关联" 按钮的回调
+              onViewDetail: (message) {
+                _performNavigation(message); // 在详情面板点击时也执行导航
+              },
+            )
           : null, // 如果没有选中消息，则右侧面板为 null
       // 控制右侧面板是否可见
       rightPanelVisible: _showMessageDetails && _selectedMessage != null,
@@ -512,23 +518,28 @@ class _MessageScreenState extends State<MessageScreen> {
       // 使用自定义 AppBar
       appBar: CustomAppBar(
         title: '消息中心',
-        actions: [ // AppBar 上的操作按钮
+        actions: [
+          // AppBar 上的操作按钮
           if (!_allMessagesRead)
-            IconButton(
-              icon: Icon(Icons.done_all),
-              tooltip: '全部标为已读',
-              onPressed: _markAllAsRead,
-            ),
-          IconButton(
-            icon: Icon(Icons.refresh),
-            tooltip: '刷新',
-            onPressed: _loadGroupedMessages,
-          ),
+            _iconRead(),
+          // 添加刷新按钮
+          _iconRefresh()
         ],
         // 移动端不需要 bottom TabBar 了
       ),
       // 主体内容
       body: _buildMessageContent(),
     );
+  }
+
+  /// 构建整体页面结构 (区分移动端和桌面端)
+  @override
+  Widget build(BuildContext context) {
+    // 根据设备类型选择不同的布局
+    if (DeviceUtils.isDesktop) {
+      return _buildDesktopLayout();
+    } else {
+      return _buildMobileLayout();
+    }
   }
 }

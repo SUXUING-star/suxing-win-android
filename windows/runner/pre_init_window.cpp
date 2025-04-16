@@ -294,62 +294,65 @@ bool PreInitWindow::RunChecks() {
 HINTERNET PreInitWindow::http_session_ = NULL;
 
 // 实现网络安全检查方法
+// 实现网络安全检查方法
 bool PreInitWindow::CheckNetworkSecurity() {
     // 检查 TLS 安全设置
-    bool tlsCheck = VerifyTLSSettings();
-    
-    
-    if (!tlsCheck && !has_shown_error_) {
-        MessageBoxW(window_handle_, L"setting warning,connection is not safe", 
-                   L"waring", MB_ICONWARNING);
-        // 仅警告，不中断启动
-    }
-    
+    //bool tlsCheck = VerifyTLSSettings();
+
+
+    // if (!tlsCheck && !has_shown_error_) { // <--- 把这行注释掉
+    //     MessageBoxW(window_handle_, L"setting warning,connection is not safe",
+    //                L"waring", MB_ICONWARNING); // <--- 把这行注释掉 (或者直接删除这两行)
+    // } // <--- 把这行注释掉
+
+
     // 即使有警告也继续，但记录了警告状态
     return true;
 }
 
-bool PreInitWindow::VerifyTLSSettings() {
-    // 检查系统是否有安全的 TLS 版本
-    HMODULE hModule = LoadLibraryW(L"schannel.dll");
-    if (!hModule) {
-        return false;
-    }
-    FreeLibrary(hModule);
-    
-    // 检查 Windows 安全策略设置中的 TLS 1.2 状态
-    DWORD secureProtocols = 0;
-    DWORD bufSize = sizeof(secureProtocols);
-    DWORD regType = REG_DWORD;
-    LONG result = RegGetValueW(
-        HKEY_LOCAL_MACHINE,
-        L"SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.2\\Client",
-        L"Enabled",
-        RRF_RT_REG_DWORD,
-        &regType,
-        &secureProtocols,
-        &bufSize
-    );
-    
-    // 如果 TLS 1.2 启用，返回 true
-    if (result == ERROR_SUCCESS && secureProtocols == 1) {
-        return true;
-    }
-    
-    // 检查 TLS 1.3 (如果系统支持)
-    secureProtocols = 0;
-    result = RegGetValueW(
-        HKEY_LOCAL_MACHINE,
-        L"SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.3\\Client",
-        L"Enabled",
-        RRF_RT_REG_DWORD,
-        &regType,
-        &secureProtocols,
-        &bufSize
-    );
-    
-    return (result == ERROR_SUCCESS && secureProtocols == 1);
-}
+//bool PreInitWindow::VerifyTLSSettings() {
+//    // 检查 schannel.dll 在不在 (基本没用，肯定在)
+//    HMODULE hModule = LoadLibraryW(L"schannel.dll");
+//    if (!hModule) {
+//        return false; // 基本不可能
+//    }
+//    FreeLibrary(hModule); // 立刻释放，只是看它能不能加载
+//
+//    // 检查注册表里 TLS 1.2 客户端是不是明确写了 Enabled = 1
+//    DWORD secureProtocols = 0;
+//    DWORD bufSize = sizeof(secureProtocols);
+//    DWORD regType = REG_DWORD;
+//    LONG result = RegGetValueW(
+//            HKEY_LOCAL_MACHINE,
+//            L"SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.2\\Client",
+//            L"Enabled",
+//            RRF_RT_REG_DWORD,
+//            &regType,
+//            &secureProtocols,
+//            &bufSize
+//    );
+//
+//    // 如果明确写了 Enabled = 1 就行
+//    if (result == ERROR_SUCCESS && secureProtocols == 1) {
+//        return true;
+//    }
+//
+//    // 再检查 TLS 1.3 客户端是不是明确写了 Enabled = 1
+//    secureProtocols = 0; // 重置变量
+//    result = RegGetValueW( // 重新调用
+//            HKEY_LOCAL_MACHINE,
+//            L"SYSTEM\\CurrentControlSet\\Control\\SecurityProviders\\SCHANNEL\\Protocols\\TLS 1.3\\Client",
+//            L"Enabled",
+//            RRF_RT_REG_DWORD,
+//    &regType,
+//            &secureProtocols,
+//            &bufSize
+//    );
+//
+//    // 如果明确写了 Enabled = 1 也行
+//    return (result == ERROR_SUCCESS && secureProtocols == 1);
+//}
+
 
 bool PreInitWindow::CheckSystemProxies() {
     WINHTTP_CURRENT_USER_IE_PROXY_CONFIG proxyConfig;

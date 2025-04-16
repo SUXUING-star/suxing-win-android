@@ -69,12 +69,8 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
     try {
       await _userService.saveLocalSearchHistory(_searchHistory);
-      print("已存储搜索记录${_searchHistory}");
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('保存搜索历史失败: $e')),
-      );
     }
   }
 

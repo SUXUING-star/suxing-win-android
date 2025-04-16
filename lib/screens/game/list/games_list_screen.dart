@@ -6,6 +6,8 @@ import 'package:suxingchahui/models/tag/tag.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // Your Dialog
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -606,6 +608,11 @@ class _GamesListScreenState extends State<GamesListScreen>
     final bool shouldShowRightPanel = isDesktop &&
         _showRightPanel &&
         (screenWidth >= _hideRightPanelThreshold);
+    // 定义面板动画参数
+    const Duration panelAnimationDuration = Duration(milliseconds: 300);
+    const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧先一点
+    const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧稍后
+
 
     return RefreshIndicator(
       onRefresh: _refreshData,
@@ -617,10 +624,16 @@ class _GamesListScreenState extends State<GamesListScreen>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     if (shouldShowLeftPanel)
-                      GameLeftPanel(
-                        tags: _availableTags,
-                        selectedTag: _currentTag,
-                        onTagSelected: _handleTagBarSelected,
+                      FadeInSlideLRItem( // <--- 2. 包裹左侧面板
+                        key: const ValueKey('game_list_left_panel'), // 添加 Key
+                        slideDirection: SlideDirection.left, // <--- 从左滑入
+                        duration: panelAnimationDuration,
+                        delay: leftPanelDelay,
+                        child: GameLeftPanel(
+                          tags: _availableTags,
+                          selectedTag: _currentTag,
+                          onTagSelected: _handleTagBarSelected,
+                        ),
                       ),
                     Expanded(
                       child: _buildMainContentArea(
@@ -629,11 +642,18 @@ class _GamesListScreenState extends State<GamesListScreen>
                     // Show Right Panel only if enabled, width allows, AND we have data (or loading initial data)
                     if (shouldShowRightPanel &&
                         (_isInitialized || _gamesList.isNotEmpty))
-                      GameRightPanel(
-                        currentPageGames: _gamesList,
-                        totalGamesCount: _totalPages * _pageSize,
-                        selectedTag: _currentTag,
-                        onTagSelected: _handleTagBarSelected,
+                      FadeInSlideLRItem( // <--- 3. 包裹右侧面板
+                        key: const ValueKey('game_list_right_panel'), // 添加 Key
+                        slideDirection: SlideDirection.right, // <--- 从右滑入
+                        duration: panelAnimationDuration,
+                        delay: rightPanelDelay, // 使用不同的延迟
+                        child: GameRightPanel(
+                          currentPageGames: _gamesList,
+                          totalGamesCount: _totalPages * _pageSize, // 估算总数
+                          selectedTag: _currentTag,
+                          onTagSelected: _handleTagBarSelected,
+                          // 假设 GameRightPanel 内部不需要知道外部面板状态，它只接收数据
+                        ),
                       ),
                   ],
                 )
@@ -765,16 +785,21 @@ class _GamesListScreenState extends State<GamesListScreen>
         itemCount: _gamesList.length,
         itemBuilder: (context, index) {
           final game = _gamesList[index];
-          return BaseGameCard(
-            key: ValueKey(game.id),
-            game: game,
-            isGridItem: true,
-            adaptForPanels: withPanels, // 传递给卡片，让卡片内部可能也自适应
-            showTags: true,
-            showCollectionStats: true,
-            forceCompact: useCompactMode, // 强制紧凑模式
-            maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2), // 紧凑或有面板时少显示标签
-            onDeleteAction: () => _handleDeleteGame(game.id),
+          return FadeInSlideUpItem(
+            key: ValueKey(game.id), // 使用游戏 ID 作为 Key，确保列表项更新时动画正确触发
+            delay: Duration(milliseconds: index * 50), // 交错延迟效果，越后面的卡片延迟越久
+            child: BaseGameCard(
+              // BaseGameCard 的 key 不再是必须的，因为父级动画组件有 Key
+              // key: ValueKey(game.id), // 可以移除或者保留，但父级的 Key 更重要
+              game: game,
+              isGridItem: true,
+              adaptForPanels: withPanels,
+              showTags: true,
+              showCollectionStats: true,
+              forceCompact: useCompactMode,
+              maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
+              onDeleteAction: () => _handleDeleteGame(game.id),
+            ),
           );
         },
       );

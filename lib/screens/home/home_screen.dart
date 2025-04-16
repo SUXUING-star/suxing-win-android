@@ -27,7 +27,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // --- 懒加载状态 ---
   bool _isInitialized = false; // 是否已初始化（首次加载）
   bool _isVisible = false;     // 当前是否可见
-  // --- 结束懒加载状态 ---
+
 
   String? _errorMessage;
   bool _isLoading = false; // 这个仍然用于刷新和加载过程中的状态
@@ -35,15 +35,11 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // --- 不在这里加载数据 ---
-    // _initGameStreams();
+
   }
 
   // 初始化游戏数据流
   void _loadData() {
-    // 不再需要在这里设置 _isLoading = true，因为 _triggerInitialLoad 或 _refreshData 会处理
-    // setState(() { _isLoading = true; _errorMessage = null; });
-
     try {
       // 使用缓存优先的流
       _hotGamesStream = _gameService.getHotGames();
@@ -95,12 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
     return now.difference(_lastRefreshTime!) >= _minRefreshInterval;
   }
 
-  // 刷新数据的方法 (逻辑微调)
+  // 刷新数据的方法
   Future<void> _refreshData() async {
-    // final loadingObserver = NavigationUtils.of(context) // loadingObserver 可选
-    //     .widget.observers
-    //     .whereType<LoadingRouteObserver>()
-    //     .first;
 
     if (!mounted) return; // 检查 mounted
 

@@ -59,7 +59,10 @@ class ResponsiveFavoritesLayout extends StatelessWidget {
   }
 
   Widget _buildEmptyView() {
-    return EmptyStateWidget(message: '暂无收藏的游戏');
+    return EmptyStateWidget(
+      message: '暂无收藏的游戏',
+      iconData: Icons.videogame_asset_off,
+    );
   }
 
   // 列表布局 - 适用于移动设备

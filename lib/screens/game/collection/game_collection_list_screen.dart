@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 
 import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
@@ -109,11 +110,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
   Widget _buildContent() {
     if (_errorMessage != null) {
       if (_errorMessage == '请先登录后再查看收藏') {
-        return InlineErrorWidget(
-            errorMessage: _errorMessage,
-            onRetry: () {
-              NavigationUtils.pushReplacementNamed(context, AppRoutes.login);
-            });
+        return LoginPromptWidget();
       }
       return InlineErrorWidget(
           errorMessage: _errorMessage, onRetry: _refreshData);

@@ -1,6 +1,7 @@
 // lib/providers/initialize/initialization_provider.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
+import 'package:suxingchahui/utils/error/error_formatter.dart';
 import '../../widgets/common/startup/initialization_screen.dart';
 
 class InitializationProvider extends ChangeNotifier {
@@ -27,7 +28,7 @@ class InitializationProvider extends ChangeNotifier {
 
   void setError(String error) {
     if (_isDisposed) return;
-    _message = error;
+    _message = ErrorFormatter.formatErrorMessage(error);
     _status = InitializationStatus.error;
     notifyListeners();
   }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:collection/collection.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import '../../../../../../models/post/post.dart';
 import '../../../../../../services/main/forum/forum_service.dart';
 import 'reply_item.dart';
@@ -30,11 +31,11 @@ class _ReplyListState extends State<ReplyList> {
       stream: _forumService.getReplies(widget.postId),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('加载失败：${snapshot.error}'));
+          return InlineErrorWidget(errorMessage: "加载发生错误",);;
         }
 
         if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator());
+          return InlineErrorWidget(errorMessage: "发生异常错误",);
         }
 
         final allReplies = snapshot.data!;

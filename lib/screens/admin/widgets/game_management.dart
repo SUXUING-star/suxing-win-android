@@ -11,18 +11,11 @@ import '../../../models/tag/tag.dart'; // 如果面板需要
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../game/edit/edit_game_screen.dart';
 import '../../game/edit/add_game_screen.dart';
-// *** 确保这里引用的是重构后的 BaseGameListScreen (没有 _isVisible, 接收 Future) ***
-import '../../game/list/base_game_list_screen.dart';
+import '../../game/list/common_game_list_screen.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 import '../../../widgets/ui/dialogs/edit_dialog.dart'; // 现在是 TextInputDialog
 import '../../../widgets/ui/common/empty_state_widget.dart';
-// Panel imports (如果需要)
-// import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
-// import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
-import '../../../utils/check/admin_check.dart'; // AdminCheck
-import '../../../utils/device/device_utils.dart'; // DeviceUtils
-import '../../../widgets/ui/appbar/custom_app_bar.dart'; // CustomAppBar
-import '../../../widgets/ui/components/pagination_controls.dart'; // PaginationControls
+
 
 class GameManagement extends StatefulWidget {
   const GameManagement({Key? key}) : super(key: key);
@@ -346,7 +339,7 @@ class _GameManagementState extends State<GameManagement>
 
   /// Builds the "All Games" tab using the refactored BaseGameListScreen. **(Complete)**
   Widget _buildAllGamesTab() {
-    return BaseGameListScreen(
+    return CommonGameListScreen(
       // Use a simple ValueKey, or manage a GlobalKey if external control is needed
       key: ValueKey(
           'all_games_management_${_allGamesFuture.hashCode}'), // Key changes when Future changes

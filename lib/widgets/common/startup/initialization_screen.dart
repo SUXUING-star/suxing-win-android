@@ -29,7 +29,9 @@ class InitializationScreen extends StatefulWidget {
 
 class _InitializationScreenState extends State<InitializationScreen> {
   // 随机选择GIF文件
-  final String _logoGifFile = Random().nextBool() ? 'assets/images/cappo.gif' : 'assets/images/cappo1.gif';
+  final String _logoGifFile = Random().nextBool()
+      ? 'assets/images/cappo.gif'
+      : 'assets/images/cappo1.gif';
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +87,8 @@ class _InitializationScreenState extends State<InitializationScreen> {
                         child: LinearProgressIndicator(
                           value: widget.progress,
                           backgroundColor: Colors.blue[100],
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[700]!),
+                          valueColor:
+                              AlwaysStoppedAnimation<Color>(Colors.blue[700]!),
                           borderRadius: BorderRadius.circular(2),
                         ),
                       ),
@@ -94,7 +97,8 @@ class _InitializationScreenState extends State<InitializationScreen> {
                       // 加载文本
                       AnimatedSwitcher(
                         duration: const Duration(milliseconds: 300),
-                        transitionBuilder: (Widget child, Animation<double> animation) {
+                        transitionBuilder:
+                            (Widget child, Animation<double> animation) {
                           return FadeTransition(
                             opacity: animation,
                             child: SlideTransition(
@@ -221,4 +225,3 @@ class _InitializationScreenState extends State<InitializationScreen> {
     );
   }
 }
-

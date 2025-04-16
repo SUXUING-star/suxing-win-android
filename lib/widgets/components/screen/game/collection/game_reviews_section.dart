@@ -164,7 +164,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
             if (_isLoading && _page > 1)
               Padding(
                 padding: const EdgeInsets.only(top: 16.0),
-                child: Center(child: LoadingWidget.inline(size: 20)),
+                child: LoadingWidget.inline(size: 20),
               ),
           ],
         ),
@@ -192,16 +192,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
             color: Colors.grey[850],
           ),
         ),
-        // 注意：这里的评论条数显示逻辑移到 _buildAverageRatingDisplay 中，与评分一起显示
-        // const SizedBox(width: 8),
-        // if (_reviews.isNotEmpty && !(_isLoading && _page == 1))
-        //   Text(
-        //     '共${_reviews.length} 条',
-        //     style: TextStyle(
-        //       color: Colors.grey[600],
-        //       fontSize: 14,
-        //     ),
-        //   ),
       ],
     );
   }
@@ -261,7 +251,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
           children: [
             if (hasRating) // 只有有人评分才显示评分人数
               Text(
-                '基于 ${game.ratingCount} 份评分',
+                '共有 ${game.ratingCount} 份评分',
                 style: TextStyle(
                   fontSize: 12,
                   color: Colors.grey[600],

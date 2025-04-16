@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/game_category_tag.dart';
 import '../../../../../models/game/game.dart';
-import '../../../../common/animated_card_container.dart';
+import 'animated_card_container.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 import '../../game/card/game_stats_widget.dart';
 

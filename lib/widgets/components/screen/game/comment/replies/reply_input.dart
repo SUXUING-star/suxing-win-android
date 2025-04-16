@@ -1,21 +1,16 @@
-// lib/widgets/components/screen/game/comment/replies/reply_input.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../dialogs/limiter/rate_limit_dialog.dart';
-import '../../../../../ui/inputs/comment_input_field.dart'; // 导入新的评论输入组件
+import '../../../../../ui/inputs/comment_input_field.dart';
 
 class ReplyInput extends StatefulWidget {
-  final String gameId;
-  final String parentId;
-  final VoidCallback? onReplyAdded;
+  // --- Callbacks received from Parent (CommentItem) ---
+  final Future<void> Function(String reply) onSubmitReply;
   final VoidCallback? onCancel;
+  final bool isSubmitting; // Loading state from parent
 
   const ReplyInput({
     Key? key,
-    required this.gameId,
-    required this.parentId,
-    this.onReplyAdded,
+    required this.onSubmitReply,
+    required this.isSubmitting,
     this.onCancel,
   }) : super(key: key);
 
@@ -24,61 +19,36 @@ class ReplyInput extends StatefulWidget {
 }
 
 class _ReplyInputState extends State<ReplyInput> {
-  final GameService _commentService = GameService();
-  bool _isSubmitting = false;
+  // REMOVED: final GameService _commentService = GameService();
+  // REMOVED: bool _isSubmitting = false; (Now passed from parent)
+  final TextEditingController _controller = TextEditingController(); // Keep controller local
 
   Future<void> _submitReply(String reply) async {
-    if (reply.isEmpty) return;
+    if (reply.isEmpty || widget.isSubmitting) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    // Call the parent's handler (CommentItem's _submitReply)
+    // Error/Success handling is done higher up (CommentsSection)
+    await widget.onSubmitReply(reply);
 
-    try {
-      await _commentService.addComment(
-        widget.gameId,
-        reply,
-        parentId: widget.parentId,
-      );
-
-      // 调用回调函数刷新父组件
-      if (widget.onReplyAdded != null) {
-        widget.onReplyAdded!();
-      }
-
-      if (mounted) {
-        AppSnackBar.showSuccess(context, '回复已提交');
-      }
-    } catch (e) {
-      if (mounted) {
-        // 检查是否为速率限制错误
-        final errorMsg = e.toString();
-        if (errorMsg.contains('评论速率超限')) {
-          // 解析剩余时间并显示对话框
-          final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
-          showRateLimitDialog(context, remainingSeconds);
-        } else {
-          AppSnackBar.showError(context, '回复评论失败: ${e.toString()}');
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+    // Clear input optimistically
+    if (mounted) {
+      _controller.clear();
+      // Consider calling widget.onCancel here automatically after success if desired
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // --- Use the shared CommentInputField ---
     return CommentInputField(
+      controller: _controller, // Pass local controller
       hintText: '回复评论...',
       submitButtonText: '回复',
-      isSubmitting: _isSubmitting,
-      onSubmit: _submitReply,
-      isReply: true, // 标记为回复模式
-      maxLines: 1, // 回复通常使用单行输入
+      isSubmitting: widget.isSubmitting, // Use parent's loading state
+      onSubmit: _submitReply, // Pass local submit handler
+      isReply: true,
+      maxLines: 1,
+      onCancel: widget.onCancel, // Pass cancel callback through
     );
   }
 }

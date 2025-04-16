@@ -87,7 +87,7 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
       // (或者更简单的方式是：父级在 Service 失败时不更新数据，下次 UI 监听缓存变化时会自动修正)
     } catch (e) {
       // 如果调用回调本身出错 (理论上不应该)，或者需要处理父级抛出的异常
-      debugPrint("Error calling like/unlike callback: $e");
+      //debugPrint("Error calling like/unlike callback: $e");
       // --- 回滚前端补偿 ---
       if (mounted) {
         setState(() {
@@ -111,33 +111,11 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
       // 父级方法内部会处理确认、调用 Service、缓存失效等
       // 这个组件不再需要管理 _isDeleting 状态或调用 Service
     } else {
-      print("WARN: onDeleteComment callback is null in ActivityCommentItem.");
+      //print("WARN: onDeleteComment callback is null in ActivityCommentItem.");
       // 可以选择显示一个错误，表明无法删除
       if (mounted) AppSnackBar.showError(context, '无法执行删除操作');
     }
-
-    // --- 下面的确认对话框和 Service 调用逻辑移到父级 (`ActivityFeedScreen._handleDeleteComment`) ---
-    /*
-    CustomConfirmDialog.show(
-      context: context,
-      title: '删除评论',
-      message: '确定要删除此评论吗？此操作无法撤销。',
-      confirmButtonText: '删除',
-      confirmButtonColor: Colors.red,
-      onConfirm: () async {
-        setState(() { _isDeleting = true; });
-        try {
-          // 不再调用 Service
-          // final success = await _activityService.deleteComment(widget.activityId, _comment.id);
-          // if (success) {
-          //   // 调用父级回调通知删除成功
-          //   widget.onCommentDeleted?.call(_comment.id);
-          // } else { ... }
-        } catch (e) { ... }
-        finally { if (mounted) setState(() { _isDeleting = false; }); }
-      },
-    );
-    */
+    
   }
 
 

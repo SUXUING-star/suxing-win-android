@@ -66,7 +66,7 @@ private:
 		bool CheckNetworkSecurity();
 				
 		// TLS 设置验证
-		bool VerifyTLSSettings();
+		//bool VerifyTLSSettings();
 		
 		// 系统代理检查
 		bool CheckSystemProxies();

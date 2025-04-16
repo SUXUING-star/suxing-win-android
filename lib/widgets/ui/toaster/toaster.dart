@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
 
+// 弃用ui
 class Toaster {
   static void show(
       BuildContext context, {

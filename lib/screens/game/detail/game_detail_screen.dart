@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/toaster/toaster.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -22,7 +22,9 @@ import 'package:suxingchahui/routes/app_routes.dart';
 
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
-  const GameDetailScreen({Key? key, this.gameId}) : super(key: key);
+  final bool isNeedHistory;
+  const GameDetailScreen({Key? key, this.gameId, this.isNeedHistory = true})
+      : super(key: key);
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
 }
@@ -47,7 +49,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (widget.gameId != null) {
       _isLoading = true;
       _loadGameDetailsWithStatus(); // 原有的调用
-      _incrementViewCount(); // 原有的调用
     } else {
       // 处理 null gameId (保持不变，但确保 _isLoading 最后是 false)
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -65,7 +66,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void didUpdateWidget(GameDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.gameId != widget.gameId) {
-
       // *** 这里是改动：调用加载前，用 setState 设置 _isLoading = true ***
       setState(() {
         _game = null;
@@ -80,7 +80,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // 调用加载逻辑 (保持不变)
       if (widget.gameId != null) {
         _loadGameDetailsWithStatus();
-        _incrementViewCount();
       } else {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
@@ -94,11 +93,32 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
+  // --- 新增: 尝试增加游戏浏览次数 ---
+  void _tryIncrementViewCount() {
+    // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
+    if (_game != null &&
+            widget.gameId != null &&
+            _game!.approvalStatus == 'approved' && // <--- 检查状态
+            widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
+        ) {
+      //print(
+      //    "GameDetailScreen (${widget.gameId}): Game is approved and history needed, incrementing view count.");
+      _gameService.incrementGameView(widget.gameId!).catchError((error) {
+        print(
+            "GameDetailScreen (${widget.gameId}): Failed to increment view count: $error");
+      });
+    } else {
+      // 打印跳过原因，方便调试
+      //print(
+      //    "GameDetailScreen (${widget.gameId}): Skipping view count increment. Status: ${_game?.approvalStatus}, NeedHistory: ${widget.isNeedHistory}");
+    }
+  }
+
+  // 加载游戏详情和收藏状态
   // 加载游戏详情和收藏状态
   Future<void> _loadGameDetailsWithStatus({bool forceRefresh = false}) async {
-    if (widget.gameId == null || !mounted) return; // 保持检查
+    if (widget.gameId == null || !mounted) return;
 
-    // 确保 isLoading 是 true (如果调用前没设置好)
     if (!_isLoading && mounted) {
       setState(() {
         _isLoading = true;
@@ -107,22 +127,69 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
 
     GameDetailsWithStatus? result;
-    String? errorMsg;
+    String? errorMsg; // 用于 finally 块判断
+    bool gameWasRemoved = false; // 新增标志位
+
     try {
-      // 调用 service (保持不变)
       result = await _gameService.getGameDetailsWithStatus(widget.gameId!);
+      // 注意: 如果 service 返回 null 但没抛异常，也视为未找到 (虽然现在 service 会抛异常)
       if (result == null && mounted) {
-        errorMsg = 'not_found';
+        errorMsg = 'not_found'; // 标记为未找到
+        gameWasRemoved = true;
       }
     } catch (e) {
       if (!mounted) return;
       print(
           "GameDetailScreen (${widget.gameId}): Error loading details with status: $e");
-      // 错误处理 (保持不变)
-      if (e.toString().contains('game_pending_approval')) {
-        errorMsg = 'pending_approval';
-      } else if (e.toString().contains('not_found')) {
+
+      // 检查是否是 "not_found" 异常
+      if (e.toString().contains('not_found')) {
         errorMsg = 'not_found';
+        gameWasRemoved = true; // *** 标记游戏已被移除 ***
+
+        // *** 显示补偿/移除对话框 ***
+        // 使用 addPostFrameCallback 确保在当前帧渲染完成后执行
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            // 再次检查 mounted 状态
+            CustomInfoDialog.show(
+              context: context,
+              title: '游戏已移除',
+              message: '抱歉，您尝试访问的游戏已被移除或不存在。\n(这里可以放补偿说明，如果需要的话)',
+              iconData: Icons
+                  .delete_forever_outlined, // 或者 Icons.sentiment_very_dissatisfied
+              iconColor: Colors.redAccent,
+              closeButtonText: '知道了',
+              barrierDismissible: false, // 不允许点击外部关闭，强制用户确认
+              onClose: () {
+                // 用户点击“知道了”之后的操作
+                if (mounted) {
+                  print(
+                      "GameDetailScreen (${widget.gameId}): User acknowledged game removal. Navigating back.");
+                  // 安全地执行 Pop 操作
+                  // 使用 try-catch 增加健壮性，防止 pop 时 context 无效
+                  try {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    } else {
+                      // 如果不能 pop (比如是根路由)，可以导航到主页
+                      NavigationUtils.pushReplacementNamed(
+                          context, AppRoutes.home);
+                    }
+                  } catch (popError) {
+                    print("Error during Navigator.pop after dialog: $popError");
+                    // 备用方案：导航到主页
+                    NavigationUtils.pushReplacementNamed(
+                        context, AppRoutes.home);
+                  }
+                }
+              },
+            );
+          }
+        });
+        // 处理其他已知错误
+      } else if (e.toString().contains('game_pending_approval')) {
+        errorMsg = 'pending_approval';
       } else if (e.toString().contains('Failed host lookup') ||
           e.toString().contains('SocketException')) {
         errorMsg = 'network_error';
@@ -130,18 +197,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         errorMsg = '加载失败: ${e.toString()}';
       }
     } finally {
-      if (mounted) {
+      // *** 只有在游戏未被移除时才更新状态 ***
+      if (mounted && !gameWasRemoved) {
         setState(() {
-          // <--- 必须用 setState
           if (errorMsg == null && result != null) {
-            // 成功逻辑 (保持不变)
+            // 成功
             _game = result.game;
             _collectionStatus = result.collectionStatus;
             _navigationInfo = result.navigationInfo;
             _isLiked = result.isLiked;
             _error = null;
+            _tryIncrementViewCount();
           } else {
-            // 失败逻辑 (保持不变)
+            // 加载/刷新失败，但游戏 *并未* 被移除
             if (_game == null) {
               // 首次失败
               _error = errorMsg ?? '未知错误';
@@ -150,16 +218,21 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               // 刷新失败
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted)
-                  Toaster.show(context,
-                      message: "刷新失败: ${errorMsg ?? '未知错误'}", isError: true);
+                  AppSnackBar.showError(context, "刷新失败: ${errorMsg ?? '未知错误'}");
               });
+              // 保留旧数据，只显示 Toaster
             }
           }
-          _isLoading = false; // <--- 核心改动：保证加载结束
-          _isTogglingLike = false; // 顺便重置
+          _isLoading = false;
+          _isTogglingLike = false;
           _refreshCounter++;
-          print(
-              "GameDetailScreen (${widget.gameId}): FINALLY - setState finished. isLoading is now: $_isLoading");
+        });
+      } else if (mounted && gameWasRemoved) {
+        // 如果游戏被移除，我们不应该更新 _game 等状态
+        // 只需确保 loading 状态结束
+        setState(() {
+          _isLoading = false;
+          _isTogglingLike = false;
         });
       }
     }
@@ -168,34 +241,28 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   // 刷新逻辑
   Future<void> _refreshGameDetails() async {
     if (!mounted || widget.gameId == null) return;
-    print(
-        "GameDetailScreen (${widget.gameId}): Refreshing details (forcing cache clear)...");
 
     // 调用加载，forceRefresh 确保即使短时间内连续操作也会尝试重新加载
     await _loadGameDetailsWithStatus(forceRefresh: true);
   }
 
-  // 增加游戏浏览次数
-  void _incrementViewCount() {
-    if (widget.gameId != null) {
-      _gameService.incrementGameView(widget.gameId!);
-    }
-  }
-
   void _handleCollectionStateChangedInButton(CollectionChangeResult result) {
     // 1. 安全检查
     if (!mounted || _game == null) {
-      print('GameDetailScreen (${widget.gameId}): Cannot handle collection change, component unmounted or game data is null.');
+      print(
+          'GameDetailScreen (${widget.gameId}): Cannot handle collection change, component unmounted or game data is null.');
       return;
     }
 
-    print('GameDetailScreen (${widget.gameId}): Received collection change from button. New status: ${result.newStatus?.status}. Applying frontend compensation.');
+    print(
+        'GameDetailScreen (${widget.gameId}): Received collection change from button. New status: ${result.newStatus?.status}. Applying frontend compensation.');
 
     // 2. 获取当前状态和变化信息
     final Game currentGame = _game!;
     final Map<String, int> countDeltas = result.countDeltas; // 收藏计数增量 (来自按钮的回调)
     final GameCollectionItem? newCollectionItem = result.newStatus;
-    final GameCollectionItem? oldCollectionItem = _collectionStatus; // 使用屏幕 State 中记录的旧状态
+    final GameCollectionItem? oldCollectionItem =
+        _collectionStatus; // 使用屏幕 State 中记录的旧状态
 
     // 3. 计算评分的 Delta (前端计算)
     double deltaRatingSum = 0;
@@ -205,8 +272,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final oldRatingValue = oldCollectionItem?.rating;
     final newRatingValue = newCollectionItem?.rating;
 
-    bool oldHadRating = oldStatusString == GameCollectionStatus.played && oldRatingValue != null;
-    bool newHasRating = newStatusString == GameCollectionStatus.played && newRatingValue != null;
+    bool oldHadRating = oldStatusString == GameCollectionStatus.played &&
+        oldRatingValue != null;
+    bool newHasRating = newStatusString == GameCollectionStatus.played &&
+        newRatingValue != null;
 
     if (!oldHadRating && newHasRating) {
       deltaRatingSum = newRatingValue!;
@@ -221,8 +290,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
 
     // 4. 计算补偿后的新评分统计数据和平均分
-    final int newRatingCount = (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
-    final double newTotalRatingSum = (newRatingCount == 0) ? 0.0 : (currentGame.totalRatingSum + deltaRatingSum);
+    final int newRatingCount =
+        (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
+    final double newTotalRatingSum = (newRatingCount == 0)
+        ? 0.0
+        : (currentGame.totalRatingSum + deltaRatingSum);
 
     // *** 在前端计算平均分 ***
     double newAverageRating = 0.0;
@@ -234,14 +306,19 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // 限制在 0 到 10 之间 (可选，增加健壮性)
     newAverageRating = newAverageRating.clamp(0.0, 10.0);
 
-
     // 5. 使用 copyWith 创建包含所有补偿后数据的新 Game 对象
     final Game updatedGame = currentGame.copyWith(
       // 补偿收藏计数
-      wantToPlayCount: (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0)).clamp(0, 1000000),
-      playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0)).clamp(0, 1000000),
-      playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0)).clamp(0, 1000000),
-      totalCollections: (currentGame.totalCollections + (countDeltas['total'] ?? 0)).clamp(0, 1000000),
+      wantToPlayCount:
+          (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
+              .clamp(0, 1000000),
+      playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0))
+          .clamp(0, 1000000),
+      playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0))
+          .clamp(0, 1000000),
+      totalCollections:
+          (currentGame.totalCollections + (countDeltas['total'] ?? 0))
+              .clamp(0, 1000000),
       // *** 补偿评分相关字段 ***
       ratingCount: newRatingCount,
       totalRatingSum: newTotalRatingSum,
@@ -249,7 +326,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // *** 更新时间戳（使用模型中已有的 updateTime 和 ratingUpdateTime） ***
       updateTime: DateTime.now(), // 更新游戏整体更新时间
       // 如果评分有变化，更新 ratingUpdateTime，否则保持原来的值
-      ratingUpdateTime: (deltaRatingCount != 0 || deltaRatingSum != 0) ? DateTime.now() : currentGame.ratingUpdateTime,
+      ratingUpdateTime: (deltaRatingCount != 0 || deltaRatingSum != 0)
+          ? DateTime.now()
+          : currentGame.ratingUpdateTime,
       // *** 不再有 collectionUpdateTime 这个字段 ***
     );
 
@@ -258,9 +337,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _collectionStatus = result.newStatus; // 更新收藏按钮状态
       _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
       _refreshCounter++; // 强制子组件重建
-      print("GameDetailScreen (${widget.gameId}): Frontend compensation applied. New Rating: ${updatedGame.rating}, New RatingCount: ${updatedGame.ratingCount}, New Want: ${updatedGame.wantToPlayCount}");
+      print(
+          "GameDetailScreen (${widget.gameId}): Frontend compensation applied. New Rating: ${updatedGame.rating}, New RatingCount: ${updatedGame.ratingCount}, New Want: ${updatedGame.wantToPlayCount}");
     });
   }
+
   // *** 核心改动：处理点赞切换的回调函数 ***
   // *** 这个函数需要完全替换掉你原来的 _handleToggleLike ***
   Future<void> _handleToggleLike() async {
@@ -286,11 +367,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           _isLiked = newIsLikedStatus; // 直接更新点赞状态
         });
-        AppSnackBar.showSuccess(context,newIsLikedStatus ? '点赞成功' : '已取消点赞');
+        AppSnackBar.showSuccess(context, newIsLikedStatus ? '点赞成功' : '已取消点赞');
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showError(context, '操作失败: ${e.toString().split(':').last.trim()}');
+        AppSnackBar.showError(
+            context, '操作失败: ${e.toString().split(':').last.trim()}');
       }
     } finally {
       // *** 结束按钮 loading ***
@@ -304,10 +386,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   // 处理游戏导航的回调
   void _handleNavigate(String gameId) {
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (context) => GameDetailScreen(gameId: gameId)),
-    );
+    NavigationUtils.pushNamed(context, AppRoutes.gameDetail, arguments: gameId);
   }
 
   // 检查当前用户是否有权限编辑游戏
@@ -320,20 +399,37 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   // 处理编辑按钮点击事件
   void _handleEditPressed(BuildContext context, Game game) async {
-    print("GameDetailScreen (${widget.gameId}): Edit button pressed.");
+    //print("GameDetailScreen (${widget.gameId}): Edit button pressed.");
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
         arguments: game);
     if (result == true && mounted) {
-      print(
-          "GameDetailScreen (${widget.gameId}): Game edited, refreshing details.");
+      //print(
+      //    "GameDetailScreen (${widget.gameId}): Game edited, refreshing details.");
       _refreshGameDetails(); // 强制刷新
     } else {
-      print(
-          "GameDetailScreen (${widget.gameId}): Edit page returned without saving or widget unmounted.");
+      //print(
+      //    "GameDetailScreen (${widget.gameId}): Edit page returned without saving or widget unmounted.");
     }
   }
 
   // --- UI 构建方法 ---
+
+  Widget _buildPendingApprovalBanner() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      color: Colors.orange.shade700,
+      width: double.infinity,
+      child: const SafeArea(
+        // Use SafeArea for status bar overlap avoidance
+        bottom: false,
+        child: Text(
+          '提示：此游戏正在审核中，内容未公开可见。',
+          style: TextStyle(color: Colors.white, fontSize: 13),
+          textAlign: TextAlign.center,
+        ),
+      ),
+    );
+  }
 
   Widget _buildActionButtonsGroup(BuildContext context, Game game) {
     final bool canEdit = _canEditGame(context, game);
@@ -528,9 +624,65 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
 
     if (_error != null && _game == null) {
+      if (_error == 'pending_approval') {
+        // --- 返回特定的“审核中/无权查看”UI ---
+        return Scaffold(
+          appBar: CustomAppBar(
+            // 或者使用通用 AppBar
+            title: '游戏详情',
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back),
+              onPressed: () => NavigationUtils.pop(context), // 提供返回按钮
+            ),
+          ),
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.hourglass_empty_rounded,
+                      size: 64, color: Colors.orange.shade700),
+                  SizedBox(height: 16),
+                  Text(
+                    '游戏正在审核中',
+                    style: Theme.of(context)
+                        .textTheme
+                        .headlineSmall
+                        ?.copyWith(fontWeight: FontWeight.bold),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 12),
+                  Text(
+                    '该游戏内容尚未对公众开放，或者您没有权限查看。请等待审核通过后再试。',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyLarge,
+                  ),
+                  SizedBox(height: 24),
+                  FunctionalTextButton(
+                    // 或者 ElevatedButton
+                    onPressed: () => NavigationUtils.pop(context),
+                    label: '返回上一页',
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
       // 首次加载失败时全屏 Error
-      if (_error == 'not_found') {
-        return NotFoundErrorWidget(onBack: () => NavigationUtils.of(context).pop());
+      if (_error == 'not_found' && _game == null) {
+        // 这个页面可能在对话框关闭后、导航完成前的短暂瞬间显示
+        // 或者如果对话框弹出失败，会显示这个
+        return NotFoundErrorWidget(
+            message: "抱歉，该游戏不存在或已被移除。",
+            onBack: () {
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              } else {
+                NavigationUtils.navigateToHome(context);
+              }
+            });
       }
       if (_error == 'network_error') {
         return NetworkErrorWidget(
@@ -582,18 +734,30 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       return InlineErrorWidget(errorMessage: '无法加载游戏数据');
     }
 
-    // --- 正常渲染游戏内容 ---
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    Widget bodyContent =
-        isDesktop ? _buildDesktopLayout(_game!) : _buildMobileLayout(_game!);
-
+    Widget bodyContent;
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---
     if (_isLoading && _game != null) {
       // 正在刷新且有旧数据
       bodyContent = LoadingWidget.inline(message: "正在加载数据");
+    } else {
+      // 正常渲染
+      final isDesktop = MediaQuery.of(context).size.width >= 1024;
+      bodyContent =
+          isDesktop ? _buildDesktopLayout(_game!) : _buildMobileLayout(_game!);
     }
-    // --- ---
-
-    return bodyContent; // 返回最终构建的 Widget
+    if (_game!.approvalStatus == 'pending') {
+      // 如果是 pending，返回 Material -> Column -> [Banner, Expanded(bodyContent)]
+      return Material( // 用 Material 做根，保证背景和主题
+        child: Column(
+          children: [
+            _buildPendingApprovalBanner(), // 调用你已有的 Banner 方法
+            Expanded(child: bodyContent), // 把 Scaffold 或 LoadingWidget 放下面填满
+          ],
+        ),
+      );
+    } else {
+      // 如果不是 pending，直接返回 bodyContent (它自己是 Scaffold 或 LoadingWidget)
+      return bodyContent;
+    }
   }
 }

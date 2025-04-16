@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../services/main/forum/forum_service.dart';
 import '../../../../../providers/auth/auth_provider.dart';
@@ -95,9 +96,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         widget.onInteractionSuccess!();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context, '操作失败: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -140,9 +139,8 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         widget.onInteractionSuccess!();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context, '操作失败: $e');
+
     } finally {
       setState(() {
         _isLoading = false;
@@ -185,9 +183,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         widget.onInteractionSuccess!();
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('操作失败: $e')),
-      );
+      AppSnackBar.showError(context,'操作失败: $e');
     } finally {
       setState(() {
         _isLoading = false;

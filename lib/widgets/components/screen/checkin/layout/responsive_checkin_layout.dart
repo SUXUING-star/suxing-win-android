@@ -99,7 +99,8 @@ class ResponsiveCheckInLayout extends StatelessWidget {
   Widget _buildRightPanel(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height - 80, // Account for AppBar and margins
+        maxHeight: MediaQuery.of(context).size.height -
+            80, // Account for AppBar and margins
       ),
       child: SingleChildScrollView(
         child: Column(
@@ -220,7 +221,7 @@ class ResponsiveCheckInLayout extends StatelessWidget {
               isBold: continuousDays > 0,
             ),
             // Only show when there's a check-in gap
-            if (consecutiveMissedDays > 0) ...[
+            if (consecutiveMissedDays > 1) ...[
               Container(
                 height: 50,
                 width: 1,
@@ -233,7 +234,7 @@ class ResponsiveCheckInLayout extends StatelessWidget {
                 value: '$consecutiveMissedDays 天',
                 color: Colors.red[400]!,
                 isBold: false,
-              ),
+              )
             ],
           ],
         ),

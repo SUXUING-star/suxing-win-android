@@ -3,6 +3,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../services/main/maintenance/maintenance_service.dart';
 import '../../../../../providers/auth/auth_provider.dart';
@@ -161,8 +162,7 @@ class _MaintenanceDialogState extends State<MaintenanceDialog> {
 
   // 格式化日期时间
   String _formatDateTime(DateTime dateTime) {
-    return "${dateTime.year}-${_twoDigits(dateTime.month)}-${_twoDigits(dateTime.day)} "
-        "${_twoDigits(dateTime.hour)}:${_twoDigits(dateTime.minute)}";
+    return DateTimeFormatter.formatStandard(dateTime);
   }
 
   // 格式化剩余时间

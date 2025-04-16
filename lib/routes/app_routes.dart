@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
+import 'package:suxingchahui/screens/search/search_post_screen.dart';
+import 'package:suxingchahui/screens/web/webview_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/screens/home/home_screen.dart';
 import 'package:suxingchahui/screens/common/notfound_screen.dart';
@@ -54,6 +56,7 @@ class AppRoutes {
   static const String externalLinks = '/links';
   static const String profile = '/profile';
   static const String searchGame = '/search-game';
+  static const String searchPost = '/search-post';
   static const String openProfile = '/open-profile';
   static const String addGame = '/game/add';
   static const String editGame = '/game/edit';
@@ -78,6 +81,7 @@ class AppRoutes {
   static const String activityFeed = '/activity-feed';
   static const String userActivities = '/user-activities';
   static const String activityDetail = '/activity/detail';
+  static const String webView = '/webview';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
@@ -133,6 +137,7 @@ class AppRoutes {
             builder: (_) => ResetPasswordScreen(email: email));
       case '/search-game':
         return MaterialPageRoute(builder: (_) => SearchGameScreen());
+
       case '/game/detail':
         final arguments = settings.arguments;
         String? gameId;
@@ -305,6 +310,8 @@ class AppRoutes {
             title: '全部收藏',
           ),
         );
+      case '/search-post':
+        return MaterialPageRoute(builder: (_) => SearchPostScreen());
       case '/forum':
         final String? tag = settings.arguments as String?;
         return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
@@ -367,6 +374,22 @@ class AppRoutes {
             userId: args['userId'],
             username: args['username'],
             initialShowFollowing: args['initialShowFollowing'] ?? true,
+          ),
+        );
+      case webView: // 处理 /webview 路由
+        final args = settings.arguments;
+        if (args is Map<String, dynamic> && args.containsKey('url')) {
+          final String url = args['url'];
+          final String? title = args['title']; // title 是可选的
+          return MaterialPageRoute(
+            builder: (_) => WebViewScreen(url: url, title: title),
+          );
+        }
+        // 如果参数不正确，返回错误页面
+        return MaterialPageRoute(
+          builder: (_) => RouteErrorScreen.missingParameter(
+            paramName: 'URL参数',
+            onAction: () => NavigationUtils.pop(_), // 返回上一页
           ),
         );
       default:

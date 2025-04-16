@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
-import 'base_game_list_screen.dart'; // 引入新的 Base
+import 'common_game_list_screen.dart'; // 引入新的 Base
 
 class HotGamesScreen extends StatefulWidget {
   @override
@@ -45,7 +45,7 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return BaseGameListScreen(
+    return CommonGameListScreen(
       key: ValueKey('hot_games'), // 可以用 Key 来辅助刷新
       title: '热门游戏',
       // *** 传递 Future ***

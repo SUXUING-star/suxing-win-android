@@ -2,7 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/global_reply_item.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../screens/forum/post/post_detail_screen.dart';
 import '../../../../../screens/profile/open_profile_screen.dart';
@@ -26,7 +31,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   @override
   void initState() {
     super.initState();
-    print('Initializing RecentGlobalReplies widget with limit: ${widget.limit}');
+    print(
+        'Initializing RecentGlobalReplies widget with limit: ${widget.limit}');
     // 直接在 initState 中获取 Stream
     _repliesStream = _forumService.getRecentGlobalReplies(limit: widget.limit);
   }
@@ -36,24 +42,15 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     print('Disposing RecentGlobalReplies widget for limit: ${widget.limit}');
     super.dispose();
   }
+
   // 主动刷新的方法
-  void _handleRefresh() {
-    print('Manual refresh requested for limit: ${widget.limit}');
-    // 调用 service 的 refresh 方法
-    //_forumService.refresh(limit: widget.limit);
-    // 注意：UI 不会立即更新，需要等待 Stream 发出新数据
-    // 可以考虑显示一个短暂的加载指示器，但这会增加复杂性
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('正在刷新...'), duration: Duration(seconds: 1)),
-    );
-  }
-
-
-
+  void _handleRefresh() {}
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop || DeviceUtils.isWeb || DeviceUtils.isTablet(context);
+    final bool isDesktop = DeviceUtils.isDesktop ||
+        DeviceUtils.isWeb ||
+        DeviceUtils.isTablet(context);
 
     return Container(
       margin: const EdgeInsets.only(top: 16),
@@ -108,11 +105,10 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
               // 异步操作开始但未完成时
               if (_isLoading && !snapshot.hasData) {
                 return Container(
-                  height: 200,
-                  child: const Center(
-                    child: CircularProgressIndicator(),
-                  ),
-                );
+                    height: 200,
+                    child: LoadingWidget.inline(
+                      size: 12,
+                    ));
               }
 
               // 设置不再加载
@@ -122,32 +118,16 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
               // 发生错误时显示错误信息和重试按钮
               if (snapshot.hasError) {
-                return Container(
-                  height: 200,
-                  child: Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('加载失败: ${snapshot.error}'),
-                        const SizedBox(height: 16),
-                        ElevatedButton(
-                          onPressed: _handleRefresh, // 重试也调用刷新
-                          child: const Text('重试'),
-                        ),
-                      ],
-                    ),
-                  ),
+                return InlineErrorWidget(
+                  onRetry: _handleRefresh,
+                  errorMessage: "发生错误",
                 );
               }
 
               final replies = snapshot.data ?? [];
               if (replies.isEmpty) {
-                return Container(
-                  height: 200,
-                  child: const Center(
-                    child: Text('暂无回复'),
-                  ),
-                );
+                return EmptyStateWidget(
+                    message: "暂无回复", iconData: Icons.maps_ugc_outlined);
               }
 
               return ListView.separated(
@@ -156,7 +136,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 padding: const EdgeInsets.all(16),
                 itemCount: replies.length,
                 separatorBuilder: (_, __) => const Divider(height: 16),
-                itemBuilder: (context, index) => _buildReplyItem(context, replies[index]),
+                itemBuilder: (context, index) =>
+                    _buildReplyItem(context, replies[index]),
               );
             },
           ),
@@ -202,7 +183,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                         NavigationUtils.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => OpenProfileScreen(userId: reply.author['id']),
+                            builder: (context) =>
+                                OpenProfileScreen(userId: reply.author['id']),
                           ),
                         );
                       }
@@ -233,7 +215,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                     ),
                   ),
                   Text(
-                    _formatTime(reply.createTime),
+                    DateTimeFormatter.formatTimeAgo(reply.createTime),
                     style: TextStyle(
                       color: Colors.grey[500],
                       fontSize: 12,
@@ -255,18 +237,4 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     );
   }
 
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
-
-    if (difference.inDays > 0) {
-      return '${difference.inDays}天前';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}小时前';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}分钟前';
-    } else {
-      return '刚刚';
-    }
-  }
 }

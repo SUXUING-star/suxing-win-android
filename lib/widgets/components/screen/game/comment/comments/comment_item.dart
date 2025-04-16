@@ -1,28 +1,29 @@
-// lib/widgets/components/screen/game/comment/comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+// REMOVED: import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // Keep for dialogs
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../replies/reply_list.dart';
 import '../replies/reply_input.dart';
 import '../../../../../ui/badges/user_info_badge.dart';
-import '../../../../../ui/dialogs/edit_dialog.dart'; // 导入编辑对话框
-import '../../../../../ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import '../../../../../ui/buttons/custom_popup_menu_button.dart'; // 确保路径正确
+import '../../../../../ui/dialogs/edit_dialog.dart';
+import '../../../../../ui/dialogs/confirm_dialog.dart';
+import '../../../../../ui/buttons/custom_popup_menu_button.dart';
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
-  final String gameId;
-  final VoidCallback? onCommentChanged;
+  final Future<void> Function(String id, String newContent) onUpdate;
+  final Future<void> Function(String id) onDelete;
+  final Future<void> Function(String content, String parentId) onAddReply;
 
   const CommentItem({
     Key? key,
     required this.comment,
-    required this.gameId,
-    this.onCommentChanged,
+    required this.onUpdate,
+    required this.onDelete,
+    required this.onAddReply,
   }) : super(key: key);
 
   @override
@@ -30,48 +31,41 @@ class CommentItem extends StatefulWidget {
 }
 
 class _CommentItemState extends State<CommentItem> {
-  final GameService _commentService = GameService();
-  // bool _isDeleting = false; // 4. 移除状态变量
-  bool _showReplyInput = false; // 控制回复输入框显示
+  // REMOVED: final GameService _commentService = GameService();
+  bool _showReplyInput = false;
+  bool _isSubmittingReply = false; // Local state for reply input
 
-  // 2. 修改 _buildCommentActions 方法
-  Widget _buildCommentActions(
-      BuildContext context, String gameId, Comment comment) {
-    // return PopupMenuButton<String>(...); // 旧代码
-
-    // 使用 CustomPopupMenuButton
+  // --- Action Buttons (No change needed in structure, only in onSelected) ---
+  Widget _buildCommentActions(BuildContext context, Comment comment) {
     return CustomPopupMenuButton<String>(
-      // --- 自定义外观 ---
+      // ... (外观代码不变)
       icon: Icons.more_vert,
       iconSize: 20,
       iconColor: Colors.grey[600],
-      padding: const EdgeInsets.all(0), // 紧凑一点
+      padding: const EdgeInsets.all(0),
       tooltip: '评论选项',
       elevation: 4,
       splashRadius: 18,
 
-      // --- 核心逻辑 ---
       onSelected: (value) async {
-        // onSelected 逻辑保持不变
+        // Make async
         switch (value) {
           case 'edit':
-            _showEditDialog(context, gameId, comment);
+            _showEditDialog(context, comment);
             break;
           case 'delete':
-            _showDeleteDialog(context, gameId, comment);
+            _showDeleteDialog(context, comment);
             break;
         }
       },
-      // 3. 美化 itemBuilder 中的 PopupMenuItem
       itemBuilder: (context) {
+        // ... (itemBuilder logic不变)
         final authProvider = Provider.of<AuthProvider>(context, listen: false);
         final List<PopupMenuEntry<String>> items = [];
-
         if (!authProvider.isLoggedIn) return items;
-
         bool canEdit = comment.userId == authProvider.currentUser?.id;
         bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
-
+        // ... (add items based on canEdit/canDelete)
         if (canEdit) {
           items.add(
             PopupMenuItem<String>(
@@ -87,11 +81,9 @@ class _CommentItemState extends State<CommentItem> {
             ),
           );
         }
-
         if (canEdit && canDelete) {
           items.add(const PopupMenuDivider(height: 1));
         }
-
         if (canDelete) {
           items.add(
             PopupMenuItem<String>(
@@ -112,58 +104,68 @@ class _CommentItemState extends State<CommentItem> {
     );
   }
 
-  // _showEditDialog 方法保持不变
-  void _showEditDialog(BuildContext context, String gameId, Comment comment) {
+  // --- Dialogs (Call Parent's Callbacks) ---
+  void _showEditDialog(BuildContext context, Comment comment) {
     EditDialog.show(
       context: context,
       title: '编辑评论',
       initialText: comment.content,
       hintText: '编辑评论内容...',
       onSave: (text) async {
+        // --- Call parent's update callback ---
         try {
-          await _commentService.updateComment(gameId, comment.id, text);
-          widget.onCommentChanged?.call();
-          if (context.mounted) {
-            AppSnackBar.showSuccess(context, '评论已更新');
-
-          }
+          await widget.onUpdate(widget.comment.id, text);
+          // Success message is now handled by CommentsSection
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context, '编辑评论失败：$e');
-          }
+          // Error message is now handled by CommentsSection or rethrown
+          if (context.mounted)
+            AppSnackBar.showError(context, '编辑失败: $e'); // Fallback
         }
       },
     );
   }
 
-  // _showDeleteDialog 方法保持不变 (移除 setState)
-  void _showDeleteDialog(BuildContext context, String gameId, Comment comment) {
+  void _showDeleteDialog(BuildContext context, Comment comment) {
     CustomConfirmDialog.show(
       context: context,
       title: '删除评论',
-      message: '确定要删除这条评论吗？\n(评论下的所有回复也会被删除)', // 提示更清晰
+      message: '确定要删除这条评论吗？\n(评论下的所有回复也会被删除)',
       confirmButtonText: '删除',
       confirmButtonColor: Colors.red,
       onConfirm: () async {
+        // --- Call parent's delete callback ---
         try {
-          // 不再需要管理 _isDeleting 状态
-          // setState(() { _isDeleting = true; });
-
-          await _commentService.deleteComment(gameId, comment.id);
-          widget.onCommentChanged?.call();
-
-          if (context.mounted) {
-            AppSnackBar.showSuccess(context,'评论已删除');
-          }
+          await widget.onDelete(widget.comment.id);
+          // Success message is now handled by CommentsSection
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context,'删除评论失败：$e');
-          }
-          rethrow; // 重新抛出以便外部捕获（如果需要）
+          // Error message is now handled by CommentsSection or rethrown
+          if (context.mounted)
+            AppSnackBar.showError(context, '删除失败: $e'); // Fallback
         }
-        // finally 块也可以移除
       },
     );
+  }
+
+  // --- Handle Reply Submission ---
+  Future<void> _submitReply(String replyContent) async {
+    if (replyContent.isEmpty) return;
+    setState(() => _isSubmittingReply = true);
+    try {
+      // --- Call parent's add reply callback ---
+      await widget.onAddReply(replyContent, widget.comment.id);
+      // Reply added, StreamBuilder in CommentsSection updates the list
+      if (mounted) {
+        setState(() {
+          _showReplyInput = false; // Hide input on success
+        });
+      }
+      // Success snackbar is handled by CommentsSection
+    } catch (e) {
+      // Error is handled by CommentsSection
+      if (mounted) AppSnackBar.showError(context, '回复失败: $e'); // Fallback
+    } finally {
+      if (mounted) setState(() => _isSubmittingReply = false);
+    }
   }
 
   @override
@@ -171,45 +173,40 @@ class _CommentItemState extends State<CommentItem> {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
     return Card(
+      // ... (Card styling 不变)
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 1.5, // 轻微调整阴影
-      shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10)), // 卡片圆角
+      elevation: 1.5,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 评论头部 ---
+          // --- Header (Pass comment to actions) ---
           Padding(
-            padding:
-                const EdgeInsets.only(top: 12, left: 16, right: 8), // 调整右边距
+            padding: const EdgeInsets.only(top: 12, left: 16, right: 8),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center, // 尝试垂直居中
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
                   child: UserInfoBadge(
                     userId: widget.comment.userId,
-                    showFollowButton: false, // 通常评论区不显示关注
+                    showFollowButton: false,
                   ),
                 ),
-                // 条件渲染操作按钮
                 if (authProvider.isLoggedIn &&
                     (widget.comment.userId == authProvider.currentUser?.id ||
                         authProvider.currentUser?.isAdmin == true))
-                  _buildCommentActions(
-                      context, widget.gameId, widget.comment), // 使用修改后的方法
+                  _buildCommentActions(context, widget.comment), // Pass comment
               ],
             ),
           ),
-          // --- 评论内容和时间 ---
+          // --- Content & Time (不变) ---
           Padding(
             padding: const EdgeInsets.only(
-                left: 16.0, right: 16.0, top: 8.0, bottom: 8.0), // 调整内边距
+                left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
             child: Text(
               widget.comment.content,
-              style: Theme.of(context)
-                  .textTheme
-                  .bodyLarge
-                  ?.copyWith(height: 1.4), // 使用主题样式并调整行高
+              style:
+                  Theme.of(context).textTheme.bodyLarge?.copyWith(height: 1.4),
             ),
           ),
           Padding(
@@ -218,8 +215,7 @@ class _CommentItemState extends State<CommentItem> {
             child: Align(
               alignment: Alignment.centerRight,
               child: Text(
-                DateTimeFormatter.formatRelative(
-                        widget.comment.createTime) + // 使用相对时间
+                DateTimeFormatter.formatRelative(widget.comment.createTime) +
                     (widget.comment.isEdited ? ' (已编辑)' : ''),
                 style: TextStyle(
                   fontSize: 11,
@@ -229,21 +225,17 @@ class _CommentItemState extends State<CommentItem> {
             ),
           ),
 
-          // --- 回复区域和操作 ---
-          const Divider(height: 1, thickness: 0.5), // 分隔线
+          const Divider(height: 1, thickness: 0.5),
+          // --- Reply Button (不变) ---
           Padding(
             padding: const EdgeInsets.only(
                 left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end, // 操作按钮靠右
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // 可以添加点赞、不喜欢等按钮在这里
-                // TextButton.icon(onPressed: (){}, icon: Icon(Icons.thumb_up_alt_outlined, size: 16), label: Text('赞')),
                 TextButton(
                   onPressed: () {
-                    // 需要检查是否登录才能回复
                     if (!authProvider.isLoggedIn) {
-                      // 可以跳转登录或提示
                       ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(content: Text('请先登录后才能回复')));
                       return;
@@ -253,11 +245,10 @@ class _CommentItemState extends State<CommentItem> {
                     });
                   },
                   style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).primaryColor, // 使用主题色
+                    foregroundColor: Theme.of(context).primaryColor,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
                   ),
                   child: Row(
-                    // 使用 Row 添加图标
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(_showReplyInput ? Icons.close : Icons.reply,
@@ -271,42 +262,38 @@ class _CommentItemState extends State<CommentItem> {
             ),
           ),
 
-          // --- 回复列表 ---
-          // 如果有回复，显示回复列表
+          // --- Reply List (Pass callbacks down) ---
           if (widget.comment.replies.isNotEmpty)
             ReplyList(
               replies: widget.comment.replies,
-              gameId: widget.gameId,
-              onReplyChanged: widget.onCommentChanged,
+              // Pass the *specific* update/delete callbacks for replies
+              onUpdateReply: widget
+                  .onUpdate, // Assuming update logic is the same for comment/reply
+              onDeleteReply:
+                  widget.onDelete, // Assuming delete logic is the same
+              // REMOVED: gameId
+              // REMOVED: onReplyChanged
             ),
 
-          // --- 回复输入框 ---
-          // 根据状态显示或隐藏回复输入框
+          // --- Reply Input (Pass submit callback) ---
           AnimatedSize(
-            // 添加动画效果
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
             child: Visibility(
               visible: _showReplyInput,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16), // 给输入框一些边距
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: ReplyInput(
-                  gameId: widget.gameId,
-                  parentId: widget.comment.id,
-                  onReplyAdded: () {
-                    // 回复成功后可以自动收起输入框
-                    setState(() {
-                      _showReplyInput = false;
-                    });
-                    // 并触发外部的回调刷新
-                    widget.onCommentChanged?.call();
-                  },
+                  // REMOVED: gameId
+                  // REMOVED: parentId (handled in _submitReply)
+                  onSubmitReply: _submitReply, // Pass the local submit handler
+                  isSubmitting: _isSubmittingReply, // Pass local loading state
                   onCancel: () {
-                    // 添加取消回调
                     setState(() {
                       _showReplyInput = false;
                     });
                   },
+                  // REMOVED: onReplyAdded
                 ),
               ),
             ),

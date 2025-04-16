@@ -46,7 +46,7 @@ class FavoriteGameGridCard extends StatelessWidget {
                     imageUrl: game.coverImage,
                     fit: BoxFit.cover,
                     onError: (url, error) {
-                      print('收藏游戏封面加载失败: $url, 错误: $error');
+                      //print('收藏游戏封面加载失败: $url, 错误: $error');
                     },
                   ),
 
