@@ -189,7 +189,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
 
   Widget _buildBody() {
     if (_isLoading && _activities.isEmpty) {
-      return LoadingWidget.inline();
+      return LoadingWidget.fullScreen(message: "正在加载动态数据");
     }
 
     if (_error.isNotEmpty && _activities.isEmpty) {

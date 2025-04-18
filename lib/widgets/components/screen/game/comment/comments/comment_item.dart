@@ -1,29 +1,38 @@
+// lib/widgets/components/screen/game/comment/comments/comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// REMOVED: import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // Keep for dialogs
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../replies/reply_list.dart';
-import '../replies/reply_input.dart';
+import '../replies/reply_list.dart'; // 导入 ReplyList
+import '../replies/reply_input.dart'; // 导入 ReplyInput
 import '../../../../../ui/badges/user_info_badge.dart';
 import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
-import '../../../../../ui/buttons/custom_popup_menu_button.dart';
+import '../../../../../ui/buttons/popup/custom_popup_menu_button.dart';
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
-  final Future<void> Function(String id, String newContent) onUpdate;
-  final Future<void> Function(String id) onDelete;
+  // *** 接收来自 CommentList (最终来自 CommentsSection) 的操作函数 ***
+  // *** 这些函数的签名是需要 ID 的版本 ***
+  final Future<void> Function(String commentId, String newContent)
+      onUpdateComment;
+  final Future<void> Function(String commentId) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
+  // 接收 loading 状态
+  final bool isDeleting;
+  final bool isUpdating;
 
   const CommentItem({
     Key? key,
     required this.comment,
-    required this.onUpdate,
-    required this.onDelete,
-    required this.onAddReply,
+    required this.onUpdateComment, // 接收需要 ID 的 onUpdate
+    required this.onDeleteComment, // 接收需要 ID 的 onDelete
+    required this.onAddReply, // 接收 onAddReply
+    this.isDeleting = false,
+    this.isUpdating = false,
   }) : super(key: key);
 
   @override
@@ -31,138 +40,114 @@ class CommentItem extends StatefulWidget {
 }
 
 class _CommentItemState extends State<CommentItem> {
-  // REMOVED: final GameService _commentService = GameService();
   bool _showReplyInput = false;
-  bool _isSubmittingReply = false; // Local state for reply input
+  bool _isSubmittingReply = false; // 本地回复 loading
 
-  // --- Action Buttons (No change needed in structure, only in onSelected) ---
+  // Action Buttons: 调用时传入 widget.comment.id
   Widget _buildCommentActions(BuildContext context, Comment comment) {
-    return CustomPopupMenuButton<String>(
-      // ... (外观代码不变)
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final theme = Theme.of(context);
+    final bool canEdit = comment.userId == authProvider.currentUser?.id;
+    final bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
+
+    if (!canEdit && !canDelete) return const SizedBox.shrink();
+
+    return StylishPopupMenuButton<String>( // *** 使用新组件 ***
       icon: Icons.more_vert,
       iconSize: 20,
       iconColor: Colors.grey[600],
-      padding: const EdgeInsets.all(0),
+      triggerPadding: const EdgeInsets.all(0),
       tooltip: '评论选项',
-      elevation: 4,
-      splashRadius: 18,
+      menuColor: theme.canvasColor,
+      elevation: 2.0,
+      itemHeight: 40,
+      // *** 按钮整体是否可用，取决于 widget 的 loading 状态 ***
+      isEnabled: !widget.isDeleting && !widget.isUpdating,
 
-      onSelected: (value) async {
-        // Make async
+      // *** 直接提供数据列表 ***
+      items: [
+        // 编辑选项
+        if (canEdit)
+          StylishMenuItemData( // **提供数据**
+            value: 'edit',
+            // **提供内容 (Row)**
+            child: Row(children: [
+              Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
+              const SizedBox(width: 10), const Text('编辑'),
+            ],),
+          ),
+
+        // 分割线
+        if (canEdit && canDelete)
+          const StylishMenuDividerData(), // **标记分割线**
+
+        // 删除选项
+        if (canDelete)
+          StylishMenuItemData( // **提供数据**
+            value: 'delete',
+            // **提供内容 (根据 widget.isDeleting 显示不同 Row)**
+            child: widget.isDeleting
+                ? Row(children: [
+              SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: theme.disabledColor)),
+              const SizedBox(width: 10), Text('删除中...', style: TextStyle(color: theme.disabledColor)),
+            ],)
+                : Row(children: [
+              Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+              const SizedBox(width: 10), Text('删除', style: TextStyle(color: theme.colorScheme.error)),
+            ],),
+            // **单独控制删除项的启用状态**
+            enabled: !widget.isDeleting,
+          ),
+      ],
+
+      // onSelected 逻辑不变
+      onSelected: (value) {
         switch (value) {
-          case 'edit':
-            _showEditDialog(context, comment);
-            break;
-          case 'delete':
-            _showDeleteDialog(context, comment);
-            break;
+          case 'edit': _showEditDialog(context, comment); break;
+          case 'delete': if (!widget.isDeleting) _showDeleteDialog(context, comment); break;
         }
-      },
-      itemBuilder: (context) {
-        // ... (itemBuilder logic不变)
-        final authProvider = Provider.of<AuthProvider>(context, listen: false);
-        final List<PopupMenuEntry<String>> items = [];
-        if (!authProvider.isLoggedIn) return items;
-        bool canEdit = comment.userId == authProvider.currentUser?.id;
-        bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
-        // ... (add items based on canEdit/canDelete)
-        if (canEdit) {
-          items.add(
-            PopupMenuItem<String>(
-              value: 'edit',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]),
-                  const SizedBox(width: 10),
-                  const Text('编辑'),
-                ],
-              ),
-            ),
-          );
-        }
-        if (canEdit && canDelete) {
-          items.add(const PopupMenuDivider(height: 1));
-        }
-        if (canDelete) {
-          items.add(
-            PopupMenuItem<String>(
-              value: 'delete',
-              height: 40,
-              child: Row(
-                children: [
-                  Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
-                  const SizedBox(width: 10),
-                  Text('删除', style: TextStyle(color: Colors.red[700])),
-                ],
-              ),
-            ),
-          );
-        }
-        return items;
       },
     );
   }
 
-  // --- Dialogs (Call Parent's Callbacks) ---
+  // Dialogs: 调用 widget 的回调，传入 widget.comment.id
   void _showEditDialog(BuildContext context, Comment comment) {
     EditDialog.show(
-      context: context,
-      title: '编辑评论',
-      initialText: comment.content,
+      context: context, title: '编辑评论', initialText: comment.content,
       hintText: '编辑评论内容...',
+      // isSaving: widget.isUpdating, // 如果 Dialog 支持 loading
       onSave: (text) async {
-        // --- Call parent's update callback ---
-        try {
-          await widget.onUpdate(widget.comment.id, text);
-          // Success message is now handled by CommentsSection
-        } catch (e) {
-          // Error message is now handled by CommentsSection or rethrown
-          if (context.mounted)
-            AppSnackBar.showError(context, '编辑失败: $e'); // Fallback
-        }
+        // *** 调用 widget.onUpdateComment，传入 comment.id ***
+        await widget.onUpdateComment(widget.comment.id, text);
       },
     );
   }
 
   void _showDeleteDialog(BuildContext context, Comment comment) {
     CustomConfirmDialog.show(
-      context: context,
-      title: '删除评论',
-      message: '确定要删除这条评论吗？\n(评论下的所有回复也会被删除)',
-      confirmButtonText: '删除',
-      confirmButtonColor: Colors.red,
+      context: context, title: '删除评论', message: '确定要删除这条评论吗？\n(评论下的所有回复也会被删除)',
+      confirmButtonText: '删除', confirmButtonColor: Colors.red,
+      // isConfirming: widget.isDeleting, // 如果 Dialog 支持 loading
       onConfirm: () async {
-        // --- Call parent's delete callback ---
-        try {
-          await widget.onDelete(widget.comment.id);
-          // Success message is now handled by CommentsSection
-        } catch (e) {
-          // Error message is now handled by CommentsSection or rethrown
-          if (context.mounted)
-            AppSnackBar.showError(context, '删除失败: $e'); // Fallback
-        }
+        // *** 调用 widget.onDeleteComment，传入 comment.id ***
+        await widget.onDeleteComment(widget.comment.id);
       },
     );
   }
 
-  // --- Handle Reply Submission ---
+  // Submit Reply: 调用 widget.onAddReply，传入 widget.comment.id 作为 parentId
   Future<void> _submitReply(String replyContent) async {
-    if (replyContent.isEmpty) return;
+    if (replyContent.isEmpty || !mounted) return;
     setState(() => _isSubmittingReply = true);
     try {
-      // --- Call parent's add reply callback ---
+      // *** 调用 widget.onAddReply，传入自己的 comment.id 作为 parentId ***
       await widget.onAddReply(replyContent, widget.comment.id);
-      // Reply added, StreamBuilder in CommentsSection updates the list
-      if (mounted) {
+      if (mounted)
         setState(() {
-          _showReplyInput = false; // Hide input on success
+          _showReplyInput = false;
         });
-      }
-      // Success snackbar is handled by CommentsSection
     } catch (e) {
-      // Error is handled by CommentsSection
-      if (mounted) AppSnackBar.showError(context, '回复失败: $e'); // Fallback
+      if (mounted) AppSnackBar.showError(context, '回复失败: $e');
     } finally {
       if (mounted) setState(() => _isSubmittingReply = false);
     }
@@ -170,37 +155,36 @@ class _CommentItemState extends State<CommentItem> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final authProvider = Provider.of<AuthProvider>(context);
 
     return Card(
-      // ... (Card styling 不变)
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      elevation: 1.5,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      color: Colors.white,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Header (Pass comment to actions) ---
           Padding(
+            // Header
             padding: const EdgeInsets.only(top: 12, left: 16, right: 8),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Expanded(
-                  child: UserInfoBadge(
-                    userId: widget.comment.userId,
-                    showFollowButton: false,
-                  ),
-                ),
+                    child: UserInfoBadge(
+                  userId: widget.comment.userId,
+                  showFollowButton: false,
+                )),
                 if (authProvider.isLoggedIn &&
                     (widget.comment.userId == authProvider.currentUser?.id ||
                         authProvider.currentUser?.isAdmin == true))
-                  _buildCommentActions(context, widget.comment), // Pass comment
+                  _buildCommentActions(context, widget.comment), // 调用 actions
               ],
             ),
           ),
-          // --- Content & Time (不变) ---
           Padding(
+            // Content
             padding: const EdgeInsets.only(
                 left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
             child: Text(
@@ -210,6 +194,7 @@ class _CommentItemState extends State<CommentItem> {
             ),
           ),
           Padding(
+            // Time
             padding:
                 const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
             child: Align(
@@ -224,10 +209,9 @@ class _CommentItemState extends State<CommentItem> {
               ),
             ),
           ),
-
           const Divider(height: 1, thickness: 0.5),
-          // --- Reply Button (不变) ---
           Padding(
+            // Reply Button
             padding: const EdgeInsets.only(
                 left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
             child: Row(
@@ -262,20 +246,18 @@ class _CommentItemState extends State<CommentItem> {
             ),
           ),
 
-          // --- Reply List (Pass callbacks down) ---
+          // *** 修改: 调用 ReplyList 并传递 *需要 ID* 的回调 ***
           if (widget.comment.replies.isNotEmpty)
             ReplyList(
+              key: ValueKey('reply_list_${widget.comment.id}'),
               replies: widget.comment.replies,
-              // Pass the *specific* update/delete callbacks for replies
-              onUpdateReply: widget
-                  .onUpdate, // Assuming update logic is the same for comment/reply
-              onDeleteReply:
-                  widget.onDelete, // Assuming delete logic is the same
-              // REMOVED: gameId
-              // REMOVED: onReplyChanged
+              // *** 直接把 CommentItem 收到的需要 ID 的回调传下去 ***
+              onUpdateReply: widget.onUpdateComment,
+              onDeleteReply: widget.onDeleteComment,
+              // *** 不传递 loading 状态 Set 给 ReplyList ***
             ),
 
-          // --- Reply Input (Pass submit callback) ---
+          // Reply Input 不变
           AnimatedSize(
             duration: const Duration(milliseconds: 200),
             curve: Curves.easeInOut,
@@ -284,16 +266,11 @@ class _CommentItemState extends State<CommentItem> {
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                 child: ReplyInput(
-                  // REMOVED: gameId
-                  // REMOVED: parentId (handled in _submitReply)
-                  onSubmitReply: _submitReply, // Pass the local submit handler
-                  isSubmitting: _isSubmittingReply, // Pass local loading state
-                  onCancel: () {
-                    setState(() {
-                      _showReplyInput = false;
-                    });
-                  },
-                  // REMOVED: onReplyAdded
+                  onSubmitReply: _submitReply, // 传递本地提交函数
+                  isSubmitting: _isSubmittingReply, // 传递本地 loading 状态
+                  onCancel: () => setState(() {
+                    _showReplyInput = false;
+                  }),
                 ),
               ),
             ),

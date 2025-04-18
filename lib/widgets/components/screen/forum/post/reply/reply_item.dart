@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 // 确保导入了 AppSnackBar 和 NavigationUtils
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/post/post.dart';
 import '../../../../../../services/main/forum/forum_service.dart';
@@ -12,7 +13,7 @@ import '../../../../../ui/badges/user_info_badge.dart';
 import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
 import '../../../../../ui/inputs/text_input_field.dart';
-import '../../../../../ui/buttons/custom_popup_menu_button.dart';
+import '../../../../../ui/buttons/popup/custom_popup_menu_button.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -158,50 +159,60 @@ class ReplyItem extends StatelessWidget {
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         if (!auth.isLoggedIn) return const SizedBox.shrink();
+        final theme = Theme.of(context); // 获取 theme
 
         final currentUserId = auth.currentUser?.id;
-        // 注意：直接比较字符串 ID，如果你的 ID 格式固定
-        final replyAuthorId = reply.authorId; // 假设 reply.authorId 已经是纯粹的 ID 字符串
-
+        final replyAuthorId = reply.authorId;
         final isAuthor = currentUserId == replyAuthorId;
         final isAdmin = auth.currentUser?.isAdmin ?? false;
 
         if (!isAuthor && !isAdmin) return const SizedBox.shrink();
 
-        return CustomPopupMenuButton<String>(
+        return StylishPopupMenuButton<String>( // *** 使用新组件 ***
           icon: Icons.more_vert,
           iconSize: 18,
           iconColor: Colors.grey[600],
-          padding: const EdgeInsets.all(0),
+          triggerPadding: const EdgeInsets.all(0), // 使用 triggerPadding
           tooltip: '回复操作',
-          elevation: 3,
-          splashRadius: 16,
+          menuColor: theme.canvasColor,
+          elevation: 3, // 这个例子里是 3
+          itemHeight: 40,
+
+          // *** 直接提供数据列表 ***
+          items: [
+            // 编辑选项
+            if (isAuthor)
+              StylishMenuItemData( // **提供数据**
+                value: 'edit',
+                // **提供内容 (Row)**
+                child: Row(children: [
+                  Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
+                  const SizedBox(width: 10), const Text('编辑')
+                ]),
+              ),
+
+            // 分割线
+            if (isAuthor && isAdmin)
+              const StylishMenuDividerData(), // **标记分割线**
+
+            // 删除选项
+            if (isAuthor || isAdmin)
+              StylishMenuItemData( // **提供数据**
+                value: 'delete',
+                // **提供内容 (Row)**
+                child: Row(children: [
+                  Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
+                  const SizedBox(width: 10), Text('删除', style: TextStyle(color: theme.colorScheme.error))
+                ]),
+              ),
+          ],
+
+          // onSelected 逻辑不变
           onSelected: (value) {
             switch (value) {
-              case 'edit':
-                _handleEditReply(context, reply); // 注意这里去掉了 postId 参数
-                break;
-              case 'delete':
-                _handleDeleteReply(context, reply); // 注意这里去掉了 postId 参数
-                break;
+              case 'edit': _handleEditReply(context, reply); break;
+              case 'delete': _handleDeleteReply(context, reply); break;
             }
-          },
-          itemBuilder: (context) {
-            final List<PopupMenuEntry<String>> items = [];
-            if (isAuthor) {
-              items.add(PopupMenuItem<String>(
-                value: 'edit', height: 40,
-                child: Row(children: [ Icon(Icons.edit_outlined, size: 18, color: Colors.blue[700]), const SizedBox(width: 10), const Text('编辑')]),
-              ));
-            }
-            if (isAuthor && isAdmin) items.add(const PopupMenuDivider(height: 1));
-            if (isAuthor || isAdmin) { // 修正逻辑：作者或管理员都可以删除
-              items.add(PopupMenuItem<String>(
-                value: 'delete', height: 40,
-                child: Row(children: [ Icon(Icons.delete_outline, size: 18, color: Colors.red[700]), const SizedBox(width: 10), Text('删除', style: TextStyle(color: Colors.red[700]))]),
-              ));
-            }
-            return items;
           },
         );
       },

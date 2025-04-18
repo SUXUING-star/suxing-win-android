@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/custom_page_popup_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
+
+// --- 完整修改后的 PaginationControls 组件 (方案三：使用 PopupMenuButton) ---
 
 class PaginationControls extends StatelessWidget {
   final int currentPage;
@@ -6,6 +10,8 @@ class PaginationControls extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onPreviousPage;
   final VoidCallback? onNextPage;
+  // 回调不变：当用户通过菜单选择了新页码时调用
+  final ValueChanged<int>? onPageSelected;
 
   const PaginationControls({
     Key? key,
@@ -14,6 +20,7 @@ class PaginationControls extends StatelessWidget {
     required this.isLoading,
     this.onPreviousPage,
     this.onNextPage,
+    this.onPageSelected,
   }) : super(key: key);
 
   @override
@@ -25,14 +32,11 @@ class PaginationControls extends StatelessWidget {
     final bool canGoPrevious = currentPage > 1 && !isLoading;
     final bool canGoNext = currentPage < totalPages && !isLoading;
 
-    // 使用 Row 并让其内容居中
     return Padding(
-      // 外层 Padding 控制整个控件组的边距
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.center, // ***核心改动：让子元素在 Row 中居中对齐***
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // --- 上一页按钮 (不再使用 Expanded) ---
           _buildNavigationButton(
             context,
             label: '上一页',
@@ -42,10 +46,9 @@ class PaginationControls extends StatelessWidget {
             isPrevious: true,
           ),
 
-          // --- 中间的页码信息或加载指示器 ---
-          _buildPageInfo(context), // 页码/加载指示器
+          // --- 中间的页码信息 (使用 PopupMenuButton) ---
+          _buildPageInfo(context), // 现在用 PopupMenuButton 实现
 
-          // --- 下一页按钮 (不再使用 Expanded) ---
           _buildNavigationButton(
             context,
             label: '下一页',
@@ -59,7 +62,7 @@ class PaginationControls extends StatelessWidget {
     );
   }
 
-  // 构建单个导航按钮，样式微调，使其更“轻”
+  // 构建单个导航按钮 (不变)
   Widget _buildNavigationButton(BuildContext context, {
     required String label,
     required IconData icon,
@@ -69,26 +72,23 @@ class PaginationControls extends StatelessWidget {
   }) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    // 稍微柔和的禁用颜色
     final Color disabledColor = Colors.grey.shade400;
-    // 启用时的颜色可以从主题获取或保持原样
     final Color enabledIconColor = colorScheme.primary;
     final Color enabledTextColor = textTheme.bodyMedium?.color ?? Colors.black87;
 
-    // 使用原始 Card 结构，但调整内部样式
     Widget buttonContent = Row(
-      mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容，不主动伸展
+      mainAxisSize: MainAxisSize.min,
       children: [
         if (isPrevious)
           Padding(
-            padding: const EdgeInsets.only(right: 4.0), // 减小间距
-            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor), // 减小图标
+            padding: const EdgeInsets.only(right: 4.0),
+            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor),
           ),
         Text(
           label,
           style: TextStyle(
-            fontWeight: FontWeight.w500, // 正常字重或稍细
-            fontSize: 12, // 减小字号
+            fontWeight: FontWeight.w500,
+            fontSize: 12,
             color: isEnabled ? enabledTextColor : disabledColor,
           ),
           maxLines: 1,
@@ -96,34 +96,29 @@ class PaginationControls extends StatelessWidget {
         ),
         if (!isPrevious)
           Padding(
-            padding: const EdgeInsets.only(left: 4.0), // 减小间距
-            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor), // 减小图标
+            padding: const EdgeInsets.only(left: 4.0),
+            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor),
           ),
       ],
     );
 
-    // Card 外层控制形状和点击效果，不再需要 Expanded
     return Opacity(
-      opacity: isEnabled ? 1.0 : 0.6, // 禁用时稍微透明即可
+      opacity: isEnabled ? 1.0 : 0.6,
       child: Card(
-        // 添加左右边距，防止按钮紧挨着页码
         margin: const EdgeInsets.symmetric(horizontal: 6.0),
         clipBehavior: Clip.antiAlias,
-        elevation: isEnabled ? 0.5 : 0, // 降低阴影，更“无感”
-        // 可以考虑用 surfaceVariant 或带透明度的 cardColor
-        // color: colorScheme.surfaceVariant.withOpacity(0.7),
-        color: Theme.of(context).cardColor.withOpacity(0.9), // 卡片背景可以带点透明
+        elevation: isEnabled ? 0.5 : 0,
+        color: Theme.of(context).cardColor.withOpacity(0.9),
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16), // 圆角可以大一点，显得更柔和
+          borderRadius: BorderRadius.circular(16),
           side: isEnabled
-              ? BorderSide.none // 启用时无边框
-              : BorderSide(color: Colors.grey.shade300.withOpacity(0.5), width: 0.5), // 禁用时可以加个非常淡的边框
+              ? BorderSide.none
+              : BorderSide(color: Colors.grey.shade300.withOpacity(0.5), width: 0.5),
         ),
         child: InkWell(
           onTap: isEnabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(16), // InkWell 的圆角要匹配 Card
+          borderRadius: BorderRadius.circular(16),
           child: Padding(
-            // 减小内边距，让按钮更紧凑
             padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
             child: buttonContent,
           ),
@@ -132,34 +127,109 @@ class PaginationControls extends StatelessWidget {
     );
   }
 
-  // 构建中间的页码/加载指示器，也调小一点
+  // *** 构建中间的页码信息 (使用 PopupMenuButton 实现) ***
+  // *** 构建中间的页码信息 (尝试移除 ConstrainedBox/Center) ***
   Widget _buildPageInfo(BuildContext context) {
     final ColorScheme colorScheme = Theme.of(context).colorScheme;
     final TextTheme textTheme = Theme.of(context).textTheme;
-    const double indicatorSize = 16.0; // 减小加载圈尺寸
+    const double indicatorSize = 16.0;
+    final pageInfoStyle = textTheme.bodySmall?.copyWith(
+      fontWeight: FontWeight.w600,
+      color: (textTheme.bodySmall?.color ?? Colors.grey.shade700).withOpacity(0.9),
+    );
+    final disabledPageInfoColor = (textTheme.bodySmall?.color ?? Colors.grey.shade700).withOpacity(0.5);
 
-    return Padding(
-      // 控制页码与按钮的间距
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: ConstrainedBox( // 限制最小高度防止跳动
-        constraints: const BoxConstraints(minHeight: indicatorSize + 4),
-        child: isLoading
-            ? SizedBox(
+    // 1. 加载圈 (不变)
+    if (isLoading) {
+      // *** 为了保险，也给加载圈一个明确的大小，避免依赖 ConstrainedBox ***
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: SizedBox( // 直接用 SizedBox 指定大小
           width: indicatorSize,
-          height: indicatorSize,
-          child: CircularProgressIndicator(
-            strokeWidth: 1.5, // 更细的加载圈
-            color: colorScheme.primary.withOpacity(0.8),
-          ),
-        )
-            : Text(
-          '$currentPage / $totalPages',
-          style: textTheme.bodySmall?.copyWith( // 使用更小的字号样式
-            fontWeight: FontWeight.w600,
-            color: (textTheme.bodySmall?.color ?? Colors.grey.shade700).withOpacity(0.9),
+          height: 30, // 给一个大概的高度，跟按钮差不多
+          child: Center( // Center 保证加载圈在 SizedBox 中间
+            child: SizedBox(
+              width: indicatorSize,
+              height: indicatorSize,
+              child: CircularProgressIndicator(
+                strokeWidth: 1.5,
+                color: colorScheme.primary.withOpacity(0.8),
+              ),
+            ),
           ),
         ),
-      ),
-    );
+      );
+    }
+
+    // 2. 使用 CustomPopupMenuButton，并用自定义 Item
+    if (totalPages > 1 && onPageSelected != null) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: CustomPopupMenuButton<int>( // 继续使用支持 child 的版本
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            height: 30,
+            alignment: Alignment.center,
+            child: Text(
+              '$currentPage / $totalPages',
+              style: pageInfoStyle,
+            ),
+          ),
+          // *** 修改 itemBuilder 来使用 CustomPagePopupItem ***
+          itemBuilder: (context) {
+            return List<PopupMenuEntry<int>>.generate(totalPages, (index) {
+              final page = index + 1;
+              return PopupMenuItem<int>(
+                value: page,
+                // *** 重要：移除内边距，让 child 完全填充 ***
+                padding: EdgeInsets.zero,
+                // *** 设置 enabled 为 false 可以禁用默认的 Material 点击效果 (可选) ***
+                // enabled: false, // 如果完全不想要 Material 的反馈，可以试试这个
+                height: 40, // 根据 CustomPagePopupItem 的内边距调整，确保高度足够
+                // *** 把自定义的 Item 作为 child ***
+                child: CustomPagePopupItem(
+                  pageNumber: page,
+                  totalPages: totalPages,
+                  isCurrentPage: page == currentPage,
+                ),
+              );
+            });
+          },
+          onSelected: (int newPage) {
+            if (newPage != currentPage) {
+              onPageSelected!(newPage);
+            }
+          },
+          tooltip: '跳转页面',
+          isEnabled: !isLoading,
+          shape: RoundedRectangleBorder( // 保持菜单的圆角
+            borderRadius: BorderRadius.circular(8.0),
+          ),
+          // *** 设置菜单背景为透明或白色，让 Item 的背景生效 ***
+          // 如果 CustomPagePopupItem 本身有背景色，这里可以设为透明
+          menuBackgroundColor: Colors.transparent, // 例如，让菜单背景透明
+          // 或者如果 CustomPagePopupItem 没有设置背景，这里统一设置白色
+          // color: Colors.white,
+          elevation: 0, // 保持阴影
+          padding: EdgeInsets.zero,
+        ),
+      );
+    }
+    // 3. 只显示文本 (移除 ConstrainedBox 和 Center)
+    else {
+      // *** 也给纯文本一个明确的高度或容器，保持一致性 ***
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Container( // 用 Container 包裹
+          padding: const EdgeInsets.symmetric(vertical: 6.0), // 同上，给点垂直空间
+          height: 30, // 保持和其他情况高度一致
+          alignment: Alignment.center, // 确保文本在容器中居中
+          child: Text(
+            '$currentPage / $totalPages',
+            style: onPageSelected == null ? TextStyle(color: disabledPageInfoColor, fontSize: pageInfoStyle?.fontSize, fontWeight: pageInfoStyle?.fontWeight) : pageInfoStyle,
+          ),
+        ),
+      );
+    }
   }
-}
+} // --- PaginationControls 组件结束 ---

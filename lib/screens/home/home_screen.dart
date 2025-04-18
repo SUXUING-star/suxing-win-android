@@ -26,8 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // --- 懒加载状态 ---
   bool _isInitialized = false; // 是否已初始化（首次加载）
-  bool _isVisible = false;     // 当前是否可见
-
+  bool _isVisible = false; // 当前是否可见
 
   String? _errorMessage;
   bool _isLoading = false; // 这个仍然用于刷新和加载过程中的状态
@@ -35,7 +34,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-
   }
 
   // 初始化游戏数据流
@@ -71,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
       print("HomeScreen is now visible and not initialized. Loading data...");
       setState(() {
         _isInitialized = true; // 标记为已初始化
-        _isLoading = true;     // 开始加载，显示 Loading
+        _isLoading = true; // 开始加载，显示 Loading
         _errorMessage = null;
       });
       _loadData(); // 调用实际加载数据的方法
@@ -80,7 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 判断是否应该刷新数据
   bool _shouldRefresh() {
-
     // 如果从未刷新过，则应该刷新
     if (_lastRefreshTime == null) {
       return true;
@@ -93,7 +90,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 刷新数据的方法
   Future<void> _refreshData() async {
-
     if (!mounted) return; // 检查 mounted
 
     setState(() {
@@ -128,6 +124,7 @@ class _HomeScreenState extends State<HomeScreen> {
     }
     // finally 块不再需要设置 _isLoading = false，因为成功和失败路径都处理了
   }
+
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
@@ -150,7 +147,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!_isInitialized) {
       return Scaffold(
         // 可以只显示一个简单的 Loading，或者根据你的 UI 设计来
-        body: LoadingWidget.inline(message: '等待加载首页...'),
+        body: LoadingWidget.fullScreen(size: 40, message: '等待加载首页...'),
       );
     }
 
@@ -159,16 +156,16 @@ class _HomeScreenState extends State<HomeScreen> {
       // 如果已有内容，可以在内容上层叠 Loading，否则显示全屏 Loading
       // 这里简单处理，直接显示 Loading
       return Scaffold(
-        body: LoadingWidget.inline(message: '正在加载首页...'),
+        body: LoadingWidget.fullScreen(size: 40, message: '正在加载首页...'),
       );
     }
 
     // 3. 如果加载出错
     if (_errorMessage != null) {
       return CustomErrorWidget(
-          errorMessage: _errorMessage!,
-          onRetry: _loadData, // 出错重试时直接调用 _loadData
-          title: '加载失败',
+        errorMessage: _errorMessage!,
+        onRetry: _loadData, // 出错重试时直接调用 _loadData
+        title: '加载失败',
       );
     }
 

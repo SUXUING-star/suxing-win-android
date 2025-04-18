@@ -5,6 +5,7 @@ import 'package:hive/hive.dart'; // BoxEvent
 import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider (如果 Card 里需要)
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 只依赖 Service
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_type_filter.dart';
@@ -487,7 +488,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _stopWatchingCache();
     print(
         "ActivityFeedScreen: Navigating to detail, stopped watching feed cache.");
-    NavigationUtils.pushNamed(context, '/activity/detail',
+    NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
         arguments: {'activityId': activity.id, 'activity': activity}).then((_) {
       if (mounted) {
         _startOrUpdateWatchingCache();
@@ -642,9 +643,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   Widget _buildBodyContent() {
     if (!_isInitialized && !_isLoadingData)
-      return LoadingWidget.inline(message: "等待加载动态...");
+      return LoadingWidget.fullScreen(message: "等待加载动态...");
     if (_isLoadingData && _activities.isEmpty)
-      return LoadingWidget.inline(message: "正在加载动态...");
+      return LoadingWidget.fullScreen(message: "正在加载动态...");
     if (_error.isNotEmpty && _activities.isEmpty)
       return InlineErrorWidget(
           errorMessage: _error,

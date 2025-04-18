@@ -618,7 +618,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   // 主 build 方法
   @override
   Widget build(BuildContext context) {
-    final isPending = _game!.approvalStatus == 'pending';
     // 初始 ID 检查
     if (widget.gameId == null) {
       return CustomErrorWidget(errorMessage: '无效的游戏 ID');
@@ -627,7 +626,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // --- Loading / Error / Content 构建逻辑 ---
     if (_isLoading && _game == null) {
       // 首次加载时全屏 Loading
-      return LoadingWidget.fullScreen(message: '加载中...');
+      return LoadingWidget.fullScreen(message: '正在加载游戏数据...');
     }
 
     if (_error != null && _game == null) {
@@ -741,11 +740,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       return InlineErrorWidget(errorMessage: '无法加载游戏数据');
     }
 
+    final bool isPending = _game!.approvalStatus == 'pending';
+
     Widget bodyContent;
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---
     if (_isLoading && _game != null) {
       // 正在刷新且有旧数据
-      bodyContent = LoadingWidget.inline(message: "正在加载数据");
+      bodyContent = LoadingWidget.fullScreen(message: "正在加载游戏数据");
     } else {
       // 正常渲染
       final isDesktop = MediaQuery.of(context).size.width >= 1024;

@@ -117,7 +117,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     }
 
     if (_isLoading) {
-      return LoadingWidget.inline(); // Use consistent loading widget
+      return LoadingWidget.fullScreen(message: "正在加载收藏数据"); // Use consistent loading widget
     }
 
     if (_games.isEmpty) {

@@ -166,6 +166,53 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
     // NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
   }
 
+  // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
+  Future<void> _handleToggleLockAction(String postId) async {
+    print("PostFavoritesTab: Handling toggle lock action for $postId");
+    if (!mounted) return;
+
+    // 可选：显示加载状态
+    // setState(() => _isLoading = true);
+
+    try {
+      await _forumService.togglePostLock(postId);
+      if (!mounted) return;
+
+      AppSnackBar.showSuccess(context, '帖子状态已切换');
+
+      // --- 更新收藏列表中的帖子状态 ---
+      setState(() {
+        final index = _favoritePosts.indexWhere((p) => p.id == postId);
+        if (index != -1) {
+          final oldPost = _favoritePosts[index];
+          final newStatus = oldPost.status == PostStatus.locked
+              ? PostStatus.active
+              : PostStatus.locked;
+          _favoritePosts[index] = oldPost.copyWith(status: newStatus);
+          print("PostFavoritesTab: Updated post $postId status in favorites list.");
+          // 如果帖子被锁定，它理论上不应该出现在普通用户的收藏夹了
+          // 但管理员可能看到。如果非管理员，可以考虑直接移除
+          // if (newStatus == PostStatus.locked && !Provider.of<AuthProvider>(context, listen: false).isAdmin) {
+          //   _favoritePosts.removeAt(index);
+          //   print("PostFavoritesTab: Removed locked post $postId from non-admin favorites.");
+          // }
+        } else {
+          print("PostFavoritesTab: Warning - Post $postId not found in favorites list after toggle.");
+          // 可以选择刷新: refreshPosts();
+        }
+      });
+
+    } catch (e) {
+      if (!mounted) return;
+      print("PostFavoritesTab: Error toggling lock for post $postId: $e");
+      AppSnackBar.showError(context, '操作失败: $e');
+    } finally {
+      // 可选：结束加载状态
+      // if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -228,6 +275,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
         // --- 传递实现好的回调函数 ---
         onDeleteAction: _handleUnfavoritePost,
         onEditAction: _handleEditPostRequest,
+        onToggleLockAction: _handleToggleLockAction,
       ),
     );
   }

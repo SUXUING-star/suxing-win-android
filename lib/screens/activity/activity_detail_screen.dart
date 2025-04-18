@@ -256,6 +256,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                   id: currentActivity.id,
                   userId: currentActivity.userId,
                   type: currentActivity.type,
+                  sourceId: currentActivity.sourceId,
                   targetId: currentActivity.targetId,
                   targetType: currentActivity.targetType,
                   content: newText, // <--- 更新内容

@@ -8,4 +8,12 @@ class DeletePostEvent extends MyPostsEvent {
   DeletePostEvent(this.postId);
 }
 
+// --- 新增：切换帖子锁定状态事件 ---
+class TogglePostLockEvent extends MyPostsEvent {
+  final String postId;
+  TogglePostLockEvent(this.postId);
+}
+
 class RefreshMyPostsEvent extends MyPostsEvent {}
+
+class ClearPostsErrorEvent extends MyPostsEvent {}

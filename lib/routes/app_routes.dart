@@ -63,7 +63,7 @@ class AppRoutes {
   static const String favorites = '/favorites';
   static const String history = '/history';
   static const String myPosts = '/my-posts';
-  static const String settings = '/settings';
+  static const String settingPage = '/settings';
   static const String wantToPlayGames = '/collections/want-to-play';
   static const String playingGames = '/collections/playing';
   static const String playedGames = '/collections/played';
@@ -88,7 +88,7 @@ class AppRoutes {
 
     switch (routeName) {
       // 在 app_routes.dart 中更新根路由的处理
-      case '/':
+      case home:
         // 检查是否有传递标签索引参数
         if (settings.arguments != null) {
 
@@ -114,15 +114,15 @@ class AppRoutes {
         // 默认行为，无参数时直接返回主页面
         print("AppRoutes: 返回默认主页面");
         return MaterialPageRoute(builder: (_) => HomeScreen());
-      case '/about':
+      case about:
         return MaterialPageRoute(builder: (_) => AboutScreen());
-      case '/login':
+      case login:
         return MaterialPageRoute(builder: (_) => LoginScreen());
-      case '/register':
+      case register:
         return MaterialPageRoute(builder: (_) => RegisterScreen());
-      case '/forgot-password':
+      case forgotPassword:
         return MaterialPageRoute(builder: (_) => ForgotPasswordScreen());
-      case '/reset-password':
+      case resetPassword:
         final arguments = settings.arguments;
         if (arguments is! String || (arguments as String).isEmpty) {
           return MaterialPageRoute(
@@ -135,10 +135,10 @@ class AppRoutes {
         final String email = arguments;
         return MaterialPageRoute(
             builder: (_) => ResetPasswordScreen(email: email));
-      case '/search-game':
+      case searchGame:
         return MaterialPageRoute(builder: (_) => SearchGameScreen());
 
-      case '/game/detail':
+      case gameDetail:
         final arguments = settings.arguments;
         String? gameId;
 
@@ -160,18 +160,18 @@ class AppRoutes {
         // 此时 gameId 一定非空，可以安全地传递给 GameDetailScreen
         return MaterialPageRoute(
             builder: (_) => GameDetailScreen(gameId: gameId));
-      case '/games':
+      case gamesList:
         return MaterialPageRoute(builder: (_) => GamesListScreen());
-      case '/hot-games':
+      case hotGames:
         return MaterialPageRoute(builder: (_) => HotGamesScreen());
-      case '/latest-games':
+      case latestGames:
         return MaterialPageRoute(builder: (_) => LatestGamesScreen());
-      case '/links':
+      case externalLinks:
         return MaterialPageRoute(builder: (_) => LinksToolsScreen());
 
-      case '/profile':
+      case profile:
         return MaterialPageRoute(builder: (_) => ProfileScreen());
-      case '/open-profile':
+      case openProfile:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
@@ -185,9 +185,9 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => OpenProfileScreen(userId: userId));
 
-      case '/game/add':
+      case addGame:
         return MaterialPageRoute(builder: (_) => AddGameScreen());
-      case '/game/edit':
+      case editGame:
         final arguments = settings.arguments;
         if (arguments is! Game) {
           return MaterialPageRoute(
@@ -201,22 +201,22 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => EditGameScreen(game: game),
         );
-      case '/checkin':
+      case checkin:
         return MaterialPageRoute(builder: (_) => CheckInScreen());
-      case '/favorites':
+      case favorites:
         return MaterialPageRoute(builder: (_) => FavoritesScreen());
-      case '/history':
+      case history:
         return MaterialPageRoute(builder: (_) => HistoryScreen());
-      case '/my-posts':
+      case myPosts:
         return MaterialPageRoute(builder: (_) => MyPostsScreen());
-      case '/settings':
+      case settingPage:
         return MaterialPageRoute(builder: (_) => SettingsScreen());
-      case '/my-collections':
+      case myCollections:
         return MaterialPageRoute(builder: (_) => GameCollectionScreen());
-      case '/activity-feed':
+      case activityFeed:
         return MaterialPageRoute(builder: (_) => ActivityFeedScreen());
 
-      case '/user-activities':
+      case userActivities:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
@@ -234,7 +234,7 @@ class AppRoutes {
           ),
         );
 
-      case '/activity/detail':
+      case activityDetail:
         final arguments = settings.arguments;
         String? activityId;
         UserActivity? activity;
@@ -282,40 +282,40 @@ class AppRoutes {
           ),
         );
 
-      case '/collections/want-to-play':
+      case wantToPlayGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
             collectionType: 'wantToPlay',
             title: '想玩的游戏',
           ),
         );
-      case '/collections/playing':
+      case playingGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
             collectionType: 'playing',
             title: '在玩的游戏',
           ),
         );
-      case '/collections/played':
+      case playedGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
             collectionType: 'played',
             title: '玩过的游戏',
           ),
         );
-      case '/collections/all':
+      case allCollections:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
             collectionType: 'all',
             title: '全部收藏',
           ),
         );
-      case '/search-post':
+      case searchPost:
         return MaterialPageRoute(builder: (_) => SearchPostScreen());
-      case '/forum':
+      case forum:
         final String? tag = settings.arguments as String?;
         return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
-      case '/forum/post':
+      case postDetail:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
@@ -328,9 +328,9 @@ class AppRoutes {
         final String postId = settings.arguments as String;
         return MaterialPageRoute(
             builder: (_) => PostDetailScreen(postId: postId));
-      case '/forum/post/create':
+      case createPost:
         return MaterialPageRoute(builder: (_) => CreatePostScreen());
-      case '/forum/post/edit':
+      case editPost:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
@@ -343,11 +343,11 @@ class AppRoutes {
         final String postId = settings.arguments as String;
         return MaterialPageRoute(
             builder: (_) => EditPostScreen(postId: postId));
-      case '/admin':
+      case adminDashboard:
         return MaterialPageRoute(builder: (_) => AdminDashboard());
-      case '/my-games':
+      case myGames:
         return MaterialPageRoute(builder: (_) => MyGamesScreen());
-      case '/user-follows':
+      case userFollows:
         if (settings.arguments is! Map<String, dynamic>) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(

@@ -4,6 +4,7 @@ class UserActivity {
   final String id;
   final String userId;
   final String type;
+  final String sourceId;
   final String targetId;
   final String targetType;
   final String content;
@@ -23,6 +24,7 @@ class UserActivity {
     required this.id,
     required this.userId,
     required this.type,
+    required this.sourceId,
     required this.targetId,
     required this.targetType,
     required this.content,
@@ -40,6 +42,17 @@ class UserActivity {
   });
 
   factory UserActivity.fromJson(Map<String, dynamic> json) {
+    // 安全解析日期，提供默认值或处理错误
+    DateTime parseDateTime(String? dateString) {
+      if (dateString == null) return DateTime.now();
+      try {
+        // 尝试多种格式，或者确保后端总是返回 ISO 8601
+        return DateTime.parse(dateString);
+      } catch (e) {
+        print("Error parsing date: $dateString. Error: $e");
+        return DateTime.now(); // Fallback to now if parsing fails
+      }
+    }
     List<ActivityComment> comments = [];
     if (json['comments'] != null) {
       comments = (json['comments'] as List)
@@ -51,15 +64,12 @@ class UserActivity {
       id: json['id'],
       userId: json['userId'],
       type: json['type'],
+      sourceId: json['sourceId'] ?? '',
       targetId: json['targetId'] ?? '',
       targetType: json['targetType'] ?? '',
       content: json['content'] ?? '',
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
-      updateTime: json['updateTime'] != null
-          ? DateTime.parse(json['updateTime'])
-          : DateTime.now(),  // 新增字段
+      createTime: parseDateTime(json['createTime']),
+      updateTime: parseDateTime(json['updateTime']),
       isEdited: json['isEdited'] ?? false,  // 新增字段
       likesCount: json['likesCount'] ?? 0,
       commentsCount: json['commentsCount'] ?? 0,
@@ -77,6 +87,7 @@ class UserActivity {
       'id': id,
       'userId': userId,
       'type': type,
+      'sourceId': sourceId,
       'targetId': targetId,
       'targetType': targetType,
       'content': content,
@@ -96,6 +107,7 @@ class UserActivity {
 }
 class ActivityComment {
   final String id;
+  final String userId;
   final String content;
   final DateTime createTime;
   int likesCount;
@@ -104,6 +116,7 @@ class ActivityComment {
 
   ActivityComment({
     required this.id,
+    required this.userId,
     required this.content,
     required this.createTime,
     required this.likesCount,
@@ -112,12 +125,25 @@ class ActivityComment {
   });
 
   factory ActivityComment.fromJson(Map<String, dynamic> json) {
+    // 安全解析日期
+    DateTime parseDateTime(String? dateString) {
+      if (dateString == null) return DateTime.now();
+      try {
+        return DateTime.parse(dateString);
+      } catch (e) {
+        print("Error parsing comment date: $dateString. Error: $e");
+        return DateTime.now();
+      }
+    }
+
+    // 从 user map 中提取 userId
+    String extractedUserId = (json['user'] as Map?)?['userId'] as String? ??
+        json['userId'] as String? ?? ''; // 兼容顶层 userId
     return ActivityComment(
       id: json['id'],
+      userId: extractedUserId,
       content: json['content'] ?? '',
-      createTime: json['createTime'] != null
-          ? DateTime.parse(json['createTime'])
-          : DateTime.now(),
+      createTime: parseDateTime(json['createTime']),
       likesCount: json['likesCount'] ?? 0,
       isLiked: json['isLiked'] ?? false,
       user: json['user'],
@@ -127,6 +153,7 @@ class ActivityComment {
   Map<String, dynamic> toJson() {
     return {
       'id': id,
+      'userId': userId,
       'content': content,
       'createTime': createTime.toIso8601String(),
       'likesCount': likesCount,
@@ -134,4 +161,5 @@ class ActivityComment {
       'user': user,
     };
   }
+
 }

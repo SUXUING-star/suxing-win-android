@@ -1,6 +1,7 @@
 // lib/models/game/game.dart
 import 'package:mongo_dart/mongo_dart.dart';
 
+
 class Game {
   final String id;
   final String authorId;

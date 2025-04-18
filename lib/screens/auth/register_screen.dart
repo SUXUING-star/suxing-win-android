@@ -177,7 +177,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           // Opacity(opacity: 0.6, child: Container(width: double.infinity, height: double.infinity)),
 
           // 加载状态
-          if (isLoading) LoadingWidget.inline(message: loadingMessage),
+          if (isLoading) LoadingWidget.fullScreen(message: loadingMessage),
 
           Center(
             child: ConstrainedBox(

@@ -347,7 +347,7 @@ class _MessageScreenState extends State<MessageScreen> {
   Widget _buildMessageContent() {
     // 加载状态
     if (_isLoading && _groupedMessages.isEmpty) {
-      return LoadingWidget.inline();
+      return LoadingWidget.fullScreen(message: "正在加载消息");
     }
 
     return RefreshIndicator(

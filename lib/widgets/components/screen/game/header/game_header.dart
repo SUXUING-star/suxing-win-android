@@ -1,6 +1,7 @@
 // lib/widgets/game/game_header.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../models/game/game.dart';
 import '../tag/game_tags.dart'; // 导入游戏标签组件
 import '../../../../ui/badges/user_info_badge.dart'; // 导入新的用户信息组件
@@ -76,13 +77,11 @@ class GameHeader extends StatelessWidget {
               ],
             ),
             SizedBox(height: 16),
-            Text(
+            AppText(
               game.title,
-              style: TextStyle(
-                fontSize: isDesktop ? 24 : 20,
-                fontWeight: FontWeight.bold,
-                height: 1.3,
-              ),
+              fontSize: isDesktop ? 24 : 18,
+              fontWeight: FontWeight.bold,
+              height: 1.3,
             ),
             SizedBox(height: 8),
             Text(
@@ -141,7 +140,8 @@ class GameHeader extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.remove_red_eye_outlined, size: 16, color: Colors.grey[600]),
+                Icon(Icons.remove_red_eye_outlined,
+                    size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
                 Text('${game.viewCount} 次浏览', style: textStyle),
               ],
@@ -149,7 +149,8 @@ class GameHeader extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.thumb_up_off_alt_outlined, size: 16, color: Colors.grey[600]),
+                Icon(Icons.thumb_up_off_alt_outlined,
+                    size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
                 Text('${game.likeCount} 人点赞', style: textStyle),
               ],
@@ -157,7 +158,8 @@ class GameHeader extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.bookmark_added_outlined, size: 16, color: Colors.grey[600]),
+                Icon(Icons.bookmark_added_outlined,
+                    size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
                 Text('${game.totalCollections} 人收藏', style: textStyle),
               ],
@@ -165,7 +167,8 @@ class GameHeader extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.star_border_outlined, size: 16, color: Colors.grey[600]),
+                Icon(Icons.star_border_outlined,
+                    size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
                 Text('评分值${game.rating}', style: textStyle),
               ],
@@ -177,14 +180,14 @@ class GameHeader extends StatelessWidget {
           children: [
             Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
             SizedBox(width: 4),
-            Text('发布于 ${DateTimeFormatter.formatTimeAgo(game.createTime)}', style: textStyle),
+            Text('发布于 ${DateTimeFormatter.formatTimeAgo(game.createTime)}',
+                style: textStyle),
             SizedBox(width: 4),
-            Text('编辑于 ${DateTimeFormatter.formatTimeAgo(game.updateTime)}', style: textStyle),
+            Text('编辑于 ${DateTimeFormatter.formatTimeAgo(game.updateTime)}',
+                style: textStyle),
           ],
         ),
-
       ],
     );
   }
 }
-

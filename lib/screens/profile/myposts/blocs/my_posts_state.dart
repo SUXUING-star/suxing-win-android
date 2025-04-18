@@ -1,34 +1,44 @@
 // lib/blocs/my_posts/my_posts_state.dart
-import '../../../../models/post/post.dart';
+import '../../../../models/post/post.dart'; // 确保导入 Post 模型
 
-class MyPostsState {
+// 使用 Equatable 方便状态比较，避免不必要的 UI 重建
+import 'package:equatable/equatable.dart';
+
+class MyPostsState extends Equatable {
   final List<Post> posts;
-  final bool hasMoreData; // 添加 hasMoreData
-  final bool isLoading; // 添加一个通用的 isLoading 标记? 或者用 status 判断
-  final String? error;
-  final String? userId;
+  final bool isLoading; // 标记是否正在加载或刷新
+  final String? error;  // 错误信息
+  final String? userId; // 当前用户的 ID
 
-  MyPostsState({
-    required this.posts,
-    this.hasMoreData = true, // 初始假设有更多数据
+  const MyPostsState({
+    this.posts = const [], // 默认空列表
     this.isLoading = false, // 初始非加载状态
     this.error,
     this.userId,
   });
 
+  // 使用 copyWith 来创建新状态，保证不可变性
   MyPostsState copyWith({
     List<Post>? posts,
-    bool? hasMoreData,
     bool? isLoading,
     String? error,
     String? userId,
+    bool clearError = false, // 添加一个标志来显式清除错误
   }) {
     return MyPostsState(
       posts: posts ?? this.posts,
-      hasMoreData: hasMoreData ?? this.hasMoreData,
       isLoading: isLoading ?? this.isLoading,
-      error: error,
+      // 如果 clearError 为 true，则将 error 设为 null，否则使用传入的 error 或保持旧 error
+      error: clearError ? null : (error ?? this.error),
       userId: userId ?? this.userId,
     );
   }
+
+  // Equatable 需要重写 props
+  @override
+  List<Object?> get props => [posts, isLoading, error, userId];
+
+  // Equatable 需要重写 stringify (可选, 方便调试)
+  @override
+  bool get stringify => true;
 }

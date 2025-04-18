@@ -3,10 +3,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/theme/theme_provider.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/widgets/ui/buttons/custom_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 // --- 引入新的活动类型工具类 ---
 import 'package:suxingchahui/utils/activity/activity_type_utils.dart';
@@ -45,6 +47,8 @@ class ActivityHeader extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.currentUserId;
     final isAdmin = authProvider.isAdmin;
+
+    final theme = Theme.of(context); // 获取 theme
 
     final bool canEdit = onEdit != null && authProvider.isLoggedIn && currentUserId == userId;
     final bool canDelete = onDelete != null && authProvider.isLoggedIn && (currentUserId == userId || isAdmin);
@@ -101,13 +105,45 @@ class ActivityHeader extends StatelessWidget {
 
             // 操作菜单按钮
             if (canEdit || canDelete)
-              CustomPopupMenuButton<String>(
+              StylishPopupMenuButton<String>( // *** 使用新组件 ***
                 icon: Icons.more_vert,
                 iconSize: 16 * math.sqrt(cardHeight * 0.8),
                 iconColor: Colors.grey.shade600,
                 tooltip: '更多操作',
-                padding: const EdgeInsets.all(4.0),
+                triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
                 offset: const Offset(0, 25),
+                menuColor: theme.canvasColor,
+                elevation: 2.0, // 可以给个默认值
+                itemHeight: 36, // 这个例子里项高是 36
+
+                // *** 直接提供数据列表 ***
+                items: [
+                  // 编辑选项
+                  if (canEdit)
+                    StylishMenuItemData( // **提供数据**
+                      value: 'edit',
+                      // **提供内容 (Row)**
+                      child: Row(children: [
+                        Icon(Icons.edit_outlined, size: 16, color: theme.colorScheme.primary),
+                        SizedBox(width: 8),
+                        Text('编辑'),
+                      ],),
+                    ),
+
+                  // 删除选项
+                  if (canDelete)
+                    StylishMenuItemData( // **提供数据**
+                      value: 'delete',
+                      // **提供内容 (Row)**
+                      child: Row(children: [
+                        Icon(Icons.delete_outline, size: 16, color: theme.colorScheme.error),
+                        SizedBox(width: 8),
+                        Text('删除', style: TextStyle(color: theme.colorScheme.error)),
+                      ],),
+                    ),
+                ],
+
+                // onSelected 逻辑不变
                 onSelected: (value) {
                   if (value == 'edit' && onEdit != null) {
                     onEdit!();
@@ -115,34 +151,6 @@ class ActivityHeader extends StatelessWidget {
                     onDelete!();
                   }
                 },
-                itemBuilder: (context) => [
-                  if (canEdit)
-                    const PopupMenuItem<String>(
-                      value: 'edit',
-                      height: 36,
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.edit_outlined, size: 16, color: Colors.blue),
-                          SizedBox(width: 8),
-                          Text('编辑'),
-                        ],
-                      ),
-                    ),
-                  if (canDelete)
-                    const PopupMenuItem<String>(
-                      value: 'delete',
-                      height: 36,
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.delete_outline, size: 16, color: Colors.red),
-                          SizedBox(width: 8),
-                          Text('删除', style: TextStyle(color: Colors.red)),
-                        ],
-                      ),
-                    ),
-                ],
               ),
           ],
         ),

@@ -55,7 +55,6 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
       // --- 其他参数 ---
       // 热门列表通常只读，提供空的回调或不提供
       onDeleteGameAction: (gameId) async { /* No action needed */ },
-      // onEditGameAction: (game) async { /* No action needed */ },
       emptyStateMessage: '暂无热门游戏',
       emptyStateIcon: Icon(Icons.local_fire_department, size: 48, color: Colors.grey), // 不加 const
       showTagSelection: false,

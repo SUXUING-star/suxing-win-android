@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'dart:io'; // For Platform
 import 'dart:math'; // For Random
 import '../../../utils/font/font_config.dart';
@@ -110,17 +112,12 @@ class _InitializationScreenState extends State<InitializationScreen> {
                             ),
                           );
                         },
-                        child: Text(
+                        child: AppText(
                           widget.message,
                           key: ValueKey<String>(widget.message),
-                          style: TextStyle(
-                            fontFamily: FontConfig.defaultFontFamily,
-                            fontFamilyFallback: FontConfig.fontFallback,
-                            color: Colors.blue[700],
-                            fontSize: messageTextSize,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          textAlign: TextAlign.center,
+                          type: AppTextType.title,
+                          color: Colors.blue[400],
+
                         ),
                       ),
                     ] else
@@ -147,7 +144,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
                               color: Colors.red[400],
                             ),
                             const SizedBox(height: 16),
-                            Text(
+                            AppText(
                               widget.message,
                               style: TextStyle(
                                 color: Colors.grey[800],
@@ -173,9 +170,9 @@ class _InitializationScreenState extends State<InitializationScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                     ),
                                   ),
-                                  child: const Text(
+                                  child: const AppText(
                                     '重试',
-                                    style: TextStyle(fontSize: 16),
+                                    type: AppTextType.error,
                                   ),
                                 ),
                                 const SizedBox(width: 16),
@@ -205,15 +202,11 @@ class _InitializationScreenState extends State<InitializationScreen> {
 
                     const SizedBox(height: 40),
                     // 欢迎文本
-                    Text(
+                    AppText(
                       '宿星茶会（跨平台版）',
-                      style: TextStyle(
-                        fontFamily: FontConfig.defaultFontFamily,
-                        fontFamilyFallback: FontConfig.fontFallback,
-                        color: Colors.blue[400],
-                        fontSize: welcomeTextSize, // 使用平台特定的欢迎文字尺寸
-                        fontWeight: FontWeight.bold,
-                      ),
+                      color: Colors.blue[400],
+                      fontSize: welcomeTextSize, // 使用平台特定的欢迎文字尺寸
+                      fontWeight: FontWeight.bold,
                     ),
                   ],
                 ),

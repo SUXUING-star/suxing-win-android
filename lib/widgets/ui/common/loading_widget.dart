@@ -1,7 +1,8 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
 // --- 导入【外部】统一的动画组件 ---
-import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart'; // 确保这个导入路径正确
+import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 确保这个导入路径正确
 
 // (NavigationUtils import - if needed, keep it)
 // import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -248,7 +249,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
           // --- 文字 (如果提供) ---
           if (widget.message != null && widget.message!.isNotEmpty) ...[
             const SizedBox(height: 12), // Spacing between animation and text
-            Text(
+            AppText(
               widget.message!,
               style: TextStyle(
                 color: textColor,

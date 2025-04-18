@@ -386,7 +386,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             IconButton(
               icon: Icon(Icons.settings_outlined), // 设置图标
               onPressed: () => NavigationUtils.pushNamed(
-                  context, AppRoutes.settings), // 导航到设置页面
+                  context, AppRoutes.settingPage), // 导航到设置页面
               tooltip: '设置',
             ),
           ],
@@ -417,12 +417,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // State 2: 尚未初始化 (等待 VisibilityDetector 触发首次加载)
     if (!_isInitialized) {
-      return LoadingWidget.inline(message: "等待加载个人信息...");
+      return LoadingWidget.fullScreen(message: "等待加载个人信息...");
     }
 
     // State 3: 正在加载数据 (首次加载或刷新中)
     if (_isLoadingData) {
-      return LoadingWidget.inline(message: "正在加载个人信息...");
+      return LoadingWidget.fullScreen(message: "正在加载个人信息...");
     }
 
     // State 4: 加载出错

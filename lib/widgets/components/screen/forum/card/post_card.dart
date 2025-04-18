@@ -1,6 +1,7 @@
 // 文件路径: lib/widgets/components/screen/forum/card/post_card.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 用于获取 AuthProvider
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 
 import '../../../../../models/post/post.dart';
 import '../../../../../providers/auth/auth_provider.dart'; // 用于获取当前用户信息和权限
@@ -8,7 +9,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/navigation/navigation_utils.dart'; // 用于导航
 import '../../../../ui/badges/user_info_badge.dart'; // 用户信息徽章
-import '../../../../ui/buttons/custom_popup_menu_button.dart'; // 自定义弹出菜单按钮
+import '../../../../ui/buttons/popup/custom_popup_menu_button.dart'; // 自定义弹出菜单按钮
 // 注意：不再需要导入 ForumService 或 ConfirmDialog (如果确认逻辑移到父级)
 
 import 'post_statistics_row.dart'; // 帖子统计行
@@ -33,19 +34,22 @@ class PostCard extends StatelessWidget {
   /// 父组件应在此回调中处理导航到编辑页面等逻辑。
   /// 参数为要编辑的帖子对象。
   final void Function(Post post) onEditAction;
+  final Future<void> Function(String postId) onToggleLockAction;
 
   const PostCard({
     Key? key,
     required this.post,
     this.isDesktopLayout = false,
     required this.onDeleteAction, // 强制要求传入删除回调
-    required this.onEditAction,   // 强制要求传入编辑回调
+    required this.onEditAction, // 强制要求传入编辑回调
+    required this.onToggleLockAction,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     // 获取设备和屏幕信息，用于调整布局
-    final isAndroidPortrait = DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
+    final isAndroidPortrait =
+        DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
     final screenWidth = MediaQuery.of(context).size.width;
     // final isSmallScreen = screenWidth < 360; // 这个判断条件可以根据 LayoutBuilder 调整
 
@@ -73,20 +77,23 @@ class PostCard extends StatelessWidget {
             AppRoutes.postDetail,
             arguments: post.id, // 传递帖子 ID
           );
-          print("PostCard onTap: Returned from post detail with result: $result");
+          print(
+              "PostCard onTap: Returned from post detail with result: $result");
 
           // --- 处理从详情页返回的结果 ---
           if (!context.mounted) return; // 检查 context 是否仍然有效
 
           if (result is Map) {
             if (result['deleted'] == true) {
-              print("PostCard onTap: Detail page indicated deletion. Parent should handle refresh via its own logic or onDeleteAction if necessary.");
+              print(
+                  "PostCard onTap: Detail page indicated deletion. Parent should handle refresh via its own logic or onDeleteAction if necessary.");
               // ForumScreen 的 _navigateToPostDetail 应该已经处理了删除后的刷新
               // 这里通常不需要再调用 onDeleteAction，避免重复操作或逻辑冲突
               // 如果确实需要在 ForumScreen._navigateToPostDetail 之外也处理，可以取消注释下一行
               // await onDeleteAction(post.id.toString());
             } else if (result['updated'] == true) {
-              print("PostCard onTap: Detail page indicated update. Parent should handle refresh via its own logic or onEditAction if necessary.");
+              print(
+                  "PostCard onTap: Detail page indicated update. Parent should handle refresh via its own logic or onEditAction if necessary.");
               // ForumScreen 的 _navigateToPostDetail 应该已经处理了编辑后的刷新
               // 这里通常不需要再调用 onEditAction
               // 如果确实需要，可以取消注释下一行
@@ -94,7 +101,8 @@ class PostCard extends StatelessWidget {
             }
           } else if (result == true) {
             // 处理来自 PostDetailScreen dispose 的通用交互信号 (比如回复后返回)
-            print("PostCard onTap: Detail page returned generic interaction (true). Assuming ForumScreen._navigateToPostDetail handles refresh.");
+            print(
+                "PostCard onTap: Detail page returned generic interaction (true). Assuming ForumScreen._navigateToPostDetail handles refresh.");
             // 通用交互通常也由 ForumScreen 的 _navigateToPostDetail 刷新逻辑覆盖
             // 如果需要特定处理，可以在这里添加或依赖父级
           }
@@ -125,7 +133,6 @@ class PostCard extends StatelessWidget {
                 ],
               ),
             ),
-
 
             // --- 标签行（如果标签不为空） ---
             if (post.tags.isNotEmpty)
@@ -178,7 +185,8 @@ class PostCard extends StatelessWidget {
                           replyCount: post.replyCount,
                           likeCount: post.likeCount,
                           favoriteCount: post.favoriteCount,
-                          isSmallScreen: constraints.maxWidth < 320, // 基于实际宽度判断是否为小屏幕样式
+                          isSmallScreen:
+                              constraints.maxWidth < 320, // 基于实际宽度判断是否为小屏幕样式
                         ),
                       ],
                     );
@@ -219,43 +227,76 @@ class PostCard extends StatelessWidget {
 
   /// 构建帖子操作的弹出菜单（仅在有权限时调用）。
   Widget _buildPopupMenu(BuildContext context) {
-    return CustomPopupMenuButton<String>(
-      icon: Icons.more_horiz, // 水平三点图标
-      iconSize: 20, // 图标大小
-      iconColor: Colors.grey[600], // 图标颜色
-      padding: const EdgeInsets.all(4.0), // 按钮内边距
-      tooltip: '帖子选项', // 提示文本
-      splashRadius: 18, // 点击效果半径
-      // 当菜单项被选择时调用
+    // 获取认证信息和权限
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final isAdmin = authProvider.currentUser?.isAdmin ?? false;
+    final currentUserId = authProvider.currentUser?.id;
+    // 判断当前用户是否有权修改此帖子（作者本人） -> 编辑/删除用
+    final canModifyContent = (post.authorId.toString() == currentUserId);
+
+    // --- 检查是否有任何操作可以显示 ---
+    final bool showEditDelete = canModifyContent || isAdmin; // 管理员也能删改
+    final bool showLockUnlock = isAdmin; // 只有管理员能锁定
+
+    if (!showEditDelete && !showLockUnlock) {
+      return const SizedBox.shrink(); // 如果没有任何权限，不显示菜单
+    }
+
+    return StylishPopupMenuButton<String>(
+      icon: Icons.more_horiz,
+      iconSize: 20,
+      iconColor: Colors.grey[600],
+      menuColor: Colors.white,
+      tooltip: '帖子选项',
       onSelected: (value) => _handleMenuItemSelected(context, value),
-      // 构建菜单项
-      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
-        // 编辑选项
-        PopupMenuItem<String>(
-          value: 'edit',
-          height: 40, // 菜单项高度
-          child: Row(
-            children: [
-              Icon(Icons.edit_outlined, size: 18, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(width: 10),
-              const Text('编辑'),
-            ],
+      items: [
+        // 编辑选项 (作者或管理员)
+        if (showEditDelete)
+          StylishMenuItemData(
+            value: 'edit',
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined,
+                    size: 18, color: Theme.of(context).colorScheme.primary),
+                const SizedBox(width: 10),
+                const Text('编辑'),
+              ],
+            ),
           ),
-        ),
-        // 分割线
-        const PopupMenuDivider(height: 1),
-        // 删除选项
-        PopupMenuItem<String>(
-          value: 'delete',
-          height: 40,
-          child: Row(
-            children: [
-              Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
-              const SizedBox(width: 10),
-              Text('删除', style: TextStyle(color: Colors.red[700])),
-            ],
+        if (showEditDelete)
+          // 删除选项 (作者或管理员)
+          StylishMenuItemData(
+            value: 'delete',
+            child: Row(
+              children: [
+                Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
+                const SizedBox(width: 10),
+                Text('删除', style: TextStyle(color: Colors.red[700])),
+              ],
+            ),
           ),
-        ),
+
+        // --- 锁定/解锁选项 (仅管理员) ---
+        if (showLockUnlock)
+          StylishMenuItemData(
+            value: 'toggle_lock', // 新的 value
+            child: Row(
+              children: [
+                Icon(
+                  post.status == PostStatus.locked
+                      ? Icons.lock_open_outlined
+                      : Icons.lock_outline, // 根据状态切换图标
+                  size: 18,
+                  color: post.status == PostStatus.locked
+                      ? Colors.green[700]
+                      : Colors.orange[800], // 不同颜色区分
+                ),
+                const SizedBox(width: 10),
+                Text(
+                    post.status == PostStatus.locked ? '解锁' : '锁定'), // 根据状态切换文本
+              ],
+            ),
+          ),
       ],
     );
   }
@@ -264,23 +305,30 @@ class PostCard extends StatelessWidget {
   /// 此方法现在只调用父组件传递的回调函数。
   void _handleMenuItemSelected(BuildContext context, String value) async {
     if (value == 'edit') {
-      // --- 用户点击编辑 ---
-      print("PostCard: Edit option selected for post ${post.id}. Calling onEditAction.");
-      // 调用父组件传入的编辑回调，将 post 对象传递出去
+      print(
+          "PostCard: Edit option selected for post ${post.id}. Calling onEditAction.");
       onEditAction(post);
     } else if (value == 'delete') {
-      // --- 用户点击删除 ---
-      print("PostCard: Delete option selected for post ${post.id}. Calling onDeleteAction.");
-      // 调用父组件传入的删除回调，将 postId 传递出去
-      // 父组件 (ForumScreen) 会负责弹出确认对话框和执行实际删除
-      // 注意：这里是异步调用，但 PostCard 不关心其结果，父组件处理
+      print(
+          "PostCard: Delete option selected for post ${post.id}. Calling onDeleteAction.");
       try {
         await onDeleteAction(post.id.toString());
         print("PostCard: onDeleteAction call initiated for post ${post.id}.");
       } catch (e) {
-        // 一般来说，父组件的回调应该自己处理异常，这里只是以防万一
         print("PostCard: Error occurred during onDeleteAction call: $e");
-        // 不建议在这里显示 SnackBar，因为父组件应该已经处理或正在处理
+      }
+      // --- 新增处理 toggle_lock ---
+    } else if (value == 'toggle_lock') {
+      print(
+          "PostCard: Toggle lock option selected for post ${post.id}. Calling onToggleLockAction.");
+      try {
+        // 调用父组件传递过来的回调
+        await onToggleLockAction(post.id.toString());
+        print(
+            "PostCard: onToggleLockAction call initiated for post ${post.id}.");
+      } catch (e) {
+        print("PostCard: Error occurred during onToggleLockAction call: $e");
+        // 可以在这里显示错误，但通常父组件会处理
       }
     }
   }

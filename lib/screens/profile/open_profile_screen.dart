@@ -123,7 +123,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildBody(bool isDesktop) {
     if (_isLoading) {
-      return LoadingWidget.inline(message: '正在加载用户资料...');
+      return LoadingWidget.fullScreen(message: '正在加载用户资料...');
     }
 
     if (_error != null) {

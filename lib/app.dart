@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
@@ -98,35 +99,39 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             debugShowCheckedModeBanner: false,
             navigatorObservers: [widget.loadingRouteObserver],
             builder: (context, child) {
-              return MaintenanceWrapper(
-                // Add this wrapper
-                child: Stack(
-                  children: [
-                    AppBackground(
-                      // 背景层
-                      child: MouseTrailEffect(
-                        // <--- 在这里套上特效
-                        particleColor: particleColor, // <--- 把计算好的颜色传进去
-                        child: Navigator(
-                          // <--- 把原来的 Navigator 作为特效的 child
-                          onGenerateRoute: (settings) => MaterialPageRoute(
-                            builder: (_) => PlatformWrapper(
-                              child: child ?? Container(),
+              return GlobalApiErrorListener(
+                // <--- 把监听器放在这里
+                child: MaintenanceWrapper(
+                  // 你原来的结构
+                  // Add this wrapper
+                  child: Stack(
+                    children: [
+                      AppBackground(
+                        // 背景层
+                        child: MouseTrailEffect(
+                          // <--- 在这里套上特效
+                          particleColor: particleColor, // <--- 把计算好的颜色传进去
+                          child: Navigator(
+                            // <--- 把原来的 Navigator 作为特效的 child
+                            onGenerateRoute: (settings) => MaterialPageRoute(
+                              builder: (_) => PlatformWrapper(
+                                child: child ?? Container(),
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                    ValueListenableBuilder<bool>(
-                      valueListenable: widget.loadingRouteObserver.isLoading,
-                      builder: (context, isLoading, _) {
-                        return LoadingScreen(
-                          isLoading: isLoading,
-                          message: isLoading ? '加载中...' : null,
-                        );
-                      },
-                    ),
-                  ],
+                      ValueListenableBuilder<bool>(
+                        valueListenable: widget.loadingRouteObserver.isLoading,
+                        builder: (context, isLoading, _) {
+                          return LoadingScreen(
+                            isLoading: isLoading,
+                            message: isLoading ? '加载中...' : null,
+                          );
+                        },
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

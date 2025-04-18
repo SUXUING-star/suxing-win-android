@@ -281,7 +281,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // 注册跳转
                   FunctionalTextButton(
                     onPressed: () =>
-                        NavigationUtils.pushNamed(context, '/register'),
+                        NavigationUtils.navigateToLogin(context),
                     label: '还没有账号？立即注册',
                   ),
                 ],

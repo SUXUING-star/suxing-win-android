@@ -247,11 +247,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   Widget _buildLinksToolsContent(bool isAdmin, bool isDesktop) {
     // State 1: Not yet initialized (Waiting for visibility or initial load failed silently)
     if (!_isInitialized && !_isLoadingData) {
-      return LoadingWidget.inline(message: "等待加载...");
+      return LoadingWidget.fullScreen(message: "等待加载...");
     }
     // State 2: Loading initial data or refreshing
     else if (_isLoadingData) {
-      return LoadingWidget.inline(message: "正在加载工具和链接...");
+      return LoadingWidget.fullScreen(message: "正在加载工具和链接...");
     }
     // State 3: Error occurred
     else if (_errorMessage != null) {

@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../../models/game/game.dart';
@@ -20,7 +21,7 @@ class DesktopProfileGameCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: InkWell(
-        onTap: () => NavigationUtils.pushNamed(context, '/game/detail', arguments: game),
+        onTap: () => NavigationUtils.pushNamed(context, AppRoutes.gameDetail, arguments: game),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

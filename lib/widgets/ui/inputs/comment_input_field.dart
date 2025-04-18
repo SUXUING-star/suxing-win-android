@@ -98,8 +98,6 @@ class _CommentInputFieldState extends State<CommentInputField> {
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
     final theme = Theme.of(context);
-
-    // ... (锁定和未登录状态的 UI 逻辑保持不变) ...
     if (widget.lockedContent != null) {
       return Padding(padding: widget.padding, child: widget.lockedContent!);
     }

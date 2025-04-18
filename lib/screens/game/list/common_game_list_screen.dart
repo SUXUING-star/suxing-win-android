@@ -341,17 +341,19 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
             : (canShowRightPanelBasedOnWidth ? '显示右侧面板' : '屏幕宽度不足'),
       ));
     }
-    if (widget.selectedTag != null && widget.showTagSelection)
+    if (widget.selectedTag != null && widget.showTagSelection) {
       actions.add(IconButton(
           icon: Icon(Icons.clear, color: Colors.white),
           onPressed: _clearTagSelection,
           tooltip: '清除标签筛选'));
-    if (!isDesktop && widget.showTagSelection)
+    }
+    if (!isDesktop && widget.showTagSelection) {
       actions.add(IconButton(
           icon: Icon(Icons.tag,
               color: _showTagFilter ? secondaryColor : enabledColor),
           onPressed: _toggleTagFilter,
           tooltip: _showTagFilter ? '隐藏标签栏' : '显示标签栏'));
+    }
     return actions;
   }
 
@@ -416,7 +418,6 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
     bool actuallyShowLeftPanel = false, // 接收实际左面板状态
     bool actuallyShowRightPanel = false, // 接收实际右面板状态
   }) {
-
     // 1. 判断是否处于有面板的桌面模式
     final bool withPanels =
         isDesktop && (actuallyShowLeftPanel || actuallyShowRightPanel);
@@ -426,7 +427,7 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
         withPanels: withPanels, // 传递是否有面板的状态
         leftPanelVisible: actuallyShowLeftPanel, // 传递实际左面板状态
         rightPanelVisible: actuallyShowRightPanel // 传递实际右面板状态
-    );
+        );
     if (cardsPerRow <= 0) return InlineErrorWidget(errorMessage: "渲染错误");
 
     // 3. 决定是否强制使用紧凑模式
@@ -435,11 +436,14 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
     // 4. 计算卡片宽高比
     //    根据是否有面板，调用不同的 DeviceUtils 方法
     final cardRatio = withPanels
-        ? DeviceUtils.calculateGameListCardRatio( // 调用带面板的计算
-        context, actuallyShowLeftPanel, actuallyShowRightPanel,
-        showTags: widget.showTagSelection) // 使用 widget 的 showTagSelection
+        ? DeviceUtils.calculateGameListCardRatio(
+            // 调用带面板的计算
+            context,
+            actuallyShowLeftPanel,
+            actuallyShowRightPanel,
+            showTags: widget.showTagSelection) // 使用 widget 的 showTagSelection
         : DeviceUtils.calculateSimpleCardRatio(context, // 调用无面板的计算
-        showTags: widget.showTagSelection); // 使用 widget 的 showTagSelection
+            showTags: widget.showTagSelection); // 使用 widget 的 showTagSelection
 
     // 5. 构建 GridView
     return GridView.builder(
@@ -448,8 +452,8 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
         physics: AlwaysScrollableScrollPhysics(),
         padding: EdgeInsets.all(isDesktop ? 16 : 8), // 桌面端 padding 大一点
         gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: cardsPerRow,    // 使用计算出的每行数量
-          childAspectRatio: cardRatio,   // 使用计算出的宽高比
+          crossAxisCount: cardsPerRow, // 使用计算出的每行数量
+          childAspectRatio: cardRatio, // 使用计算出的宽高比
           crossAxisSpacing: 8,
           mainAxisSpacing: isDesktop ? 16 : 8,
         ),
@@ -460,23 +464,23 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
           return widget.customCardBuilder != null
               ? widget.customCardBuilder!(game)
               : BaseGameCard(
-            key: ValueKey(game.id),
-            game: game,
-            isGridItem: true,
-            adaptForPanels: withPanels,
-            showTags: widget.showTagSelection,
-            showCollectionStats: true,
-            forceCompact: useCompactMode,
-            maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
-            onDeleteAction: () => widget.onDeleteGameAction(game.id),
-          );
+                  key: ValueKey(game.id),
+                  game: game,
+                  isGridItem: true,
+                  adaptForPanels: withPanels,
+                  showTags: widget.showTagSelection,
+                  showCollectionStats: true,
+                  forceCompact: useCompactMode,
+                  maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
+                  onDeleteAction: () => widget.onDeleteGameAction(game.id),
+                );
         });
   }
 
   // --- 构建 Loading, Error, EmptyState (内部方法) ---
   Widget _buildLoading(String message) {
     // *** 移除 Center，让 Builder 或 RefreshIndicator 处理布局 ***
-    return LoadingWidget.inline(message: message); // 不加 const
+    return LoadingWidget.fullScreen(message: message); // 不加 const
   }
 
   Widget _buildError(String message) {
@@ -491,27 +495,24 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
         ? '没有找到标签为 “${widget.selectedTag}” 的游戏'
         : widget.emptyStateMessage;
     // *** 移除 const ***
-    return Center(
-      // EmptyState 可能需要居中
-      child: EmptyStateWidget(
-        iconData: Icons
-            .sentiment_dissatisfied_outlined, // 默认图标或使用 widget.emptyStateIcon
-        message: message,
-        action: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (widget.selectedTag != null && widget.showTagSelection) ...[
-              FunctionalButton(
-                onPressed: _clearTagSelection,
-                label: '查看全部游戏',
-                icon: Icons.list_alt,
-              ),
-              SizedBox(height: 16),
-            ],
-            // 添加按钮由外部 FAB 控制，这里不显示
-            // if (widget.showAddButton && !widget.showAddButtonInAppBar) ...
+    return EmptyStateWidget(
+      iconData: Icons
+          .sentiment_dissatisfied_outlined, // 默认图标或使用 widget.emptyStateIcon
+      message: message,
+      action: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (widget.selectedTag != null && widget.showTagSelection) ...[
+            FunctionalButton(
+              onPressed: _clearTagSelection,
+              label: '查看全部游戏',
+              icon: Icons.list_alt,
+            ),
+            SizedBox(height: 16),
           ],
-        ),
+          // 添加按钮由外部 FAB 控制，这里不显示
+          // if (widget.showAddButton && !widget.showAddButtonInAppBar) ...
+        ],
       ),
     );
   }

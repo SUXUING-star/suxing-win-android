@@ -15,6 +15,7 @@ class PostGridView extends StatelessWidget {
   // --- 新增：接收来自父组件的回调函数 ---
   final Future<void> Function(String postId) onDeleteAction;
   final void Function(Post post) onEditAction;
+  final Future<void> Function(String postId) onToggleLockAction;
 
   const PostGridView({
     Key? key,
@@ -26,6 +27,7 @@ class PostGridView extends StatelessWidget {
     this.isDesktopLayout = true, // 桌面布局默认为 true? 检查默认值是否合适
     required this.onDeleteAction, // 设为 required
     required this.onEditAction,   // 设为 required
+    required this.onToggleLockAction,
   }) : super(key: key);
 
   @override
@@ -67,6 +69,7 @@ class PostGridView extends StatelessWidget {
             // --- 将接收到的回调传递给 PostCard ---
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,
+            onToggleLockAction: onToggleLockAction,
           );
         } else {
           // 显示加载更多指示器

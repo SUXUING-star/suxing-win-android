@@ -52,7 +52,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
       AppSnackBar.showSuccess(context, "重置密码成功，用新的密码进行登录吧！");
 
-      NavigationUtils.pushReplacementNamed(context, '/login');
+      NavigationUtils.navigateToLogin(context);
     } catch (e) {
       setState(() {
         _error = '重置密码失败：${e.toString()}';
@@ -84,7 +84,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
           // 加载状态
           if (_isLoading)
-            LoadingWidget.inline(message: '正在重置密码...'),
+            LoadingWidget.fullScreen(message: '正在重置密码...'),
 
           // 重置密码表单 - 添加最大宽度约束
           Center(

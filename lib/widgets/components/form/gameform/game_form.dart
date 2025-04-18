@@ -3,28 +3,32 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'dart:async';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
+
+// --- 核心依赖 ---
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
+import 'package:suxingchahui/services/common/upload/file_upload_service.dart';
+import 'package:suxingchahui/services/utils/request_lock_service.dart'; // <--- 引入全局锁服务
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // <--- 引入提示框
+
+// --- UI 和辅助组件 ---
+import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'dart:async';
-
-import '../../../../models/game/game.dart'; // 确保路径正确
-import '../../../../services/common/upload/file_upload_service.dart'; // 确保路径正确
-import '../../../../utils/device/device_utils.dart'; // 确保路径正确
-import '../../../../utils/font/font_config.dart'; // 确保路径正确
-import 'field/category_field.dart'; // 确保路径正确
-import 'field/cover_image_field.dart'; // 确保路径正确
-import 'field/download_links_field.dart'; // 确保路径正确
-import 'field/game_images_field.dart'; // 确保路径正确
-import 'field/tags_field.dart'; // 确保路径正确
-import 'preview/game_preview_button.dart'; // 确保路径正确
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/font/font_config.dart';
+import 'field/category_field.dart';
+import 'field/cover_image_field.dart';
+import 'field/download_links_field.dart';
+import 'field/game_images_field.dart';
+import 'field/tags_field.dart';
+import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
-  final Game? game;
-  final Function(Game) onSubmit;
+  final Game? game; // 编辑时传入的游戏对象
+  final Function(Game) onSubmit; // 提交成功后的回调
 
   const GameForm({
     Key? key,
@@ -37,72 +41,77 @@ class GameForm extends StatefulWidget {
 }
 
 class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
+  // --- 表单和控制器 ---
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _summaryController = TextEditingController();
   final _descriptionController = TextEditingController();
   final _musicUrlController = TextEditingController();
 
-  // --- 图片状态变量 ---
+  // --- 图片状态 ---
   dynamic _coverImageSource; // String? (URL) 或 XFile? (本地文件)
   List<dynamic> _gameImagesSources = []; // List<String or XFile>
+  // final Set<String> _deletedOriginalImageUrls = {}; // 如果你需要跟踪删除的旧图，保留这个
 
-  final Set<String> _deletedOriginalImageUrls = {};
-  // --- 图片状态变量结束 ---
-
+  // --- 其他表单状态 ---
   List<DownloadLink> _downloadLinks = [];
-  double _rating = 0.0;
-  bool _isLoading = false;
+  double _rating = 0.0; // 评分可能不需要在这里处理，除非表单内有评分组件
   List<String> _selectedCategories = [];
   List<String> _selectedTags = [];
 
-  bool _isDraftRestored = false; // 标记是否已恢复草稿，避免重复询问
-  bool _isSubmitting = false; // 标记是否正在提交，避免在提交时保存草稿
+  // --- 状态标志 ---
+  bool _isProcessing = false; // <--- 本地状态：控制 UI 加载指示和按钮禁用
+  bool _isDraftRestored = false;
+  // 移除 _isLoading 和 _isSubmitting，统一使用 _isProcessing
 
+  // --- 验证错误信息 ---
   String? _coverImageError;
   String? _categoryError;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this); // <--- 注册 observer
-    _initializeFormData(); // 先初始化默认或编辑状态
-    _checkAndRestoreDraft(); // <--- 再检查并恢复草稿
+    WidgetsBinding.instance.addObserver(this);
+    _initializeFormData();
+    _checkAndRestoreDraft();
   }
 
   @override
   void dispose() {
-    // 在 dispose 时，如果不是正在提交，则保存草稿
-    if (!_isSubmitting) {
-      _saveDraft(); // <--- 保存草稿
+    // 只有在非处理状态下才保存草稿
+    if (!_isProcessing) {
+      _saveDraft();
     }
-    WidgetsBinding.instance.removeObserver(this); // <--- 移除 observer
+    WidgetsBinding.instance.removeObserver(this);
     _titleController.dispose();
     _summaryController.dispose();
     _descriptionController.dispose();
     _musicUrlController.dispose();
     super.dispose();
   }
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // 当应用进入后台或暂停时，保存草稿
-    if (state == AppLifecycleState.paused || state == AppLifecycleState.detached) {
-      if (!_isSubmitting) {
-        _saveDraft(); // <--- 保存草稿
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      if (!_isProcessing) {
+        _saveDraft();
       }
     }
   }
 
+  // --- 初始化表单数据 (编辑或空表单) ---
   void _initializeFormData() {
+    // 重置所有状态
     _coverImageSource = null;
     _gameImagesSources = [];
-    _deletedOriginalImageUrls.clear();
+    // _deletedOriginalImageUrls.clear();
     _downloadLinks = [];
     _rating = 0.0;
     _selectedCategories = [];
     _selectedTags = [];
-    _isLoading = false;
+    _isProcessing = false; // 确保初始状态不是处理中
     _coverImageError = null;
     _categoryError = null;
     _titleController.clear();
@@ -110,6 +119,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     _descriptionController.clear();
     _musicUrlController.clear();
 
+    // 如果是编辑模式，加载现有数据
     if (widget.game != null) {
       final game = widget.game!;
       _titleController.text = game.title;
@@ -117,8 +127,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       _descriptionController.text = game.description;
       _musicUrlController.text = game.musicUrl ?? '';
       _coverImageSource = game.coverImage;
-      _gameImagesSources = List.from(game.images);
-      _downloadLinks = List.from(game.downloadLinks);
+      _gameImagesSources = List.from(game.images); // 确保是可修改列表
+      _downloadLinks = List.from(game.downloadLinks); // 确保是可修改列表
       _rating = game.rating;
       _selectedCategories = game.category
           .split(',')
@@ -129,19 +139,15 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _selectedTags = game.tags != null ? List.from(game.tags!) : [];
       } catch (e) {
         _selectedTags = [];
-        //print('初始化标签时出错: $e');
+        print('初始化标签时出错: $e');
       }
     }
   }
 
-
-  // --- 草稿检查与恢复 ---
+  // --- 草稿相关方法 (保持不变) ---
   Future<void> _checkAndRestoreDraft() async {
-    // 如果正在编辑游戏，或者已经恢复过草稿，则不再检查
     if (widget.game != null || _isDraftRestored) return;
-
     bool hasDraft = await GameFormCacheService().hasDraft();
-    // 必须检查 mounted，妈的异步操作回来页面可能没了
     if (hasDraft && mounted) {
       try {
         await CustomConfirmDialog.show(
@@ -154,28 +160,26 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             await _loadAndApplyDraft();
             if (mounted) {
               setState(() {
-                _isDraftRestored = true; // 标记已恢复
+                _isDraftRestored = true;
               });
               AppSnackBar.showSuccess(context, '草稿已恢复');
             }
+            // CustomConfirmDialog 内部会自动 pop
           },
           onCancel: () async {
-            // 取消恢复，清除旧草稿
             await GameFormCacheService().clearDraft();
             print("User chose to discard the draft.");
+            // CustomConfirmDialog 内部会自动 pop
           },
         );
       } catch (e) {
         print("Error showing/handling restore draft dialog: $e");
-        if (mounted) {
-          AppSnackBar.showError(context, '处理草稿时出错');
-        }
-        await GameFormCacheService().clearDraft(); // 出错也清掉
+        if (mounted) AppSnackBar.showError(context, '处理草稿时出错');
+        await GameFormCacheService().clearDraft();
       }
     }
   }
 
-  // --- 加载并应用草稿数据 ---
   Future<void> _loadAndApplyDraft() async {
     final draft = await GameFormCacheService().loadDraft();
     if (draft != null && mounted) {
@@ -186,16 +190,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _musicUrlController.text = draft.musicUrl ?? '';
         _selectedCategories = draft.selectedCategories;
         _selectedTags = draft.selectedTags;
-
         _downloadLinks = draft.downloadLinks
-            .map((map) => DownloadLink.fromJson(map)) // 草稿存的是Map，要转回来
+            .map((map) => DownloadLink.fromJson(map))
             .toList();
-
-        // 只恢复 URL，本地文件丢了就丢了
-        _coverImageSource = draft.coverImageUrl;
-        _gameImagesSources = List<dynamic>.from(draft.gameImageUrls);
-
-        _coverImageError = null; // 清错误提示
+        _coverImageSource = draft.coverImageUrl; // 只恢复 URL
+        _gameImagesSources = List<dynamic>.from(draft.gameImageUrls); // 只恢复 URL
+        _coverImageError = null;
         _categoryError = null;
       });
       print("Draft applied to form state.");
@@ -204,278 +204,279 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     }
   }
 
-  // --- 保存当前表单状态为草稿 ---
   Future<void> _saveDraft() async {
-    // 表单空或者正在提交，滚蛋，不保存
-    if (_isFormEmpty() || _isSubmitting) {
-      print("Form is empty or submitting, skipping draft save.");
+    if (_isFormEmpty() || _isProcessing) {
+      // 正在处理时不保存
+      print("Form is empty or processing, skipping draft save.");
       return;
     }
-
-    // 图片只存 URL，XFile 去死吧
     String? coverImageUrl;
-    if (_coverImageSource is String) {
+    if (_coverImageSource is String)
       coverImageUrl = _coverImageSource as String;
-    }
-    List<String> gameImageUrls = _gameImagesSources
-        .whereType<String>() // 只搞 String
-        .toList();
+    List<String> gameImageUrls =
+        _gameImagesSources.whereType<String>().toList();
 
-    // 创建草稿对象
     final draft = GameFormDraft(
       title: _titleController.text.trim(),
       summary: _summaryController.text.trim(),
       description: _descriptionController.text.trim(),
-      musicUrl: _musicUrlController.text.trim().isEmpty ? null : _musicUrlController.text.trim(),
+      musicUrl: _musicUrlController.text.trim().isEmpty
+          ? null
+          : _musicUrlController.text.trim(),
       coverImageUrl: coverImageUrl,
       gameImageUrls: gameImageUrls,
-      downloadLinks: _downloadLinks.map((link) => link.toJson()).toList(), // 链接存 Map
+      downloadLinks: _downloadLinks.map((link) => link.toJson()).toList(),
       selectedCategories: _selectedCategories,
       selectedTags: _selectedTags,
       lastSaved: DateTime.now(),
     );
-
     await GameFormCacheService().saveDraft(draft);
     print("Draft saved on dispose/pause.");
   }
 
-  // --- 辅助函数：检查表单是不是空的 ---
   bool _isFormEmpty() {
-    // 简单检查下文本框、图片、链接、分类、标签是不是都没填
     return _titleController.text.trim().isEmpty &&
         _summaryController.text.trim().isEmpty &&
         _descriptionController.text.trim().isEmpty &&
         _musicUrlController.text.trim().isEmpty &&
-        (_coverImageSource == null || (_coverImageSource is String && (_coverImageSource as String).isEmpty)) && // 检查封面图是不是真没有
-        _gameImagesSources.where((s) => (s is String && s.isNotEmpty) || s is XFile).isEmpty && // 检查截图是不是真没有
+        (_coverImageSource == null ||
+            (_coverImageSource is String &&
+                (_coverImageSource as String).isEmpty)) &&
+        _gameImagesSources
+            .where((s) => (s is String && s.isNotEmpty) || s is XFile)
+            .isEmpty &&
         _downloadLinks.isEmpty &&
         _selectedCategories.isEmpty &&
         _selectedTags.isEmpty;
   }
 
+  // --- 表单验证 ---
   bool _validateForm() {
     bool isValid = _formKey.currentState?.validate() ?? false;
-
-    // 验证封面图 (可能是 String URL 或 XFile)
     bool hasCover = _coverImageSource != null &&
         !(_coverImageSource is String && (_coverImageSource as String).isEmpty);
-    if (!hasCover) {
-      setState(() {
-        _coverImageError = '请添加封面图片';
-      });
-      isValid = false;
-    } else {
-      setState(() {
-        _coverImageError = null;
-      });
-    }
+    bool hasCategory = _selectedCategories.isNotEmpty;
 
-    if (_selectedCategories.isEmpty) {
-      setState(() {
-        _categoryError = '请选择至少一个分类';
-      });
-      isValid = false;
-    } else {
-      setState(() {
-        _categoryError = null;
-      });
-    }
-
-    return isValid;
-  }
-
-
-
-  Future<void> _submitForm() async {
-    // 1. 表单验证，不过关就滚
-    if (!_validateForm()) {
-      AppSnackBar.showError(context, '请检查表单中的错误并修正');
-      return;
-    }
-
-    // 2. 设置加载和提交状态
+    // 使用 setState 更新错误信息，这样 UI 会响应
     setState(() {
-      _isLoading = true;
-      _isSubmitting = true;
+      _coverImageError = hasCover ? null : '请添加封面图片';
+      _categoryError = hasCategory ? null : '请选择至少一个分类';
     });
 
-    // 声明最终要用的变量
-    String? finalCoverImageUrl;
-    List<String> finalGameImagesUrls = []; // *** 初始化为空列表 ***
-    String? errorMessage;
-
-    try {
-      // ------------------------------------
-      // 3. 处理封面图
-      // ------------------------------------
-      final dynamic currentCoverSource = _coverImageSource;
-
-      if (currentCoverSource is XFile) {
-        // 是新文件？上传它
-        print("上传新封面...");
-        final fileToUpload = File(currentCoverSource.path);
-        finalCoverImageUrl = await FileUpload.uploadImage(
-          fileToUpload,
-          folder: 'games/covers',
-          // 不再传递 oldImageUrl
-        );
-        print("新封面URL: $finalCoverImageUrl");
-      } else if (currentCoverSource is String && currentCoverSource.isNotEmpty) {
-        // 是旧 URL？直接用
-        finalCoverImageUrl = currentCoverSource;
-        print("保留封面URL: $finalCoverImageUrl");
-      } else {
-        // 啥也不是？那就是空
-        finalCoverImageUrl = ''; // 或者 null，看你后端怎么定义“无图”
-        print("无封面图");
-      }
-
-      // ------------------------------------
-      // 4. 处理游戏截图
-      // ------------------------------------
-      final List<dynamic> currentImageSources = List.from(_gameImagesSources);
-      final List<File> filesToUpload = [];
-      final List<int> xFileIndices = []; // 记录 XFile 在原列表的索引
-
-      // 4a. 找出所有新选的本地文件 (XFile)
-      for (int i = 0; i < currentImageSources.length; i++) {
-        if (currentImageSources[i] is XFile) {
-          filesToUpload.add(File((currentImageSources[i] as XFile).path));
-          xFileIndices.add(i);
-        }
-      }
-
-      // 4b. 上传这些新文件 (如果有的话)
-      List<String> uploadedUrls = [];
-      if (filesToUpload.isNotEmpty) {
-        print("上传 ${filesToUpload.length} 张新截图...");
-        uploadedUrls = await FileUpload.uploadFiles(
-          filesToUpload,
-          folder: 'games/screenshots',
-        );
-        if (uploadedUrls.length != filesToUpload.length) {
-          throw Exception("截图上传数量对不上！");
-        }
-        print("新截图上传成功: $uploadedUrls");
-      } else {
-        print("没有新截图需要上传");
-      }
-
-      // 4c. 构建最终 URL 列表 (合并旧 URL 和新上传的 URL，保持顺序)
-      int uploadedUrlIndex = 0;
-      // *** 创建一个临时的、允许 null 的列表来按顺序放置 URL ***
-      List<String?> orderedUrlsPlaceholder = List.filled(currentImageSources.length, null);
-
-      for (int i = 0; i < currentImageSources.length; i++) {
-        final source = currentImageSources[i];
-        if (xFileIndices.contains(i)) {
-          // 这个位置原来是 XFile，用对应的已上传 URL 填入
-          if (uploadedUrlIndex < uploadedUrls.length) {
-            orderedUrlsPlaceholder[i] = uploadedUrls[uploadedUrlIndex++];
-          }
-        } else if (source is String && source.isNotEmpty) {
-          // 这个位置是有效的旧 URL，直接使用
-          orderedUrlsPlaceholder[i] = source;
-        }
-        // 其他情况（比如 null 或空字符串）保持为 null
-      }
-
-      // *** 过滤掉 null，得到最终的 List<String> ***
-      finalGameImagesUrls = orderedUrlsPlaceholder.whereType<String>().toList();
-      print("最终提交的截图列表 (${finalGameImagesUrls.length} 张): $finalGameImagesUrls");
-
-
-      // ------------------------------------
-      // 5. 构建 Game 对象
-      // ------------------------------------
-      final game = Game(
-        id: widget.game?.id ?? mongo.ObjectId().toHexString(),
-        authorId: widget.game?.authorId ?? 'GET_CURRENT_USER_ID()', // TODO: 替换成真实的用户 ID 获取逻辑
-        title: _titleController.text.trim(),
-        summary: _summaryController.text.trim(),
-        description: _descriptionController.text.trim(),
-        category: _selectedCategories.join(', '),
-        coverImage: finalCoverImageUrl ?? '',      // 使用处理后的封面 URL
-        images: finalGameImagesUrls,               // 使用处理后的截图 URL 列表
-        tags: _selectedTags,
-        rating: widget.game?.rating ?? 0.0,
-        createTime: widget.game?.createTime ?? DateTime.now(),
-        updateTime: DateTime.now(),
-        viewCount: widget.game?.viewCount ?? 0,
-        likeCount: widget.game?.likeCount ?? 0,
-        likedBy: widget.game?.likedBy ?? [],
-        downloadLinks: _downloadLinks,
-        musicUrl: _musicUrlController.text.trim().isEmpty
-            ? null
-            : _musicUrlController.text.trim(),
-        lastViewedAt: widget.game?.lastViewedAt,
-        // 注意: approvalStatus, reviewedAt, reviewedBy 等字段由后端处理，前端不提交
-      );
-
-      // ------------------------------------
-      // 6. 调用 onSubmit 回调
-      // ------------------------------------
-      print("提交 Game 对象...");
-      widget.onSubmit(game);
-      print("提交完成.");
-
-      // ------------------------------------
-      // 7. 清除本地草稿
-      // ------------------------------------
-      await GameFormCacheService().clearDraft();
-      print("本地草稿已清除.");
-
-    } catch (e) {
-      // ------------------------------------
-      // 8. 错误处理
-      // ------------------------------------
-      errorMessage = '操，提交时出错了: $e';
-      print(errorMessage);
-      if (mounted) {
-        AppSnackBar.showError(context, errorMessage);
-      }
-    } finally {
-      // ------------------------------------
-      // 9. 重置状态
-      // ------------------------------------
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-          _isSubmitting = false;
-        });
-      }
-    }
+    return isValid && hasCover && hasCategory;
   }
 
-  // 当封面图片选择变化时调用
+  // --- 图片处理回调 (保持不变) ---
   void _handleCoverImageChange(dynamic newSource) {
     setState(() {
-      _coverImageSource = newSource; // 直接更新状态
-      // 如果新来源有效，清除错误提示
+      _coverImageSource = newSource;
       if (_coverImageSource != null &&
           !(_coverImageSource is String &&
               (_coverImageSource as String).isEmpty)) {
-        _coverImageError = null;
+        _coverImageError = null; // 清除错误提示
       }
     });
-    //print("封面图片状态更新为: $_coverImageSource");
   }
 
-  // 当游戏截图列表变化时调用
   void _handleGameImagesChange(List<dynamic> newSourcesList) {
     setState(() {
-      _gameImagesSources = newSourcesList; // 直接更新状态
+      _gameImagesSources = newSourcesList;
     });
-    //print("游戏截图状态更新为: $_gameImagesSources");
   }
 
-  // --- 主构建方法 ---
+  // --- 辅助方法：获取操作 Key ---
+  String? _getOperationKey() {
+    if (widget.game == null) {
+      return 'add_game'; // 添加操作
+    } else if (widget.game?.id != null) {
+      return 'edit_game_${widget.game!.id}'; // 编辑操作，带 ID
+    } else {
+      print(
+          "Error: Cannot determine operation key, game ID is null in edit mode.");
+      return null; // 异常情况
+    }
+  }
+
+  // --- 核心提交逻辑 ---
+  Future<void> _submitForm() async {
+    // 1. 表单验证
+    if (!_validateForm()) {
+      if (mounted) AppSnackBar.showError(context, '请检查表单中的错误并修正');
+      return;
+    }
+
+    final operationKey = _getOperationKey();
+    if (operationKey == null) {
+      if (mounted) AppSnackBar.showError(context, '内部错误：无法提交');
+      return;
+    }
+
+    // 2. 设置本地处理状态，用于 UI 反馈
+    if (mounted) {
+      setState(() {
+        _isProcessing = true;
+      });
+    }
+
+    // 3. 使用全局锁执行实际操作
+    bool actionExecuted = await RequestLockService.instance.tryLockAsync(
+      operationKey,
+      action: () async {
+        // ============================================
+        // 开始核心操作 (上传文件、构建对象、调用回调)
+        // ============================================
+        String? finalCoverImageUrl;
+        List<String> finalGameImagesUrls = [];
+
+        try {
+          // 3a. 处理封面图上传 (如果需要)
+          final dynamic currentCoverSource = _coverImageSource;
+          if (currentCoverSource is XFile) {
+            print("Uploading new cover image...");
+            final fileToUpload = File(currentCoverSource.path);
+            // 假设 FileUpload.uploadImage 是异步的
+            finalCoverImageUrl = await FileUpload.uploadImage(
+              fileToUpload,
+              folder: 'games/covers',
+              // oldImageUrl: (widget.game?.coverImage?.startsWith('http') ?? false) ? widget.game!.coverImage : null, // 如果需要传递旧 URL 给后端
+            );
+            print("New cover URL: $finalCoverImageUrl");
+          } else if (currentCoverSource is String &&
+              currentCoverSource.isNotEmpty) {
+            finalCoverImageUrl = currentCoverSource; // 使用现有 URL
+          } else {
+            finalCoverImageUrl = ''; // 没有封面图
+          }
+
+          // 3b. 处理游戏截图上传 (如果需要)
+          final List<dynamic> currentImageSources =
+              List.from(_gameImagesSources);
+          final List<File> filesToUpload = [];
+          final List<int> xFileIndices = [];
+          final List<String> existingUrls = []; // 保留现有 URL
+
+          for (int i = 0; i < currentImageSources.length; i++) {
+            if (currentImageSources[i] is XFile) {
+              filesToUpload.add(File((currentImageSources[i] as XFile).path));
+              xFileIndices.add(i); // 记下 XFile 的位置
+            } else if (currentImageSources[i] is String &&
+                (currentImageSources[i] as String).isNotEmpty) {
+              // existingUrls.add(currentImageSources[i] as String); // 不需要单独收集，后面直接用
+            }
+          }
+
+          List<String> uploadedUrls = [];
+          if (filesToUpload.isNotEmpty) {
+            print("Uploading ${filesToUpload.length} new screenshots...");
+            // 假设 FileUpload.uploadFiles 是异步的
+            uploadedUrls = await FileUpload.uploadFiles(
+              filesToUpload,
+              folder: 'games/screenshots',
+            );
+            if (uploadedUrls.length != filesToUpload.length) {
+              throw Exception("Screenshot upload count mismatch!");
+            }
+            print("New screenshot URLs: $uploadedUrls");
+          }
+
+          // 构建最终 URL 列表，保持原始顺序
+          List<String?> orderedUrlsPlaceholder =
+              List.filled(currentImageSources.length, null);
+          int uploadedUrlIndex = 0;
+          for (int i = 0; i < currentImageSources.length; i++) {
+            final source = currentImageSources[i];
+            if (xFileIndices.contains(i)) {
+              if (uploadedUrlIndex < uploadedUrls.length) {
+                orderedUrlsPlaceholder[i] = uploadedUrls[uploadedUrlIndex++];
+              }
+            } else if (source is String && source.isNotEmpty) {
+              orderedUrlsPlaceholder[i] = source;
+            }
+          }
+          finalGameImagesUrls =
+              orderedUrlsPlaceholder.whereType<String>().toList();
+          print(
+              "Final submitted screenshot URLs (${finalGameImagesUrls.length}): $finalGameImagesUrls");
+
+          // 3c. 构建 Game 对象
+          final game = Game(
+            id: widget.game?.id ?? mongo.ObjectId().toHexString(),
+            authorId: widget.game?.authorId ??
+                'GET_CURRENT_USER_ID()', // TODO: 替换为实际用户ID
+            title: _titleController.text.trim(),
+            summary: _summaryController.text.trim(),
+            description: _descriptionController.text.trim(),
+            category: _selectedCategories.join(', '),
+            coverImage: finalCoverImageUrl ?? '',
+            images: finalGameImagesUrls,
+            tags: _selectedTags,
+            rating: widget.game?.rating ?? 0.0,
+            createTime: widget.game?.createTime ?? DateTime.now(),
+            updateTime: DateTime.now(), // 总是更新时间
+            viewCount: widget.game?.viewCount ?? 0,
+            likeCount: widget.game?.likeCount ?? 0,
+            likedBy: widget.game?.likedBy ?? [],
+            downloadLinks: _downloadLinks,
+            musicUrl: _musicUrlController.text.trim().isEmpty
+                ? null
+                : _musicUrlController.text.trim(),
+            lastViewedAt: widget.game?.lastViewedAt,
+            // approvalStatus 等由后端处理
+          );
+
+          // 3d. 调用外部 onSubmit 回调 (执行 API 请求)
+          print("Calling widget.onSubmit for operation $operationKey...");
+          await widget.onSubmit(game); // 等待 API 调用完成
+          print("widget.onSubmit for $operationKey completed.");
+
+          // 3e. 清除草稿 (只有在 action 完全成功后才清除)
+          await GameFormCacheService().clearDraft();
+          print(
+              "Local draft cleared after successful submission of $operationKey.");
+        } catch (e) {
+          // action 内部错误处理
+          print('Error during submission action ($operationKey): $e');
+          if (mounted) {
+            AppSnackBar.showError(context, '提交处理失败: ${e.toString()}');
+          }
+          // 必须重新抛出，让 tryLockAsync 知道出错了
+          rethrow;
+        }
+        // ============================================
+        // 核心操作结束
+        // ============================================
+      },
+      onLockFailed: () {
+        // 锁定时（操作已在进行中）的回调
+        print("Operation ($operationKey) is already in progress.");
+        if (mounted) {
+          AppSnackBar.showInfo(context, '操作正在进行中，请稍候...');
+        }
+      },
+    );
+
+    // 4. 无论 tryLockAsync 结果如何，最后都重置本地处理状态
+    if (mounted) {
+      setState(() {
+        _isProcessing = false;
+      });
+    }
+
+    // actionExecuted 会告诉你 action 是否被执行（即是否成功获取到锁）
+    if (actionExecuted) {
+      print("Submission action attempt finished for $operationKey.");
+      // 成功的 SnackBar 应该由调用方 (Add/Edit Screen) 在 onSubmit 回调成功后显示
+    }
+  }
+
+  // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width > 900;
 
+    // 使用 Stack 包裹，方便显示全局加载指示器
     return Stack(
       children: [
         Form(
@@ -484,23 +485,21 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
               ? _buildDesktopLayout(context)
               : _buildMobileLayout(context),
         ),
-        if (_isLoading) LoadingWidget.inline(),
+        // 使用 _isProcessing 控制 LoadingWidget.inline 的显示
+        if (_isProcessing) LoadingWidget.inline(),
       ],
     );
   }
 
-  // --- 桌面布局构建方法 (Refactored) ---
+  // --- 桌面布局构建 (保持不变，但调用修改后的字段构建器) ---
   Widget _buildDesktopLayout(BuildContext context) {
-    final desktopCardHeight =
-        MediaQuery.of(context).size.height - 100; // 保持原有计算方式
+    final desktopCardHeight = MediaQuery.of(context).size.height - 100;
     return SingleChildScrollView(
-      // 使用 SingleChildScrollView 替代 ListView 保持桌面原有滚动行为
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 左侧面板 (视觉内容)
             Expanded(
               flex: 4,
               child: Card(
@@ -508,21 +507,20 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 child: Container(
                   constraints: BoxConstraints(maxHeight: desktopCardHeight),
                   child: SingleChildScrollView(
-                    // 内层滚动
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle('图片和链接'), // 新增: 分区标题
+                        _buildSectionTitle('图片和链接'),
                         const SizedBox(height: 16),
-                        _buildCoverImageSection(), // 调用: 封面图区域
+                        _buildCoverImageSection(), // 使用带错误提示的版本
                         const SizedBox(height: 24),
-                        _buildGameImagesSection(), // 调用: 截图区域
+                        _buildGameImagesSection(),
                         const SizedBox(height: 24),
-                        _buildDownloadLinksField(), // 调用: 下载链接
+                        _buildDownloadLinksField(),
                         const SizedBox(height: 24),
-                        _buildMusicUrlField(), // 调用: 音乐链接
-                        const SizedBox(height: 16), // 底部留白
+                        _buildMusicUrlField(),
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -530,7 +528,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
               ),
             ),
             const SizedBox(width: 16),
-            // 右侧面板 (文本信息)
             Expanded(
               flex: 6,
               child: Card(
@@ -538,42 +535,33 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 child: Container(
                   constraints: BoxConstraints(maxHeight: desktopCardHeight),
                   child: SingleChildScrollView(
-                    // 内层滚动
                     padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _buildSectionTitle('游戏信息'), // 新增: 分区标题
+                        _buildSectionTitle('游戏信息'),
                         const SizedBox(height: 16),
-                        _buildTitleField(), // 调用: 标题
+                        _buildTitleField(),
                         const SizedBox(height: 16),
-                        _buildSummaryField(), // 调用: 简介
+                        _buildSummaryField(),
                         const SizedBox(height: 16),
-                        _buildDescriptionField(), // 调用: 描述
+                        _buildDescriptionField(),
                         const SizedBox(height: 24),
-                        Row(
-                          // 分类和评分 (保持行布局)
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                                child: _buildCategorySection()), // 调用: 分类区域
-                          ],
-                        ),
+                        _buildCategorySection(), // 使用带错误提示的版本
                         const SizedBox(height: 24),
-                        _buildTagsField(), // 调用: 标签
+                        _buildTagsField(),
                         const SizedBox(height: 32),
                         Center(
-                          // 预览和提交按钮 (保持居中和行布局)
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              _buildPreviewButton(),
+                              _buildPreviewButton(), // 预览按钮
                               const SizedBox(width: 16),
-                              _buildSubmitButton(),
+                              _buildSubmitButton(), // 提交按钮
                             ],
                           ),
                         ),
-                        const SizedBox(height: 16), // 底部留白
+                        const SizedBox(height: 16),
                       ],
                     ),
                   ),
@@ -586,42 +574,41 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // --- 移动布局构建方法 (Refactored) ---
+  // --- 移动布局构建 (保持不变，但调用修改后的字段构建器) ---
   Widget _buildMobileLayout(BuildContext context) {
     return ListView(
-      // 使用 ListView 保持移动端原有滚动行为
       padding: const EdgeInsets.all(16.0),
       children: [
-        const SizedBox(height: 16), // 顶部留白
-        _buildCoverImageSection(), // 调用: 封面图区域
         const SizedBox(height: 16),
-        _buildTitleField(), // 调用: 标题
+        _buildCoverImageSection(), // 使用带错误提示的版本
         const SizedBox(height: 16),
-        _buildSummaryField(), // 调用: 简介
+        _buildTitleField(),
         const SizedBox(height: 16),
-        _buildDescriptionField(), // 调用: 描述
+        _buildSummaryField(),
         const SizedBox(height: 16),
-        _buildMusicUrlField(), // 调用: 音乐链接
+        _buildDescriptionField(),
         const SizedBox(height: 16),
-        _buildCategorySection(), // 调用: 分类区域
+        _buildMusicUrlField(),
         const SizedBox(height: 16),
-        _buildTagsField(), // 调用: 标签
+        _buildCategorySection(), // 使用带错误提示的版本
         const SizedBox(height: 16),
-        _buildDownloadLinksField(), // 调用: 下载链接
+        _buildTagsField(),
         const SizedBox(height: 16),
-        _buildGameImagesSection(), // 调用: 截图区域
+        _buildDownloadLinksField(),
+        const SizedBox(height: 16),
+        _buildGameImagesSection(),
         const SizedBox(height: 24),
-        _buildPreviewButton(), // 调用: 预览按钮 (移动端单独一行)
+        _buildPreviewButton(), // 预览按钮
         const SizedBox(height: 16),
-        _buildSubmitButton(), // 调用: 提交按钮 (移动端单独一行)
-        const SizedBox(height: 16), // 底部留白
+        _buildSubmitButton(), // 提交按钮
+        const SizedBox(height: 16),
       ],
     );
   }
 
-  // --- Reusable Field Builders ---
+  // --- 可重用字段构建器 ---
 
-  // 新增: 分区标题构建方法
+  // 分区标题
   Widget _buildSectionTitle(String title) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -639,7 +626,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建封面图区域 (包含错误提示)
+  // 封面图区域 (带错误提示)
   Widget _buildCoverImageSection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -647,7 +634,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         CoverImageField(
           coverImageSource: _coverImageSource,
           onChanged: _handleCoverImageChange,
-          isLoading: _isLoading,
+          isLoading: _isProcessing, // 使用 _isProcessing
         ),
         if (_coverImageError != null)
           Padding(
@@ -659,7 +646,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建标题字段
+  // 标题字段
   Widget _buildTitleField() {
     return TextFormField(
       controller: _titleController,
@@ -672,7 +659,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建简介字段
+  // 简介字段
   Widget _buildSummaryField() {
     return TextFormField(
       controller: _summaryController,
@@ -686,7 +673,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建描述字段
+  // 描述字段
   Widget _buildDescriptionField() {
     return TextFormField(
       controller: _descriptionController,
@@ -696,12 +683,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           border: OutlineInputBorder(),
           alignLabelWithHint: true,
           prefixIcon: Icon(Icons.description)),
-      maxLines: DeviceUtils.isDesktop ? 6 : 5, // 保持原有的行数差异
+      maxLines: DeviceUtils.isDesktop ? 6 : 5,
       validator: (value) => value?.trim().isEmpty ?? true ? '请输入详细描述' : null,
     );
   }
 
-  // 构建音乐链接字段
+  // 音乐链接字段
   Widget _buildMusicUrlField() {
     return TextFormField(
       controller: _musicUrlController,
@@ -710,11 +697,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           labelText: '背景音乐链接(可选)',
           border: OutlineInputBorder(),
           prefixIcon: Icon(Icons.music_note)),
-      // 可选字段通常不需要 validator
     );
   }
 
-  // 构建分类区域 (包含错误提示)
+  // 分类区域 (带错误提示)
   Widget _buildCategorySection() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -723,7 +709,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           selectedCategories: _selectedCategories,
           onChanged: (categories) => setState(() {
             _selectedCategories = categories;
-            if (categories.isNotEmpty) _categoryError = null;
+            if (categories.isNotEmpty) _categoryError = null; // 清除错误
           }),
         ),
         if (_categoryError != null)
@@ -736,7 +722,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建标签字段
+  // 标签字段
   Widget _buildTagsField() {
     return TagsField(
       tags: _selectedTags,
@@ -744,7 +730,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建下载链接字段
+  // 下载链接字段
   Widget _buildDownloadLinksField() {
     return DownloadLinksField(
       downloadLinks: _downloadLinks,
@@ -752,64 +738,58 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // 构建游戏截图区域
+  // 游戏截图区域
   Widget _buildGameImagesSection() {
     return GameImagesField(
       gameImagesSources: _gameImagesSources,
       onChanged: _handleGameImagesChange,
-      isLoading: _isLoading,
+      isLoading: _isProcessing, // 使用 _isProcessing
     );
   }
 
+  // --- 构建提交按钮 (使用 _isProcessing 控制状态) ---
   Widget _buildSubmitButton() {
+    // 按钮是否可用取决于本地 _isProcessing 状态
+    bool canPress = !_isProcessing;
+
     return AppButton(
-      onPressed: _submitForm,
-      isLoading: _isLoading,
+      // 当 _isProcessing 为 true 时，onPressed 为 null 来禁用
+      onPressed: canPress ? _submitForm : null,
+      // isLoading 控制按钮内部是否显示加载指示器
+      isLoading: _isProcessing,
       text: widget.game == null ? '添加游戏' : '保存修改',
       isPrimaryAction: true,
       icon: Icon(widget.game == null
           ? Icons.add_circle_outline
           : Icons.save_alt_outlined),
-      isMini: false, // 保持原有设置
+      isMini: false,
     );
   }
 
+  // --- 构建预览按钮 (逻辑不变) ---
   Widget _buildPreviewButton() {
-    // 准备给预览组件的数据，预览通常只能显示 URL
-
-    // 1. 处理封面图用于预览
     String? previewCoverUrl;
-    if (_coverImageSource is String && (_coverImageSource as String).isNotEmpty) {
-      // 如果是有效的 URL 字符串，直接用
+    if (_coverImageSource is String &&
+        (_coverImageSource as String).isNotEmpty) {
       previewCoverUrl = _coverImageSource as String;
     }
-    // 如果是 XFile 或 null/空字符串，则不传递 URL 给预览 (预览组件需处理 null 情况)
-
-    // 2. 处理游戏截图用于预览
     List<String> previewImageUrls = _gameImagesSources
-        .whereType<String>() // 只筛选出 String 类型的 URL
-        .where((url) => url.isNotEmpty) // 确保 URL 非空
+        .whereType<String>()
+        .where((url) => url.isNotEmpty)
         .toList();
-    // 本地选择的 XFile 不会包含在预览的图片列表中
 
-    // 3. 构建预览按钮，传递处理后的数据
     return GamePreviewButton(
-      // 基本信息控制器
       titleController: _titleController,
       summaryController: _summaryController,
       descriptionController: _descriptionController,
-      // 图像信息 (只传 URL)
-      coverImageUrl: previewCoverUrl,   // 可能为 null
-      gameImages: previewImageUrls,     // 只包含 URL 的列表
-      // 其他信息
+      coverImageUrl: previewCoverUrl,
+      gameImages: previewImageUrls,
       selectedCategories: _selectedCategories,
       selectedTags: _selectedTags,
-      rating: widget.game?.rating ?? 0.0, // 使用现有评分或默认值
+      rating: widget.game?.rating ?? 0.0,
       downloadLinks: _downloadLinks,
       musicUrl: _musicUrlController.text.trim(),
       existingGame: widget.game,
-      // 可选: 告知预览组件是否有本地文件未显示
-      // hasLocalImages: _coverImageSource is XFile || _gameImagesSources.any((s) => s is XFile),
     );
   }
-}
+} // _GameFormState 结束

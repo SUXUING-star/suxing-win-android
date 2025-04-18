@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider 判断权限
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/custom_popup_menu_button.dart'; // 引入自定义菜单按钮
+import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart'; // 引入自定义菜单按钮
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart'; // 需要路由
 import '../../../../../utils/device/device_utils.dart';
@@ -23,10 +26,9 @@ class BaseGameCard extends StatelessWidget {
   final int maxTags;
   final bool forceCompact;
   final bool showCollectionStats;
-
-  // --- !!! 新增：接收来自父级的操作回调 !!! ---
   final VoidCallback? onDeleteAction; // 删除按钮点击回调
-  //final VoidCallback? onEditAction; // 编辑按钮点击回调
+  // final VoidCallback? onEditAction; // 编辑按钮点击回调
+  // 通常gamelist后端返回的字段里不包含description字段，所以直接进行编辑回调，这里的game有些字段会缺失
 
   const BaseGameCard({
     Key? key,
@@ -43,8 +45,14 @@ class BaseGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 根据布局类型选择构建方法
-    return isGridItem ? _buildGridCard(context) : _buildListCard(context);
+    // --- 新增加的保险判断 ---
+    // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
+    if (game.approvalStatus == 'pending') {
+      // 返回一个空的、不占空间的Widget
+      return const SizedBox.shrink();
+    } else {
+      return isGridItem ? _buildGridCard(context) : _buildListCard(context);
+    }
   }
 
   // --- 列表布局卡片 ---
@@ -258,55 +266,47 @@ class BaseGameCard extends StatelessWidget {
 
   // --- !!! 构建右上角弹出菜单 !!! ---
   Widget _buildPopupMenu(BuildContext context) {
-    // 检查是否有编辑或删除的回调，并且用户有权限
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.currentUser?.id;
     final isAdmin = authProvider.currentUser?.isAdmin ?? false;
-    // 确保比较的是字符串 ID
     final canModify = (game.authorId.toString() == currentUserId) || isAdmin;
-    final hasActions = (
-        //onEditAction != null ||
-            onDeleteAction != null);
+    // *** 直接检查 onDeleteAction 是否非 null ***
+    final hasDeleteAction = onDeleteAction != null;
 
-    // 如果不能修改或者没有提供任何操作回调，则不显示菜单
-    if (!canModify || !hasActions) {
+    // 如果不能修改或者没有删除回调，不显示
+    if (!canModify || !hasDeleteAction) {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      child:
-      CustomPopupMenuButton<String>(
-      icon: Icons.more_vert, // 使用垂直点
-      iconSize: 20,
-      padding: const EdgeInsets.all(4.0), // 减少按钮 padding
-      tooltip: '选项',
-      onSelected: (value) {
-        // --- !!! 调用父级传递的回调 !!! ---
-        if (value == 'edit') {
-          // onEditAction?.call();
-        } else if (value == 'delete') {
-          onDeleteAction?.call();
-        }
-      },
-      itemBuilder: (BuildContext context) {
-        final items = <PopupMenuEntry<String>>[];
-        // 如果有编辑回调，显示编辑选项
-        // if (onEditAction != null) {
-        //   items.add(PopupMenuItem<String>(value: 'edit', child: Text('编辑')));
-        // }
-        // 如果有删除回调，显示删除选项
-        if (onDeleteAction != null) {
-          // 如果前面有编辑选项，加个分割线
-          if (items.isNotEmpty) {
-            items.add(PopupMenuDivider(height: 1));
-          }
-          items.add(PopupMenuItem<String>(
+    return Container( // 可以保留 Container 做微调，或者直接返回 Button
+      child: StylishPopupMenuButton<String>( // *** 使用新组件 ***
+        icon: Icons.more_vert,
+        iconSize: 20,
+        triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
+        tooltip: '选项',
+        elevation: 2.0,                          // 设置阴影
+        itemHeight: 40,                          // 设置项高
+
+        // *** 直接提供数据列表 ***
+        items: [
+          // 删除选项
+          if (hasDeleteAction) // 使用计算好的变量
+            StylishMenuItemData( // **提供数据**
               value: 'delete',
-              child: Text('删除', style: TextStyle(color: Colors.red))));
-        }
-        return items;
-      },
-    ),
+              // **提供内容**
+              child: AppText('删除', type: AppTextType.error), // 使用主题颜色
+            ),
+          // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData
+        ],
+
+        // onSelected 逻辑不变
+        onSelected: (value) {
+          if (value == 'delete') {
+            onDeleteAction?.call(); // 直接调用
+          }
+          // else if (value == 'edit') { ... }
+        },
+      ),
     );
   }
 }

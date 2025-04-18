@@ -129,6 +129,29 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
   }
 
+  // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
+  Future<void> _handleToggleLockFromCard(String postId) async {
+
+    try {
+      // 调用 ForumService
+      await _forumService.togglePostLock(postId);
+      if (!mounted) return; // 检查组件是否还在
+      AppSnackBar.showSuccess(context, '帖子状态已切换');
+
+      // --- 刷新当前页数据 ---
+      // 重新加载当前页是确保数据一致性的最安全方法
+      print("ForumScreen: Post lock toggled, refreshing current page ($_currentPage).");
+      await _loadPosts(page: _currentPage, isRefresh: true);
+
+    } catch (e) {
+      if (!mounted) return;
+      print("ForumScreen: Failed to toggle lock for post $postId: $e");
+      AppSnackBar.showError(context, '操作失败: $e');
+    } finally {
+      // routeObserver?.hideLoading();
+    }
+  }
+
   // --- 核心加载逻辑 ---
   Future<void> _loadPosts({required int page,
     bool isInitialLoad = false,
@@ -670,7 +693,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // 2. 如果正在加载，并且没有旧帖子数据显示 (_posts 为 null)
     if (_isLoadingData && _posts == null) {
       print("  -> Showing LoadingWidget (initial/page change)");
-      return LoadingWidget.inline(message: '正在加载帖子...');
+      return LoadingWidget.fullScreen(message: '正在加载帖子...');
     }
 
     // 3. 如果加载完成，但帖子列表为空
@@ -690,7 +713,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // 5. 其他情况（理论上不应到达，例如 _posts 为 null 但不在加载也没错误）
     print("  -> Fallback: Showing initial loading prompt or empty SizedBox");
     // 可能是在初始化但还不可见，或者状态异常
-    return LoadingWidget.inline(message: "等待加载..."); // 或者 SizedBox.shrink()
+    return LoadingWidget.fullScreen(message: "等待加载..."); // 或者 SizedBox.shrink()
   }
 
   // --- 构建桌面布局 (Row + Panels + List) ---
@@ -808,6 +831,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
                 isDesktopLayout: false,
                 onDeleteAction: onDeleteAction,
                 onEditAction: onEditAction,
+                onToggleLockAction: _handleToggleLockFromCard,
               ),
             ),
           ),
@@ -852,6 +876,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             isDesktopLayout: true,
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,
+            onToggleLockAction: _handleToggleLockFromCard,
             // 桌面 PostCard 内部可能处理 onTap，如果需要外部处理，则加 GestureDetector
           ),
         );

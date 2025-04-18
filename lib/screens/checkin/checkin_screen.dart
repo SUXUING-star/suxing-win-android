@@ -310,15 +310,15 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       ),
       body: Stack(
         children: [
+
           // 处理加载和错误状态
           if (_isLoading)
-            LoadingWidget.inline(message: '正在加载签到数据...'),
+            LoadingWidget.fullScreen(message: '正在加载签到数据...'),
 
           if (_errorMessage != null)
-            CustomErrorWidget(
+            InlineErrorWidget(
               errorMessage: _errorMessage!,
               onRetry: _loadData,
-              title: '签到数据加载失败',
             ),
 
           // 成功状态下显示响应式布局

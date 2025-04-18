@@ -1,4 +1,4 @@
-// lib/widgets/ui/components/base_game_card.dart
+// lib/widgets/ui/components/common_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../models/game/game.dart';
@@ -27,6 +27,14 @@ class CommonGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // --- 新增加的保险判断 ---
+    // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
+    if (game.approvalStatus == 'pending') {
+      // 返回一个空的、不占空间的Widget
+      return const SizedBox.shrink();
+    }
+
+    // 如果状态不是 pending，则正常构建卡片
     return isGridItem ? _buildGridCard(context) : _buildListCard(context);
   }
 

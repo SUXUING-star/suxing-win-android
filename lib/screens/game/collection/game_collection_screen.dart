@@ -234,7 +234,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
     return Scaffold(
       appBar: CustomAppBar(
-        title: '我的游戏',
+        title: '我的收藏',
       ),
       // *** 直接调用 _buildBody，依赖当前的状态变量 ***
       body: _buildBody(isLoggedIn), // 传递当前获取的登录状态
@@ -257,7 +257,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
         _gameCollections.values.every((list) => list.isEmpty) &&
         _error == null) {
       print("_buildBody: 显示初始加载指示器");
-      return LoadingWidget.inline(message: "正在加载收藏数据");
+      return LoadingWidget.fullScreen(message: "正在加载收藏数据");
     }
 
     // 3. 加载出错

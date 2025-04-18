@@ -1,5 +1,6 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 // --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // <--- 引入 ElevatedButton 封装
@@ -111,7 +112,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       if (!mounted) return;
 
       if (isCodeValid) {
-        NavigationUtils.pushReplacementNamed(context, '/reset-password',
+        NavigationUtils.pushReplacementNamed(context, AppRoutes.resetPassword,
             arguments: _emailController.text);
       } else {
         setState(() => _error = '验证码错误或已过期');

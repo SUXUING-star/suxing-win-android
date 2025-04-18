@@ -333,6 +333,47 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       }
     });
   }
+
+  // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
+  Future<void> _handleToggleLockAction(String postId) async {
+    print("SearchPostScreen: Handling toggle lock action for $postId");
+    if (!mounted) return;
+
+    LoadingRouteObserver? loadingObserver = _getLoadingObserver();
+    loadingObserver?.showLoading(); // 显示加载指示
+
+    try {
+      await _forumService.togglePostLock(postId);
+      if (!mounted) return;
+
+      AppSnackBar.showSuccess(context, '帖子状态已切换');
+
+      // --- 更新搜索结果列表中的帖子状态 ---
+      setState(() {
+        final index = _searchResults.indexWhere((p) => p.id == postId);
+        if (index != -1) {
+          final oldPost = _searchResults[index];
+          final newStatus = oldPost.status == PostStatus.locked
+              ? PostStatus.active
+              : PostStatus.locked;
+          _searchResults[index] = oldPost.copyWith(status: newStatus);
+          print("SearchPostScreen: Updated post $postId status in search results.");
+        } else {
+          // 如果没找到，可能需要重新搜索？但通常此时帖子还在列表里
+          print("SearchPostScreen: Warning - Post $postId not found in search results after toggle.");
+          // 可以选择刷新：_performSearch(_searchController.text.trim(), isNewSearch: true);
+        }
+      });
+
+    } catch (e) {
+      if (!mounted) return;
+      print("SearchPostScreen: Error toggling lock for post $postId: $e");
+      AppSnackBar.showError(context, '操作失败: $e');
+    } finally {
+      if (mounted) loadingObserver?.hideLoading();
+    }
+  }
+
   // ========================================
   // == 回调处理方法结束 ==
   // ========================================
@@ -491,12 +532,13 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         // 帖子卡片
         if (index < _searchResults.length) {
           final post = _searchResults[index];
-          // print("SearchPostScreen: Building PostCard for index $index, post ID ${post.id}");
           return PostCard(
-            key: ValueKey(post.id), // 添加 Key 帮助 Flutter 识别
+            key: ValueKey(post.id),
             post: post,
-            onDeleteAction: _handleDeletePostAction, // 使用抽出的方法
-            onEditAction: _handleEditPostAction,     // 使用抽出的方法
+            // --- 传递所有需要的回调 ---
+            onDeleteAction: _handleDeletePostAction,
+            onEditAction: _handleEditPostAction,
+            onToggleLockAction: _handleToggleLockAction, // <-- 传递新回调
           );
         }
         // 安全返回

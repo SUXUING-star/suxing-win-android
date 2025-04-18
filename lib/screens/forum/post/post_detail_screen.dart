@@ -2,11 +2,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/custom_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
@@ -43,6 +45,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   // 交互标志
   bool _hasInteraction = false;
+  bool _isTogglingLock = false;
 
   @override
   void initState() {
@@ -51,89 +54,106 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   Future<void> _loadPost() async {
-    bool postWasRemoved = false; // 新增标志位
-    String? errorMessage;
+    // bool postWasRemoved = false; // 这个标志现在由 'not_found' 异常处理
+    setState(() {
+      _isLoading = true;
+      _error = null; // 重置错误状态
+      _post = null; // 重置帖子数据
+    });
 
     try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      // 1. 获取帖子数据
+      // 1. 获取帖子数据 (现在会抛出更具体的异常)
       final post = await _forumService.getPost(widget.postId);
 
-      // --- 增加浏览量逻辑 Start ---
+      // 如果 getPost 成功返回 post (表示有权限查看)
       if (post != null && mounted) {
-        // 2. 在成功获取到帖子 *之后*，尝试增加浏览量
-        //    这里使用 try-catch 包裹，即使增加浏览量失败，也不影响帖子详情的展示
-        try {
-          // 调用服务层的方法，注意：这里是异步调用，但我们不一定需要 await 它完成，
-          if (!postWasRemoved && widget.needHistory)
+        // --- 增加浏览量逻辑 (仅在成功获取帖子后执行) ---
+        if (widget.needHistory) {
+          try {
+            // 无需等待，后台执行即可
             _forumService.incrementPostView(widget.postId);
-        } catch (viewError) {
-          errorMessage = "view_error";
-        }
-      }
-      // --- 增加浏览量逻辑 End ---
-
-      // 3. 更新 UI 状态 (在获取帖子和尝试增加浏览量之后)
-      if (mounted) {
-        // 异步操作后必须检查 mounted
-        setState(() {
-          if (post == null) {
-            _error = '帖子不存在或已被删除';
-            errorMessage = "not_found";
-            _post = null; // 确保 post 为 null，以便后续显示错误或 Not Found
-          } else {
-            _post = post;
+          } catch (viewError) {
+            print(
+                "Warning: Failed to increment view count for post ${widget.postId}: $viewError");
+            // 不阻塞主流程，只记录警告
           }
+        }
+        // --- 更新 UI ---
+        setState(() {
+          _post = post;
+          _isLoading = false;
+        });
+      } else if (mounted) {
+        // 如果 getPost 返回 null 但没抛异常 (理论上不应该发生在此场景，除非 postId 无效)
+        setState(() {
+          _error = '无法加载帖子，请稍后重试';
           _isLoading = false;
         });
       }
     } catch (e) {
-      if (e.toString().contains('not_found') || errorMessage == 'not_found') {
-        postWasRemoved = true; // *** 标记游戏已被移除 ***
+      final errorString = e.toString();
+      print(
+          "PostDetailScreen: Error loading post ${widget.postId}: $errorString");
 
-        // *** 显示补偿/移除对话框 ***
-        // 使用 addPostFrameCallback 确保在当前帧渲染完成后执行
+      if (!mounted) return; // 异步操作后检查 mounted
+
+      // --- 根据 ForumService 抛出的特定异常更新 UI ---
+      if (errorString.startsWith('access_denied:')) {
+        // --- 情况1：访问被拒绝 (帖子锁定或无权) ---
+        setState(() {
+          // 从异常消息中提取用户友好的部分
+          _error = errorString.substring('access_denied:'.length).trim();
+          _isLoading = false;
+          _post = null; // 确保帖子数据为空
+        });
+        // *不* 显示“已删除”对话框，错误信息会在 build 方法中显示
+      } else if (errorString.contains('not_found')) {
+        // --- 情况2：帖子确实不存在或已被删除 (API 404) ---
+        // postWasRemoved = true; // 不需要标志了，直接处理
+        // 显示“已删除”对话框
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) {
-            // 再次检查 mounted 状态
             CustomInfoDialog.show(
               context: context,
-              title: '帖子已被删除',
-              message: '抱歉，您尝试访问的帖子已被移除或不存在。\n(回到主页会重新刷新)',
-              iconData: Icons
-                  .delete_forever_outlined, // 或者 Icons.sentiment_very_dissatisfied
-              iconColor: Colors.redAccent,
+              title: '帖子找不到了', // 优化标题
+              message: '抱歉，您要查看的帖子可能已被删除或转移。\n(返回上一页或首页会自动刷新列表)', // 优化信息
+              iconData: Icons.search_off, // 换个图标
+              iconColor: Colors.orange,
               closeButtonText: '知道了',
-              barrierDismissible: false, // 不允许点击外部关闭，强制用户确认
+              barrierDismissible: false,
               onClose: () {
-                // 用户点击“知道了”之后的操作
                 if (mounted) {
                   try {
+                    // 标记有交互（即使是错误），以便列表刷新
+                    _hasInteraction = true;
                     if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
+                      Navigator.pop(context, _hasInteraction); // 返回交互结果
                     } else {
-                      // 如果不能 pop (比如是根路由)，可以导航到主页
                       NavigationUtils.navigateToHome(context);
                     }
                   } catch (popError) {
-                    NavigationUtils.navigateToHome(context);
+                    print(
+                        "Error popping context after 'not found' dialog: $popError");
+                    NavigationUtils.navigateToHome(context); // 保底导航
                   }
                 }
               },
             );
+            // 同时也设置错误状态，以防对话框被意外关闭
+            setState(() {
+              _error = '帖子不存在或已被删除';
+              _isLoading = false;
+              _post = null;
+            });
           }
         });
-      }
-
-      if (mounted) {
+      } else {
+        // --- 情况3：其他加载错误 (网络、服务器内部错误、格式错误等) ---
         setState(() {
-          _error = '加载帖子失败: ${e.toString()}';
+          // 直接使用 ForumService 抛出的通用错误信息
+          _error = errorString;
           _isLoading = false;
-          _post = null; // 加载失败，清空帖子数据
+          _post = null;
         });
       }
     }
@@ -149,6 +169,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
 
     super.dispose();
+  }
+
+  // --- 新增：处理锁定/解锁操作 ---
+  Future<void> _handleToggleLock(BuildContext context) async {
+    if (_post == null || _isTogglingLock) return; // 防止重复点击或在 post 为 null 时操作
+
+    print("PostDetailScreen: Handling toggle lock for post ${widget.postId}");
+    setState(() {
+      _isTogglingLock = true; // 开始操作，显示加载状态
+    });
+
+    try {
+      // 调用 ForumService
+      await _forumService.togglePostLock(widget.postId);
+      if (!mounted) return;
+
+      AppSnackBar.showSuccess(context, '帖子状态已切换');
+
+      // --- 标记有交互 ---
+      _hasInteraction = true;
+
+      // --- 刷新帖子数据以获取最新状态 ---
+      await _refreshPost(); // _refreshPost 内部会处理 isLoading 状态
+    } catch (e) {
+      if (!mounted) return;
+      print(
+          "PostDetailScreen: Failed to toggle lock for post ${widget.postId}: $e");
+      AppSnackBar.showError(context, '操作失败: $e');
+    } finally {
+      // 确保在操作结束后（无论成功或失败）都重置加载状态
+      if (mounted) {
+        setState(() {
+          _isTogglingLock = false;
+        });
+      }
+    }
   }
 
   // 处理交互成功回调
@@ -269,7 +325,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
-        body: LoadingWidget.inline(message: '正在加载帖子...'),
+        body: LoadingWidget.fullScreen(message: '正在加载帖子...'),
       );
     }
 
@@ -344,48 +400,83 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
         final bool canEdit = auth.currentUser?.id == _post!.authorId;
         final bool canDelete = canEdit || auth.currentUser?.isAdmin == true;
-        final bool canToggleLock =
-            auth.currentUser?.isAdmin == true; // 假设只有管理员能锁定/解锁
+        // --- 检查是否可以切换锁定状态 (仅管理员) ---
+        final bool canToggleLock = auth.currentUser?.isAdmin == true;
 
-        // 检查是否有任何操作可用
         if (!canEdit && !canDelete && !canToggleLock) {
           return const SizedBox.shrink();
         }
 
-        return CustomPopupMenuButton<String>(
-          // <--- 使用 CustomPopupMenuButton
-          icon: Icons.more_vert, // 可以保持默认或自定义
+        return StylishPopupMenuButton<String>(
+          // *** 直接用这个！***
+          icon: Icons.more_vert,
           tooltip: '更多选项',
-          itemBuilder: (context) {
-            final items = <PopupMenuEntry<String>>[];
+          isEnabled: !_isTogglingLock,
+          menuColor: Colors.white, // 设置菜单背景
+          elevation: 1.0, // 设置阴影
+          itemHeight: 40, // 统一设置项高
 
-            if (canEdit) {
-              items.add(const PopupMenuItem(value: 'edit', child: Text('编辑')));
-            }
-            if (canDelete) {
-              items
-                  .add(const PopupMenuItem(value: 'delete', child: Text('删除')));
-            }
-            if (canToggleLock) {
-              // 添加分割线，如果前面有内容
-              if (items.isNotEmpty) {
-                items.add(const PopupMenuDivider());
-              }
-              items.add(PopupMenuItem(
+          // *** 直接提供数据列表！***
+          items: [
+            // 编辑选项
+            if (canEdit)
+              StylishMenuItemData(
+                // **提供数据**
+                value: 'edit',
+                child: Text('编辑'), // **提供内容**
+              ),
+
+            // 删除选项
+            if (canDelete)
+              StylishMenuItemData(
+                // **提供数据**
+                value: 'delete',
+                child: AppText('删除',
+                    style: TextStyle(
+                        color:
+                            Theme.of(context).colorScheme.error)), // **提供内容**
+              ),
+
+            // 分割线标记
+            if (canToggleLock && (canEdit || canDelete))
+              const StylishMenuDividerData(), // **标记分割线**
+
+            // 锁定/解锁选项
+            if (canToggleLock)
+              StylishMenuItemData(
+                // **提供数据**
                 value: 'toggle_lock',
-                child:
+                // **提供 Row 作为内容**
+                child: Row(
+                  children: [
+                    Icon(
+                      _post!.status == PostStatus.locked
+                          ? Icons.lock_open
+                          : Icons.lock,
+                      size: 18,
+                      color: _post!.status == PostStatus.locked
+                          ? Theme.of(context).colorScheme.secondary
+                          : Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
                     Text(_post!.status == PostStatus.locked ? '解锁帖子' : '锁定帖子'),
-              ));
-            }
-            return items;
-          },
+                  ],
+                ),
+                // enabled: someCondition, // 也可以单独控制某一项的启用状态
+              ),
+          ],
           onSelected: (value) async {
+            // --- 在 onSelected 中处理 ---
             switch (value) {
               case 'edit':
                 await _handleEditPost(context);
                 break;
               case 'delete':
                 await _handleDeletePost(context);
+                break;
+              // --- 处理 toggle_lock ---
+              case 'toggle_lock':
+                await _handleToggleLock(context); // 调用新的处理函数
                 break;
             }
           },
