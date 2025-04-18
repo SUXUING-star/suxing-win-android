@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/open/mobile/profile_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
-import '../../../../../../models/game/game.dart';
+import '../../../../../models/game/game.dart';
 
 class ProfileGameCard extends CommonGameCard {
   // 简单继承基类，不需要添加额外的操作按钮

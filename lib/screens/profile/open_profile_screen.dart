@@ -1,6 +1,8 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -13,8 +15,8 @@ import '../../models/game/game.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/ui/image/safe_user_avatar.dart';
 import '../../utils/device/device_utils.dart';
-import '../../widgets/components/screen/profile/open/mobile/profile_game_card.dart';
-import '../../widgets/components/screen/profile/open/mobile/profile_post_card.dart';
+import '../../widgets/components/screen/profile/open/profile_game_card.dart';
+import '../../widgets/components/screen/profile/open/profile_post_card.dart';
 import '../../widgets/ui/buttons/follow_user_button.dart';
 
 class OpenProfileScreen extends StatefulWidget {
@@ -127,17 +129,29 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     }
 
     if (_error != null) {
+      // 错误提示加个动画
       return InlineErrorWidget(
         onRetry: _loadUserProfile,
         errorMessage: _error,
       );
     }
 
-    return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
+    final contentKey = ValueKey<String>(_user?.id ?? 'loading_finished');
+
+    if (isDesktop) {
+      return _buildDesktopLayout(contentKey); // 传递 Key
+    } else {
+      return _buildMobileLayout(contentKey); // 传递 Key
+    }
   }
 
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(Key animationKey) {
+    // 定义基础延迟和间隔
+    const Duration initialDelay = Duration(milliseconds: 100);
+    const Duration stagger = Duration(milliseconds: 150);
+
     return Row(
+      key: animationKey, // 应用 Key
       children: [
         // 左侧用户信息
         Expanded(
@@ -148,29 +162,57 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildUserHeader(),
+                  // 用户 Header 动画
+                  FadeInSlideUpItem(
+                    delay: initialDelay, // 第一个出现
+                    child: _buildUserHeader(),
+                  ),
                   SizedBox(height: 16),
-                  _buildUserStatistics(),
+                  // 用户统计卡片动画
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger, // 稍微延迟
+                    child: _buildUserStatistics(),
+                  ),
                 ],
               ),
             ),
           ),
         ),
 
-        // 右侧内容
+        // 右侧内容区动画
         Expanded(
           flex: 2,
-          child: _buildContentSection(),
+          child: FadeInSlideUpItem(
+            delay: initialDelay + stagger * 2, // 更晚一点出现
+            child: _buildContentSection(), // 内容区的动画是整体的
+            // 内部列表/网格的动画在下面处理
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout(Key animationKey) {
+    // 定义基础延迟和间隔
+    const Duration initialDelay = Duration(milliseconds: 100);
+    const Duration stagger = Duration(milliseconds: 150);
+
     return Column(
+      key: animationKey, // 应用 Key
       children: [
-        _buildUserHeader(),
-        _buildContentSection(),
+        // 用户 Header 动画
+        FadeInSlideUpItem(
+          delay: initialDelay,
+          child: _buildUserHeader(),
+        ),
+        // 内容区动画 (TabBar + TabBarView)
+        // Expanded 包裹动画组件，确保内容区能正确填充剩余空间
+        Expanded(
+          child: FadeInSlideUpItem(
+            delay: initialDelay + stagger,
+            child: _buildContentSection(), // 同样，内部列表/网格动画需单独处理
+          ),
+        ),
       ],
     );
   }
@@ -348,11 +390,15 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       physics: NeverScrollableScrollPhysics(),
       itemCount: _publishedGames!.length,
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: ProfileGameCard(
-            game: _publishedGames![index],
-            isGridItem: false,
+        // 为每个列表项添加动画
+        return FadeInSlideUpItem(
+          delay: Duration(milliseconds: 50 * index), //  staggered delay
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: ProfileGameCard(
+              game: _publishedGames![index],
+              isGridItem: false,
+            ),
           ),
         );
       },
@@ -374,9 +420,13 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       ),
       itemCount: _publishedGames!.length,
       itemBuilder: (context, index) {
-        return ProfileGameCard(
-          game: _publishedGames![index],
-          isGridItem: true,
+        // 为每个网格项添加动画
+        return FadeInSlideUpItem(
+          delay: Duration(milliseconds: 50 * index), // staggered delay
+          child: ProfileGameCard(
+            game: _publishedGames![index],
+            isGridItem: true,
+          ),
         );
       },
     );
@@ -388,9 +438,13 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       physics: NeverScrollableScrollPhysics(),
       itemCount: _recentPosts!.length,
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: ProfilePostCard(post: _recentPosts![index]),
+        // 为每个帖子项添加动画
+        return FadeInSlideUpItem(
+          delay: Duration(milliseconds: 50 * index), // staggered delay
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: ProfilePostCard(post: _recentPosts![index]),
+          ),
         );
       },
     );
@@ -511,7 +565,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   String _formatDate(DateTime? date) {
     if (date == null) return '';
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return DateTimeFormatter.formatStandard(date);
   }
 
   Color _getLevelColor(int level) {

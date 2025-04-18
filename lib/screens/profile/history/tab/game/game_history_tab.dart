@@ -1,10 +1,14 @@
 // lib/screens/profile/tab/game_history_tab.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
-import './layout/game_history_grid_card.dart';  // 导入网格布局卡片
-import './card/game_history_list_card.dart';  // 导入列表布局卡片
-
+import './layout/game_history_grid_card.dart'; // 导入网格布局卡片
+import './card/game_history_list_card.dart'; // 导入列表布局卡片
 
 // 游戏历史标签页 - 优化UI显示
 class GameHistoryTab extends StatefulWidget {
@@ -23,10 +27,12 @@ class GameHistoryTab extends StatefulWidget {
   _GameHistoryTabState createState() => _GameHistoryTabState();
 }
 
-class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAliveClientMixin {
+class _GameHistoryTabState extends State<GameHistoryTab>
+    with AutomaticKeepAliveClientMixin {
   List<Map<String, dynamic>>? _gameHistoryWithDetails;
   Map<String, dynamic>? _gameHistoryPagination;
   bool _isLoading = false;
+  bool _isInitialLoading = true;
   int _page = 1;
   final int _pageSize = 10;
 
@@ -36,11 +42,12 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
   @override
   void initState() {
     super.initState();
-    // 使用addPostFrameCallback确保不在build过程中调用setState
     if (widget.isLoaded) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        _loadHistory();
+        if (mounted) _loadHistory();
       });
+    } else {
+      _isInitialLoading = false;
     }
   }
 
@@ -48,150 +55,155 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
   void didUpdateWidget(GameHistoryTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLoaded && !oldWidget.isLoaded) {
+      _page = 1;
+      _gameHistoryWithDetails = null;
+      _isInitialLoading = true;
       _loadHistory();
     }
   }
 
   Future<void> _loadHistory() async {
-    if (_isLoading) return;
+    if (_isLoading || !mounted) return;
 
     setState(() {
       _isLoading = true;
+      if (_page > 1) {
+        // 加载更多时不清空
+      } else if (!_isInitialLoading && _gameHistoryWithDetails != null) {
+        _gameHistoryWithDetails = null; // 下拉刷新时清空
+      }
     });
 
     try {
-      final results = await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
+      final results =
+      await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
+      if (!mounted) return;
 
-      setState(() {
-        // 安全地处理游戏历史数据
-        if (results.containsKey('history') && results['history'] is List) {
-          final historyData = results['history'] as List;
-          _gameHistoryWithDetails = historyData
-              .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
-              .toList();
-        } else {
-          _gameHistoryWithDetails = [];
-        }
-
-        // 安全地处理游戏分页数据
-        if (results.containsKey('pagination') && results['pagination'] is Map) {
-          _gameHistoryPagination = Map<String, dynamic>.from(results['pagination'] as Map);
-        } else {
-          _gameHistoryPagination = {'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0};
-        }
-
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMoreHistory() async {
-    if (_isLoading) return;
-    if (_gameHistoryPagination == null) return;
-
-    // 检查是否已到最后一页
-    final int totalPages = _gameHistoryPagination!['totalPages'] as int? ?? 1;
-    if (_page >= totalPages) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
-    try {
-      // 加载下一页
-      _page++;
-      final results = await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
-
-      // 安全地处理新的游戏历史数据
+      List<Map<String, dynamic>> currentItems = _gameHistoryWithDetails ?? [];
       List<Map<String, dynamic>> newItems = [];
+      Map<String, dynamic>? paginationData;
+
+      // 安全处理
       if (results.containsKey('history') && results['history'] is List) {
         final historyData = results['history'] as List;
         newItems = historyData
             .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
             .toList();
       }
+      if (results.containsKey('pagination') && results['pagination'] is Map) {
+        paginationData = Map<String, dynamic>.from(results['pagination'] as Map);
+      } else {
+        paginationData = {
+          'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0
+        };
+      }
+
+      setState(() {
+        if (_page == 1) {
+          _gameHistoryWithDetails = newItems;
+        } else {
+          _gameHistoryWithDetails = [...currentItems, ...newItems];
+        }
+        _gameHistoryPagination = paginationData;
+        _isLoading = false;
+        if (_isInitialLoading) _isInitialLoading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _isInitialLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadMoreHistory() async {
+    if (_isLoading || !mounted) return;
+    if (_gameHistoryPagination == null) return;
+
+    final int totalPages = _gameHistoryPagination!['totalPages'] as int? ?? 1;
+    if (_page >= totalPages) return;
+
+    _page++;
+
+    try {
+      final results =
+      await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
+      if (!mounted) return;
+
+      List<Map<String, dynamic>> currentItems = _gameHistoryWithDetails ?? [];
+      List<Map<String, dynamic>> newItems = [];
+      Map<String, dynamic>? paginationData;
+
+      // 安全处理
+      if (results.containsKey('history') && results['history'] is List) {
+        final historyData = results['history'] as List;
+        newItems = historyData
+            .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
+            .toList();
+      }
+      if (results.containsKey('pagination') && results['pagination'] is Map) {
+        paginationData = Map<String, dynamic>.from(results['pagination'] as Map);
+      } else {
+        paginationData = {
+          'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0
+        };
+      }
 
       setState(() {
         if (newItems.isNotEmpty) {
-          _gameHistoryWithDetails = [...?_gameHistoryWithDetails, ...newItems];
+          _gameHistoryWithDetails = [...currentItems, ...newItems];
         }
-
-        // 安全地处理分页数据
-        if (results.containsKey('pagination') && results['pagination'] is Map) {
-          _gameHistoryPagination = Map<String, dynamic>.from(results['pagination'] as Map);
-        } else {
-          _gameHistoryPagination = {'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0};
-        }
-
-        _isLoading = false;
+        _gameHistoryPagination = paginationData;
+        // _isLoading = false;
       });
     } catch (e) {
-      setState(() {
-        _page--; // 失败时回滚页码
-        _isLoading = false;
-      });
+      if (!mounted) return;
+      _page--;
+      // setState(() { _isLoading = false; });
+      // 显示错误提示...
     }
   }
 
   Widget _buildInitialLoadButton() {
     return Center(
-      child: ElevatedButton(
-        onPressed: widget.onLoad,
-        child: Text('加载游戏历史'),
-      ),
+      child: FunctionalTextButton(onPressed: widget.onLoad, label: '加载浏览记录'),
     );
   }
 
   Widget _buildLoadingIndicator() {
-    return Center(child: CircularProgressIndicator());
+    return LoadingWidget.inline();
   }
 
   Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.history, size: 64, color: Colors.grey[400]),
-          SizedBox(height: 16),
-          Text(
-            '暂无游戏浏览记录',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            '浏览游戏后，您的历史记录将显示在这里',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
-        ],
+    return FadeInSlideUpItem( // 添加动画
+      child: EmptyStateWidget(
+        message: '暂无游戏浏览记录',
+        iconData: Icons.history,
+        iconColor: Colors.grey[400],
+        iconSize: 64,
       ),
     );
   }
 
   Widget _buildLoadMoreIndicator() {
-    return Center(child: Padding(
-      padding: const EdgeInsets.all(8.0),
-      child: CircularProgressIndicator(),
-    ));
+    return LoadingWidget.inline(message: "正在加载记录");
   }
 
   Widget _buildLoadMoreButton() {
-    return Center(
-      child: TextButton(
-        onPressed: _loadMoreHistory,
-        child: Text('加载更多'),
+    return Padding( // 给加载更多加点边距
+      padding: const EdgeInsets.symmetric(vertical: 16.0),
+      child: Center(
+        child: FadeInItem( // 添加动画
+          child: FunctionalTextButton(
+              onPressed: _loadMoreHistory,
+              label: '加载更多'
+          ),
+        ),
       ),
     );
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -201,7 +213,8 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
       return _buildInitialLoadButton();
     }
 
-    if (_isLoading && (_gameHistoryWithDetails == null || _gameHistoryWithDetails!.isEmpty)) {
+    if (_isLoading &&
+        (_gameHistoryWithDetails == null || _gameHistoryWithDetails!.isEmpty)) {
       return _buildLoadingIndicator();
     }
 
@@ -223,9 +236,13 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
 
   // 列表布局 - 适用于移动设备
   Widget _buildListLayout(BuildContext context) {
+    // 添加 Key
+    final listKey = ValueKey<int>(_gameHistoryWithDetails?.length ?? 0);
+
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent && !_isLoading) {
+        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent * 0.9 &&
+            !_isLoading) {
           _loadMoreHistory();
         }
         return true;
@@ -233,26 +250,35 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
       child: RefreshIndicator(
         onRefresh: () async {
           _page = 1;
+          _isInitialLoading = true;
           await _loadHistory();
         },
         child: ListView.builder(
+          key: listKey, // 应用 Key
           padding: EdgeInsets.all(16),
-          itemCount: _gameHistoryWithDetails!.length + 1, // +1 for the loading indicator
+          itemCount: (_gameHistoryWithDetails?.length ?? 0) + 1,
           itemBuilder: (context, index) {
-            if (index == _gameHistoryWithDetails!.length) {
-              // 显示加载指示器或"没有更多"信息
-              if (_isLoading) {
+            if (index == (_gameHistoryWithDetails?.length ?? 0)) {
+              if (_isLoading && _page > 1) {
                 return _buildLoadMoreIndicator();
-              } else if (_gameHistoryPagination != null &&
+              } else if (!_isLoading &&
+                  _gameHistoryPagination != null &&
                   _page < (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
                 return _buildLoadMoreButton();
               } else {
-                return const SizedBox.shrink(); // No more items, return an empty SizedBox.
+                return const SizedBox.shrink();
               }
             }
 
             final historyItem = _gameHistoryWithDetails![index];
-            return GameHistoryListCard(historyItem: historyItem); // 使用分离的列表卡片组件
+            return FadeInSlideUpItem(
+              delay: _isInitialLoading ? Duration(milliseconds: 50 * index) : Duration.zero,
+              duration: Duration(milliseconds: 350),
+              child: Padding( // 加间距
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: GameHistoryListCard(historyItem: historyItem),
+              ),
+            );
           },
         ),
       ),
@@ -261,14 +287,15 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
 
   // 网格布局 - 适用于桌面和平板
   Widget _buildGridLayout(BuildContext context) {
-    // 计算一行显示的卡片数量
     final crossAxisCount = DeviceUtils.calculateCardsPerRow(context);
-    // 计算卡片比例
     final cardRatio = DeviceUtils.calculateSimpleCardRatio(context);
+    // 添加 Key
+    final gridKey = ValueKey<int>(_gameHistoryWithDetails?.length ?? 0);
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels == scrollInfo.metrics.maxScrollExtent && !_isLoading) {
+        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent * 0.9 &&
+            !_isLoading) {
           _loadMoreHistory();
         }
         return true;
@@ -276,9 +303,11 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
       child: RefreshIndicator(
         onRefresh: () async {
           _page = 1;
+          _isInitialLoading = true;
           await _loadHistory();
         },
         child: GridView.builder(
+          key: gridKey, // 应用 Key
           padding: EdgeInsets.all(16),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
@@ -286,22 +315,28 @@ class _GameHistoryTabState extends State<GameHistoryTab> with AutomaticKeepAlive
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
-          itemCount: _gameHistoryWithDetails!.length + 1, // +1 for the loading indicator
+          itemCount: (_gameHistoryWithDetails?.length ?? 0) + 1,
           itemBuilder: (context, index) {
-            if (index == _gameHistoryWithDetails!.length) {
-              // 显示加载指示器或"没有更多"信息
-              if (_isLoading) {
+            if (index == (_gameHistoryWithDetails?.length ?? 0)) {
+              if (_isLoading && _page > 1) {
                 return _buildLoadMoreIndicator();
-              } else if (_gameHistoryPagination != null &&
+              } else if (!_isLoading &&
+                  _gameHistoryPagination != null &&
                   _page < (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
+                // 网格布局的加载更多按钮可能需要特殊处理，或者只显示指示器
+                // 这里暂时和列表保持一致
                 return _buildLoadMoreButton();
               } else {
-                return const SizedBox.shrink(); // No more items, return an empty SizedBox.
+                return const SizedBox.shrink();
               }
             }
 
             final historyItem = _gameHistoryWithDetails![index];
-            return GameHistoryGridCard(historyItem: historyItem); // 使用分离的网格卡片组件
+            return FadeInSlideUpItem(
+              delay: _isInitialLoading ? Duration(milliseconds: 50 * index) : Duration.zero,
+              duration: Duration(milliseconds: 350),
+              child: GameHistoryGridCard(historyItem: historyItem),
+            );
           },
         ),
       ),

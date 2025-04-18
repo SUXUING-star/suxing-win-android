@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../../models/post/post.dart';
+import '../../../../../models/post/post.dart';
 
 class ProfilePostCard extends StatelessWidget {
   final Post post;

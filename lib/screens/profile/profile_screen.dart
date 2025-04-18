@@ -1,6 +1,8 @@
 // lib/screens/profile/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // <--- 引入懒加载库
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -46,12 +48,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-
   }
 
   @override
   void dispose() {
-
     super.dispose();
   }
 
@@ -59,7 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _triggerInitialLoad() {
     // 仅在 Widget 变得可见且尚未初始化时执行
     if (_isVisible && !_isInitialized) {
-
       // 标记为已初始化（即使加载失败也算初始化过一次）
       // 注意：在 _loadUserProfile 开始时再标记 _isLoadingData = true
       _isInitialized = true;
@@ -125,12 +124,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
     if (!mounted) return;
 
-
     // (可选) 清除相关缓存
     try {
       await _userService.clearExperienceProgressCache();
-    } catch (e) {
-    }
+    } catch (e) {}
 
     // 直接调用加载方法来刷新
     await _loadUserProfile();
@@ -161,8 +158,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         try {
           // 简单验证
           if (newUsername.trim().isEmpty) {
-            if (mounted)
-              AppSnackBar.showWarning(context, '用户名不能为空');
+            if (mounted) AppSnackBar.showWarning(context, '用户名不能为空');
 
             return;
           }
@@ -177,12 +173,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
           if (mounted) {
             AppSnackBar.showSuccess(context, '用户名更新成功');
-
           }
         } catch (e) {
           if (mounted) {
             AppSnackBar.showError(context, '更新失败：$e');
-
           }
         }
       },
@@ -412,7 +406,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // State 1: 用户未登录
     if (!authProvider.isLoggedIn) {
-      return LoginPromptWidget(isDesktop: useDesktopLayout); // 显示登录提示组件
+      return FadeInSlideUpItem(
+        // 或者用 FadeInItem
+        duration: Duration(milliseconds: 300),
+        child: LoginPromptWidget(isDesktop: useDesktopLayout),
+      );
     }
 
     // State 2: 尚未初始化 (等待 VisibilityDetector 触发首次加载)
@@ -436,14 +434,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // State 5: 加载成功，但用户数据为空 (理论上已登录不应发生，除非API问题)
     if (_user == null) {
-      print(
-          "ProfileScreen Build: User data is null after load, showing ErrorWidget.");
-      return Center(
-        child: InlineErrorWidget(
-          errorMessage: "无法获取用户信息，请稍后重试。",
-          onRetry: _refreshProfile,
-        ),
-      );
+      return FadeInSlideUpItem(
+          // 或者用 FadeInItem
+          duration: Duration(milliseconds: 300),
+          child: InlineErrorWidget(
+            errorMessage: "无法获取用户信息，请稍后重试。",
+            onRetry: _refreshProfile,
+          ));
     }
 
     // State 6: 数据加载成功，显示用户信息
@@ -451,61 +448,76 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = _user!; // 确认用户数据非空
     final menuItems = _getMenuItems(); // 获取菜单项
 
-    // 根据布局类型选择渲染桌面或移动端视图
+    // --- 根据布局选择渲染并应用动画 ---
     if (useDesktopLayout) {
-      // --- 桌面布局 ---
+      // --- 桌面布局动画 ---
       return Padding(
-        // 整体内边距
         padding: const EdgeInsets.all(24.0),
         child: Row(
-          // 左右布局
-          crossAxisAlignment: CrossAxisAlignment.start, // 顶部对齐
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 左侧面板 - 用户资料卡片
+            // 左侧卡片：从左滑入 + 淡入
             Expanded(
-              // 占据一部分空间
-              flex: 1, // 比例可以调整
-              child: DesktopProfileCard(
-                // 使用桌面版卡片组件
-                user: user,
-                onEditProfile: () => _showEditProfileDialog(user), // 编辑按钮回调
-                onLogout: () =>
-                    _showLogoutDialog(context, authProvider), // 退出按钮回调
-                onUploadStateChanged: _handleUploadStateChanged, // 上传状态回调
-                onUploadSuccess: _handleUploadSuccess, // 上传成功回调
+              flex: 1,
+              child: FadeInSlideLRItem(
+                slideDirection: SlideDirection.left, // 从左边滑入
+                duration: Duration(milliseconds: 500), // 动画时长
+                delay: Duration(milliseconds: 100), // 稍微延迟一点开始，给页面渲染一点时间
+                child: DesktopProfileCard(
+                  user: user,
+                  onEditProfile: () => _showEditProfileDialog(user),
+                  onLogout: () => _showLogoutDialog(context, authProvider),
+                  onUploadStateChanged: _handleUploadStateChanged,
+                  onUploadSuccess: _handleUploadSuccess,
+                ),
               ),
             ),
-            SizedBox(width: 24), // 左右面板间距
-            // 右侧面板 - 菜单网格
+            SizedBox(width: 24),
+            // 右侧菜单：从右滑入 + 淡入
             Expanded(
-              // 占据剩余空间
-              flex: 2, // 比例可以调整
-              child: DesktopMenuGrid(menuItems: menuItems), // 使用桌面版菜单网格组件
+              flex: 2,
+              child: FadeInSlideLRItem(
+                slideDirection: SlideDirection.right, // 从右边滑入
+                duration: Duration(milliseconds: 500), // 动画时长
+                delay: Duration(milliseconds: 250), // 比左侧卡片晚一点开始，形成错落感
+                child: DesktopMenuGrid(menuItems: menuItems),
+              ),
             ),
           ],
         ),
       );
     } else {
-      // --- 移动端布局 ---
-      // 使用 SingleChildScrollView 包裹，确保内容可滚动，且能触发 RefreshIndicator
+      // --- 移动端布局动画 ---
+      // SingleChildScrollView 本身不需要动画，动画应用在它的子组件上
       return SingleChildScrollView(
-        physics: AlwaysScrollableScrollPhysics(), // 保证总是可以滚动下拉
+        physics: AlwaysScrollableScrollPhysics(),
         child: Column(
-          // 垂直排列
           children: [
-            // 移动端头部信息组件
-            MobileProfileHeader(
-              user: user,
-              onEditProfile: () => _showEditProfileDialog(user),
-              onLogout: () => _showLogoutDialog(context, authProvider),
-              onUploadStateChanged: _handleUploadStateChanged,
-              onUploadSuccess: _handleUploadSuccess,
+            // 移动端 Header: 从下滑入 + 淡入
+            FadeInSlideUpItem(
+              duration: Duration(milliseconds: 400),
+              delay: Duration(milliseconds: 100), // 轻微延迟
+              child: MobileProfileHeader(
+                user: user,
+                onEditProfile: () => _showEditProfileDialog(user),
+                onLogout: () => _showLogoutDialog(context, authProvider),
+                onUploadStateChanged: _handleUploadStateChanged,
+                onUploadSuccess: _handleUploadSuccess,
+              ),
             ),
-            // 移动端菜单列表组件
-            MobileProfileMenuList(
-              menuItems: menuItems,
+            // 移动端菜单列表: 整体从下滑入 + 淡入
+            // 注意：更优的效果是列表项逐个进入，但这需要修改 MobileProfileMenuList 内部实现，
+            // 在其 ListView.builder 的 itemBuilder 中为每个 ListTile 包裹 FadeInSlideUpItem，
+            // 并根据 index 设置不同的 delay (例如: delay: Duration(milliseconds: 200 + index * 50))
+            // 这里我们先对整个列表组件应用动画。
+            FadeInSlideUpItem(
+              duration: Duration(milliseconds: 450), // 比 Header 稍慢一点
+              delay: Duration(milliseconds: 200), // 在 Header 之后开始
+              child: MobileProfileMenuList(
+                menuItems: menuItems,
+              ),
             ),
-            SizedBox(height: 20), // 底部留一些空间
+            SizedBox(height: 20),
           ],
         ),
       );

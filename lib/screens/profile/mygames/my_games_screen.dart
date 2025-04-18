@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -138,11 +140,10 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
   }
 
-
-
   Future<void> _handleResubmit(Game game) async {
     // 使用 CustomConfirmDialog 进行确认
-    await CustomConfirmDialog.show( // 或者 showConfirm，取决于你的实现
+    await CustomConfirmDialog.show(
+      // 或者 showConfirm，取决于你的实现
       context: context,
       title: '确认重新提交？',
       message: '您确定要将《${game.title}》重新提交审核吗？',
@@ -173,7 +174,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
       // 刷新列表以更新状态
       await _loadInitialGames(); // 使用 await 确保刷新完成后再继续
-
     } catch (e) {
       if (!mounted) return; // 检查 context 是否有效
       print('重新提交失败: $e');
@@ -192,12 +192,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       title: '拒绝原因',
       message: comment, // 将拒绝原因作为消息显示
       iconData: Icons.comment_outlined, // 可以用评论相关的图标
-      iconColor: Colors.orange,        // 橙色或红色系
+      iconColor: Colors.orange, // 橙色或红色系
       closeButtonText: '知道了',
       // onClose 回调可以留空，如果不需要关闭后执行特定操作
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -220,7 +219,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             _loadInitialGames();
           }
         },
-
         icon: Icons.add,
         tooltip: '提交新游戏',
       ),
@@ -234,31 +232,37 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     // 使用 _errorMessage 来显示具体的错误信息
     if (_hasError) {
+      // 错误提示也加个动画
       return InlineErrorWidget(
         onRetry: _loadInitialGames,
         errorMessage: _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',
       );
     }
 
+    // --- 空状态 ---
     if (_myGames.isEmpty) {
-      return EmptyStateWidget(
-        message: '您还没有提交过游戏',
-        action: FunctionalTextButton(
-            onPressed: () {
-              NavigationUtils.pushNamed(context, AppRoutes.addGame)
-                  .then((result) { // 修改为 .then 处理返回
-                if (result == true && mounted) { // 检查返回结果和 mounted
-                  _loadInitialGames();
-                }
-              });
-            },
-            label: '创建新游戏',
-            icon: Icons.videogame_asset_rounded),
+      // 空状态提示也加个动画
+      return FadeInSlideUpItem(
+        child: EmptyStateWidget(
+          message: '您还没有提交过游戏',
+          action: FunctionalTextButton(
+              onPressed: () {
+                NavigationUtils.pushNamed(context, AppRoutes.addGame)
+                    .then((result) {
+                  if (result == true && mounted) {
+                    _loadInitialGames();
+                  }
+                });
+              },
+              label: '创建新游戏',
+              icon: Icons.videogame_asset_rounded),
+        ),
       );
     }
 
     // ListView + GridView 结构保持不变
     return ListView(
+        key: ValueKey<int>(_myGames.length),
         controller: _scrollController,
         padding: EdgeInsets.all(8),
         children: [
@@ -274,13 +278,22 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             itemCount: _myGames.length,
             itemBuilder: (context, index) {
               final game = _myGames[index];
-              return _buildGameCard(game); // 调用重构后的卡片构建方法
+              // *** 为每个 Grid Item 应用动画 ***
+              return FadeInSlideUpItem(
+                // 根据索引计算延迟，实现交错效果
+                delay: Duration(milliseconds: 50 * index),
+                duration: Duration(milliseconds: 350), // 可以调整动画时长
+                child: _buildGameCard(game), // 构建卡片本身
+              );
             },
           ),
+          // --- 加载更多指示器 ---
           if (_isFetchingMore)
-            Padding( // 给加载更多加一点边距
+            Padding(
               padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: LoadingWidget.inline(message: "加载更多..."),
+              // 加载更多也简单淡入
+              child:
+                  FadeInItem(child: LoadingWidget.inline(message: "加载更多...")),
             )
         ]);
   }

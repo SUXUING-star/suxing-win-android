@@ -131,6 +131,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   // 刷新当前选中的历史
   Future<void> _refreshCurrentHistory() async {
+    if (!mounted || _tabController == null) return;
     int currentTab = _tabController!.index;
 
     if (currentTab == 0) {
@@ -143,6 +144,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
       // 刷新帖子历史
       setState(() {
         _postHistoryLoaded = false;
+        _error = null;
       });
       await _loadPostHistory();
     }

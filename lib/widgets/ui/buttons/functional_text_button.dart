@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../utils/font/font_config.dart'; // 确认路径正确
 
 class FunctionalTextButton extends StatelessWidget {
@@ -57,7 +58,7 @@ class FunctionalTextButton extends StatelessWidget {
 
     // --- 创建 Label Widget ---
     // 确保 Text 颜色根据 isEnabled 状态变化
-    final Widget labelWidget = Text(
+    final Widget labelWidget = AppText(
       label,
       style: TextStyle(
         fontFamily: FontConfig.defaultFontFamily,
