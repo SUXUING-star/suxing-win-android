@@ -7,6 +7,7 @@ import 'package:suxingchahui/models/tag/tag.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
@@ -750,7 +751,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   Widget _buildMainContentArea(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
     if (!_isInitialized) {
-      return LoadingWidget.fullScreen(message: '正在加载游戏...');
+      return FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载游戏...'));
     }
 
     if (_errorMessage != null && _gamesList.isEmpty && !_isLoadingData) {

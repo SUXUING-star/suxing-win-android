@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 // --- 移除 VisibilityDetector (Builder会处理初始状态) ---
 // import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -479,15 +480,16 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
 
   // --- 构建 Loading, Error, EmptyState (内部方法) ---
   Widget _buildLoading(String message) {
-    // *** 移除 Center，让 Builder 或 RefreshIndicator 处理布局 ***
-    return LoadingWidget.fullScreen(message: message); // 不加 const
+    return FadeInItem(
+        child: LoadingWidget.fullScreen(message: message)); // 不加 const
   }
 
   Widget _buildError(String message) {
     // *** 移除 Center ***
     // *** onRetry 现在调用 _refreshData，它会触发父级回调 ***
-    return InlineErrorWidget(
-        errorMessage: message, onRetry: _refreshData); // 不加 const
+    return FadeInItem(
+        child: InlineErrorWidget(
+            errorMessage: message, onRetry: _refreshData)); // 不加 const
   }
 
   Widget _buildEmptyState(BuildContext context) {

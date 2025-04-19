@@ -35,7 +35,11 @@ class UserInfoBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<Map<String, dynamic>>(
+      // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
       // 优化：可以考虑将 Future 提取到 StatefulWidget 的 initState 或使用 Provider/Riverpod 管理状态，避免重复请求
+      // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
+      // 别你妈多管闲事，我她妈这个↓接口里面是加有本地缓存的，本身就是全局的
+      // 每个用户都是不同的没必要放状态里，当前用户才需要authprovider
       future: _userService.getUserInfoById(userId),
       builder: (context, snapshot) {
         // 处理加载和错误状态会更健壮

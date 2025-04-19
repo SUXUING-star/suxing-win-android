@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/home/section/home_hot.dart
+// lib/widgets/components/screen/home/section/home_game_hot.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -14,14 +14,14 @@ import '../../../../../utils/device/device_utils.dart';
 
 // --- 结束引入 ---
 
-class HomeHot extends StatefulWidget {
+class HomeGameHot extends StatefulWidget {
   final Stream<List<Game>>? gamesStream;
-  const HomeHot({Key? key, this.gamesStream}) : super(key: key);
+  const HomeGameHot({Key? key, this.gamesStream}) : super(key: key);
   @override
-  _HomeHotState createState() => _HomeHotState();
+  _HomeGameHotState createState() => _HomeGameHotState();
 }
 
-class _HomeHotState extends State<HomeHot> {
+class _HomeGameHotState extends State<HomeGameHot> {
   final GameService _gameService = GameService();
   final PageController _pageController = PageController();
   Timer? _timer;
@@ -53,7 +53,7 @@ class _HomeHotState extends State<HomeHot> {
   }
 
   @override
-  void didUpdateWidget(HomeHot oldWidget) {
+  void didUpdateWidget(HomeGameHot oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 流变化时重新加载
     if (widget.gamesStream != oldWidget.gamesStream) {

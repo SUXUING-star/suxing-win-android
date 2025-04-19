@@ -1,6 +1,7 @@
 // lib/screens/profile/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -415,7 +416,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     // State 2: 尚未初始化 (等待 VisibilityDetector 触发首次加载)
     if (!_isInitialized) {
-      return LoadingWidget.fullScreen(message: "等待加载个人信息...");
+      return FadeInItem(
+          child: LoadingWidget.fullScreen(message: "等待加载个人信息..."));
     }
 
     // State 3: 正在加载数据 (首次加载或刷新中)

@@ -131,17 +131,7 @@ class GameStatsWidget extends StatelessWidget {
             ),
 
           ],
-          // if (showCollectionStats && game.rating >0)...[
-          //   SizedBox(width: 6),
-          //   StatItemWidget(
-          //     icon: Icons.star,
-          //     value: game.rating.toString(),
-          //     color: Colors.lightGreen.shade500,
-          //     iconSize: 10,
-          //     fontSize: 10,
-          //     showBackground: true,
-          //   ),
-          // ]
+
         ],
       ),
     );

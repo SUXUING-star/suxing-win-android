@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
@@ -499,7 +500,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Mobile Layout 构建
-  Widget _buildMobileLayout(Game game , bool isPending) {
+  Widget _buildMobileLayout(Game game, bool isPending) {
     final flexibleSpaceBackground = Stack(
       fit: StackFit.expand,
       children: [
@@ -557,8 +558,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             SliverPadding(
               padding: const EdgeInsets.only(bottom: 80),
               sliver: SliverToBoxAdapter(
-                child:
-                GameDetailContent(
+                child: GameDetailContent(
                   // 传递数据给 Content
                   game: game,
                   initialCollectionStatus: _collectionStatus, // <--- 传递状态
@@ -567,8 +567,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   onNavigate: _handleNavigate,
                   navigationInfo: _navigationInfo,
                   isPreviewMode: isPending,
-                )
-                ,
+                ),
               ),
             ),
           ],
@@ -582,9 +581,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Desktop Layout 构建
-  Widget _buildDesktopLayout(Game game,bool isPending) {
+  Widget _buildDesktopLayout(Game game, bool isPending) {
     final bool canEdit = _canEditGame(context, game);
-    final bool isPreview= isPending ? true : false;
+    final bool isPreview = isPending ? true : false;
     return Scaffold(
       appBar: CustomAppBar(
         title: game.title,
@@ -620,13 +619,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Widget build(BuildContext context) {
     // 初始 ID 检查
     if (widget.gameId == null) {
-      return CustomErrorWidget(errorMessage: '无效的游戏 ID');
+      return CustomErrorWidget(
+        errorMessage: '无效的游戏 ID',
+        isNeedLoadingAnimation: true,
+      );
     }
 
     // --- Loading / Error / Content 构建逻辑 ---
     if (_isLoading && _game == null) {
       // 首次加载时全屏 Loading
-      return LoadingWidget.fullScreen(message: '正在加载游戏数据...');
+      return FadeInItem(
+          child: LoadingWidget.fullScreen(message: '正在加载游戏数据...'));
     }
 
     if (_error != null && _game == null) {
@@ -751,12 +754,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // 正常渲染
       final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
-      bodyContent =
-          isDesktop ? _buildDesktopLayout(_game!,isPending) : _buildMobileLayout(_game!,isPending);
+      bodyContent = isDesktop
+          ? _buildDesktopLayout(_game!, isPending)
+          : _buildMobileLayout(_game!, isPending);
     }
     if (isPending) {
       // 如果是 pending，返回 Material -> Column -> [Banner, Expanded(bodyContent)]
-      return Material( // 用 Material 做根，保证背景和主题
+      return Material(
+        // 用 Material 做根，保证背景和主题
         child: Column(
           children: [
             _buildPendingApprovalBanner(), // 调用你已有的 Banner 方法

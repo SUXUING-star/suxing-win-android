@@ -10,19 +10,19 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 import '../../../../../services/main/game/game_service.dart';
 
-class HomeLatest extends StatefulWidget {
+class HomeGameLatest extends StatefulWidget {
   final Stream<List<Game>>? gamesStream;
 
-  const HomeLatest({
+  const HomeGameLatest({
     Key? key,
     required this.gamesStream,
   }) : super(key: key);
 
   @override
-  _HomeLatestState createState() => _HomeLatestState();
+  _HomeGameLatestState createState() => _HomeGameLatestState();
 }
 
-class _HomeLatestState extends State<HomeLatest> {
+class _HomeGameLatestState extends State<HomeGameLatest> {
   // 保存数据以避免重复请求
   List<Game>? _cachedGames;
   bool _isLoading = false;
@@ -38,7 +38,7 @@ class _HomeLatestState extends State<HomeLatest> {
   }
 
   @override
-  void didUpdateWidget(HomeLatest oldWidget) {
+  void didUpdateWidget(HomeGameLatest oldWidget) {
     super.didUpdateWidget(oldWidget);
 
     // 当流改变时重新加载数据

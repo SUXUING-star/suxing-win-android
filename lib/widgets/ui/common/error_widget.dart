@@ -1,5 +1,6 @@
 // lib/widgets/ui/common/error_widget.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
@@ -11,6 +12,7 @@ class CustomErrorWidget extends StatelessWidget {
   final String retryText;
   final double iconSize;
   final Color iconColor;
+  final bool isNeedLoadingAnimation;
 
   const CustomErrorWidget({
     Key? key,
@@ -21,34 +23,37 @@ class CustomErrorWidget extends StatelessWidget {
     this.retryText = '重新加载',
     this.iconSize = 48.0,
     this.iconColor = Colors.red,
+    this.isNeedLoadingAnimation = true,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(title: title),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(icon, color: iconColor, size: iconSize),
-              const SizedBox(height: 16),
-              if (errorMessage != null)
-                Text(
-                  errorMessage!,
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              if (onRetry != null) ...[
-                const SizedBox(height: 24),
-                FunctionalTextButton(
-                  onPressed: onRetry,
-                  label:retryText,
-                ),
+      body: FadeInItem(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(icon, color: iconColor, size: iconSize),
+                const SizedBox(height: 16),
+                if (errorMessage != null)
+                  Text(
+                    errorMessage!,
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                if (onRetry != null) ...[
+                  const SizedBox(height: 24),
+                  FunctionalTextButton(
+                    onPressed: onRetry,
+                    label: retryText,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ),
@@ -167,9 +172,7 @@ class LoginErrorWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomErrorWidget(
-      errorMessage: isUnauthorized
-          ? '会话已过期，请重新登录'
-          : message,
+      errorMessage: isUnauthorized ? '会话已过期，请重新登录' : message,
       onRetry: onLogin,
       icon: Icons.lock_outline,
       title: isUnauthorized ? '会话过期' : '需要登录',

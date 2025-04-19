@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -325,17 +326,18 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (_isLoading) {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
-        body: LoadingWidget.fullScreen(message: '正在加载帖子...'),
+        body: FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载帖子...')),
       );
     }
 
     if (_error != null) {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
-        body: InlineErrorWidget(
+        body: FadeInItem(
+            child: InlineErrorWidget(
           errorMessage: '加载错误',
           onRetry: _loadPost,
-        ),
+        )),
       );
     }
 
