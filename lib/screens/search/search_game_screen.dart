@@ -1,16 +1,26 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'dart:async';
+
+// Models
+import '../../models/game/game.dart';
+
+// Services
+import '../../services/main/game/game_service.dart';
+import '../../services/main/user/user_service.dart';
+
+// Providers
+import '../../providers/auth/auth_provider.dart';
+
+// Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+// *** 导入 LoadingWidget ***
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
-import '../../models/game/game.dart';
-import '../../services/main/game/game_service.dart';
-import '../../services/main/user/user_service.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth/auth_provider.dart';
-import '../../widgets/components/loading/loading_route_observer.dart';
-import 'dart:async';
+// import '../../widgets/components/loading/loading_route_observer.dart'; // 已删除
 
 class SearchGameScreen extends StatefulWidget {
   @override
@@ -26,250 +36,285 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   String? _error;
   Timer? _debounceTimer;
 
+  // *** 新增：用于控制搜索的加载状态 ***
+  bool _isSearching = false;
+  // 这个页面没有分页，所以不需要 _isLoadingMore
+
+  // --- 生命周期方法 ---
+  @override
+  void initState() {
+    super.initState();
+    print("SearchGameScreen initState called");
+  }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Removed loading observer logic from here as it's handled in performSearch
-      _loadSearchHistory();
+      if (_searchHistory.isEmpty && mounted) {
+        print("SearchGameScreen didChangeDependencies: Loading search history");
+        _loadSearchHistory(); // 历史加载不需要 LoadingWidget
+      }
     });
   }
 
   @override
   void dispose() {
+    print("SearchGameScreen dispose called");
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
   }
+  // --- 生命周期方法结束 ---
 
+
+  // --- 搜索历史管理 (无加载状态控制) ---
   Future<void> _loadSearchHistory() async {
+    print("SearchGameScreen: Attempting to load search history...");
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) return;
-
+    if (!authProvider.isLoggedIn || !mounted) {
+      print("SearchGameScreen: Not logged in or not mounted, skipping history load.");
+      return;
+    }
     try {
       final history = await _userService.loadLocalSearchHistory();
-      if (!mounted) return; // Check if the widget is still in the tree
-      setState(() {
-        _searchHistory = history;
-      });
-    } catch (e) {
       if (!mounted) return;
-      setState(() {
-        _error = '加载搜索历史失败: $e';
-      });
-    } finally {
-      // if (mounted) loadingObserver.hideLoading();
+      print("SearchGameScreen: Search history loaded: $history");
+      setState(() { _searchHistory = history; _error = null; });
+    } catch (e) {
+      print("SearchGameScreen: Error loading search history: $e");
+      if (!mounted) return;
+      // 仅在搜索框为空时显示历史错误
+      if (_searchController.text.isEmpty) {
+        setState(() { _error = '加载搜索历史失败: $e'; });
+      }
     }
   }
 
   Future<void> _saveSearchHistory() async {
+    print("SearchGameScreen: Saving search history: $_searchHistory");
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) return;
-
+    if (!authProvider.isLoggedIn || !mounted) return;
     try {
       await _userService.saveLocalSearchHistory(_searchHistory);
-    } catch (e) {
-      if (!mounted) return;
-    }
+      print("SearchGameScreen: Search history saved successfully.");
+    } catch (e) { print("SearchGameScreen: Error saving search history: $e"); }
   }
 
   void _addToHistory(String query) {
-    if (query.trim().isEmpty) return;
-
+    final trimmedQuery = query.trim();
+    if (trimmedQuery.isEmpty || !mounted) return;
+    print("SearchGameScreen: Adding '$trimmedQuery' to history.");
     setState(() {
-      _searchHistory.remove(query);
-      _searchHistory.insert(0, query);
-      if (_searchHistory.length > 10) {
-        _searchHistory.removeLast();
-      }
+      _searchHistory.remove(trimmedQuery);
+      _searchHistory.insert(0, trimmedQuery);
+      if (_searchHistory.length > 10) { _searchHistory.removeLast(); }
     });
-    _saveSearchHistory(); // Save after state update
+    _saveSearchHistory();
   }
 
   void _removeFromHistory(String query) {
-    setState(() {
-      _searchHistory.remove(query);
-    });
-    _saveSearchHistory(); // Save after state update
+    if (!mounted) return;
+    print("SearchGameScreen: Removing '$query' from history.");
+    setState(() { _searchHistory.remove(query); });
+    _saveSearchHistory();
   }
 
   void _clearHistory() {
-    setState(() {
-      _searchHistory.clear();
-    });
-    _saveSearchHistory(); // Save after state update
+    if (!mounted) return;
+    print("SearchGameScreen: Clearing search history.");
+    setState(() { _searchHistory.clear(); });
+    _saveSearchHistory();
   }
+  // --- 搜索历史结束 ---
 
+
+  // --- 核心搜索逻辑 ---
   Future<void> _performSearch(String query) async {
     _debounceTimer?.cancel();
-
     _debounceTimer = Timer(Duration(milliseconds: 500), () async {
       final trimmedQuery = query.trim();
+      print("SearchGameScreen: Performing search for '$trimmedQuery'");
+      if (!mounted) return;
+
+      // 如果搜索词为空，清空结果并重置状态
       if (trimmedQuery.isEmpty) {
-        if (!mounted) return;
         setState(() {
           _searchResults.clear();
           _error = null;
+          _isSearching = false; // 确保搜索状态关闭
         });
         return;
       }
 
-      // Ensure the loading observer is accessible
-      LoadingRouteObserver? loadingObserver;
-      try {
-        loadingObserver = Navigator.of(context)
-            .widget.observers
-            .whereType<LoadingRouteObserver>()
-            .first;
-      } catch (e) {
-        print("LoadingRouteObserver not found: $e");
-        // Handle cases where the observer might not be present (e.g., during tests or unusual navigation)
-      }
+      // *** 开始搜索，设置 _isSearching 为 true ***
+      setState(() {
+        _error = null; // 清除旧错误
+        _isSearching = true; // 显示加载
+      });
 
-
-      loadingObserver?.showLoading();
+      // LoadingRouteObserver 相关代码已删除
 
       try {
+        print("SearchGameScreen: Calling GameService.searchGames...");
         final results = await _gameService.searchGames(trimmedQuery);
         if (!mounted) return;
+
+        print("SearchGameScreen: Search results received. Count: ${results.length}");
         setState(() {
           _searchResults = results;
-          _error = null;
+          _error = null; // 清除错误
+          // 加载成功后，isSearching 会在 finally 中重置
         });
-      } catch (e) {
+
+        // 搜索成功且有结果时添加到历史
+        if (results.isNotEmpty) {
+          _addToHistory(trimmedQuery);
+        }
+
+      } catch (e, s) {
+        print("SearchGameScreen: Search failed: $e\n$s");
         if (!mounted) return;
         setState(() {
-          _error = '搜索失败：$e';
-          _searchResults.clear(); // Clear results on error
+          _error = '搜索失败：$e'; // 设置错误信息
+          _searchResults.clear(); // 出错清空结果
+          // isSearching 会在 finally 中重置
         });
       } finally {
+        // *** 无论成功失败，最后都重置 isSearching 状态 ***
         if (mounted) {
-          loadingObserver?.hideLoading();
+          if (_isSearching) setState(() => _isSearching = false); // 重置搜索状态
+          print("SearchGameScreen: Search finished, isSearching: $_isSearching");
         }
       }
     });
   }
+  // --- 搜索逻辑结束 ---
 
+
+  // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
+    print("SearchGameScreen: Build method called. isSearching: $_isSearching");
     return Scaffold(
       appBar: AppBar(
-        // 1. 设置背景透明，让 flexibleSpace 显示出来
         backgroundColor: Colors.transparent,
-        // 2. 去掉阴影，与 CustomAppBar 统一
         elevation: 0,
-        // 3. 添加 flexibleSpace 并复制 CustomAppBar 的渐变背景
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [
-                Color(0xFF6AB7F0), // 与 CustomAppBar 相同的颜色
-                Color(0xFF4E9DE3), // 与 CustomAppBar 相同的颜色
-              ],
+              colors: [ Color(0xFF6AB7F0), Color(0xFF4E9DE3), ],
             ),
           ),
         ),
-        // 保留原来的 TextField 作为 title
         title: TextField(
           controller: _searchController,
           autofocus: true,
           decoration: InputDecoration(
             hintText: '搜索游戏...',
-            // 确保提示文字在渐变背景上可见
             hintStyle: TextStyle(color: Colors.white70),
-            border: InputBorder.none, // 去掉下划线，更简洁
+            border: InputBorder.none,
           ),
-          // 确保输入文字在渐变背景上可见
           style: TextStyle(color: Colors.white),
+          // 每次输入变化都触发搜索
           onChanged: _performSearch,
           onSubmitted: (query) {
-            _addToHistory(query.trim());
+            print("SearchGameScreen: Submitted search for '$query'");
+            // 提交时也触发搜索
             _performSearch(query.trim());
+            // 添加历史在 performSearch 成功后处理
           },
         ),
         actions: [
           if (_searchController.text.isNotEmpty)
             IconButton(
-              icon: Icon(Icons.clear),
+              icon: Icon(Icons.clear, color: Colors.white),
               onPressed: () {
+                print("SearchGameScreen: Clearing search input.");
                 _searchController.clear();
-                _performSearch(''); // Clear results
+                // 清空时也触发 performSearch('') 来重置状态并显示历史
+                _performSearch('');
               },
             ),
         ],
       ),
+      // --- Body ---
       body: _buildBody(),
     );
   }
 
+  // --- _buildBody ---
   Widget _buildBody() {
-    // Prioritize showing error if it exists
-    if (_error != null && _searchController.text.isNotEmpty) {
-      // Show specific error for search failure
-      return InlineErrorWidget(
-        errorMessage: _error!,
-        onRetry: () {
-          setState(() { _error = null; }); // Clear error before retry
-          _performSearch(_searchController.text.trim());
-        },
-      );
-    }
-    // Show history error only if search bar is empty
-    else if (_error != null && _searchController.text.isEmpty) {
-      return InlineErrorWidget(
-        errorMessage: _error!,
-        onRetry: () {
-          setState(() { _error = null; }); // Clear error before retry
-          _loadSearchHistory();
-        },
-      );
+    // *** 1. 检查是否正在搜索 ***
+    if (_isSearching) {
+      // print("SearchGameScreen: Displaying search LoadingWidget.");
+      // 直接显示加载，因为游戏搜索结果通常是替换式的
+      return LoadingWidget.fullScreen(message: '正在搜索游戏...'); // 或者 LoadingWidget.inline()
     }
 
+    // *** 2. 检查是否有错误信息 ***
+    if (_error != null) {
+      // 根据搜索框是否为空判断是哪个错误
+      if (_searchController.text.isNotEmpty) {
+        // print("SearchGameScreen: Displaying search error widget.");
+        return InlineErrorWidget(
+          errorMessage: _error!,
+          onRetry: () {
+            setState(() { _error = null; }); // 清除错误
+            _performSearch(_searchController.text.trim()); // 重试搜索
+          },
+        );
+      } else {
+        print("SearchGameScreen: Displaying history error widget.");
+        return InlineErrorWidget(
+          errorMessage: _error!,
+          onRetry: () {
+            setState(() { _error = null; }); // 清除错误
+            _loadSearchHistory(); // 重试加载历史
+          },
+        );
+      }
+    }
 
+    // *** 3. 如果搜索框为空，显示历史记录 ***
     if (_searchController.text.isEmpty) {
+      print("SearchGameScreen: Displaying search history.");
       return _buildSearchHistory();
     }
 
+    // *** 4. 显示搜索结果列表 (包括空状态) ***
+    print("SearchGameScreen: Displaying search results.");
     return _buildSearchResults();
   }
 
+  // --- _buildSearchHistory (保持不变) ---
   Widget _buildSearchHistory() {
-    // Check login status for displaying history
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
-      return  LoginPromptWidget();
+      return LoginPromptWidget();
     }
-
-
     if (_searchHistory.isEmpty) {
-      return EmptyStateWidget(
-        message: '暂无搜索历史',
-        iconData: Icons.history, // Use history icon
-      );
+      return EmptyStateWidget( message: '暂无搜索历史', iconData: Icons.history, );
     }
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(16, 16, 16, 8), // Adjusted padding
+          padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text('搜索历史', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-              TextButton(
-                onPressed: _clearHistory,
-                child: Text('清空'),
-              ),
+              if (_searchHistory.isNotEmpty)
+                TextButton( onPressed: _clearHistory, child: Text('清空'), ),
             ],
           ),
         ),
         Expanded(
           child: ListView.builder(
-            padding: EdgeInsets.symmetric(horizontal: 8), // Padding for list items
+            padding: EdgeInsets.symmetric(horizontal: 8),
             itemCount: _searchHistory.length,
             itemBuilder: (context, index) {
               final query = _searchHistory[index];
@@ -282,11 +327,8 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
                 ),
                 onTap: () {
                   _searchController.text = query;
-                  _searchController.selection = TextSelection.fromPosition(
-                      TextPosition(offset: _searchController.text.length)); // Move cursor to end
+                  _searchController.selection = TextSelection.fromPosition( TextPosition(offset: _searchController.text.length));
                   _performSearch(query);
-                  // Optional: Add to history again to move it to top?
-                  // _addToHistory(query);
                 },
               );
             },
@@ -296,39 +338,37 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     );
   }
 
-  // --- MODIFIED METHOD ---
+  // --- 构建搜索结果 UI ---
   Widget _buildSearchResults() {
-    // Use EmptyStateWidget for no search results (and no error)
-    // Note: Error state is handled in _buildBody() now
-    if (_searchResults.isEmpty && _error == null) {
-      // Check _error == null to ensure we don't show this *and* an error widget
+    print("SearchGameScreen: Building search results. Count: ${_searchResults.length}");
+
+    // *** 空状态处理: 仅在非搜索中、无错误且结果为空时显示 ***
+    if (!_isSearching && _searchResults.isEmpty && _error == null) {
+      print("SearchGameScreen: Displaying empty search results state.");
       return EmptyStateWidget(
         message: '未找到相关游戏',
-        iconData: Icons.search_off, // Icon indicating nothing found
+        iconData: Icons.search_off,
       );
     }
 
+    // 结果列表
+    // 因为没有分页，所以不需要判断 isLoadingMore
     return ListView.builder(
-      // Add padding around the list for better spacing from screen edges
       padding: const EdgeInsets.all(8.0),
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         final game = _searchResults[index];
-        // Replace ListTile with BaseGameCard
         return Padding(
-          // Add padding below each card for spacing within the list
-          padding: const EdgeInsets.only(bottom: 12.0), // Increased spacing
+          padding: const EdgeInsets.only(bottom: 12.0),
           child: CommonGameCard(
             game: game,
-            isGridItem: false, // Use the list (horizontal) layout
-            showTags: true,    // Show tags in the card (default is true)
-            maxTags: 3,        // Example: Show up to 3 tags
-            // adaptForPanels: false, // Default, adjust if needed
-            // forceCompact: false, // Default, adjust if needed
+            isGridItem: false, // 使用列表样式
+            showTags: true,
+            maxTags: 3,
           ),
         );
       },
     );
   }
-// --- END OF MODIFIED METHOD ---
+// --- 构建 UI 结束 ---
 }

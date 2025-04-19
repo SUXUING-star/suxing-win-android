@@ -98,7 +98,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
             widget.gameId != null &&
-            _game!.approvalStatus == 'approved' && // <--- 检查状态
+            _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
             widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
         ) {
       //print(

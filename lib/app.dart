@@ -7,10 +7,8 @@ import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
-import 'widgets/components/loading/loading_route_observer.dart';
 import './layouts/main_layout.dart';
 import 'layouts/background/app_background.dart';
-import 'widgets/components/loading/loading_screen.dart';
 import './routes/app_routes.dart';
 import 'wrapper/platform_wrapper.dart';
 import 'wrapper/maintenance_wrapper.dart';
@@ -29,7 +27,6 @@ class App extends StatelessWidget {
       child: InitializationWrapper(
         onInitialized: (providers) => MyApp(
           providers: providers,
-          loadingRouteObserver: LoadingRouteObserver(),
         ),
       ),
     );
@@ -38,12 +35,10 @@ class App extends StatelessWidget {
 
 class MyApp extends StatefulWidget {
   final List<SingleChildWidget> providers;
-  final LoadingRouteObserver loadingRouteObserver;
 
   const MyApp({
     Key? key,
     required this.providers,
-    required this.loadingRouteObserver,
   }) : super(key: key);
 
   @override
@@ -97,7 +92,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,
             debugShowCheckedModeBanner: false,
-            navigatorObservers: [widget.loadingRouteObserver],
             builder: (context, child) {
               return GlobalApiErrorListener(
                 // <--- 把监听器放在这里
@@ -120,15 +114,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
                             ),
                           ),
                         ),
-                      ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: widget.loadingRouteObserver.isLoading,
-                        builder: (context, isLoading, _) {
-                          return LoadingScreen(
-                            isLoading: isLoading,
-                            message: isLoading ? '加载中...' : null,
-                          );
-                        },
                       ),
                     ],
                   ),

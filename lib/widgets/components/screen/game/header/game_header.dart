@@ -161,7 +161,7 @@ class GameHeader extends StatelessWidget {
                 Icon(Icons.bookmark_added_outlined,
                     size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
-                Text('${game.totalCollections} 人收藏', style: textStyle),
+                AppText('${game.totalCollections} 人收藏', style: textStyle),
               ],
             ),
             Row(
@@ -170,7 +170,7 @@ class GameHeader extends StatelessWidget {
                 Icon(Icons.star_border_outlined,
                     size: 16, color: Colors.grey[600]),
                 SizedBox(width: 4),
-                Text('评分值${game.rating}', style: textStyle),
+                AppText('评分值${game.rating}', style: textStyle),
               ],
             ),
           ],

@@ -47,12 +47,12 @@ class BaseGameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // --- 新增加的保险判断 ---
     // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
-    if (game.approvalStatus == 'pending') {
+    if (game.approvalStatus == GameStatus.pending ||
+        game.approvalStatus == GameStatus.rejected) {
       // 返回一个空的、不占空间的Widget
       return const SizedBox.shrink();
-    } else {
-      return isGridItem ? _buildGridCard(context) : _buildListCard(context);
     }
+    return isGridItem ? _buildGridCard(context) : _buildListCard(context);
   }
 
   // --- 列表布局卡片 ---
@@ -278,20 +278,23 @@ class BaseGameCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Container( // 可以保留 Container 做微调，或者直接返回 Button
-      child: StylishPopupMenuButton<String>( // *** 使用新组件 ***
+    return Container(
+      // 可以保留 Container 做微调，或者直接返回 Button
+      child: StylishPopupMenuButton<String>(
+        // *** 使用新组件 ***
         icon: Icons.more_vert,
         iconSize: 20,
         triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
         tooltip: '选项',
-        elevation: 2.0,                          // 设置阴影
-        itemHeight: 40,                          // 设置项高
+        elevation: 2.0, // 设置阴影
+        itemHeight: 40, // 设置项高
 
         // *** 直接提供数据列表 ***
         items: [
           // 删除选项
           if (hasDeleteAction) // 使用计算好的变量
-            StylishMenuItemData( // **提供数据**
+            StylishMenuItemData(
+              // **提供数据**
               value: 'delete',
               // **提供内容**
               child: AppText('删除', type: AppTextType.error), // 使用主题颜色

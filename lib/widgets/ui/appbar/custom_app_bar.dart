@@ -1,5 +1,6 @@
 // lib/widgets/ui/appbar/custom_app_bar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'dart:io' show Platform;
 import '../../../utils/device/device_utils.dart';
 
@@ -26,8 +27,8 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     // 移动平台保持原有的尺寸计算
     double height = Platform.isAndroid &&
-        WidgetsBinding.instance.window.physicalSize.width >
-            WidgetsBinding.instance.window.physicalSize.height
+            WidgetsBinding.instance.window.physicalSize.width >
+                WidgetsBinding.instance.window.physicalSize.height
         ? kToolbarHeight * 0.8
         : kToolbarHeight;
 
@@ -53,13 +54,11 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     final double bottomHeight = isAndroidLandscape ? 2.0 : 4.0;
 
     return AppBar(
-      title: Text(
+      title: AppText(
         title,
-        style: TextStyle(
-          color: Colors.white,
-          fontWeight: FontWeight.bold,
-          fontSize: fontSize,
-        ),
+        color: Colors.white,
+        fontWeight: FontWeight.bold,
+        fontSize: fontSize,
       ),
       leading: leading,
       actions: actions,
@@ -78,16 +77,17 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
       ),
-      bottom: bottom ?? PreferredSize(
-        preferredSize: Size.fromHeight(bottomHeight),
-        child: Opacity(
-          opacity: 0.7,
-          child: Container(
-            color: Colors.white.withOpacity(0.2),
-            height: bottomHeight / 4,
+      bottom: bottom ??
+          PreferredSize(
+            preferredSize: Size.fromHeight(bottomHeight),
+            child: Opacity(
+              opacity: 0.7,
+              child: Container(
+                color: Colors.white.withOpacity(0.2),
+                height: bottomHeight / 4,
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 

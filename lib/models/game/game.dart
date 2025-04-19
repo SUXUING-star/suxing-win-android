@@ -1,6 +1,11 @@
 // lib/models/game/game.dart
 import 'package:mongo_dart/mongo_dart.dart';
 
+class GameStatus {
+  static const String approved = "approved";
+  static const String rejected = "rejected";
+  static const String pending  = "pending";
+}
 
 class Game {
   final String id;
@@ -22,9 +27,9 @@ class Game {
   final String? musicUrl;
   final DateTime? lastViewedAt;
   final String? approvalStatus; // "pending", "approved", "rejected"
-  final String? reviewComment;  // Admin feedback if rejected
-  final DateTime? reviewedAt;   // When the game was reviewed
-  final String? reviewedBy;     // Admin who reviewed the game
+  final String? reviewComment; // Admin feedback if rejected
+  final DateTime? reviewedAt; // When the game was reviewed
+  final String? reviewedBy; // Admin who reviewed the game
   final double totalRatingSum;
   final int ratingCount;
   final DateTime? ratingUpdateTime; // 评分最后更新时间
@@ -80,8 +85,8 @@ class Game {
       try {
         return links
             .map((link) => link is Map<String, dynamic>
-            ? DownloadLink.fromJson(link)
-            : null) // Handle non-map items
+                ? DownloadLink.fromJson(link)
+                : null) // Handle non-map items
             .whereType<DownloadLink>() // Filter out nulls
             .toList();
       } catch (e) {
@@ -109,7 +114,8 @@ class Game {
     DateTime parseDateTime(dynamic dateValue) {
       if (dateValue == null) return DateTime.now(); // Or throw error?
       if (dateValue is DateTime) return dateValue;
-      if (dateValue is Timestamp) { // 处理 MongoDB Timestamp 类型
+      if (dateValue is Timestamp) {
+        // 处理 MongoDB Timestamp 类型
         // Timestamp 包含 seconds 和 incrementing counter
         // 从 seconds 创建 DateTime
         return DateTime.fromMillisecondsSinceEpoch(dateValue.seconds * 1000);
@@ -147,11 +153,10 @@ class Game {
       // Use the robust parseDateTime logic
       try {
         return parseDateTime(dateValue);
-      } catch(_) {
+      } catch (_) {
         return null;
       }
     }
-
 
     return Game(
       id: parseId(json['_id'] ?? json['id']), // Handle both _id and id
@@ -160,7 +165,10 @@ class Game {
       summary: json['summary']?.toString() ?? '',
       description: json['description']?.toString() ?? '',
       coverImage: json['coverImage']?.toString() ?? '',
-      images: (json['images'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      images: (json['images'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       category: json['category']?.toString() ?? '',
       tags: parseTags(json['tags']),
       // rating: 已经是计算好的平均分
@@ -169,7 +177,10 @@ class Game {
       updateTime: parseDateTime(json['updateTime']),
       viewCount: parseIntSafely(json['viewCount']),
       likeCount: parseIntSafely(json['likeCount']),
-      likedBy: (json['likedBy'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+      likedBy: (json['likedBy'] as List<dynamic>?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          [],
       downloadLinks: parseDownloadLinks(json['downloadLinks']),
       musicUrl: json['musicUrl']?.toString(),
       lastViewedAt: parseNullableDateTime(json['lastViewedAt']),

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/stat_item_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -230,6 +232,9 @@ class _HomeLatestState extends State<HomeLatest> {
     );
   }
 
+
+
+
   Widget _buildGameListItem(Game game, BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
@@ -300,12 +305,39 @@ class _HomeLatestState extends State<HomeLatest> {
               children: [
                 Icon(
                   Icons.remove_red_eye_outlined,
-                  color: Colors.grey[600],
+                  color: Colors.green[300],
                   size: 20,
                 ),
                 SizedBox(height: 4),
                 Text(
                   '${game.viewCount}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+
+                Icon(
+                  Icons.star_border_purple500_outlined,
+                  color: Colors.yellow[600],
+                  size: 20,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '${game.ratingCount}',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                Icon(
+                  Icons.thumb_up_off_alt_outlined,
+                  color: Colors.redAccent[100],
+                  size: 20,
+                ),
+                SizedBox(height: 4),
+                Text(
+                  '${game.ratingCount}',
                   style: TextStyle(
                     color: Colors.grey[600],
                     fontSize: 12,

@@ -1,3 +1,4 @@
+// lib/screens/home/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -9,6 +10,11 @@ import '../../services/main/game/game_service.dart';
 import '../../widgets/ui/common/loading_widget.dart';
 import '../../widgets/ui/common/error_widget.dart';
 
+// --- 引入动画组件 ---
+import '../../widgets/ui/animation/fade_in_slide_up_item.dart';
+import '../../widgets/ui/animation/fade_in_item.dart';
+// --- 结束引入 ---
+
 class HomeScreen extends StatefulWidget {
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -19,37 +25,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Stream<List<Game>>? _hotGamesStream;
   Stream<List<Game>>? _latestGamesStream;
 
-  // 添加缓存刷新控制
   DateTime? _lastRefreshTime;
-  // 最小刷新间隔 - 5分钟
   static const Duration _minRefreshInterval = Duration(minutes: 5);
 
-  // --- 懒加载状态 ---
-  bool _isInitialized = false; // 是否已初始化（首次加载）
-  bool _isVisible = false; // 当前是否可见
-
+  bool _isInitialized = false;
+  bool _isVisible = false;
   String? _errorMessage;
-  bool _isLoading = false; // 这个仍然用于刷新和加载过程中的状态
+  bool _isLoading = false;
+
+  // 新增：用于控制子组件动画只播放一次的标志
+  bool _hasPlayedEntryAnimation = false;
 
   @override
   void initState() {
     super.initState();
+    // 初始加载逻辑移到 _triggerInitialLoad
   }
 
   // 初始化游戏数据流
   void _loadData() {
+    // 增加 mounted 检查
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true; // 开始加载，更新状态
+      _errorMessage = null;
+    });
+
     try {
-      // 使用缓存优先的流
       _hotGamesStream = _gameService.getHotGames();
       _latestGamesStream = _gameService.getLatestGames();
-
-      // 设置刷新时间
       _lastRefreshTime = DateTime.now();
 
-      // 确保 setState 在 mounted 状态下调用
       if (mounted) {
         setState(() {
           _isLoading = false; // 加载完成
+          if (!_hasPlayedEntryAnimation) {
+            _hasPlayedEntryAnimation = true; // 标记动画已播放（或即将播放）
+          }
         });
       }
     } catch (e) {
@@ -57,60 +70,60 @@ class _HomeScreenState extends State<HomeScreen> {
         setState(() {
           _errorMessage = '加载数据失败：${e.toString()}';
           _isLoading = false;
+          _hasPlayedEntryAnimation = false; // 加载失败，允许下次重试播放动画
         });
       }
     }
   }
 
-  // --- 新增：触发首次加载的方法 ---
+  // 触发首次加载的方法
   void _triggerInitialLoad() {
-    // 保证只加载一次，并且是在可见时加载
-    if (_isVisible && !_isInitialized) {
+    if (_isVisible && !_isInitialized && mounted) {
+      // 增加 mounted 检查
       print("HomeScreen is now visible and not initialized. Loading data...");
       setState(() {
-        _isInitialized = true; // 标记为已初始化
-        _isLoading = true; // 开始加载，显示 Loading
+        _isInitialized = true;
+        _isLoading = true;
         _errorMessage = null;
+        _hasPlayedEntryAnimation = false; // 重置动画播放标志
       });
-      _loadData(); // 调用实际加载数据的方法
+      _loadData();
     }
   }
 
-  // 判断是否应该刷新数据
+  // 判断是否应该刷新数据 (保持不变)
   bool _shouldRefresh() {
-    // 如果从未刷新过，则应该刷新
     if (_lastRefreshTime == null) {
       return true;
     }
-
-    // 检查刷新间隔
     final now = DateTime.now();
     return now.difference(_lastRefreshTime!) >= _minRefreshInterval;
   }
 
   // 刷新数据的方法
   Future<void> _refreshData() async {
-    if (!mounted) return; // 检查 mounted
+    if (!mounted) return;
 
     setState(() {
-      _isLoading = true; // 开始刷新，显示 Loading
+      _isLoading = true;
       _errorMessage = null;
+      _hasPlayedEntryAnimation = false; // 刷新时重置动画标志
     });
 
     try {
       final shouldForceRefresh = _shouldRefresh();
-
       if (shouldForceRefresh) {
         print('主页：强制刷新数据');
-        // 强制刷新时，直接调用 _loadData 获取新数据流
-        _loadData(); // _loadData 内部会处理 stream 的重新获取和状态更新
-        _lastRefreshTime = DateTime.now();
+        // 重新加载流，并在加载完成后更新状态
+        _loadData(); // _loadData 内部会处理状态
       } else {
         print('主页：使用缓存数据，不强制刷新');
-        // 如果不强制刷新，只需结束 loading 状态
         if (mounted) {
           setState(() {
-            _isLoading = false;
+            _isLoading = false; // 仅结束加载状态
+            if (!_hasPlayedEntryAnimation) {
+              _hasPlayedEntryAnimation = true; // 标记动画已播放
+            }
           });
         }
       }
@@ -118,71 +131,122 @@ class _HomeScreenState extends State<HomeScreen> {
       if (mounted) {
         setState(() {
           _errorMessage = '刷新数据失败：${e.toString()}';
-          _isLoading = false; // 刷新失败也要结束 loading
+          _isLoading = false;
+          _hasPlayedEntryAnimation = false; // 刷新失败，允许重试播放
         });
       }
     }
-    // finally 块不再需要设置 _isLoading = false，因为成功和失败路径都处理了
   }
 
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: Key('home_screen_visibility'), // 给个 Key
+      key: Key('home_screen_visibility'),
       onVisibilityChanged: (visibilityInfo) {
         final wasVisible = _isVisible;
-        _isVisible = visibilityInfo.visibleFraction > 0;
-        // 如果从不可见到可见，尝试触发加载
-        if (!wasVisible && _isVisible) {
-          _triggerInitialLoad();
-        }
+        // 使用 microtask 确保 setState 在 build 周期外或合适时机执行
+        Future.microtask(() {
+          final currentlyVisible = visibilityInfo.visibleFraction > 0;
+          if (currentlyVisible != _isVisible) {
+            if (mounted) {
+              setState(() {
+                _isVisible = currentlyVisible;
+              });
+            } else {
+              _isVisible = currentlyVisible; // 如果 unmounted，只更新状态变量
+            }
+            // 如果从不可见到可见，尝试触发加载
+            if (!wasVisible && _isVisible) {
+              _triggerInitialLoad();
+            }
+          }
+        });
       },
-      child: _buildContent(), // 把实际内容抽出来
+      child: _buildContent(),
     );
   }
 
-  // --- 抽出实际的页面内容构建逻辑 ---
+  // 抽出实际的页面内容构建逻辑 (应用动画)
   Widget _buildContent() {
-    // 1. 如果还未初始化（即从未加载过），显示占位符或初始 Loading
+    // 1. 还未初始化
     if (!_isInitialized) {
+      // --- 修改这里：初始等待状态加动画 ---
       return Scaffold(
-        // 可以只显示一个简单的 Loading，或者根据你的 UI 设计来
-        body: LoadingWidget.fullScreen(size: 40, message: '等待加载首页...'),
+        body: FadeInItem(
+          // 使用 FadeInItem
+          child: LoadingWidget.fullScreen(size: 40, message: '等待加载首页...'),
+        ),
       );
+      // --- 结束修改 ---
     }
 
-    // 2. 如果正在加载（包括首次加载或刷新）
+    // 2. 正在加载（刷新或首次加载的短暂过程）
+    // 这里可以考虑不显示全屏 Loading，让旧内容保持，仅在 AppBar 显示刷新指示器
+    // 或者像现在这样显示 Loading
     if (_isLoading) {
-      // 如果已有内容，可以在内容上层叠 Loading，否则显示全屏 Loading
-      // 这里简单处理，直接显示 Loading
+      // --- 修改这里：加载中状态加动画 ---
       return Scaffold(
         body: LoadingWidget.fullScreen(size: 40, message: '正在加载首页...'),
       );
+      // --- 结束修改 ---
     }
 
-    // 3. 如果加载出错
+    // 3. 加载出错
     if (_errorMessage != null) {
-      return CustomErrorWidget(
-        errorMessage: _errorMessage!,
-        onRetry: _loadData, // 出错重试时直接调用 _loadData
-        title: '加载失败',
+      // --- 修改这里：错误状态加动画 ---
+      return FadeInSlideUpItem(
+        // 使用 FadeInSlideUpItem
+        child: CustomErrorWidget(
+          // CustomErrorWidget 可能需要 Scaffold 包裹或自行处理背景
+          errorMessage: _errorMessage!,
+          onRetry: _loadData,
+          title: '加载失败',
+        ),
       );
+      // --- 结束修改 ---
     }
 
     // 4. 正常显示内容
+    // 定义基础延迟和间隔
+    const Duration initialDelay = Duration(milliseconds: 150);
+    const Duration stagger = Duration(milliseconds: 100);
+
     return Scaffold(
       body: RefreshIndicator(
         onRefresh: _refreshData,
         child: SingleChildScrollView(
+          // 添加 Key，确保内容更新时能被识别
+          key: ValueKey<bool>(_hasPlayedEntryAnimation), // 使用动画状态作为 Key 的一部分
           physics: AlwaysScrollableScrollPhysics(),
           child: Column(
             children: [
-              HomeBanner(),
-              // 确保 Stream 不为 null 再传递
+              // --- 修改这里：为每个 Section 添加动画 ---
+              // 只有在动画标志为 true 时才应用动画（首次加载/刷新成功后）
+              // HomeBanner 动画
+              FadeInSlideUpItem(
+                // play: _hasPlayedEntryAnimation, // 可选：如果动画组件支持 play 参数
+                delay: initialDelay,
+                child: HomeBanner(),
+              ),
+              // HomeHot 动画
               if (_hotGamesStream != null)
-                HomeHot(gamesStream: _hotGamesStream),
+                FadeInSlideUpItem(
+                  // play: _hasPlayedEntryAnimation,
+                  delay: initialDelay + stagger,
+                  child: Padding(
+                    // 给 Section 之间加点间距
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: HomeHot(gamesStream: _hotGamesStream),
+                  ),
+                ),
+              // HomeLatest 动画
               if (_latestGamesStream != null)
-                HomeLatest(gamesStream: _latestGamesStream),
+                FadeInSlideUpItem(
+                  // play: _hasPlayedEntryAnimation,
+                  delay: initialDelay + stagger * 2,
+                  child: HomeLatest(gamesStream: _latestGamesStream),
+                ),
+              // --- 结束修改 ---
             ],
           ),
         ),

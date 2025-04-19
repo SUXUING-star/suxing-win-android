@@ -2,9 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import '../../../widgets/components/loading/loading_route_observer.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
@@ -77,27 +75,28 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   Future<void> _loadGameHistory() async {
     if (_gameHistoryLoaded) return;
 
-    final loadingObserver = NavigationUtils.of(context)
-        .widget
-        .observers
-        .whereType<LoadingRouteObserver>()
-        .first;
+    setState(() {
+      // 可以考虑在这里设置一个临时的加载状态，如果 Tab 还没渲染出来
+      _error = null; // 清除之前的错误
+    });
 
-    loadingObserver.showLoading();
 
     try {
-      // 只获取游戏历史数据
-      await _gameService.getGameHistoryWithDetails(1, 10);
+      // 实际的数据获取和状态更新由 PostHistoryTab 内部处理
+      // await _forumService.getPostHistoryWithDetails(1, 10); // <--- 实际加载应该在 Tab 内触发
+      if (!mounted) return;
       setState(() {
-        _gameHistoryLoaded = true;
-        _error = null;
+        _postHistoryLoaded = true;
+        // _error = null; // 已在上面设置
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = '加载游戏历史失败: $e';
+        _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
+        _postHistoryLoaded = false; // 加载失败，允许重试
       });
     } finally {
-      loadingObserver.hideLoading();
+      // loadingObserver.hideLoading(); // <--- 删除了 hideLoading
     }
   }
 
@@ -105,27 +104,24 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   Future<void> _loadPostHistory() async {
     if (_postHistoryLoaded) return;
 
-    final loadingObserver = NavigationUtils.of(context)
-        .widget
-        .observers
-        .whereType<LoadingRouteObserver>()
-        .first;
+    setState(() {
+      _error = null; // 清除之前的错误
+    });
 
-    loadingObserver.showLoading();
 
     try {
-      // 只获取帖子历史数据
-      await _forumService.getPostHistoryWithDetails(1, 10);
+      if (!mounted) return;
       setState(() {
         _postHistoryLoaded = true;
-        _error = null;
+        // _error = null; // 已在上面设置
       });
     } catch (e) {
       setState(() {
-        _error = '加载帖子历史失败: $e';
+        _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
+        _postHistoryLoaded = false; // 加载失败，允许重试
       });
     } finally {
-      loadingObserver.hideLoading();
+
     }
   }
 
@@ -134,21 +130,25 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     if (!mounted || _tabController == null) return;
     int currentTab = _tabController!.index;
 
+    // 重置加载状态标记，让对应的 Tab 重新加载
     if (currentTab == 0) {
-      // 刷新游戏历史
       setState(() {
         _gameHistoryLoaded = false;
+        _error = null; // 清除错误以便重试
       });
-      await _loadGameHistory();
+      // 触发加载（Tab 组件会检测到 isLoaded 变为 false 并重新加载）
+      _loadGameHistory(); // 或者直接调用 Tab 内部的刷新方法（如果暴露了的话）
     } else {
-      // 刷新帖子历史
       setState(() {
         _postHistoryLoaded = false;
-        _error = null;
+        _error = null; // 清除错误以便重试
       });
-      await _loadPostHistory();
+      _loadPostHistory(); // 同上
     }
+    // 注意：这里的 await 意义不大，因为实际加载在 Tab 组件内部异步进行
+    // RefreshIndicator 会自己处理完成状态
   }
+
 
   @override
   Widget build(BuildContext context) {

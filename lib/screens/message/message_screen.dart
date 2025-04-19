@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
@@ -12,7 +14,6 @@ import '../../utils/device/device_utils.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/message/message_detail.dart';
 import '../../widgets/components/screen/message/message_list.dart';
-import '../../widgets/components/screen/message/message_desktop_layout.dart';
 
 /// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
@@ -351,107 +352,138 @@ class _MessageScreenState extends State<MessageScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadGroupedMessages,
-      child: _groupedMessages.isEmpty && !_isLoading
-          // 情况一：数据为空且加载完成
-          ? LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  child: Container(
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
-                    alignment: Alignment.center,
-                    child: EmptyStateWidget(
-                      message: '暂无任何消息',
-                      iconData: Icons.mark_as_unread_outlined,
-                    ),
-                  ),
-                );
-              },
-            )
-          // 情况二：数据不为空，显示消息列表
-          : ListView.builder(
-              itemCount: _sortedTypeKeys.length,
-              itemBuilder: (context, index) {
-                final typeKey = _sortedTypeKeys[index];
-                final messagesForType = _groupedMessages[typeKey] ?? [];
-                final messageType = MessageTypeInfo.fromString(typeKey);
-                final typeDisplayName = messageType.displayName;
-                final unreadCount = _getUnreadCountForType(typeKey);
+        onRefresh: _loadGroupedMessages,
+        child: _groupedMessages.isEmpty && !_isLoading
+            ? _buildEmptyContent()
+            // 情况二：数据不为空，显示消息列表
+            : _buildMainContent());
+  }
 
-                return ExpansionTile(
-                  key: PageStorageKey(typeKey),
-                  initiallyExpanded: _expansionState[typeKey] ?? false,
-                  onExpansionChanged: (isExpanded) {
-                    if (mounted) {
-                      setState(() {
-                        _expansionState[typeKey] = isExpanded;
-                      });
-                    }
-                  },
-                  title: Row(
-                    // ... title Row 内容 ...
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          typeDisplayName,
-                          style: TextStyle(
-                              fontWeight: FontWeight.bold, fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (unreadCount > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(left: 8.0),
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 3),
-                            decoration: BoxDecoration(
-                              color: Colors.redAccent,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Text(
-                              '$unreadCount',
-                              style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.bold),
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                  childrenPadding: EdgeInsets.zero,
-                  tilePadding:
-                      EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-                  backgroundColor: Colors.grey[50],
-                  collapsedBackgroundColor: Colors.white,
-                  iconColor: Theme.of(context).primaryColor,
-                  collapsedIconColor: Colors.grey[600],
-                  children: [
-                    // ... children 内容 (MessageList 或空分组提示) ...
-                    if (messagesForType.isEmpty)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 16.0, vertical: 20.0),
-                        child: Center(
-                            child: Text('此类消息暂无内容',
-                                style: TextStyle(color: Colors.grey))),
-                      )
-                    else
-                      MessageList(
-                        messages: messagesForType,
-                        onMessageTap: _handleMessageTap,
-                        selectedMessage: _selectedMessage,
-                        isCompact: DeviceUtils.isDesktop,
-                      ),
-                  ],
-                );
-              },
-              padding: EdgeInsets.only(bottom: 16.0),
+  Widget _buildEmptyContent() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          child: Container(
+            constraints: BoxConstraints(minHeight: constraints.maxHeight),
+            alignment: Alignment.center,
+            // *** 修改这里：为空状态添加动画 ***
+            child: FadeInSlideUpItem(
+              // 使用 FadeInSlideUpItem 包裹
+              child: EmptyStateWidget(
+                message: '暂无任何消息',
+                iconData: Icons.mark_as_unread_outlined,
+              ),
             ),
+            // *** 结束修改 ***
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMainContent() {
+    // 添加 Key，帮助动画识别列表变化
+    final listKey = ValueKey<int>(_sortedTypeKeys.length);
+
+    return ListView.builder(
+      key: listKey, // 应用 Key
+      itemCount: _sortedTypeKeys.length,
+      itemBuilder: (context, index) {
+        final typeKey = _sortedTypeKeys[index];
+        final messagesForType = _groupedMessages[typeKey] ?? [];
+        final messageType = MessageTypeInfo.fromString(typeKey);
+        final typeDisplayName = messageType.displayName;
+        final unreadCount = _getUnreadCountForType(typeKey);
+
+        // --- 提取 ExpansionTile 的 children 构建逻辑 ---
+        List<Widget> buildExpansionChildren() {
+          if (messagesForType.isEmpty) {
+            // 空状态也加个简单动画
+            return [
+              Padding(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 16.0, vertical: 20.0),
+                  // *** 修改这里：空消息提示添加动画 ***
+                  child: FadeInItem(
+                    // 使用 FadeInItem
+                    child: EmptyStateWidget(
+                        message: '此类消息暂无内容',
+                        iconData: Icons.messenger_outline_outlined,
+                        iconColor: Colors.grey),
+                  )
+                  // *** 结束修改 ***
+                  )
+            ];
+          } else {
+            // *** 修改这里：为 MessageList 添加动画 ***
+            // 注意：这里是整体动画，非列表项逐个动画
+            return [
+              FadeInSlideUpItem(
+                // 使用 FadeInSlideUpItem 包裹 MessageList
+                // 可以根据需要调整 duration 和 delay
+                // delay: Duration(milliseconds: 100), // 展开后轻微延迟出现
+                duration: Duration(milliseconds: 300),
+                child: MessageList(
+                  messages: messagesForType,
+                  onMessageTap: _handleMessageTap,
+                  selectedMessage: _selectedMessage,
+                  isCompact: DeviceUtils.isDesktop,
+                ),
+              )
+            ];
+            // *** 结束修改 ***
+          }
+        }
+        // --- 结束提取 ---
+
+        return ExpansionTile(
+          key: PageStorageKey(typeKey), // 保持 Key 用于保存状态
+          initiallyExpanded: _expansionState[typeKey] ?? false,
+          onExpansionChanged: (isExpanded) {
+            if (mounted) {
+              setState(() {
+                _expansionState[typeKey] = isExpanded;
+              });
+            }
+          },
+          // --- ExpansionTile 标题和样式保持不变 ---
+          title: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                  child: Text(typeDisplayName,
+                      style:
+                          TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                      overflow: TextOverflow.ellipsis)),
+              if (unreadCount > 0)
+                Padding(
+                  padding: const EdgeInsets.only(left: 8.0),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                        color: Colors.redAccent,
+                        borderRadius: BorderRadius.circular(12)),
+                    child: Text('$unreadCount',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold)),
+                  ),
+                ),
+            ],
+          ),
+          childrenPadding: EdgeInsets.zero,
+          tilePadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+          backgroundColor: Colors.grey[50],
+          collapsedBackgroundColor: Colors.white,
+          iconColor: Theme.of(context).primaryColor,
+          collapsedIconColor: Colors.grey[600],
+          // --- 使用提取的 children 构建逻辑 ---
+          children: buildExpansionChildren(),
+        );
+      },
+      padding: EdgeInsets.only(bottom: 16.0),
     );
   }
 
@@ -471,44 +503,90 @@ class _MessageScreenState extends State<MessageScreen> {
     );
   }
 
+  Widget? _buildRightPanel() {
+    return _showMessageDetails && _selectedMessage != null
+        ? MessageDetail(
+            message: _selectedMessage!, // 传递选中的消息
+            // 关闭详情面板的回调
+            onClose: () {
+              if (mounted) {
+                setState(() {
+                  _showMessageDetails = false;
+                  _selectedMessage = null; // 清除选中状态
+                });
+              }
+            },
+            // 删除按钮的回调
+            onDelete: () => _showDeleteDialog(_selectedMessage!),
+            // "查看关联" 按钮的回调
+            onViewDetail: (message) {
+              _performNavigation(message); // 在详情面板点击时也执行导航
+            },
+          )
+        : null; // 如果没有选中消息，则右侧面板为 null
+  }
+
+  /// 构建桌面端布局
   /// 构建桌面端布局
   Widget _buildDesktopLayout() {
-    return MessageDesktopLayout(
-      // 使用左右分栏布局
-      title: '消息中心',
-      actions: [
-        // AppBar 上的操作按钮
-        // 仅当有未读消息时显示 "全部标为已读" 按钮
-        if (!_allMessagesRead)
-          _iconRead(),
-        // 添加刷新按钮
-        _iconRefresh()
-      ],
-      // 左侧主内容区域
-      body: _buildMessageContent(),
-      // 右侧详情面板内容
-      rightPanel: _showMessageDetails && _selectedMessage != null
-          ? MessageDetail(
-              message: _selectedMessage!, // 传递选中的消息
-              // 关闭详情面板的回调
-              onClose: () {
-                if (mounted) {
-                  setState(() {
-                    _showMessageDetails = false;
-                    _selectedMessage = null; // 清除选中状态
-                  });
-                }
-              },
-              // 删除按钮的回调
-              onDelete: () => _showDeleteDialog(_selectedMessage!),
-              // "查看关联" 按钮的回调
-              onViewDetail: (message) {
-                _performNavigation(message); // 在详情面板点击时也执行导航
-              },
-            )
-          : null, // 如果没有选中消息，则右侧面板为 null
-      // 控制右侧面板是否可见
-      rightPanelVisible: _showMessageDetails && _selectedMessage != null,
+    final sidePanelWidth = DeviceUtils.getSidePanelWidth(context);
+
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: '消息中心',
+        actions: [if (!_allMessagesRead) _iconRead(), _iconRefresh()],
+      ),
+      body: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Main content (左侧列表)
+          Expanded(
+            child: _buildMessageContent(), // 内部已有动画
+          ),
+
+          // --- 修改这里：使用 AnimatedSwitcher 包裹右侧面板 ---
+          AnimatedSwitcher(
+            duration: const Duration(milliseconds: 300), // 动画时长
+            transitionBuilder: (Widget child, Animation<double> animation) {
+              // 使用 Fade + Slide 过渡
+              return FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  // 从右侧滑入滑出
+                  position: Tween<Offset>(
+                    begin: const Offset(0.1, 0.0), // 从右侧 10% 的位置开始
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              );
+            },
+            // 根据 _showMessageDetails 和 _selectedMessage 是否为 null 决定显示什么
+            child: _showMessageDetails && _selectedMessage != null
+                ? Container(
+                    // 使用 Container 包装，并给 Key
+                    key: ValueKey<String>(
+                        _selectedMessage!.id), // 使用消息 ID 作为 Key
+                    width: sidePanelWidth,
+                    height: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: Offset(-2, 0),
+                        ),
+                      ],
+                    ),
+                    child: _buildRightPanel(), // 构建详情面板内容
+                  )
+                : SizedBox.shrink(
+                    key: ValueKey<String>('empty_panel')), // 不显示时用 SizedBox
+          ),
+          // --- 结束修改 ---
+        ],
+      ),
     );
   }
 
@@ -520,8 +598,7 @@ class _MessageScreenState extends State<MessageScreen> {
         title: '消息中心',
         actions: [
           // AppBar 上的操作按钮
-          if (!_allMessagesRead)
-            _iconRead(),
+          if (!_allMessagesRead) _iconRead(),
           // 添加刷新按钮
           _iconRefresh()
         ],

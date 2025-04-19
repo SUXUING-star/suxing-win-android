@@ -29,7 +29,7 @@ class CommonGameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // --- 新增加的保险判断 ---
     // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
-    if (game.approvalStatus == 'pending') {
+    if (game.approvalStatus == GameStatus.rejected || game.approvalStatus == GameStatus.pending) {
       // 返回一个空的、不占空间的Widget
       return const SizedBox.shrink();
     }

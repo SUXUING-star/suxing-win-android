@@ -1,12 +1,7 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
-// --- 导入【外部】统一的动画组件 ---
 import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 确保这个导入路径正确
-
-// (NavigationUtils import - if needed, keep it)
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-
 
 class LoadingWidget extends StatefulWidget {
   final String? message;
@@ -261,10 +256,6 @@ class _LoadingWidgetState extends State<LoadingWidget> {
               overflow: TextOverflow.ellipsis,
             ),
           ],
-          // If no message, maybe add a minimal vertical space to maintain card height?
-          // Or let the card shrink if preferred. Current behavior shrinks.
-          // if (widget.message == null || widget.message!.isEmpty)
-          //   const SizedBox(height: 4), // Example placeholder space
         ],
       ),
     );

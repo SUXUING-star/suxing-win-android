@@ -7,7 +7,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
-import './layout/game_history_grid_card.dart'; // 导入网格布局卡片
+import 'card/game_history_grid_card.dart'; // 导入网格布局卡片
 import './card/game_history_list_card.dart'; // 导入列表布局卡片
 
 // 游戏历史标签页 - 优化UI显示

@@ -3,10 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 // --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // <--- 引入 ElevatedButton 封装
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // <--- 引入 TextButton 封装
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../services/main/email/email_service.dart';
 import 'dart:async';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
@@ -18,7 +21,6 @@ class ForgotPasswordScreen extends StatefulWidget {
 }
 
 class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
-  // ... (其他状态变量和方法保持不变) ...
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _codeController = TextEditingController();
@@ -28,7 +30,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Timer? _timer;
   bool _isSendingCode = false;
   bool _isVerifying = false;
-
 
   @override
   void dispose() {
@@ -116,12 +117,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
             arguments: _emailController.text);
       } else {
         setState(() => _error = '验证码错误或已过期');
-        AppSnackBar.showError(context,_error!);
+        AppSnackBar.showError(context, _error!);
       }
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '验证码校验时发生错误: ${e.toString()}');
-      AppSnackBar.showError(context,_error!);
+      AppSnackBar.showError(context, _error!);
     } finally {
       if (mounted) {
         setState(() => _isVerifying = false);
@@ -129,33 +130,89 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     }
   }
 
+  Widget _buildEmailFormField(bool isOverallLoading) {
+    return TextFormField(
+      controller: _emailController,
+      enabled: !_isSendingCode && !_isVerifying, // 允许在验证时修改邮箱
+      decoration: InputDecoration(
+          labelText: '注册邮箱', // 明确是注册时用的邮箱
+          // border: OutlineInputBorder(), // 可以统一风格
+          prefixIcon: Icon(Icons.email_outlined)), // 换个图标
+      validator: (value) {
+        if (value == null || value.isEmpty || !value.contains('@'))
+          return '请输入有效的邮箱地址';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildVerificationCodeField(bool isOverallLoading) {
+    return TextFormField(
+      controller: _codeController,
+      enabled: !isOverallLoading,
+      decoration: InputDecoration(
+          labelText: '邮箱验证码', // 更明确
+          // border: OutlineInputBorder(),
+          prefixIcon: Icon(Icons.pin_outlined)),
+      // 换个图标
+      keyboardType: TextInputType.number,
+      validator: (value) {
+        // 移除 _codeSent 检查，因为只有 codeSent 时才显示
+        if (value == null || value.isEmpty) return '请输入验证码';
+        if (value.length != 6) return '验证码应为6位数字';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildErrorMessageField() {
+    return _error != null
+        ? FadeInItem(
+            // 使用 FadeInItem 包裹
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16.0),
+              child: InlineErrorWidget(
+                errorMessage: _error!,
+                icon: Icons.error_outline,
+                // retryText: '重试', // 可以去掉重试按钮，因为通常需要用户修改输入
+                iconColor: Colors.red,
+                // onRetry: () { setState(() { _error = null; }); },
+              ),
+            ),
+          )
+        : SizedBox.shrink();
+  }
+
+  @override
   @override
   Widget build(BuildContext context) {
-    // 整体加载状态，用于禁用输入框和返回按钮等
     final bool isOverallLoading = _isSendingCode || _isVerifying;
     final String loadingMessage = '请稍候...';
 
-    // --- 计算发送按钮的标签和状态 ---
     final String sendButtonLabel =
         _codeSent ? (_countDown > 0 ? '${_countDown}s' : '重新发送') : '发送验证码';
-    // 发送按钮是否可用：不在加载中 且 倒计时结束
     final bool isSendButtonEnabled = !isOverallLoading && _countDown <= 0;
+    final bool isVerifyButtonEnabled =
+        !isOverallLoading && _codeSent; // 验证按钮也需要 _codeSent
 
-    // --- 计算验证按钮的状态 ---
-    // 验证按钮是否可用：不在加载中
-    final bool isVerifyButtonEnabled = !isOverallLoading;
+    // --- 定义动画延迟和间隔 ---
+    const Duration initialDelay = Duration(milliseconds: 200);
+    const Duration stagger = Duration(milliseconds: 80);
 
     return Scaffold(
       appBar: CustomAppBar(title: '找回密码'),
       body: Stack(
         children: [
-          Opacity(
-              opacity: 0.6,
-              child:
-                  Container(width: double.infinity, height: double.infinity)),
-          // 加载状态处理 (保持不变)
+          // 背景 Opacity 可以保留或移除
+          // Opacity(opacity: 0.6, child: Container(width: double.infinity, height: double.infinity)),
+
+          // --- 修改这里：为 Loading 添加动画 ---
           if (isOverallLoading)
-            LoadingWidget.fullScreen(message: loadingMessage),
+            FadeInItem(
+              // 使用 FadeInItem
+              child: LoadingWidget.fullScreen(message: loadingMessage),
+            ),
+          // --- 结束修改 ---
 
           Center(
             child: ConstrainedBox(
@@ -173,113 +230,112 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('找回密码',
-                            style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87)),
+                        // --- 修改这里：为所有表单元素添加动画 ---
+                        // 标题
+                        FadeInSlideUpItem(
+                          delay: initialDelay,
+                          child: AppText('找回密码',
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87),
+                        ),
                         SizedBox(height: 16),
-                        Text('通过邮箱重置您的密码',
-                            style: TextStyle(fontSize: 16, color: Colors.grey)),
+                        // 副标题
+                        FadeInSlideUpItem(
+                          delay: initialDelay + stagger,
+                          child: AppText('通过邮箱重置您的密码',
+                              fontSize: 16, color: Colors.grey),
+                        ),
                         SizedBox(height: 24),
 
-                        // 显示错误信息 - 使用自定义错误组件
-                        if (_error != null)
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 16.0),
-                            child: InlineErrorWidget(
-                              errorMessage: _error!,
-                              icon: Icons.error_outline,
-                              retryText: '重试',
-                              iconColor: Colors.red,
-                              onRetry: () {
-                                setState(() {
-                                  _error = null;
-                                });
-                              },
-                            ),
-                          ),
+                        // 错误消息 (内部已加动画)
+                        _buildErrorMessageField(),
 
-                        // 邮箱输入 (保持不变, 使用 isOverallLoading 控制 enabled)
-                        TextFormField(
-                          controller: _emailController,
-                          enabled: !isOverallLoading, // 使用整体加载状态
-                          decoration: InputDecoration(
-                              labelText: '邮箱',
-                              border: OutlineInputBorder(),
-                              prefixIcon: Icon(Icons.email)),
-                          validator: (value) {
-                            if (value == null ||
-                                value.isEmpty ||
-                                !value.contains('@')) return '请输入有效的邮箱地址';
-                            return null;
-                          },
+                        // 邮箱输入
+                        FadeInSlideUpItem(
+                          delay: initialDelay + stagger * 2,
+                          child: _buildEmailFormField(isOverallLoading),
                         ),
                         SizedBox(height: 16),
 
-                        // 验证码输入 (保持不变, 使用 isOverallLoading 控制 enabled)
-                        if (_codeSent)
-                          TextFormField(
-                            controller: _codeController,
-                            enabled: !isOverallLoading, // 使用整体加载状态
-                            decoration: InputDecoration(
-                                labelText: '验证码',
-                                border: OutlineInputBorder(),
-                                prefixIcon: Icon(Icons.code)),
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (!_codeSent) return null;
-                              if (value == null || value.isEmpty)
-                                return '请输入验证码';
-                              if (value.length != 6) return '验证码应为6位数字';
-                              return null;
-                            },
+                        // 验证码输入 (根据 _codeSent 决定是否显示)
+                        // 使用 AnimatedSize 和 AnimatedOpacity 来平滑显示/隐藏
+                        AnimatedSize(
+                          duration: Duration(milliseconds: 300),
+                          curve: Curves.easeInOut,
+                          child: AnimatedOpacity(
+                            opacity: _codeSent ? 1.0 : 0.0,
+                            duration: Duration(milliseconds: 300),
+                            child: _codeSent // 只有在 _codeSent 为 true 时才构建内容
+                                ? FadeInSlideUpItem(
+                                    key: ValueKey('verification_code_field'),
+                                    // 给个 Key
+                                    delay: Duration.zero,
+                                    // 因为外层有动画，内部不需要延迟
+                                    child: Padding(
+                                      // 加个 Padding 避免动画跳动
+                                      padding:
+                                          const EdgeInsets.only(bottom: 16.0),
+                                      child: _buildVerificationCodeField(
+                                          isOverallLoading),
+                                    ),
+                                  )
+                                : SizedBox.shrink(), // 隐藏时不占空间
                           ),
-                        if (_codeSent) SizedBox(height: 16),
+                        ),
+                        // if (_codeSent) SizedBox(height: 16), // 间距由 Padding 处理
 
-                        // --- 使用新的 FunctionalButton ---
-                        Row(
-                          children: [
-                            Expanded(
-                              child: FunctionalButton(
-                                // <--- 替换发送/重发按钮
-                                onPressed: _sendVerificationCode,
-                                label: sendButtonLabel, // 使用计算好的标签
-                                isLoading: _isSendingCode, // 传递发送的加载状态
-                                isEnabled: isSendButtonEnabled, // 传递计算好的可用状态
-                                // 可以按需调整 padding 等样式参数
-                                // padding: EdgeInsets.symmetric(vertical: 14),
-                              ),
-                            ),
-                            // 验证按钮 (保持不变的逻辑，只替换组件)
-                            if (_codeSent) ...[
-                              SizedBox(width: 16),
+                        // 按钮行
+                        FadeInSlideUpItem(
+                          delay: initialDelay + stagger * (_codeSent ? 4 : 3),
+                          // 根据验证码框是否显示调整延迟
+                          child: Row(
+                            children: [
                               Expanded(
                                 child: FunctionalButton(
-                                  // <--- 替换验证按钮
-                                  onPressed: _verifyCode,
-                                  label: '验证',
-                                  isLoading: _isVerifying, // 传递验证的加载状态
-                                  isEnabled:
-                                      isVerifyButtonEnabled, // 传递计算好的可用状态
-                                  // padding: EdgeInsets.symmetric(vertical: 14),
+                                  onPressed: _sendVerificationCode,
+                                  label: sendButtonLabel,
+                                  isLoading: _isSendingCode,
+                                  isEnabled: isSendButtonEnabled,
                                 ),
                               ),
+                              // 验证按钮也用 AnimatedOpacity 平滑显示
+                              AnimatedOpacity(
+                                opacity: _codeSent ? 1.0 : 0.0,
+                                duration: Duration(milliseconds: 300),
+                                child: _codeSent
+                                    ? Row(
+                                        // 使用 Row 包装，避免 AnimatedOpacity 影响布局
+                                        children: [
+                                          SizedBox(width: 16),
+                                          Expanded(
+                                            child: FunctionalButton(
+                                              onPressed: _verifyCode,
+                                              label: '验证',
+                                              isLoading: _isVerifying,
+                                              isEnabled: isVerifyButtonEnabled,
+                                            ),
+                                          ),
+                                        ],
+                                      )
+                                    : SizedBox.shrink(),
+                              ),
                             ],
-                          ],
+                          ),
                         ),
                         SizedBox(height: 16),
 
-                        // --- 使用新的 FunctionalTextButton 添加返回按钮 ---
-                        FunctionalTextButton(
-                          // <--- 添加返回按钮
-                          onPressed: () => NavigationUtils.pop(context),
-                          label: '返回登录',
-                          isEnabled: !isOverallLoading, // 加载时禁用
-                          // 可以加个返回图标
-                          // icon: Icons.arrow_back,
-                          // customColor: Colors.grey, // 如果想用灰色
+                        // 返回按钮
+                        FadeInSlideUpItem(
+                          delay: initialDelay + stagger * (_codeSent ? 5 : 4),
+                          // 根据验证码框是否显示调整延迟
+                          child: FunctionalTextButton(
+                            onPressed: () => NavigationUtils.pop(context),
+                            label: '返回登录',
+                            isEnabled: !isOverallLoading,
+                          ),
                         ),
+                        // --- 结束修改 ---
                       ],
                     ),
                   ),

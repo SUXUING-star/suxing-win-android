@@ -1,9 +1,13 @@
 // lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../services/main/user/cache/account_cache_service.dart';
 import '../../utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
@@ -141,22 +145,99 @@ class _LoginScreenState extends State<LoginScreen> {
           _errorMessage = '登录失败：${e.toString()}';
           _isLoading = false;
         });
-        if (_errorMessage != null){
+        if (_errorMessage != null) {
           AppSnackBar.showError(context, _errorMessage!);
         }
-
       }
     }
   }
 
+  Widget _buildErrorMessageField() {
+    return _errorMessage != null
+        ? FadeInItem(
+            // 使用 FadeInItem 包裹
+            child: Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Text(
+                _errorMessage!,
+                style: TextStyle(color: Colors.red),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          )
+        // --- 结束修改 ---
+        : SizedBox.shrink();
+  }
+
+  Widget _buildEmailFormField() {
+    // 邮箱输入
+    return TextFormField(
+      key: _emailFieldKey,
+      controller: _emailController,
+      decoration: InputDecoration(
+        labelText: '邮箱',
+        prefixIcon: Icon(Icons.email),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        // 添加账号选择按钮
+        suffixIcon: _accountCache.getAllAccounts().isNotEmpty
+            ? IconButton(
+                icon: Icon(Icons.account_circle),
+                tooltip: '选择已保存的账号',
+                onPressed: _showAccountBubbleMenu,
+              )
+            : null,
+      ),
+      keyboardType: TextInputType.emailAddress,
+      validator: (value) {
+        if (value == null || value.isEmpty) return '请输入邮箱';
+        if (!value.contains('@')) return '请输入有效邮箱';
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPassWordFormField() {
+    return // 密码输入
+        TextFormField(
+      controller: _passwordController,
+      obscureText: _obscurePassword,
+      decoration: InputDecoration(
+        labelText: '密码',
+        prefixIcon: Icon(Icons.lock),
+        suffixIcon: IconButton(
+          icon:
+              Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() {
+            _obscurePassword = !_obscurePassword;
+          }),
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+      validator: (value) {
+        if (value == null || value.isEmpty) return '请输入密码';
+        if (value.length < 6) return '密码至少6位';
+        return null;
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    // 定义基础延迟和间隔
+    const Duration initialDelay = Duration(milliseconds: 200); // 登录页可以稍微慢点开始
+    const Duration stagger = Duration(milliseconds: 80); // 元素间间隔
+
     return Scaffold(
       appBar: CustomAppBar(title: '登录'),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Container(
+            // 这个外部容器可以不加动画，让内部元素滑入
             width: 400,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
@@ -176,114 +257,81 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    '欢迎回来',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  // --- 修改这里：添加动画 ---
+                  // 欢迎标题
+                  FadeInSlideUpItem(
+                    delay: initialDelay,
+                    child: AppText(
+                      '欢迎回来',
+                      textAlign: TextAlign.center,
+                      type: AppTextType.title,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   const SizedBox(height: 24),
 
-                  // 错误提示
-                  if (_errorMessage != null)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 16),
-                      child: Text(
-                        _errorMessage!,
-                        style: TextStyle(color: Colors.red),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
+                  // 错误消息 (在 _buildErrorMessageField 内部添加动画)
+                  _buildErrorMessageField(),
 
-                  // 邮箱输入
-                  TextFormField(
-                    key: _emailFieldKey,
-                    controller: _emailController,
-                    decoration: InputDecoration(
-                      labelText: '邮箱',
-                      prefixIcon: Icon(Icons.email),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      // 添加账号选择按钮
-                      suffixIcon: _accountCache.getAllAccounts().isNotEmpty
-                          ? IconButton(
-                              icon: Icon(Icons.account_circle),
-                              tooltip: '选择已保存的账号',
-                              onPressed: _showAccountBubbleMenu,
-                            )
-                          : null,
-                    ),
-                    keyboardType: TextInputType.emailAddress,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入邮箱';
-                      if (!value.contains('@')) return '请输入有效邮箱';
-                      return null;
-                    },
+                  // 邮箱输入框
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger, // 延迟
+                    child: _buildEmailFormField(),
                   ),
                   const SizedBox(height: 16),
 
-                  // 密码输入
-                  TextFormField(
-                    controller: _passwordController,
-                    obscureText: _obscurePassword,
-                    decoration: InputDecoration(
-                      labelText: '密码',
-                      prefixIcon: Icon(Icons.lock),
-                      suffixIcon: IconButton(
-                        icon: Icon(_obscurePassword
-                            ? Icons.visibility_off
-                            : Icons.visibility),
-                        onPressed: () => setState(() {
-                          _obscurePassword = !_obscurePassword;
-                        }),
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.isEmpty) return '请输入密码';
-                      if (value.length < 6) return '密码至少6位';
-                      return null;
-                    },
+                  // 密码输入框
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger * 2, // 再延迟
+                    child: _buildPassWordFormField(),
                   ),
                   const SizedBox(height: 16),
 
-                  // 记住密码
-                  Row(
-                    children: [
-                      Checkbox(
-                        value: _rememberMe,
-                        onChanged: (value) => setState(() {
-                          _rememberMe = value ?? false;
-                        }),
-                      ),
-                      Text('记住账号'),
-                      const Spacer(),
-                      FunctionalTextButton(
-                          onPressed: () => NavigationUtils.pushNamed(
-                              context, '/forgot-password'),
-                          label: '忘记密码?'),
-                    ],
+                  // 记住密码和忘记密码行
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger * 3, // 再延迟
+                    child: Row(
+                      children: [
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (value) => setState(() {
+                            _rememberMe = value ?? false;
+                          }),
+                        ),
+                        Text('记住账号'),
+                        const Spacer(),
+                        FunctionalTextButton(
+                            onPressed: () => NavigationUtils.pushNamed(
+                                context, '/forgot-password'), // 路由可能需要调整
+                            label: '忘记密码?'),
+                      ],
+                    ),
                   ),
                   const SizedBox(height: 24),
 
                   // 登录按钮
-                  FunctionalButton(
-                    onPressed: _login,
-                    label: '登录',
-                    isEnabled: !_isLoading,
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger * 4, // 再延迟
+                    child: FunctionalButton(
+                      onPressed:
+                          _isLoading ? ()=> {} : _login, // 保持 loading 状态禁用逻辑
+                      label: '登录',
+                      isEnabled: !_isLoading, // 保持 isEnabled
+                    ),
                   ),
                   const SizedBox(height: 16),
 
-                  // 注册跳转
-                  FunctionalTextButton(
-                    onPressed: () =>
-                        NavigationUtils.navigateToLogin(context),
-                    label: '还没有账号？立即注册',
+                  // 注册跳转按钮
+                  FadeInSlideUpItem(
+                    delay: initialDelay + stagger * 5, // 最后出现
+                    child: FunctionalTextButton(
+                      // onPressed: () => NavigationUtils.navigateToLogin(context), // 这里应该是去注册页
+                      onPressed: () => NavigationUtils.pushNamed(
+                          context, '/register'), // 假设注册页路由是 /register
+                      label: '还没有账号？立即注册',
+                    ),
                   ),
+                  // --- 结束修改 ---
                 ],
               ),
             ),

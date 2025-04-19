@@ -16,7 +16,6 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/widgets/components/loading/loading_route_observer.dart';
 import 'package:suxingchahui/widgets/components/form/postform/config/post_taglists.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
@@ -58,7 +57,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   bool _showLeftPanel = true;
   bool _showRightPanel = true;
 
-  LoadingRouteObserver? _routeObserver;
+  //LoadingRouteObserver? _routeObserver;
 
   // --- 缓存监听 ---
   StreamSubscription<dynamic>? _cacheSubscription;
@@ -84,20 +83,12 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final observers = NavigationUtils
-        .of(context)
-        .widget
-        .observers;
-    _routeObserver = observers
-        .whereType<LoadingRouteObserver>()
-        .firstOrNull;
-    print("ForumScreen didChangeDependencies");
     // Maybe trigger load if visible here? Or rely solely on VisibilityDetector
   }
 
   @override
   void dispose() {
-    print("ForumScreen dispose: Tag=$_selectedTag");
+    // print("ForumScreen dispose: Tag=$_selectedTag");
     _stopWatchingCache(); // 停止监听
     WidgetsBinding.instance.removeObserver(this);
     _refreshController.dispose();
@@ -108,23 +99,23 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      print("ForumScreen: App resumed.");
+      // print("ForumScreen: App resumed.");
       // 如果需要刷新，并且当前可见，则刷新
       if (_needsRefresh && _isVisible) {
-        print(
-            "ForumScreen: Needs refresh on resume and visible, triggering refresh.");
+        // print(
+        //     "ForumScreen: Needs refresh on resume and visible, triggering refresh.");
         // 使用 Debounce 避免过于频繁的刷新
         _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
         _needsRefresh = false; // 重置标记
       } else if (_isVisible) {
         // 如果只是恢复且可见，也检查一下
-        print(
-            "ForumScreen: App resumed and visible, checking for potential refresh.");
+        //print(
+        //    "ForumScreen: App resumed and visible, checking for potential refresh.");
         _refreshDataIfNeeded(reason: "App Resumed");
       }
       // 如果恢复时不可见，则在 VisibilityDetector 变为可见时处理 _needsRefresh
     } else if (state == AppLifecycleState.paused) {
-      print("ForumScreen: App paused.");
+      // print("ForumScreen: App paused.");
       _needsRefresh = true; // App 进入后台，标记下次回来时需要检查刷新
     }
   }
@@ -140,12 +131,12 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
       // --- 刷新当前页数据 ---
       // 重新加载当前页是确保数据一致性的最安全方法
-      print("ForumScreen: Post lock toggled, refreshing current page ($_currentPage).");
+      // print("ForumScreen: Post lock toggled, refreshing current page ($_currentPage).");
       await _loadPosts(page: _currentPage, isRefresh: true);
 
     } catch (e) {
       if (!mounted) return;
-      print("ForumScreen: Failed to toggle lock for post $postId: $e");
+      // print("ForumScreen: Failed to toggle lock for post $postId: $e");
       AppSnackBar.showError(context, '操作失败: $e');
     } finally {
       // routeObserver?.hideLoading();
@@ -158,13 +149,13 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     bool isRefresh = false}) async {
     // 防止在加载过程中重复触发（除非是强制刷新）
     if (_isLoadingData && !isRefresh) {
-      print("ForumScreen _loadPosts: Skipped, already loading page $page.");
+      // print("ForumScreen _loadPosts: Skipped, already loading page $page.");
       return;
     }
     if (!mounted) return;
 
-    print(
-        "ForumScreen _loadPosts: Loading page $page. Initial: $isInitialLoad, Refresh: $isRefresh");
+    // print(
+    //     "ForumScreen _loadPosts: Loading page $page. Initial: $isInitialLoad, Refresh: $isRefresh");
     _isInitialized = true; // 标记已尝试加载
 
     // --- 设置加载状态，触发 UI 重建显示 Loading ---
@@ -179,14 +170,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         _posts = null;
       }
       // 分页加载时，不清空 _posts，让旧数据显示，只在分页控件显示 loading
-      // _isLoadingPage = (page != _currentPage && !isRefresh); // 这个状态似乎多余了
     });
-
-    // 只有强制刷新或首次加载（且无缓存）时显示全局路由 Loading
-    final bool showRouteLoading =
-        isRefresh || (isInitialLoad && _posts == null);
-    if (showRouteLoading) _routeObserver?.showLoading();
-
     // --- 调用 Service 获取数据 ---
     try {
       final result = await _forumService.getPostsPage(
@@ -210,9 +194,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           _currentPage = serverPage; // 使用服务器返回的页码
           _totalPages = serverTotalPages;
           _errorMessage = null; // 清除错误
-          print(
-              "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts
-                  ?.length}");
+          // print(
+          //     "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts
+          //         ?.length}");
         });
 
         // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
@@ -243,17 +227,16 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         setState(() {
           _isLoadingData = false;
         });
-        if (showRouteLoading) _routeObserver?.hideLoading();
+        // if (showRouteLoading) _routeObserver?.hideLoading(); // <--- 删除了调用 hideLoading
         if (isRefresh) _refreshController.refreshCompleted();
       }
     }
   }
-
   // --- 刷新数据 (调用 _loadPosts 强制刷新第一页) ---
   Future<void> _refreshData() async {
     if (_isLoadingData) return;
     if (!mounted) return;
-    print("ForumScreen: Refresh triggered, loading page 1 forcefully.");
+    // print("ForumScreen: Refresh triggered, loading page 1 forcefully.");
     setState(() {
       _currentPage = 1; // 重置到第一页
       // _totalPages = 1; // 可以在加载成功后更新
