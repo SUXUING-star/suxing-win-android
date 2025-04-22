@@ -11,7 +11,6 @@ import '../replies/reply_input.dart'; // 导入 ReplyInput
 import '../../../../../ui/badges/user_info_badge.dart';
 import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
-import '../../../../../ui/buttons/popup/custom_popup_menu_button.dart';
 
 class CommentItem extends StatefulWidget {
   final Comment comment;
@@ -26,14 +25,14 @@ class CommentItem extends StatefulWidget {
   final bool isUpdating;
 
   const CommentItem({
-    Key? key,
+    super.key,
     required this.comment,
     required this.onUpdateComment, // 接收需要 ID 的 onUpdate
     required this.onDeleteComment, // 接收需要 ID 的 onDelete
     required this.onAddReply, // 接收 onAddReply
     this.isDeleting = false,
     this.isUpdating = false,
-  }) : super(key: key);
+  });
 
   @override
   State<CommentItem> createState() => _CommentItemState();
@@ -142,10 +141,11 @@ class _CommentItemState extends State<CommentItem> {
     try {
       // *** 调用 widget.onAddReply，传入自己的 comment.id 作为 parentId ***
       await widget.onAddReply(replyContent, widget.comment.id);
-      if (mounted)
+      if (mounted) {
         setState(() {
           _showReplyInput = false;
         });
+      }
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '回复失败: $e');
     } finally {

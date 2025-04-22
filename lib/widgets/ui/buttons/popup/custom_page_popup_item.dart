@@ -7,11 +7,11 @@ class CustomPagePopupItem extends StatelessWidget {
   final bool isCurrentPage;
 
   const CustomPagePopupItem({
-    Key? key,
+    super.key,
     required this.pageNumber,
     required this.totalPages,
     required this.isCurrentPage,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

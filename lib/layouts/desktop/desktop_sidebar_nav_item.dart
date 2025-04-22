@@ -9,13 +9,13 @@ class DesktopSidebarNavItem extends StatelessWidget {
   final VoidCallback onTap;
 
   const DesktopSidebarNavItem({
-    Key? key,
+    super.key,
     required this.icon,
     required this.label,
     required this.index,
     this.isSelected = false,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   // Define icon background colors for each nav item
   static final List<Color> _navItemColors = [

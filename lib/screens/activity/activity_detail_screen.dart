@@ -21,10 +21,10 @@ class ActivityDetailScreen extends StatefulWidget {
   final UserActivity? activity;
 
   const ActivityDetailScreen({
-    Key? key,
+    super.key,
     required this.activityId,
     this.activity,
-  }) : super(key: key);
+  });
 
   @override
   _ActivityDetailScreenState createState() => _ActivityDetailScreenState();
@@ -34,7 +34,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   final UserActivityService _activityService = UserActivityService();
   UserActivity? _activity;
   bool _isLoading = true;
-  bool _isLoadingComments = false;
+  final bool _isLoadingComments = false;
   String _error = '';
   final ScrollController _scrollController = ScrollController();
   // int _currentPage = 1; // 评论分页暂时不用

@@ -1,6 +1,5 @@
 // lib/widgets/components/screen/activity/hot_activities_full_panel.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../stats/activity_stats_card.dart';
@@ -18,7 +17,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
   final double panelWidth;
 
   const HotActivitiesFullPanel({
-    Key? key,
+    super.key,
     required this.hotActivities,
     required this.activityStats,
     required this.isLoading,
@@ -28,11 +27,11 @@ class HotActivitiesFullPanel extends StatelessWidget {
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
     required this.panelWidth,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: panelWidth,
       child: Card(
         elevation: 1,

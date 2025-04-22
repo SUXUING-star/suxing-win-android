@@ -9,7 +9,7 @@ import '../../../../services/main/update/update_service.dart';
 import '../../dialogs/update/force_update_dialog.dart'; // 保留，用于强制更新
 
 class UpdateButton extends StatelessWidget {
-  const UpdateButton({Key? key}) : super(key: key);
+  const UpdateButton({super.key});
 
   @override
   Widget build(BuildContext context) {

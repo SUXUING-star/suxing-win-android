@@ -1,6 +1,5 @@
 // lib/screens/admin/widgets/announcement_management/edit_announcement_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/announcement/announcement.dart';
@@ -11,8 +10,7 @@ class EditAnnouncementScreen extends StatelessWidget {
   final AnnouncementFull announcement;
   final AnnouncementService _announcementService = AnnouncementService();
 
-  EditAnnouncementScreen({Key? key, required this.announcement})
-      : super(key: key);
+  EditAnnouncementScreen({super.key, required this.announcement});
 
   @override
   Widget build(BuildContext context) {

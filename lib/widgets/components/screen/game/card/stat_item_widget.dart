@@ -10,14 +10,14 @@ class StatItemWidget extends StatelessWidget {
   final bool showBackground;
 
   const StatItemWidget({
-    Key? key,
+    super.key,
     required this.icon,
     required this.value,
     required this.color,
     required this.iconSize,
     required this.fontSize,
     required this.showBackground,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

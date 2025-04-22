@@ -6,9 +6,9 @@ class CommunityGuidelines extends StatelessWidget {
   final bool useSeparateCard;
 
   const CommunityGuidelines({
-    Key? key,
+    super.key,
     this.useSeparateCard = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,5 +1,6 @@
 // lib/widgets/components/form/announcementform/field/action_field.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
 class ActionField extends StatelessWidget {
   final String? actionUrl;
@@ -8,12 +9,12 @@ class ActionField extends StatelessWidget {
   final Function(String) onActionTextChanged;
 
   const ActionField({
-    Key? key,
+    super.key,
     required this.actionUrl,
     required this.actionText,
     required this.onActionUrlChanged,
     required this.onActionTextChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -37,7 +38,7 @@ class ActionField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        FormTextInputField(
           initialValue: actionUrl ?? '',
           decoration: const InputDecoration(
             hintText: '输入链接URL',
@@ -46,6 +47,12 @@ class ActionField extends StatelessWidget {
             prefixIcon: Icon(Icons.link),
           ),
           onChanged: onActionUrlChanged,
+          validator: (value){
+            if( !value!.startsWith("http") ){
+              return '链接不合法';
+            }
+            return null;
+          },
         ),
         const SizedBox(height: 8),
         const Text(
@@ -66,7 +73,7 @@ class ActionField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        FormTextInputField(
           initialValue: actionText ?? '',
           decoration: const InputDecoration(
             hintText: '输入按钮显示文本',
@@ -75,6 +82,10 @@ class ActionField extends StatelessWidget {
             prefixIcon: Icon(Icons.text_fields),
           ),
           onChanged: onActionTextChanged,
+          validator: (value){
+            if(value != null || value!.isEmpty) return "文本为空";
+            return null;
+          },
         ),
         const SizedBox(height: 8),
         const Text(

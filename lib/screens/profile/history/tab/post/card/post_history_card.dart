@@ -8,7 +8,7 @@ import '../../../../../../utils/datetime/date_time_formatter.dart';
 class PostHistoryCard extends StatelessWidget {
   final Map<String, dynamic> historyItem;
 
-  const PostHistoryCard({Key? key, required this.historyItem}) : super(key: key);
+  const PostHistoryCard({super.key, required this.historyItem});
 
   @override
   Widget build(BuildContext context) {

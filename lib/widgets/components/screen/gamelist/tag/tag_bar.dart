@@ -8,11 +8,11 @@ class TagBar extends StatelessWidget implements PreferredSizeWidget {
   final Function(String) onTagSelected;
 
   const TagBar({
-    Key? key,
+    super.key,
     required this.tags,
     required this.selectedTag,
     required this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize => Size.fromHeight(48.0);

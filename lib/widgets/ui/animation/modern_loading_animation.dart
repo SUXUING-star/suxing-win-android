@@ -9,11 +9,11 @@ class ModernLoadingAnimation extends StatefulWidget {
   final double strokeWidth;
 
   const ModernLoadingAnimation({
-    Key? key,
+    super.key,
     this.size = 32.0, // 默认大小
     this.color,      // 颜色可选，不提供则使用主题色
     this.strokeWidth = 2.5, // 默认线宽
-  }) : super(key: key);
+  });
 
   @override
   _ModernLoadingAnimationState createState() => _ModernLoadingAnimationState();

@@ -14,7 +14,7 @@ class ResponsiveHistoryLayout extends StatelessWidget {
   final bool hasMoreItems;
 
   const ResponsiveHistoryLayout({
-    Key? key,
+    super.key,
     required this.historyItems,
     required this.isLoading,
     this.error,
@@ -22,7 +22,7 @@ class ResponsiveHistoryLayout extends StatelessWidget {
     required this.onDeleteItem,
     this.onLoadMore,
     this.hasMoreItems = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -22,7 +22,7 @@ class UserInfoBadge extends StatelessWidget {
   final UserService _userService = UserService();
 
   UserInfoBadge({
-    Key? key,
+    super.key,
     required this.userId,
     this.showFollowButton = true,
     this.mini = false,
@@ -30,7 +30,7 @@ class UserInfoBadge extends StatelessWidget {
     this.padding,
     this.backgroundColor,
     this.textColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -8,13 +8,13 @@ class SkeletonLoading extends StatefulWidget {
   final Color? highlightColor;
 
   const SkeletonLoading({
-    Key? key,
+    super.key,
     this.width = double.infinity,
     this.height = 16,
     this.borderRadius = 4,
     this.baseColor,
     this.highlightColor,
-  }) : super(key: key);
+  });
 
   @override
   State<SkeletonLoading> createState() => _SkeletonLoadingState();

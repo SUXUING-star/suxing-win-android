@@ -1,22 +1,17 @@
 // lib/widgets/components/screen/game/favorite/favorite_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
-import '../../../../../models/game/game.dart';
 
 /// 为游戏收藏屏幕专门设计的卡片组件
 class FavoriteGameCard extends CommonGameCard {
   final VoidCallback? onFavoritePressed;
 
   const FavoriteGameCard({
-    Key? key,
-    required Game game,
-    bool isGridItem = false,
+    super.key,
+    required super.game,
+    super.isGridItem = false,
     this.onFavoritePressed,
-  }) : super(
-    key: key,
-    game: game,
-    isGridItem: isGridItem,
-  );
+  });
 
   Widget _buildListTopRightAction(BuildContext context) {
     return IconButton(

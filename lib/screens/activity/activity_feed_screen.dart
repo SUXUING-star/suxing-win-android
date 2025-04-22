@@ -1,8 +1,8 @@
 import 'dart:async'; // Timer, StreamSubscription
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // HapticFeedback
+// HapticFeedback
 import 'package:hive/hive.dart'; // BoxEvent
-import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider (如果 Card 里需要)
+// 需要 Provider 获取 AuthProvider (如果 Card 里需要)
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -15,8 +15,8 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/utils/activity/activity_type_utils.dart'; // 需要类型工具
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
+// 需要类型工具
+// 需要时间格式化
 import 'package:visibility_detector/visibility_detector.dart'; // 需要可见性检测
 
 class ActivityFeedScreen extends StatefulWidget {
@@ -27,13 +27,13 @@ class ActivityFeedScreen extends StatefulWidget {
   final bool showHotActivities;
 
   const ActivityFeedScreen({
-    Key? key,
+    super.key,
     this.userId,
     this.type,
     this.title = '动态流', // 默认标题
     this.useAlternatingLayout = true, // 默认交替布局
     this.showHotActivities = true, // 默认显示热门
-  }) : super(key: key);
+  });
 
   @override
   _ActivityFeedScreenState createState() => _ActivityFeedScreenState();
@@ -169,8 +169,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         onDone: () {
           print(
               "ActivityFeedScreen (${widget.title}): Cache watch stream is done (Identifier: $_currentWatchIdentifier).");
-          if (_currentWatchIdentifier == newWatchIdentifier)
+          if (_currentWatchIdentifier == newWatchIdentifier) {
             _currentWatchIdentifier = '';
+          }
         },
         cancelOnError: true,
       );
@@ -259,13 +260,15 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       _error = ''; // 清除错误
       if (isRefresh || isInitialLoad) {
         _currentPage = pageToLoad; // 确认目标页码
-        if (isInitialLoad || _activities.isEmpty)
+        if (isInitialLoad || _activities.isEmpty) {
           _activities = []; // 初始或列表为空时清空
+        }
         _pagination = null;
       }
     });
-    if (isRefresh && pageToLoad == 1)
+    if (isRefresh && pageToLoad == 1) {
       _refreshAnimationController.forward(from: 0.0); // 只有刷新第一页才转圈
+    }
 
     try {
       Map<String, dynamic> result;
@@ -362,7 +365,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         _isLoadingData ||
         _isLoadingMore ||
         _pagination == null ||
-        _currentPage >= _pagination!.pages) return;
+        _currentPage >= _pagination!.pages) {
+      return;
+    }
     if (!mounted) return;
     final nextPage = _currentPage + 1;
     print(
@@ -636,20 +641,24 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         }
       },
       child: Scaffold(
+        //appBar: CustomAppBar(title: "动态空间"),
         body: SafeArea(child: _buildBodyContent()),
       ),
     );
   }
 
   Widget _buildBodyContent() {
-    if (!_isInitialized && !_isLoadingData)
+    if (!_isInitialized && !_isLoadingData) {
       return LoadingWidget.fullScreen(message: "等待加载动态...");
-    if (_isLoadingData && _activities.isEmpty)
+    }
+    if (_isLoadingData && _activities.isEmpty) {
       return LoadingWidget.fullScreen(message: "正在加载动态...");
-    if (_error.isNotEmpty && _activities.isEmpty)
+    }
+    if (_error.isNotEmpty && _activities.isEmpty) {
       return InlineErrorWidget(
           errorMessage: _error,
           onRetry: () => _loadActivities(isRefresh: true, pageToLoad: 1));
+    }
 
     return Column(
       children: [

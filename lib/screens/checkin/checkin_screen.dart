@@ -14,7 +14,7 @@ import '../../widgets/ui/common/error_widget.dart';
 import '../../widgets/ui/common/loading_widget.dart';
 
 class CheckInScreen extends StatefulWidget {
-  const CheckInScreen({Key? key}) : super(key: key);
+  const CheckInScreen({super.key});
 
   @override
   _CheckInScreenState createState() => _CheckInScreenState();
@@ -212,8 +212,8 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
     } catch (e) {
       print('签到失败: $e');
       if (mounted) {
-        final String _errorMessage ='签到失败: ${e.toString().replaceAll('Exception: ', '')}';
-        AppSnackBar.showError(context,_errorMessage);
+        final String errorMessage ='签到失败: ${e.toString().replaceAll('Exception: ', '')}';
+        AppSnackBar.showError(context,errorMessage);
       }
     } finally {
       if (mounted) {

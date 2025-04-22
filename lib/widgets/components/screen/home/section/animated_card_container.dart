@@ -9,13 +9,13 @@ class AnimatedCardContainer extends StatefulWidget {
   final BorderRadius? borderRadius;
 
   const AnimatedCardContainer({
-    Key? key,
+    super.key,
     required this.child,
     this.onTap,
     this.enableHover = true,
     this.margin,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedCardContainer> createState() => _AnimatedCardContainerState();

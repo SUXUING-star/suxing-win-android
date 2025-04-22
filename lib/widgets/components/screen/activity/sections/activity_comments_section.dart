@@ -17,7 +17,7 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
   final bool isDesktop;
 
   const ActivityCommentsSection({ // 构造函数
-    Key? key,
+    super.key,
     required this.activityId,
     required this.comments,
     required this.isLoadingComments,
@@ -25,7 +25,7 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
     required this.onCommentDeleted,    // 保持接收 commentId
     required this.onCommentLikeToggled, // <--- 改回接收 ActivityComment
     required this.isDesktop,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

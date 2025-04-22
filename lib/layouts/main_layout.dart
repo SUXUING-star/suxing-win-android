@@ -1,6 +1,7 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 引入 Provider
+import 'package:suxingchahui/app.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 可能需要用于导航到登录
 import '../screens/home/home_screen.dart';
 import '../screens/game/list/games_list_screen.dart';
@@ -32,7 +33,7 @@ class MainLayout extends StatefulWidget {
   _MainLayoutState createState() => _MainLayoutState();
 }
 
-class _MainLayoutState extends State<MainLayout> {
+class _MainLayoutState extends State<MainLayout> with RouteAware {
   // *** 不再需要 _currentIndex 本地状态，由 Provider 控制 ***
   // int _currentIndex = 0;
 
@@ -61,6 +62,68 @@ class _MainLayoutState extends State<MainLayout> {
       _checkBanStatus();
       _checkAnnouncements();
       _ensureNetworkManagerInitialized();
+      _updateSubRouteStatus(false); // Set initial state
+    });
+  }
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe to RouteObserver in didChangeDependencies
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    //print("MainLayout: Subscribed to RouteObserver");
+  }
+
+  @override
+  void dispose() {
+    // Unsubscribe from RouteObserver in dispose
+    routeObserver.unsubscribe(this);
+    //print("MainLayout: Unsubscribed from RouteObserver");
+    super.dispose();
+  }
+
+  /// Called when the current route has been pushed.
+  @override
+  void didPush() {
+    //print("MainLayout: didPush - Route became visible.");
+    // We might need to reset the flag if we are returning TO MainLayout
+    // But didPopNext is usually better for that. Let's see.
+    _updateSubRouteStatus(false); // Assume becoming visible means no sub-route initially
+  }
+
+  /// Called when the current route has been popped off.
+  @override
+  void didPop() {
+    //print("MainLayout: didPop - Route was popped off.");
+    // Not typically useful here as the widget is being disposed.
+  }
+
+
+  /// Called when a new route has been pushed, and the current route is no longer visible.
+  @override
+  void didPushNext() {
+    //print("MainLayout: didPushNext - New route pushed ON TOP of MainLayout.");
+    // A new route is covering MainLayout, so a sub-route IS active
+    _updateSubRouteStatus(true);
+  }
+
+
+  /// Called when the top route has been popped off, and the current route is visible again.
+  @override
+  void didPopNext() {
+    //print("MainLayout: didPopNext - Route popped, MainLayout visible AGAIN.");
+    // We are returning to MainLayout, so no sub-route is active anymore
+    _updateSubRouteStatus(false);
+  }
+
+  // Helper method to update the provider
+  void _updateSubRouteStatus(bool isActive) {
+    // Use WidgetsBinding to delay update slightly after navigation finishes
+    // This can sometimes prevent race conditions or build errors.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) { // Check if still mounted before accessing provider
+        Provider.of<SidebarProvider>(context, listen: false)
+            .setSubRouteActive(isActive);
+      }
     });
   }
 
@@ -170,7 +233,7 @@ class _MainLayoutState extends State<MainLayout> {
         ? selectedIndex
         : 0; // 如果索引无效，默认显示第一个页面 (Home)
 
-    print("MainLayout build: watched selectedIndex=$selectedIndex, using validIndex=$validIndex"); // 添加日志
+    //print("MainLayout build: watched selectedIndex=$selectedIndex, using validIndex=$validIndex"); // 添加日志
 
     return Scaffold(
       // 移动平台显示顶部导航栏 (逻辑不变，但 onTap 回调需要修改)

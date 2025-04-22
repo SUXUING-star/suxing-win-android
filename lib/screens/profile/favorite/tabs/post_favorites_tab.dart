@@ -221,10 +221,9 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
     // 处理错误状态
     if (_error != null) {
-      return CustomErrorWidget(
+      return InlineErrorWidget(
         errorMessage: _error!,
         onRetry: _loadFavoritePosts,
-        title: '加载错误',
       );
     }
 

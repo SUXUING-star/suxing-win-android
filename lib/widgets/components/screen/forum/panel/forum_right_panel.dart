@@ -16,11 +16,11 @@ class ForumRightPanel extends StatelessWidget {
   final ForumStatsService _statsService = ForumStatsService();
 
   ForumRightPanel({
-    Key? key,
+    super.key,
     required this.currentPosts,
     this.selectedTag,
     this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -147,7 +147,7 @@ class ForumRightPanel extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         Divider(height: 16),
       ],
     );

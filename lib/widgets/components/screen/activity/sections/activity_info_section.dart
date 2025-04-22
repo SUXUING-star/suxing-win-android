@@ -11,12 +11,12 @@ class ActivityInfoSection extends StatelessWidget { // 公共类
   final bool isDesktop;
 
   const ActivityInfoSection({ // 构造函数
-    Key? key,
+    super.key,
     required this.activity,
     this.onEditActivity,
     this.onDeleteActivity,
     required this.isDesktop,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
-import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider
+// 需要 Provider 获取 AuthProvider
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 需要评论模型
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider
+// 需要 AuthProvider
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 仍然需要 UserService 判断所有者
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 需要确认对话框
+// 需要确认对话框
 import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart'; // 使用安全头像组件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 需要 Snackbar
 
@@ -24,7 +23,7 @@ class ActivityCommentItem extends StatefulWidget {
   // 暂时保持 VoidCallback，父级在收到回调后处理
 
   const ActivityCommentItem({
-    Key? key,
+    super.key,
     required this.comment,
     required this.activityId, // 父级需要知道是哪个活动的评论
     this.isAlternate = false,
@@ -32,7 +31,7 @@ class ActivityCommentItem extends StatefulWidget {
     this.onLike,
     this.onUnlike,
     this.onCommentDeleted,
-  }) : super(key: key);
+  });
 
   @override
   _ActivityCommentItemState createState() => _ActivityCommentItemState();
@@ -41,7 +40,7 @@ class ActivityCommentItem extends StatefulWidget {
 class _ActivityCommentItemState extends State<ActivityCommentItem> {
   late ActivityComment _comment; // 内部状态，用于前端补偿
   final UserService _userService = UserService(); // 仍需要判断所有者
-  bool _isDeleting = false; // 内部删除加载状态
+  final bool _isDeleting = false; // 内部删除加载状态
 
   @override
   void initState() {

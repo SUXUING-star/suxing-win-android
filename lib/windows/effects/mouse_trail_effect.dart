@@ -35,12 +35,12 @@ class MouseTrailEffect extends StatefulWidget {
   final Duration particleLifespan;
 
   const MouseTrailEffect({
-    Key? key,
+    super.key,
     required this.child,
     this.particleColor = Colors.blue,
     this.maxParticles = 15, // 可以适当调整个数
     this.particleLifespan = const Duration(milliseconds: 600), // 可以调整生命周期
-  }) : super(key: key);
+  });
 
   @override
   State<MouseTrailEffect> createState() => _MouseTrailEffectState();

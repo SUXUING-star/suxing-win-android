@@ -1,7 +1,7 @@
 // lib/screens/profile/settings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:provider/provider.dart'; // 需要 Provider 来读取 Service
+// 需要 Provider 来读取 Service
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入 LoadingWidget
@@ -119,6 +119,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
 
 // --- SettingsScreen Widget ---
 class SettingsScreen extends StatelessWidget {
+  const SettingsScreen({super.key});
+
   // 改为 StatelessWidget，因为状态由 Bloc 管理
   @override
   Widget build(BuildContext context) {

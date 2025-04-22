@@ -13,9 +13,9 @@ class DesktopSidebarUserProfile extends StatelessWidget {
   final UserService _userService = UserService();
 
   DesktopSidebarUserProfile({
-    Key? key,
+    super.key,
     required this.onProfileTap,
-  }) : super(key: key);
+  });
 
   // 根据等级返回不同的颜色
   Color _getLevelColor(int level) {

@@ -28,7 +28,7 @@ class ResponsiveCheckInLayout extends StatelessWidget {
   // --- 结束新增 ---
 
   const ResponsiveCheckInLayout({
-    Key? key,
+    super.key,
     required this.checkInStats,
     required this.userLevel,
     required this.monthlyData,
@@ -45,7 +45,7 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     // --- 新增：接收动画播放状态 ---
     // this.playAnimations = false, // 默认不播放
     // --- 结束新增 ---
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

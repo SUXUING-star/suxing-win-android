@@ -9,12 +9,12 @@ class FadeInSlideUpItem extends StatefulWidget {
   final double slideOffset;
 
   const FadeInSlideUpItem({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 400), // 动画持续时间
     this.delay = Duration.zero,                      // 动画延迟开始时间
     this.slideOffset = 30.0,                         // 向上滑动的距离
-  }) : super(key: key);
+  });
 
   @override
   _FadeInSlideUpItemState createState() => _FadeInSlideUpItemState();

@@ -52,7 +52,7 @@ class GenericFloatingActionButton extends StatelessWidget {
   final double loadingIndicatorStrokeWidth;
 
   const GenericFloatingActionButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.icon,
     this.tooltip,
@@ -66,7 +66,7 @@ class GenericFloatingActionButton extends StatelessWidget {
     this.iconSize, // 通常 FAB 会自动处理图标大小
     this.loadingIndicatorSize = 20.0, // 加载圈的大小
     this.loadingIndicatorStrokeWidth = 2.5, // 加载圈的粗细
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

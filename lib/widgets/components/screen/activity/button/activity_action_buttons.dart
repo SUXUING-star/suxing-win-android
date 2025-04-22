@@ -14,7 +14,7 @@ class ActivityActionButtons extends StatelessWidget {
   final VoidCallback onComment;
 
   const ActivityActionButtons({
-    Key? key,
+    super.key,
     required this.isLiked,
     required this.likesCount,
     required this.commentsCount,
@@ -22,7 +22,7 @@ class ActivityActionButtons extends StatelessWidget {
     this.cardHeight = 1.0,
     required this.onLike,
     required this.onComment,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

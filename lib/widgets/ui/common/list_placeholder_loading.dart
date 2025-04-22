@@ -11,7 +11,7 @@ class ListPlaceholderLoading extends StatelessWidget {
   final double spacing;
 
   const ListPlaceholderLoading({
-    Key? key,
+    super.key,
     this.itemCount = 5,
     this.itemHeight = 80,
     this.padding = const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -19,7 +19,7 @@ class ListPlaceholderLoading extends StatelessWidget {
     this.hasTitle = true,
     this.hasSubtitle = true,
     this.spacing = 8,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

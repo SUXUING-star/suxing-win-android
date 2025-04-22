@@ -19,7 +19,7 @@ class LoadingWidget extends StatefulWidget {
   final double overlayCardWidth;
 
   const LoadingWidget({
-    Key? key,
+    super.key,
     this.message,
     this.color,
     this.size = 32.0, // Default size for animation
@@ -33,7 +33,7 @@ class LoadingWidget extends StatefulWidget {
     this.overlayCardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24), // Adjusted padding
     this.overlayCardBorderRadius = 12.0,
     this.overlayCardWidth = 130.0, // Adjusted width
-  }) : super(key: key);
+  });
 
   /// 创建一个内联加载指示器 (动画 + 可选文字，无背景容器)
   factory LoadingWidget.inline({
@@ -97,14 +97,14 @@ class LoadingWidget extends StatefulWidget {
       color: color,
       size: size,
       isOverlay: true, // 明确是覆盖
-      isDismissible: isDismissible,
-      child: child, // Pass the child to overlay
+      isDismissible: isDismissible, // Pass the child to overlay
       overlayOpacity: opacity,
       overlayCardColor: cardColor,
       overlayTextColor: textColor,
       overlayCardPadding: cardPadding,
       overlayCardBorderRadius: cardBorderRadius,
       overlayCardWidth: cardWidth,
+      child: child,
     );
   }
 

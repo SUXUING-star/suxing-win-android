@@ -7,7 +7,7 @@ class CommentInput extends StatefulWidget {
   final Future<void> Function(String comment) onCommentAdded;
   final bool isSubmitting;
 
-  const CommentInput({ Key? key, required this.onCommentAdded, required this.isSubmitting }) : super(key: key);
+  const CommentInput({ super.key, required this.onCommentAdded, required this.isSubmitting });
 
   @override
   State<CommentInput> createState() => _CommentInputState();

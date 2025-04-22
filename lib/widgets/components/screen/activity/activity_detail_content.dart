@@ -21,7 +21,7 @@ class ActivityDetailContent extends StatelessWidget {
   final VoidCallback? onDeleteActivity;
 
   const ActivityDetailContent({
-    Key? key,
+    super.key,
     required this.activity,
     required this.comments,
     required this.isLoadingComments,
@@ -32,7 +32,7 @@ class ActivityDetailContent extends StatelessWidget {
     required this.onActivityUpdated,
     this.onEditActivity,
     this.onDeleteActivity,
-  }) : super(key: key);
+  });
 
   // --- Section 构建器 (保持不变，用于包裹各个 Section Widget) ---
   Widget _buildSectionWrapper({
@@ -125,7 +125,7 @@ class ActivityDetailContent extends StatelessWidget {
               isDesktop: isDesktop,
             ),
           ),
-        if (activity.targetType != null && activity.target != null)
+        if (activity.target != null)
           _buildSectionWrapper(
             context: context,
             title: activity.targetType == 'game' ? '游戏信息' :
@@ -196,7 +196,7 @@ class ActivityDetailContent extends StatelessWidget {
                       isDesktop: isDesktop,
                     ),
                   ),
-                if (activity.targetType != null && activity.target != null)
+                if (activity.target != null)
                   _buildSectionWrapper(
                     context: context,
                     title: activity.targetType == 'game' ? '游戏信息' :

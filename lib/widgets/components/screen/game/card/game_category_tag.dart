@@ -4,9 +4,9 @@ class GameCategoryTag extends StatelessWidget {
   final String category;
 
   const GameCategoryTag({
-    Key? key,
+    super.key,
     required this.category,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

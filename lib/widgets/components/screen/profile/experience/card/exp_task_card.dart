@@ -8,9 +8,9 @@ class ExpTaskCard extends StatelessWidget {
   final Map<String, dynamic> task;
 
   const ExpTaskCard({
-    Key? key,
+    super.key,
     required this.task,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

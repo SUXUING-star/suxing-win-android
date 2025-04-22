@@ -82,7 +82,7 @@ class CheckInStats {
 
   factory CheckInStats.fromJson(Map<String, dynamic> json) {
     // 确保安全地处理 null 值和类型转换
-    bool _safeBool(dynamic value, bool defaultValue) {
+    bool safeBool(dynamic value, bool defaultValue) {
       if (value == null) return defaultValue;
       if (value is bool) return value;
       if (value is String) return value.toLowerCase() == 'true';
@@ -90,7 +90,7 @@ class CheckInStats {
       return defaultValue;
     }
 
-    int _safeInt(dynamic value, int defaultValue) {
+    int safeInt(dynamic value, int defaultValue) {
       if (value == null) return defaultValue;
       if (value is int) return value;
       if (value is double) return value.toInt();
@@ -104,7 +104,7 @@ class CheckInStats {
       return defaultValue;
     }
 
-    double _safeDouble(dynamic value, double defaultValue) {
+    double safeDouble(dynamic value, double defaultValue) {
       if (value == null) return defaultValue;
       if (value is double) return value;
       if (value is int) return value.toDouble();
@@ -119,22 +119,22 @@ class CheckInStats {
     }
 
     // 处理布尔值
-    final hasCheckedToday = _safeBool(json['checkedInToday'], false);
+    final hasCheckedToday = safeBool(json['checkedInToday'], false);
     final canCheckInToday = json.containsKey('canCheckInToday')
-        ? _safeBool(json['canCheckInToday'], true)
+        ? safeBool(json['canCheckInToday'], true)
         : !hasCheckedToday;  // 如果没有提供，则默认为未签到时可签到
 
     return CheckInStats(
-      totalCheckIns: _safeInt(json['totalCheckIn'], 0),
-      continuousDays: _safeInt(json['consecutiveCheckIn'], 0),
+      totalCheckIns: safeInt(json['totalCheckIn'], 0),
+      continuousDays: safeInt(json['consecutiveCheckIn'], 0),
       hasCheckedToday: hasCheckedToday,
       canCheckInToday: canCheckInToday,
-      level: _safeInt(json['level'], 1),
-      currentExp: _safeInt(json['currentExp'] ?? json['experience'], 0),
-      requiredExp: _safeInt(json['requiredExp'] ?? json['expToNextLevel'], 500),
-      totalExp: _safeInt(json['totalExp'] ?? json['experience'], 0),
-      nextRewardExp: _safeInt(json['nextRewardExp'] ?? json['nextCheckInExp'], 10),
-      levelProgress: _safeDouble(json['levelProgress'] ?? json['progress'], 0.0),
+      level: safeInt(json['level'], 1),
+      currentExp: safeInt(json['currentExp'] ?? json['experience'], 0),
+      requiredExp: safeInt(json['requiredExp'] ?? json['expToNextLevel'], 500),
+      totalExp: safeInt(json['totalExp'] ?? json['experience'], 0),
+      nextRewardExp: safeInt(json['nextRewardExp'] ?? json['nextCheckInExp'], 10),
+      levelProgress: safeDouble(json['levelProgress'] ?? json['progress'], 0.0),
     );
   }
 

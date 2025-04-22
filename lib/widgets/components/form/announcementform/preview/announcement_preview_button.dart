@@ -10,11 +10,11 @@ class AnnouncementPreviewButton extends StatelessWidget {
   final bool isLoading;
 
   const AnnouncementPreviewButton({
-    Key? key,
+    super.key,
     required this.announcement,
     required this.imageSourceForPreview, // 新增：设为 required
     this.isLoading = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

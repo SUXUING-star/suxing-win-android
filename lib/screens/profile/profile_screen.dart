@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // <--- 引入懒加载库
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -27,7 +29,7 @@ import '../../widgets/ui/dialogs/confirm_dialog.dart'; // 引入确认对话框
 
 class ProfileScreen extends StatefulWidget {
   // 接收 Key
-  const ProfileScreen({Key? key}) : super(key: key);
+  const ProfileScreen({super.key});
 
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
@@ -107,7 +109,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _user = user; // 保存用户数据
         _isLoadingData = false; // 加载完成
       });
-    } catch (e, s) {
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _error = '加载个人信息失败: $e'; // 设置错误信息
@@ -257,9 +259,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               },
             );
           } else {
-            if (mounted)
+            if (mounted) {
               ScaffoldMessenger.of(context)
                   .showSnackBar(SnackBar(content: Text('无法加载用户数据')));
+            }
           }
         },
       ),
@@ -286,9 +289,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: '分享应用',
         route: '', // 使用 onTap
         onTap: () {
-          if (mounted)
+          if (mounted) {
             ScaffoldMessenger.of(context)
                 .showSnackBar(SnackBar(content: Text('分享功能开发中')));
+          }
         },
       ),
       ProfileMenuItem(
@@ -377,13 +381,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           // 使用自定义 AppBar
           title: '个人中心',
           actions: [
-            // AppBar 右侧操作按钮
-            IconButton(
-              icon: Icon(Icons.settings_outlined), // 设置图标
-              onPressed: () => NavigationUtils.pushNamed(
-                  context, AppRoutes.settingPage), // 导航到设置页面
-              tooltip: '设置',
-            ),
+            // 太丑了哥们
+            // // AppBar 右侧操作按钮
+            // IconButton(
+            //   icon: Icon(Icons.settings_outlined), // 设置图标
+            //   onPressed: () => NavigationUtils.pushNamed(
+            //       context, AppRoutes.settingPage), // 导航到设置页面
+            //   tooltip: '设置',
+            // ),
           ],
         ),
         // 使用 RefreshIndicator 包裹 Body，支持下拉刷新
@@ -391,6 +396,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
           onRefresh: _refreshProfile, // 绑定刷新回调
           child: _buildProfileContent(context, authProvider), // 构建主体内容
         ),
+        floatingActionButton: _buildFloatButtons(context),
+      ),
+    );
+  }
+
+  Widget _buildFloatButtons(BuildContext context) {
+    return Padding(
+      // 给整个按钮组添加统一的外边距
+      padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
+      child: FloatingActionButtonGroup(
+        spacing: 16.0, // 按钮间距
+        alignment: MainAxisAlignment.end, // 底部对齐
+        children: [
+          GenericFloatingActionButton(
+            icon: Icons.settings_outlined,
+            onPressed: () =>
+                NavigationUtils.pushNamed(context, AppRoutes.settingPage),
+            heroTag: "profile_setting_fab",
+            tooltip: "系统设置(测试)",
+          )
+        ],
       ),
     );
   }

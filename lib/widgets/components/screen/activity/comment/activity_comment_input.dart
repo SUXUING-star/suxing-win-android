@@ -11,13 +11,13 @@ class ActivityCommentInput extends StatefulWidget {
   final bool isSubmitting;
 
   const ActivityCommentInput({
-    Key? key,
+    super.key,
     required this.onSubmit,
     this.isAlternate = false,
     this.hintText = '发表评论...',
     this.isLocked = false, // 默认为未锁定
     this.isSubmitting = false,
-  }) : super(key: key);
+  });
 
   @override
   _ActivityCommentInputState createState() => _ActivityCommentInputState();

@@ -6,9 +6,9 @@ class GameDescription extends StatelessWidget {
   final Game game;
 
   const GameDescription({
-    Key? key,
+    super.key,
     required this.game,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -13,7 +13,7 @@ class PostStatisticsRow extends StatelessWidget {
   final bool showLabels;
 
   const PostStatisticsRow({
-    Key? key,
+    super.key,
     required this.replyCount,
     required this.likeCount,
     required this.favoriteCount,
@@ -22,7 +22,7 @@ class PostStatisticsRow extends StatelessWidget {
     this.likeColor,
     this.favoriteColor,
     this.showLabels = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

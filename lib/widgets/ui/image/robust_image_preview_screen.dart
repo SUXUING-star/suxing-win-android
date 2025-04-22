@@ -15,12 +15,12 @@ class RobustImagePreviewScreen extends StatefulWidget {
   final bool allowDownload;
 
   const RobustImagePreviewScreen({
-    Key? key,
+    super.key,
     required this.images,
     this.initialIndex = 0,
     this.allowShare = true,
     this.allowDownload = false,
-  }) : super(key: key);
+  });
 
   @override
   _RobustImagePreviewScreenState createState() => _RobustImagePreviewScreenState();

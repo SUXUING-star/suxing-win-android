@@ -19,13 +19,13 @@ class AnnouncementImageField extends StatelessWidget {
   // final ValueChanged<bool> onLoadingChanged;
 
   const AnnouncementImageField({
-    Key? key,
+    super.key,
     required this.imageSource,
     required this.onImageSourceChanged,
     // this.imageUrl, // 移除
     // required this.isLoading, // 移除
     // required this.onLoadingChanged, // 移除
-  }) : super(key: key);
+  });
 
   Future<void> _pickImage(BuildContext context) async {
     final ImagePicker picker = ImagePicker();

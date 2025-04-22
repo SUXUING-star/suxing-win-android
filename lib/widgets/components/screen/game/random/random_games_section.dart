@@ -8,9 +8,9 @@ class RandomGamesSection extends StatefulWidget {
   final String currentGameId;
 
   const RandomGamesSection({
-    Key? key,
+    super.key,
     required this.currentGameId,
-  }) : super(key: key);
+  });
 
   @override
   _RandomGamesSectionState createState() => _RandomGamesSectionState();

@@ -7,13 +7,13 @@ class StatisticItem extends StatelessWidget {
   final String? label;
 
   const StatisticItem({
-    Key? key,
+    super.key,
     required this.icon,
     required this.count,
     required this.color,
     required this.isSmallScreen,
     this.label,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,6 +1,5 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../widgets/components/screen/game/game_detail_content.dart';
@@ -10,9 +9,9 @@ class GamePreviewScreen extends StatelessWidget {
   final Game game;
 
   const GamePreviewScreen({
-    Key? key,
+    super.key,
     required this.game,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,16 +22,17 @@ class GamePreviewScreen extends StatelessWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
+    // print("previewscreen获取到的game${game.toJson()}");
     return Scaffold(
       appBar: CustomAppBar(
         title: '预览: ${game.title}',
         actions: [
-          TextButton.icon(
-            icon: Icon(Icons.arrow_back),
-            label: Text('返回编辑'),
-            onPressed: () => NavigationUtils.of(context).pop(),
-            style: TextButton.styleFrom(foregroundColor: Colors.white),
-          ),
+          // TextButton.icon(
+          //   icon: Icon(Icons.arrow_back),
+          //   label: Text('返回编辑'),
+          //   onPressed: () => NavigationUtils.of(context).pop(),
+          //   style: TextButton.styleFrom(foregroundColor: Colors.white),
+          // ),
         ],
       ),
       body: Column(
@@ -59,7 +59,10 @@ class GamePreviewScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.all(24.0),
-                child: GameDetailContent(game: game),
+                child: GameDetailContent(
+                  game: game,
+                  isPreviewMode: true,
+                ),
               ),
             ),
           ),

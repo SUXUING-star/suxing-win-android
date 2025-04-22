@@ -12,12 +12,12 @@ class ActivityTarget extends StatelessWidget {
   final double cardHeight;
 
   const ActivityTarget({
-    Key? key,
+    super.key,
     required this.target,
     required this.targetType,
     this.isAlternate = false,
     this.cardHeight = 1.0, // Default to 1.0 if not provided elsewhere
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -75,8 +75,8 @@ class ActivityTarget extends StatelessWidget {
             height: imageSize,
             fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(borderRadiusValue),
-            memCacheWidth: cacheSize,
-            memCacheHeight: cacheSize,
+            // memCacheWidth: cacheSize,
+            // memCacheHeight: cacheSize,
             // Optional: Add specific background if needed for placeholder/error
             // backgroundColor: Colors.grey.shade300,
           )

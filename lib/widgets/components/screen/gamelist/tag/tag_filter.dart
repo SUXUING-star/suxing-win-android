@@ -12,14 +12,14 @@ class TagFilter extends StatefulWidget {
   final VoidCallback onToggleVisibility;
 
   const TagFilter({
-    Key? key,
+    super.key,
     required this.tags,
     required this.selectedTag,
     required this.onTagSelected,
     required this.onClearSelection,
     required this.isVisible,
     required this.onToggleVisibility,
-  }) : super(key: key);
+  });
 
   @override
   _TagFilterState createState() => _TagFilterState();

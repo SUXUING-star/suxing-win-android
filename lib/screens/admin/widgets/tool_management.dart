@@ -9,7 +9,7 @@ import '../../../models/linkstools/tool.dart';
 import '../../../widgets/components/form/toolform/tool_form_dialog.dart';
 
 class ToolManagement extends StatefulWidget {
-  const ToolManagement({Key? key}) : super(key: key);
+  const ToolManagement({super.key});
 
   @override
   State<ToolManagement> createState() => _ToolManagementState();

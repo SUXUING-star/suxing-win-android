@@ -5,7 +5,6 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -20,7 +19,7 @@ import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
 
 class MyGamesScreen extends StatefulWidget {
-  const MyGamesScreen({Key? key}) : super(key: key);
+  const MyGamesScreen({super.key});
 
   @override
   _MyGamesScreenState createState() => _MyGamesScreenState();

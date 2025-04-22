@@ -16,7 +16,7 @@ import '../../../../../../widgets/ui/buttons/login_prompt.dart';
 
 class CommentsSection extends StatefulWidget {
   final String gameId;
-  const CommentsSection({Key? key, required this.gameId}) : super(key: key);
+  const CommentsSection({super.key, required this.gameId});
   @override
   State<CommentsSection> createState() => _CommentsSectionState();
 }
@@ -42,27 +42,33 @@ class _CommentsSectionState extends State<CommentsSection> {
   }
 
   void _initializeStreamAndListen() {
+    print("Initializing comment stream and listening for ${widget
+        .gameId}..."); // 加个日志好调试
     _commentsStream = _gameService.getGameComments(widget.gameId);
-    _commentsStream.listen((comments) {
-      if (mounted) {
-        setState(() {
-          _currentComments = comments;
-          _initialLoadComplete = true;
-          _streamError = null;
-        });
-      }
-    }, onError: (error, stackTrace) {
-      print(
-          "Comments Stream Error in Service for ${widget.gameId}: $error\n$stackTrace");
-      if (mounted) {
-        setState(() {
-          _streamError = error;
-          _initialLoadComplete = true;
-        });
-      }
-    });
-    // 可以在这里触发第一次手动获取，确保初始状态
-    _fetchLatestCommentsAndUpdateState();
+    _commentsStream.listen(
+          (comments) {
+        if (mounted) {
+          print("Stream delivered ${comments.length} comments for ${widget
+              .gameId}. Updating state.");
+          setState(() {
+            _currentComments = comments;
+            _initialLoadComplete = true; // 流成功返回数据，标记初始加载完成
+            _streamError = null; // 清除错误状态
+          });
+        }
+      },
+      onError: (error, stackTrace) {
+        print("Comments Stream Error in Listener for ${widget
+            .gameId}: $error\n$stackTrace");
+        if (mounted) {
+          setState(() {
+            _streamError = error;
+            _initialLoadComplete = true; // 即使流出错，也标记初始加载完成（尝试显示错误信息）
+            // _currentComments 保持不变或者设为 null/[]，取决于你希望错误时如何显示
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -185,8 +191,9 @@ class _CommentsSectionState extends State<CommentsSection> {
       }
     } else {
       String displayError = errorMsg;
-      if (displayError.length > 100)
-        displayError = displayError.substring(0, 100) + "...";
+      if (displayError.length > 100) {
+        displayError = "${displayError.substring(0, 100)}...";
+      }
       AppSnackBar.showError(context, '$defaultMessage: $displayError');
     }
   }

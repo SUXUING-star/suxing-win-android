@@ -25,7 +25,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
   final Function({bool forceRefresh}) refreshFollowers;
 
   const ResponsiveFollowsLayout({
-    Key? key,
+    super.key,
     required this.tabController,
     required this.followings,
     required this.followers,
@@ -38,7 +38,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
     required this.onRefresh,
     required this.refreshFollowings,
     required this.refreshFollowers,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

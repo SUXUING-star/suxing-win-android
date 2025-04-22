@@ -17,11 +17,11 @@ class AnnouncementForm extends StatefulWidget {
   final VoidCallback onCancel;
 
   const AnnouncementForm({
-    Key? key,
+    super.key,
     required this.announcement,
     required this.onSubmit,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<AnnouncementForm> createState() => _AnnouncementFormState();

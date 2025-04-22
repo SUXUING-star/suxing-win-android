@@ -17,13 +17,13 @@ class DesktopProfileCard extends StatelessWidget {
   final Function() onUploadSuccess;
 
   const DesktopProfileCard({
-    Key? key,
+    super.key,
     required this.user,
     required this.onEditProfile,
     required this.onLogout,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

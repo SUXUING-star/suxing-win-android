@@ -7,7 +7,7 @@ import '../../../widgets/components/form/postform/field/post_guidelines.dart';
 import '../../../widgets/components/form/postform/config/post_taglists.dart';
 
 class CreatePostScreen extends StatefulWidget {
-  const CreatePostScreen({Key? key}) : super(key: key);
+  const CreatePostScreen({super.key});
 
   @override
   _CreatePostScreenState createState() => _CreatePostScreenState();

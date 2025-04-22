@@ -10,12 +10,12 @@ class ExpTodayProgressCard extends StatelessWidget {
   final dynamic completionPercentage;
 
   const ExpTodayProgressCard({
-    Key? key,
+    super.key,
     required this.earnedToday,
     required this.possibleToday,
     required this.remainingToday,
     required this.completionPercentage,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

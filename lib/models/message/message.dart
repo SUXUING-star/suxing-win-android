@@ -47,10 +47,10 @@ class Message {
     this.updateTime,
   }) {
     // 在构造函数中解析并缓存 MessageType
-    this.messageType = MessageTypeInfo.fromString(this.type);
+    messageType = MessageTypeInfo.fromString(type);
     // 可以在这里添加一些断言或日志，帮助调试类型解析
     // assert(this.messageType != MessageType.unknown, 'Message ID $id has an unknown type string: $type');
-    if (this.messageType == MessageType.unknown && kDebugMode) {
+    if (messageType == MessageType.unknown && kDebugMode) {
       print('Debug: Message ID $id created with unknown type string: "$type"');
     }
   }
@@ -144,7 +144,7 @@ class Message {
 
     // 简单的截断逻辑
     if (source.length > maxLength + 3) { // +3 为 "..." 的长度
-      return source.substring(0, maxLength) + '...';
+      return '${source.substring(0, maxLength)}...';
     }
     return source;
   }

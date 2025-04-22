@@ -14,7 +14,7 @@ class LoginPrompt extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const LoginPrompt({
-    Key? key,
+    super.key,
     this.message = '登录后继续操作',
     this.buttonText = '登录',
     this.onLoginPressed,
@@ -24,7 +24,7 @@ class LoginPrompt extends StatelessWidget {
     this.borderRadius,
     // (可选) 如果添加了上面的参数，这里也要加上
     // this.buttonIcon = Icons.login, // 设置默认图标
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../../../utils/font/font_config.dart';
 
 class LoadingOverlay extends StatelessWidget {
-  const LoadingOverlay({Key? key}) : super(key: key);
+  const LoadingOverlay({super.key});
 
   @override
   Widget build(BuildContext context) {

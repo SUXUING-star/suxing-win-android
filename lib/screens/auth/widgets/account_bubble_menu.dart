@@ -12,12 +12,12 @@ class AccountBubbleMenu extends StatelessWidget {
   final Color? backgroundColor;
 
   const AccountBubbleMenu({
-    Key? key,
+    super.key,
     required this.onAccountSelected,
     required this.anchorContext,
     this.anchorOffset,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

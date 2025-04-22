@@ -21,7 +21,7 @@ class EditableUserAvatar extends StatelessWidget {
   final IconData placeholderIcon;
 
   const EditableUserAvatar({
-    Key? key,
+    super.key,
     required this.user,
     required this.radius,
     required this.onUploadStateChanged,
@@ -31,7 +31,7 @@ class EditableUserAvatar extends StatelessWidget {
     this.iconBackgroundColor = Colors.blue, // 默认用蓝色
     this.placeholderColor = Colors.grey,
     this.placeholderIcon = Icons.person_outline,
-  }) : super(key: key);
+  });
 
   // --- 核心逻辑：处理头像点击、裁剪和上传 ---
   Future<void> _handleAvatarUpdate(BuildContext context) async {

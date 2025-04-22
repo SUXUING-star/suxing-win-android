@@ -2,10 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/screens/web/webview_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -17,9 +16,9 @@ class GameDownloadLinks extends StatelessWidget {
   final List<DownloadLink> downloadLinks;
 
   const GameDownloadLinks({
-    Key? key,
+    super.key,
     required this.downloadLinks,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -68,24 +67,11 @@ class GameDownloadLinks extends StatelessWidget {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // --- 新增：在应用内打开按钮 ---
-                        IconButton(
-                          icon: const Icon(Icons.open_in_new), // 使用这个图标表示应用内打开
-                          tooltip: '在应用内浏览器打开',
-                          color: Colors.teal, // 给个不同的颜色区分
-                          onPressed: link.url == null
-                              ? null
-                              : () => _openInAppBrowser(
-                                  context, link.url!, link.title),
-                        ),
-                        // --- 外部浏览器打开按钮 ---
-                        IconButton(
-                          icon: const Icon(Icons.launch),
-                          tooltip: '在外部浏览器中打开',
-                          color: Colors.orange,
-                          onPressed: link.url == null
-                              ? null
-                              : () => _launchURL(context, link.url),
+                        OpenUrlButton(
+                          url: link.url,
+                          webViewTitle: link.title, // 把链接标题传给 WebView
+                          color: Colors.teal, // 可以保持颜色
+                          tooltip: '打开链接', // 可以改个更明确的 tooltip
                         ),
                         // --- 复制链接按钮 ---
                         IconButton(
@@ -101,7 +87,7 @@ class GameDownloadLinks extends StatelessWidget {
                     // onTap: link.url == null ? null : () => _openInAppBrowser(context, link.url!, link.title), // 让整个 Tile 也能点击打开
                   ),
                 ))
-            .toList(),
+            ,
       ],
     );
   }

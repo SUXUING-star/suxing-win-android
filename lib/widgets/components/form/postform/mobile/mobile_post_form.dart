@@ -17,7 +17,7 @@ class DesktopPostForm extends StatelessWidget {
   final Function(String tag, bool selected) onTagSelected;
 
   const DesktopPostForm({
-    Key? key,
+    super.key,
     required this.formKey,
     required this.titleController,
     required this.contentController,
@@ -30,7 +30,7 @@ class DesktopPostForm extends StatelessWidget {
     this.createTimeInfo,
     this.additionalInfo,
     required this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

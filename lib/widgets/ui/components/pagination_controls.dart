@@ -14,14 +14,14 @@ class PaginationControls extends StatelessWidget {
   final ValueChanged<int>? onPageSelected;
 
   const PaginationControls({
-    Key? key,
+    super.key,
     required this.currentPage,
     required this.totalPages,
     required this.isLoading,
     this.onPreviousPage,
     this.onNextPage,
     this.onPageSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -166,16 +166,6 @@ class PaginationControls extends StatelessWidget {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
         child: CustomPopupMenuButton<int>( // 继续使用支持 child 的版本
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 6.0),
-            height: 30,
-            alignment: Alignment.center,
-            child: Text(
-              '$currentPage / $totalPages',
-              style: pageInfoStyle,
-            ),
-          ),
-          // *** 修改 itemBuilder 来使用 CustomPagePopupItem ***
           itemBuilder: (context) {
             return List<PopupMenuEntry<int>>.generate(totalPages, (index) {
               final page = index + 1;
@@ -211,7 +201,16 @@ class PaginationControls extends StatelessWidget {
           // 或者如果 CustomPagePopupItem 没有设置背景，这里统一设置白色
           // color: Colors.white,
           elevation: 0, // 保持阴影
-          padding: EdgeInsets.zero,
+          padding: EdgeInsets.zero, // 继续使用支持 child 的版本
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 6.0),
+            height: 30,
+            alignment: Alignment.center,
+            child: Text(
+              '$currentPage / $totalPages',
+              style: pageInfoStyle,
+            ),
+          ),
         ),
       );
     }

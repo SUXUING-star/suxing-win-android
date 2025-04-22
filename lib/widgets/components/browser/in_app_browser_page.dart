@@ -10,10 +10,10 @@ class InAppBrowserPage extends StatefulWidget {
   final String title;
 
   const InAppBrowserPage({
-    Key? key,
+    super.key,
     required this.url,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   State<InAppBrowserPage> createState() => _InAppBrowserPageState();

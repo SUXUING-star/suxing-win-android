@@ -2,7 +2,6 @@
 
 // 用于携带错误信息的简单数据类
 import 'package:suxingchahui/models/error/idempotency_error_code.dart';
-import 'package:suxingchahui/services/main/api/secure_api_client.dart';
 
 class IdempotencyErrorDetails {
   final IdempotencyExceptionCode code;

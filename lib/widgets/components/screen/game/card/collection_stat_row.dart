@@ -8,13 +8,13 @@ class CollectionStatRow extends StatelessWidget {
   final IconData icon;
 
   const CollectionStatRow({
-    Key? key,
+    super.key,
     required this.label,
     required this.count,
     required this.percent,
     required this.color,
     required this.icon,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

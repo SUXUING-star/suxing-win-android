@@ -1,6 +1,5 @@
 // lib/app.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
@@ -12,40 +11,39 @@ import 'layouts/background/app_background.dart';
 import './routes/app_routes.dart';
 import 'wrapper/platform_wrapper.dart';
 import 'wrapper/maintenance_wrapper.dart';
-import 'services/main/restart/restart_service.dart';
 import 'services/main/network/network_manager.dart';
 
 // 添加全局导航器键
 final GlobalKey<NavigatorState> mainNavigatorKey = GlobalKey<NavigatorState>();
+final RouteObserver<ModalRoute<void>> routeObserver =
+    RouteObserver<ModalRoute<void>>();
 
 class App extends StatelessWidget {
-  const App({Key? key}) : super(key: key);
+  const App({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return RestartWrapper(
-      child: InitializationWrapper(
-        onInitialized: (providers) => MyApp(
-          providers: providers,
-        ),
+    return InitializationWrapper(
+      onInitialized: (providers) => MainApp(
+        providers: providers,
       ),
     );
   }
 }
 
-class MyApp extends StatefulWidget {
+class MainApp extends StatefulWidget {
   final List<SingleChildWidget> providers;
 
-  const MyApp({
-    Key? key,
+  const MainApp({
+    super.key,
     required this.providers,
-  }) : super(key: key);
+  });
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<MainApp> createState() => _MainAppState();
 }
 
-class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
+class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   NetworkManager? _networkManager;
 
   @override
@@ -57,7 +55,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Try to get the NetworkManager when dependencies change
     try {
       _networkManager = Provider.of<NetworkManager>(context, listen: false);
     } catch (e) {
@@ -92,21 +89,16 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,
             debugShowCheckedModeBanner: false,
+            navigatorObservers: [routeObserver],
             builder: (context, child) {
               return GlobalApiErrorListener(
-                // <--- 把监听器放在这里
                 child: MaintenanceWrapper(
-                  // 你原来的结构
-                  // Add this wrapper
                   child: Stack(
                     children: [
                       AppBackground(
-                        // 背景层
                         child: MouseTrailEffect(
-                          // <--- 在这里套上特效
-                          particleColor: particleColor, // <--- 把计算好的颜色传进去
+                          particleColor: particleColor,
                           child: Navigator(
-                            // <--- 把原来的 Navigator 作为特效的 child
                             onGenerateRoute: (settings) => MaterialPageRoute(
                               builder: (_) => PlatformWrapper(
                                 child: child ?? Container(),

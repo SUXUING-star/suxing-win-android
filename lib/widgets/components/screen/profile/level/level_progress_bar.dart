@@ -13,11 +13,11 @@ class LevelProgressBar extends StatefulWidget {
   final bool isDesktop;
 
   const LevelProgressBar({
-    Key? key,
+    super.key,
     required this.user,
     this.width = 300,
     this.isDesktop = false,
-  }) : super(key: key);
+  });
 
   @override
   _LevelProgressBarState createState() => _LevelProgressBarState();

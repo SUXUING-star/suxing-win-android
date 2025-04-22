@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
-import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
@@ -29,8 +28,7 @@ class PostDetailScreen extends StatefulWidget {
   final bool needHistory;
 
   const PostDetailScreen(
-      {Key? key, required this.postId, this.needHistory = true})
-      : super(key: key);
+      {super.key, required this.postId, this.needHistory = true});
 
   @override
   _PostDetailScreenState createState() => _PostDetailScreenState();
@@ -352,7 +350,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       appBar: CustomAppBar(
         title: '帖子详情',
         actions: [
-          _buildMoreMenu(),
+          //_buildMoreMenu(),
+          // 太丑了
         ],
       ),
       body: RefreshIndicator(
@@ -364,7 +363,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 replyInput: PostReplyInput(
                   post: _post,
                   controller: _replyController,
-                  onSubmitReply: _submitReply,
+                  onSubmitReply: (BuildContext,String) => _submitReply(context),
                   isSubmitting: _isSubmitting,
                   isDesktopLayout: true,
                 ),
@@ -388,7 +387,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           : PostReplyInput(
               post: _post,
               controller: _replyController,
-              onSubmitReply: _submitReply,
+              onSubmitReply: (BuildContext context,String text) => _submitReply(context),
               isSubmitting: _isSubmitting,
               isDesktopLayout: false,
             ),
@@ -498,6 +497,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
         final bool canEdit = auth.currentUser?.id == post.authorId;
         final bool canDelete = canEdit || auth.currentUser?.isAdmin == true;
+        final bool canLock = auth.currentUser?.isAdmin == true;
+        // 只有管理员才能lock
 
         // 如果没有任何权限，也不显示按钮组
         if (!canEdit && !canDelete) {
@@ -507,6 +508,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         // 为按钮定义 Hero Tags
         final String editHeroTag = 'postEditFab_${post.id}';
         final String deleteHeroTag = 'postDeleteFab_${post.id}';
+        final String lockHeroTag = 'postLockFab_${post.id}';
 
         return Padding(
           padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
@@ -543,6 +545,17 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                   backgroundColor: Colors.red[400], // 删除用红色背景
                   foregroundColor: Colors.white, // 白色图标
                 ),
+              if (canLock)
+                GenericFloatingActionButton(
+                  heroTag: lockHeroTag,
+                  onPressed:
+                      _isLoading ? null : () => _handleToggleLock(context),
+                  icon: Icons.lock_outline_sharp,
+                  backgroundColor: Colors.red[400], // 删除用红色背景
+                  foregroundColor: Colors.white, // 白色图标
+                  mini: true,
+                  tooltip: "锁定帖子",
+                )
 
               // --- 注意：锁定/解锁功能未包含在此 FAB 组中 ---
               // 如果需要，可以作为第三个按钮添加，同样需要权限判断和回调

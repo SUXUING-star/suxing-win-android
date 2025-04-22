@@ -8,9 +8,9 @@ class DesktopMenuGrid extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
 
   const DesktopMenuGrid({
-    Key? key,
+    super.key,
     required this.menuItems,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

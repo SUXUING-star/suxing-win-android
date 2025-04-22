@@ -9,11 +9,11 @@ class ForumLeftPanel extends StatelessWidget {
   final Function(String) onTagSelected;
 
   const ForumLeftPanel({
-    Key? key,
+    super.key,
     required this.tags,
     required this.selectedTag,
     required this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

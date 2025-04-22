@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart'; // 需要用户 Profile 页面
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航
@@ -14,7 +13,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/card/activity_ta
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart'; // 引入 SafeUserAvatar
+// 引入 SafeUserAvatar
 
 class ActivityCard extends StatefulWidget {
   final UserActivity activity;
@@ -28,13 +27,17 @@ class ActivityCard extends StatefulWidget {
   final VoidCallback? onDelete;
   final VoidCallback? onLike;
   final VoidCallback? onUnlike;
-  final FutureOr<ActivityComment?> Function(String activityId, String content)? onAddComment;
-  final FutureOr<void> Function(String activityId, String commentId)? onDeleteComment; // 修改这里！
-  final FutureOr<void> Function(String activityId, String commentId)? onLikeComment;   // 修改这里！
-  final FutureOr<void> Function(String activityId, String commentId)? onUnlikeComment; // 修改这里！
+  final FutureOr<ActivityComment?> Function(String activityId, String content)?
+      onAddComment;
+  final FutureOr<void> Function(String activityId, String commentId)?
+      onDeleteComment; // 修改这里！
+  final FutureOr<void> Function(String activityId, String commentId)?
+      onLikeComment; // 修改这里！
+  final FutureOr<void> Function(String activityId, String commentId)?
+      onUnlikeComment; // 修改这里！
 
   const ActivityCard({
-    Key? key,
+    super.key,
     required this.activity,
     this.isAlternate = false,
     this.onUpdated,
@@ -49,7 +52,7 @@ class ActivityCard extends StatefulWidget {
     this.onDeleteComment,
     this.onLikeComment,
     this.onUnlikeComment,
-  }) : super(key: key);
+  });
 
   @override
   _ActivityCardState createState() => _ActivityCardState();
@@ -95,15 +98,29 @@ class _ActivityCardState extends State<ActivityCard> {
     final bool hasContent = _activity.content.isNotEmpty;
     final bool hasTarget = _activity.targetType != null;
     double minHeight = 1.0, maxHeight = 1.5;
-    if (hasContent && hasTarget) { minHeight = 1.0; maxHeight = 1.8; }
-    else if (hasContent) { minHeight = 0.9; maxHeight = 1.5; }
-    else if (hasTarget) { minHeight = 1.0; maxHeight = 1.4; }
-    else { minHeight = 0.8; maxHeight = 1.2; }
-    double contentLengthFactor = hasContent ? math.min(_activity.content.length / 200, 0.3) : 0;
-    _cardHeight = minHeight + random.nextDouble() * (maxHeight - minHeight) + contentLengthFactor;
+    if (hasContent && hasTarget) {
+      minHeight = 1.0;
+      maxHeight = 1.8;
+    } else if (hasContent) {
+      minHeight = 0.9;
+      maxHeight = 1.5;
+    } else if (hasTarget) {
+      minHeight = 1.0;
+      maxHeight = 1.4;
+    } else {
+      minHeight = 0.8;
+      maxHeight = 1.2;
+    }
+    double contentLengthFactor =
+        hasContent ? math.min(_activity.content.length / 200, 0.3) : 0;
+    _cardHeight = minHeight +
+        random.nextDouble() * (maxHeight - minHeight) +
+        contentLengthFactor;
     double widthBase = 0.75, widthVariation = 0.2;
-    double contentWidthFactor = hasContent ? math.min(_activity.content.length / 300, 0.15) : 0;
-    _cardWidth = widthBase + random.nextDouble() * widthVariation + contentWidthFactor;
+    double contentWidthFactor =
+        hasContent ? math.min(_activity.content.length / 300, 0.15) : 0;
+    _cardWidth =
+        widthBase + random.nextDouble() * widthVariation + contentWidthFactor;
     if (widget.isInDetailView) _cardWidth = 0.95;
   }
 
@@ -112,15 +129,36 @@ class _ActivityCardState extends State<ActivityCard> {
     HapticFeedback.lightImpact();
     final originalLikedState = _activity.isLiked;
     final originalLikesCount = _activity.likesCount;
-    setState(() { _activity.isLiked = !originalLikedState; _activity.likesCount += _activity.isLiked ? 1 : -1; if (_activity.likesCount < 0) _activity.likesCount = 0; });
-    try { if (_activity.isLiked) { widget.onLike?.call(); } else { widget.onUnlike?.call(); } widget.onUpdated?.call(); }
-    catch (e) { if (mounted) { setState(() { _activity.isLiked = originalLikedState; _activity.likesCount = originalLikesCount; }); } }
+    setState(() {
+      _activity.isLiked = !originalLikedState;
+      _activity.likesCount += _activity.isLiked ? 1 : -1;
+      if (_activity.likesCount < 0) _activity.likesCount = 0;
+    });
+    try {
+      if (_activity.isLiked) {
+        widget.onLike?.call();
+      } else {
+        widget.onUnlike?.call();
+      }
+      widget.onUpdated?.call();
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _activity.isLiked = originalLikedState;
+          _activity.likesCount = originalLikesCount;
+        });
+      }
+    }
   }
 
-  void _handleComment() { HapticFeedback.mediumImpact(); setState(() => _showComments = !_showComments); }
+  void _handleComment() {
+    HapticFeedback.mediumImpact();
+    setState(() => _showComments = !_showComments);
+  }
 
   // --- 这个方法现在由 ActivityCommentInput 的 onSubmit 调用 ---
-  Future<void> _addComment(String content) async { // <--- 接收 String content
+  Future<void> _addComment(String content) async {
+    // <--- 接收 String content
     // content 由 ActivityCommentInput 传递进来，已经 trim 过了
     if (content.isEmpty || _isSubmittingComment) return;
     if (widget.onAddComment == null) {
@@ -162,7 +200,10 @@ class _ActivityCardState extends State<ActivityCard> {
   void _navigateToUserProfile(String userId) {
     // 这个方法之前写的是空的，现在补全
     print("Navigating to user profile: $userId");
-    NavigationUtils.push(context, MaterialPageRoute(builder: (context) => OpenProfileScreen(userId: userId)));
+    NavigationUtils.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => OpenProfileScreen(userId: userId)));
   }
 
   void _handleActivityTap() {
@@ -178,11 +219,16 @@ class _ActivityCardState extends State<ActivityCard> {
 
     // --- 内容 Widget (传递 edit/delete 给 Header) ---
     Widget contentWidget = Column(
-      crossAxisAlignment: _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      crossAxisAlignment:
+          _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         ActivityHeader(
-          user: _activity.user, createTime: _activity.createTime, updateTime: _activity.updateTime,
-          isEdited: _activity.isEdited, activityType: _activity.type, isAlternate: _isAlternate,
+          user: _activity.user,
+          createTime: _activity.createTime,
+          updateTime: _activity.updateTime,
+          isEdited: _activity.isEdited,
+          activityType: _activity.type,
+          isAlternate: _isAlternate,
           cardHeight: _cardHeight,
           onEdit: widget.onEdit,
           onDelete: widget.onDelete,
@@ -191,18 +237,29 @@ class _ActivityCardState extends State<ActivityCard> {
         if (_activity.content.isNotEmpty)
           Container(
             width: double.infinity,
-            alignment: _isAlternate ? Alignment.centerRight : Alignment.centerLeft,
-            child: Text(_activity.content, style: TextStyle(fontSize: 14 * math.sqrt(_cardHeight * 0.7)), textAlign: _isAlternate ? TextAlign.right : TextAlign.left),
+            alignment:
+                _isAlternate ? Alignment.centerRight : Alignment.centerLeft,
+            child: Text(_activity.content,
+                style: TextStyle(fontSize: 14 * math.sqrt(_cardHeight * 0.7)),
+                textAlign: _isAlternate ? TextAlign.right : TextAlign.left),
           ),
-        if (_activity.targetType != null) ...[
-          SizedBox(height: 12 * _cardHeight),
-          ActivityTarget(target: _activity.target, targetType: _activity.targetType, isAlternate: _isAlternate, cardHeight: _cardHeight),
-        ],
-        ActivityTargetNavigation(activity: _activity, isAlternate: _isAlternate),
+        ...[
+        SizedBox(height: 12 * _cardHeight),
+        ActivityTarget(
+            target: _activity.target,
+            targetType: _activity.targetType,
+            isAlternate: _isAlternate,
+            cardHeight: _cardHeight),
+      ],
+        ActivityTargetNavigation(
+            activity: _activity, isAlternate: _isAlternate),
         SizedBox(height: 16 * _cardHeight),
         ActivityActionButtons(
-          isLiked: _activity.isLiked, likesCount: _activity.likesCount, commentsCount: _activity.commentsCount,
-          isAlternate: _isAlternate, cardHeight: _cardHeight,
+          isLiked: _activity.isLiked,
+          likesCount: _activity.likesCount,
+          commentsCount: _activity.commentsCount,
+          isAlternate: _isAlternate,
+          cardHeight: _cardHeight,
           onLike: _handleLike,
           onComment: _handleComment,
         ),
@@ -216,13 +273,15 @@ class _ActivityCardState extends State<ActivityCard> {
     // --- 卡片包装 ---
     if (!widget.hasOwnBackground) {
       // 详情页中的卡片可能不需要额外的点击区域和背景
-      return Padding( // 添加一些内边距，模拟卡片效果
+      return Padding(
+        // 添加一些内边距，模拟卡片效果
         padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: contentWidget,
       );
     }
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300), margin: const EdgeInsets.symmetric(vertical: 8),
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(vertical: 8),
       alignment: _isAlternate ? Alignment.centerRight : Alignment.centerLeft,
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 4 * _cardHeight),
       child: MouseRegion(
@@ -230,13 +289,27 @@ class _ActivityCardState extends State<ActivityCard> {
         child: GestureDetector(
           onTap: _handleActivityTap,
           child: Container(
-            width: calculatedWidth, constraints: BoxConstraints(maxWidth: screenWidth * 0.95, minWidth: screenWidth * 0.6),
+            width: calculatedWidth,
+            constraints: BoxConstraints(
+                maxWidth: screenWidth * 0.95, minWidth: screenWidth * 0.6),
             child: Card(
-              elevation: 1, margin: EdgeInsets.zero,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.only(topLeft: Radius.circular(_isAlternate ? 20 : 4), topRight: Radius.circular(_isAlternate ? 4 : 20), bottomLeft: const Radius.circular(20), bottomRight: const Radius.circular(20))),
+              elevation: 1,
+              margin: EdgeInsets.zero,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(_isAlternate ? 20 : 4),
+                      topRight: Radius.circular(_isAlternate ? 4 : 20),
+                      bottomLeft: const Radius.circular(20),
+                      bottomRight: const Radius.circular(20))),
               child: Container(
                 padding: EdgeInsets.all(16 * math.sqrt(_cardHeight)),
-                decoration: BoxDecoration(borderRadius: BorderRadius.only(topLeft: Radius.circular(_isAlternate ? 20 : 4), topRight: Radius.circular(_isAlternate ? 4 : 20), bottomLeft: const Radius.circular(20), bottomRight: const Radius.circular(20)), color: Colors.white),
+                decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(_isAlternate ? 20 : 4),
+                        topRight: Radius.circular(_isAlternate ? 4 : 20),
+                        bottomLeft: const Radius.circular(20),
+                        bottomRight: const Radius.circular(20)),
+                    color: Colors.white),
                 child: contentWidget,
               ),
             ),
@@ -251,14 +324,17 @@ class _ActivityCardState extends State<ActivityCard> {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: Column(
-        crossAxisAlignment: _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment:
+            _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
         children: [
           // --- 显示评论列表 ---
           if (_activity.comments.isNotEmpty)
             ListView.builder(
               physics: const NeverScrollableScrollPhysics(),
               shrinkWrap: true,
-              itemCount: _activity.comments.length > 3 && !_showComments ? 3 : _activity.comments.length,
+              itemCount: _activity.comments.length > 3 && !_showComments
+                  ? 3
+                  : _activity.comments.length,
               itemBuilder: (context, index) {
                 final comment = _activity.comments[index];
                 return ActivityCommentItem(
@@ -267,11 +343,17 @@ class _ActivityCardState extends State<ActivityCard> {
                   activityId: _activity.id,
                   isAlternate: _isAlternate,
                   // --- 传递评论的操作回调 ---
-                  onLike: widget.onLikeComment != null ? () => widget.onLikeComment!(_activity.id, comment.id) : null,
-                  onUnlike: widget.onUnlikeComment != null ? () => widget.onUnlikeComment!(_activity.id, comment.id) : null,
+                  onLike: widget.onLikeComment != null
+                      ? () => widget.onLikeComment!(_activity.id, comment.id)
+                      : null,
+                  onUnlike: widget.onUnlikeComment != null
+                      ? () => widget.onUnlikeComment!(_activity.id, comment.id)
+                      : null,
                   // --- 注意：这里是 ActivityCommentItem 自己的删除回调，它会调用父级 (ActivityCard) 的 onDeleteComment ---
                   // --- 而 ActivityCard 的 onDeleteComment 回调最终会调用 ActivityFeedScreen 的 _handleDeleteComment ---
-                  onCommentDeleted: widget.onDeleteComment != null ? () => widget.onDeleteComment!(_activity.id, comment.id) : null,
+                  onCommentDeleted: widget.onDeleteComment != null
+                      ? () => widget.onDeleteComment!(_activity.id, comment.id)
+                      : null,
                 );
               },
             ),
@@ -281,9 +363,14 @@ class _ActivityCardState extends State<ActivityCard> {
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: TextButton(
-                style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: Size(50, 30), tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                style: TextButton.styleFrom(
+                    padding: EdgeInsets.zero,
+                    minimumSize: Size(50, 30),
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap),
                 onPressed: () => setState(() => _showComments = true),
-                child: Text('查看全部 ${_activity.commentsCount} 条评论...', style: TextStyle(fontSize: 13, color: Theme.of(context).primaryColor)),
+                child: Text('查看全部 ${_activity.commentsCount} 条评论...',
+                    style: TextStyle(
+                        fontSize: 13, color: Theme.of(context).primaryColor)),
               ),
             ),
 
@@ -302,7 +389,8 @@ class _ActivityCardState extends State<ActivityCard> {
           if (_activity.comments.isEmpty && _showComments)
             Padding(
               padding: const EdgeInsets.only(top: 12.0, bottom: 8.0),
-              child: Text('暂无评论，快来抢沙发吧~', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+              child: Text('暂无评论，快来抢沙发吧~',
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
             ),
         ],
       ),

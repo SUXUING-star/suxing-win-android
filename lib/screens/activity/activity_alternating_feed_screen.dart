@@ -15,10 +15,10 @@ class ActivityAlternatingFeedScreen extends StatefulWidget {
   final String title; // 屏幕标题
 
   const ActivityAlternatingFeedScreen({
-    Key? key,
+    super.key,
     this.userId,
     this.title = '我的动态',
-  }) : super(key: key);
+  });
 
   @override
   _ActivityAlternatingFeedScreenState createState() => _ActivityAlternatingFeedScreenState();

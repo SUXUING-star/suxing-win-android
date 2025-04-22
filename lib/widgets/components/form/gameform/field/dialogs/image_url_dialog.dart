@@ -8,9 +8,9 @@ class ImageUrlDialog extends StatefulWidget {
   final String? initialUrl;
 
   const ImageUrlDialog({
-    Key? key,
+    super.key,
     this.initialUrl,
-  }) : super(key: key);
+  });
 
   @override
   State<ImageUrlDialog> createState() => _ImageUrlDialogState();

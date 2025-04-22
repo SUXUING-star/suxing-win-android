@@ -1,13 +1,13 @@
 // lib/widgets/components/badge/layout/message_badge.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../services/main/message/message_service.dart';
-import '../../../../screens/message/message_screen.dart';
 
 class MessageBadge extends StatelessWidget {
   final MessageService _messageService = MessageService();
 
-  MessageBadge({Key? key}) : super(key: key);
+  MessageBadge({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -18,9 +18,9 @@ class MessageBadge extends StatelessWidget {
 
         return GestureDetector(
           onTap: () {
-            NavigationUtils.push(
+            NavigationUtils.pushNamed(
               context,
-              MaterialPageRoute(builder: (context) => MessageScreen()),
+              AppRoutes.message
             );
           },
           child: unreadCount > 0

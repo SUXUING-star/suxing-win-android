@@ -7,7 +7,7 @@ import '../../../../../../models/post/post.dart';
 class DesktopProfilePostCard extends StatelessWidget {
   final Post post;
 
-  const DesktopProfilePostCard({Key? key, required this.post}) : super(key: key);
+  const DesktopProfilePostCard({super.key, required this.post});
 
   @override
   Widget build(BuildContext context) {

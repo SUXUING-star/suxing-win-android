@@ -17,11 +17,11 @@ class CoverImageField extends StatelessWidget {
   final bool isLoading; // 父组件加载状态
 
   const CoverImageField({
-    Key? key,
+    super.key,
     this.coverImageSource,
     required this.onChanged,
     required this.isLoading,
-  }) : super(key: key);
+  });
 
   Future<void> _pickCoverImage(BuildContext context) async {
     if (isLoading) return;

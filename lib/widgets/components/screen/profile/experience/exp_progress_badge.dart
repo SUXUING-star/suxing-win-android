@@ -15,12 +15,12 @@ class ExpProgressBadge extends StatefulWidget {
   final bool isDesktop;
 
   const ExpProgressBadge({
-    Key? key,
+    super.key,
     this.size = 24.0,
     this.backgroundColor,
     this.textColor,
     this.isDesktop = false,
-  }) : super(key: key);
+  });
 
   @override
   State<ExpProgressBadge> createState() => _ExpProgressBadgeState();

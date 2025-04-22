@@ -1,5 +1,4 @@
 import 'dart:io'; // 导入 dart:io
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 导入 XFile
 import 'package:url_launcher/url_launcher.dart';
@@ -96,11 +95,11 @@ class AnnouncementDialog extends StatelessWidget {
   final VoidCallback? onClose;
 
   const AnnouncementDialog({
-    Key? key,
+    super.key,
     required this.announcement,
     this.imageSource, // 新增
     this.onClose,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

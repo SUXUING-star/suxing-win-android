@@ -13,11 +13,11 @@ class HotActivitiesList extends StatelessWidget {
   final Color Function(String) getActivityTypeColor;
 
   const HotActivitiesList({
-    Key? key,
+    super.key,
     required this.hotActivities,
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -83,8 +83,8 @@ class HotActivitiesList extends StatelessWidget {
                     onTap: () => _navigateToUserProfile(context, activity.userId),
                     child: CircleAvatar(
                       backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      child: avatarUrl == null ? Text(username[0].toUpperCase()) : null,
                       radius: 16,
+                      child: avatarUrl == null ? Text(username[0].toUpperCase()) : null,
                     ),
                   ),
                   SizedBox(width: 8),

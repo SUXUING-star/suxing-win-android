@@ -24,8 +24,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
   final bool isNeedHistory;
-  const GameDetailScreen({Key? key, this.gameId, this.isNeedHistory = true})
-      : super(key: key);
+  const GameDetailScreen({super.key, this.gameId, this.isNeedHistory = true});
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
 }
@@ -102,8 +101,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
             widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
         ) {
-      //print(
-      //    "GameDetailScreen (${widget.gameId}): Game is approved and history needed, incrementing view count.");
+      print(
+          "GameDetailScreen (${widget.gameId}): Game is approved and history needed, incrementing view count.");
       _gameService.incrementGameView(widget.gameId!).catchError((error) {
         print(
             "GameDetailScreen (${widget.gameId}): Failed to increment view count: $error");
@@ -218,8 +217,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             } else {
               // 刷新失败
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted)
+                if (mounted) {
                   AppSnackBar.showError(context, "刷新失败: ${errorMsg ?? '未知错误'}");
+                }
               });
               // 保留旧数据，只显示 Toaster
             }
@@ -279,14 +279,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         newRatingValue != null;
 
     if (!oldHadRating && newHasRating) {
-      deltaRatingSum = newRatingValue!;
+      deltaRatingSum = newRatingValue;
       deltaRatingCount = 1;
     } else if (oldHadRating && newHasRating) {
-      if (oldRatingValue! != newRatingValue!) {
-        deltaRatingSum = newRatingValue! - oldRatingValue!;
+      if (oldRatingValue != newRatingValue) {
+        deltaRatingSum = newRatingValue - oldRatingValue;
       }
     } else if (oldHadRating && !newHasRating) {
-      deltaRatingSum = -oldRatingValue!;
+      deltaRatingSum = -oldRatingValue;
       deltaRatingCount = -1;
     }
 
@@ -587,10 +587,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: game.title,
-        actions: [
-          IconButton(
-              icon: const Icon(Icons.share), onPressed: () {}, tooltip: '分享'),
-        ],
       ),
 
       body: SingleChildScrollView(

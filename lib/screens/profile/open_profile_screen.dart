@@ -22,7 +22,7 @@ import '../../widgets/ui/buttons/follow_user_button.dart';
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
 
-  const OpenProfileScreen({Key? key, required this.userId}) : super(key: key);
+  const OpenProfileScreen({super.key, required this.userId});
 
   @override
   _OpenProfileScreenState createState() => _OpenProfileScreenState();

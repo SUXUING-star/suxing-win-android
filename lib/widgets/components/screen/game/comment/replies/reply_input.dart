@@ -8,7 +8,7 @@ class ReplyInput extends StatefulWidget {
   final VoidCallback? onCancel;
   final bool isSubmitting; // 由 CommentItem 传入
 
-  const ReplyInput({ Key? key, required this.onSubmitReply, required this.isSubmitting, this.onCancel }) : super(key: key);
+  const ReplyInput({ super.key, required this.onSubmitReply, required this.isSubmitting, this.onCancel });
 
   @override
   State<ReplyInput> createState() => _ReplyInputState();

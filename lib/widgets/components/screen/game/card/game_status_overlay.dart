@@ -9,11 +9,11 @@ class GameStatusOverlay extends StatelessWidget {
   final Function(String) onShowReviewComment; // 用于显示拒绝原因的回调
 
   const GameStatusOverlay({
-    Key? key,
+    super.key,
     required this.game,
     required this.onResubmit,
     required this.onShowReviewComment,
-  }) : super(key: key);
+  });
 
   // Helper function from MyGamesScreen, now moved here or accessed differently
   Map<String, dynamic> _getStatusDisplay(String? status) {

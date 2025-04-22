@@ -9,11 +9,11 @@ class GameStatsWidget extends StatelessWidget {
   final bool isGrid;
 
   const GameStatsWidget({
-    Key? key,
+    super.key,
     required this.game,
     required this.showCollectionStats,
     required this.isGrid,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

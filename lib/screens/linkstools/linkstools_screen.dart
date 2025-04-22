@@ -1,9 +1,10 @@
 // lib/screens/linkstools/linkstools_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:provider/provider.dart';
 import '../../services/main/linktool/link_tool_service.dart';
 import '../../models/linkstools/link.dart';
 import '../../models/linkstools/tool.dart';
@@ -18,11 +19,10 @@ import '../../widgets/ui/common/error_widget.dart';
 
 // --- 引入动画组件 ---
 import '../../widgets/ui/animation/fade_in_slide_up_item.dart';
-import '../../widgets/ui/animation/fade_in_item.dart';
 // --- 结束引入 ---
 
 class LinksToolsScreen extends StatefulWidget {
-  const LinksToolsScreen({Key? key}) : super(key: key);
+  const LinksToolsScreen({super.key});
 
   @override
   _LinksToolsScreenState createState() => _LinksToolsScreenState();
@@ -30,6 +30,7 @@ class LinksToolsScreen extends StatefulWidget {
 
 class _LinksToolsScreenState extends State<LinksToolsScreen> {
   final LinkToolService _linkToolService = LinkToolService();
+  final AuthProvider _authProvider = AuthProvider();
 
   // --- 数据状态 (保持不变) ---
   List<Link>? _links;
@@ -110,7 +111,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       }
     } catch (e) {
       print("Error launching URL $url: $e");
-      if (mounted) AppSnackBar.showError(context,  '打开链接失败: $e');
+      if (mounted) AppSnackBar.showError(context, '打开链接失败: $e');
     }
   }
 
@@ -121,11 +122,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       if (linkData != null) {
         try {
           await _linkToolService.addLink(Link.fromJson(linkData));
-          if (mounted) AppSnackBar.showSuccess(context,  '添加链接成功');
+          if (mounted) AppSnackBar.showSuccess(context, '添加链接成功');
           await _loadData();
         } catch (e) {
-          if (mounted)
-            AppSnackBar.showError(context,  '添加链接失败: $e');
+          if (mounted) AppSnackBar.showError(context, '添加链接失败: $e');
         }
       }
     });
@@ -142,8 +142,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
           if (mounted) AppSnackBar.showSuccess(context, '添加工具成功');
           await _loadData();
         } catch (e) {
-          if (mounted)
-            AppSnackBar.showError(context, '添加工具失败: $e');
+          if (mounted) AppSnackBar.showError(context, '添加工具失败: $e');
         }
       }
     });
@@ -151,7 +150,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = context.select<AuthProvider, bool>((auth) => auth.isAdmin);
+    final isAdmin = _authProvider.isAdmin;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= _desktopBreakpoint;
 
@@ -174,15 +173,44 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         }
       },
       child: Scaffold(
-        appBar: isDesktop
-            ? null
-            : CustomAppBar(title: '实用工具', actions: [
-                if (isAdmin) ..._buildAdminActions(context),
-              ]),
+        appBar: CustomAppBar(title: '实用工具', actions: [
+          //if (isAdmin) ..._buildAdminActions(context),
+          // 不要了太丑了
+        ]),
         body: RefreshIndicator(
           onRefresh: _loadData,
           child: _buildLinksToolsContent(isAdmin, isDesktop),
         ),
+        floatingActionButton: _buildFloatButtons(isAdmin, context),
+      ),
+    );
+  }
+
+  Widget _buildFloatButtons(bool isAdmin, BuildContext context) {
+    if (!isAdmin) return SizedBox.shrink();
+    return Padding(
+      // 给整个按钮组添加统一的外边距
+      padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
+      child: FloatingActionButtonGroup(
+        spacing: 16.0, // 按钮间距
+        alignment: MainAxisAlignment.end, // 底部对齐
+        children: [
+          GenericFloatingActionButton(
+            onPressed: () =>
+                _showAddLinkDialog(context), // onPressed 是 VoidCallback?
+            icon: Icons.add_link,
+            tooltip: '添加链接',
+            heroTag: 'link_list_fab',
+            //mini: true,
+          ),
+          GenericFloatingActionButton(
+            onPressed: () => _showAddToolDialog(context),
+            icon: Icons.add_box_outlined,
+            tooltip: '添加工具',
+            heroTag: 'tool_list_fab',
+            //mini: true,
+          )
+        ],
       ),
     );
   }
@@ -205,11 +233,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     else if (_errorMessage != null) {
       // --- 修改：添加动画 ---
       return FadeInSlideUpItem(
-        child: Center(
-          child: CustomErrorWidget(
-            errorMessage: _errorMessage!,
-            onRetry: _loadData,
-          ),
+        child: InlineErrorWidget(
+          errorMessage: _errorMessage!,
+          onRetry: _loadData,
         ),
       );
       // --- 结束修改 ---
@@ -222,20 +248,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         return _buildMobileLayout(isAdmin); // 内部组件将应用动画
       }
     }
-  }
-
-  // --- _buildAdminActions (保持不变) ---
-  List<Widget> _buildAdminActions(BuildContext context) {
-    return [
-      IconButton(
-          icon: Icon(Icons.add_link),
-          onPressed: () => _showAddLinkDialog(context),
-          tooltip: '添加链接'),
-      IconButton(
-          icon: Icon(Icons.add_box_outlined),
-          onPressed: () => _showAddToolDialog(context),
-          tooltip: '添加工具'),
-    ];
   }
 
   // --- 构建桌面端布局 (应用标题动画) ---

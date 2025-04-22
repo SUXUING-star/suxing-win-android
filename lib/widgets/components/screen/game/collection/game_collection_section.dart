@@ -11,13 +11,15 @@ class GameCollectionSection extends StatefulWidget {
   final Game game;
   final GameCollectionItem? initialCollectionStatus;
   final Function(CollectionChangeResult)? onCollectionChanged;
+  final isPreviewMode;
 
   const GameCollectionSection({
-    Key? key,
+    super.key,
     required this.game,
     this.initialCollectionStatus,
     this.onCollectionChanged,
-  }) : super(key: key);
+    this.isPreviewMode = false,
+  });
 
   @override
   // *** 创建 State ***
@@ -33,6 +35,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
   // 保存评分，虽然不在这个组件显示，但 game 对象可能变化
   late double _rating;
   late int _ratingCount;
+
 
 
   @override
@@ -155,6 +158,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                 ),
                 const Spacer(),
                 // *** 传递 game 对象 和 回调 ***
+                if(!widget.isPreviewMode)
                 GameCollectionButton(
                   game: widget.game, // 按钮仍然需要原始 game 对象来获取 ID 等信息
                   initialCollectionStatus: widget.initialCollectionStatus,
@@ -206,7 +210,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                 const SizedBox(width: 8),
                 Text(
                   // 使用 State 变量
-                  '总收藏 ${_totalCollections} 人' + (_ratingCount > 0 ? ' / $_ratingCount 人评分' : ''),
+                  '总收藏 $_totalCollections 人${_ratingCount > 0 ? ' / $_ratingCount 人评分' : ''}',
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,

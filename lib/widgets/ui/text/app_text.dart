@@ -19,6 +19,7 @@ class AppText extends StatelessWidget {
   final double? decorationThickness; // <--- 新增：装饰线粗细
 
   // --- Text 的所有原生参数，一个不漏 ---
+  @override
   final Key? key;
   final TextStyle? style; // <--- 仍然保留，用于最终覆盖复杂或未直接暴露的样式！
   final StrutStyle? strutStyle;

@@ -1,10 +1,11 @@
 // lib/widgets/forum/post_form.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/app.dart';
 import 'package:suxingchahui/services/form/post_form_cache_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 确保路径正确
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../utils/device/device_utils.dart'; // 确保路径正确
 import '../../../../utils/font/font_config.dart'; // 确保路径正确
@@ -35,7 +36,7 @@ class PostForm extends StatefulWidget {
   final Widget? additionalInfo;
 
   const PostForm({
-    Key? key,
+    super.key,
     required this.title,
     this.initialTitle = '',
     this.initialContent = '',
@@ -47,7 +48,7 @@ class PostForm extends StatefulWidget {
     this.postIdInfo,
     this.updatetimeInfo,
     this.additionalInfo,
-  }) : super(key: key);
+  });
 
   @override
   _PostFormState createState() => _PostFormState();
@@ -119,16 +120,6 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
       appBar: CustomAppBar(
         // Assuming CustomAppBar works like a standard AppBar
         title: widget.title,
-        actions: [
-          TextButton(
-            onPressed: widget.isSubmitting ? null : _submit,
-            child: Text(
-              _effectiveSubmitButtonText,
-              style: const TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ],
       ),
       body: Form(
         key: _formKey,
@@ -337,12 +328,8 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
   }
 
   Widget _buildTitleField() {
-    return TextFormField(
+    return FormTextInputField(
       controller: _titleController,
-      style: TextStyle(
-        fontFamily: FontConfig.defaultFontFamily,
-        fontSize: 16,
-      ),
       decoration: const InputDecoration(
         labelText: '标题',
         hintText: '请输入帖子标题',
@@ -424,13 +411,8 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
   }
 
   Widget _buildContentField() {
-    return TextFormField(
+    return FormTextInputField(
       controller: _contentController,
-      style: TextStyle(
-        fontFamily: FontConfig.defaultFontFamily,
-        fontSize: 15,
-        height: 1.5,
-      ),
       decoration: const InputDecoration(
         labelText: '内容',
         hintText: '请输入帖子内容...',
@@ -456,11 +438,10 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
   Widget _buildSubmitButton() {
     // Pass context IF showing Snackbar here
     return Center(
-      child: AppButton(
-        onPressed: widget.isSubmitting ? null : _submit,
+      child: FunctionalButton(
+        onPressed: widget.isSubmitting ? () => {} : _submit,
         // Call _submit directly
-        text: _effectiveSubmitButtonText,
-        isPrimaryAction: true,
+        label: _effectiveSubmitButtonText,
       ),
     );
   }
@@ -541,6 +522,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
 
   // --- 提交逻辑 ---
   void _submit() {
+
     FocusScope.of(context).unfocus(); // 收起键盘
 
     // 1. 验证表单
@@ -571,7 +553,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
       // 6. 提交动作已发出，异步清除草稿 (不阻塞 UI)
       //    假设 onSubmit 调用后就可以清除，如果需要等结果，逻辑要改
       PostFormCacheService().clearDraft().then((_) {
-        print("提交后尝试清除草稿：成功");
+        // print("提交后尝试清除草稿：成功");
       }).catchError((e) {
         print("提交后尝试清除草稿：失败 - $e");
       });

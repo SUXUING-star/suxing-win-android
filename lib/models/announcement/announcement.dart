@@ -1,5 +1,4 @@
 // lib/models/announcement/announcement.dart
-import 'package:json_annotation/json_annotation.dart';
 
 // 简化版公告模型（用于列表显示）
 class Announcement {

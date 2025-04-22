@@ -48,7 +48,7 @@ class _CropOverlayPainter extends CustomPainter {
 
 // --- Dialog 的入口 (保持不变) ---
 class ModernCropDialog extends StatelessWidget { // 改回 StatelessWidget，因为状态在 Content 里
-  const ModernCropDialog({Key? key}) : super(key: key);
+  const ModernCropDialog({super.key});
 
   static Future<Uint8List?> show(BuildContext context) {
     return showDialog<Uint8List?>(
@@ -81,7 +81,7 @@ class ModernCropDialog extends StatelessWidget { // 改回 StatelessWidget，因
 
 // --- Dialog 内容和状态管理 ---
 class ModernCropDialogContent extends StatefulWidget {
-  const ModernCropDialogContent({Key? key}) : super(key: key);
+  const ModernCropDialogContent({super.key});
 
   @override
   _ModernCropDialogContentState createState() => _ModernCropDialogContentState();
@@ -235,7 +235,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
           else { finalCircularImage.setPixelRgba(x, y, 0, 0, 0, 0); }
         }
       }
-      if (finalCircularImage == null) return null;
       final resultBytes = img.encodePng(finalCircularImage); return Uint8List.fromList(resultBytes);
     } catch (e, stacktrace) { print("_performCrop Error: Exception during image processing: $e\n$stacktrace"); return null; }
   }
@@ -399,7 +398,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
               children: [
                 // 取消按钮 (使用 TextButton 以示区分)
                 TextButton(
-                  child: const Text('取消'),
                   style: TextButton.styleFrom(
                       foregroundColor: secondaryColor, // 使用次要颜色
                       disabledForegroundColor: disabledColor.withOpacity(0.7),
@@ -413,6 +411,7 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)) // 统一圆角
                   ),
                   onPressed: _isProcessing ? null : () => Navigator.of(context).pop(null),
+                  child: const Text('取消'),
                 ),
                 const SizedBox(width: 12),
 

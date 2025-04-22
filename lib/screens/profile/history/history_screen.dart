@@ -8,6 +8,8 @@ import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
 
 class HistoryScreen extends StatefulWidget {
+  const HistoryScreen({super.key});
+
   @override
   _HistoryScreenState createState() => _HistoryScreenState();
 }

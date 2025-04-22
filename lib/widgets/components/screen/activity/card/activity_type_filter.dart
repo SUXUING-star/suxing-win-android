@@ -7,10 +7,10 @@ class ActivityTypeFilter extends StatelessWidget {
   final Function(String?) onTypeSelected;
 
   const ActivityTypeFilter({
-    Key? key,
+    super.key,
     this.selectedType,
     required this.onTypeSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

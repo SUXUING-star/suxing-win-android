@@ -18,14 +18,14 @@ class FollowUserButton extends StatefulWidget {
   final bool? initialIsFollowing;
 
   const FollowUserButton({
-    Key? key,
+    super.key,
     required this.userId,
     this.color,
     this.showIcon = true,
     this.mini = false,
     this.onFollowChanged,
     this.initialIsFollowing,
-  }) : super(key: key);
+  });
 
   @override
   _FollowUserButtonState createState() => _FollowUserButtonState();

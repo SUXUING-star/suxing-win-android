@@ -16,7 +16,7 @@ class LevelProgressCard extends StatelessWidget {
   final int consecutiveMissedDays; // Days since last check-in
 
   const LevelProgressCard({
-    Key? key,
+    super.key,
     required this.stats,
     required this.userLevel,
     required this.isLoading,
@@ -25,7 +25,7 @@ class LevelProgressCard extends StatelessWidget {
     required this.onCheckIn,
     this.missedDays = 0, // Default missed days to 0
     this.consecutiveMissedDays = 0, // Default check-in gap to 0
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +34,8 @@ class LevelProgressCard extends StatelessWidget {
 
     // Calculate correct percentage value, ensure it's a double between 0.0 and 1.0
     double progressPercentage = 0.0;
-    if (stats.levelProgress is double) {
-      progressPercentage = stats.levelProgress / 100.0;
-    } else if (stats.levelProgress is num) {
-      progressPercentage = (stats.levelProgress as num).toDouble() / 100.0;
-    }
-
+    progressPercentage = stats.levelProgress / 100.0;
+  
     // Ensure percentage is within reasonable range
     progressPercentage = progressPercentage.clamp(0.0, 1.0);
 

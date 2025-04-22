@@ -20,10 +20,10 @@ class GameCollectionListScreen extends StatefulWidget {
   final String title;
 
   const GameCollectionListScreen({
-    Key? key,
+    super.key,
     required this.collectionType,
     required this.title,
-  }) : super(key: key);
+  });
 
   @override
   _GameCollectionListScreenState createState() =>

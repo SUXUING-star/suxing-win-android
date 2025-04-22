@@ -14,11 +14,11 @@ class MobileCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
   final String collectionType;
 
   const MobileCollectionLayout({
-    Key? key,
+    super.key,
     required this.games,
     required this.collectionType,
     // *** 移除 onRefresh 参数 ***
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../utils/font/font_config.dart'; // 确认路径正确
 
 class FunctionalButton extends StatelessWidget {
@@ -10,9 +11,13 @@ class FunctionalButton extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final bool isLoading;
   final bool isEnabled;
+  final bool hasBorder;
+  final double? borderWidth;
+  final Color? borderColor;
+  final BorderStyle? borderStyle;
 
   const FunctionalButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.label,
     this.icon, // 去掉 required，现在是可选的
@@ -21,7 +26,11 @@ class FunctionalButton extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
     this.isLoading = false,
     this.isEnabled = true,
-  }) : super(key: key);
+    this.hasBorder = false,
+    this.borderStyle = BorderStyle.solid,
+    this.borderColor = Colors.black,
+    this.borderWidth = 1.0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,12 +43,16 @@ class FunctionalButton extends StatelessWidget {
     final Color disabledForegroundColor = Colors.grey.shade400;
 
     // --- 统一处理 onPressed 回调 ---
-    final VoidCallback? effectiveOnPressed = isEnabled && !isLoading ? onPressed : null;
+    final VoidCallback? effectiveOnPressed =
+        isEnabled && !isLoading ? onPressed : null;
 
     // --- 统一处理按钮样式 ---
     final ButtonStyle buttonStyle = ElevatedButton.styleFrom(
-      backgroundColor: isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
-      foregroundColor: isEnabled ? buttonForegroundColor : disabledForegroundColor, // foregroundColor 会影响 Text 和 Icon (如果未单独设置颜色)
+      backgroundColor:
+          isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
+      foregroundColor: isEnabled
+          ? buttonForegroundColor
+          : disabledForegroundColor, // foregroundColor 会影响 Text 和 Icon (如果未单独设置颜色)
       disabledForegroundColor: disabledForegroundColor,
       disabledBackgroundColor: disabledBackgroundColor,
       elevation: 0,
@@ -47,12 +60,20 @@ class FunctionalButton extends StatelessWidget {
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
       ),
+
+      side: hasBorder
+          ? BorderSide(
+              width: 1,
+              color: Colors.black,
+              style: BorderStyle.solid,
+            )
+          : null,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
 
     // --- 创建 Label Widget ---
     // 确保 Text 颜色根据 isEnabled 状态变化
-    final Widget labelWidget = Text(
+    final Widget labelWidget = AppText(
       label,
       style: TextStyle(
         fontFamily: FontConfig.defaultFontFamily,
@@ -71,16 +92,22 @@ class FunctionalButton extends StatelessWidget {
         onPressed: effectiveOnPressed,
         icon: isLoading
             ? SizedBox(
-          width: iconSize,
-          height: iconSize,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            // 加载指示器颜色也应根据状态变化
-            color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
-          ),
-        )
-        // icon! 是安全的，因为我们已经检查过 icon != null
-            : Icon(icon!, size: iconSize, color: isEnabled ? buttonForegroundColor : disabledForegroundColor),
+                width: iconSize,
+                height: iconSize,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  // 加载指示器颜色也应根据状态变化
+                  color: isEnabled
+                      ? buttonForegroundColor
+                      : disabledForegroundColor,
+                ),
+              )
+            // icon! 是安全的，因为我们已经检查过 icon != null
+            : Icon(icon!,
+                size: iconSize,
+                color: isEnabled
+                    ? buttonForegroundColor
+                    : disabledForegroundColor),
         label: labelWidget,
         style: buttonStyle,
       );
@@ -90,22 +117,25 @@ class FunctionalButton extends StatelessWidget {
         onPressed: effectiveOnPressed,
         style: buttonStyle,
         child: isLoading
-            ? Row( // 如果需要在没有图标时，加载中也显示指示器
-          mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
-          children: [
-            SizedBox(
-              // 让加载指示器大小和文字差不多
-              width: fontSize,
-              height: fontSize,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
-              ),
-            ),
-            const SizedBox(width: 8), // 指示器和文字之间的间距
-            labelWidget,
-          ],
-        )
+            ? Row(
+                // 如果需要在没有图标时，加载中也显示指示器
+                mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
+                children: [
+                  SizedBox(
+                    // 让加载指示器大小和文字差不多
+                    width: fontSize,
+                    height: fontSize,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: isEnabled
+                          ? buttonForegroundColor
+                          : disabledForegroundColor,
+                    ),
+                  ),
+                  const SizedBox(width: 8), // 指示器和文字之间的间距
+                  labelWidget,
+                ],
+              )
             : labelWidget, // 不加载时只显示文字
       );
     }

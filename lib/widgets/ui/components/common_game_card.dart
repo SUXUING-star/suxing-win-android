@@ -16,14 +16,14 @@ class CommonGameCard extends StatelessWidget {
   final bool forceCompact;
 
   const CommonGameCard({
-    Key? key,
+    super.key,
     required this.game,
     this.isGridItem = true,
     this.adaptForPanels = false,
     this.showTags = true,
     this.maxTags = 2,
     this.forceCompact = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

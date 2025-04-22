@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../models/game/game_collection.dart';
 import '../../../../../widgets/components/form/collection/collection_form.dart';
 
 class CollectionDialog extends StatelessWidget {
@@ -12,14 +11,14 @@ class CollectionDialog extends StatelessWidget {
   final double? currentRating;
 
   const CollectionDialog({
-    Key? key,
+    super.key,
     required this.gameId,
     required this.gameName,
     this.currentStatus,
     this.currentNotes,
     this.currentReview, // Add this parameter
     this.currentRating,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -33,8 +32,8 @@ class CollectionDialog extends StatelessWidget {
       child: ConstrainedBox(
         // 2. 使用 ConstrainedBox 限制对话框大小
         constraints: BoxConstraints(
-          maxWidth: isDesktop ? 600 : 400,
-          // maxHeight: MediaQuery.of(context).size.height * 0.8, // 高度可以自适应内容，不需要限制最大高度
+          maxWidth: isDesktop ? 500 : 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.8, // 高度可以自适应内容，不需要限制最大高度
           minWidth: 280, //  添加最小宽度，和 CustomConfirmDialog 保持一致
         ),
         child: Material(

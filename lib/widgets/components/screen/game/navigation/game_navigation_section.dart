@@ -7,11 +7,11 @@ class GameNavigationSection extends StatelessWidget { // <--- 改为 StatelessWi
   final Function(String gameId)? onNavigate;
 
   const GameNavigationSection({
-    Key? key,
+    super.key,
     required this.currentGameId,
     this.navigationInfo, // <--- 接收导航信息
     this.onNavigate,
-  }) : super(key: key);
+  });
 
   // 导航方法保持不变
   void _navigateToGame(BuildContext context, String gameId) {

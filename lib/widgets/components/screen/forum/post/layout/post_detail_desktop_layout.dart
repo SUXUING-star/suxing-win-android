@@ -14,12 +14,12 @@ class PostDetailDesktopLayout extends StatelessWidget {
   final VoidCallback? onInteractionSuccess;
 
   const PostDetailDesktopLayout({
-    Key? key,
+    super.key,
     required this.post,
     required this.postId,
     required this.replyInput,
     this.onInteractionSuccess,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +40,8 @@ class PostDetailDesktopLayout extends StatelessWidget {
           // --- 左侧面板带动画 ---
           Expanded(
             flex: 4,
-            child: SingleChildScrollView( // 保持 SingleChildScrollView
+            child: SingleChildScrollView(
+              // 保持 SingleChildScrollView
               child: Column(
                 children: [
                   // PostContent
@@ -82,20 +83,26 @@ class PostDetailDesktopLayout extends StatelessWidget {
             child: Column(
               children: [
                 // Reply Input
-                FadeInSlideUpItem( // 输入框也用滑动
+                FadeInSlideUpItem(
+                  // 输入框也用滑动
                   key: ValueKey('reply_input_desk_${post.id}'),
                   duration: primaryDuration,
                   // 右侧第一个元素稍微延迟一点
-                  delay: baseDelay + (incrementDelay * rightDelayIndex++) + incrementDelay,
+                  delay: baseDelay +
+                      (incrementDelay * rightDelayIndex++) +
+                      incrementDelay,
                   child: replyInput,
                 ),
                 const SizedBox(height: 16),
                 // Reply List
                 Expanded(
-                  child: FadeInItem( // 回复列表用淡入
+                  child: FadeInItem(
+                    // 回复列表用淡入
                     key: ValueKey('reply_list_desk_${post.id}'),
                     duration: secondaryDuration,
-                    delay: baseDelay + (incrementDelay * rightDelayIndex++) + incrementDelay,
+                    delay: baseDelay +
+                        (incrementDelay * rightDelayIndex++) +
+                        incrementDelay,
                     child: ReplyList(postId: postId),
                   ),
                 ),

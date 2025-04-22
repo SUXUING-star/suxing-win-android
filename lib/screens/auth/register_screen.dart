@@ -7,6 +7,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 // *** 引入我们封装的按钮 ***
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
@@ -19,6 +20,8 @@ import '../../widgets/ui/common/loading_widget.dart';
 // --- ---
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -161,22 +164,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildPassWordFormField(bool isLoading) {
-    // 密码输入
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _passwordController,
       enabled: !isLoading,
-      obscureText: _obscurePassword,
+      obscureText: _obscurePassword, // <--- 设置 obscureText
       decoration: InputDecoration(
         labelText: '密码 (至少6位)',
-        // border: OutlineInputBorder(),
-        prefixIcon: Icon(Icons.lock_outline), // 换个图标
+        prefixIcon: const Icon(Icons.lock_outline),
         suffixIcon: IconButton(
-          icon: Icon(_obscurePassword
-              ? Icons.visibility_off_outlined
-              : Icons.visibility_outlined),
+          icon: Icon(_obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
           onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
         ),
       ),
+      keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
+      textInputAction: TextInputAction.next,
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入密码';
         if (value.length < 6) return '密码长度至少6位';
@@ -186,15 +187,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
   }
 
   Widget _buildVerificationCodeField(bool isLoading) {
-    return // 验证码输入
-        TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _verificationCodeController,
       enabled: !isLoading && _codeSent,
-      decoration: InputDecoration(
-          labelText: '验证码',
-          // border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.pin_outlined)), // 换个图标
-      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: '验证码',
+        prefixIcon: Icon(Icons.pin_outlined),
+      ),
+      keyboardType: TextInputType.number, // <--- 设置 keyboardType
+      maxLength: 6, // 可以加上长度限制
+      textInputAction: TextInputAction.next,
       validator: (value) {
         if (!_codeSent) return null;
         if (value == null || value.isEmpty) return '请输入验证码';
@@ -204,82 +206,84 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 
+
   Widget _buildUserNameFormField(bool isLoading) {
-    // 用户名
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _usernameController,
       enabled: !isLoading,
-      decoration: InputDecoration(
-          labelText: '用户名',
-          // border: OutlineInputBorder(), // 可以试试 UnderlineInputBorder 或其他样式
-          prefixIcon: Icon(Icons.person_outline)), // 换个图标样式
+      decoration: const InputDecoration(
+        labelText: '用户名',
+        prefixIcon: Icon(Icons.person_outline),
+        // border: OutlineInputBorder(), // 可以由 FormTextInputField 默认提供
+      ),
+      textInputAction: TextInputAction.next,
       validator: (value) => (value == null || value.isEmpty) ? '请输入用户名' : null,
     );
   }
 
   Widget _buildEmailFormField(bool isLoading) {
-    final String sendCodeButtonLabel =
-        _countDown > 0 ? '${_countDown}s' : (_codeSent ? '重新发送' : '发送验证码');
+    final String sendCodeButtonLabel = _countDown > 0 ? '${_countDown}s' : (_codeSent ? '重新发送' : '发送验证码');
     final bool isSendCodeButtonEnabled = !isLoading && _countDown <= 0;
+
+    // 邮箱输入部分使用 FormTextInputField
+    final emailField = FormTextInputField( // <--- 替换
+      key: _emailFormKey, // Form key 移到外面 Row 的 Form 上或去掉嵌套 Form
+      controller: _emailController,
+      enabled: !isLoading,
+      decoration: const InputDecoration(
+        labelText: '邮箱',
+        prefixIcon: Icon(Icons.alternate_email),
+      ),
+      keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
+      textInputAction: TextInputAction.next,
+      validator: (value) {
+        if (value == null || value.isEmpty) return '请输入邮箱';
+        final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+        if (!emailRegex.hasMatch(value)) return '请输入有效的邮箱地址';
+        return null;
+      },
+    );
+
+    // Row 布局和按钮保持不变
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start, // 保持对齐
       children: [
         Expanded(
-          child: Form(
-            key: _emailFormKey,
-            child: TextFormField(
-              controller: _emailController,
-              enabled: !isLoading,
-              decoration: InputDecoration(
-                  labelText: '邮箱',
-                  // border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.alternate_email)), // 换个图标
-              keyboardType: TextInputType.emailAddress,
-              validator: (value) {
-                if (value == null || value.isEmpty) return '请输入邮箱';
-                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
-                if (!emailRegex.hasMatch(value)) return '请输入有效的邮箱地址';
-                return null;
-              },
-            ),
-          ),
+          // 这里不需要嵌套 Form 了，_emailFormKey 用于验证，直接用 emailField
+          child: emailField,
         ),
-        SizedBox(width: 12), // 调整间距
-        // FunctionalButton 用于发送验证码
+        SizedBox(width: 12),
         SizedBox(
-          height: 58, // 尝试与 TextFormField 对齐高度
+          height: 58, // 保持高度对齐
           child: FunctionalButton(
             onPressed: _sendVerificationCode,
             label: sendCodeButtonLabel,
             isLoading: _isSendingCode,
             isEnabled: isSendCodeButtonEnabled,
-            // 调整按钮样式使其不那么突出
             padding: EdgeInsets.symmetric(horizontal: 12),
             fontSize: 14,
-            // type: FunctionalButtonType.outlined, // 可以尝试 Outlined 类型
           ),
         ),
       ],
     );
   }
 
+
   Widget _buildRepeatPassWordFormField(bool isLoading) {
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
         controller: _confirmPasswordController,
         enabled: !isLoading,
-        obscureText: _obscureConfirmPassword,
+        obscureText: _obscureConfirmPassword, // <--- 设置 obscureText
         decoration: InputDecoration(
           labelText: '确认密码',
-          // border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.lock_outline), // 保持一致
+          prefixIcon: const Icon(Icons.lock_outline),
           suffixIcon: IconButton(
-            icon: Icon(_obscureConfirmPassword
-                ? Icons.visibility_off_outlined
-                : Icons.visibility_outlined),
-            onPressed: () => setState(
-                () => _obscureConfirmPassword = !_obscureConfirmPassword),
+            icon: Icon(_obscureConfirmPassword ? Icons.visibility_off_outlined : Icons.visibility_outlined),
+            onPressed: () => setState(() => _obscureConfirmPassword = !_obscureConfirmPassword),
           ),
         ),
+        keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
+        textInputAction: TextInputAction.done, // 最后一个字段用 done
         validator: (value) {
           if (value == null || value.isEmpty) return '请再次输入密码';
           if (value != _passwordController.text) return '两次输入的密码不一致';

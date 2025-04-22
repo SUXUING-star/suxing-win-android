@@ -1,4 +1,5 @@
 // lib/models/game/game.dart
+import 'package:flutter/cupertino.dart';
 import 'package:mongo_dart/mongo_dart.dart';
 
 class GameStatus {
@@ -25,6 +26,7 @@ class Game {
   final List<String> likedBy;
   final List<DownloadLink> downloadLinks;
   final String? musicUrl;
+  final String? bvid;
   final DateTime? lastViewedAt;
   final String? approvalStatus; // "pending", "approved", "rejected"
   final String? reviewComment; // Admin feedback if rejected
@@ -58,6 +60,7 @@ class Game {
     required this.likedBy,
     required this.downloadLinks,
     this.musicUrl,
+    this.bvid,
     this.lastViewedAt,
     // 初始化新增的收藏统计字段
     this.wantToPlayCount = 0,
@@ -71,7 +74,7 @@ class Game {
     this.reviewComment,
     this.reviewedAt,
     this.reviewedBy,
-  }) : this.tags = tags ?? [];
+  }) : tags = tags ?? [];
 
   factory Game.fromJson(Map<String, dynamic> json) {
     // Helper functions (保持你原来的，确认它们能处理 null 和类型转换)
@@ -183,6 +186,7 @@ class Game {
           [],
       downloadLinks: parseDownloadLinks(json['downloadLinks']),
       musicUrl: json['musicUrl']?.toString(),
+      bvid: json['bvid']?.toString(),
       lastViewedAt: parseNullableDateTime(json['lastViewedAt']),
       wantToPlayCount: parseIntSafely(json['wantToPlayCount']),
       playingCount: parseIntSafely(json['playingCount']),
@@ -219,6 +223,7 @@ class Game {
       'likedBy': likedBy,
       'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl,
+      'bvid': bvid,
       'lastViewedAt': lastViewedAt?.toIso8601String(),
       'wantToPlayCount': wantToPlayCount,
       'playingCount': playingCount,
@@ -255,6 +260,7 @@ class Game {
     List<String>? likedBy,
     List<DownloadLink>? downloadLinks,
     String? musicUrl,
+    ValueGetter<String?>? bvid,
     DateTime? lastViewedAt,
     int? wantToPlayCount,
     int? playingCount,
@@ -287,6 +293,7 @@ class Game {
       likedBy: likedBy ?? this.likedBy,
       downloadLinks: downloadLinks ?? this.downloadLinks,
       musicUrl: musicUrl ?? this.musicUrl,
+      bvid: bvid != null ? bvid() : this.bvid,
       lastViewedAt: lastViewedAt ?? this.lastViewedAt,
       wantToPlayCount: wantToPlayCount ?? this.wantToPlayCount,
       playingCount: playingCount ?? this.playingCount,

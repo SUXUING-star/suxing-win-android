@@ -8,11 +8,11 @@ class ParticleEffect extends StatefulWidget {
   final int particleCount;
 
   const ParticleEffect({
-    Key? key,
+    super.key,
     required this.controller,
     this.color,
     this.particleCount = 30,
-  }) : super(key: key);
+  });
 
   @override
   _ParticleEffectState createState() => _ParticleEffectState();

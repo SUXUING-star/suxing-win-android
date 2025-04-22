@@ -9,10 +9,10 @@ class ActivityTargetNavigation extends StatelessWidget {
   final bool isAlternate;
 
   const ActivityTargetNavigation({
-    Key? key,
+    super.key,
     required this.activity,
     this.isAlternate = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -19,7 +19,7 @@ class CustomPopupMenuButton<T> extends StatelessWidget {
   final Widget? child; // 支持 child 的版本
 
   const CustomPopupMenuButton({
-    Key? key,
+    super.key,
     required this.itemBuilder,
     this.onSelected,
     this.icon = Icons.more_vert,
@@ -35,7 +35,7 @@ class CustomPopupMenuButton<T> extends StatelessWidget {
     this.splashRadius,
     this.isEnabled = true,
     this.child,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

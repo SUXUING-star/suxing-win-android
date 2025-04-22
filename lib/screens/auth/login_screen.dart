@@ -5,6 +5,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
@@ -15,7 +16,7 @@ import '../../widgets/ui/appbar/custom_app_bar.dart';
 import './widgets/account_bubble_menu.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -170,26 +171,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildEmailFormField() {
-    // 邮箱输入
-    return TextFormField(
-      key: _emailFieldKey,
+    return FormTextInputField( // <--- 替换
+      key: _emailFieldKey, // GlobalKey 保持
       controller: _emailController,
+      enabled: !_isLoading,
       decoration: InputDecoration(
         labelText: '邮箱',
         prefixIcon: Icon(Icons.email),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
-        // 添加账号选择按钮
+        // border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), // FormTextInputField 有默认边框
         suffixIcon: _accountCache.getAllAccounts().isNotEmpty
             ? IconButton(
-                icon: Icon(Icons.account_circle),
-                tooltip: '选择已保存的账号',
-                onPressed: _showAccountBubbleMenu,
-              )
+          icon: Icon(Icons.account_circle),
+          tooltip: '选择已保存的账号',
+          onPressed: _showAccountBubbleMenu,
+        )
             : null,
       ),
-      keyboardType: TextInputType.emailAddress,
+      keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
+      textInputAction: TextInputAction.next,
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入邮箱';
         if (!value.contains('@')) return '请输入有效邮箱';
@@ -199,29 +198,30 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Widget _buildPassWordFormField() {
-    return // 密码输入
-        TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _passwordController,
-      obscureText: _obscurePassword,
+      enabled: !_isLoading,
+      obscureText: _obscurePassword, // <--- 设置 obscureText
       decoration: InputDecoration(
         labelText: '密码',
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon:
-              Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-          onPressed: () => setState(() {
-            _obscurePassword = !_obscurePassword;
-          }),
+          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() { _obscurePassword = !_obscurePassword; }),
         ),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        // border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
+      keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
+      textInputAction: TextInputAction.done, // 登录页密码后通常是 done
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入密码';
         if (value.length < 6) return '密码至少6位';
         return null;
       },
+      // 可以在这里添加 onSubmitted，尝试直接登录
+      // onSubmitted: (_) {
+      //   if (!_isLoading) _login();
+      // },
     );
   }
 

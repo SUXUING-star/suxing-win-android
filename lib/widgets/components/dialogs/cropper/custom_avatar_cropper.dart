@@ -134,9 +134,8 @@ class _CustomCropperDialog extends StatefulWidget {
   final File imageFile;
 
   const _CustomCropperDialog({
-    Key? key,
     required this.imageFile,
-  }) : super(key: key);
+  });
 
   @override
   _CustomCropperDialogState createState() => _CustomCropperDialogState();

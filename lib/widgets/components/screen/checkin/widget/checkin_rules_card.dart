@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 
 class CheckInRulesCard extends StatelessWidget {
+  const CheckInRulesCard({super.key});
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);

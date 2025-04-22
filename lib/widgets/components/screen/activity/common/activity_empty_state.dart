@@ -8,11 +8,11 @@ class ActivityEmptyState extends StatelessWidget {
   final VoidCallback? onRefresh;
 
   const ActivityEmptyState({
-    Key? key,
+    super.key,
     this.message = '暂无动态',
     this.icon = Icons.feed_outlined,
     this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

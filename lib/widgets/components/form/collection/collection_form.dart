@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import '../../../../models/game/game_collection.dart';
 
 class CollectionForm extends StatefulWidget {
@@ -11,10 +12,11 @@ class CollectionForm extends StatefulWidget {
   final bool showRemoveButton;
   final Function() onCancel;
   final Function() onRemove;
-  final Function(String status, String? notes, String? review, double? rating) onSubmit;
+  final Function(String status, String? notes, String? review, double? rating)
+      onSubmit;
 
   const CollectionForm({
-    Key? key,
+    super.key,
     required this.gameId,
     required this.initialStatus,
     this.initialNotes,
@@ -24,7 +26,7 @@ class CollectionForm extends StatefulWidget {
     required this.onCancel,
     required this.onRemove,
     required this.onSubmit,
-  }) : super(key: key);
+  });
 
   @override
   _CollectionFormState createState() => _CollectionFormState();
@@ -135,7 +137,9 @@ class _CollectionFormState extends State<CollectionForm> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
           decoration: BoxDecoration(
-            color: isSelected ? Theme.of(context).primaryColor : Colors.transparent,
+            color: isSelected
+                ? Theme.of(context).primaryColor
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(6),
           ),
           child: Column(
@@ -171,19 +175,13 @@ class _CollectionFormState extends State<CollectionForm> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
-          controller: _notesController,
-          decoration: InputDecoration(
-            hintText: '添加个人备注...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+        TextInputField(
+          controller: _notesController, // 传递 controller
+          hintText: '添加个人备注...',
           maxLines: 2,
+          padding: EdgeInsets.zero, // 如果 CollectionForm 已有 padding，这里可能设为 zero
+          showSubmitButton: false, // 这个场景不需要单独的提交按钮
+          // textInputAction: TextInputAction.newline, // 已在 TextInputField 内部根据 maxLines 设置
         ),
       ],
     );
@@ -200,19 +198,13 @@ class _CollectionFormState extends State<CollectionForm> {
           ),
         ),
         const SizedBox(height: 8),
-        TextField(
+        TextInputField( // <--- 使用封装的组件
           controller: _reviewController,
-          decoration: InputDecoration(
-            hintText: '写下你对这款游戏的评价...',
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 12,
-              vertical: 12,
-            ),
-          ),
+          hintText: '写下你对这款游戏的评价...',
           maxLines: 5,
+          padding: EdgeInsets.zero,
+          showSubmitButton: false,
+          // textInputAction: TextInputAction.newline, // 已在 TextInputField 内部根据 maxLines 设置
         ),
       ],
     );
@@ -254,7 +246,7 @@ class _CollectionFormState extends State<CollectionForm> {
             min: 0,
             max: 10,
             divisions: 20,
-            label: _rating != null ? _rating!.toStringAsFixed(1) : null,
+            label: _rating?.toStringAsFixed(1),
             onChanged: (value) {
               setState(() {
                 _rating = value;
@@ -277,15 +269,17 @@ class _CollectionFormState extends State<CollectionForm> {
     return Padding(
       padding: const EdgeInsets.only(top: 24.0), //  给按钮区域添加一些上边距，更美观
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, //  调整按钮的 MainAxisAlignment
+        mainAxisAlignment:
+            MainAxisAlignment.spaceBetween, //  调整按钮的 MainAxisAlignment
         children: [
           // 删除收藏按钮 (红色主题)
           if (widget.showRemoveButton)
-            Theme( //  使用 Theme 组件包裹删除按钮，设置红色主题
+            Theme(
+              //  使用 Theme 组件包裹删除按钮，设置红色主题
               data: Theme.of(context).copyWith(
                 colorScheme: Theme.of(context).colorScheme.copyWith(
-                  primary: Colors.red.shade700, //  设置 primaryColor 为红色
-                ),
+                      primary: Colors.red.shade700, //  设置 primaryColor 为红色
+                    ),
               ),
               child: FunctionalButton(
                 onPressed: widget.onRemove,
@@ -294,8 +288,7 @@ class _CollectionFormState extends State<CollectionForm> {
               ),
             ),
           //  如果不需要删除按钮，则留空，不需要 Spacer() 占位
-          if (!widget.showRemoveButton)
-            const SizedBox.shrink(),
+          if (!widget.showRemoveButton) const SizedBox.shrink(),
 
           //  右侧的 取消 和 保存 按钮
           Row(
@@ -321,7 +314,9 @@ class _CollectionFormState extends State<CollectionForm> {
 
   //  处理表单提交的方法
   Future<void> _handleSubmit() async {
-    setState(() { _isSubmitting = true; }); //  设置提交状态为加载中
+    setState(() {
+      _isSubmitting = true;
+    }); //  设置提交状态为加载中
     try {
       await Future.delayed(const Duration(milliseconds: 500)); // 模拟提交延迟
       widget.onSubmit(
@@ -331,7 +326,9 @@ class _CollectionFormState extends State<CollectionForm> {
         _rating,
       );
     } finally {
-      setState(() { _isSubmitting = false; }); //  提交完成后，取消加载状态
+      setState(() {
+        _isSubmitting = false;
+      }); //  提交完成后，取消加载状态
     }
   }
 }

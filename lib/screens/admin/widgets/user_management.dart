@@ -13,7 +13,7 @@ import '../../../services/main/user/user_ban_service.dart';
 import 'package:intl/intl.dart'; // 用于日期格式化
 
 class UserManagement extends StatefulWidget {
-  const UserManagement({Key? key}) : super(key: key);
+  const UserManagement({super.key});
 
   @override
   State<UserManagement> createState() => _UserManagementState();

@@ -12,6 +12,8 @@ import 'package:suxingchahui/services/main/user/user_service.dart';
 
 // Providers
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -29,6 +31,8 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
+  const SearchPostScreen({super.key});
+
   @override
   _SearchPostScreenState createState() => _SearchPostScreenState();
 }
@@ -82,11 +86,12 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
   // --- 生命周期方法结束 ---
 
-
   // --- 滚动监听 ---
   void _scrollListener() {
     // 仅当不是初始搜索加载中时，才触发加载更多
-    if (!_isSearching && _scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+    if (!_isSearching &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200 &&
         !_isLoadingMore &&
         _currentPage < _totalPages &&
         _searchController.text.isNotEmpty) {
@@ -96,26 +101,31 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
   // --- 滚动监听结束 ---
 
-
   // --- 搜索历史管理 (无加载状态控制) ---
   Future<void> _loadSearchHistory() async {
     print("SearchPostScreen: Attempting to load search history...");
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn || !mounted) {
-      print("SearchPostScreen: Not logged in or not mounted, skipping history load.");
+      print(
+          "SearchPostScreen: Not logged in or not mounted, skipping history load.");
       return;
     }
     try {
       final history = await _userService.loadLocalSearchHistory();
       if (!mounted) return;
       print("SearchPostScreen: Search history loaded: $history");
-      setState(() { _searchHistory = history; _error = null; });
+      setState(() {
+        _searchHistory = history;
+        _error = null;
+      });
     } catch (e) {
       print("SearchPostScreen: Error loading search history: $e");
       if (!mounted) return;
       // 仅在搜索框为空时显示历史错误
       if (_searchController.text.isEmpty) {
-        setState(() { _error = '加载搜索历史失败: $e'; });
+        setState(() {
+          _error = '加载搜索历史失败: $e';
+        });
       }
     }
   }
@@ -127,7 +137,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     try {
       await _userService.saveLocalSearchHistory(_searchHistory);
       print("SearchPostScreen: Search history saved successfully.");
-    } catch (e) { print("SearchPostScreen: Error saving search history: $e"); }
+    } catch (e) {
+      print("SearchPostScreen: Error saving search history: $e");
+    }
   }
 
   void _addToHistory(String query) {
@@ -137,7 +149,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     setState(() {
       _searchHistory.remove(trimmedQuery);
       _searchHistory.insert(0, trimmedQuery);
-      if (_searchHistory.length > 10) { _searchHistory.removeLast(); }
+      if (_searchHistory.length > 10) {
+        _searchHistory.removeLast();
+      }
     });
     _saveSearchHistory();
   }
@@ -145,31 +159,38 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   void _removeFromHistory(String query) {
     if (!mounted) return;
     print("SearchPostScreen: Removing '$query' from history.");
-    setState(() { _searchHistory.remove(query); });
+    setState(() {
+      _searchHistory.remove(query);
+    });
     _saveSearchHistory();
   }
 
   void _clearHistory() {
     if (!mounted) return;
     print("SearchPostScreen: Clearing search history.");
-    setState(() { _searchHistory.clear(); });
+    setState(() {
+      _searchHistory.clear();
+    });
     _saveSearchHistory();
   }
   // --- 搜索历史结束 ---
-
 
   // --- 核心搜索逻辑 ---
   Future<void> _performSearch(String query, {bool isNewSearch = true}) async {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(Duration(milliseconds: 500), () async {
       final trimmedQuery = query.trim();
-      print("SearchPostScreen: Performing search for '$trimmedQuery', isNewSearch: $isNewSearch");
+      print(
+          "SearchPostScreen: Performing search for '$trimmedQuery', isNewSearch: $isNewSearch");
       if (!mounted) return;
 
       // 如果搜索词为空，清空结果并重置状态，不显示加载
       if (trimmedQuery.isEmpty) {
         setState(() {
-          _searchResults.clear(); _error = null; _currentPage = 1; _totalPages = 1;
+          _searchResults.clear();
+          _error = null;
+          _currentPage = 1;
+          _totalPages = 1;
           _isSearching = false; // 确保搜索状态关闭
           _isLoadingMore = false;
         });
@@ -180,7 +201,10 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       if (isNewSearch) {
         // 新搜索：显示 _isSearching 的加载，重置所有相关状态
         setState(() {
-          _searchResults.clear(); _currentPage = 1; _totalPages = 1; _error = null;
+          _searchResults.clear();
+          _currentPage = 1;
+          _totalPages = 1;
+          _error = null;
           _isLoadingMore = false; // 重置加载更多状态
           _isSearching = true; // *** 显示初始搜索加载 ***
         });
@@ -194,18 +218,24 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       try {
         print("SearchPostScreen: Calling ForumService.searchPosts...");
         final resultsData = await _forumService.searchPosts(
-          keyword: trimmedQuery, page: _currentPage, limit: _limit,
+          keyword: trimmedQuery,
+          page: _currentPage,
+          limit: _limit,
         );
         if (!mounted) return;
 
         final List<Post> newPosts = resultsData['posts'];
         final pagination = resultsData['pagination'];
         final int serverTotalPages = pagination['pages'] ?? 1;
-        print("SearchPostScreen: Search results received. Posts: ${newPosts.length}, Total Pages: $serverTotalPages");
+        print(
+            "SearchPostScreen: Search results received. Posts: ${newPosts.length}, Total Pages: $serverTotalPages");
 
         setState(() {
-          if (isNewSearch) { _searchResults = newPosts; }
-          else { _searchResults.addAll(newPosts); }
+          if (isNewSearch) {
+            _searchResults = newPosts;
+          } else {
+            _searchResults.addAll(newPosts);
+          }
           _totalPages = serverTotalPages;
           _error = null; // 清除错误
           // 加载成功后，如果是新搜索，则 _isSearching 会在 finally 中重置
@@ -213,14 +243,17 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         });
 
         // 只有在新搜索且成功时才添加到历史记录
-        if (isNewSearch) { _addToHistory(trimmedQuery); }
-
+        if (isNewSearch) {
+          _addToHistory(trimmedQuery);
+        }
       } catch (e, s) {
         print("SearchPostScreen: Search failed: $e\n$s");
         if (!mounted) return;
         setState(() {
           _error = '搜索失败：$e'; // 设置错误信息
-          if (isNewSearch) { _searchResults.clear(); } // 新搜索出错清空结果
+          if (isNewSearch) {
+            _searchResults.clear();
+          } // 新搜索出错清空结果
           // 出错时也要重置加载状态，这在 finally 中处理
         });
       } finally {
@@ -229,21 +262,24 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
           if (isNewSearch) {
             if (_isSearching) setState(() => _isSearching = false); // 重置初始搜索状态
           } else {
-            if (_isLoadingMore) setState(() => _isLoadingMore = false); // 重置加载更多状态
+            if (_isLoadingMore) {
+              setState(() => _isLoadingMore = false); // 重置加载更多状态
+            }
           }
-          print("SearchPostScreen: Search finished, isSearching: $_isSearching, isLoadingMore: $_isLoadingMore");
+          print(
+              "SearchPostScreen: Search finished, isSearching: $_isSearching, isLoadingMore: $_isLoadingMore");
         }
       }
     });
   }
   // --- 搜索逻辑结束 ---
 
-
   // --- 加载更多逻辑 ---
   Future<void> _loadMoreResults() async {
     // 增加 _isSearching 判断，初始搜索时不允许加载更多
     if (_isLoadingMore || _isSearching || _currentPage >= _totalPages) {
-      print("SearchPostScreen: Load more skipped. isLoadingMore: $_isLoadingMore, isSearching: $_isSearching, currentPage: $_currentPage, totalPages: $_totalPages");
+      print(
+          "SearchPostScreen: Load more skipped. isLoadingMore: $_isLoadingMore, isSearching: $_isSearching, currentPage: $_currentPage, totalPages: $_totalPages");
       return;
     }
     _currentPage++; // 先增加页码
@@ -252,7 +288,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     await _performSearch(_searchController.text.trim(), isNewSearch: false);
   }
   // --- 加载更多结束 ---
-
 
   // --- PostCard 回调处理方法 (删除 Observer 相关代码) ---
   Future<void> _handleDeletePostAction(String postId) async {
@@ -269,13 +304,17 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         iconData: Icons.delete_forever_outlined,
         iconColor: Colors.red,
         onConfirm: () async {
-          print("SearchPostScreen: Delete confirmed for post $postId. Calling service...");
+          print(
+              "SearchPostScreen: Delete confirmed for post $postId. Calling service...");
           // *** 这里可以考虑加一个临时的按钮加载状态，但不影响全局 ***
           try {
             await _forumService.deletePost(postId);
             if (!mounted) return;
-            print("SearchPostScreen: Post $postId deleted successfully from service.");
-            setState(() { _searchResults.removeWhere((p) => p.id == postId); });
+            print(
+                "SearchPostScreen: Post $postId deleted successfully from service.");
+            setState(() {
+              _searchResults.removeWhere((p) => p.id == postId);
+            });
             AppSnackBar.showSuccess(context, '帖子已删除');
           } catch (e) {
             print("SearchPostScreen: Error deleting post $postId: $e");
@@ -284,9 +323,11 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
           }
         },
       );
-      print("SearchPostScreen: Delete process completed successfully for post $postId.");
+      print(
+          "SearchPostScreen: Delete process completed successfully for post $postId.");
     } catch (e) {
-      print("SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
+      print(
+          "SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
     }
   }
 
@@ -299,11 +340,13 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       arguments: postToEdit.id,
     ).then((updated) {
       if (updated == true && mounted) {
-        print("SearchPostScreen: Returned from edit post with update signal. Refreshing search...");
+        print(
+            "SearchPostScreen: Returned from edit post with update signal. Refreshing search...");
         // 强制刷新当前搜索结果
         _performSearch(_searchController.text.trim(), isNewSearch: true);
       } else {
-        print("SearchPostScreen: Returned from edit post without update signal.");
+        print(
+            "SearchPostScreen: Returned from edit post without update signal.");
       }
     });
   }
@@ -326,7 +369,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               ? PostStatus.active
               : PostStatus.locked;
           _searchResults[index] = oldPost.copyWith(status: newStatus);
-          print("SearchPostScreen: Updated post $postId status in search results to $newStatus.");
+          print(
+              "SearchPostScreen: Updated post $postId status in search results to $newStatus.");
         }
       });
     } catch (e) {
@@ -336,11 +380,11 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
   // --- 回调处理方法结束 ---
 
-
   // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
-    print("SearchPostScreen: Build method called. isSearching: $_isSearching, isLoadingMore: $_isLoadingMore");
+    print(
+        "SearchPostScreen: Build method called. isSearching: $_isSearching, isLoadingMore: $_isLoadingMore");
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -350,7 +394,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [ Color(0xFF6AB7F0), Color(0xFF4E9DE3), ],
+              colors: [
+                ...CustomAppBar.appBarColors,
+              ],
             ),
           ),
         ),
@@ -359,12 +405,14 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
           autofocus: true,
           decoration: InputDecoration(
             hintText: '搜索帖子...',
-            hintStyle: TextStyle(color: Colors.white70),
+            hintStyle: TextStyle(
+              color: Colors.grey,
+            ),
             border: InputBorder.none,
           ),
           style: TextStyle(color: Colors.white),
           // 每次输入变化都触发新的搜索
-          onChanged:(query) => _performSearch(query, isNewSearch: true),
+          onChanged: (query) => _performSearch(query, isNewSearch: true),
           onSubmitted: (query) {
             print("SearchPostScreen: Submitted search for '$query'");
             // 提交时也触发新搜索
@@ -395,7 +443,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 只有在新搜索且当前结果为空时才显示全屏加载
     if (_isSearching && _searchResults.isEmpty) {
       // print("SearchPostScreen: Displaying initial search LoadingWidget.");
-      return LoadingWidget.fullScreen(message: '正在搜索...'); // 或者 LoadingWidget.inline()
+      return LoadingWidget.fullScreen(
+          message: '正在搜索...'); // 或者 LoadingWidget.inline()
     }
 
     // *** 2. 检查是否有错误信息 ***
@@ -406,8 +455,11 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         return InlineErrorWidget(
           errorMessage: _error!,
           onRetry: () {
-            setState(() { _error = null; }); // 清除错误
-            _performSearch(_searchController.text.trim(), isNewSearch: true); // 重试
+            setState(() {
+              _error = null;
+            }); // 清除错误
+            _performSearch(_searchController.text.trim(),
+                isNewSearch: true); // 重试
           },
         );
       }
@@ -417,7 +469,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         return InlineErrorWidget(
           errorMessage: _error!,
           onRetry: () {
-            setState(() { _error = null; }); // 清除错误
+            setState(() {
+              _error = null;
+            }); // 清除错误
             _loadSearchHistory(); // 重试加载历史
           },
         );
@@ -442,7 +496,10 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       return LoginPromptWidget();
     }
     if (_searchHistory.isEmpty) {
-      return EmptyStateWidget( message: '暂无搜索历史', iconData: Icons.history, );
+      return EmptyStateWidget(
+        message: '暂无搜索历史',
+        iconData: Icons.history,
+      );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -452,9 +509,13 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('搜索历史', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+              Text('搜索历史',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
               if (_searchHistory.isNotEmpty)
-                TextButton( onPressed: _clearHistory, child: Text('清空'), ),
+                TextButton(
+                  onPressed: _clearHistory,
+                  child: Text('清空'),
+                ),
             ],
           ),
         ),
@@ -473,7 +534,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
                 ),
                 onTap: () {
                   _searchController.text = query;
-                  _searchController.selection = TextSelection.fromPosition( TextPosition(offset: _searchController.text.length));
+                  _searchController.selection = TextSelection.fromPosition(
+                      TextPosition(offset: _searchController.text.length));
                   _performSearch(query, isNewSearch: true);
                 },
               );
@@ -486,48 +548,63 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   // --- 构建搜索结果 UI ---
   Widget _buildSearchResults() {
-    print("SearchPostScreen: Building search results. Count: ${_searchResults.length}, isLoadingMore: $_isLoadingMore");
+    //print("SearchPostScreen: Building search results. Count: ${_searchResults.length}, isLoadingMore: $_isLoadingMore");
 
-    // *** 空状态处理: 仅在非初始搜索、非加载更多、无错误且结果为空时显示 ***
-    if (!_isSearching && _searchResults.isEmpty && !_isLoadingMore && _error == null) {
-      print("SearchPostScreen: Displaying empty search results state.");
-      return EmptyStateWidget( message: '未找到相关帖子', iconData: Icons.search_off, );
+    // 空状态处理 (保持不变)
+    if (!_isSearching &&
+        _searchResults.isEmpty &&
+        !_isLoadingMore &&
+        _error == null) {
+      //print("SearchPostScreen: Displaying empty search results state.");
+      return EmptyStateWidget(
+        message: '未找到相关帖子',
+        iconData: Icons.search_off,
+      );
     }
+
+    // 定义卡片动画参数
+    const Duration cardAnimationDuration = Duration(milliseconds: 350);
+    const Duration cardDelayIncrement = Duration(milliseconds: 40);
 
     // 结果列表 + 加载更多指示器
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(8.0),
-      // itemCount 包含加载指示器的位置
       itemCount: _searchResults.length + (_isLoadingMore ? 1 : 0),
       itemBuilder: (context, index) {
-        // 加载更多指示器 (显示在列表末尾)
+        // 加载更多指示器 (保持不变)
         if (index == _searchResults.length) {
-          // 只有在 _isLoadingMore 为 true 时才显示
           return _isLoadingMore
               ? const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0), // 给加载指示器一些垂直空间
-            child: Center(child: CircularProgressIndicator()),
-          )
-              : const SizedBox.shrink(); // 否则返回空 SizedBox
+                  padding: EdgeInsets.symmetric(vertical: 16.0),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              : const SizedBox.shrink();
         }
 
         // 帖子卡片 (确保 index 在范围内)
         if (index < _searchResults.length) {
           final post = _searchResults[index];
-          return Padding( // 给卡片之间加点间距
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: PostCard(
-              key: ValueKey(post.id), // 使用 ValueKey 提高性能
-              post: post,
-              onDeleteAction: _handleDeletePostAction,
-              onEditAction: _handleEditPostAction,
-              onToggleLockAction: _handleToggleLockAction,
+          // --- 使用 FadeInSlideUpItem 包裹卡片 ---
+          return FadeInSlideUpItem(
+            key: ValueKey(post
+                .id), // PostCard 内部已经有 Key(ValueKey(post.id)) 了，这里可以省略，避免冲突或冗余
+            duration: cardAnimationDuration,
+            delay: cardDelayIncrement * index,
+            child: Padding(
+              // 保持原有的 Padding
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: PostCard(
+                post: post,
+                onDeleteAction: _handleDeletePostAction,
+                onEditAction: _handleEditPostAction,
+                onToggleLockAction: _handleToggleLockAction,
+                // 确保 PostCard 正确显示，没有多余的外部 Key
+              ),
             ),
           );
         }
-        // 安全返回，理论上不应到达这里
-        return Container();
+        return Container(); // 安全返回
       },
     );
   }

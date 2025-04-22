@@ -7,10 +7,10 @@ class AdminCheck extends StatelessWidget {
   final Widget fallback;
 
   const AdminCheck({
-    Key? key,
+    super.key,
     required this.child,
     this.fallback = const SizedBox.shrink(),
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

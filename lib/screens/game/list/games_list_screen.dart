@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // <--- 需要: 为了输入框数字限制
+// <--- 需要: 为了输入框数字限制
 import 'package:hive/hive.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/tag/tag.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -21,11 +22,9 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // Correct wi
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/check/admin_check.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-// *** Import Desktop Panels ***
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
 
@@ -33,7 +32,7 @@ import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right
 class GamesListScreen extends StatefulWidget {
   final String? selectedTag;
 
-  const GamesListScreen({Key? key, this.selectedTag}) : super(key: key);
+  const GamesListScreen({super.key, this.selectedTag});
 
   @override
   _GamesListScreenState createState() => _GamesListScreenState();
@@ -42,6 +41,7 @@ class GamesListScreen extends StatefulWidget {
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
   final GameService _gameService = GameService();
+  final AuthProvider _authProvider = AuthProvider();
 
   // --- State Variables ---
   bool _isLoadingData = false;
@@ -621,12 +621,13 @@ class _GamesListScreenState extends State<GamesListScreen>
             tooltip: _showRightPanel ? '隐藏右侧面板' : '显示右侧面板',
             onPressed: canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
           ),
-        AdminCheck(
-            child: IconButton(
+        // 有审核机制
+        // 不需要admincheck
+        IconButton(
           icon: Icon(Icons.add, color: iconColor),
           onPressed: _isLoadingData ? null : _handleAddGame,
           tooltip: '添加游戏',
-        )),
+        ),
         IconButton(
           icon: Icon(Icons.history_edu, color: iconColor),
           onPressed: _isLoadingData
@@ -677,6 +678,10 @@ class _GamesListScreenState extends State<GamesListScreen>
           : null,
     );
   }
+
+
+
+
 
   /// Builds the main body content.
   Widget _buildBodyContent() {
@@ -784,6 +789,18 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
+  // !!!!!!!!!!!!!!!!!!!
+  // 这是判断对于目前用户哪一个游戏能够有删除权限的
+  bool _checkPermissionDeleteGame(Game game) {
+    if (game.authorId == _authProvider.currentUserId) {
+      return true;
+    }
+    if (_authProvider.isAdmin) {
+      return true;
+    }
+    return false;
+  }
+
   /// Builds the GridView with In-Grid Navigation Tiles.
   Widget _buildGameGridWithNavigation(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
@@ -816,9 +833,6 @@ class _GamesListScreenState extends State<GamesListScreen>
       if (showPrevTile) totalItemCount++;
       if (showNextTile) totalItemCount++;
     }
-
-    print(
-        "构建 Grid: 当前页=$_currentPage, 总页数=$_totalPages, 列表项数=${_gamesList.length}, Grid总项数=$totalItemCount, 显示上一页=$showPrevTile, 显示下一页=$showNextTile");
 
     return LayoutBuilder(builder: (context, constraints) {
       return GridView.builder(
@@ -860,6 +874,7 @@ class _GamesListScreenState extends State<GamesListScreen>
             }
             final game = _gamesList[gameIndex];
             final animationDelayIndex = gameIndex % _pageSize;
+
             return FadeInSlideUpItem(
               key: ValueKey(game.id),
               delay: Duration(milliseconds: animationDelayIndex * 50),
@@ -871,8 +886,8 @@ class _GamesListScreenState extends State<GamesListScreen>
                 showCollectionStats: true,
                 forceCompact: useCompactMode,
                 maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
-                // --- 修正: 明确使用函数体 ---
-                onDeleteAction: _isLoadingData
+                // 当加载中传递空回调，即使加载成功(加载成功后是false)如果没有权限也传递空回调
+                onDeleteAction: _isLoadingData && !_checkPermissionDeleteGame(game)
                     ? null
                     : () {
                         _handleDeleteGame(game.id);

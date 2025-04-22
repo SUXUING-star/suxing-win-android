@@ -10,13 +10,13 @@ class CheckInButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   const CheckInButton({
-    Key? key,
+    super.key,
     required this.hasCheckedToday,
     required this.isLoading,
     required this.animationController,
     required this.nextReward,
     required this.onPressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

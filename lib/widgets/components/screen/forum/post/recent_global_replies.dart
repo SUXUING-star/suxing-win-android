@@ -4,11 +4,9 @@ import 'package:suxingchahui/models/post/global_reply_item.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../models/post/post.dart';
 import '../../../../../screens/forum/post/post_detail_screen.dart';
 import '../../../../../screens/profile/open_profile_screen.dart';
 import '../../../../../utils/device/device_utils.dart';
@@ -17,7 +15,7 @@ import '../../../../ui/image/safe_user_avatar.dart';
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
 
-  const RecentGlobalReplies({Key? key, this.limit = 5}) : super(key: key);
+  const RecentGlobalReplies({super.key, this.limit = 5});
 
   @override
   _RecentGlobalRepliesState createState() => _RecentGlobalRepliesState();
@@ -104,7 +102,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
             builder: (context, snapshot) {
               // 异步操作开始但未完成时
               if (_isLoading && !snapshot.hasData) {
-                return Container(
+                return SizedBox(
                     height: 200,
                     child: LoadingWidget.inline(
                       size: 12,

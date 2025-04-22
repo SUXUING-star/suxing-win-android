@@ -7,10 +7,10 @@ class PostGuidelines extends StatelessWidget {
   final String title;
 
   const PostGuidelines({
-    Key? key,
+    super.key,
     required this.guidelines,
     this.title = '发布指南',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

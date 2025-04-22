@@ -5,7 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../services/main/maintenance/maintenance_service.dart';
 
 class MaintenanceManagement extends StatefulWidget {
-  const MaintenanceManagement({Key? key}) : super(key: key);
+  const MaintenanceManagement({super.key});
 
   @override
   State<MaintenanceManagement> createState() => _MaintenanceManagementState();

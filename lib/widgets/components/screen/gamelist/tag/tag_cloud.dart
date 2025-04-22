@@ -11,13 +11,13 @@ class TagCloud extends StatelessWidget {
   final bool compact;
 
   const TagCloud({
-    Key? key,
+    super.key,
     required this.tags,
     required this.onTagSelected,
     this.selectedTag,
     this.maxTags,
     this.compact = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -63,12 +63,12 @@ class StatTagCloud extends StatelessWidget {
   final bool compact;
 
   const StatTagCloud({
-    Key? key,
+    super.key,
     required this.tags,
     this.onTagSelected,
     this.selectedTag,
     this.compact = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

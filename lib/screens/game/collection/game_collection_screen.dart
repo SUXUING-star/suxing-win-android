@@ -15,7 +15,7 @@ import '../../../widgets/components/screen/gamecollection/layout/mobile_collecti
 import '../../../widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
 
 class GameCollectionScreen extends StatefulWidget {
-  const GameCollectionScreen({Key? key}) : super(key: key);
+  const GameCollectionScreen({super.key});
 
   @override
   _GameCollectionScreenState createState() => _GameCollectionScreenState();

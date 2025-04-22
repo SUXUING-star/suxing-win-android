@@ -3,7 +3,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class AboutScreen extends StatelessWidget {
-  const AboutScreen({Key? key}) : super(key: key);
+  const AboutScreen({super.key});
 
   final List<Map<String, dynamic>> techStacks = const [
     {
@@ -172,7 +172,7 @@ class AboutScreen extends StatelessWidget {
                               const Divider(height: 32.0),
                           ],
                         );
-                      }).toList(),
+                      }),
                     ],
                   ),
                 ),

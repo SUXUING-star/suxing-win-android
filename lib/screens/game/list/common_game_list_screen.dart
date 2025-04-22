@@ -43,6 +43,7 @@ class CommonGameListScreen extends StatefulWidget {
   final bool useScaffold;
   final bool showAddButtonInAppBar;
   final bool showMySubmissionsButton;
+  final bool showSearchButton;
   final List<Tag>? availableTags; // 标签数据由外部传入
 
   // --- 回调 (保持不变) ---
@@ -58,7 +59,7 @@ class CommonGameListScreen extends StatefulWidget {
   final Widget Function(Game)? customCardBuilder;
 
   const CommonGameListScreen({
-    Key? key,
+    super.key,
     required this.title,
     // *** 修改: 接收 Future 或 Stream ***
     this.gamesFuture,
@@ -79,13 +80,13 @@ class CommonGameListScreen extends StatefulWidget {
     this.onAddPressed,
     this.showAddButtonInAppBar = false,
     this.showMySubmissionsButton = false,
+    this.showSearchButton = false,
     this.customCardBuilder,
     // *** 移除: initialError, isInitiallyLoading ***
     required this.onDeleteGameAction,
     this.onTagSelectedInPanel,
   })  : assert(gamesFuture != null || gamesStream != null,
-            'Either gamesFuture or gamesStream must be provided'), // 确保至少提供一个数据源
-        super(key: key);
+            'Either gamesFuture or gamesStream must be provided');
 
   @override
   _CommonGameListScreenState createState() => _CommonGameListScreenState();
@@ -295,31 +296,37 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
     final Color disabledColor = Colors.white54; // 假设 AppBar 亮色背景
     final Color enabledColor = Colors.white; // 假设 AppBar 亮色背景
 
-    if (widget.additionalActions != null)
+    if (widget.additionalActions != null) {
       actions.addAll(widget.additionalActions!);
-    if (widget.showAddButtonInAppBar)
+    }
+    if (widget.showAddButtonInAppBar) {
       actions.add(AdminCheck(
           child: IconButton(
               icon: Icon(Icons.add, color: enabledColor),
               onPressed: widget.onAddPressed ??
                   () => NavigationUtils.pushNamed(context, AppRoutes.addGame),
               tooltip: '添加游戏')));
-    if (widget.showMySubmissionsButton)
+    }
+    if (widget.showMySubmissionsButton) {
       actions.add(IconButton(
           icon: Icon(Icons.history_edu, color: enabledColor),
           onPressed: widget.onMySubmissionsPressed ??
               () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
           tooltip: '我的提交'));
-    actions.add(IconButton(
-        icon: Icon(Icons.search, color: enabledColor),
-        onPressed: () =>
-            NavigationUtils.pushNamed(context, AppRoutes.searchGame),
-        tooltip: '搜索游戏'));
-    if (widget.showSortOptions && widget.onFilterPressed != null)
+    }
+    if (widget.showSearchButton) {
+      actions.add(IconButton(
+          icon: Icon(Icons.search, color: enabledColor),
+          onPressed: () =>
+              NavigationUtils.pushNamed(context, AppRoutes.searchGame),
+          tooltip: '搜索游戏'));
+    }
+    if (widget.showSortOptions && widget.onFilterPressed != null) {
       actions.add(IconButton(
           icon: Icon(Icons.filter_list, color: enabledColor),
           onPressed: () => widget.onFilterPressed!(context),
           tooltip: '排序/筛选'));
+    }
     if (showActualPanelToggles) {
       actions.add(IconButton(
         icon: Icon(Icons.menu_open,

@@ -17,13 +17,13 @@ class DesktopCollectionLayout extends StatelessWidget {
   final IconData icon;
 
   const DesktopCollectionLayout({
-    Key? key,
+    super.key,
     required this.games,
     required this.collectionType,
     required this.title, // 直接接收完整标题
     required this.icon,
     // *** 移除 onRefresh 参数 ***
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

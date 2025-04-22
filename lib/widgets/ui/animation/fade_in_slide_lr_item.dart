@@ -13,13 +13,13 @@ class FadeInSlideLRItem extends StatefulWidget {
   final SlideDirection slideDirection; // 新增：指定滑动方向
 
   const FadeInSlideLRItem({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 350), // 面板动画可以快一点
     this.delay = Duration.zero,
     this.slideOffset = 50.0, // 水平滑动距离
     required this.slideDirection, // 方向是必须的
-  }) : super(key: key);
+  });
 
   @override
   _FadeInSlideLRItemState createState() => _FadeInSlideLRItemState();

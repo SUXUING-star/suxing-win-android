@@ -16,7 +16,6 @@ class _CustomSnackBarWidget extends StatefulWidget {
   final VoidCallback? onActionPressed; // <-- 新增：操作按钮回调
 
   const _CustomSnackBarWidget({
-    Key? key,
     required this.message,
     required this.backgroundColor,
     required this.iconData,
@@ -25,7 +24,7 @@ class _CustomSnackBarWidget extends StatefulWidget {
     required this.maxWidth,
     this.actionLabel, // <-- 设为可选
     this.onActionPressed, // <-- 设为可选
-  }) : super(key: key);
+  });
 
   @override
   _CustomSnackBarWidgetState createState() => _CustomSnackBarWidgetState();
@@ -211,10 +210,6 @@ class AppSnackBar {
 
     // 获取 OverlayState
     final overlayState = Overlay.of(context);
-    if (overlayState == null) {
-      print("AppSnackBar Error: Could not find OverlayState. Make sure you have a MaterialApp/WidgetsApp parent.");
-      return;
-    }
 
     // 如果已有 SnackBar 显示，先移除旧的
     _removeTimer?.cancel(); // 取消可能存在的移除计时器

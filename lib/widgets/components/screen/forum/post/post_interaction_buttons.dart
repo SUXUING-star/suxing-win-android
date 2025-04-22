@@ -13,11 +13,11 @@ class PostInteractionButtons extends StatefulWidget {
   final VoidCallback? onInteractionSuccess;
 
   const PostInteractionButtons({
-    Key? key,
+    super.key,
     required this.post,
     required this.onPostUpdated,
     this.onInteractionSuccess,
-  }) : super(key: key);
+  });
 
   @override
   _PostInteractionButtonsState createState() => _PostInteractionButtonsState();

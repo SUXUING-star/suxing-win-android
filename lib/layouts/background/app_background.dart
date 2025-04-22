@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'dart:math' as math;
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import '../effects/particle_effect.dart'; // 导入粒子效果组件
 
@@ -22,9 +20,9 @@ class AppBackground extends StatefulWidget {
   final Widget child;
 
   const AppBackground({
-    Key? key,
+    super.key,
     required this.child,
-  }) : super(key: key);
+  });
 
   @override
   State<AppBackground> createState() => _AppBackgroundState();

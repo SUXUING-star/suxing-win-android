@@ -12,11 +12,11 @@ class PostDetailMobileLayout extends StatelessWidget {
   final VoidCallback? onInteractionSuccess;
 
   const PostDetailMobileLayout({
-    Key? key,
+    super.key,
     required this.post,
     required this.postId,
     this.onInteractionSuccess,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,7 +46,7 @@ class PostDetailMobileLayout extends StatelessWidget {
           key: ValueKey('reply_list_mob_${post.id}'), // Key
           duration: replyListDuration,
           delay: baseDelay + replyDelay, // 稍后出现
-          child: Container(
+          child: SizedBox(
             // 保持原有高度计算
             height: MediaQuery.of(context).size.height -
                 kToolbarHeight -

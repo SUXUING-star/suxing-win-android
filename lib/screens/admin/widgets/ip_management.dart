@@ -5,7 +5,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/denfence/defence_service.dart';
 
 class IPManagement extends StatefulWidget {
-  const IPManagement({Key? key}) : super(key: key);
+  const IPManagement({super.key});
 
   @override
   State<IPManagement> createState() => _IPManagementState();
@@ -144,11 +144,11 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _isLoading ? null : () => _addToBlacklist(_blacklistIpController.text.trim()),
-                child: const Text('拉黑'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.red,
                   foregroundColor: Colors.white,
                 ),
+                child: const Text('拉黑'),
               ),
             ],
           ),
@@ -237,11 +237,11 @@ class _IPManagementState extends State<IPManagement> with SingleTickerProviderSt
               const SizedBox(width: 16),
               ElevatedButton(
                 onPressed: _isLoading ? null : () => _addToWhitelist(_ipController.text.trim()),
-                child: const Text('添加'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green,
                   foregroundColor: Colors.white,
                 ),
+                child: const Text('添加'),
               ),
             ],
           ),

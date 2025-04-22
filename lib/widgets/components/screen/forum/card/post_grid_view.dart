@@ -18,7 +18,7 @@ class PostGridView extends StatelessWidget {
   final Future<void> Function(String postId) onToggleLockAction;
 
   const PostGridView({
-    Key? key,
+    super.key,
     required this.posts,
     this.scrollController,
     this.isLoading = false,
@@ -28,7 +28,7 @@ class PostGridView extends StatelessWidget {
     required this.onDeleteAction, // 设为 required
     required this.onEditAction,   // 设为 required
     required this.onToggleLockAction,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

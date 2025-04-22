@@ -1,5 +1,4 @@
 // lib/models/history_item.dart
-import 'package:flutter/foundation.dart';
 
 class HistoryItem {
   final String id;

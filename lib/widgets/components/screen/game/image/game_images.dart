@@ -8,9 +8,9 @@ class GameImages extends StatelessWidget {
   final Game game;
 
   const GameImages({
-    Key? key,
+    super.key,
     required this.game,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

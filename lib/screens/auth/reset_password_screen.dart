@@ -4,6 +4,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../services/main/user/user_service.dart';
@@ -14,7 +15,7 @@ import '../../widgets/ui/common/loading_widget.dart';
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
 
-  const ResetPasswordScreen({Key? key, required this.email}) : super(key: key);
+  const ResetPasswordScreen({super.key, required this.email});
 
   @override
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
@@ -68,59 +69,47 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Widget _buildNewPassWordFormField() {
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _passwordController,
+      enabled: !_isLoading,
+      obscureText: _obscurePassword, // <--- 设置 obscureText
       decoration: InputDecoration(
         labelText: '新密码',
-        border: OutlineInputBorder(),
+        // border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon: Icon(
-            _obscurePassword ? Icons.visibility_off : Icons.visibility,
-          ),
-          onPressed: () {
-            setState(() {
-              _obscurePassword = !_obscurePassword;
-            });
-          },
+          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () { setState(() { _obscurePassword = !_obscurePassword; }); },
         ),
       ),
-      obscureText: _obscurePassword,
+      keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
+      textInputAction: TextInputAction.next,
       validator: (value) {
-        if (value == null || value.isEmpty) {
-          return '请输入新密码';
-        }
-        if (value.length < 6) {
-          return '密码长度至少6位';
-        }
+        if (value == null || value.isEmpty) return '请输入新密码';
+        if (value.length < 6) return '密码长度至少6位';
         return null;
       },
     );
   }
 
   Widget _buildRepeatPassWordFormField() {
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _confirmPasswordController,
+      enabled: !_isLoading,
+      obscureText: _obscureConfirmPassword, // <--- 设置 obscureText
       decoration: InputDecoration(
         labelText: '确认新密码',
-        border: OutlineInputBorder(),
+        // border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon: Icon(
-            _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
-          ),
-          onPressed: () {
-            setState(() {
-              _obscureConfirmPassword = !_obscureConfirmPassword;
-            });
-          },
+          icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () { setState(() { _obscureConfirmPassword = !_obscureConfirmPassword; }); },
         ),
       ),
-      obscureText: _obscureConfirmPassword,
+      keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
+      textInputAction: TextInputAction.done,
       validator: (value) {
-        if (value != _passwordController.text) {
-          return '两次输入的密码不一致';
-        }
+        if (value != _passwordController.text) return '两次输入的密码不一致';
         return null;
       },
     );

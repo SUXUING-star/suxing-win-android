@@ -21,7 +21,7 @@ class HotActivitiesCompactPanel extends StatelessWidget {
   final double panelWidth;
 
   const HotActivitiesCompactPanel({
-    Key? key,
+    super.key,
     required this.hotActivities,
     required this.activityStats,
     required this.isLoading,
@@ -31,11 +31,11 @@ class HotActivitiesCompactPanel extends StatelessWidget {
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
     required this.panelWidth,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: panelWidth,
       child: Card(
         elevation: 1,

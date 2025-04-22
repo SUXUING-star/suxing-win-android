@@ -1,7 +1,7 @@
 // lib/utils/error/error_formatter.dart (修改这个文件)
 
-import 'dart:async'; // 如果你需要检查 TimeoutException 类型
-import 'dart:io'; // 如果你需要检查 SocketException 等类型
+// 如果你需要检查 TimeoutException 类型
+// 如果你需要检查 SocketException 等类型
 // import 'package:hive/hive.dart'; // 如果你需要检查 HiveError 类型
 // import '../security/security_error.dart'; // 如果你需要检查 SecurityError 类型
 

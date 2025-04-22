@@ -15,7 +15,7 @@ class CustomErrorWidget extends StatelessWidget {
   final bool isNeedLoadingAnimation;
 
   const CustomErrorWidget({
-    Key? key,
+    super.key,
     this.errorMessage,
     this.onRetry,
     this.icon = Icons.error_outline,
@@ -24,7 +24,7 @@ class CustomErrorWidget extends StatelessWidget {
     this.iconSize = 48.0,
     this.iconColor = Colors.red,
     this.isNeedLoadingAnimation = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,14 +71,14 @@ class InlineErrorWidget extends StatelessWidget {
   final Color iconColor;
 
   const InlineErrorWidget({
-    Key? key,
+    super.key,
     this.errorMessage,
     this.onRetry,
     this.icon = Icons.error_outline,
     this.retryText = '重新加载',
     this.iconSize = 36.0,
     this.iconColor = Colors.red,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -115,10 +115,10 @@ class NetworkErrorWidget extends StatelessWidget {
   final String message;
 
   const NetworkErrorWidget({
-    Key? key,
+    super.key,
     this.onRetry,
     this.message = '网络连接错误，请检查您的网络连接后重试',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -138,10 +138,10 @@ class NotFoundErrorWidget extends StatelessWidget {
   final String message;
 
   const NotFoundErrorWidget({
-    Key? key,
+    super.key,
     this.onBack,
     this.message = '未找到请求的资源',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -163,11 +163,11 @@ class LoginErrorWidget extends StatelessWidget {
   final bool isUnauthorized;
 
   const LoginErrorWidget({
-    Key? key,
+    super.key,
     this.onLogin,
     this.message = '您需要登录以继续',
     this.isUnauthorized = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

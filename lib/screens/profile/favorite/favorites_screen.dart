@@ -5,6 +5,8 @@ import 'tabs/game_favorites_tab.dart';
 import 'tabs/post_favorites_tab.dart';
 
 class FavoritesScreen extends StatefulWidget {
+  const FavoritesScreen({super.key});
+
   @override
   _FavoritesScreenState createState() => _FavoritesScreenState();
 }

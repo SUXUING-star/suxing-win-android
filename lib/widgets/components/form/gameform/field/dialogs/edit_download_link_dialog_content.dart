@@ -15,14 +15,14 @@ class EditDownloadLinkDialogContent extends StatefulWidget {
   final IconData iconData;
 
   const EditDownloadLinkDialogContent({
-    Key? key,
+    super.key,
     required this.initialLink,
     required this.onSave,
     this.dialogTitle = '编辑下载链接',
     this.saveButtonText = '保存',
     this.cancelButtonText = '取消',
     this.iconData = Icons.link_outlined, // 默认图标
-  }) : super(key: key);
+  });
 
   @override
   _EditDownloadLinkDialogContentState createState() =>

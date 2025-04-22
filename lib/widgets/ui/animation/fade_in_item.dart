@@ -8,11 +8,11 @@ class FadeInItem extends StatefulWidget {
   final Duration delay;
 
   const FadeInItem({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 350), // 可以比滑动稍快
     this.delay = Duration.zero,
-  }) : super(key: key);
+  });
 
   @override
   _FadeInItemState createState() => _FadeInItemState();

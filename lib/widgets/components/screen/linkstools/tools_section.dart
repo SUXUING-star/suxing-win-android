@@ -10,12 +10,12 @@ class ToolsSection extends StatelessWidget {
   final Function(String) onLaunchURL;
 
   const ToolsSection({
-    Key? key,
+    super.key,
     required this.tools,
     required this.isAdmin,
     required this.onLaunchURL,
     // this.linkToolService,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

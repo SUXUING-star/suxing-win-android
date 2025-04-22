@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'package:suxingchahui/utils/error/error_formatter.dart';
-import '../../widgets/common/startup/initialization_screen.dart';
 
 class InitializationProvider extends ChangeNotifier {
   InitializationStatus _status = InitializationStatus.inProgress;

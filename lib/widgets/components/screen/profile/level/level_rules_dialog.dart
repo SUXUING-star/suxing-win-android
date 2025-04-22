@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../models/user/user_level.dart';
 import '../../../../../services/main/user/user_level_service.dart';
 import '../../../../../utils/font/font_config.dart';
 
@@ -10,9 +9,9 @@ class LevelRulesDialog extends StatefulWidget {
   final int currentLevel;
 
   const LevelRulesDialog({
-    Key? key,
+    super.key,
     required this.currentLevel,
-  }) : super(key: key);
+  });
 
   @override
   _LevelRulesDialogState createState() => _LevelRulesDialogState();

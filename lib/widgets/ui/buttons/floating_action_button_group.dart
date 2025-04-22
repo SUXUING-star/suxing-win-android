@@ -22,12 +22,12 @@ class FloatingActionButtonGroup extends StatelessWidget {
   final MainAxisSize mainAxisSize;
 
   const FloatingActionButtonGroup({
-    Key? key,
+    super.key,
     required this.children,
     this.spacing = 16.0, // 默认间距
     this.alignment = MainAxisAlignment.end, // 默认底部对齐
     this.mainAxisSize = MainAxisSize.min, // 默认最小化占用空间
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

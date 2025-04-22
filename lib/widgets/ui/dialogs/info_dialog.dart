@@ -57,7 +57,7 @@ class CustomInfoDialog extends StatelessWidget {
 
   // *** 恢复构造函数 ***
   const CustomInfoDialog({
-    Key? key,
+    super.key,
     required this.title,     // title 是 required
     required this.message,    // message 是 required
     this.closeButtonText = '好的',
@@ -65,7 +65,7 @@ class CustomInfoDialog extends StatelessWidget {
     this.iconData = Icons.info_outline, // 默认信息图标
     this.iconColor = Colors.blue,       // 默认蓝色
     this.closeButtonColor,             // 默认跟随主题色
-  }) : super(key: key);
+  });
 
   /// 显示自定义信息对话框的静态方法
   /// *** 保持原有签名 ***

@@ -11,12 +11,12 @@ class MessageListItem extends StatelessWidget {
   final bool isCompact;    // 是否为紧凑模式 (影响边距和行数)
 
   const MessageListItem({
-    Key? key,
+    super.key,
     required this.message,
     required this.onTap,
     this.isSelected = false,
     this.isCompact = false,
-  }) : super(key: key);
+  });
 
   /// 格式化显示时间 (可以移到全局工具类)
   String _formatDisplayTime(DateTime time) {

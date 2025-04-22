@@ -11,10 +11,10 @@ class AnnouncementPreviewScreen extends StatelessWidget {
   final dynamic imageSource; // 图片源 (XFile, String, or null)
 
   const AnnouncementPreviewScreen({
-    Key? key,
+    super.key,
     required this.announcementFormData, // 修改变量名以区分
     required this.imageSource,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

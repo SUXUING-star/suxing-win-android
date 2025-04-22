@@ -11,11 +11,11 @@ class ReplyList extends StatelessWidget {
   // *** 不需要接收 loading 状态 Set ***
 
   const ReplyList({
-    Key? key,
+    super.key,
     required this.replies,
     required this.onUpdateReply, // 接收需要 ID 的 onUpdate
     required this.onDeleteReply, // 接收需要 ID 的 onDelete
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

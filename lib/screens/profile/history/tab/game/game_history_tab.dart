@@ -17,11 +17,11 @@ class GameHistoryTab extends StatefulWidget {
   final GameService gameService;
 
   const GameHistoryTab({
-    Key? key,
+    super.key,
     required this.isLoaded,
     required this.onLoad,
     required this.gameService,
-  }) : super(key: key);
+  });
 
   @override
   _GameHistoryTabState createState() => _GameHistoryTabState();

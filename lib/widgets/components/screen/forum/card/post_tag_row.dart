@@ -11,7 +11,7 @@ class PostTagRow extends StatelessWidget {
   final Color? tagTextColor;
 
   const PostTagRow({
-    Key? key,
+    super.key,
     required this.tags,
     this.isAndroidPortrait = false,
     this.tagMargin,
@@ -19,7 +19,7 @@ class PostTagRow extends StatelessWidget {
     this.tagBorderRadius,
     this.tagBackgroundColor,
     this.tagTextColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

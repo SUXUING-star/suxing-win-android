@@ -12,10 +12,10 @@ class TodayCheckInList extends StatefulWidget {
   final bool showTitle;
 
   const TodayCheckInList({
-    Key? key,
+    super.key,
     this.maxHeight = 250,
     this.showTitle = true,
-  }) : super(key: key);
+  });
 
   @override
   _TodayCheckInListState createState() => _TodayCheckInListState();

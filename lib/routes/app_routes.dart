@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/notifiers/review_refresh_notifier.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
+import 'package:suxingchahui/screens/message/message_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/screens/search/search_post_screen.dart';
 import 'package:suxingchahui/screens/web/webview_screen.dart';
@@ -38,7 +41,6 @@ import 'package:suxingchahui/screens/profile/follow/user_follows_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_feed_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_detail_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_alternating_feed_screen.dart';
-import 'package:suxingchahui/layouts/main_layout.dart';
 import 'package:suxingchahui/screens/common/route_error_screen.dart';
 
 class AppRoutes {
@@ -82,6 +84,7 @@ class AppRoutes {
   static const String userActivities = '/user-activities';
   static const String activityDetail = '/activity/detail';
   static const String webView = '/webview';
+  static const String message = '/message';
 
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
@@ -91,7 +94,6 @@ class AppRoutes {
       case home:
         // 检查是否有传递标签索引参数
         if (settings.arguments != null) {
-
           if (settings.arguments is Map<String, dynamic> &&
               (settings.arguments as Map<String, dynamic>)
                   .containsKey('tab_index')) {
@@ -124,7 +126,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => ForgotPasswordScreen());
       case resetPassword:
         final arguments = settings.arguments;
-        if (arguments is! String || (arguments as String).isEmpty) {
+        if (arguments is! String || (arguments).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
               paramName: '邮箱',
@@ -159,7 +161,12 @@ class AppRoutes {
         }
         // 此时 gameId 一定非空，可以安全地传递给 GameDetailScreen
         return MaterialPageRoute(
-            builder: (_) => GameDetailScreen(gameId: gameId));
+          settings: settings,
+          builder: (context) => ChangeNotifierProvider(
+            create: (_) => ReviewRefreshNotifier(), // 创建实例
+            child: GameDetailScreen(gameId: gameId),
+          ),
+        );
       case gamesList:
         return MaterialPageRoute(builder: (_) => GamesListScreen());
       case hotGames:
@@ -266,7 +273,7 @@ class AppRoutes {
         }
 
         // 如果 activityId 为空，返回错误页面
-        if (activityId == null || activityId.isEmpty) {
+        if (activityId.isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
               resourceType: '动态',
@@ -376,6 +383,8 @@ class AppRoutes {
             initialShowFollowing: args['initialShowFollowing'] ?? true,
           ),
         );
+      case message:
+        return MaterialPageRoute(builder: (_) => MessageScreen());
       case webView: // 处理 /webview 路由
         final args = settings.arguments;
         if (args is Map<String, dynamic> && args.containsKey('url')) {

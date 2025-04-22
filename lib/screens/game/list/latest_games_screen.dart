@@ -4,6 +4,8 @@ import '../../../services/main/game/game_service.dart';
 import 'common_game_list_screen.dart'; // 引入新的 Base
 
 class LatestGamesScreen extends StatefulWidget {
+  const LatestGamesScreen({super.key});
+
   @override
   _LatestGamesScreenState createState() => _LatestGamesScreenState();
 }

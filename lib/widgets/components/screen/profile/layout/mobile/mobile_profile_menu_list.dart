@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../../routes/app_routes.dart';
 import '../../../../../../utils/font/font_config.dart';
 import '../models/profile_menu_item.dart';
 
@@ -9,9 +8,9 @@ class MobileProfileMenuList extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
 
   const MobileProfileMenuList({
-    Key? key,
+    super.key,
     required this.menuItems,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -70,7 +69,7 @@ class MobileProfileMenuList extends StatelessWidget {
                     ),
                 ],
               );
-            }).toList(),
+            }),
           ],
         ),
       ),

@@ -13,9 +13,9 @@ class MaintenanceDialog extends StatefulWidget {
   final bool canDismiss;
 
   const MaintenanceDialog({
-    Key? key,
+    super.key,
     this.canDismiss = false,
-  }) : super(key: key);
+  });
 
   @override
   _MaintenanceDialogState createState() => _MaintenanceDialogState();

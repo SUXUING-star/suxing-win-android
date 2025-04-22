@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // 保留，可能其他地方用到
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
-import '../../services/main/announcement/announcement_service.dart';
 import 'dart:async';
 
 class AuthProvider with ChangeNotifier {

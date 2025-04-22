@@ -9,12 +9,12 @@ class ScaleInItem extends StatefulWidget {
   final double initialScale;
 
   const ScaleInItem({
-    Key? key,
+    super.key,
     required this.child,
     this.duration = const Duration(milliseconds: 450), // 放大可以稍慢，更有弹性感
     this.delay = Duration.zero,
     this.initialScale = 0.7, // 从小一点开始
-  }) : super(key: key);
+  });
 
   @override
   _ScaleInItemState createState() => _ScaleInItemState();

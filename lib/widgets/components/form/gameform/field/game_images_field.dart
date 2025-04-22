@@ -15,11 +15,11 @@ class GameImagesField extends StatelessWidget {
   // 移除了内部 onLoadingChanged 和 initialGameImages
 
   const GameImagesField({
-    Key? key,
+    super.key,
     required this.gameImagesSources,
     required this.onChanged,
     required this.isLoading, // 父组件的加载状态
-  }) : super(key: key);
+  });
 
   // 选择多张本地图片
   Future<void> _pickGameImages() async {
@@ -27,9 +27,9 @@ class GameImagesField extends StatelessWidget {
 
     final ImagePicker picker = ImagePicker();
     // 选择多张图片
-    final List<XFile>? images = await picker.pickMultiImage();
+    final List<XFile> images = await picker.pickMultiImage();
 
-    if (images != null && images.isNotEmpty) {
+    if (images.isNotEmpty) {
       // 将新选的 XFile 添加到现有列表末尾
       final newList = [...gameImagesSources, ...images];
       onChanged(newList); // 将包含新 XFile 的完整列表传递给父组件

@@ -1,5 +1,4 @@
 import 'dart:math' as math;
-import 'dart:ui';
 import 'package:flutter/material.dart';
 
 class Particle {
@@ -145,9 +144,9 @@ class ParticleEffectKey extends GlobalKey<ParticleEffectState> {
 
 class ParticleEffect extends StatefulWidget {
   const ParticleEffect({
-    Key? key,
+    super.key,
     this.particleCount = 50,
-  }) : super(key: key);
+  });
 
   final int particleCount;
 

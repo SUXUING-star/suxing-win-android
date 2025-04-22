@@ -1,5 +1,4 @@
 // lib/widgets/common/robust_network_image.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -31,7 +30,7 @@ class RobustNetworkImage extends StatelessWidget {
   /// [backgroundColor] 背景颜色
   /// [defaultImage] 默认图片路径，用于所有情况失败时显示
   const RobustNetworkImage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.width,
     this.height,
@@ -43,7 +42,7 @@ class RobustNetworkImage extends StatelessWidget {
     this.onTap,
     this.backgroundColor = const Color(0xFFEEEEEE),
     this.defaultImage = 'assets/images/image_placeholder.png',
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

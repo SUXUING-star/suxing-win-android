@@ -9,10 +9,10 @@ class RandomGameCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   const RandomGameCard({
-    Key? key,
+    super.key,
     required this.game,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

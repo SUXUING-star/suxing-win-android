@@ -7,11 +7,11 @@ class GameTagList extends StatelessWidget {
   final bool isScrollable;
 
   const GameTagList({
-    Key? key,
+    super.key,
     required this.tags,
     required this.maxTags,
     this.isScrollable = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

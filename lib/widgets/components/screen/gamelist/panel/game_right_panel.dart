@@ -16,12 +16,12 @@ class GameRightPanel extends StatelessWidget {
   final GameStatsService _statsService = GameStatsService();
 
   GameRightPanel({
-    Key? key,
+    super.key,
     required this.currentPageGames,
     required this.totalGamesCount,
     this.selectedTag,
     this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -142,7 +142,7 @@ class GameRightPanel extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         Divider(height: 16),
       ],
     );
@@ -232,7 +232,7 @@ class GameRightPanel extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         Divider(height: 16),
       ],
     );

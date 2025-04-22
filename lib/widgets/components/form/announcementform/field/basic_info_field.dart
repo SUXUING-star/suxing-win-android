@@ -1,5 +1,6 @@
 // lib/widgets/components/form/announcementform/field/basic_info_field.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
 class BasicInfoField extends StatelessWidget {
   final String title;
@@ -10,14 +11,14 @@ class BasicInfoField extends StatelessWidget {
   final Function(String) onTypeChanged;
 
   const BasicInfoField({
-    Key? key,
+    super.key,
     required this.title,
     required this.content,
     required this.type,
     required this.onTitleChanged,
     required this.onContentChanged,
     required this.onTypeChanged,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +36,7 @@ class BasicInfoField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        FormTextInputField(
           initialValue: title,
           decoration: const InputDecoration(
             hintText: '输入公告标题',
@@ -61,7 +62,7 @@ class BasicInfoField extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 8),
-        TextFormField(
+        FormTextInputField(
           initialValue: content,
           decoration: const InputDecoration(
             hintText: '输入公告内容',

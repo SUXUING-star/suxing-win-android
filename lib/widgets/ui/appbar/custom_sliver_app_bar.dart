@@ -1,7 +1,6 @@
 // lib/widgets/ui/appbar/custom_sliver_app_bar.dart
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
-import 'dart:math' as math;
 
 class CustomSliverAppBar extends StatelessWidget {
   final String titleText;
@@ -23,7 +22,7 @@ class CustomSliverAppBar extends StatelessWidget {
 
 
   const CustomSliverAppBar({
-    Key? key,
+    super.key,
     required this.titleText,
     this.actions,
     this.leading,
@@ -40,8 +39,7 @@ class CustomSliverAppBar extends StatelessWidget {
     this.titleTextStyle, // 允许覆盖默认样式
     this.iconTheme = const IconThemeData(color: Colors.white), // 默认白色图标
     this.actionsIconTheme = const IconThemeData(color: Colors.white), // 默认白色图标
-  }) : assert(!snap || floating, 'snap=true requires floating=true'),
-        super(key: key);
+  }) : assert(!snap || floating, 'snap=true requires floating=true');
 
   // 辅助函数：构建默认底部线条 (可选)
   PreferredSizeWidget _buildDefaultBottom(BuildContext context, bool isAndroidLandscape) {

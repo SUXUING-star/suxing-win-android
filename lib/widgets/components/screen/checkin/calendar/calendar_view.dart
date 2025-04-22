@@ -11,13 +11,13 @@ class CalendarView extends StatelessWidget {
   final int missedDays; // 从父级传入的漏签天数 (可选)
 
   const CalendarView({
-    Key? key,
+    super.key,
     required this.selectedYear,
     required this.selectedMonth,
     required this.monthlyData,
     required this.onChangeMonth,
     this.missedDays = 0,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +115,7 @@ class CalendarView extends StatelessWidget {
                             // 年月显示 (用 Flexible 允许文本溢出时显示省略号)
                             Flexible(
                               child: Text(
-                                '$selectedYear年${selectedMonth}月',
+                                '$selectedYear年$selectedMonth月',
                                 style: const TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.bold,

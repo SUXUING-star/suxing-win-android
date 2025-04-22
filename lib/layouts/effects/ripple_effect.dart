@@ -1,5 +1,4 @@
 // lib/layouts/effects/ripple_effect.dart
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 class RipplePoint {
@@ -27,10 +26,10 @@ class RippleEffect extends StatefulWidget {
   final Function(Offset position, double strength) onRippleEffect;
 
   const RippleEffect({
-    Key? key,
+    super.key,
     required this.child,
     required this.onRippleEffect,
-  }) : super(key: key);
+  });
 
   @override
   State<RippleEffect> createState() => _RippleEffectState();

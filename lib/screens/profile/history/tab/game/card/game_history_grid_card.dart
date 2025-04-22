@@ -9,7 +9,7 @@ import '../../../../../../widgets/ui/image/safe_cached_image.dart';
 class GameHistoryGridCard extends StatelessWidget {
   final Map<String, dynamic> historyItem;
 
-  const GameHistoryGridCard({Key? key, required this.historyItem}) : super(key: key);
+  const GameHistoryGridCard({super.key, required this.historyItem});
 
   @override
   Widget build(BuildContext context) {

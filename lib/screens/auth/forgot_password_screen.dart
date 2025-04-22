@@ -8,6 +8,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // <--- 引入 ElevatedButton 封装
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // <--- 引入 TextButton 封装
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../services/main/email/email_service.dart';
@@ -16,6 +17,8 @@ import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/ui/common/loading_widget.dart';
 
 class ForgotPasswordScreen extends StatefulWidget {
+  const ForgotPasswordScreen({super.key});
+
   @override
   _ForgotPasswordScreenState createState() => _ForgotPasswordScreenState();
 }
@@ -131,33 +134,35 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildEmailFormField(bool isOverallLoading) {
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _emailController,
-      enabled: !_isSendingCode && !_isVerifying, // 允许在验证时修改邮箱
-      decoration: InputDecoration(
-          labelText: '注册邮箱', // 明确是注册时用的邮箱
-          // border: OutlineInputBorder(), // 可以统一风格
-          prefixIcon: Icon(Icons.email_outlined)), // 换个图标
+      enabled: !_isSendingCode && !_isVerifying,
+      decoration: const InputDecoration(
+        labelText: '注册邮箱',
+        prefixIcon: Icon(Icons.email_outlined),
+      ),
+      keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
+      textInputAction: TextInputAction.next, // 下一步是验证码（如果出现）
       validator: (value) {
-        if (value == null || value.isEmpty || !value.contains('@'))
-          return '请输入有效的邮箱地址';
+        if (value == null || value.isEmpty || !value.contains('@')) return '请输入有效的邮箱地址';
         return null;
       },
     );
   }
 
+
   Widget _buildVerificationCodeField(bool isOverallLoading) {
-    return TextFormField(
+    return FormTextInputField( // <--- 替换
       controller: _codeController,
       enabled: !isOverallLoading,
-      decoration: InputDecoration(
-          labelText: '邮箱验证码', // 更明确
-          // border: OutlineInputBorder(),
-          prefixIcon: Icon(Icons.pin_outlined)),
-      // 换个图标
-      keyboardType: TextInputType.number,
+      decoration: const InputDecoration(
+        labelText: '邮箱验证码',
+        prefixIcon: Icon(Icons.pin_outlined),
+      ),
+      keyboardType: TextInputType.number, // <--- 设置 keyboardType
+      maxLength: 6,
+      textInputAction: TextInputAction.done, // 最后一个输入是 done
       validator: (value) {
-        // 移除 _codeSent 检查，因为只有 codeSent 时才显示
         if (value == null || value.isEmpty) return '请输入验证码';
         if (value.length != 6) return '验证码应为6位数字';
         return null;

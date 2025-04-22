@@ -4,12 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider 判断权限
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart'; // 引入自定义菜单按钮
+// 引入自定义菜单按钮
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../../../../models/game/game.dart';
-import '../../../../../routes/app_routes.dart'; // 需要路由
+// 需要路由
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 import 'game_category_tag.dart';
@@ -31,7 +31,7 @@ class BaseGameCard extends StatelessWidget {
   // 通常gamelist后端返回的字段里不包含description字段，所以直接进行编辑回调，这里的game有些字段会缺失
 
   const BaseGameCard({
-    Key? key,
+    super.key,
     required this.game,
     this.isGridItem = true,
     this.adaptForPanels = false,
@@ -41,7 +41,7 @@ class BaseGameCard extends StatelessWidget {
     this.showCollectionStats = true,
     this.onDeleteAction,
     //this.onEditAction,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

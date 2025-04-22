@@ -17,14 +17,14 @@ class CommentList extends StatelessWidget {
 
   // *** 修改：构造函数接收正确签名的回调和 loading 状态 ***
   const CommentList({
-    Key? key,
+    super.key,
     required this.comments,
     required this.onUpdateComment, // 接收需要 ID 的 onUpdate
     required this.onDeleteComment, // 接收需要 ID 的 onDelete
     required this.onAddReply,      // 接收 onAddReply
     required this.deletingCommentIds, // 接收 loading
     required this.updatingCommentIds, // 接收 loading
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

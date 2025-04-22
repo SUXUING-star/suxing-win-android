@@ -7,7 +7,7 @@ import 'layout/mobile/hot_activities_compact_panel.dart';
 import 'layout/desktop/hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
-  const HotActivitiesPanel({Key? key}) : super(key: key);
+  const HotActivitiesPanel({super.key});
 
   @override
   _HotActivitiesPanelState createState() => _HotActivitiesPanelState();

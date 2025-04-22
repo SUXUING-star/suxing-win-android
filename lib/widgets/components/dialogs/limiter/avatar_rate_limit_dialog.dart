@@ -5,7 +5,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 class AvatarRateLimitDialog extends StatelessWidget {
   final int remainingSeconds;
 
-  const AvatarRateLimitDialog({Key? key, required this.remainingSeconds}) : super(key: key);
+  const AvatarRateLimitDialog({super.key, required this.remainingSeconds});
 
   @override
   Widget build(BuildContext context) {

@@ -11,10 +11,10 @@ class FavoriteGameGridCard extends StatelessWidget {
   final VoidCallback? onFavoritePressed;
 
   const FavoriteGameGridCard({
-    Key? key,
+    super.key,
     required this.game,
     this.onFavoritePressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -16,13 +16,13 @@ class ResponsiveFavoritesLayout extends StatelessWidget {
   final Function(String) onToggleFavorite;
 
   const ResponsiveFavoritesLayout({
-    Key? key,
+    super.key,
     required this.games,
     required this.isLoading,
     this.error,
     required this.onRefresh,
     required this.onToggleFavorite,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

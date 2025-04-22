@@ -7,11 +7,11 @@ class TagSelection extends StatelessWidget {
   final Function(String tag, bool selected) onTagSelected;
 
   const TagSelection({
-    Key? key,
+    super.key,
     required this.availableTags,
     required this.selectedTags,
     required this.onTagSelected,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

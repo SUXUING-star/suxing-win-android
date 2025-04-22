@@ -18,14 +18,14 @@ class EmptyStateWidget extends StatelessWidget {
   ///
   /// [message] 是必须的。
   const EmptyStateWidget({
-    Key? key,
+    super.key,
     required this.message,
     this.iconData,
     this.action,
     this.iconColor,
     this.textStyle,
     this.iconSize,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

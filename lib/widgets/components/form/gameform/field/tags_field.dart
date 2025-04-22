@@ -7,10 +7,10 @@ class TagsField extends StatefulWidget {
   final Function(List<String>) onChanged;
 
   const TagsField({
-    Key? key,
+    super.key,
     required this.tags,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   @override
   _TagsFieldState createState() => _TagsFieldState();

@@ -30,7 +30,7 @@ import 'refresh_controller.dart';
 class ForumScreen extends StatefulWidget {
   final String? tag;
 
-  const ForumScreen({Key? key, this.tag}) : super(key: key);
+  const ForumScreen({super.key, this.tag});
 
   @override
   _ForumScreenState createState() => _ForumScreenState();
@@ -182,30 +182,25 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       if (!mounted) return; // 获取数据后检查组件是否还在
 
       // --- *** 处理结果并强制 setState *** ---
-      if (result != null) {
-        final List<Post> fetchedPosts = result['posts'] ?? [];
-        final Map<String, dynamic> pagination = result['pagination'] ?? {};
-        final int serverPage = pagination['page'] ?? page;
-        final int serverTotalPages = pagination['pages'] ?? 1;
+      final List<Post> fetchedPosts = result['posts'] ?? [];
+      final Map<String, dynamic> pagination = result['pagination'] ?? {};
+      final int serverPage = pagination['page'] ?? page;
+      final int serverTotalPages = pagination['pages'] ?? 1;
 
-        // *** 无论如何，获取到数据后就调用 setState 更新状态 ***
-        setState(() {
-          _posts = fetchedPosts;
-          _currentPage = serverPage; // 使用服务器返回的页码
-          _totalPages = serverTotalPages;
-          _errorMessage = null; // 清除错误
-          // print(
-          //     "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts
-          //         ?.length}");
-        });
+      // *** 无论如何，获取到数据后就调用 setState 更新状态 ***
+      setState(() {
+        _posts = fetchedPosts;
+        _currentPage = serverPage; // 使用服务器返回的页码
+        _totalPages = serverTotalPages;
+        _errorMessage = null; // 清除错误
+        // print(
+        //     "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts
+        //         ?.length}");
+      });
 
-        // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
-        _startOrUpdateWatchingCache();
-      } else {
-        // 如果 service 返回 null (例如内部解析错误)
-        throw Exception("ForumService returned null data.");
-      }
-    } catch (e, s) {
+      // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
+      _startOrUpdateWatchingCache();
+        } catch (e, s) {
       print('ForumScreen _loadPosts: Error (page $page): $e\nStackTrace: $s');
       if (!mounted) return;
       // *** 出错也要 setState 更新错误信息 ***
@@ -259,7 +254,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 开始/更新监听缓存 ---
   void _startOrUpdateWatchingCache() {
-    final String newWatchIdentifier = "${_selectedTag}_${_currentPage}";
+    final String newWatchIdentifier = "${_selectedTag}_$_currentPage";
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
       // print("ForumScreen: Watch identifier hasn't changed ($newWatchIdentifier). Keeping current subscription.");

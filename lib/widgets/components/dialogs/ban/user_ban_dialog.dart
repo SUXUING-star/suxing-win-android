@@ -7,9 +7,9 @@ class UserBanDialog extends StatelessWidget {
   final UserBan ban;
 
   const UserBanDialog({
-    Key? key,
+    super.key,
     required this.ban,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

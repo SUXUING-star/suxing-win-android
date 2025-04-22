@@ -13,10 +13,10 @@ class ReplyList extends StatefulWidget {
   final VoidCallback? onReplyChanged;
 
   const ReplyList({
-    Key? key,
+    super.key,
     required this.postId,
     this.onReplyChanged,
-  }) : super(key: key);
+  });
 
   @override
   _ReplyListState createState() => _ReplyListState();

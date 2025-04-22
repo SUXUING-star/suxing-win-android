@@ -1,5 +1,6 @@
 import 'dart:async'; // For Future
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 // *** 确保这些 import 路径是正确的 ***
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -7,18 +8,16 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../models/game/game.dart';
-import '../../../models/tag/tag.dart'; // 如果面板需要
+// 如果面板需要
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
-import '../../game/edit/edit_game_screen.dart';
 import '../../game/edit/add_game_screen.dart';
 import '../../game/list/common_game_list_screen.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 import '../../../widgets/ui/dialogs/edit_dialog.dart'; // 现在是 TextInputDialog
 import '../../../widgets/ui/common/empty_state_widget.dart';
 
-
 class GameManagement extends StatefulWidget {
-  const GameManagement({Key? key}) : super(key: key);
+  const GameManagement({super.key});
 
   @override
   State<GameManagement> createState() => _GameManagementState();
@@ -100,17 +99,19 @@ class _GameManagementState extends State<GameManagement>
       if (_tabController.index == 1) {
         final result =
             await _gameService.getPendingGamesWithInfo(page: 1, pageSize: 100);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _pendingGames = result['games'];
           });
+        }
       } else if (_tabController.index == 2) {
         final result = await _gameService.getUserRejectedGamesWithInfo(
             page: 1, pageSize: 100);
-        if (mounted)
+        if (mounted) {
           setState(() {
             _rejectedGames = result['games'];
           });
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -121,10 +122,11 @@ class _GameManagementState extends State<GameManagement>
         });
       }
     } finally {
-      if (mounted)
+      if (mounted) {
         setState(() {
           _isLoadingPendingRejected = false;
         });
+      }
     }
   }
 
@@ -185,8 +187,8 @@ class _GameManagementState extends State<GameManagement>
 
   /// Handles editing a game. **(Complete)**
   Future<void> _handleEditGame(Game game) async {
-    final result = await NavigationUtils.push(context,
-        MaterialPageRoute(builder: (context) => EditGameScreen(game: game)));
+    final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
+        arguments: game);
     if (result == true && mounted) {
       _refreshAllGames();
       if (_tabController.index == 1 || _tabController.index == 2) {
@@ -227,10 +229,11 @@ class _GameManagementState extends State<GameManagement>
     } else {
       // --- Reject Case: Use EditDialog first to get the reason ---
       // *** Call EditDialog.show and provide the REQUIRED onSave callback ***
-      await EditDialog.show( // Await the Future<void> returned by EditDialog.show
+      await EditDialog.show(
+        // Await the Future<void> returned by EditDialog.show
         context: context,
         title: '输入拒绝原因',
-        initialText: '',       // Start with empty text
+        initialText: '', // Start with empty text
         hintText: '请详细说明拒绝的原因...',
         saveButtonText: '下一步', // Button text for getting reason
         maxLines: 3,
@@ -244,7 +247,7 @@ class _GameManagementState extends State<GameManagement>
             // This check is technically redundant if EditDialog's internal validation
             // (via BaseInputDialog -> Form) works correctly, but acts as a safeguard.
             // If EditDialog allowed saving empty, show warning and stop.
-            if(mounted) AppSnackBar.showWarning(context, '必须填写拒绝原因');
+            if (mounted) AppSnackBar.showWarning(context, '必须填写拒绝原因');
             // We need a way for onSave to signal failure *without* throwing an unhandled exception
             // if possible. If EditDialog's underlying BaseInputDialog handles onConfirm returning null
             // to keep the dialog open, we could return null or throw a specific validation exception.
@@ -268,7 +271,6 @@ class _GameManagementState extends State<GameManagement>
             },
           );
           // --- End of CustomConfirmDialog call ---
-
         }, // --- End of onSave callback for EditDialog ---
       );
       // The Future<void> returned by EditDialog.show completes when the dialog
@@ -580,6 +582,17 @@ class _GameManagementState extends State<GameManagement>
                   icon: Icon(Icons.delete, color: Colors.red),
                   onPressed: () => _handleDeleteGame(game.id, game.title),
                   tooltip: '删除',
+                ),
+              ),
+              CircleAvatar(
+                backgroundColor: Colors.white.withOpacity(0.7),
+                radius: 16,
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  iconSize: 18,
+                  icon: Icon(Icons.edit, color: Colors.green),
+                  onPressed: () => _handleEditGame(game),
+                  tooltip: '编辑',
                 ),
               ),
             ],

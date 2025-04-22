@@ -6,7 +6,7 @@ import '../../../models/linkstools/link.dart';
 import '../../../widgets/components/form/linkform/link_form_dialog.dart';
 
 class LinkManagement extends StatefulWidget {
-  const LinkManagement({Key? key}) : super(key: key);
+  const LinkManagement({super.key});
 
   @override
   State<LinkManagement> createState() => _LinkManagementState();
@@ -172,8 +172,8 @@ class _LinkManagementState extends State<LinkManagement> {
           ),
           TextButton(
             onPressed: () => NavigationUtils.pop(context, true),
-            child: const Text('删除'),
             style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('删除'),
           ),
         ],
       ),

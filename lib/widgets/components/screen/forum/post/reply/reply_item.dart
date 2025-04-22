@@ -13,7 +13,6 @@ import '../../../../../ui/badges/user_info_badge.dart';
 import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
 import '../../../../../ui/inputs/text_input_field.dart';
-import '../../../../../ui/buttons/popup/custom_popup_menu_button.dart';
 
 class ReplyItem extends StatelessWidget {
   final Reply reply;
@@ -23,12 +22,12 @@ class ReplyItem extends StatelessWidget {
   final VoidCallback? onReplyChanged;
 
   ReplyItem({
-    Key? key,
+    super.key,
     required this.postId,
     required this.reply,
     required this.floor,
     this.onReplyChanged,
-  }) : super(key: key);
+  });
 
   // --- 提取出来的回复提交逻辑 ---
   /// 处理回复提交的核心逻辑
@@ -305,7 +304,7 @@ class ReplyItem extends StatelessWidget {
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8.0), // 标题和输入框间距
                     child: Text(
-                      '回复 ${floor}楼', // 使用 floor 变量
+                      '回复 $floor楼', // 使用 floor 变量
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,

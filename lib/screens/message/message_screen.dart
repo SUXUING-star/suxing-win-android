@@ -17,6 +17,8 @@ import '../../widgets/components/screen/message/message_list.dart';
 
 /// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
+  const MessageScreen({super.key});
+
   @override
   _MessageScreenState createState() => _MessageScreenState();
 }
@@ -527,7 +529,6 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   /// 构建桌面端布局
-  /// 构建桌面端布局
   Widget _buildDesktopLayout() {
     final sidePanelWidth = DeviceUtils.getSidePanelWidth(context);
 
@@ -541,50 +542,48 @@ class _MessageScreenState extends State<MessageScreen> {
         children: [
           // Main content (左侧列表)
           Expanded(
-            child: _buildMessageContent(), // 内部已有动画
+            child: _buildMessageContent(),
           ),
 
-          // --- 修改这里：使用 AnimatedSwitcher 包裹右侧面板 ---
+          // AnimatedSwitcher for the right panel
           AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300), // 动画时长
+            duration: const Duration(milliseconds: 300),
             transitionBuilder: (Widget child, Animation<double> animation) {
-              // 使用 Fade + Slide 过渡
               return FadeTransition(
                 opacity: animation,
                 child: SlideTransition(
-                  // 从右侧滑入滑出
                   position: Tween<Offset>(
-                    begin: const Offset(0.1, 0.0), // 从右侧 10% 的位置开始
+                    begin: const Offset(0.1, 0.0),
                     end: Offset.zero,
                   ).animate(animation),
                   child: child,
                 ),
               );
             },
-            // 根据 _showMessageDetails 和 _selectedMessage 是否为 null 决定显示什么
             child: _showMessageDetails && _selectedMessage != null
                 ? Container(
-                    // 使用 Container 包装，并给 Key
-                    key: ValueKey<String>(
-                        _selectedMessage!.id), // 使用消息 ID 作为 Key
-                    width: sidePanelWidth,
-                    height: double.infinity,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.05),
-                          blurRadius: 5,
-                          offset: Offset(-2, 0),
-                        ),
-                      ],
-                    ),
-                    child: _buildRightPanel(), // 构建详情面板内容
-                  )
-                : SizedBox.shrink(
-                    key: ValueKey<String>('empty_panel')), // 不显示时用 SizedBox
+              // Key is important for AnimatedSwitcher to detect changes
+              key: ValueKey<String>(_selectedMessage!.id),
+              width: sidePanelWidth,
+              // --- 修改开始: 移除无限高度 ---
+              // height: double.infinity, // REMOVE THIS LINE
+              // --- 修改结束 ---
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: Offset(-2, 0),
+                  ),
+                ],
+              ),
+              // Ensure the MessageDetail widget itself can handle height correctly
+              child: _buildRightPanel(),
+            )
+            // Use SizedBox.shrink() for the 'empty' state
+                : SizedBox.shrink(key: ValueKey<String>('empty_panel')),
           ),
-          // --- 结束修改 ---
         ],
       ),
     );

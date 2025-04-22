@@ -8,9 +8,9 @@ class NetworkStatusIndicator extends StatefulWidget {
   final VoidCallback? onReconnect;
 
   const NetworkStatusIndicator({
-    Key? key,
+    super.key,
     this.onReconnect,
-  }) : super(key: key);
+  });
 
   @override
   State<NetworkStatusIndicator> createState() => _NetworkStatusIndicatorState();

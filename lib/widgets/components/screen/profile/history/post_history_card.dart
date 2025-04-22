@@ -10,10 +10,10 @@ class PostHistoryCard extends StatelessWidget {
   final VoidCallback? onDeletePressed;
 
   const PostHistoryCard({
-    Key? key,
+    super.key,
     required this.historyItem,
     this.onDeletePressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

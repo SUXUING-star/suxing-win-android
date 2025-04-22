@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
 
@@ -12,10 +11,10 @@ class HistoryGameGridCard extends StatelessWidget {
   final VoidCallback? onDeletePressed;
 
   const HistoryGameGridCard({
-    Key? key,
+    super.key,
     required this.historyItem,
     this.onDeletePressed,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

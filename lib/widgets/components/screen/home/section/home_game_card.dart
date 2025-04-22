@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/components/screen/game/card/game_category_tag.dart';
 import '../../../../../models/game/game.dart';
 import 'animated_card_container.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -12,10 +11,10 @@ class HomeGameCard extends StatelessWidget {
   static const double cardHeight = 210; // 稍微增加高度，为统计信息留出空间
 
   const HomeGameCard({
-    Key? key,
+    super.key,
     required this.game,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

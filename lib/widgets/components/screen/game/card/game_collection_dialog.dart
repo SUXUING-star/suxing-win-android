@@ -6,7 +6,7 @@ import 'collection_stat_row.dart';
 class GameCollectionDialog extends StatelessWidget {
   final Game game;
 
-  const GameCollectionDialog({Key? key, required this.game}) : super(key: key);
+  const GameCollectionDialog({super.key, required this.game});
 
   @override
   Widget build(BuildContext context) {

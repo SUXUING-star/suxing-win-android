@@ -9,24 +9,24 @@ class ActivityStatsCard extends StatelessWidget {
   final Color Function(String) getActivityTypeColor;
 
   const ActivityStatsCard({
-    Key? key,
+    super.key,
     required this.activityStats,
     required this.isLoading,
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
     if (isLoading) {
-      return Container(
+      return SizedBox(
         height: 80,
         child: Center(child: CircularProgressIndicator()),
       );
     }
 
     if (activityStats.isEmpty) {
-      return Container(
+      return SizedBox(
         height: 80,
         child: Center(child: Text('无法加载统计数据')),
       );
@@ -88,7 +88,7 @@ class ActivityStatsCard extends StatelessWidget {
         SizedBox(height: 8),
 
         // 动态类型分布
-        Container(
+        SizedBox(
           height: 80,
           child: ListView.builder(
             scrollDirection: Axis.horizontal,

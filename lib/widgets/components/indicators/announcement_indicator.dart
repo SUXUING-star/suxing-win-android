@@ -8,7 +8,7 @@ import '../dialogs/announcement/announcement_dialog.dart';
 import '../../../providers/auth/auth_provider.dart';
 
 class AnnouncementIndicator extends StatefulWidget {
-  const AnnouncementIndicator({Key? key}) : super(key: key);
+  const AnnouncementIndicator({super.key});
 
   @override
   State<AnnouncementIndicator> createState() => _AnnouncementIndicatorState();

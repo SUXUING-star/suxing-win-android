@@ -13,7 +13,7 @@ class EditGameScreen extends StatelessWidget {
   final Game game;
   final GameService _gameService = GameService();
 
-  EditGameScreen({required this.game});
+  EditGameScreen({super.key, required this.game});
 
   @override
   Widget build(BuildContext context) {

@@ -10,13 +10,13 @@ class StarLogo extends StatelessWidget {
   final bool withGlow;
 
   const StarLogo({
-    Key? key,
+    super.key,
     this.size = 80,
     this.primaryColor = const Color(0xFFFFD700), // 金黄色
     this.secondaryColor = const Color(0xFFFFA500), // 橙色
     this.numberOfStars = 7,
     this.withGlow = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

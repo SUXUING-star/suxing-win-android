@@ -14,7 +14,7 @@ class FunctionalTextButton extends StatelessWidget {
   final Color? customColor; // 可选的自定义颜色
 
   const FunctionalTextButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.label,
     this.icon, // 去掉 required，现在是可选的
@@ -24,7 +24,7 @@ class FunctionalTextButton extends StatelessWidget {
     this.isLoading = false,
     this.isEnabled = true,
     this.customColor, // 允许传入自定义颜色
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

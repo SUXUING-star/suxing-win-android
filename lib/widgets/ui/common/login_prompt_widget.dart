@@ -9,9 +9,9 @@ class LoginPromptWidget extends StatelessWidget {
   final bool isDesktop;
 
   const LoginPromptWidget({
-    Key? key,
+    super.key,
     this.isDesktop = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -41,7 +41,7 @@ class SafeUserAvatar extends StatefulWidget {
   final Color? backgroundColor;
 
   const SafeUserAvatar({
-    Key? key,
+    super.key,
     this.userId,
     this.avatarUrl,
     this.username,
@@ -52,7 +52,7 @@ class SafeUserAvatar extends StatefulWidget {
     this.borderColor,
     this.borderWidth,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   State<SafeUserAvatar> createState() => _SafeUserAvatarState();

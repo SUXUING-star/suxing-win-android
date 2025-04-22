@@ -13,14 +13,14 @@ class GameCoverImage extends StatelessWidget {
   final BoxFit fit;
 
   const GameCoverImage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.borderRadius = 12.0, // 默认圆角大小
     this.hasShadow = true,    // 默认启用阴影
     this.height,              // 可选高度
     this.width,               // 可选宽度
     this.fit = BoxFit.contain, // 默认使用contain以保持原始比例
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

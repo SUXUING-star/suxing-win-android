@@ -12,7 +12,7 @@ class WarningButton extends StatelessWidget {
   final bool isEnabled;
 
   const WarningButton({
-    Key? key,
+    super.key,
     required this.onPressed,
     required this.label,
     required this.icon,
@@ -21,7 +21,7 @@ class WarningButton extends StatelessWidget {
     this.padding = const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
     this.isLoading = false,
     this.isEnabled = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

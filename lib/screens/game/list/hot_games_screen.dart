@@ -4,6 +4,8 @@ import '../../../services/main/game/game_service.dart';
 import 'common_game_list_screen.dart'; // 引入新的 Base
 
 class HotGamesScreen extends StatefulWidget {
+  const HotGamesScreen({super.key});
+
   @override
   _HotGamesScreenState createState() => _HotGamesScreenState();
 }
@@ -50,17 +52,13 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
       title: '热门游戏',
       // *** 传递 Future ***
       gamesFuture: _hotGamesFuture,
-      // *** 传递下拉刷新回调 ***
       onRefreshTriggered: _handleRefresh,
-      // --- 其他参数 ---
-      // 热门列表通常只读，提供空的回调或不提供
       onDeleteGameAction: (gameId) async { /* No action needed */ },
       emptyStateMessage: '暂无热门游戏',
       emptyStateIcon: Icon(Icons.local_fire_department, size: 48, color: Colors.grey), // 不加 const
       showTagSelection: false,
       showPanelToggles: false,
       useScaffold: true, // HotGamesScreen 可能需要自己的 Scaffold
-      // 其他需要显示的按钮可以设置为 true
       showAddButton: false,
       showSortOptions: false,
     );

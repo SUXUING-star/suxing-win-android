@@ -3,11 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/theme/theme_provider.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 // --- 引入新的活动类型工具类 ---
@@ -26,7 +24,7 @@ class ActivityHeader extends StatelessWidget {
 
 
   const ActivityHeader({
-    Key? key,
+    super.key,
     required this.user,
     required this.createTime,
     this.updateTime,
@@ -36,7 +34,7 @@ class ActivityHeader extends StatelessWidget {
     this.cardHeight = 1.0,
     this.onEdit,
     this.onDelete,
-  }) : super(key: key);
+  });
 
 
   @override

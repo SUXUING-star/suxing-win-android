@@ -12,7 +12,7 @@ class GameTags extends StatelessWidget {
   final CrossAxisAlignment crossAxisAlignment;
 
   const GameTags({
-    Key? key,
+    super.key,
     required this.game,
     this.fontSize,
     this.wrap = true,
@@ -20,7 +20,7 @@ class GameTags extends StatelessWidget {
     this.padding,
     this.mainAxisAlignment = MainAxisAlignment.start,
     this.crossAxisAlignment = CrossAxisAlignment.center,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

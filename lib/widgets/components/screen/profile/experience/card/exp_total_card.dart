@@ -7,9 +7,9 @@ class ExpTotalCard extends StatelessWidget {
   final int totalExp;
 
   const ExpTotalCard({
-    Key? key,
+    super.key,
     required this.totalExp,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

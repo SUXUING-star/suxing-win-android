@@ -15,10 +15,10 @@ class ImagePreviewScreen extends StatefulWidget {
   final int initialIndex;
 
   const ImagePreviewScreen({
-    Key? key,
+    super.key,
     required this.images,
     required this.initialIndex,
-  }) : super(key: key);
+  });
 
   @override
   _ImagePreviewScreenState createState() => _ImagePreviewScreenState();

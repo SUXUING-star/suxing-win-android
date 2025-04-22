@@ -38,7 +38,7 @@ class SafeCachedImage extends StatelessWidget {
   final Color? backgroundColor;
 
   const SafeCachedImage({
-    Key? key,
+    super.key,
     required this.imageUrl,
     this.width,
     this.height,
@@ -49,7 +49,7 @@ class SafeCachedImage extends StatelessWidget {
     this.memCacheWidth,
     this.memCacheHeight,
     this.backgroundColor,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

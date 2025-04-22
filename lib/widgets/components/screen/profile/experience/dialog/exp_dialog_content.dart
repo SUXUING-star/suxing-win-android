@@ -12,11 +12,11 @@ class ExpDialogContent extends StatelessWidget {
   final bool isDesktop;
 
   const ExpDialogContent({
-    Key? key,
+    super.key,
     required this.progressData,
     required this.tasks,
     this.isDesktop = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -55,7 +55,7 @@ class ExpDialogContent extends StatelessWidget {
           _buildTaskListTitle(),
 
           // 任务卡片列表
-          ...tasks.map((task) => ExpTaskCard(task: task)).toList(),
+          ...tasks.map((task) => ExpTaskCard(task: task)),
         ],
       ),
     );

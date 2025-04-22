@@ -2,23 +2,27 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/wrapper/platform_wrapper.dart';
 import '../../providers/navigation/sidebar_provider.dart';
-import '../../app.dart';
 import 'desktop_sidebar_nav_item.dart';
-import 'desktop_sidebar_buttons.dart';
 import 'desktop_sidebar_user_profile.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class DesktopSidebar extends StatelessWidget {
   final Widget child;
-  final int currentIndex;
+  static const double _sidebarWidth = 70.0;
+  static const sidebarWidth = _sidebarWidth;
 
   const DesktopSidebar({
-    Key? key,
+    super.key,
     required this.child,
-    this.currentIndex = 0,
-  }) : super(key: key);
+  });
 
   static const iconPath = 'assets/images/icons';
+  static const List<Color> sideBarColors = [
+    Color(0xFFD8FFEF),
+    Color(0x000000ff),
+  ];
 
   // 导航菜单项列表
   List<Map<String, dynamic>> _getNavItems() {
@@ -33,16 +37,18 @@ class DesktopSidebar extends StatelessWidget {
 
   // 构建导航菜单
   Widget _buildSidebarNavigation(BuildContext context) {
+    final currentSidebarIndex =
+        Provider.of<SidebarProvider>(context).currentIndex;
     return ListView(
-      padding: EdgeInsets.symmetric(vertical: 16),
+      padding: EdgeInsets.symmetric(vertical: 2),
       children: _getNavItems()
           .map((item) => DesktopSidebarNavItem(
-        icon: item['icon'],
-        label: item['label'],
-        index: item['index'],
-        isSelected: currentIndex == item['index'],
-        onTap: () => _navigateToMainScreen(context, item['index']),
-      ))
+                icon: item['icon'],
+                label: item['label'],
+                index: item['index'],
+                isSelected: currentSidebarIndex == item['index'],
+                onTap: () => _navigateToMainScreen(context, item['index']),
+              ))
           .toList(),
     );
   }
@@ -50,28 +56,27 @@ class DesktopSidebar extends StatelessWidget {
   // 导航到指定页面
   void _navigateToMainScreen(BuildContext context, int index) {
     Provider.of<SidebarProvider>(context, listen: false).setCurrentIndex(index);
-    NavigationUtils.navigateToHome(context,tabIndex: index);
+    NavigationUtils.navigateToHome(context, tabIndex: index);
   }
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = DeviceUtils.isDesktop;
+    final bool canGoBack = Navigator.canPop(context);
+    //print("cangoback: $canGoBack");
     // 侧边栏宽度
-    const double sidebarWidth = 80.0;
 
     return Row(
       children: [
         // 左侧边栏
         Container(
-          width: sidebarWidth,
+          width: _sidebarWidth,
           height: double.infinity,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                Color(0xFF6AB7F0),
-                Color(0xFF4E9DE3),
-              ],
+              colors: [...sideBarColors],
             ),
             boxShadow: [
               BoxShadow(
@@ -82,33 +87,51 @@ class DesktopSidebar extends StatelessWidget {
             ],
           ),
           child: SafeArea(
-            child: Column(
-              children: [
-                // 用户资料
-                DesktopSidebarUserProfile(
-                  onProfileTap: () => _navigateToMainScreen(context, 5),
-                ),
+            child: Padding(
+              padding: const EdgeInsets.only(
+                  top: PlatformWrapper.kDesktopTitleBarHeight),
+              child: Consumer<SidebarProvider>(
+                // <--- Consume SidebarProvider
+                builder: (context, sidebarState, _) {
+                  final bool isSubRouteActive = sidebarState.isSubRouteActive;
+                  return Column(
+                    children: [
+                      if (isDesktop &&
+                          isSubRouteActive) // <-- Use the new state
+                        IconButton(
+                          icon: Icon(Icons.arrow_back, color: Colors.black54),
+                          iconSize: 20,
+                          tooltip: '返回',
+                          onPressed: () {
+                            // Pop using NavigationUtils (which should update state via RouteObserver)
+                            NavigationUtils.pop(context);
+                          },
+                        )
+                      else // Placeholder to prevent layout jumps
+                        SizedBox.shrink(),
+                      // 用户资料
+                      DesktopSidebarUserProfile(
+                        onProfileTap: () => _navigateToMainScreen(context, 5),
+                      ),
 
+                      // 导航菜单（可滚动）
+                      Expanded(
+                        child: _buildSidebarNavigation(context),
+                      ),
 
-                // 导航菜单（可滚动）
-                Expanded(
-                  child: _buildSidebarNavigation(context),
-                ),
-
-                // 分隔线
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: Divider(
-                    color: Colors.white.withOpacity(0.3),
-                    height: 1,
-                  ),
-                ),
-
-                // 移动端按钮区域
-                DesktopSidebarMobileButtons(),
-
-
-              ],
+                      // 分隔线
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                        child: Divider(
+                          color: Colors.white.withOpacity(0.3),
+                          height: 1,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+              // --- End Consumer ---
             ),
           ),
         ),

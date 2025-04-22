@@ -13,7 +13,7 @@ import 'widgets/announcement_management.dart'; // 导入公告管理组件
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 
 class AdminDashboard extends StatefulWidget {
-  const AdminDashboard({Key? key}) : super(key: key);
+  const AdminDashboard({super.key});
 
   @override
   State<AdminDashboard> createState() => _AdminDashboardState();

@@ -12,11 +12,11 @@ class UserFollowsScreen extends StatefulWidget {
   final bool initialShowFollowing; // true 显示关注列表，false 显示粉丝列表
 
   const UserFollowsScreen({
-    Key? key,
+    super.key,
     required this.userId,
     required this.username,
     this.initialShowFollowing = true,
-  }) : super(key: key);
+  });
 
   @override
   _UserFollowsScreenState createState() => _UserFollowsScreenState();

@@ -14,9 +14,9 @@ class PostActionsBottomSheet extends StatelessWidget {
   final Post post;
 
   const PostActionsBottomSheet({
-    Key? key,
+    super.key,
     required this.post,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

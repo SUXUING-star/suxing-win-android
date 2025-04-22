@@ -39,13 +39,13 @@ class PostCard extends StatelessWidget {
   final Future<void> Function(String postId)? onToggleLockAction;
 
   const PostCard({
-    Key? key,
+    super.key,
     required this.post,
     this.isDesktopLayout = false,
     this.onDeleteAction, // 已设为可选
     this.onEditAction,   // 已设为可选
     this.onToggleLockAction, // 已设为可选
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -80,8 +80,8 @@ class PostCard extends StatelessWidget {
             AppRoutes.postDetail,
             arguments: post.id, // 传递帖子 ID
           );
-          print(
-              "PostCard onTap: Returned from post detail with result: $result");
+          //print(
+          //    "PostCard onTap: Returned from post detail with result: $result");
 
           // --- 处理从详情页返回的结果 ---
           if (!context.mounted) return; // 检查 context 是否仍然有效
@@ -89,15 +89,15 @@ class PostCard extends StatelessWidget {
           // 这里的逻辑保持不变，依赖父组件通过 _navigateToPostDetail 处理刷新
           if (result is Map) {
             if (result['deleted'] == true) {
-              print(
-                  "PostCard onTap: Detail page indicated deletion. Parent should handle refresh via its own logic.");
+              //print(
+              //    "PostCard onTap: Detail page indicated deletion. Parent should handle refresh via its own logic.");
             } else if (result['updated'] == true) {
-              print(
-                  "PostCard onTap: Detail page indicated update. Parent should handle refresh via its own logic.");
-            }
+              //print(
+              //    "PostCard onTap: Detail page indicated update. Parent should handle refresh via its own logic.");
+            }//
           } else if (result == true) {
-            print(
-                "PostCard onTap: Detail page returned generic interaction (true). Assuming ForumScreen._navigateToPostDetail handles refresh.");
+            //print(
+            //    "PostCard onTap: Detail page returned generic interaction (true). Assuming ForumScreen._navigateToPostDetail handles refresh.");
           }
         },
         child: Column(

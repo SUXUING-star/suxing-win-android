@@ -7,7 +7,7 @@ import '../../../widgets/components/dialogs/announcement/announcement_dialog.dar
 import '../../../widgets/components/form/announcementform/announcement_form.dart';
 
 class AnnouncementManagement extends StatefulWidget {
-  const AnnouncementManagement({Key? key}) : super(key: key);
+  const AnnouncementManagement({super.key});
 
   @override
   State<AnnouncementManagement> createState() => _AnnouncementManagementState();
@@ -336,8 +336,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
             leading: Icon(_getTypeIcon(type), color: typeColor),
             title: Text(announcement.title, style: const TextStyle(fontWeight: FontWeight.bold)),
             subtitle: Text(
-              '优先级: ${announcement.priority} · ' +
-                  '${announcement.startDate.day}/${announcement.startDate.month} - ${announcement.endDate.day}/${announcement.endDate.month}',
+              '优先级: ${announcement.priority} · ' '${announcement.startDate.day}/${announcement.startDate.month} - ${announcement.endDate.day}/${announcement.endDate.month}',
             ),
             trailing: Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),

@@ -9,7 +9,7 @@ import '../../../../../../models/game/game.dart';
 class DesktopProfileGameCard extends StatelessWidget {
   final Game game;
 
-  const DesktopProfileGameCard({Key? key, required this.game}) : super(key: key);
+  const DesktopProfileGameCard({super.key, required this.game});
 
   @override
   Widget build(BuildContext context) {

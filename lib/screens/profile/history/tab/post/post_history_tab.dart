@@ -15,11 +15,11 @@ class PostHistoryTab extends StatefulWidget {
   final ForumService forumService;
 
   const PostHistoryTab({
-    Key? key,
+    super.key,
     required this.isLoaded,
     required this.onLoad,
     required this.forumService,
-  }) : super(key: key);
+  });
 
   @override
   _PostHistoryTabState createState() => _PostHistoryTabState();

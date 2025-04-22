@@ -7,7 +7,7 @@ import '../../widgets/components/badge/layout/update_button.dart';
 import '../../widgets/components/badge/layout/message_badge.dart';
 import '../../widgets/components/indicators/announcement_indicator.dart';
 class DesktopSidebarMobileButtons extends StatelessWidget {
-  const DesktopSidebarMobileButtons({Key? key}) : super(key: key);
+  const DesktopSidebarMobileButtons({super.key});
 
   // 通用的指示器按钮构建方法，添加悬停效果和光标样式
   Widget _buildIndicatorButton(BuildContext context, {required Widget child}) {

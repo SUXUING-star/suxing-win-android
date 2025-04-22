@@ -18,7 +18,7 @@ class RouteErrorScreen extends StatelessWidget {
   final bool showHomeButton;
 
   const RouteErrorScreen({
-    Key? key,
+    super.key,
     this.errorTitle = '路由错误',
     this.errorMessage = '无法访问请求的页面',
     this.buttonText = '返回首页',
@@ -26,7 +26,7 @@ class RouteErrorScreen extends StatelessWidget {
     this.iconColor = Colors.red,
     this.onAction,
     this.showHomeButton = true,
-  }) : super(key: key);
+  });
 
   /// Factory constructor for invalid ID error cases
   factory RouteErrorScreen.invalidId({

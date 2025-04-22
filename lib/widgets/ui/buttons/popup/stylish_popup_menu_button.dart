@@ -26,7 +26,7 @@ class StylishPopupMenuButton<T> extends StatelessWidget {
   final EdgeInsetsGeometry itemPadding; // 统一的菜单项内边距
 
   const StylishPopupMenuButton({
-    Key? key,
+    super.key,
     required this.items,
     this.onSelected,
     // --- 触发器 ---
@@ -46,8 +46,7 @@ class StylishPopupMenuButton<T> extends StatelessWidget {
     // --- Item 外观 ---
     this.itemHeight = 42.0, // 默认 Item 高度
     this.itemPadding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0), // 默认 Item 内边距
-  }) : assert(icon != null || child != null, 'Either icon or child must be provided.'),
-        super(key: key);
+  }) : assert(icon != null || child != null, 'Either icon or child must be provided.');
 
   @override
   Widget build(BuildContext context) {

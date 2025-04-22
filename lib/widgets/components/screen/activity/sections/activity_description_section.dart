@@ -6,10 +6,10 @@ class ActivityDescriptionSection extends StatelessWidget { // 公共类
   final bool isDesktop;
 
   const ActivityDescriptionSection({ // 构造函数
-    Key? key,
+    super.key,
     required this.activity,
     required this.isDesktop,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

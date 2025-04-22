@@ -19,7 +19,7 @@ class DisplaySettingsField extends StatelessWidget {
   // final Function(bool) onLoadingChanged; // 移除 onLoadingChanged
 
   const DisplaySettingsField({
-    Key? key,
+    super.key,
     required this.startDate,
     required this.endDate,
     required this.isActive,
@@ -32,7 +32,7 @@ class DisplaySettingsField extends StatelessWidget {
     required this.onImageSourceChanged, // 修改
     // this.isLoading = false, // 移除
     // required this.onLoadingChanged, // 移除
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -40,27 +40,36 @@ class DisplaySettingsField extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 日期部分 - 不变
-        const Text('显示日期', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('显示日期',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
         Row(
           children: [
-            Expanded(child: _buildDateField(context, '开始日期', startDate, onStartDateChanged)),
+            Expanded(
+                child: _buildDateField(
+                    context, '开始日期', startDate, onStartDateChanged)),
             const SizedBox(width: 16),
-            Expanded(child: _buildDateField(context, '结束日期', endDate, onEndDateChanged)),
+            Expanded(
+                child: _buildDateField(
+                    context, '结束日期', endDate, onEndDateChanged)),
           ],
         ),
         const SizedBox(height: 8),
-        const Text('设置公告的显示时间范围。', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+        const Text('设置公告的显示时间范围。',
+            style: TextStyle(
+                fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
         const SizedBox(height: 16),
 
-
         // 优先级部分 - 不变
-        const Text('优先级', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+        const Text('优先级',
+            style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         const SizedBox(height: 8),
-        DropdownButtonFormField<int>( // 使用 DropdownButtonFormField 更好
+        DropdownButtonFormField<int>(
+          // 使用 DropdownButtonFormField 更好
           decoration: const InputDecoration(
             border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 调整内边距
+            contentPadding:
+                EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 调整内边距
           ),
           value: priority.clamp(1, 10), // 确保值在1-10
           items: List.generate(10, (index) => index + 1) // 生成 1 到 10
@@ -73,9 +82,10 @@ class DisplaySettingsField extends StatelessWidget {
           },
         ),
         const SizedBox(height: 8),
-        const Text('数字越大优先级越高 (10为最高)。', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
+        const Text('数字越大优先级越高 (10为最高)。',
+            style: TextStyle(
+                fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
         const SizedBox(height: 16),
-
 
         // --- 图片上传组件 (修改) ---
         AnnouncementImageField(
@@ -91,20 +101,22 @@ class DisplaySettingsField extends StatelessWidget {
         // 是否激活部分 - 不变
         Row(
           children: [
-            const Text('是否激活', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            const Text('是否激活',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const Spacer(),
             Switch(value: isActive, onChanged: onActiveChanged),
           ],
         ),
-        const Text('激活后将在指定日期内对用户可见。', style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
-
+        const Text('激活后将在指定日期内对用户可见。',
+            style: TextStyle(
+                fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic)),
       ],
     );
   }
 
   // _buildDateField 方法 - 保持不变
-  Widget _buildDateField(
-      BuildContext context, String label, DateTime initialDate, Function(DateTime) onDateChanged) {
+  Widget _buildDateField(BuildContext context, String label,
+      DateTime initialDate, Function(DateTime) onDateChanged) {
     final dateFormat = DateFormat('yyyy-MM-dd');
     return InkWell(
       onTap: () async {
@@ -117,16 +129,19 @@ class DisplaySettingsField extends StatelessWidget {
         if (date != null) {
           // 如果需要保留时间，可以结合 TimeOfDay 选择器或使用现有时间
           final currentTime = TimeOfDay.fromDateTime(initialDate);
-          final finalDateTime = DateTime(date.year, date.month, date.day, currentTime.hour, currentTime.minute);
+          final finalDateTime = DateTime(date.year, date.month, date.day,
+              currentTime.hour, currentTime.minute);
           onDateChanged(finalDateTime); // 返回包含时间的 DateTime
           // 如果只需要日期，则： onDateChanged(date);
         }
       },
-      child: InputDecorator( // 使用 InputDecorator 样式更统一
+      child: InputDecorator(
+        // 使用 InputDecorator 样式更统一
         decoration: InputDecoration(
           labelText: label,
           border: const OutlineInputBorder(),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // 调整边距
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 12, vertical: 16), // 调整边距
         ),
         child: Text(dateFormat.format(initialDate)),
       ),

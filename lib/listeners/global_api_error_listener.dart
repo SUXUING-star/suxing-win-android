@@ -7,7 +7,7 @@ import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart'; // 导入你�
 
 class GlobalApiErrorListener extends StatefulWidget {
   final Widget child;
-  const GlobalApiErrorListener({Key? key, required this.child}) : super(key: key);
+  const GlobalApiErrorListener({super.key, required this.child});
 
   @override
   State<GlobalApiErrorListener> createState() => _GlobalApiErrorListenerState();

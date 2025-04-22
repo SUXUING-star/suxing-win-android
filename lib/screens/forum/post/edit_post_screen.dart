@@ -1,7 +1,6 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -13,7 +12,7 @@ import '../../../widgets/components/form/postform/config/post_taglists.dart';
 class EditPostScreen extends StatefulWidget {
   final String postId;
 
-  const EditPostScreen({Key? key, required this.postId}) : super(key: key);
+  const EditPostScreen({super.key, required this.postId});
 
   @override
   _EditPostScreenState createState() => _EditPostScreenState();
@@ -60,9 +59,9 @@ class _EditPostScreenState extends State<EditPostScreen> {
 
     // 安全地处理 postIdInfo
     String displayPostId = "无效ID"; // 默认值
-    if (_post!.id != null && _post!.id.isNotEmpty) { // 增加非空和非空字符串检查
+    if (_post!.id.isNotEmpty) { // 增加非空和非空字符串检查
       displayPostId = _post!.id.length >= 8
-          ? _post!.id.substring(0, 8) + '...'
+          ? '${_post!.id.substring(0, 8)}...'
           : _post!.id; // 如果 ID 不足8位，显示完整 ID
     }
 

@@ -6,9 +6,9 @@ class AnimatedAppLogo extends StatefulWidget {
   final double size;
 
   const AnimatedAppLogo({
-    Key? key,
+    super.key,
     this.size = 180,
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedAppLogo> createState() => _AnimatedAppLogoState();

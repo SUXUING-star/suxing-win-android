@@ -12,7 +12,6 @@ import '../../widgets/components/badge/layout/update_button.dart';
 import '../../widgets/components/badge/layout/message_badge.dart';
 import '../../widgets/components/indicators/announcement_indicator.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart';
-import '../../widgets/components/indicators/network_status_indicator.dart';
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
@@ -20,10 +19,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final UserService _userService = UserService();
 
   TopNavigationBar({
-    Key? key,
+    super.key,
     required this.onLogoTap,
     required this.onProfileTap
-  }) : super(key: key);
+  });
 
   @override
   Size get preferredSize {
@@ -233,7 +232,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
                           radius: radius,
                           backgroundColor: Colors.grey[100],
                           child: Text(
-                            snapshot.data?.username?[0].toUpperCase() ?? '?',
+                            snapshot.data?.username[0].toUpperCase() ?? '?',
                             style: TextStyle(
                               fontSize: radius * 0.8,
                               fontWeight: FontWeight.bold,

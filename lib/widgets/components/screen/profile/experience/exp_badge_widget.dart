@@ -12,14 +12,14 @@ class ExpBadgeWidget extends StatelessWidget {
   final VoidCallback onTap;
 
   const ExpBadgeWidget({
-    Key? key,
+    super.key,
     required this.size,
     required this.backgroundColor,
     required this.textColor,
     required this.earnedToday,
     required this.completionPercentage,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

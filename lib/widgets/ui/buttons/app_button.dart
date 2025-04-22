@@ -12,7 +12,7 @@ class AppButton extends StatelessWidget {
   final bool isPrimaryAction;
 
   const AppButton({
-    Key? key,
+    super.key,
     required this.text,
     required this.onPressed,
     this.isLoading = false,
@@ -21,7 +21,7 @@ class AppButton extends StatelessWidget {
     this.iconSpacing = 8.0,
     this.isMini = false,
     this.isPrimaryAction = false,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

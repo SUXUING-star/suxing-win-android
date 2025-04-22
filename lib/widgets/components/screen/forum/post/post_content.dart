@@ -10,11 +10,11 @@ class PostContent extends StatefulWidget {
   // 添加回调函数，当交互成功时通知父组件
   final VoidCallback? onInteractionSuccess;
 
-  PostContent({
-    Key? key,
+  const PostContent({
+    super.key,
     required this.post,
     this.onInteractionSuccess,
-  }) : super(key: key);
+  });
 
   @override
   _PostContentState createState() => _PostContentState();

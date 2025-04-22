@@ -16,13 +16,14 @@ class GameCollectionButton extends StatefulWidget {
   final Function(CollectionChangeResult)? onCollectionChanged;
   final GameCollectionItem? initialCollectionStatus;
 
+
   const GameCollectionButton({
-    Key? key,
+    super.key,
     required this.game,
     this.compact = false,
     this.onCollectionChanged, // *** 新签名 ***
     this.initialCollectionStatus,
-  }) : super(key: key);
+  });
 
   @override
   _GameCollectionButtonState createState() => _GameCollectionButtonState();
@@ -157,8 +158,9 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
             countDeltas =
                 _calculateCountDeltas(oldStatus?.status, finalNewStatus.status);
 
-            if (mounted)
+            if (mounted) {
               AppSnackBar.showSuccess(context, '收藏状态已更新');
+            }
           } else {
             AppSnackBar.showError(context, "更新失败");
             throw Exception("更新收藏失败");
@@ -171,8 +173,9 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***
             countDeltas = _calculateCountDeltas(oldStatus?.status, null);
-            if (mounted)
-             AppSnackBar.showSuccess(context,'已从收藏中移除');
+            if (mounted) {
+              AppSnackBar.showSuccess(context,'已从收藏中移除');
+            }
           } else {
             AppSnackBar.showError(context, "移除收藏失败");
             throw Exception("移除收藏失败");
@@ -231,21 +234,26 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
 
     // 1. 处理旧状态的减少
     if (hadStatus) {
-      if (oldStatusString == GameCollectionStatus.wantToPlay)
+      if (oldStatusString == GameCollectionStatus.wantToPlay) {
         deltas['want'] = -1;
-      if (oldStatusString == GameCollectionStatus.playing)
+      }
+      if (oldStatusString == GameCollectionStatus.playing) {
         deltas['playing'] = -1;
+      }
       if (oldStatusString == GameCollectionStatus.played) deltas['played'] = -1;
     }
 
     // 2. 处理新状态的增加
     if (hasStatus) {
-      if (newStatusString == GameCollectionStatus.wantToPlay)
+      if (newStatusString == GameCollectionStatus.wantToPlay) {
         deltas['want'] = (deltas['want'] ?? 0) + 1;
-      if (newStatusString == GameCollectionStatus.playing)
+      }
+      if (newStatusString == GameCollectionStatus.playing) {
         deltas['playing'] = (deltas['playing'] ?? 0) + 1;
-      if (newStatusString == GameCollectionStatus.played)
+      }
+      if (newStatusString == GameCollectionStatus.played) {
         deltas['played'] = (deltas['played'] ?? 0) + 1;
+      }
     }
 
     // 3. 处理总数变化

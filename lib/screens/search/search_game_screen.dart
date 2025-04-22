@@ -1,6 +1,8 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'dart:async';
 
 // Models
@@ -23,6 +25,8 @@ import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
 // import '../../widgets/components/loading/loading_route_observer.dart'; // 已删除
 
 class SearchGameScreen extends StatefulWidget {
+  const SearchGameScreen({super.key});
+
   @override
   _SearchGameScreenState createState() => _SearchGameScreenState();
 }
@@ -205,7 +209,9 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [ Color(0xFF6AB7F0), Color(0xFF4E9DE3), ],
+              colors: [
+                ...CustomAppBar.appBarColors
+              ],
             ),
           ),
         ),
@@ -342,7 +348,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   Widget _buildSearchResults() {
     print("SearchGameScreen: Building search results. Count: ${_searchResults.length}");
 
-    // *** 空状态处理: 仅在非搜索中、无错误且结果为空时显示 ***
+    // 空状态处理 (保持不变)
     if (!_isSearching && _searchResults.isEmpty && _error == null) {
       print("SearchGameScreen: Displaying empty search results state.");
       return EmptyStateWidget(
@@ -351,20 +357,30 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
       );
     }
 
+    // 定义卡片动画参数
+    const Duration cardAnimationDuration = Duration(milliseconds: 350);
+    const Duration cardDelayIncrement = Duration(milliseconds: 40);
+
     // 结果列表
-    // 因为没有分页，所以不需要判断 isLoadingMore
     return ListView.builder(
       padding: const EdgeInsets.all(8.0),
       itemCount: _searchResults.length,
       itemBuilder: (context, index) {
         final game = _searchResults[index];
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 12.0),
-          child: CommonGameCard(
-            game: game,
-            isGridItem: false, // 使用列表样式
-            showTags: true,
-            maxTags: 3,
+        // --- 使用 FadeInSlideUpItem 包裹卡片 ---
+        return FadeInSlideUpItem(
+          key: ValueKey(game.id), // 使用 game.id 作为 Key
+          duration: cardAnimationDuration,
+          delay: cardDelayIncrement * index, // 交错延迟
+          child: Padding( // 保持原有的 Padding
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: CommonGameCard(
+              game: game,
+              isGridItem: false, // 列表样式
+              showTags: true,
+              maxTags: 3,
+              // CommonGameCard 通常内部处理点击导航
+            ),
           ),
         );
       },

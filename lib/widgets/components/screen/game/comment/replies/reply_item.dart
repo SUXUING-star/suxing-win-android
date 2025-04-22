@@ -9,7 +9,6 @@ import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../../../../../ui/badges/user_info_badge.dart';
 import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
-import '../../../../../ui/buttons/popup/custom_popup_menu_button.dart';
 
 // *** 可以是 StatefulWidget 以管理本地 loading ***
 class ReplyItem extends StatefulWidget {
@@ -19,11 +18,11 @@ class ReplyItem extends StatefulWidget {
   final Future<void> Function() onDelete;
 
   const ReplyItem({
-    Key? key,
+    super.key,
     required this.reply,
     required this.onUpdate, // 接收不需要 ID 的 onUpdate
     required this.onDelete, // 接收不需要 ID 的 onDelete
-  }) : super(key: key);
+  });
 
   @override
   State<ReplyItem> createState() => _ReplyItemState();

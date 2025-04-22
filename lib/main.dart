@@ -1,9 +1,7 @@
-
 import 'package:flutter/material.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
-import 'services/main/restart/restart_service.dart';
 
 void main() async {
   // 确保Flutter绑定初始化
@@ -18,6 +16,7 @@ void main() async {
       center: true,
       title: "宿星茶会（windows版）",
       minimumSize: Size(800, 600),
+      titleBarStyle: TitleBarStyle.hidden,
     );
 
     await windowManager.waitUntilReadyToShow(windowOptions, () async {
@@ -27,5 +26,5 @@ void main() async {
   }
 
   // 在主线程中运行应用
-  runApp(const RestartWrapper(child: App()));
+  runApp(const App());
 }

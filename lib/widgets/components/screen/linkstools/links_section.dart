@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/buttons/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/linkstools/link.dart';
 import '../../../../services/main/linktool/link_tool_service.dart';
@@ -15,13 +16,13 @@ class LinksSection extends StatelessWidget {
   final LinkToolService linkToolService;
 
   const LinksSection({
-    Key? key,
+    super.key,
     required this.links,
     required this.isAdmin,
     required this.onRefresh,
     required this.onLaunchURL,
     required this.linkToolService,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -71,9 +72,12 @@ class LinksSection extends StatelessWidget {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        IconButton(
-                            icon: Icon(Icons.open_in_new, color: Colors.blue),
-                            onPressed: () => onLaunchURL(link.url)),
+                        OpenUrlButton(
+                          url: link.url,
+                          webViewTitle: link.title, // 把链接标题传给 WebView
+                          color: Colors.teal, // 可以保持颜色
+                          tooltip: '打开链接', // 可以改个更明确的 tooltip
+                        ),
                         if (isAdmin)
                           IconButton(
                               icon: Icon(Icons.edit, color: Colors.grey[600]),
@@ -100,8 +104,9 @@ class LinksSection extends StatelessWidget {
       if (linkData != null) {
         try {
           await linkToolService.updateLink(Link.fromJson(linkData));
-          if (context.mounted)
+          if (context.mounted) {
             AppSnackBar.showSuccess(context, '更新链接成功'); // 检查 mounted
+          }
           onRefresh();
         } catch (e) {
           if (context.mounted) AppSnackBar.showError(context, '更新链接失败: $e');

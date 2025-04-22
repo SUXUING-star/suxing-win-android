@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class HomeBanner extends StatelessWidget {
+  const HomeBanner({super.key});
+
   @override
   Widget build(BuildContext context) {
     double bannerHeight = 200.0;

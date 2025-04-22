@@ -10,13 +10,14 @@ import 'package:suxingchahui/widgets/components/screen/game/coverImage/game_cove
 import 'package:suxingchahui/widgets/components/screen/game/description/game_description.dart';
 import 'package:suxingchahui/widgets/components/screen/game/header/game_header.dart';
 import 'package:suxingchahui/widgets/components/screen/game/image/game_images.dart';
+import 'package:suxingchahui/widgets/components/screen/game/music/game_music_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/navigation/game_navigation_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/random/random_games_section.dart';
+import 'package:suxingchahui/widgets/components/screen/game/video/game_video_section.dart';
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart';
-
 
 class GameDetailContent extends StatefulWidget {
   final Game game;
@@ -27,21 +28,22 @@ class GameDetailContent extends StatefulWidget {
   final bool isPreviewMode;
 
   const GameDetailContent({
-    Key? key,
+    super.key,
     required this.game,
     this.onNavigate,
     this.initialCollectionStatus,
     this.onCollectionChanged,
     this.navigationInfo,
     this.isPreviewMode = false,
-  }) : super(key: key);
+  });
 
   @override
   _GameDetailContentState createState() => _GameDetailContentState();
 }
 
 class _GameDetailContentState extends State<GameDetailContent> {
-  final GlobalKey<GameReviewSectionState> _reviewSectionKey = GlobalKey<GameReviewSectionState>();
+  final GlobalKey<GameReviewSectionState> _reviewSectionKey =
+      GlobalKey<GameReviewSectionState>();
   GameCollectionItem? _previousCollectionStatus;
 
   @override
@@ -62,21 +64,27 @@ class _GameDetailContentState extends State<GameDetailContent> {
   }
 
   void _handleCollectionChangedInternal(CollectionChangeResult result) {
-    print('GameDetailContent (${widget.game.id}): Received collection change callback. New status: ${result.newStatus?.status}');
+    print(
+        'GameDetailContent (${widget.game.id}): Received collection change callback. New status: ${result.newStatus?.status}');
     final newStatusString = result.newStatus?.status;
     final oldStatusString = _previousCollectionStatus?.status;
-    bool shouldRefreshReviews = (newStatusString == GameCollectionStatus.played) ||
-        (oldStatusString == GameCollectionStatus.played && newStatusString != GameCollectionStatus.played);
+    bool shouldRefreshReviews =
+        (newStatusString == GameCollectionStatus.played) ||
+            (oldStatusString == GameCollectionStatus.played &&
+                newStatusString != GameCollectionStatus.played);
 
     if (shouldRefreshReviews) {
       if (!widget.isPreviewMode && _reviewSectionKey.currentState != null) {
-        print('GameDetailContent (${widget.game.id}): Status changed to/from Played. Calling refresh on GameReviewSection...');
+        print(
+            'GameDetailContent (${widget.game.id}): Status changed to/from Played. Calling refresh on GameReviewSection...');
         _reviewSectionKey.currentState!.refresh();
       } else if (!widget.isPreviewMode) {
-        print('GameDetailContent (${widget.game.id}): _reviewSectionKey is null or in preview mode. Cannot refresh reviews.');
+        print(
+            'GameDetailContent (${widget.game.id}): _reviewSectionKey is null or in preview mode. Cannot refresh reviews.');
       }
     } else {
-      print('GameDetailContent (${widget.game.id}): Status change does not involve Played. Reviews section not refreshed.');
+      print(
+          'GameDetailContent (${widget.game.id}): Status change does not involve Played. Reviews section not refreshed.');
     }
     _previousCollectionStatus = result.newStatus;
     widget.onCollectionChanged?.call(result);
@@ -98,244 +106,400 @@ class _GameDetailContentState extends State<GameDetailContent> {
       key: ValueKey('game_detail_content_${widget.game.id}'),
       padding: EdgeInsets.all(isDesktop ? 0 : 16.0),
       child: isDesktop
-          ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset, slideDuration, fadeDuration, scaleDuration)
-          : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset, slideDuration, fadeDuration, scaleDuration),
+          ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
+              slideDuration, fadeDuration, scaleDuration)
+          : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,
+              slideDuration, fadeDuration, scaleDuration),
     );
   }
 
-  // --- Mobile Layout (应用不同动画, 包含完整参数) ---
-  Widget _buildMobileLayout(BuildContext context, Duration baseDelay, Duration delayIncrement, double slideOffset, Duration slideDuration, Duration fadeDuration, Duration scaleDuration) {
-    int delayIndex = 0;
+  Widget _buildHeaderSection(
+      Duration duration, Duration delay, double slideOffset, Key key) {
+    return FadeInSlideUpItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
+      child: GameHeader(game: widget.game),
+    );
+  }
 
+  Widget _buildDescriptionSection(Duration duration, Duration delay, Key key) {
+    return FadeInItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      child: GameDescription(game: widget.game),
+    );
+  }
+
+  Widget _buildCollectionStatsSection(
+      Duration duration, Duration delay, double slideOffset, Key key) {
+    return FadeInSlideUpItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
+      child: GameCollectionSection(
+        game: widget.game,
+        initialCollectionStatus: widget.initialCollectionStatus,
+        onCollectionChanged: _handleCollectionChangedInternal,
+      ),
+    );
+  }
+
+  Widget _buildReviewSection(bool isPreviewMode, Duration duration,
+      Duration delay, double slideOffset, Key key) {
+    // 注意：这里没有传递 _reviewSectionKey，因为 GameReviewSection 内部需要它
+    // 如果你的 _buildReviewSection 需要接收 Key，你需要修改签名并传递它
+    // 但目前看，GlobalKey 在 State 级别使用是常见的模式。
+    return !isPreviewMode
+        ? FadeInSlideUpItem(
+            key: key, // 动画组件的 Key
+            duration: duration,
+            delay: delay,
+            slideOffset: slideOffset,
+            child: GameReviewSection(
+              key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
+              game: widget.game,
+            ),
+          )
+        : SizedBox.shrink();
+  }
+
+  Widget _buildImagesSection(Duration duration, Duration delay, Key key) {
+    // GameImages 本身似乎不需要 ScaleInItem 的 slideOffset 参数
+    return ScaleInItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      child: GameImages(game: widget.game),
+    );
+  }
+
+  Widget _buildMusicSection(
+      Duration duration, Duration delay, double slideOffset, Key key) {
+    // 假设音乐区也用滑入效果
+    return FadeInSlideUpItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
+      child: GameMusicSection(
+        musicUrl: widget.game.musicUrl, // 传递 musicUrl
+      ),
+    );
+  }
+
+  Widget _buildVideoSection(
+      Duration duration, Duration delay, double slideOffset, Key key) {
+    return FadeInSlideUpItem(
+      key: key,
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
+      child: GameVideoSection(
+        bvid: widget.game.bvid,
+      ),
+    );
+  }
+
+  Widget _buildCommentSection(bool isPreviewMode, Duration duration,
+      Duration delay, double slideOffset, Key key) {
+    return !isPreviewMode
+        ? FadeInSlideUpItem(
+            key: key,
+            duration: duration,
+            delay: delay,
+            slideOffset: slideOffset,
+            child: CommentsSection(gameId: widget.game.id),
+          )
+        : SizedBox.shrink();
+  }
+
+  Widget _buildRandomSection(
+      bool isPreviewMode, Duration duration, Duration delay, Key key) {
+    return !isPreviewMode
+        ? FadeInItem(
+            key: key,
+            duration: duration,
+            delay: delay,
+            child: RandomGamesSection(currentGameId: widget.game.id),
+          )
+        : SizedBox.shrink();
+  }
+
+  Widget _buildNavigationSection(
+      bool isPreviewMode, Duration duration, Duration delay, Key key) {
+    return !isPreviewMode
+        ? FadeInItem(
+            key: key,
+            duration: duration,
+            delay: delay,
+            child: GameNavigationSection(
+              currentGameId: widget.game.id,
+              navigationInfo: widget.navigationInfo,
+              onNavigate: widget.onNavigate,
+            ),
+          )
+        : SizedBox.shrink();
+  }
+
+  Widget _buildMobileLayout(
+      BuildContext context,
+      Duration baseDelay,
+      Duration delayIncrement,
+      double slideOffset,
+      Duration slideDuration,
+      Duration fadeDuration,
+      Duration scaleDuration) {
+    int delayIndex = 0;
+    // --- 为每个 Section 定义唯一的 Key ---
+    final headerKey = ValueKey('header_mob_${widget.game.id}');
+    final descriptionKey = ValueKey('desc_mob_${widget.game.id}');
+    final collectionKey = ValueKey('collection_mob_${widget.game.id}');
+    final reviewKey = ValueKey('reviews_mob_${widget.game.id}');
+    final imageKey = ValueKey('images_mob_${widget.game.id}');
+    final videoKey = ValueKey('video_section_mob_${widget.game.id}');
+    final musicKey = ValueKey('music_section_mob_${widget.game.id}');
+    final commentKey = ValueKey('comments_mob_${widget.game.id}');
+    final randomKey = ValueKey('random_mob_${widget.game.id}');
+    final navigationKey = ValueKey('nav_mob_${widget.game.id}');
+
+    // --- 按顺序构建 Widgets ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Header: 滑动进入
-        FadeInSlideUpItem(
-          key: ValueKey('header_mob_${widget.game.id}'), // 添加 Key
-          duration: slideDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          slideOffset: slideOffset,
-          child: GameHeader(game: widget.game),
-        ),
+        _buildHeaderSection(
+            slideDuration,
+            baseDelay + (delayIncrement * delayIndex++),
+            slideOffset,
+            headerKey),
+        const SizedBox(height: 16), // 添加间距
+
         // Description: 纯淡入
-        FadeInItem(
-          key: ValueKey('desc_mob_${widget.game.id}'), // 添加 Key
-          duration: fadeDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          child: GameDescription(game: widget.game),
-        ),
+        _buildDescriptionSection(fadeDuration,
+            baseDelay + (delayIncrement * delayIndex++), descriptionKey),
+        const SizedBox(height: 16), // 添加间距
+
         // Collection: 滑动进入 (交互区域)
-        FadeInSlideUpItem(
-          key: ValueKey('collection_mob_${widget.game.id}'), // 添加 Key
-          duration: slideDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          slideOffset: slideOffset,
-          child: GameCollectionSection(
-            game: widget.game, // 传递 game
-            initialCollectionStatus: widget.initialCollectionStatus, // 传递状态
-            onCollectionChanged: _handleCollectionChangedInternal, // 传递回调
-          ),
-        ),
+        _buildCollectionStatsSection(
+            slideDuration,
+            baseDelay + (delayIncrement * delayIndex++),
+            slideOffset,
+            collectionKey),
+        // 仅在非预览模式下显示相关内容间距
+        if (!widget.isPreviewMode) const SizedBox(height: 16),
+
         // Reviews: 滑动进入 (交互区域)
-        if (!widget.isPreviewMode)
-          FadeInSlideUpItem(
-            key: ValueKey('reviews_mob_${widget.game.id}'), // 添加 Key
-            duration: slideDuration,
-            delay: baseDelay + (delayIncrement * delayIndex++),
-            slideOffset: slideOffset,
-            child: GameReviewSection(
-              key: _reviewSectionKey, // 传递 GlobalKey
-              game: widget.game, // 传递 game
-            ),
-          ),
+        _buildReviewSection(
+            widget.isPreviewMode,
+            slideDuration,
+            baseDelay + (delayIncrement * delayIndex++),
+            slideOffset,
+            reviewKey),
+        const SizedBox(height: 16), // 添加间距
+
         // Images: 缩放进入 (视觉元素)
-        ScaleInItem(
-          key: ValueKey('images_mob_${widget.game.id}'), // 添加 Key
-          duration: scaleDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          child: GameImages(game: widget.game), // 传递 game
-        ),
-        if (!widget.isPreviewMode) const Divider(height: 8),
-        // Comments: 滑动进入 (交互区域)
-        if (!widget.isPreviewMode)
-          FadeInSlideUpItem(
-            key: ValueKey('comments_mob_${widget.game.id}'), // 添加 Key
-            duration: slideDuration,
-            delay: baseDelay + (delayIncrement * delayIndex++),
-            slideOffset: slideOffset,
-            child: CommentsSection(gameId: widget.game.id), // 传递 gameId
-          ),
-        const Divider(height: 8),
-        // Random Games: 淡入
-        FadeInItem(
-          key: ValueKey('random_mob_${widget.game.id}'), // 添加 Key
-          duration: fadeDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          child: RandomGamesSection(currentGameId: widget.game.id), // 传递 currentGameId
-        ),
-        const SizedBox(height: 24),
-        const Divider(height: 8),
-        const SizedBox(height: 16),
-        // Navigation: 淡入
-        FadeInItem(
-          key: ValueKey('nav_mob_${widget.game.id}'), // 添加 Key
-          duration: fadeDuration,
-          delay: baseDelay + (delayIncrement * delayIndex++),
-          child: GameNavigationSection(
-            currentGameId: widget.game.id, // 传递 currentGameId
-            navigationInfo: widget.navigationInfo, // 传递 navigationInfo
-            onNavigate: widget.onNavigate, // 传递 onNavigate
-          ),
-        ),
-        const SizedBox(height: 16),
+        _buildImagesSection(scaleDuration,
+            baseDelay + (delayIncrement * delayIndex++), imageKey),
+        const SizedBox(height: 24), // 图片后多点间距
+
+        // Video: 滑动进入
+        _buildVideoSection(slideDuration,
+            baseDelay + (delayIncrement * delayIndex++), slideOffset, videoKey),
+        const SizedBox(height: 16), // 添加间距
+
+        // Music: 滑动进入
+        _buildMusicSection(slideDuration,
+            baseDelay + (delayIncrement * delayIndex++), slideOffset, musicKey),
+        // 仅在非预览模式下显示分割线和下方内容
+        if (!widget.isPreviewMode) ...[
+          const SizedBox(height: 16), // 添加间距
+          const Divider(height: 1), // 使用细分割线
+          const SizedBox(height: 16), // 添加间距
+
+          // Comments: 滑动进入 (交互区域)
+          _buildCommentSection(
+              widget.isPreviewMode,
+              slideDuration,
+              baseDelay + (delayIncrement * delayIndex++),
+              slideOffset,
+              commentKey),
+          const SizedBox(height: 24), // 评论后多点间距
+
+          // Random: 淡入
+          _buildRandomSection(widget.isPreviewMode, fadeDuration,
+              baseDelay + (delayIncrement * delayIndex++), randomKey),
+          const SizedBox(height: 24), // 随机推荐后多点间距
+          const Divider(height: 1), // 使用细分割线
+          const SizedBox(height: 16), // 添加间距
+
+          // Navigation: 淡入
+          _buildNavigationSection(widget.isPreviewMode, fadeDuration,
+              baseDelay + (delayIncrement * delayIndex++), navigationKey),
+          const SizedBox(height: 16), // 底部留白
+        ] else
+          const SizedBox(height: 16), // 预览模式下底部也留点白
       ],
     );
   }
 
-
   // --- Desktop Layout (修复错误 + 应用不同动画 + 包含完整参数) ---
-  Widget _buildDesktopLayout(BuildContext context, Duration baseDelay, Duration delayIncrement, double slideOffset, Duration slideDuration, Duration fadeDuration, Duration scaleDuration) {
+  Widget _buildDesktopLayout(
+      BuildContext context,
+      Duration baseDelay,
+      Duration delayIncrement,
+      double slideOffset,
+      Duration slideDuration,
+      Duration fadeDuration,
+      Duration scaleDuration) {
     int leftDelayIndex = 0;
     int rightDelayIndex = 0;
 
-    // --- 直接构建 Widget 列表，不再使用匿名函数和 expand ---
-    List<Widget> children = [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // --- Left Column ---
-          Expanded(
-            flex: 2,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Cover Image: 缩放进入
-                ScaleInItem(
-                  key: ValueKey('cover_desk_${widget.game.id}'), // 添加 Key
-                  duration: scaleDuration,
-                  delay: baseDelay + (delayIncrement * leftDelayIndex++),
-                  child: AspectRatio(
-                      aspectRatio: 4 / 3,
-                      child: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: GameCoverImage(imageUrl: widget.game.coverImage) // 传递 imageUrl
-                      )
-                  ),
-                ),
-                const SizedBox(height: 24),
-                // Game Images: 缩放进入
-                ScaleInItem(
-                  key: ValueKey('images_desk_${widget.game.id}'), // 添加 Key
-                  duration: scaleDuration,
-                  delay: baseDelay + (delayIncrement * leftDelayIndex++),
-                  child: GameImages(game: widget.game), // 传递 game
-                ),
-                const SizedBox(height: 24),
-                // Collection: 滑动进入
-                FadeInSlideUpItem(
-                  key: ValueKey('collection_desk_${widget.game.id}'), // 添加 Key
-                  duration: slideDuration,
-                  delay: baseDelay + (delayIncrement * leftDelayIndex++),
-                  slideOffset: slideOffset,
-                  child: GameCollectionSection(
-                    game: widget.game, // 传递 game
-                    initialCollectionStatus: widget.initialCollectionStatus, // 传递状态
-                    onCollectionChanged: _handleCollectionChangedInternal, // 传递回调
-                  ),
-                ),
-                if (!widget.isPreviewMode) const SizedBox(height: 24),
-                // Reviews: 滑动进入
-                if (!widget.isPreviewMode)
-                  FadeInSlideUpItem(
-                      key: ValueKey('reviews_desk_${widget.game.id}'), // 添加 Key
-                      duration: slideDuration,
-                      delay: baseDelay + (delayIncrement * leftDelayIndex++),
-                      slideOffset: slideOffset,
-                      child: GameReviewSection(
-                          key: _reviewSectionKey, // 传递 GlobalKey
-                          game: widget.game // 传递 game
-                      )
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 32),
-          // --- Right Column ---
-          Expanded(
-            flex: 3,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header: 滑动进入
-                FadeInSlideUpItem(
-                  key: ValueKey('header_desk_${widget.game.id}'), // 添加 Key
-                  duration: slideDuration,
-                  delay: baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement, // 保持稍微延迟
-                  slideOffset: slideOffset,
-                  child: GameHeader(game: widget.game), // 传递 game
-                ),
-                const SizedBox(height: 24),
-                // Description: 淡入
-                FadeInItem(
-                  key: ValueKey('desc_desk_${widget.game.id}'), // 添加 Key
-                  duration: fadeDuration,
-                  delay: baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
-                  child: GameDescription(game: widget.game), // 传递 game
-                ),
-                if (!widget.isPreviewMode) const SizedBox(height: 24),
-                // Comments: 滑动进入
-                if (!widget.isPreviewMode)
-                  FadeInSlideUpItem(
-                    key: ValueKey('comments_desk_${widget.game.id}'), // 添加 Key
-                    duration: slideDuration,
-                    delay: baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
-                    slideOffset: slideOffset,
-                    child: CommentsSection(gameId: widget.game.id), // 传递 gameId
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ), // <-- Row 结束
-    ]; // <-- children 列表初始化结束
+    // --- 定义 Keys ---
+    final coverKey = ValueKey('cover_desk_${widget.game.id}');
+    final imagesKey = ValueKey('images_desk_${widget.game.id}');
+    final collectionKey = ValueKey('collection_desk_${widget.game.id}');
+    final reviewsKey = ValueKey('reviews_desk_${widget.game.id}');
+    final videoKey = ValueKey('video_section_desk_${widget.game.id}');
+    final musicKey = ValueKey('music_section_desk_${widget.game.id}');
+    final headerKey = ValueKey('header_desk_${widget.game.id}');
+    final descriptionKey = ValueKey('desc_desk_${widget.game.id}');
+    final commentsKey = ValueKey('comments_desk_${widget.game.id}');
+    final randomKey = ValueKey('random_desk_${widget.game.id}');
+    final navigationKey = ValueKey('nav_desk_${widget.game.id}');
 
-    // --- 计算下方内容的起始索引 ---
-    final bottomStartIndex = (leftDelayIndex > rightDelayIndex ? leftDelayIndex : rightDelayIndex);
-
-    // --- 直接将下方 Widgets 添加到 children 列表中 ---
-    children.addAll([
-      const SizedBox(height: 24),
-      const Divider(),
-      const SizedBox(height: 16),
-      // Random Games: 淡入
-      FadeInItem(
-        key: ValueKey('random_desk_${widget.game.id}'), // 添加 Key
-        duration: fadeDuration,
-        delay: baseDelay + (delayIncrement * bottomStartIndex), // 使用计算好的索引
-        child: RandomGamesSection(currentGameId: widget.game.id), // 传递 currentGameId
-      ),
-      const SizedBox(height: 32),
-      const Divider(),
-      const SizedBox(height: 16),
-      // Navigation: 淡入
-      FadeInItem(
-        key: ValueKey('nav_desk_${widget.game.id}'), // 添加 Key
-        duration: fadeDuration,
-        delay: baseDelay + (delayIncrement * (bottomStartIndex + 1)), // 索引 +1
-        child: GameNavigationSection(
-            currentGameId: widget.game.id, // 传递 currentGameId
-            navigationInfo: widget.navigationInfo, // 传递 navigationInfo
-            onNavigate: widget.onNavigate // 传递 onNavigate
+    // --- 构建左右列 ---
+    Widget leftColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Cover Image: 缩放进入
+        ScaleInItem(
+          key: coverKey,
+          duration: scaleDuration,
+          delay: baseDelay + (delayIncrement * leftDelayIndex++),
+          child: AspectRatio(
+              aspectRatio: 16 / 9, // 桌面端封面比例可能更宽
+              child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: GameCoverImage(
+                      imageUrl: widget.game.coverImage) // 传递 imageUrl
+                  )),
         ),
-      ),
-      const SizedBox(height: 16),
-    ]);
+        const SizedBox(height: 24),
+        // Game Images: 缩放进入
+        _buildImagesSection(scaleDuration,
+            baseDelay + (delayIncrement * leftDelayIndex++), imagesKey),
+        const SizedBox(height: 24),
+        // Collection: 滑动进入
+        _buildCollectionStatsSection(
+            slideDuration,
+            baseDelay + (delayIncrement * leftDelayIndex++),
+            slideOffset,
+            collectionKey),
+        // 仅在非预览模式下显示 Review 和相关间距
+        if (!widget.isPreviewMode) ...[
+          const SizedBox(height: 24),
+          // Reviews: 滑动进入
+          _buildReviewSection(
+              widget.isPreviewMode,
+              slideDuration,
+              baseDelay + (delayIncrement * leftDelayIndex++),
+              slideOffset,
+              reviewsKey),
+        ],
+        const SizedBox(height: 24),
+        // Video: 滑动进入
+        _buildVideoSection(
+            slideDuration,
+            baseDelay + (delayIncrement * leftDelayIndex++),
+            slideOffset,
+            videoKey),
+        const SizedBox(height: 24),
+        // Music: 滑动进入
+        _buildMusicSection(
+            slideDuration,
+            baseDelay + (delayIncrement * leftDelayIndex++),
+            slideOffset,
+            musicKey),
+      ],
+    );
 
-    // --- 返回包含所有 Widgets 的 Column ---
+    Widget rightColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Header: 滑动进入 (比左列稍微延迟一点点，增加层次感)
+        _buildHeaderSection(
+            slideDuration,
+            baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
+            slideOffset,
+            headerKey),
+        const SizedBox(height: 24),
+        // Description: 淡入
+        _buildDescriptionSection(
+            fadeDuration,
+            baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
+            descriptionKey),
+        // 仅在非预览模式下显示评论和相关间距
+        if (!widget.isPreviewMode) ...[
+          const SizedBox(height: 24),
+          // Comments: 滑动进入
+          _buildCommentSection(
+              widget.isPreviewMode,
+              slideDuration,
+              baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
+              slideOffset,
+              commentsKey),
+        ],
+      ],
+    );
+
+    // --- 计算下方内容的起始延迟索引 (取左右列中较大的那个) ---
+    // 确保下方内容在两列动画基本开始后再出现
+    final bottomStartIndex =
+        (leftDelayIndex > rightDelayIndex ? leftDelayIndex : rightDelayIndex) +
+            1; // 加1给点缓冲
+
+    // --- 构建下方公共部分 (仅非预览模式) ---
+    List<Widget> bottomSections = [];
+    if (!widget.isPreviewMode) {
+      bottomSections.addAll([
+        const SizedBox(height: 32), // 上下分割区域
+        const Divider(height: 1),
+        const SizedBox(height: 24),
+        // Random Games: 淡入
+        _buildRandomSection(widget.isPreviewMode, fadeDuration,
+            baseDelay + (delayIncrement * bottomStartIndex), randomKey),
+        const SizedBox(height: 32),
+        const Divider(height: 1),
+        const SizedBox(height: 24),
+        // Navigation: 淡入
+        _buildNavigationSection(
+            widget.isPreviewMode,
+            fadeDuration,
+            baseDelay + (delayIncrement * (bottomStartIndex + 1)),
+            navigationKey), // 索引+1
+        const SizedBox(height: 24), // 底部留白
+      ]);
+    }
+
+    // --- 组合布局 ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: children, // 直接使用构建好的 children 列表
+      children: [
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(flex: 3, child: leftColumn), // 左列给稍小空间 flex 3
+            const SizedBox(width: 32),
+            Expanded(flex: 5, child: rightColumn), // 右列给稍大空间 flex 5
+          ],
+        ),
+        // 将下方公共部分添加到 Column 中
+        ...bottomSections,
+      ],
     );
   }
 }

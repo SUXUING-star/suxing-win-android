@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import '../../../../../models/game/game.dart';
 
@@ -12,10 +11,10 @@ class DownloadLinksField extends StatelessWidget {
   final ValueChanged<List<DownloadLink>> onChanged;
 
   const DownloadLinksField({
-    Key? key,
+    super.key,
     required this.downloadLinks,
     required this.onChanged,
-  }) : super(key: key);
+  });
 
   Future<void> _quickAddFromClipboard(BuildContext context) async {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);

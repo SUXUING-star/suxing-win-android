@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
-import 'dart:collection'; // LinkedHashMap
+// LinkedHashMap
 import 'dart:math' as math; // math.Random 等
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
@@ -41,7 +41,7 @@ class CollapsibleActivityFeed extends StatefulWidget {
   final VoidCallback? Function(String activityId)?
       onEditActivity; // 这个返回 VoidCallback? 可能也需要调整，取决于具体逻辑，暂时保持
   const CollapsibleActivityFeed({
-    Key? key,
+    super.key,
     required this.activities,
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -60,7 +60,7 @@ class CollapsibleActivityFeed extends StatefulWidget {
     this.onLikeComment,
     this.onUnlikeComment,
     this.onEditActivity,
-  }) : super(key: key);
+  });
 
   @override
   _CollapsibleActivityFeedState createState() =>
@@ -115,9 +115,10 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   }
 
   Map<String, List<UserActivity>> _getGroupedActivities() {
-    if (widget.collapseMode == FeedCollapseMode.none)
+    if (widget.collapseMode == FeedCollapseMode.none) {
       return {'all': widget.activities};
-    final Map<String, List<UserActivity>> grouped = LinkedHashMap();
+    }
+    final Map<String, List<UserActivity>> grouped = {};
     for (final activity in widget.activities) {
       String key = (widget.collapseMode == FeedCollapseMode.byUser)
           ? (activity.user?['userId'] ??
@@ -449,20 +450,19 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                               fontSize: 14, color: Colors.grey.shade800)),
-                    if (latestActivity.targetType != null)
-                      Row(children: [
-                        Icon(_getTargetTypeIcon(latestActivity.targetType!),
-                            size: 14, color: Colors.grey.shade600),
-                        const SizedBox(width: 4),
-                        Expanded(
-                            child: Text(_getTargetTitle(latestActivity),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey.shade600,
-                                    fontStyle: FontStyle.italic)))
-                      ]),
+                    Row(children: [
+                      Icon(_getTargetTypeIcon(latestActivity.targetType),
+                          size: 14, color: Colors.grey.shade600),
+                      const SizedBox(width: 4),
+                      Expanded(
+                          child: Text(_getTargetTitle(latestActivity),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.grey.shade600,
+                                  fontStyle: FontStyle.italic)))
+                    ]),
                   ])),
             ]),
             const SizedBox(height: 12),
