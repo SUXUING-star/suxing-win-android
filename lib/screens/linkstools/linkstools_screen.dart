@@ -86,8 +86,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         _links = List<Link>.from(results[0] as List? ?? []);
         _tools = List<Tool>.from(results[1] as List? ?? []);
         _isLoadingData = false;
-        print(
-            "LinksToolsScreen: Load successful. Links: ${_links?.length}, Tools: ${_tools?.length}");
       });
     } catch (e, s) {
       print('LinksToolsScreen: Load data error: $e\nStackTrace: $s');

@@ -168,7 +168,15 @@ class AppRoutes {
           ),
         );
       case gamesList:
-        return MaterialPageRoute(builder: (_) => GamesListScreen());
+      // *** 修改这里以接收参数 ***
+        final arguments = settings.arguments;
+        String? selectedTag;
+        if (arguments is String) {
+          selectedTag = arguments;
+        } else {
+
+        }
+        return MaterialPageRoute(builder: (_) => GamesListScreen(selectedTag: selectedTag));
       case hotGames:
         return MaterialPageRoute(builder: (_) => HotGamesScreen());
       case latestGames:

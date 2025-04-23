@@ -13,7 +13,7 @@ import '../../services/main/game/game_service.dart';
 import '../../models/post/post.dart';
 import '../../models/game/game.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/ui/image/safe_user_avatar.dart';
+import '../../widgets/ui/badges/safe_user_avatar.dart';
 import '../../utils/device/device_utils.dart';
 import '../../widgets/components/screen/profile/open/profile_game_card.dart';
 import '../../widgets/components/screen/profile/open/profile_post_card.dart';
@@ -69,10 +69,9 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       _isCurrentUser = currentUserId == widget.userId;
 
       // 获取用户信息
-      final userInfo = await _userService.safegetUserById(widget.userId);
-      if (userInfo != null) {
-        _user = User.fromJson(userInfo);
-      }
+      final userInfo = await _userService.getUserInfoById(widget.userId);
+      _user = User.fromJson(userInfo);
+
 
       // 加载用户帖子
       final userPosts =

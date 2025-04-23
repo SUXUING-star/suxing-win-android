@@ -171,8 +171,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   void _handleCommentDeleted(String commentId) {
-    // 这里是父级处理删除逻辑的地方，通常会调用 Service
-    print("ActivityDetailScreen: Handling delete request for comment $commentId");
     // --- 这里应该调用 Service 删除，并处理 UI 更新 (移除) ---
     // 这个方法现在由 ActivityCommentItem -> ActivityCommentsSection -> 这里 最终调用
     // 之前在 ActivityFeedScreen 的实现是正确的，应该类似：

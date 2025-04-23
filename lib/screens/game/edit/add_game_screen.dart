@@ -51,8 +51,6 @@ class AddGameScreen extends StatelessWidget {
       cancelButtonText: '返回列表',    // 取消按钮文本
       barrierDismissible: false,     // 不允许点击外部关闭
       onConfirm: () async {
-        // 对应 "查看审核状态" 按钮的操作
-        // CustomConfirmDialog 内部不再自动 pop，需要在这里处理
         NavigationUtils.pop(context); // 关闭对话框
         // *重要*: 添加游戏成功后，通常应该先返回列表页，再跳转到我的游戏
         // 如果希望直接跳转，可以只 pop 对话框，然后 pushNamed

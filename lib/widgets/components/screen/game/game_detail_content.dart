@@ -144,6 +144,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
         game: widget.game,
         initialCollectionStatus: widget.initialCollectionStatus,
         onCollectionChanged: _handleCollectionChangedInternal,
+        isPreviewMode: widget.isPreviewMode,
       ),
     );
   }
@@ -160,7 +161,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
             delay: delay,
             slideOffset: slideOffset,
             child: GameReviewSection(
-              key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
+              // key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
               game: widget.game,
             ),
           )

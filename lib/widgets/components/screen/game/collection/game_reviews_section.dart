@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 class GameReviewSection extends StatefulWidget {
   final Game game;
 
-  const GameReviewSection({Key? key, required this.game}) : super(key: key);
+  const GameReviewSection({super.key, required this.game});
 
   @override
   GameReviewSectionState createState() => GameReviewSectionState();
@@ -98,38 +98,48 @@ class GameReviewSectionState extends State<GameReviewSection> {
     });
 
     // 4. 调用加载逻辑
-    print(">>> GRS (${widget.game.id}): refresh() calling _loadReviews [$callId].");
+    print(
+        ">>> GRS (${widget.game.id}): refresh() calling _loadReviews [$callId].");
     _loadReviews(isInitialLoad: true, debugCallId: callId);
   }
 
   /// 内部加载数据的方法 (核心逻辑)
   /// [isInitialLoad] 标记是否由 initState 或 refresh 触发
   /// [debugCallId] 仅用于调试追踪
-  Future<void> _loadReviews({bool isInitialLoad = false, int? debugCallId}) async {
+  Future<void> _loadReviews(
+      {bool isInitialLoad = false, int? debugCallId}) async {
     _loadReviewsCallCount++;
     final currentCallCount = _loadReviewsCallCount;
     final bool forPageOne = isInitialLoad || _page == 1; // 判断是否是针对第一页的操作
 
-    print(">>> GRS (${widget.game.id}): _loadReviews CALLED (Count: $currentCallCount, Page: $_page, Initial: $isInitialLoad, ForPage1: $forPageOne) [$debugCallId]. Lock status: $_isProcessingPageOne, IsLoading: $_isLoading");
+    print(
+        ">>> GRS (${widget.game.id}): _loadReviews CALLED (Count: $currentCallCount, Page: $_page, Initial: $isInitialLoad, ForPage1: $forPageOne) [$debugCallId]. Lock status: $_isProcessingPageOne, IsLoading: $_isLoading");
 
     // --- 防并发和重复加载 ---
     // 1. 如果是针对第一页的操作 (Initial Load 或 Refresh)
     if (forPageOne) {
-      if (_isProcessingPageOne) { // 检查锁是否已被其他调用（如并发的 refresh 或 initState）占用
-        print(">>> GRS (${widget.game.id}): _loadReviews ABORTED (Count: $currentCallCount, Page: $_page) [$debugCallId] - Already processing page 1 (Lock is ON).");
+      if (_isProcessingPageOne) {
+        // 检查锁是否已被其他调用（如并发的 refresh 或 initState）占用
+        print(
+            ">>> GRS (${widget.game.id}): _loadReviews ABORTED (Count: $currentCallCount, Page: $_page) [$debugCallId] - Already processing page 1 (Lock is ON).");
         return; // 阻止并发执行
       } else {
         // 如果没有锁，说明这是第一个到达的针对第一页的操作，获取锁
-        print(">>> GRS (${widget.game.id}): _loadReviews Setting page 1 lock (Count: $currentCallCount, Page: $_page) [$debugCallId].");
+        print(
+            ">>> GRS (${widget.game.id}): _loadReviews Setting page 1 lock (Count: $currentCallCount, Page: $_page) [$debugCallId].");
         _isProcessingPageOne = true;
         // 因为 refresh 或 initState 可能已经设置了 _isLoading=true，这里不需要重复 setState
         // 但如果逻辑允许其他地方调用 _loadReviews(page:1)，这里可能需要 setState({_isLoading = true, _isProcessingPageOne = true})
         // 为了安全，如果发现 _isLoading 是 false，还是强制设为 true
         if (!_isLoading && mounted) {
-          print(">>> GRS (${widget.game.id}): Forcing _isLoading=true while setting page 1 lock [$debugCallId].");
-          setState(() { _isLoading = true; }); // 确保 UI 显示加载状态
+          print(
+              ">>> GRS (${widget.game.id}): Forcing _isLoading=true while setting page 1 lock [$debugCallId].");
+          setState(() {
+            _isLoading = true;
+          }); // 确保 UI 显示加载状态
         } else if (!_isLoading && !mounted) {
-          print(">>> GRS (${widget.game.id}): Tried to set _isLoading=true but unmounted [$debugCallId]. Aborting.");
+          print(
+              ">>> GRS (${widget.game.id}): Tried to set _isLoading=true but unmounted [$debugCallId]. Aborting.");
           _isProcessingPageOne = false; // 释放刚设置的锁
           return;
         }
@@ -139,20 +149,26 @@ class GameReviewSectionState extends State<GameReviewSection> {
     else {
       // 必须同时满足：不在加载中 + 还有更多
       if (_isLoading) {
-        print(">>> GRS (${widget.game.id}): _loadReviews ABORTED loading more (Count: $currentCallCount, Page: $_page) [$debugCallId] - _isLoading is true.");
+        print(
+            ">>> GRS (${widget.game.id}): _loadReviews ABORTED loading more (Count: $currentCallCount, Page: $_page) [$debugCallId] - _isLoading is true.");
         return;
       }
       if (!_hasMoreReviews) {
-        print(">>> GRS (${widget.game.id}): _loadReviews ABORTED loading more (Count: $currentCallCount, Page: $_page) [$debugCallId] - _hasMoreReviews is false.");
+        print(
+            ">>> GRS (${widget.game.id}): _loadReviews ABORTED loading more (Count: $currentCallCount, Page: $_page) [$debugCallId] - _hasMoreReviews is false.");
         return;
       }
       // 加载更多时，不需要关心 _isProcessingPageOne 锁
       // 设置整体加载状态
       if (mounted) {
-        print(">>> GRS (${widget.game.id}): Setting _isLoading=true for loading page $_page [$debugCallId].");
-        setState(() { _isLoading = true; });
+        print(
+            ">>> GRS (${widget.game.id}): Setting _isLoading=true for loading page $_page [$debugCallId].");
+        setState(() {
+          _isLoading = true;
+        });
       } else {
-        print(">>> GRS (${widget.game.id}): Tried to set _isLoading=true for page $_page but unmounted [$debugCallId]. Aborting.");
+        print(
+            ">>> GRS (${widget.game.id}): Tried to set _isLoading=true for page $_page but unmounted [$debugCallId]. Aborting.");
         return;
       }
     }
@@ -160,10 +176,12 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
     // 组件检查，防止在 API 调用前卸载
     if (!mounted) {
-      print(">>> GRS (${widget.game.id}): _loadReviews ABORTED before API call (Count: $currentCallCount, Page: $_page) [$debugCallId] - Widget not mounted.");
+      print(
+          ">>> GRS (${widget.game.id}): _loadReviews ABORTED before API call (Count: $currentCallCount, Page: $_page) [$debugCallId] - Widget not mounted.");
       // 如果是第一页的操作，并且在 API 调用前就 unmounted 了，需要释放锁
       if (forPageOne && _isProcessingPageOne) {
-        print(">>> GRS (${widget.game.id}): Releasing page 1 lock early due to unmount before API call [$debugCallId].");
+        print(
+            ">>> GRS (${widget.game.id}): Releasing page 1 lock early due to unmount before API call [$debugCallId].");
         _isProcessingPageOne = false;
       }
       return;
@@ -171,13 +189,17 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
     // *** 开始 API 请求 ***
     try {
-      print(">>> GRS (${widget.game.id}): Fetching API for page $_page (Count: $currentCallCount) [$debugCallId]...");
-      final reviews = await _collectionService.getGameReviews(widget.game.id, page: _page, limit: _pageSize);
-      print(">>> GRS (${widget.game.id}): API fetched for page $_page (Count: $currentCallCount) [$debugCallId]. Mounted: $mounted");
+      print(
+          ">>> GRS (${widget.game.id}): Fetching API for page $_page (Count: $currentCallCount) [$debugCallId]...");
+      final reviews = await _collectionService.getGameReviews(widget.game.id,
+          page: _page, limit: _pageSize);
+      print(
+          ">>> GRS (${widget.game.id}): API fetched for page $_page (Count: $currentCallCount) [$debugCallId]. Mounted: $mounted");
 
       // API 返回后再次检查是否挂载
       if (!mounted) {
-        print(">>> GRS (${widget.game.id}): Widget unmounted after API call for page $_page (Count: $currentCallCount) [$debugCallId].");
+        print(
+            ">>> GRS (${widget.game.id}): Widget unmounted after API call for page $_page (Count: $currentCallCount) [$debugCallId].");
         // finally 块会处理锁
         return;
       }
@@ -185,7 +207,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
       // 处理成功结果
       setState(() {
         final fetchedList = List<Map<String, dynamic>>.from(reviews ?? []);
-        if (_page == 1) { // 使用 _page 判断，因为 forPageOne 可能在分页加载时为 false
+        if (_page == 1) {
+          // 使用 _page 判断，因为 forPageOne 可能在分页加载时为 false
           _reviews = fetchedList;
         } else {
           _reviews.addAll(fetchedList);
@@ -193,25 +216,29 @@ class GameReviewSectionState extends State<GameReviewSection> {
         _hasMoreReviews = fetchedList.length >= _pageSize;
         _error = null;
         // _isLoading = false; // 移到 finally 处理
-        print(">>> GRS (${widget.game.id}): Page $_page loaded successfully (Count: $currentCallCount) [$debugCallId]. HasMore: $_hasMoreReviews. Total: ${_reviews.length}");
+        print(
+            ">>> GRS (${widget.game.id}): Page $_page loaded successfully (Count: $currentCallCount) [$debugCallId]. HasMore: $_hasMoreReviews. Total: ${_reviews.length}");
       });
-
     } catch (e, s) {
-      print(">>> GRS (${widget.game.id}): ERROR loading page $_page (Count: $currentCallCount) [$debugCallId]: $e\n$s");
+      print(
+          ">>> GRS (${widget.game.id}): ERROR loading page $_page (Count: $currentCallCount) [$debugCallId]: $e\n$s");
       if (!mounted) {
-        print(">>> GRS (${widget.game.id}): Widget unmounted after API error for page $_page (Count: $currentCallCount) [$debugCallId].");
+        print(
+            ">>> GRS (${widget.game.id}): Widget unmounted after API error for page $_page (Count: $currentCallCount) [$debugCallId].");
         // finally 块会处理锁
         return;
       }
       // 处理错误结果
       setState(() {
         // _isLoading = false; // 移到 finally 处理
-        if (_page == 1) { // 使用 _page 判断
+        if (_page == 1) {
+          // 使用 _page 判断
           _error = '加载评价失败: ${e.toString().split(':').last.trim()}';
           _reviews = [];
         } else {
           // 加载更多失败，用 Snackbar 提示
-          if(context.mounted) { // 确保 context 可用
+          if (context.mounted) {
+            // 确保 context 可用
             AppSnackBar.showError(context, '加载更多评价失败');
           }
           _hasMoreReviews = false; // 标记没有更多
@@ -220,7 +247,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
     } finally {
       // *** 无论成功失败，最终执行 ***
       final bool stillMounted = mounted; // 记录当前挂载状态
-      print(">>> GRS (${widget.game.id}): Finally block for page $_page (Count: $currentCallCount) [$debugCallId]. Mounted: $stillMounted, Lock before release: $_isProcessingPageOne");
+      print(
+          ">>> GRS (${widget.game.id}): Finally block for page $_page (Count: $currentCallCount) [$debugCallId]. Mounted: $stillMounted, Lock before release: $_isProcessingPageOne");
 
       // 标记：是否需要在 finally 块结束后释放锁
       bool shouldReleaseLock = false;
@@ -233,35 +261,41 @@ class GameReviewSectionState extends State<GameReviewSection> {
         setState(() {
           // *** 释放页面 1 的锁（仅当这个调用是处理页面1且持有锁时）***
           if (shouldReleaseLock) {
-            print(">>> GRS (${widget.game.id}): Releasing page 1 lock in finally (mounted) [$debugCallId].");
+            print(
+                ">>> GRS (${widget.game.id}): Releasing page 1 lock in finally (mounted) [$debugCallId].");
             _isProcessingPageOne = false;
           }
           // *** 总是重置整体加载状态 ***
           _isLoading = false;
-          print(">>> GRS (${widget.game.id}): Setting _isLoading=false in finally (mounted) [$debugCallId].");
+          print(
+              ">>> GRS (${widget.game.id}): Setting _isLoading=false in finally (mounted) [$debugCallId].");
         });
       } else {
         // 如果组件已卸载，不能调用 setState，但需要确保锁状态被更新
         if (shouldReleaseLock) {
-          print(">>> GRS (${widget.game.id}): Releasing page 1 lock in finally (unmounted) [$debugCallId].");
+          print(
+              ">>> GRS (${widget.game.id}): Releasing page 1 lock in finally (unmounted) [$debugCallId].");
           _isProcessingPageOne = false; // 直接修改成员变量
         }
         // _isLoading 在卸载后无所谓
       }
-      print(">>> GRS (${widget.game.id}): End of finally for page $_page (Count: $currentCallCount) [$debugCallId]. Lock status: $_isProcessingPageOne, IsLoading: $_isLoading");
+      print(
+          ">>> GRS (${widget.game.id}): End of finally for page $_page (Count: $currentCallCount) [$debugCallId]. Lock status: $_isProcessingPageOne, IsLoading: $_isLoading");
     }
   }
 
   /// 加载更多评论（由按钮触发）
   void _loadMoreReviews() {
-    print(">>> GRS (${widget.game.id}): _loadMoreReviews CALLED. Lock: $_isProcessingPageOne, Loading: $_isLoading, HasMore: $_hasMoreReviews");
+    print(
+        ">>> GRS (${widget.game.id}): _loadMoreReviews CALLED. Lock: $_isProcessingPageOne, Loading: $_isLoading, HasMore: $_hasMoreReviews");
     // 必须同时满足：不在加载中 + 还有更多
     // 注意：加载更多不关心 _isProcessingPageOne 锁
     if (!_isLoading && _hasMoreReviews) {
       setState(() {
         _page++; // 先增加页码
       });
-      print(">>> GRS (${widget.game.id}): Incremented page to $_page, calling _loadReviews.");
+      print(
+          ">>> GRS (${widget.game.id}): Incremented page to $_page, calling _loadReviews.");
       _loadReviews(); // 调用加载
     } else {
       print(">>> GRS (${widget.game.id}): _loadMoreReviews ignored.");
@@ -271,7 +305,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
   // --- UI 构建方法 (无省略号) ---
   @override
   Widget build(BuildContext context) {
-    print(">>> GRS (${widget.game.id}): build CALLED. Current State: isLoading=$_isLoading, isProcessingP1=$_isProcessingPageOne, page=$_page, error=$_error, reviews=${_reviews.length}, hasMore=$_hasMoreReviews");
+    print(
+        ">>> GRS (${widget.game.id}): build CALLED. Current State: isLoading=$_isLoading, isProcessingP1=$_isProcessingPageOne, page=$_page, error=$_error, reviews=${_reviews.length}, hasMore=$_hasMoreReviews");
     return Card(
       elevation: 1,
       margin: const EdgeInsets.only(bottom: 16),
@@ -417,13 +452,13 @@ class GameReviewSectionState extends State<GameReviewSection> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: _reviews.length,
-        separatorBuilder: (context, index) => Divider(color: Colors.grey[200], height: 1),
+        separatorBuilder: (context, index) =>
+            Divider(color: Colors.grey[200], height: 1),
         itemBuilder: (context, index) {
           // Log index for debugging potential list issues
           // print(">>> GRS (${widget.game.id}): Building review item at index $index");
           return _buildReviewItem(_reviews[index]);
-        }
-    );
+        });
   }
 
   Widget _buildReviewItem(Map<String, dynamic> review) {
@@ -492,7 +527,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
                 reviewText,
-                style: TextStyle(fontSize: 14, color: Colors.grey[800], height: 1.5),
+                style: TextStyle(
+                    fontSize: 14, color: Colors.grey[800], height: 1.5),
               ),
             ),
         ],
@@ -505,8 +541,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (_isLoading && !_isProcessingPageOne && _page > 1) {
       return Padding(
           padding: const EdgeInsets.only(top: 16.0),
-          child: LoadingWidget.inline(size: 20, message: "加载中...")
-      );
+          child: LoadingWidget.inline(size: 20, message: "加载中..."));
     }
     // Show "Load More" button if not loading, there are more reviews, and some reviews are already loaded
     if (!_isLoading && _hasMoreReviews && _reviews.isNotEmpty) {

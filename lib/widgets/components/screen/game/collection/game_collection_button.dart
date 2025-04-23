@@ -15,11 +15,13 @@ class GameCollectionButton extends StatefulWidget {
   // *** 修改回调签名以使用新的结果类 ***
   final Function(CollectionChangeResult)? onCollectionChanged;
   final GameCollectionItem? initialCollectionStatus;
+  final bool isPreview;
 
 
   const GameCollectionButton({
     super.key,
     required this.game,
+    this.isPreview = false,
     this.compact = false,
     this.onCollectionChanged, // *** 新签名 ***
     this.initialCollectionStatus,
@@ -278,6 +280,10 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     final bool hasStatus = _collectionStatus != null;
     final ThemeData theme = Theme.of(context);
 
+    // 预览模式下不允许显示按钮
+    if (widget.isPreview){
+      return SizedBox.shrink();
+    }
     // 根据是否已收藏，返回不同的按钮 Widget
     if (hasStatus) {
       // 如果已收藏，调用 _buildCollectionStatusButton 来构建显示当前状态的按钮

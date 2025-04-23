@@ -6,7 +6,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/image/safe_user_avatar.dart';
+import '../../../../ui/badges/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../ui/buttons/follow_user_button.dart';
 

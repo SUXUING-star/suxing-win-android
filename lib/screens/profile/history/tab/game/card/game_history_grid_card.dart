@@ -1,6 +1,9 @@
 // lib/screens/profile/tab/widgets/game_history_grid_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../../../../../routes/app_routes.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
 import '../../../../../../widgets/ui/image/safe_cached_image.dart';
@@ -47,6 +50,7 @@ class GameHistoryGridCard extends StatelessWidget {
                       print('历史游戏封面加载失败: $url, 错误: $error');
                     },
                   ),
+
 
                   // 类别标签
                   if (historyItem['category'] != null)
@@ -98,6 +102,7 @@ class GameHistoryGridCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
                 ],
               ),
             ),
@@ -110,12 +115,10 @@ class GameHistoryGridCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    AppText(
                       historyItem['title']?.toString() ?? '未知游戏',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      type: AppTextType.title,
+                      fontWeight: FontWeight.bold,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -127,7 +130,7 @@ class GameHistoryGridCard extends StatelessWidget {
                           fontSize: 12,
                           color: Colors.grey[700],
                         ),
-                        maxLines: 2,
+                        maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
 

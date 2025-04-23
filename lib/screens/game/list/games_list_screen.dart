@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-// <--- 需要: 为了输入框数字限制
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/tag/tag.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -59,6 +59,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   String _currentSortBy = 'createTime';
   bool _isDescending = true;
   String? _currentTag;
+  GameListFilterProvider? _filterProvider;
   List<Tag> _availableTags = [];
   StreamSubscription<BoxEvent>? _cacheSubscription;
   String _currentWatchIdentifier = '';
@@ -78,11 +79,41 @@ class _GamesListScreenState extends State<GamesListScreen>
   @override
   void initState() {
     super.initState();
-    _currentTag = widget.selectedTag;
+    //print("GamesListScreen initState: widget.selectedTag = ${widget.selectedTag}");
+    // 获取 Provider 实例
+    // listen: false 因为我们会在 VisibilityDetector 里主动检查
+    _filterProvider = Provider.of<GameListFilterProvider>(context, listen: false);
+
+    // 初始化 _currentTag
+    _initializeCurrentTag();
+
     WidgetsBinding.instance.addObserver(this);
-    _loadTags();
-    // Initial load triggered by VisibilityDetector
+    _loadTags(); // 异步加载可用标签列表
+    // 初始数据加载现在主要由 VisibilityDetector 变为可见时触发
   }
+
+  void _initializeCurrentTag() {
+    final initialProviderTag = _filterProvider?.selectedTag;
+    final tagWasSet = _filterProvider?.tagHasBeenSet ?? false;
+    //print("GamesListScreen _initializeCurrentTag: Provider state -> tag='$initialProviderTag', wasSet=$tagWasSet");
+
+    // 规则：如果 Provider 的 tag 被设置过 (wasSet=true)，就用 Provider 的值；否则看 widget.selectedTag
+    _currentTag = tagWasSet ? initialProviderTag : widget.selectedTag;
+    //print("GamesListScreen _initializeCurrentTag: Initial _currentTag set to '$_currentTag'");
+
+    // 注意：不在 initState 重置 Provider 的 flag，让第一次可见性检查来处理
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 确保 Provider 实例存在
+    if (_filterProvider == null) {
+      _filterProvider = Provider.of<GameListFilterProvider>(context, listen: false);
+      print("GamesListScreen didChangeDependencies: Got provider instance.");
+    }
+  }
+
 
   @override
   void dispose() {
@@ -96,17 +127,83 @@ class _GamesListScreenState extends State<GamesListScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      if (_needsRefresh && _isVisible) {
-        _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
-        _needsRefresh = false;
-      } else if (_isVisible) {
-        _refreshDataIfNeeded(reason: "App Resumed");
+      if (_isVisible) { // 页面当前可见
+        print("GamesListScreen: App resumed and visible. Checking provider & refreshing data if needed.");
+        _checkProviderAndApplyTagIfNeeded(reason: "App Resumed"); // 检查 Provider
+        _refreshDataIfNeeded(reason: "App Resumed"); // 刷新当前页数据
+      } else {
+        print("GamesListScreen: App resumed but hidden. Marking for refresh.");
+        _needsRefresh = true; // 标记，等可见时刷新
       }
     } else if (state == AppLifecycleState.paused) {
-      _needsRefresh = true;
+      _needsRefresh = true; // 可选：离开时标记需要刷新
     }
   }
 
+  // === Visibility Handling ===
+  void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
+    // 使用一个稍微宽松的阈值，避免快速切换时误判
+    final bool nowVisible = visibilityInfo.visibleFraction > 0;
+    if (!mounted) return; // 组件已卸载，不处理
+
+    if (nowVisible && !_isVisible) {
+      print("GamesListScreen: Became visible.");
+      _isVisible = true;
+      // 1. 检查 Provider 是否有新的 tag 指令
+      _checkProviderAndApplyTagIfNeeded(reason: "Became Visible");
+
+      // 2. 处理加载逻辑
+      if (!_isInitialized) {
+        print("GamesListScreen: Triggering initial load.");
+        // 初始加载使用当前的 _currentTag (可能已被 _checkProvider 更新)
+        _loadGames(pageToFetch: 1, isInitialLoad: true);
+      } else if (_needsRefresh) {
+        print("GamesListScreen: Triggering refresh on visibility.");
+        _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
+        _needsRefresh = false;
+      } else {
+        print("GamesListScreen: Already initialized and no refresh needed. Ensuring cache watcher is active.");
+        // 确保缓存监听器在监听当前状态
+        _startOrUpdateWatchingCache();
+      }
+    } else if (!nowVisible && _isVisible) {
+      print("GamesListScreen: Became hidden.");
+      _isVisible = false;
+      _stopWatchingCache(); // 页面隐藏时停止监听缓存
+      _refreshDebounceTimer?.cancel(); // 取消可能存在的刷新定时器
+    }
+  }
+  // === Provider Check Logic ===
+  void _checkProviderAndApplyTagIfNeeded({required String reason}) {
+    if (_filterProvider == null) {
+      print("GamesListScreen _checkProvider...: Error - Provider instance is null.");
+      return;
+    }
+
+    final providerTag = _filterProvider!.selectedTag;
+    final tagWasSet = _filterProvider!.tagHasBeenSet;
+
+    print("GamesListScreen _checkProvider... (Reason: $reason): "
+        "Provider state -> tag='$providerTag', wasSet=$tagWasSet. "
+        "Current state -> _currentTag='$_currentTag'");
+
+    // 核心逻辑：只有当 Provider 标记被设置过，并且 Provider 的 tag 和当前页面的 tag 不同时，才需要动作
+    if (tagWasSet && providerTag != _currentTag) {
+      print("GamesListScreen _checkProvider...: Mismatch detected! Applying tag '$providerTag' from Provider.");
+      // 应用新的 tag，这会更新 _currentTag 并触发刷新
+      _applyTagAndSort(providerTag, _currentSortBy, _isDescending);
+      // !!! 关键：处理完后，重置 Provider 中的标志位 !!!
+      _filterProvider!.resetTagFlag();
+      print("GamesListScreen _checkProvider...: Provider tag flag has been reset.");
+    } else if (tagWasSet && providerTag == _currentTag) {
+      // 如果 tag 相同，但标志位是 true (比如重复导航到同一 tag)，我们不刷新，但要重置标志位
+      print("GamesListScreen _checkProvider...: Provider tag matches current tag, but flag was set. Resetting flag only.");
+      _filterProvider!.resetTagFlag();
+    } else {
+      // Provider 没被设置过，或者 tag 没变，啥也不用做
+      print("GamesListScreen _checkProvider...: No action needed based on provider state.");
+    }
+  }
   // === Data Loading & Cache ===
   Future<void> _loadTags() async {
     try {
@@ -183,6 +280,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         _currentPage = serverPage;
         _totalPages = serverTotalPages;
         _errorMessage = null;
+        if (!_isInitialized) _isInitialized = true;
       });
 
       _startOrUpdateWatchingCache(); // 监听当前页
@@ -413,7 +511,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     // 5. 对话框关闭后，如果用户点击了 "应用" (confirmed == true)
     if (confirmed == true && mounted) {
       // 使用更新后的临时变量调用应用逻辑
-      _applyTagAndSort(tempSelectedTag, tempSortBy, tempDescending);
+      _handleFilterDialogConfirm(tempSelectedTag, tempSortBy, tempDescending);
     }
   }
 
@@ -473,29 +571,64 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// Applies filter/sort and triggers refresh. (调用 _loadGames 刷新第一页)
   void _applyTagAndSort(String? newTag, String newSortBy, bool newDescending) {
     bool tagChanged = _currentTag != newTag;
-    bool sortChanged =
-        _currentSortBy != newSortBy || _isDescending != newDescending;
+    bool sortChanged = _currentSortBy != newSortBy || _isDescending != newDescending;
+
     if (tagChanged || sortChanged) {
-      print("应用筛选/排序: tag=$newTag, sort=$newSortBy, desc=$newDescending");
-      _stopWatchingCache();
+      print("GamesListScreen _applyTagAndSort: Applying state -> tag='$newTag', sort='$newSortBy', desc=$newDescending");
+      _stopWatchingCache(); // 停止旧状态的监听
       setState(() {
+        // 更新内部状态
         _currentTag = newTag;
         _currentSortBy = newSortBy;
         _isDescending = newDescending;
+        // 重置分页和错误信息
+        _currentPage = 1;
+        _totalPages = 1;
         _errorMessage = null;
+        _gamesList = []; // 立即清空列表以提供视觉反馈
       });
-      _loadGames(pageToFetch: 1, isRefresh: true); // 强制刷新第一页
+      // 触发第一页加载
+      _loadGames(pageToFetch: 1, isRefresh: true);
     } else {
-      print("筛选/排序条件未改变");
+      print("GamesListScreen _applyTagAndSort: State unchanged.");
     }
   }
 
-  /// Handles mobile TagBar selection. (调用 _applyTagAndSort)
-  void _handleTagBarSelected(String? tag) {
-    final newTag = (_currentTag == tag) ? null : tag;
-    if (_currentTag != newTag) {
-      _applyTagAndSort(newTag, _currentSortBy, _isDescending);
+  void _clearTagFilter() {
+    print("GamesListScreen: Clear tag button pressed.");
+    // 1. 调用 apply 函数更新页面状态并触发加载
+    _applyTagAndSort(null, _currentSortBy, _isDescending);
+    // 2. 同步更新 Provider 状态
+    _filterProvider?.clearTag(); // clearTag 会设置 tag=null 并标记
+    // 3. 因为是页面内部操作触发，立即重置标志位
+    _filterProvider?.resetTagFlag();
+  }
+  // 筛选对话框确认
+  void _handleFilterDialogConfirm(String? newTag, String newSortBy, bool newDescending) {
+    print("GamesListScreen: Filter dialog confirmed -> tag='$newTag', sort='$newSortBy', desc=$newDescending");
+    // 1. 调用 apply 函数更新页面状态并触发加载
+    _applyTagAndSort(newTag, newSortBy, newDescending);
+    // 2. 同步更新 Provider 状态
+    if (_filterProvider?.selectedTag != newTag) {
+      _filterProvider?.setTag(newTag);
     }
+    // 3. 因为是页面内部操作触发，立即重置标志位
+    _filterProvider?.resetTagFlag();
+  }
+
+
+  // 移动端 TagBar 选择
+  void _handleTagBarSelected(String? tag) {
+    final newTag = (_currentTag == tag) ? null : tag; // 点击相同 tag 则取消
+    print("GamesListScreen: TagBar selected -> newTag='$newTag'");
+    // 1. 调用 apply 函数更新页面状态并触发加载
+    _applyTagAndSort(newTag, _currentSortBy, _isDescending);
+    // 2. 同步更新 Provider 状态
+    if (_filterProvider?.selectedTag != newTag) {
+      _filterProvider?.setTag(newTag);
+    }
+    // 3. 因为是页面内部操作触发，立即重置标志位
+    _filterProvider?.resetTagFlag();
   }
 
   /// Handles delete action (using your original onConfirm logic).
@@ -547,36 +680,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       appBar: _buildAppBar(), // AppBar 不包含跳页按钮
       body: VisibilityDetector(
         key: const ValueKey('games_list_visibility_detector'),
-        onVisibilityChanged: (visibilityInfo) {
-          final double visibleFraction = visibilityInfo.visibleFraction;
-          final bool nowVisible = visibleFraction > 0.1;
-          if (mounted) {
-            if (nowVisible && !_isVisible) {
-              print("页面变为可见");
-              _isVisible = true;
-              if (!_isInitialized) {
-                _triggerInitialLoad();
-              } else if (_needsRefresh) {
-                _refreshDataIfNeeded(
-                    reason: "Became Visible with NeedsRefresh");
-                _needsRefresh = false;
-              } else if (_gamesList.isEmpty &&
-                  _errorMessage == null &&
-                  !_isLoadingData) {
-                print("页面可见但列表为空，尝试刷新当前页");
-                _loadGames(pageToFetch: _currentPage, isRefresh: true);
-              } else {
-                print("页面恢复可见，检查当前页缓存监听器");
-                _startOrUpdateWatchingCache();
-              }
-            } else if (!nowVisible && _isVisible) {
-              print("页面变为不可见");
-              _isVisible = false;
-              _stopWatchingCache();
-              _refreshDebounceTimer?.cancel();
-            }
-          }
-        },
+        onVisibilityChanged: _handleVisibilityChange,
         child: _buildBodyContent(),
       ),
       floatingActionButton: _buildFab(),
@@ -650,13 +754,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         ),
         if (_currentTag != null)
           IconButton(
-            icon: Icon(Icons.clear, color: iconColor),
-            // --- 修正: 使用明确的函数体 ---
-            onPressed: _isLoadingData
-                ? null
-                : () {
-                    _applyTagAndSort(null, _currentSortBy, _isDescending);
-                  },
+            icon: Icon(Icons.clear),
+            onPressed: _isLoadingData ? null : _clearTagFilter, // 调用新的处理函数
             tooltip: '清除标签筛选',
           ),
         if (!isDesktop)
@@ -668,14 +767,12 @@ class _GamesListScreenState extends State<GamesListScreen>
             tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
           ),
       ],
-      bottom: (!isDesktop && _showMobileTagBar && _availableTags.isNotEmpty)
+      bottom: (!DeviceUtils.isDesktop && _showMobileTagBar && _availableTags.isNotEmpty)
           ? TagBar(
-              tags: _availableTags,
-              selectedTag: _currentTag,
-              onTagSelected: _isLoadingData
-                  ? (String? tag) {}
-                  : _handleTagBarSelected, // onTagSelected 需要 Function(String?)?
-            )
+        tags: _availableTags,
+        selectedTag: _currentTag, // 使用内部状态
+        onTagSelected: _handleTagBarSelected, // 调用新的处理函数
+      )
           : null,
     );
   }
@@ -792,7 +889,7 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   // !!!!!!!!!!!!!!!!!!!
   // 这是判断对于目前用户哪一个游戏能够有删除权限的
-  bool _checkPermissionDeleteGame(Game game) {
+  bool _checkPermissionDeleteGame(Game game,BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context,listen: false);
     if (game.authorId == authProvider.currentUserId) {
       return true;
@@ -889,7 +986,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                 forceCompact: useCompactMode,
                 maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
                 // 当加载中传递空回调，即使加载成功(加载成功后是false)如果没有权限也传递空回调
-                onDeleteAction: _isLoadingData && !_checkPermissionDeleteGame(game)
+                onDeleteAction: _isLoadingData && !_checkPermissionDeleteGame(game,context)
                     ? null
                     : () {
                         _handleDeleteGame(game.id);

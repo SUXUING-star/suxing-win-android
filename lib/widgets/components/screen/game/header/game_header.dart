@@ -98,6 +98,7 @@ class GameHeader extends StatelessWidget {
                 game: game,
                 wrap: false,
                 maxTags: 5,
+                navigateToGameListOnClick: true,
               ),
             ],
             SizedBox(height: 12),

@@ -1,6 +1,7 @@
 // lib/screens/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -225,9 +226,18 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   }
 
   Widget _buildBody() {
+    // 4. 计算卡片宽高比
+    //    根据是否有面板，调用不同的 DeviceUtils 方法
+    final cardRatio =
+
+        DeviceUtils.calculateSimpleCardRatio(context); // 使用 widget 的 showTagSelection
     if (_isLoading) {
       return LoadingWidget.inline();
     }
+    // 2. 计算每行卡片数
+    final cardsPerRow = DeviceUtils.calculateCardsPerRow(context);
+    if (cardsPerRow <= 0) return InlineErrorWidget(errorMessage: "渲染错误");
+    final isDesktop = DeviceUtils.isDesktop;
 
     // 使用 _errorMessage 来显示具体的错误信息
     if (_hasError) {
@@ -268,11 +278,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
           GridView.builder(
             shrinkWrap: true,
             physics: NeverScrollableScrollPhysics(),
-            gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-              maxCrossAxisExtent: 250,
-              childAspectRatio: 0.70, // 可能需要微调以适应 Overlay
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: cardsPerRow, // 使用计算出的每行数量
+              childAspectRatio: cardRatio, // 使用计算出的宽高比
               crossAxisSpacing: 8,
-              mainAxisSpacing: 12,
+              mainAxisSpacing: isDesktop ? 16 : 8,
             ),
             itemCount: _myGames.length,
             itemBuilder: (context, index) {

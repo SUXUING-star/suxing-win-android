@@ -1,107 +1,146 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入依赖 (需要 ActivityComment)
-import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 导入依赖
+import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入依赖
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
-class ActivityCommentsSection extends StatelessWidget { // 公共类
+class ActivityCommentsSection extends StatelessWidget {
   final String activityId;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
   final Function(String) onAddComment;
-  final FutureOr<void> Function(String commentId) onCommentDeleted; // 删除接收 commentId
-  final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled; // 点赞切换接收整个 Comment 对象
+  final FutureOr<void> Function(String commentId) onCommentDeleted;
+  final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled;
   final bool isDesktop;
 
-  const ActivityCommentsSection({ // 构造函数
+  const ActivityCommentsSection({
     super.key,
     required this.activityId,
     required this.comments,
     required this.isLoadingComments,
     required this.onAddComment,
-    required this.onCommentDeleted,    // 保持接收 commentId
-    required this.onCommentLikeToggled, // <--- 改回接收 ActivityComment
+    required this.onCommentDeleted,
+    required this.onCommentLikeToggled,
     required this.isDesktop,
   });
 
   @override
   Widget build(BuildContext context) {
-    // 评论输入框 Widget
+    final theme = Theme.of(context);
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+
+    // --- 评论输入框 Widget ---
     final commentInput = Padding(
-      padding: EdgeInsets.only(
-          top: isDesktop ? 0 : 16,
-          bottom: isDesktop ? 16 : 0
-      ),
+      padding: EdgeInsets.only(bottom: isDesktop ? 16 : 0), // 调整padding
       child: Column(
+        // crossAxisAlignment: CrossAxisAlignment.start, // 移除以使分割线居中
         children: [
-          if(!isDesktop) ...[const SizedBox(height: 10), const Divider(), const SizedBox(height: 10)],
+          if (!isDesktop) ...[const SizedBox(height: 10), const Divider(), const SizedBox(height: 10)],
           ActivityCommentInput(
             onSubmit: onAddComment,
             isAlternate: false,
             hintText: '添加你的看法...',
           ),
-          if(isDesktop) ...[const SizedBox(height: 20), const Divider(), const SizedBox(height: 16)],
+          if (isDesktop) ...[const SizedBox(height: 20), const Divider(), const SizedBox(height: 16)], // 输入框和列表间的分割线
         ],
       ),
     );
 
-    // 评论列表 Widget
-    Widget commentList;
+    // --- 评论列表内容 Widget (ListView.builder本身) ---
+    Widget commentListContent;
     if (isLoadingComments && comments.isEmpty) {
-      commentList = Padding(
-        padding: EdgeInsets.symmetric(vertical: 32.0),
-        child: LoadingWidget.inline(),
+      commentListContent = Padding(
+        padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Loading时的垂直间距
+        child: LoadingWidget.inline(message: "正在加载评论...") // 居中显示
       );
     } else if (comments.isEmpty && !isLoadingComments) {
-      commentList = const EmptyStateWidget(
-        message: '暂无评论，发表第一条评论吧',
-        iconData: Icons.chat_outlined,
+      commentListContent = const Padding(
+        padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Empty时的垂直间距
+        child: Center( // 居中显示
+          child: EmptyStateWidget(
+            message: '暂无评论，发表第一条评论吧',
+            iconData: Icons.chat_bubble_outline, // 换个图标试试
+          ),
+        ),
       );
     } else {
-      commentList = ListView.builder(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+      // 这里的 ListView 不再需要外部滚动控制，因为它会在 ConstrainedBox + SingleChildScrollView 内部
+      commentListContent = ListView.builder(
+        shrinkWrap: true, // 在 SingleChildScrollView 内部通常需要
+        physics: const NeverScrollableScrollPhysics(), // 在 SingleChildScrollView 内部不需要自己的滚动
         itemCount: comments.length,
         itemBuilder: (context, index) {
-          final comment = comments[index]; // 获取当前评论
+          final comment = comments[index];
           return Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
+            padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(
               comment: comment,
               activityId: activityId,
               isAlternate: false,
               onLike: () => onCommentLikeToggled(comment),
               onUnlike: () => onCommentLikeToggled(comment),
-              onCommentDeleted: () => onCommentDeleted(comment.id), // 传递
+              onCommentDeleted: () => onCommentDeleted(comment.id),
             ),
           );
         },
       );
     }
 
-    // 根据 isDesktop 决定输入框和列表的顺序
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: isDesktop
-          ? [
-        commentInput,
-        if (comments.isNotEmpty || isLoadingComments)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Text("评论列表", style: Theme.of(context).textTheme.titleMedium),
+    // --- 构建桌面端的评论列表区域 (带滚动约束) ---
+    Widget buildDesktopCommentListArea() {
+      // 只有在有评论或者正在加载时才显示滚动区域
+      if ((comments.isNotEmpty || isLoadingComments)) {
+        return ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: 500, // *** 关键：限制最大高度 ***
           ),
-        Container(
-          constraints: const BoxConstraints(maxHeight: 600),
-          child: commentList,
-        ),
-      ]
-          : [
-        commentList,
-        commentInput,
-      ],
+          child: SingleChildScrollView( // *** 关键：让内容在此区域内滚动 ***
+            child: commentListContent,
+          ),
+        );
+      } else {
+        // 如果没评论也不在加载（即空状态），直接显示空状态内容，不需要滚动和高度限制
+        return commentListContent;
+      }
+    }
+
+
+    // --- 根据 isDesktop 决定输入框和列表的顺序 ---
+    List<Widget> childrenInOrder = isDesktop
+        ? [
+      commentInput, // 输入框 (包含其下的分割线)
+      // --- 桌面评论列表区域 ---
+      buildDesktopCommentListArea(),
+    ]
+        : [
+      // --- 移动端列表内容直接放这里 ---
+      commentListContent,
+      // --- 移动端输入框 (包含其上的分割线) ---
+      commentInput,
+    ];
+
+    // --- 使用 Container 实现卡片样式 ---
+    return Container(
+      padding: sectionPadding,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch, // 让内容撑满卡片宽度
+        mainAxisSize: MainAxisSize.min, // *** 关键：让卡片高度自适应内容 ***
+        children: childrenInOrder,
+      ),
     );
   }
 }

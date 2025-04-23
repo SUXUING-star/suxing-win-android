@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
@@ -466,8 +467,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               foregroundColor: _isLiked! ? primaryColor : greyColor,
               onPressed: _handleToggleLike, // 点击回调保持不变
               isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
-              // 可以调整大小，比如都用 mini？或者保持默认大小
-              // mini: true,
+              mini:  DeviceUtils.isDesktop ? false : true
             )
           else
             // 加载占位符 (保持不变)
@@ -485,7 +485,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           if (canEdit)
             GenericFloatingActionButton(
               heroTag: editHeroTag, // 使用区分后的 heroTag
-              mini: true, // 统一使用 mini 尺寸，或根据需要调整
+              mini: DeviceUtils.isDesktop ? false : true, // 统一使用 mini 尺寸，或根据需要调整
               tooltip: '编辑',
               icon: Icons.edit,
               onPressed: () => _handleEditPressed(context, game),

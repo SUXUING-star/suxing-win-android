@@ -1407,7 +1407,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         ),
       ),
       minLines: DeviceUtils.isDesktop ? 5 : 4,
-      maxLength: 200,
+      maxLength: 500,
       maxLines: DeviceUtils.isDesktop ? 10 : 8,
       enabled: !_isProcessing,
       textInputAction: TextInputAction.newline,

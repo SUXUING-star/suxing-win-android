@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/user/cache/account_cache_service.dart';
-import '../../../widgets/ui/image/safe_user_avatar.dart';
+import '../../../widgets/ui/badges/safe_user_avatar.dart';
 
 class AccountBubbleMenu extends StatelessWidget {
   final Function(SavedAccount) onAccountSelected;

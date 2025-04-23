@@ -142,8 +142,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     _stopWatchingCache();
     _currentWatchIdentifier = newWatchIdentifier;
-    print(
-        "ActivityFeedScreen (${widget.title}): Starting/Updating cache watch for Identifier: $_currentWatchIdentifier");
 
     try {
       _cacheSubscription = _activityService
@@ -153,8 +151,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       )
           .listen(
         (BoxEvent event) {
-          print(
-              "ActivityFeedScreen (${widget.title}): Received cache change event. Identifier: $_currentWatchIdentifier");
           if (_isVisible) {
             _refreshCurrentPageData(reason: "Cache Changed");
           } else {
@@ -184,8 +180,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   void _stopWatchingCache() {
     if (_cacheSubscription != null) {
-      print(
-          "ActivityFeedScreen (${widget.title}): Stopping cache watch (Identifier: $_currentWatchIdentifier).");
       _cacheSubscription!.cancel();
       _cacheSubscription = null;
       // 不清除 _currentWatchIdentifier，用于下次比较
@@ -333,17 +327,19 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // UI 层防抖/节流 (与按钮点击逻辑类似)
     if (_isLoadingData || _isLoadingMore) return;
     final now = DateTime.now();
-    if (_lastRefreshTime != null && now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
+    if (_lastRefreshTime != null &&
+        now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
       print("ActivityFeedScreen (${widget.title}): Pull-to-refresh throttled.");
       await Future.delayed(Duration(milliseconds: 300)); // 给用户一个反馈
       return;
     }
 
-    print("ActivityFeedScreen (${widget.title}): Pull-to-refresh triggered (loading page 1).");
+    print(
+        "ActivityFeedScreen (${widget.title}): Pull-to-refresh triggered (loading page 1).");
     _stopWatchingCache(); // 停止旧监听
     setState(() {
       _currentPage = 1; // 重置到第一页
-      _error = '';      // 清除错误
+      _error = ''; // 清除错误
       // 不需要设置 isLoadingData，让 _loadActivities 处理
     });
     // --- 调用加载第一页的逻辑 ---
@@ -357,7 +353,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // 直接调用统一的刷新方法，它内部包含了节流逻辑
     _refreshData();
   }
-
 
   Future<void> _loadMoreActivities() async {
     if (!_isInitialized ||
@@ -502,7 +497,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     });
   }
 
-
   // --- 新增：传递给 CollapsibleActivityFeed 的具体回调实现 ---
 
   Future<void> _handleDeleteActivity(String activityId) async {
@@ -558,7 +552,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     print("Requesting add comment to activity $activityId");
     try {
       final comment =
-      await _activityService.commentOnActivity(activityId, content);
+          await _activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // 刷新由监听器处理
@@ -586,7 +580,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         print("Delete comment confirmed for $commentId");
         try {
           final success =
-          await _activityService.deleteComment(activityId, commentId);
+              await _activityService.deleteComment(activityId, commentId);
           if (success && mounted) AppSnackBar.showSuccess(context, '评论已删除');
           // 刷新由监听器处理
         } catch (e) {
@@ -770,5 +764,4 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       ],
     );
   }
-
 } // _ActivityFeedScreenState 类结束

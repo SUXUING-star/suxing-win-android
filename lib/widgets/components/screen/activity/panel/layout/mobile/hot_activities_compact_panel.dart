@@ -6,7 +6,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart';
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import '../../../utils/activity_utils.dart';
 
 class HotActivitiesCompactPanel extends StatelessWidget {

@@ -75,32 +75,22 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   // 只加载游戏历史
   Future<void> _loadGameHistory() async {
-    if (_gameHistoryLoaded) return;
+    if (_gameHistoryLoaded) return; // 如果已经加载过，直接返回
 
     setState(() {
-      // 可以考虑在这里设置一个临时的加载状态，如果 Tab 还没渲染出来
-      _error = null; // 清除之前的错误
+      _error = null; // 清除之前的错误，准备加载
     });
 
-
-    try {
-      // 实际的数据获取和状态更新由 PostHistoryTab 内部处理
-      // await _forumService.getPostHistoryWithDetails(1, 10); // <--- 实际加载应该在 Tab 内触发
-      if (!mounted) return;
-      setState(() {
-        _postHistoryLoaded = true;
-        // _error = null; // 已在上面设置
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
-        _postHistoryLoaded = false; // 加载失败，允许重试
-      });
-    } finally {
-      // loadingObserver.hideLoading(); // <--- 删除了 hideLoading
-    }
+    // 这里仅仅是标记状态，实际加载在 Tab 组件内部触发
+    // 简单的状态标记不需要 try-catch，除非标记过程本身有异常风险（这里没有）
+    if (!mounted) return;
+    setState(() {
+      _gameHistoryLoaded = true; // <--- 修正这里！标记游戏历史已“触发”加载
+    });
+    // 注意：这里不再需要 try-catch 和 finally，因为没有执行实际的异步IO操作
+    // 错误处理应该在 GameHistoryTab 的 _loadHistory 方法中进行
   }
+
 
   // 只加载帖子历史
   Future<void> _loadPostHistory() async {
@@ -128,6 +118,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   }
 
   // 刷新当前选中的历史
+  // 刷新当前选中的历史 (这里也要对应调整)
   Future<void> _refreshCurrentHistory() async {
     if (!mounted || _tabController == null) return;
     int currentTab = _tabController!.index;
@@ -135,22 +126,31 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     // 重置加载状态标记，让对应的 Tab 重新加载
     if (currentTab == 0) {
       setState(() {
-        _gameHistoryLoaded = false;
-        _error = null; // 清除错误以便重试
+        _gameHistoryLoaded = false; // <--- 重置游戏历史加载状态
+        _error = null;
       });
-      // 触发加载（Tab 组件会检测到 isLoaded 变为 false 并重新加载）
-      _loadGameHistory(); // 或者直接调用 Tab 内部的刷新方法（如果暴露了的话）
+      // 通过改变 isLoaded 状态，GameHistoryTab 的 didUpdateWidget 会被触发
+      // 或者如果 GameHistoryTab 暴露了刷新方法，可以调用它
+      // 重新触发加载（或者说，允许它下次被触发时加载）
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 确保是在下一帧触发状态更新，让 GameHistoryTab 有机会接收到 isLoaded=false
+        // 然后再触发一次加载，使其接收 isLoaded=true
+        if(mounted) {
+          _loadGameHistory(); // 再次调用，将 isLoaded 设置为 true，触发 GameHistoryTab 的加载逻辑
+        }
+      });
     } else {
       setState(() {
-        _postHistoryLoaded = false;
-        _error = null; // 清除错误以便重试
+        _postHistoryLoaded = false; // <--- 重置帖子历史加载状态
+        _error = null;
       });
-      _loadPostHistory(); // 同上
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if(mounted) {
+          _loadPostHistory();
+        }
+      });
     }
-    // 注意：这里的 await 意义不大，因为实际加载在 Tab 组件内部异步进行
-    // RefreshIndicator 会自己处理完成状态
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -184,6 +184,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   Widget _buildTabBar() {
     return TabBar(
+
       controller: _tabController,
       tabs: [
         Tab(text: '游戏浏览历史'),

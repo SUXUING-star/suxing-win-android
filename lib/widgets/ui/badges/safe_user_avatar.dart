@@ -4,7 +4,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../services/main/user/user_service.dart';
-import 'safe_cached_image.dart';
+import '../image/safe_cached_image.dart';
 
 /// 安全的用户头像组件
 ///

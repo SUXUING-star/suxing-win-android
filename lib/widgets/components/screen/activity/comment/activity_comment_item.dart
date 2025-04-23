@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/activity/user_activity.dart'; // 需要评�
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 仍然需要 UserService 判断所有者
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 // 需要确认对话框
-import 'package:suxingchahui/widgets/ui/image/safe_user_avatar.dart'; // 使用安全头像组件
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 使用安全头像组件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 需要 Snackbar
 
 class ActivityCommentItem extends StatefulWidget {

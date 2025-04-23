@@ -164,6 +164,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                   initialCollectionStatus: widget.initialCollectionStatus,
                   onCollectionChanged: _handleButtonCollectionChanged, // 传递内部处理函数
                   compact: false,
+                  isPreview: widget.isPreviewMode,
                 ),
               ],
             ),

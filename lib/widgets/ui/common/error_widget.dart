@@ -82,28 +82,34 @@ class InlineErrorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: iconColor, size: iconSize),
-          const SizedBox(height: 12),
-          if (errorMessage != null)
-            Text(
-              errorMessage!,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          if (onRetry != null) ...[
-            const SizedBox(height: 16),
-            FunctionalTextButton(
-              onPressed: onRetry,
-              label: retryText,
-            ),
-          ],
-        ],
+    return Center(
+      child: Opacity(
+        opacity: 0.9,
+        child: Container(
+          padding: const EdgeInsets.all(16.0),
+          color: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, color: iconColor, size: iconSize),
+              const SizedBox(height: 12),
+              if (errorMessage != null)
+                Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              if (onRetry != null) ...[
+                const SizedBox(height: 16),
+                FunctionalTextButton(
+                  onPressed: onRetry,
+                  label: retryText,
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
