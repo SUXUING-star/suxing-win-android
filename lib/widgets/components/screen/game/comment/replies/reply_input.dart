@@ -43,6 +43,7 @@ class _ReplyInputState extends State<ReplyInput> {
       submitButtonText: '回复',
       isSubmitting: widget.isSubmitting, // 传递 loading 状态
       isReply: true,
+      maxLength: 50,
       maxLines: 1,
       onCancel: widget.onCancel,
     );

@@ -100,7 +100,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
       // --- 获取用户数据 ---
       // 使用 .first 获取第一个事件，假设流会立即或很快发出数据
       // 如果流可能长时间无数据，考虑用 .listen 并管理 subscription
-      final user = await _userService.getCurrentUserProfile().first;
+      final authProvider = Provider.of<AuthProvider>(context, listen: true);
+      final user = authProvider.currentUser;
 
       if (!mounted) return; // 异步操作后再次检查
 
@@ -260,8 +261,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             );
           } else {
             if (mounted) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(SnackBar(content: Text('无法加载用户数据')));
+              AppSnackBar.showError(context, '无法加载用户数据');
             }
           }
         },
@@ -290,8 +290,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         route: '', // 使用 onTap
         onTap: () {
           if (mounted) {
-            ScaffoldMessenger.of(context)
-                .showSnackBar(SnackBar(content: Text('分享功能开发中')));
+            AppSnackBar.showInfo(context, '分享功能开发中');
           }
         },
       ),
@@ -300,6 +299,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         title: '帮助与反馈',
         route: '', // 使用 onTap
         onTap: _showHelpAndFeedback, // 调用显示反馈页面的方法
+      ),
+      ProfileMenuItem(
+        icon: Icons.settings,
+        title: '设置',
+        route: AppRoutes.settingPage, // 使用 onTap
       ),
     ];
   }

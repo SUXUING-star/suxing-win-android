@@ -409,7 +409,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (_reviews.isEmpty && !_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32.0),
-        child: EmptyStateWidget(message: '暂无玩家评价，快来抢沙发吧！'),
+        child: const EmptyStateWidget(message: '暂无玩家评价，快来抢沙发吧！'),
       );
     }
     // 4. Display the list of reviews

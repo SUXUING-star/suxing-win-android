@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 // 确保导入了 AppSnackBar 和 NavigationUtils
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/post/post.dart';
 import '../../../../../../services/main/forum/forum_service.dart';
@@ -35,7 +36,8 @@ class ReplyItem extends StatelessWidget {
   /// [context] : 用于显示 SnackBar 和可能的导航操作 (通常是 BottomSheet 的 context)
   /// [text] : 用户输入的回复内容
   /// [parentReplyId] : 被回复的评论 ID
-  Future<void> _performReplySubmission(BuildContext context, String text, String parentReplyId) async {
+  Future<void> _performReplySubmission(
+      BuildContext context, String text, String parentReplyId) async {
     if (text.trim().isEmpty) {
       // 使用 AppSnackBar 显示警告
       AppSnackBar.showWarning(context, "回复内容不能为空");
@@ -53,7 +55,6 @@ class ReplyItem extends StatelessWidget {
         AppSnackBar.showSuccess(context, '回复成功'); // 显示成功提示
       }
       onReplyChanged?.call(); // 通知父组件刷新
-
     } catch (e) {
       // 操作失败
       print("Error submitting reply: $e"); // 打印错误日志
@@ -65,7 +66,6 @@ class ReplyItem extends StatelessWidget {
       rethrow;
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -129,10 +129,12 @@ class ReplyItem extends StatelessWidget {
                         icon: const Icon(Icons.reply, size: 16),
                         label: const Text('回复', style: TextStyle(fontSize: 12)),
                         style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
                           minimumSize: Size.zero,
                         ),
-                        onPressed: () => _showReplyBottomSheet(context), // 点击弹出回复框
+                        onPressed: () =>
+                            _showReplyBottomSheet(context), // 点击弹出回复框
                       );
                     },
                   ),
@@ -167,7 +169,8 @@ class ReplyItem extends StatelessWidget {
 
         if (!isAuthor && !isAdmin) return const SizedBox.shrink();
 
-        return StylishPopupMenuButton<String>( // *** 使用新组件 ***
+        return StylishPopupMenuButton<String>(
+          // *** 使用新组件 ***
           icon: Icons.more_vert,
           iconSize: 18,
           iconColor: Colors.grey[600],
@@ -181,12 +184,15 @@ class ReplyItem extends StatelessWidget {
           items: [
             // 编辑选项
             if (isAuthor)
-              StylishMenuItemData( // **提供数据**
+              StylishMenuItemData(
+                // **提供数据**
                 value: 'edit',
                 // **提供内容 (Row)**
                 child: Row(children: [
-                  Icon(Icons.edit_outlined, size: 18, color: theme.colorScheme.primary),
-                  const SizedBox(width: 10), const Text('编辑')
+                  Icon(Icons.edit_outlined,
+                      size: 18, color: theme.colorScheme.primary),
+                  const SizedBox(width: 10),
+                  const Text('编辑')
                 ]),
               ),
 
@@ -196,12 +202,15 @@ class ReplyItem extends StatelessWidget {
 
             // 删除选项
             if (isAuthor || isAdmin)
-              StylishMenuItemData( // **提供数据**
+              StylishMenuItemData(
+                // **提供数据**
                 value: 'delete',
                 // **提供内容 (Row)**
                 child: Row(children: [
-                  Icon(Icons.delete_outline, size: 18, color: theme.colorScheme.error),
-                  const SizedBox(width: 10), Text('删除', style: TextStyle(color: theme.colorScheme.error))
+                  Icon(Icons.delete_outline,
+                      size: 18, color: theme.colorScheme.error),
+                  const SizedBox(width: 10),
+                  Text('删除', style: TextStyle(color: theme.colorScheme.error))
                 ]),
               ),
           ],
@@ -209,15 +218,18 @@ class ReplyItem extends StatelessWidget {
           // onSelected 逻辑不变
           onSelected: (value) {
             switch (value) {
-              case 'edit': _handleEditReply(context, reply); break;
-              case 'delete': _handleDeleteReply(context, reply); break;
+              case 'edit':
+                _handleEditReply(context, reply);
+                break;
+              case 'delete':
+                _handleDeleteReply(context, reply);
+                break;
             }
           },
         );
       },
     );
   }
-
 
   // 处理编辑回复 - 使用 AppSnackBar
   Future<void> _handleEditReply(BuildContext context, Reply reply) async {
@@ -282,11 +294,14 @@ class ReplyItem extends StatelessWidget {
       context: context,
       isScrollControlled: true, // 允许 BottomSheet 随键盘调整大小
       backgroundColor: Colors.white, // 明确背景色
-      shape: const RoundedRectangleBorder( // 添加圆角
+      shape: const RoundedRectangleBorder(
+        // 添加圆角
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (bottomSheetContext) { // 使用独立的 context 名称
-        return StatefulBuilder( // 使用 StatefulBuilder 管理局部状态 (isSubmitting)
+      builder: (bottomSheetContext) {
+        // 使用独立的 context 名称
+        return StatefulBuilder(
+          // 使用 StatefulBuilder 管理局部状态 (isSubmitting)
           builder: (builderContext, setStateInBottomSheet) {
             return Padding(
               // 适配键盘遮挡
@@ -312,14 +327,14 @@ class ReplyItem extends StatelessWidget {
                     ),
                   ),
                   // 输入框和提交按钮 (使用 TextInputField)
-                  TextInputField(
+                  CommentInputField(
                     controller: textController,
                     hintText: '写下你的回复...', // 提示文字
                     submitButtonText: '回复', // 按钮文字
                     isSubmitting: isSubmitting, // 传递提交状态
                     maxLines: 3, // 限制最大行数
-                    // *** 调用提取出的方法处理提交 ***
-                    onSubmitted: (text) async {
+                    maxLength: 50,
+                    onSubmit: (text) async {
                       // 1. 设置提交中状态
                       setStateInBottomSheet(() {
                         isSubmitting = true;
@@ -328,7 +343,8 @@ class ReplyItem extends StatelessWidget {
                         // 2. 执行核心提交逻辑
                         // 传入 builderContext 用于 SnackBar 和导航
                         // 传入 reply.id 作为被回复的评论 ID
-                        await _performReplySubmission(builderContext, text, reply.id);
+                        await _performReplySubmission(
+                            builderContext, text, reply.id);
                         // 3. 如果成功，BottomSheet 会被 pop，此状态不再重要
                       } catch (e) {
                         // 4. 如果失败 (异常被抛出)，恢复提交按钮状态
@@ -353,5 +369,4 @@ class ReplyItem extends StatelessWidget {
       },
     );
   }
-
 }

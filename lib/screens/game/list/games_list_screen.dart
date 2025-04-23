@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 // <--- 需要: 为了输入框数字限制
 import 'package:hive/hive.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/tag/tag.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -41,7 +42,7 @@ class GamesListScreen extends StatefulWidget {
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
   final GameService _gameService = GameService();
-  final AuthProvider _authProvider = AuthProvider();
+
 
   // --- State Variables ---
   bool _isLoadingData = false;
@@ -792,10 +793,11 @@ class _GamesListScreenState extends State<GamesListScreen>
   // !!!!!!!!!!!!!!!!!!!
   // 这是判断对于目前用户哪一个游戏能够有删除权限的
   bool _checkPermissionDeleteGame(Game game) {
-    if (game.authorId == _authProvider.currentUserId) {
+    final authProvider = Provider.of<AuthProvider>(context,listen: false);
+    if (game.authorId == authProvider.currentUserId) {
       return true;
     }
-    if (_authProvider.isAdmin) {
+    if (authProvider.isAdmin) {
       return true;
     }
     return false;

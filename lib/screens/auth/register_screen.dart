@@ -181,6 +181,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入密码';
         if (value.length < 6) return '密码长度至少6位';
+        if (value.length > 30) return '密码长度过长';
         return null;
       },
     );

@@ -656,7 +656,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // 3. 如果加载完成，但帖子列表为空
     if (!_isLoadingData && _posts != null && _posts!.isEmpty) {
       return FadeInItem(
-          child: EmptyStateWidget(message: "啥也没有")); // 调用独立的空状态构建方法
+          child: const EmptyStateWidget(message: "啥也没有")); // 调用独立的空状态构建方法
     }
 
     // 4. 如果有帖子数据（无论是否正在后台加载刷新）

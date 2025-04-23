@@ -45,7 +45,6 @@ class ActivityDetailContent extends StatelessWidget {
     Color backgroundColor = Colors.white,
   }) {
     final theme = Theme.of(context);
-    // ... (wrapper 实现不变) ...
     return Opacity(
       opacity: opacity,
       child: Container(

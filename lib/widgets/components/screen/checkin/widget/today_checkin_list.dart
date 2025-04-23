@@ -110,7 +110,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
     }
 
     if (_checkInList == null || _checkInList!.users.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         message: '今天还没有用户签到',
       );
     }

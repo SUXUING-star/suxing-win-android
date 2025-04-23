@@ -100,8 +100,8 @@ class CoverImageField extends StatelessWidget {
   }
 
   Widget _buildCoverPreview(BuildContext context) {
-    // ... (_buildCoverPreview 方法保持不变) ...
     final source = coverImageSource;
+
     if (source == null || (source is String && source.isEmpty)) {
       return const Center(
         child: Column(
@@ -110,28 +110,45 @@ class CoverImageField extends StatelessWidget {
         ),
       );
     }
+
     Widget imageWidget;
     if (source is XFile) {
+      print("Cover Preview: Rendering XFile: ${source.path}");
       imageWidget = Image.file(
-        File(source.path),
+        File(source.path), // <--- 从 XFile 创建 File
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print("本地封面预览错误: ${source.path}, $error");
+          print("Error rendering XFile preview ${source.path}: $error");
           return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );
-    } else if (source is String) {
+    } else if (source is File) { // <--- 新增: 处理 File 对象
+      print("Cover Preview: Rendering File: ${source.path}");
+      imageWidget = Image.file(
+        source,             // <--- 直接使用 File 对象
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          print("Error rendering File preview ${source.path}: $error");
+          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
+        },
+      );
+    }
+    else if (source is String) {
+      print("Cover Preview: Rendering String URL: $source");
       final imageUrl = source;
-      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${FileUpload.baseUrl}/$imageUrl';
+      // 不需要再拼接 baseUrl，因为存的时候已经是完整路径或 URL
+      final String displayUrl = imageUrl;
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,
         fit: BoxFit.cover,
       );
     } else {
+      print("Cover Preview: Unknown source type: ${source.runtimeType}");
       imageWidget = const Center(child: Icon(Icons.help_outline, size: 48));
     }
+
     return ClipRRect(
-      borderRadius: BorderRadius.circular(7.0),
+      borderRadius: BorderRadius.circular(7.0), // 应用圆角
       child: imageWidget,
     );
   }

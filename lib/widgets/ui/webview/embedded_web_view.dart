@@ -4,7 +4,8 @@ import 'dart:io' show Platform;
 // 需要用到 jsonDecode
 
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb check
+import 'package:suxingchahui/utils/device/device_utils.dart';
+
 
 // --- 导入你的 UI 组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -70,11 +71,11 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
     });
 
     try {
-      if (kIsWeb) {
+      if (DeviceUtils.isWeb) {
         throw UnsupportedError('Web platform is not supported.');
-      } else if (Platform.isAndroid) {
+      } else if (DeviceUtils.isAndroid) {
         await _initializeAndroidWebView();
-      } else if (Platform.isWindows) {
+      } else if (DeviceUtils.isWindows) {
         // --- 修改 Windows 初始化，使用你版本提供的 API ---
         await _initializeWindowsWebView_V0_2_0();
       } else {
@@ -221,7 +222,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
     }
 
     try {
-      if (kIsWeb) {
+      if (DeviceUtils.isWeb) {
         return const EmptyStateWidget(
           message: 'Web 平台当前不支持内嵌 WebView',
           iconData: Icons.web_asset_off,

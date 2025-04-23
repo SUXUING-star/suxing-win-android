@@ -56,7 +56,7 @@ class ActivityCommentsSection extends StatelessWidget { // 公共类
         child: LoadingWidget.inline(),
       );
     } else if (comments.isEmpty && !isLoadingComments) {
-      commentList = EmptyStateWidget(
+      commentList = const EmptyStateWidget(
         message: '暂无评论，发表第一条评论吧',
         iconData: Icons.chat_outlined,
       );

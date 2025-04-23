@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 // _CustomSnackBarWidget - 添加 action 支持
 class _CustomSnackBarWidget extends StatefulWidget {
@@ -142,12 +143,10 @@ class _CustomSnackBarWidgetState extends State<_CustomSnackBarWidget>
           ),
           // onPressed: widget.onActionPressed, // <-- 直接调用外部传入的回调
           onPressed: _handleActionPressed, // <-- 调用封装好的处理函数
-          child: Text(
-            widget.actionLabel!.toUpperCase(), // 类似原生，用大写
-            style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: fontSize * 0.95), // 字体加粗稍微小一点
-          ),
+          child: AppText(widget.actionLabel!.toUpperCase(), // 类似原生，用大写
+              fontWeight: FontWeight.bold,
+              fontSize: fontSize * 0.95 // 字体加粗稍微小一点
+              ),
         ),
       );
     }
@@ -193,18 +192,19 @@ class AppSnackBar {
 
   /// 核心显示方法 - 使用 Overlay
   static void _showOverlaySnackBar(
-      BuildContext context,
-      String message,
-      Color backgroundColor,
-      IconData iconData, {
-        Duration duration = const Duration(seconds: 3),
-        double maxWidth = _defaultMaxWidth,
-        String? actionLabel, // <-- 新增: Action 文字
-        VoidCallback? onActionPressed, // <-- 新增: Action 回调
-      }) {
+    BuildContext context,
+    String message,
+    Color backgroundColor,
+    IconData iconData, {
+    Duration duration = const Duration(seconds: 3),
+    double maxWidth = _defaultMaxWidth,
+    String? actionLabel, // <-- 新增: Action 文字
+    VoidCallback? onActionPressed, // <-- 新增: Action 回调
+  }) {
     // 如果 context 不再可用，直接返回
     if (!context.mounted) {
-      print("AppSnackBar Error: BuildContext is not mounted. Cannot show SnackBar.");
+      print(
+          "AppSnackBar Error: BuildContext is not mounted. Cannot show SnackBar.");
       return;
     }
 
@@ -223,7 +223,6 @@ class AppSnackBar {
       }
     }
 
-
     OverlayEntry? entry; // 先声明 entry 变量
     entry = OverlayEntry(
       builder: (context) {
@@ -231,7 +230,8 @@ class AppSnackBar {
         if (!context.mounted) {
           // 如果在此期间 context 失效，则不构建任何东西
           // 或者可以返回一个空的 Container
-          print("AppSnackBar Warning: BuildContext became unmounted during OverlayEntry build.");
+          print(
+              "AppSnackBar Warning: BuildContext became unmounted during OverlayEntry build.");
           // 尝试移除自身？但这比较复杂，因为 entry 可能还没插入
           // 最好是外部调用前就确保 context 有效
           return const SizedBox.shrink(); // 返回空 Widget
@@ -254,7 +254,7 @@ class AppSnackBar {
             iconData: iconData,
             duration: duration,
             maxWidth: maxWidth,
-            actionLabel: actionLabel,         // <-- 传递 actionLabel
+            actionLabel: actionLabel, // <-- 传递 actionLabel
             onActionPressed: onActionPressed, // <-- 传递 onActionPressed
             onDismissed: () {
               // _removeTimer = Timer(const Duration(milliseconds: 50), () {
@@ -301,13 +301,13 @@ class AppSnackBar {
   // --- 修改公共方法以接收 Action 参数 ---
 
   static void showSuccess(
-      BuildContext context,
-      String message, {
-        double? maxWidth,
-        Duration duration = const Duration(seconds: 3),
-        String? actionLabel,
-        VoidCallback? onActionPressed,
-      }) {
+    BuildContext context,
+    String message, {
+    double? maxWidth,
+    Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) {
     _showOverlaySnackBar(
       context,
       message,
@@ -321,13 +321,13 @@ class AppSnackBar {
   }
 
   static void showError(
-      BuildContext context,
-      String message, {
-        double? maxWidth,
-        Duration duration = const Duration(seconds: 4), // 错误信息通常显示长一点
-        String? actionLabel,
-        VoidCallback? onActionPressed,
-      }) {
+    BuildContext context,
+    String message, {
+    double? maxWidth,
+    Duration duration = const Duration(seconds: 4), // 错误信息通常显示长一点
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) {
     _showOverlaySnackBar(
       context,
       message,
@@ -341,13 +341,13 @@ class AppSnackBar {
   }
 
   static void showWarning(
-      BuildContext context,
-      String message, {
-        double? maxWidth,
-        Duration duration = const Duration(seconds: 3),
-        String? actionLabel,
-        VoidCallback? onActionPressed,
-      }) {
+    BuildContext context,
+    String message, {
+    double? maxWidth,
+    Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) {
     _showOverlaySnackBar(
       context,
       message,
@@ -361,13 +361,13 @@ class AppSnackBar {
   }
 
   static void showInfo(
-      BuildContext context,
-      String message, {
-        double? maxWidth,
-        Duration duration = const Duration(seconds: 3),
-        String? actionLabel,
-        VoidCallback? onActionPressed,
-      }) {
+    BuildContext context,
+    String message, {
+    double? maxWidth,
+    Duration duration = const Duration(seconds: 3),
+    String? actionLabel,
+    VoidCallback? onActionPressed,
+  }) {
     _showOverlaySnackBar(
       context,
       message,
@@ -392,14 +392,17 @@ class AppSnackBar {
       }
     }
   }
+
   static void showLoginRequiredSnackBar(BuildContext context) {
     // 你可以选择使用 showError 或 showWarning 作为基础样式
     // 这里使用 showWarning 感觉更合适一点（警告用户需要先完成某个操作）
-    showWarning( // 或者用 showError(...)
+    showWarning(
+      // 或者用 showError(...)
       context,
       '请先登录', // 固定消息文本
       actionLabel: '去登录', // 固定按钮文本
-      onActionPressed: () { // 固定按钮操作
+      onActionPressed: () {
+        // 固定按钮操作
         // 调用你封装好的导航函数
         NavigationUtils.navigateToLogin(context);
         // 点击后 SnackBar 会自动开始消失动画，无需手动隐藏

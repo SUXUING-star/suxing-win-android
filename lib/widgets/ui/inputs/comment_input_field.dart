@@ -13,6 +13,7 @@ class CommentInputField extends StatefulWidget {
   final TextEditingController? controller;
   final String hintText;
   final int maxLines;
+  final int maxLength;
   final String submitButtonText;
   final bool isSubmitting;
   final bool isReply;
@@ -35,6 +36,7 @@ class CommentInputField extends StatefulWidget {
     this.isSubmitting = false,
     this.isReply = false,
     this.maxLines = 3,
+    this.maxLength = 100,
     this.padding = const EdgeInsets.all(16.0),
     this.contentPadding =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -144,6 +146,7 @@ class _CommentInputFieldState extends State<CommentInputField> {
               focusNode: _focusNode, // 传递 FocusNode
               hintText: widget.hintText,
               maxLines: widget.maxLines,
+              maxLength: widget.maxLength,
               enabled: !widget.isSubmitting, // 传递 enabled 状态
               contentPadding: widget.contentPadding,
               textStyle: widget.textStyle,

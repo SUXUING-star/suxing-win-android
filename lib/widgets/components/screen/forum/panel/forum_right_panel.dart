@@ -287,7 +287,7 @@ class ForumRightPanel extends StatelessWidget {
         ),
         SizedBox(height: 8),
         posts.isEmpty
-            ? EmptyStateWidget(
+            ? const EmptyStateWidget(
                 message: '暂无帖子数据',
                 iconData: Icons.post_add_outlined,
               )

@@ -19,25 +19,27 @@ class AnnouncementPreviewButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 按钮样式可以保持或调整
-    return OutlinedButton.icon( // 使用 OutlinedButton 可能更适合预览
+    return OutlinedButton.icon(
+      // 使用 OutlinedButton 可能更适合预览
       onPressed: isLoading
           ? null
           : () {
-        // 使用标准 Navigator.push
-        Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => AnnouncementPreviewScreen(
-              // 传递表单数据和当前的图片源
-              announcementFormData: announcement,
-              imageSource: imageSourceForPreview, // 传递 imageSource
-            ),
-            fullscreenDialog: true, // 保持全屏对话框样式
-          ),
-        );
-      },
+              // 使用标准 Navigator.push
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => AnnouncementPreviewScreen(
+                    // 传递表单数据和当前的图片源
+                    announcementFormData: announcement,
+                    imageSource: imageSourceForPreview, // 传递 imageSource
+                  ),
+                  fullscreenDialog: true, // 保持全屏对话框样式
+                ),
+              );
+            },
       icon: const Icon(Icons.visibility_outlined), // 使用 visibility 图标
       label: const Text('预览'), // 简化文字
-      style: OutlinedButton.styleFrom( // 调整样式以匹配其他按钮
+      style: OutlinedButton.styleFrom(
+        // 调整样式以匹配其他按钮
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
         textStyle: const TextStyle(fontSize: 16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),

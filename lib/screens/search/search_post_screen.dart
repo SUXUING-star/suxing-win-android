@@ -556,7 +556,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         !_isLoadingMore &&
         _error == null) {
       //print("SearchPostScreen: Displaying empty search results state.");
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         message: '未找到相关帖子',
         iconData: Icons.search_off,
       );

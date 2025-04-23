@@ -29,7 +29,7 @@ class CommentList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (comments.isEmpty) { // 空状态不变
-      return EmptyStateWidget( message: '暂无评论', iconData: Icons.maps_ugc_outlined );
+      return const EmptyStateWidget( message: '暂无评论', iconData: Icons.maps_ugc_outlined );
     }
 
     // *** 修改：ListView.builder 内部创建 CommentItem 时，传递正确的参数 ***

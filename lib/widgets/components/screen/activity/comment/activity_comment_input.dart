@@ -55,6 +55,7 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
       isSubmitting: widget.isSubmitting,
       onSubmit: _handleSubmit,
       maxLines: 3,
+      maxLength: 50,
       // --- 2. Replace the custom Card with LoginPrompt ---
       loginPrompt: const LoginPrompt(
         message: '登录后发表评论', // 自定义提示信息

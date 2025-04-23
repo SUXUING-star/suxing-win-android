@@ -52,7 +52,6 @@ class GameImagesField extends StatelessWidget {
     onChanged(newList);
   }
 
-
   @override
   Widget build(BuildContext context) {
     final bool isLandscape = DeviceUtils.isLandscape(context);
@@ -81,66 +80,100 @@ class GameImagesField extends StatelessWidget {
         // 图片列表预览
         if (gameImagesSources.isNotEmpty)
           Container(
-            height: imageHeight + 8, // 稍微增加高度以容纳内边距或阴影
+            height: imageHeight + 8,
             padding: const EdgeInsets.symmetric(vertical: 4),
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: gameImagesSources.length,
               itemBuilder: (context, index) {
-                if (index >= gameImagesSources.length) return const SizedBox.shrink(); // 安全检查
+                if (index >= gameImagesSources.length)
+                  return const SizedBox.shrink();
                 final source = gameImagesSources[index];
                 Widget imageWidget;
 
                 // 根据源类型创建预览 Widget
                 if (source is XFile) {
-                  imageWidget = Image.file(
-                    File(source.path),
-                    width: imageWidth, height: imageHeight, fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, st) => Container(width: imageWidth, height: imageHeight, color: Colors.grey[300], child: const Icon(Icons.broken_image)),
-                  );
+                  print(
+                      "Game Image Preview [$index]: Rendering XFile: ${source.path}");
+                  imageWidget =
+                      Image.file(File(source.path), // <--- 从 XFile 创建 File
+                          width: imageWidth,
+                          height: imageHeight,
+                          fit: BoxFit.cover, errorBuilder: (ctx, err, st) {
+                    print("Error rendering XFile preview ${source.path}: $err");
+                    return Container(
+                        width: imageWidth,
+                        height: imageHeight,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.broken_image));
+                  });
+                } else if (source is File) {
+                  // <--- 新增: 处理 File 对象
+                  print(
+                      "Game Image Preview [$index]: Rendering File: ${source.path}");
+                  imageWidget = Image.file(source, // <--- 直接使用 File 对象
+                      width: imageWidth,
+                      height: imageHeight,
+                      fit: BoxFit.cover, errorBuilder: (ctx, err, st) {
+                    print("Error rendering File preview ${source.path}: $err");
+                    return Container(
+                        width: imageWidth,
+                        height: imageHeight,
+                        color: Colors.grey[300],
+                        child: const Icon(Icons.broken_image));
+                  });
                 } else if (source is String) {
+                  print(
+                      "Game Image Preview [$index]: Rendering String URL: $source");
                   final imageUrl = source;
-                  final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${FileUpload.baseUrl}/$imageUrl'; // 调整 URL 构造
+                  // 不需要再拼接 baseUrl
+                  final String displayUrl = imageUrl;
                   imageWidget = SafeCachedImage(
                     imageUrl: displayUrl,
-                    width: imageWidth, height: imageHeight, fit: BoxFit.cover,
+                    width: imageWidth,
+                    height: imageHeight,
+                    fit: BoxFit.cover,
                   );
                 } else {
-                  // 未知类型占位符
-                  imageWidget = Container(width: imageWidth, height: imageHeight, color: Colors.grey[200], child: const Icon(Icons.help_outline));
+                  print(
+                      "Game Image Preview [$index]: Unknown source type: ${source.runtimeType}");
+                  imageWidget = Container(
+                      width: imageWidth,
+                      height: imageHeight,
+                      color: Colors.grey[200],
+                      child: const Icon(Icons.help_outline));
                 }
 
-                // 使用 Stack 添加删除按钮
+                // Stack with delete button (保持不变)
                 return Padding(
-                  padding: EdgeInsets.only(right: 8.0), // 图片间距
+                  padding: EdgeInsets.only(right: 8.0),
                   child: Stack(
-                    clipBehavior: Clip.none, // 允许删除按钮稍微超出边界
+                    clipBehavior: Clip.none,
                     children: [
-                      ClipRRect( // 图片圆角
+                      ClipRRect(
                         borderRadius: BorderRadius.circular(4.0),
                         child: imageWidget,
                       ),
-                      // 删除按钮 (右上角)
                       Positioned(
-                          top: -4, // 微调位置
-                          right: 0,  // 微调位置
-                          child: Material( // 添加 Material 实现水波纹效果
+                          top: -4,
+                          right: 0,
+                          child: Material(
                             type: MaterialType.transparency,
                             child: InkWell(
-                              // 父组件加载时禁用删除
-                              onTap: isLoading ? null : () => _deleteImage(index),
-                              borderRadius: BorderRadius.circular(12), // 水波纹范围
+                              onTap:
+                                  isLoading ? null : () => _deleteImage(index),
+                              borderRadius: BorderRadius.circular(12),
                               child: Container(
                                 padding: const EdgeInsets.all(3),
                                 decoration: const BoxDecoration(
                                   color: Colors.black54,
                                   shape: BoxShape.circle,
                                 ),
-                                child: Icon(Icons.close, size: iconSize, color: Colors.white),
+                                child: Icon(Icons.close,
+                                    size: iconSize, color: Colors.white),
                               ),
                             ),
-                          )
-                      ),
+                          )),
                     ],
                   ),
                 );
@@ -151,7 +184,8 @@ class GameImagesField extends StatelessWidget {
         else if (!isLoading) // 不在加载时才显示提示
           Padding(
             padding: const EdgeInsets.only(top: 8.0),
-            child: Text('暂无截图，点击 "添加截图" 上传。', style: TextStyle(color: Colors.grey[600])),
+            child: Text('暂无截图，点击 "添加截图" 上传。',
+                style: TextStyle(color: Colors.grey[600])),
           ),
       ],
     );

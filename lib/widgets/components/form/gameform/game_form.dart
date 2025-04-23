@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:async';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:collection/collection.dart'; // 引入 collection 包进行深度比较
+import 'package:path_provider/path_provider.dart';
 
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
@@ -21,6 +22,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:uuid/uuid.dart';
 import 'field/category_field.dart';
 import 'field/cover_image_field.dart';
 import 'field/download_links_field.dart';
@@ -295,11 +297,45 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
           // --- 取消回调：清除草稿 ---
           onCancel: () async {
-            // 改为 async 兼容 clearDraft
-            await _cacheService.clearDraft(_draftKey!);
+            if (_draftKey == null) {
+              print("Draft key is null in onCancel, cannot discard.");
+              return; // Key 无效，无法操作
+            }
             print(
-                "User chose to discard the draft for key: $_draftKey (via CustomConfirmDialog)");
-            // onCancel 通常只是关闭对话框，不需要额外操作
+                "User chose to discard draft. Starting cleanup. Key: $_draftKey");
+            GameFormDraft? draftToDiscard; // 用来保存文件路径
+            try {
+              // 关键步骤 1: 加载要丢弃的草稿数据
+              draftToDiscard = await _cacheService.loadDraft(_draftKey!);
+
+              if (draftToDiscard != null) {
+                print("Loaded draft data before discarding for file cleanup.");
+              } else {
+                print(
+                    "Warning: Could not load draft data before discarding. File cleanup might be incomplete. Key: $_draftKey");
+              }
+
+              // 关键步骤 2: 从 Hive 中清除
+              await _cacheService.clearDraft(_draftKey!);
+              print(
+                  "Discarded draft cleared from Hive for key: $_draftKey (via CustomConfirmDialog)");
+
+              // 关键步骤 3: 删除关联的文件
+              await _deleteDraftFiles(draftToDiscard);
+
+              // 丢弃成功后，可以给个提示（如果需要）
+              if (mounted) {
+                // AppSnackBar.showInfo(context, '草稿已丢弃'); // 暂时不需要，对话框关闭即可
+              }
+            } catch (e) {
+              print(
+                  "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
+              if (mounted) {
+                AppSnackBar.showError(context, '丢弃草稿时出错');
+              }
+              // 即使出错，也要确保 onCancel 回调结束，对话框能正常关闭
+            }
+            // onCancel 通常只是关闭对话框，不需要在这里 pop 页面等
           },
         );
         // CustomConfirmDialog.show 返回 Future<void>，await 它会等待 onConfirm 完成
@@ -321,54 +357,129 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 加载并应用草稿
   Future<void> _loadAndApplyDraft() async {
     if (_draftKey == null) return;
-    setState(() => _isProcessing = true); // 开始加载，显示加载状态
+    setState(() => _isProcessing = true);
 
     try {
       final draft = await _cacheService.loadDraft(_draftKey!);
-      // 再次检查 mounted，因为 loadDraft 是异步的
       if (draft != null && mounted) {
-        setState(() {
-          _titleController.text = draft.title;
-          _summaryController.text = draft.summary;
-          _descriptionController.text = draft.description;
-          _musicUrlController.text = draft.musicUrl ?? '';
-          _bvidController.text = draft.bvid ?? '';
-          _selectedCategory = draft.selectedCategory;
-          _selectedTags = List<String>.from(draft.selectedTags); // 创建副本
-          _downloadLinks = draft.downloadLinks
-              .map((map) => DownloadLink.fromJson(map))
-              .toList(); // 从 JSON Map 创建对象
+        _titleController.text = draft.title;
+        _summaryController.text = draft.summary;
+        _descriptionController.text = draft.description;
+        _musicUrlController.text = draft.musicUrl ?? '';
+        _bvidController.text = draft.bvid ?? '';
+        _selectedCategory = draft.selectedCategory;
+        _selectedTags = List<String>.from(draft.selectedTags);
+        _downloadLinks = draft.downloadLinks
+            .map((map) => DownloadLink.fromJson(map))
+            .toList();
 
-          // 恢复图片: URL 直接用，占位符转为 null，让用户重新选择
-          _coverImageSource = (draft.coverImageUrl == _localFilePlaceholder ||
-                  draft.coverImageUrl == null)
-              ? null // 需要重新选择
-              : draft.coverImageUrl; // 使用 URL
+        // --- Restore Cover Image ---
+        dynamic restoredCoverSource;
+        final coverPathOrUrl = draft.coverImageUrl;
+        if (coverPathOrUrl != null && coverPathOrUrl.isNotEmpty) {
+          // Check if it looks like a persistent path (adjust check if needed)
+          final appDocDir =
+              await getApplicationDocumentsDirectory(); // Get base path
+          if (coverPathOrUrl.startsWith(appDocDir.path) &&
+              await File(coverPathOrUrl).exists()) {
+            print("Restoring cover from persistent file: $coverPathOrUrl");
+            restoredCoverSource = File(coverPathOrUrl); // Use the File object
+          } else if (coverPathOrUrl.startsWith('http')) {
+            print("Restoring cover from URL: $coverPathOrUrl");
+            restoredCoverSource = coverPathOrUrl; // It's a URL
+          } else {
+            print(
+                "Cover path/URL invalid or file missing: $coverPathOrUrl. Setting to null.");
+            restoredCoverSource = null; // Path invalid or file deleted
+          }
+        } else {
+          restoredCoverSource = null; // No image saved
+        }
+        _coverImageSource = restoredCoverSource; // Update state
 
-          _gameImagesSources = draft.gameImageUrls.map((source) {
-            // source 必然是 String (URL 或占位符)
-            return (source == _localFilePlaceholder)
-                ? null // 占位符 -> null, 需要重新选择
-                : source; // URL -> 保留 URL
-          }).toList(); // 生成新的 List<dynamic> (包含 String 或 null)
+        // --- Restore Game Images ---
+        List<dynamic> restoredGameImageSources = [];
+        final appDocDir =
+            await getApplicationDocumentsDirectory(); // Get base path again
+        for (final pathOrUrl in draft.gameImageUrls) {
+          if (pathOrUrl.isNotEmpty) {
+            if (pathOrUrl.startsWith(appDocDir.path) &&
+                await File(pathOrUrl).exists()) {
+              print("Restoring game image from persistent file: $pathOrUrl");
+              restoredGameImageSources.add(File(pathOrUrl)); // Use File object
+            } else if (pathOrUrl.startsWith('http')) {
+              print("Restoring game image from URL: $pathOrUrl");
+              restoredGameImageSources.add(pathOrUrl); // Use URL String
+            } else {
+              print(
+                  "Game image path/URL invalid or file missing: $pathOrUrl. Skipping.");
+              // Optionally add null or a placeholder if needed, but skipping is cleaner
+            }
+          }
+        }
+        _gameImagesSources = restoredGameImageSources; // Update state
 
-          _coverImageError = null; // 清除可能因加载草稿前的验证产生的错误
-          _categoryError = null;
-          print(
-              "Draft applied for key: $_draftKey. Cover: $_coverImageSource, Images: $_gameImagesSources");
-        });
+        _coverImageError = null;
+        _categoryError = null;
+        print(
+            "Draft applied for key: $_draftKey. Cover: $_coverImageSource, Images: $_gameImagesSources");
+        setState(() {}); // Trigger UI update after async operations
       } else if (draft == null && mounted) {
         print("Could not load draft or draft was null for key: $_draftKey.");
-        // 可以在这里提示用户草稿加载失败
-        // AppSnackBar.showError(context, '加载草稿失败');
       }
     } catch (e) {
       print("Error applying draft for key $_draftKey: $e");
       if (mounted) AppSnackBar.showError(context, '应用草稿时出错');
     } finally {
-      // 无论成功失败，都要结束加载状态
       if (mounted) {
         setState(() => _isProcessing = false);
+      }
+    }
+  }
+
+  Future<void> _deleteDraftFiles(GameFormDraft? draft) async {
+    if (draft == null) return;
+
+    List<String> pathsToDelete = [];
+    final Directory appDocDir =
+        await getApplicationDocumentsDirectory(); // 获取应用文档目录
+    final String draftImageBasePath =
+        '${appDocDir.path}/suxingchahui/draft_images'; // 确定草稿图片的基础路径
+
+    // --- 检查封面图路径 ---
+    if (draft.coverImageUrl != null &&
+        !draft.coverImageUrl!.startsWith('http') && // 确认不是 URL
+        draft.coverImageUrl!.startsWith(draftImageBasePath)) // 确认是我们自己存的路径
+    {
+      pathsToDelete.add(draft.coverImageUrl!);
+    }
+
+    // --- 检查游戏截图路径 ---
+    pathsToDelete.addAll(draft.gameImageUrls.where((path) =>
+            !path.startsWith('http') && // 确认不是 URL
+            path.startsWith(draftImageBasePath) // 确认是我们自己存的路径
+        ));
+
+    if (pathsToDelete.isEmpty) {
+      print("No local draft files found in draft data to delete.");
+      return;
+    }
+
+    print(
+        "Attempting to delete ${pathsToDelete.length} draft files: $pathsToDelete");
+
+    for (String path in pathsToDelete) {
+      try {
+        final file = File(path);
+        if (await file.exists()) {
+          await file.delete();
+          print("Deleted draft file: $path");
+        } else {
+          print("Draft file not found for deletion (already deleted?): $path");
+        }
+      } catch (e) {
+        print("Error deleting draft file $path: $e");
+        // 可以考虑是否需要上报这个错误
       }
     }
   }
@@ -422,36 +533,84 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     }
   }
 
+  // Helper function to get file extension
+  String _getFileExtension(String filePath) {
+    try {
+      return filePath.substring(filePath.lastIndexOf('.'));
+    } catch (e) {
+      print("Error getting file extension for $filePath: $e");
+      return '.jpg'; // Provide a default extension if parsing fails
+    }
+  }
+
+  // Helper function to copy file and return persistent path
+  Future<String?> _copyDraftImage(XFile sourceFile) async {
+    try {
+      final Directory appDocDir = await getApplicationDocumentsDirectory();
+      final String draftImagesDirPath = '${appDocDir.path}/suxingchahui/draft_images';
+      // Ensure the directory exists
+      await Directory(draftImagesDirPath).create(recursive: true);
+
+      final String uniqueFileName =
+          '${const Uuid().v4()}${_getFileExtension(sourceFile.path)}';
+      final String persistentPath = '$draftImagesDirPath/$uniqueFileName';
+
+      // Perform the copy operation
+      final File sourceIoFile = File(sourceFile.path);
+      await sourceIoFile.copy(persistentPath);
+
+      print('Copied draft image from ${sourceFile.path} to $persistentPath');
+      return persistentPath; // Return the new persistent path
+    } catch (e) {
+      print('Error copying draft image ${sourceFile.path}: $e');
+      // Handle error, maybe return null or rethrow
+      return null; // Indicate failure
+    }
+  }
+
   // 执行保存草稿的操作
   Future<void> _performSaveDraft() async {
-    if (_draftKey == null || !mounted) return; // 再次检查
+    if (_draftKey == null || !mounted) return;
 
-    // 处理图片源，将 XFile 转换为占位符，URL 保留，null 忽略或存为 null
     String? coverImageToSave;
+    // --- Cover Image Handling ---
     if (_coverImageSource is String) {
-      coverImageToSave = _coverImageSource as String; // 保存 URL
+      coverImageToSave = _coverImageSource as String; // Existing URL
     } else if (_coverImageSource is XFile) {
-      coverImageToSave = _localFilePlaceholder; // 保存占位符
+      // Copy XFile to persistent storage
+      coverImageToSave = await _copyDraftImage(_coverImageSource as XFile);
+      // If copy failed, coverImageToSave will be null
+    } else if (_coverImageSource is File) {
+      // If it's already a File (from a previous draft restore), save its path
+      coverImageToSave = (_coverImageSource as File).path;
     } else {
-      coverImageToSave = null; // 没有图片，保存 null
+      coverImageToSave = null; // No image
     }
 
-    // 处理游戏截图列表
-    List<String> gameImagesToSave = _gameImagesSources
-        .map((source) {
-          if (source is String) {
-            return source; // 保存 URL
-          } else if (source is XFile) {
-            return _localFilePlaceholder; // 保存占位符
-          } else {
-            return null; // 其他情况（如 null）映射为 null
-          }
-        })
-        .whereType<String>()
-        .toList(); // 过滤掉 null，只保留 String (URL 或占位符)
+    // --- Game Images Handling ---
+    List<String> gameImagesToSave = [];
+    for (final source in _gameImagesSources) {
+      String? imagePath;
+      if (source is String) {
+        imagePath = source; // Existing URL
+      } else if (source is XFile) {
+        // Copy XFile to persistent storage
+        imagePath = await _copyDraftImage(source as XFile);
+        // If copy failed, imagePath will be null, and won't be added below
+      } else if (source is File) {
+        // If it's already a File, save its path
+        imagePath = (source as File).path;
+      }
 
+      // Only add valid URLs or persistent paths to the list
+      if (imagePath != null && imagePath.isNotEmpty) {
+        gameImagesToSave.add(imagePath);
+      }
+    }
+
+    // --- Create and Save Draft ---
     final draft = GameFormDraft(
-      draftKey: _draftKey!, // 保存当前 key
+      draftKey: _draftKey!,
       title: _titleController.text.trim(),
       summary: _summaryController.text.trim(),
       description: _descriptionController.text.trim(),
@@ -461,21 +620,23 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       bvid: _bvidController.text.trim().isEmpty
           ? null
           : _bvidController.text.trim(),
-      coverImageUrl: coverImageToSave, // 可能为 URL, placeholder, 或 null
-      gameImageUrls: gameImagesToSave, // List<String> (URLs or placeholders)
-      downloadLinks: _downloadLinks
-          .map((link) => link.toJson())
-          .toList(), // 保存为 JSON Map 列表
-      selectedCategory: _selectedCategory, // <--- 新的
-      selectedTags: List<String>.from(_selectedTags), // 保存副本
+      coverImageUrl:
+          coverImageToSave, // Now contains URL or persistent File path
+      gameImageUrls:
+          gameImagesToSave, // Now contains URLs or persistent File paths
+      downloadLinks: _downloadLinks.map((link) => link.toJson()).toList(),
+      selectedCategory: _selectedCategory,
+      selectedTags: List<String>.from(_selectedTags),
       lastSaved: DateTime.now(),
     );
 
     try {
       await _cacheService.saveDraft(_draftKey!, draft);
-      print("Draft saved successfully for key: $_draftKey");
+      print(
+          "Draft saved successfully for key: $_draftKey with image paths: $coverImageToSave, $gameImagesToSave");
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '保存草稿时发生错误');
+      print("Error in _cacheService.saveDraft: $e");
     }
   }
 
@@ -785,14 +946,35 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
           // 3e. 清除当前模式的草稿 (只有在 action 完全成功后才清除)
           if (_draftKey != null) {
+            print(
+                "Starting cleanup for successful submission. Key: $_draftKey");
+            GameFormDraft? draftBeforeDeletion; // 用来保存包含文件路径的旧草稿数据
             try {
+              // 关键步骤 1: 在删除 Hive 条目之前，先加载它！
+              // 使用正确的 Service 方法 loadDraft
+              draftBeforeDeletion = await _cacheService.loadDraft(_draftKey!);
+
+              if (draftBeforeDeletion != null) {
+                print("Loaded draft data before deletion for file cleanup.");
+              } else {
+                print(
+                    "Warning: Could not load draft data before deletion. File cleanup might be incomplete. Key: $_draftKey");
+              }
+
+              // 关键步骤 2: 清除 Hive 中的草稿条目
               await _cacheService.clearDraft(_draftKey!);
-              print(
-                  "Local draft cleared after successful submission for key: $_draftKey.");
+              print("Local draft cleared from Hive for key: $_draftKey.");
+
+              // 关键步骤 3: 使用刚才加载出来的数据去删除对应的文件
+              await _deleteDraftFiles(draftBeforeDeletion); // 传入加载出来的旧数据
             } catch (e) {
               print(
-                  "Error clearing draft for key $_draftKey after submission: $e");
-              // 清除草稿失败通常不影响主要流程，记录日志即可
+                  "Error during draft cleanup (load, clear Hive, or delete files) for key $_draftKey after submission: $e");
+              // 即使清理失败，提交本身是成功的，所以一般不需要打断用户流程，记录错误即可
+              if (mounted) {
+                // 可以选择性地给用户一个提示，说明后台清理可能有点问题
+                // AppSnackBar.showWarning(context, '提交成功，但后台草稿清理可能遇到问题。');
+              }
             }
           } else {
             print(
@@ -1180,6 +1362,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         border: OutlineInputBorder(), // 可以把基础样式放在这里
       ),
       maxLines: 1,
+      maxLength: 50,
       enabled: !_isProcessing,
       textInputAction: TextInputAction.next,
       validator: (value) =>
@@ -1198,7 +1381,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         prefixIcon: Icon(Icons.short_text),
         border: OutlineInputBorder(),
       ),
-      maxLength: 150,
+      maxLength: 100,
       minLines: 2,
       maxLines: 3,
       enabled: !_isProcessing,
@@ -1224,6 +1407,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         ),
       ),
       minLines: DeviceUtils.isDesktop ? 5 : 4,
+      maxLength: 200,
       maxLines: DeviceUtils.isDesktop ? 10 : 8,
       enabled: !_isProcessing,
       textInputAction: TextInputAction.newline,
@@ -1302,7 +1486,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         CategoryField(
           // selectedCategories: _selectedCategories, // 旧的
           selectedCategory: _selectedCategory, // <--- 传入 String?
-          onChanged: (String? newValue) { // <--- 接收 String?
+          onChanged: (String? newValue) {
+            // <--- 接收 String?
             setState(() {
               _selectedCategory = newValue;
               // 如果选择了分类或取消选择，更新错误状态

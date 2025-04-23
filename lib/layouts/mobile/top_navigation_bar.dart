@@ -1,6 +1,7 @@
 // lib/layouts/mobile/top_navigation_bar.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../utils/device/device_utils.dart';
 import '../../screens/search/search_game_screen.dart';
 import '../../models/user/user.dart';
@@ -16,26 +17,23 @@ import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart'
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
   final VoidCallback onProfileTap;
-  final UserService _userService = UserService();
 
-  TopNavigationBar({
-    super.key,
-    required this.onLogoTap,
-    required this.onProfileTap
-  });
+  TopNavigationBar(
+      {super.key, required this.onLogoTap, required this.onProfileTap});
 
   @override
   Size get preferredSize {
     return DeviceUtils.isAndroid &&
-        WidgetsBinding.instance.window.physicalSize.width >
-            WidgetsBinding.instance.window.physicalSize.height
+            WidgetsBinding.instance.window.physicalSize.width >
+                WidgetsBinding.instance.window.physicalSize.height
         ? Size.fromHeight(kToolbarHeight * 0.8)
         : Size.fromHeight(kToolbarHeight);
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isAndroidLandscape = DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
+    final bool isAndroidLandscape =
+        DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
 
     final double verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
     final double iconSize = isAndroidLandscape ? 18.0 : 20.0;
@@ -70,6 +68,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       ],
     );
   }
+
   // 新增签到Badge构建方法
   Widget _buildCheckInBadge(BuildContext context, double padding) {
     final authProvider = Provider.of<AuthProvider>(context);
@@ -85,7 +84,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     }
     return SizedBox.shrink();
   }
-
 
   // 添加公告指示器构建方法
   Widget _buildAnnouncementIndicator(BuildContext context, double padding) {
@@ -170,93 +168,99 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     return SizedBox.shrink();
   }
 
-  Widget _buildProfileAvatar(BuildContext context, double radius, double padding) {
+  Widget _buildProfileAvatar(
+      BuildContext context, double radius, double padding) {
+    final double avatarSize = radius * 2; // 头像直径
+
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        // If not logged in, show default avatar
-        if (!authProvider.isLoggedIn) {
+        final bool isLoggedIn = authProvider.isLoggedIn;
+        final User? currentUser = authProvider.currentUser;
+
+        // 构建基础的头像容器 (带边框和点击)
+        Widget buildAvatarContainer(Widget avatarContent) {
           return Padding(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
             child: GestureDetector(
+              // 未登录时，点击通常是去登录页，已登录是去个人资料页
+              // onProfileTap 的具体逻辑应该由调用者决定
               onTap: onProfileTap,
               child: Container(
-                padding: EdgeInsets.all(2),
+                padding: EdgeInsets.all(2), // 边框空间
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: Color(0xFF2979FF),
+                    color: Color(0xFF2979FF), // 统一用亮蓝色边框
                     width: 1.5,
                   ),
                 ),
-                child: CircleAvatar(
-                  radius: radius,
-                  backgroundColor: Colors.grey[100],
-                  child: Icon(
-                    Icons.person_rounded,
-                    size: radius * 1.3,
-                    color: Colors.grey[400],
-                  ),
-                ),
+                child: avatarContent, // 里面塞头像具体内容
               ),
             ),
           );
         }
 
-        // For logged in users, use StreamBuilder with getCurrentUser
-        // instead of SafeUserAvatar which has issues
-        return StreamBuilder<User?>(
-          stream: _userService.getCurrentUserProfile(),
-          builder: (context, snapshot) {
-            return Padding(
-              padding: EdgeInsets.symmetric(horizontal: 12, vertical: padding),
-              child: Container(
-                padding: EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Color(0xFF2979FF),
-                    width: 1.5,
-                  ),
-                ),
-                child: GestureDetector(
-                  onTap: onProfileTap,
-                  child: snapshot.hasData && snapshot.data?.avatar != null
-                      ? ClipOval(
-                    child: Image.network(
-                      snapshot.data!.avatar!,
-                      width: radius * 2,
-                      height: radius * 2,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return CircleAvatar(
-                          radius: radius,
-                          backgroundColor: Colors.grey[100],
-                          child: Text(
-                            snapshot.data?.username[0].toUpperCase() ?? '?',
-                            style: TextStyle(
-                              fontSize: radius * 0.8,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  )
-                      : CircleAvatar(
-                    radius: radius,
-                    backgroundColor: Colors.grey[100],
-                    child: Icon(
-                      Icons.person_rounded,
-                      size: radius * 1.3,
-                      color: Colors.grey[400],
-                    ),
-                  ),
+        // ---- 未登录状态 ----
+        if (!isLoggedIn) {
+          return buildAvatarContainer(
+            CircleAvatar(
+              radius: radius,
+              backgroundColor: Colors.grey[100],
+              child: Icon(
+                Icons.person_rounded,
+                size: radius * 1.3,
+                color: Colors.grey[400],
+              ),
+            ),
+          );
+        }
+
+        // 检查是否有有效的头像 URL
+        final bool hasAvatar = currentUser?.avatar?.isNotEmpty ?? false;
+
+        if (hasAvatar) {
+          // ---- 有头像：使用 SafeCachedImage ----
+          print("TopNav: User has avatar. Using SafeCachedImage.");
+          return buildAvatarContainer(
+            // 用 ClipOval 保证 SafeCachedImage 是圆的
+            ClipOval(
+              child: SafeCachedImage(
+                imageUrl:
+                    currentUser!.avatar!, // 此时 currentUser 和 avatar 都不为 null
+                width: avatarSize,
+                height: avatarSize,
+                fit: BoxFit.cover,
+                memCacheHeight:
+                    (avatarSize * MediaQuery.of(context).devicePixelRatio)
+                        .round(), // 优化缓存尺寸
+                memCacheWidth:
+                    (avatarSize * MediaQuery.of(context).devicePixelRatio)
+                        .round(), // 优化缓存尺寸
+                // 注意：SafeCachedImage 本身没有 borderRadius，所以用 ClipOval 包裹
+              ),
+            ),
+          );
+        } else {
+          // 使用更安全的判断：currentUser.username 是否有效
+          final bool hasUsername = currentUser?.username.isNotEmpty ?? false;
+          final String fallbackText =
+              hasUsername ? currentUser!.username[0].toUpperCase() : '?';
+
+          return buildAvatarContainer(
+            CircleAvatar(
+              radius: radius,
+              backgroundColor: Colors.grey[100],
+              child: Text(
+                fallbackText,
+                style: TextStyle(
+                  fontSize: radius * 0.9, // 调整字体大小以适应圆圈
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
                 ),
               ),
-            );
-          },
-        );
+            ),
+          );
+        }
       },
     );
   }

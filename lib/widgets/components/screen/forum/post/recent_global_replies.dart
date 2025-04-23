@@ -124,7 +124,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
               final replies = snapshot.data ?? [];
               if (replies.isEmpty) {
-                return EmptyStateWidget(
+                return const EmptyStateWidget(
                     message: "暂无回复", iconData: Icons.maps_ugc_outlined);
               }
 

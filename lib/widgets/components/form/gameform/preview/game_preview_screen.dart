@@ -22,7 +22,6 @@ class GamePreviewScreen extends StatelessWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
-    // print("previewscreen获取到的game${game.toJson()}");
     return Scaffold(
       appBar: CustomAppBar(
         title: '预览: ${game.title}',

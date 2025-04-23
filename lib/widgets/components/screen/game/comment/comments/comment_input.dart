@@ -42,6 +42,7 @@ class _CommentInputState extends State<CommentInput> {
       submitButtonText: '发表',
       isSubmitting: widget.isSubmitting, // 传递 loading 状态
       maxLines: 3,
+      maxLength: 50,
     );
   }
 }

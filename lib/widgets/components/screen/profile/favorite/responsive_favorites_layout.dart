@@ -59,7 +59,7 @@ class ResponsiveFavoritesLayout extends StatelessWidget {
   }
 
   Widget _buildEmptyView() {
-    return EmptyStateWidget(
+    return const EmptyStateWidget(
       message: '暂无收藏的游戏',
       iconData: Icons.videogame_asset_off,
     );

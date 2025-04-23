@@ -363,7 +363,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildGamesContent() {
     if (_publishedGames == null || _publishedGames!.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
           message: '暂无发布的游戏', iconData: Icons.videogame_asset);
     }
 
@@ -375,7 +375,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildPostsContent() {
     if (_recentPosts == null || _recentPosts!.isEmpty) {
-      return EmptyStateWidget(message: '暂无发布的帖子', iconData: Icons.forum);
+      return const EmptyStateWidget(message: '暂无发布的帖子', iconData: Icons.forum);
     }
 
     return SingleChildScrollView(

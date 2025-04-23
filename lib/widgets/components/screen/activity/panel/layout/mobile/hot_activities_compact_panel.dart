@@ -143,7 +143,7 @@ class HotActivitiesCompactPanel extends StatelessWidget {
     }
 
     if (hotActivities.isEmpty) {
-      return EmptyStateWidget(message: '暂无热门动态');
+      return const EmptyStateWidget(message: '暂无热门动态');
     }
 
     return Column(

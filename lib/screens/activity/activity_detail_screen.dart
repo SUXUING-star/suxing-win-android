@@ -217,8 +217,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {
     if (_activity == null) return;
-    final authProvider =
-        context.read<AuthProvider>(); // 使用 context.read 获取 Provider
+    final authProvider = context.read<AuthProvider>(); // 使用 context.read 获取 Provider
 
     // 权限检查：必须是作者本人
     if (!authProvider.isLoggedIn ||

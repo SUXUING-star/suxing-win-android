@@ -302,7 +302,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
       return LoginPromptWidget();
     }
     if (_searchHistory.isEmpty) {
-      return EmptyStateWidget( message: '暂无搜索历史', iconData: Icons.history, );
+      return const EmptyStateWidget( message: '暂无搜索历史', iconData: Icons.history, );
     }
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -351,7 +351,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     // 空状态处理 (保持不变)
     if (!_isSearching && _searchResults.isEmpty && _error == null) {
       print("SearchGameScreen: Displaying empty search results state.");
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         message: '未找到相关游戏',
         iconData: Icons.search_off,
       );

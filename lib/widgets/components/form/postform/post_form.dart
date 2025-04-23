@@ -336,7 +336,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
         border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.title),
       ),
-      maxLength: 100,
+      maxLength: 50,
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return '请输入标题';
@@ -425,7 +425,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
       ),
       maxLines: null,
       minLines: DeviceUtils.isDesktop ? 10 : 8,
-      maxLength: 5000,
+      maxLength: 500,
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return '请输入内容';

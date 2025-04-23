@@ -135,6 +135,10 @@ class DesktopMenuGrid extends StatelessWidget {
         'background': Colors.white.withOpacity(0.9),
         'icon': Color(0xFFDAA520), // 金杆色
       },
+      '设置': {
+        'background': Colors.white.withOpacity(0.9),
+        'icon': Colors.black26, // 金杆色
+      },
     };
 
     final colorScheme = menuColorScheme[item.title] ?? {

@@ -1,5 +1,6 @@
 // lib/screens/linkstools/linkstools_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -30,7 +31,7 @@ class LinksToolsScreen extends StatefulWidget {
 
 class _LinksToolsScreenState extends State<LinksToolsScreen> {
   final LinkToolService _linkToolService = LinkToolService();
-  final AuthProvider _authProvider = AuthProvider();
+
 
   // --- 数据状态 (保持不变) ---
   List<Link>? _links;
@@ -150,7 +151,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isAdmin = _authProvider.isAdmin;
+    final authProvider = Provider.of<AuthProvider>(context,listen: false);
+    final isAdmin = authProvider.isAdmin;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= _desktopBreakpoint;
 

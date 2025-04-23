@@ -372,7 +372,7 @@ class _MessageScreenState extends State<MessageScreen> {
             // *** 修改这里：为空状态添加动画 ***
             child: FadeInSlideUpItem(
               // 使用 FadeInSlideUpItem 包裹
-              child: EmptyStateWidget(
+              child: const EmptyStateWidget(
                 message: '暂无任何消息',
                 iconData: Icons.mark_as_unread_outlined,
               ),

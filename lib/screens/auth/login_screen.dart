@@ -216,6 +216,7 @@ class _LoginScreenState extends State<LoginScreen> {
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入密码';
         if (value.length < 6) return '密码至少6位';
+        if (value.length > 30) return '密码长度过长';
         return null;
       },
       // 可以在这里添加 onSubmitted，尝试直接登录

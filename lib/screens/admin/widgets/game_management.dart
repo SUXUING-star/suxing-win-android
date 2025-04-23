@@ -373,7 +373,7 @@ class _GameManagementState extends State<GameManagement>
     if (!_isLoadingPendingRejected &&
         _pendingRejectedError == null &&
         _pendingGames.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         iconData: Icons.check_circle_outline,
         iconSize: 64,
         iconColor: Colors.grey,
@@ -470,7 +470,7 @@ class _GameManagementState extends State<GameManagement>
     if (!_isLoadingPendingRejected &&
         _pendingRejectedError == null &&
         _rejectedGames.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         iconData: Icons.block,
         iconSize: 64,
         iconColor: Colors.grey,

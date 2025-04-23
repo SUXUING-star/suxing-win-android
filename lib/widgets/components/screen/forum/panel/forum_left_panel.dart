@@ -103,7 +103,7 @@ class ForumLeftPanel extends StatelessWidget {
 
   Widget _buildTagsGrid(BuildContext context) {
     if (tags.isEmpty) {
-      return EmptyStateWidget(
+      return const EmptyStateWidget(
         iconData: Icons.label_off,
         message: '没有可用的标签',
       );
