@@ -34,57 +34,35 @@ class FollowUserButton extends StatefulWidget {
 class _FollowUserButtonState extends State<FollowUserButton> {
   final UserFollowService _followService = UserFollowService();
   late bool _isFollowing;
-  bool _isLoading = false; // 是否正在进行网络请求或等待初始状态
+  bool _isLoading = false; // 只在 API 调用期间为 true
+  bool _internalStateInitialized = false; // 标记内部状态是否已初始化
 
-  // --- 新增：用于等待父组件状态更新的后备 Timer ---
-  Timer? _fallbackTimer;
-  static const Duration _fallbackDelay = Duration(seconds: 1, milliseconds: 500); // 等待父组件状态的最大时间 (例如 1.5 秒)
-  // ---------------------------------------------
-
-  // 跟踪上次状态检查时间 - 减少频繁API调用 (这个仍然有用，用于非初始检查)
-  DateTime? _lastStatusCheckTime;
-  static const Duration _minStatusCheckInterval = Duration(minutes: 10);
-
-  StreamSubscription? _followStatusSubscription;
+  StreamSubscription? _followStatusSubscription; // 保留流监听，用于外部触发刷新
   bool _mounted = true;
 
   @override
   void initState() {
     super.initState();
     _mounted = true;
+    // --- 简化初始化 ---
+    // 直接使用父组件传递的状态
+    _isFollowing =
+        widget.initialIsFollowing ?? false; // 如果父组件没传（理论上不该发生），默认 false
+    _isLoading = false; // 初始时不加载
+    _internalStateInitialized = true; // 标记内部状态已根据父组件初始化
+    print(
+        'FollowUserButton (${widget.userId}): initState - Initial state from parent: $_isFollowing');
 
-    // --- 初始化状态逻辑修改 ---
-    if (widget.initialIsFollowing != null) {
-      // 1. 父组件提供了明确的初始状态 (true 或 false)
-      _isFollowing = widget.initialIsFollowing!;
-      _isLoading = false; // 状态已知，不加载
-      print('FollowUserButton (${widget.userId}): 使用父组件提供的初始状态: $_isFollowing');
-    } else {
-      // 2. 父组件未提供初始状态 (传入的是 null)
-      //    这通常意味着父组件正在异步获取数据 (比如通过 batch-info)
-      _isFollowing = false; // 默认未关注
-      _isLoading = true; // 进入加载/等待状态
-      print('FollowUserButton (${widget.userId}): 未收到初始状态，进入等待模式...');
-
-      // --- 启动后备 Timer ---
-      // 如果在 _fallbackDelay 时间内，父组件没有通过 didUpdateWidget 提供状态，
-      // 那么这个 Timer 会触发 _checkFollowStatus 进行自主检查。
-      _fallbackTimer = Timer(_fallbackDelay, () {
-        // Timer 触发时，再次检查 _mounted 状态
-        if (_mounted && _isLoading) { // 只有在仍在加载/等待状态时才执行
-          print('FollowUserButton (${widget.userId}): 等待超时，启动后备 API 检查...');
-          _checkFollowStatus(initialCheck: true); // 标记为初始(后备)检查
-        }
-      });
-      // -----------------------
-    }
-    // --------------------------
-
-    // 监听全局关注状态流 (保持不变)
-    _followStatusSubscription = _followService.followStatusStream.listen((changedUserId) {
+    // --- 仍然监听全局流，但触发时不自己调用API，而是通知父组件刷新（如果需要） ---
+    // 或者更简单：依赖父组件的 AuthProvider 刷新机制
+    _followStatusSubscription =
+        _followService.followStatusStream.listen((changedUserId) {
       if (changedUserId == widget.userId && _mounted) {
-        print('FollowUserButton (${widget.userId}): 收到状态流更新，强制检查状态');
-        _checkFollowStatus(forceCheck: true); // 强制检查最新状态
+        // 当接收到流事件时，可以认为状态可能已过期，但这里我们信任父组件的刷新
+        // 可以选择性地强制父组件刷新，但 AuthProvider.refreshUserState 应该已经处理了
+        print(
+            'FollowUserButton (${widget.userId}): Received stream update. Relying on parent refresh.');
+        // 如果需要强制刷新，可以调用 widget.onFollowChanged?.call() 并让父组件处理
       }
     });
   }
@@ -92,94 +70,36 @@ class _FollowUserButtonState extends State<FollowUserButton> {
   @override
   void didUpdateWidget(FollowUserButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-
-    // --- 监听父组件传递的 initialIsFollowing 是否从 null 变为 非null ---
-    // 这表示父组件的异步请求完成了，并把包含关注状态的数据传递过来了
-    if (oldWidget.initialIsFollowing == null && widget.initialIsFollowing != null) {
-      // 只有在当前仍然处于加载/等待状态时才处理 (避免覆盖用户操作后的状态)
-      if (_isLoading && _mounted) {
-        print('FollowUserButton (${widget.userId}): 父组件更新了状态: ${widget.initialIsFollowing}');
-
-        // --- 取消后备 Timer ---
-        // 因为父组件已经成功提供了状态，不再需要后备检查
-        _fallbackTimer?.cancel();
-        _fallbackTimer = null;
-        // -------------------
-
-        // 更新按钮状态，并结束加载
+    // --- 当父组件传递的状态更新时，同步内部状态 ---
+    // 只有当父组件传递的状态确实变化了，才更新
+    if (widget.initialIsFollowing != null &&
+        widget.initialIsFollowing != _isFollowing) {
+      print(
+          'FollowUserButton (${widget.userId}): didUpdateWidget - State updated from parent: ${widget.initialIsFollowing}');
+      // 只有在内部状态已经初始化后，才接受来自父组件的更新
+      // 避免覆盖用户刚刚点击操作后的乐观 UI 状态
+      // （或者，如果需要严格同步父状态，可以去掉 _internalStateInitialized 判断）
+      if (_internalStateInitialized && _mounted) {
         setState(() {
           _isFollowing = widget.initialIsFollowing!;
-          _isLoading = false;
+          // 如果此时正在加载（不太可能，但作为保险），取消加载
+          if (_isLoading) _isLoading = false;
         });
       }
     }
-    // ---------------------------------------------------------------
   }
-
 
   @override
   void dispose() {
     _mounted = false;
     _followStatusSubscription?.cancel();
-    _fallbackTimer?.cancel(); // 确保 Timer 被取消
-    _fallbackTimer = null;
     super.dispose();
   }
 
-  /// 检查当前用户是否关注了目标用户 [widget.userId]
-  /// 这个方法现在主要由后备 Timer、状态流更新或用户强制刷新触发
-  Future<void> _checkFollowStatus({
-    bool forceCheck = false,
-    bool initialCheck = false, // 标记是否由 initState/fallbackTimer 触发
-  }) async {
-    if (!_mounted) return;
+  // --- _checkFollowStatus 方法可以删除了 ---
+  // Future<void> _checkFollowStatus(...) async { ... } // 删除这个方法
 
-    // 节流控制 (对于非强制检查)
-    final now = DateTime.now();
-    if (!forceCheck && _lastStatusCheckTime != null) {
-      final timeSinceLastCheck = now.difference(_lastStatusCheckTime!);
-      if (timeSinceLastCheck < _minStatusCheckInterval) {
-        print('FollowUserButton (${widget.userId}): 关注状态检查被节流');
-        // 如果是初始检查被节流，且仍在加载，需要取消加载状态
-        if (initialCheck && _isLoading && mounted) {
-          setState(() { _isLoading = false; });
-        }
-        return;
-      }
-    }
-
-    // 如果不是初始检查（即由流更新或刷新触发），且当前不在加载状态，
-    // 可以考虑短暂显示加载指示器，提升用户体验
-    // if (!initialCheck && !_isLoading && mounted) {
-    //   setState(() { _isLoading = true; });
-    // }
-
-    try {
-      print('FollowUserButton (${widget.userId}): 正在调用 API 检查关注状态 (可能为后备检查)...');
-      final isFollowingResult = await _followService.isFollowing(widget.userId);
-      _lastStatusCheckTime = now;
-
-      if (!_mounted) return;
-
-      print('FollowUserButton (${widget.userId}): API 检查结果: $isFollowingResult');
-      // 只有当状态变化 或 之前在加载状态时 才更新UI
-      if (_isFollowing != isFollowingResult || _isLoading) {
-        setState(() {
-          _isFollowing = isFollowingResult;
-          _isLoading = false; // 检查完成，结束加载
-        });
-      }
-    } catch (e) {
-      print('FollowUserButton (${widget.userId}): 检查关注状态失败: $e');
-      if (_mounted && _isLoading) { // 如果检查失败时仍在加载状态
-        setState(() {
-          _isLoading = false; // 结束加载
-        });
-      }
-    }
-  }
-
-  /// 处理关注/取消关注按钮的点击事件 (基本不变)
+  /// 处理关注/取消关注按钮的点击事件 (基本不变，但调用 authProvider.refreshUserState)
   Future<void> _handleFollowTap() async {
     if (!_mounted) return;
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -189,47 +109,58 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     }
     if (_isLoading) return; // 防止重复点击
 
-    // --- 点击时，取消可能存在的后备 Timer ---
-    _fallbackTimer?.cancel();
-    _fallbackTimer = null;
-    // ------------------------------------
-
-    setState(() { _isLoading = true; }); // 进入加载状态
+    // **乐观更新 UI**
+    // 暂存旧状态，用于失败时回滚
+    final bool oldState = _isFollowing;
+    setState(() {
+      _isFollowing = !_isFollowing; // 先改状态
+      _isLoading = true; // 显示加载
+    });
 
     bool success = false;
     try {
-      if (_isFollowing) {
-        success = await _followService.unfollowUser(widget.userId);
-      } else {
+      if (!oldState) {
+        // 如果之前是 false (未关注)，现在是 true (已关注)
         success = await _followService.followUser(widget.userId);
+      } else {
+        // 如果之前是 true (已关注)，现在是 false (未关注)
+        success = await _followService.unfollowUser(widget.userId);
       }
 
       if (!_mounted) return;
 
       if (success) {
         setState(() {
-          _isFollowing = !_isFollowing;
+          _isLoading = false; // API 成功，结束加载
+        });
+        // **通知 AuthProvider 刷新当前用户状态**
+        authProvider.refreshUserState();
+        widget.onFollowChanged?.call(); // 调用回调
+      } else {
+        // API 失败，回滚状态
+        setState(() {
+          _isFollowing = oldState; // 恢复旧状态
           _isLoading = false;
         });
-        widget.onFollowChanged?.call();
-      } else {
-        setState(() { _isLoading = false; });
-        AppSnackBar.showError(context, _isFollowing ? '取消关注失败' : '关注失败');
+        AppSnackBar.showError(context, oldState ? '取消关注失败' : '关注失败');
       }
     } catch (e) {
       if (_mounted) {
-        setState(() { _isLoading = false; });
-        AppSnackBar.showError(context,'操作失败: ${e.toString()}');
+        // 异常，回滚状态
+        setState(() {
+          _isFollowing = oldState; // 恢复旧状态
+          _isLoading = false;
+        });
+        AppSnackBar.showError(context, '操作失败: ${e.toString()}');
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- UI 构建逻辑保持不变 ---
+    // --- UI 构建逻辑基本不变，依赖 _isFollowing 和 _isLoading ---
     final themeColor = widget.color ?? Theme.of(context).primaryColor;
 
-    // Mini 样式
     if (widget.mini) {
       return SizedBox(
         height: 30,
@@ -238,20 +169,25 @@ class _FollowUserButtonState extends State<FollowUserButton> {
           style: OutlinedButton.styleFrom(
             padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
             side: BorderSide(color: _isFollowing ? Colors.grey : themeColor),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
           child: _isLoading
               ? SizedBox(
-            width: 16, height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(_isFollowing ? Colors.grey : themeColor),
-            ),
-          )
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                        _isFollowing ? Colors.grey : themeColor),
+                  ),
+                )
               : Text(
-            _isFollowing ? '已关注' : '关注',
-            style: TextStyle(fontSize: 12, color: _isFollowing ? Colors.grey : themeColor),
-          ),
+                  _isFollowing ? '已关注' : '关注',
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: _isFollowing ? Colors.grey : themeColor),
+                ),
         ),
       );
     }
@@ -261,25 +197,41 @@ class _FollowUserButtonState extends State<FollowUserButton> {
       return OutlinedButton.icon(
         onPressed: _handleFollowTap,
         icon: _isLoading
-            ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.grey)))
-            : widget.showIcon ? Icon(Icons.check, size: 16, color: Colors.grey) : SizedBox.shrink(),
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.grey)))
+            : widget.showIcon
+                ? Icon(Icons.check, size: 16, color: Colors.grey)
+                : SizedBox.shrink(),
         label: Text('已关注', style: TextStyle(color: Colors.grey)),
         style: OutlinedButton.styleFrom(
           side: BorderSide(color: Colors.grey),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       );
     } else {
       return ElevatedButton.icon(
         onPressed: _handleFollowTap,
         icon: _isLoading
-            ? SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-            : widget.showIcon ? Icon(Icons.add, size: 16) : SizedBox.shrink(),
+            ? SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
+            : widget.showIcon
+                ? Icon(Icons.add, size: 16)
+                : SizedBox.shrink(),
         label: Text('关注'),
         style: ElevatedButton.styleFrom(
           backgroundColor: themeColor,
           foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       );
     }

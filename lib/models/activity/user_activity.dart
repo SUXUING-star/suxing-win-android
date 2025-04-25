@@ -16,7 +16,7 @@ class UserActivity {
   final bool isPublic;
   bool isLiked;
   final Map<String, dynamic>? metadata;
-  final Map<String, dynamic>? user;
+
   final Map<String, dynamic>? target;
   List<ActivityComment> comments;
 
@@ -36,7 +36,6 @@ class UserActivity {
     required this.isPublic,
     this.isLiked = false,
     this.metadata,
-    this.user,
     this.target,
     this.comments = const [],
   });
@@ -76,7 +75,6 @@ class UserActivity {
       isPublic: json['isPublic'] ?? true,
       isLiked: json['isLiked'] ?? false,
       metadata: json['metadata'],
-      user: json['user'],
       target: json['target'],
       comments: comments,
     );
@@ -99,7 +97,6 @@ class UserActivity {
       'isPublic': isPublic,
       'isLiked': isLiked,
       'metadata': metadata,
-      'user': user,
       'target': target,
       'comments': comments.map((comment) => comment.toJson()).toList(),
     };
@@ -112,7 +109,6 @@ class ActivityComment {
   final DateTime createTime;
   int likesCount;
   bool isLiked;
-  final Map<String, dynamic>? user; // 后端直接返回完整的user信息，包含userId、username和avatar
 
   ActivityComment({
     required this.id,
@@ -121,7 +117,6 @@ class ActivityComment {
     required this.createTime,
     required this.likesCount,
     this.isLiked = false,
-    this.user,
   });
 
   factory ActivityComment.fromJson(Map<String, dynamic> json) {
@@ -146,7 +141,6 @@ class ActivityComment {
       createTime: parseDateTime(json['createTime']),
       likesCount: json['likesCount'] ?? 0,
       isLiked: json['isLiked'] ?? false,
-      user: json['user'],
     );
   }
 
@@ -158,7 +152,6 @@ class ActivityComment {
       'createTime': createTime.toIso8601String(),
       'likesCount': likesCount,
       'isLiked': isLiked,
-      'user': user,
     };
   }
 

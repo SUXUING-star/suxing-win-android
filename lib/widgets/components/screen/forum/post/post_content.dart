@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/user_post_actions.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
@@ -7,13 +8,14 @@ import 'post_interaction_buttons.dart';
 
 class PostContent extends StatefulWidget {
   final Post post;
-  // 添加回调函数，当交互成功时通知父组件
-  final VoidCallback? onInteractionSuccess;
+  final UserPostActions userActions;
+  final Function(Post,UserPostActions) onPostUpdated;
 
   const PostContent({
     super.key,
+    required this.userActions,
     required this.post,
-    this.onInteractionSuccess,
+    required this.onPostUpdated,
   });
 
   @override
@@ -37,11 +39,7 @@ class _PostContentState extends State<PostContent> {
     }
   }
 
-  void _updatePost(Post updatedPost) {
-    setState(() {
-      _post = updatedPost;
-    });
-  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -149,10 +147,9 @@ class _PostContentState extends State<PostContent> {
             // 添加交互按钮
             const SizedBox(height: 16),
             PostInteractionButtons(
+              userActions: widget.userActions,
               post: _post,
-              onPostUpdated: _updatePost,
-              // 传递交互成功回调
-              onInteractionSuccess: widget.onInteractionSuccess,
+              onPostUpdated: widget.onPostUpdated,
             ),
 
             // Post statistics

@@ -159,13 +159,13 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                 const Spacer(),
                 // *** 传递 game 对象 和 回调 ***
                 if(!widget.isPreviewMode)
-                GameCollectionButton(
-                  game: widget.game, // 按钮仍然需要原始 game 对象来获取 ID 等信息
-                  initialCollectionStatus: widget.initialCollectionStatus,
-                  onCollectionChanged: _handleButtonCollectionChanged, // 传递内部处理函数
-                  compact: false,
-                  isPreview: widget.isPreviewMode,
-                ),
+                  GameCollectionButton(
+                    game: widget.game, // 按钮仍然需要原始 game 对象来获取 ID 等信息
+                    initialCollectionStatus: widget.initialCollectionStatus,
+                    onCollectionChanged: _handleButtonCollectionChanged, // 传递内部处理函数
+                    compact: false,
+                    isPreview: widget.isPreviewMode,
+                  ),
               ],
             ),
             const SizedBox(height: 20),

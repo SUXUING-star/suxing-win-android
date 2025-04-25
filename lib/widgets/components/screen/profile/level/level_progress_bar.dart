@@ -1,62 +1,29 @@
 // lib/widgets/components/screen/profile/level_progress_bar.dart
 
 import 'package:flutter/material.dart';
-import '../../../../../models/user/user.dart';
-import '../../../../../models/user/user_level.dart';
-import '../../../../../services/main/user/user_level_service.dart';
+import 'package:suxingchahui/models/user/user.dart'; // **只需要导入 User 模型**
 import '../../../../../utils/font/font_config.dart';
-import 'level_rules_dialog.dart';
+import 'level_rules_dialog.dart'; // 保留规则弹窗的导入
 
-class LevelProgressBar extends StatefulWidget {
-  final User user;
+// --- 改为 StatelessWidget ---
+class LevelProgressBar extends StatelessWidget {
+  final User user; // **直接接收 User 对象**
   final double width;
-  final bool isDesktop;
+  final bool isDesktop; // 保留桌面端标识，用于调整样式
 
   const LevelProgressBar({
     super.key,
-    required this.user,
+    required this.user, // **参数类型改为 User**
     this.width = 300,
     this.isDesktop = false,
   });
 
-  @override
-  _LevelProgressBarState createState() => _LevelProgressBarState();
-}
-
-class _LevelProgressBarState extends State<LevelProgressBar> {
-  final UserLevelService _levelService = UserLevelService();
-  UserLevel? _userLevel;
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadUserLevelInfo();
-  }
-
-  Future<void> _loadUserLevelInfo() async {
-    try {
-      final level = await _levelService.getUserLevel();
-      if (mounted) {
-        setState(() {
-          _userLevel = level;
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    }
-  }
-
-  void _showLevelRulesDialog() {
+  // --- 显示等级规则弹窗的方法 ---
+  void _showLevelRulesDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) => LevelRulesDialog(
-        currentLevel: _userLevel?.level ?? 1,
+        currentLevel: user.level, // **直接从 user 对象获取当前等级**
       ),
     );
   }
@@ -65,46 +32,40 @@ class _LevelProgressBarState extends State<LevelProgressBar> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    // 为桌面端和移动端使用不同的尺寸设置
-    final double progressHeight = widget.isDesktop ? 8.0 : 6.0;
-    final double fontSize = widget.isDesktop ? 14.0 : 12.0;
-    final double infoFontSize = widget.isDesktop ? 12.0 : 10.0;
-    final double iconSize = widget.isDesktop ? 16.0 : 14.0;
+    // --- 样式变量 (保持不变) ---
+    final double progressHeight = isDesktop ? 8.0 : 6.0;
+    final double fontSize = isDesktop ? 14.0 : 12.0;
+    final double infoFontSize = isDesktop ? 12.0 : 10.0;
+    final double iconSize = isDesktop ? 16.0 : 14.0;
 
-    if (_isLoading) {
-      return SizedBox(
-        width: widget.width,
-        height: 40,
-        child: Center(
-          child: SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(strokeWidth: 2),
-          ),
-        ),
-      );
-    }
+    // --- 直接从传入的 user 对象获取数据 ---
+    final int level = user.level;
+    final int nextLevel = level + 1; // 下一级（用于显示）
+    // 使用后端计算好的百分比，并确保范围
+    final double expPercentage = (user.levelProgress / 100.0).clamp(0.0, 1.0);
+    final int currentExp = user.experience; // 显示用户的总经验
+    final int requiredExp = user.nextLevelExp; // 显示下一级需要的总经验
+    final int expToNextLevel = user.expToNextLevel; // 显示还差多少经验
+    final bool isMaxLevel = user.isMaxLevel; // 获取是否满级状态
 
-    final level = _userLevel?.level ?? 1;
-    final nextLevel = level + 1;
-    final expPercentage = _userLevel?.expPercentage ?? 0.0;
-    final currentExp = _userLevel?.currentExp ?? 0;
-    final requiredExp = _userLevel?.requiredExp ?? 1000;
+    // --- 不再需要 _isLoading 判断 ---
 
-    return GestureDetector(
-      onTap: _showLevelRulesDialog,
+    return GestureDetector( // 点击区域触发规则弹窗
+      onTap: () => _showLevelRulesDialog(context), // 传递 context
       child: Container(
-        width: widget.width,
-        padding: EdgeInsets.symmetric(vertical: 6.0),
+        width: width, // 使用传入的宽度
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // 等级信息和经验值
+            // --- 1. 等级信息和经验值显示 ---
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                // 左侧：等级 Lv.X -> Lv.Y
                 Row(
+                  mainAxisSize: MainAxisSize.min, // 防止过度伸展
                   children: [
                     Text(
                       'Lv.$level',
@@ -116,89 +77,94 @@ class _LevelProgressBarState extends State<LevelProgressBar> {
                         fontFamilyFallback: FontConfig.fontFallback,
                       ),
                     ),
-                    Text(
-                      ' → Lv.$nextLevel',
-                      style: TextStyle(
-                        color: Colors.grey[700],
-                        fontSize: fontSize,
-                        fontFamily: FontConfig.defaultFontFamily,
-                        fontFamilyFallback: FontConfig.fontFallback,
+                    // 如果不是最高级，显示箭头和下一级
+                    if (!isMaxLevel)
+                      Text(
+                        ' → Lv.$nextLevel',
+                        style: TextStyle(
+                          color: Colors.grey[700],
+                          fontSize: fontSize,
+                          fontFamily: FontConfig.defaultFontFamily,
+                          fontFamilyFallback: FontConfig.fontFallback,
+                        ),
                       ),
-                    ),
                   ],
                 ),
+                // 右侧：经验值 当前总经验 / 下一级所需总经验
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '$currentExp/$requiredExp',
+                      isMaxLevel ? '$currentExp XP (已满级)' : '$currentExp / $requiredExp XP', // 显示总经验和目标，满级时提示
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: infoFontSize,
                         fontFamily: FontConfig.defaultFontFamily,
                         fontFamilyFallback: FontConfig.fontFallback,
                       ),
+                      overflow: TextOverflow.ellipsis, // 防止数字过长溢出
                     ),
-                    SizedBox(width: 4),
-                    Icon(Icons.info_outline, size: iconSize, color: Colors.grey[600]),
+                    const SizedBox(width: 4),
+                    Icon(Icons.info_outline, size: iconSize, color: Colors.grey[600]), // 信息图标
                   ],
                 ),
               ],
             ),
+            const SizedBox(height: 6), // 间距
 
-            SizedBox(height: 6),
-
-            // 进度条
-            Stack(
-              children: [
-                // 背景
-                Container(
-                  height: progressHeight,
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[300],
-                    borderRadius: BorderRadius.circular(progressHeight / 2),
-                  ),
-                ),
-
-                // 进度
-                Container(
-                  height: progressHeight,
-                  width: widget.width * expPercentage,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        theme.primaryColor.withOpacity(0.7),
-                        theme.primaryColor,
-                      ],
-                      begin: Alignment.centerLeft,
-                      end: Alignment.centerRight,
+            // --- 2. 进度条 ---
+            SizedBox( // 限制进度条高度
+              height: progressHeight,
+              child: Stack(
+                children: [
+                  // 背景条
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(progressHeight / 2),
                     ),
-                    borderRadius: BorderRadius.circular(progressHeight / 2),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.primaryColor.withOpacity(0.3),
-                        blurRadius: 2,
-                        offset: Offset(0, 1),
-                      ),
-                    ],
                   ),
-                ),
-              ],
+                  // 进度条 (使用 FractionallySizedBox 控制宽度)
+                  FractionallySizedBox(
+                    widthFactor: expPercentage, // 使用计算好的百分比
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            theme.primaryColor.withOpacity(0.7),
+                            theme.primaryColor,
+                          ],
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(progressHeight / 2),
+                        boxShadow: [
+                          BoxShadow(
+                            color: theme.primaryColor.withOpacity(0.2), // 浅阴影
+                            blurRadius: 2,
+                            offset: const Offset(0, 1),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
+            const SizedBox(height: 3), // 进度条和提示文字间距
 
-            SizedBox(height: 3),
-
-            // 点击提示
+            // --- 3. 点击提示 / 升级提示 ---
             Center(
               child: Text(
-                '点击查看等级规则',
+                isMaxLevel ? '' : '升级还需 $expToNextLevel 经验 | 点击查看等级规则', // 满级时不显示升级提示
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: infoFontSize - 2,
-                  fontStyle: FontStyle.italic,
+                  fontSize: infoFontSize - 1, // 字体稍小
+                  // fontStyle: FontStyle.italic,
                   fontFamily: FontConfig.defaultFontFamily,
                   fontFamilyFallback: FontConfig.fontFallback,
                 ),
+                textAlign: TextAlign.center,
               ),
             ),
           ],

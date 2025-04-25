@@ -1,5 +1,6 @@
 // lib/widgets/ui/image/safe_user_avatar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -12,6 +13,8 @@ import '../image/safe_cached_image.dart';
 class SafeUserAvatar extends StatefulWidget {
   /// 用户ID - 如果提供，将尝试通过ID获取用户信息
   final String? userId;
+
+  final User? user;
 
   /// 直接提供的头像URL - 如果提供，优先使用此URL而不请求服务器
   final String? avatarUrl;
@@ -42,6 +45,7 @@ class SafeUserAvatar extends StatefulWidget {
 
   const SafeUserAvatar({
     super.key,
+    this.user,
     this.userId,
     this.avatarUrl,
     this.username,
@@ -105,14 +109,19 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
     }
 
     try {
-      final userInfo = await _userService.getUserInfoById(widget.userId!);
+      User user;
+      if (widget.user == null){
+        final userInfo  = await _userService.getUserInfoById(widget.userId!);
+        user = User.fromJson(userInfo);
+      }
+      user = widget.user!;
 
       // Check mounted again before setState
       if (mounted) {
         setState(() {
-          _avatarUrl = userInfo['avatar'];
+          _avatarUrl = user.avatar;
           // Always use the username from userInfo if available
-          _username = userInfo['username'] ?? _username ?? '未知用户';
+          _username = user.username ?? _username ?? '未知用户';
           _isLoading = false;
         });
       }

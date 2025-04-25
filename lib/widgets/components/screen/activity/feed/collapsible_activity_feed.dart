@@ -6,6 +6,7 @@ import 'package:flutter/services.dart'; // HapticFeedback
 import 'dart:math' as math; // math.Random 等
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
 import 'package:suxingchahui/utils/activity/activity_type_utils.dart';
@@ -71,6 +72,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     with SingleTickerProviderStateMixin {
   final Map<String, bool> _expandedGroups = {};
   late AnimationController _animationController;
+  late UserService _userService;
+
 
   @override
   void initState() {
@@ -78,12 +81,14 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     _animationController = AnimationController(
         duration: const Duration(milliseconds: 300), vsync: this);
     _initExpandedGroups();
+    _userService = UserService();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
+
   }
 
   @override
@@ -121,8 +126,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     final Map<String, List<UserActivity>> grouped = {};
     for (final activity in widget.activities) {
       String key = (widget.collapseMode == FeedCollapseMode.byUser)
-          ? (activity.user?['userId'] ??
-              'unknown_user_${activity.user?['username'] ?? math.Random().nextInt(1000)}')
+          ? (activity.userId)
           : activity.type;
       grouped.putIfAbsent(key, () => []).add(activity);
     }
@@ -131,7 +135,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
 
   String _getGroupTitle(String groupKey, List<UserActivity> activities) {
     if (widget.collapseMode == FeedCollapseMode.byUser) {
-      return '${activities.first.user?['username'] ?? '未知用户'} 的动态';
+      final username = _userService.getUserInfoById(activities.first.userId);
+      return '${username} 的动态';
     } else {
       return ActivityTypeUtils.getActivityTypeDisplayInfo(groupKey).text;
     }
@@ -417,7 +422,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
         setState(() {
           final String groupKey =
               (widget.collapseMode == FeedCollapseMode.byUser)
-                  ? (latestActivity.user?['userId'] ?? 'unknown')
+                  ? (latestActivity.userId)
                   : latestActivity.type;
           _expandedGroups[groupKey] = true;
         });

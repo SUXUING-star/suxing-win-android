@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
@@ -9,16 +10,18 @@ import '../recent_global_replies.dart';
 
 class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;
+  final UserPostActions userActions;
   final String postId;
   final Widget replyInput;
-  final VoidCallback? onInteractionSuccess;
+  final Function(Post,UserPostActions) onPostUpdated;
 
   const PostDetailDesktopLayout({
     super.key,
     required this.post,
+    required this.userActions,
     required this.postId,
     required this.replyInput,
-    this.onInteractionSuccess,
+    required this.onPostUpdated,
   });
 
   @override
@@ -50,8 +53,9 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     duration: primaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
                     child: PostContent(
+                      userActions: userActions,
                       post: post,
-                      onInteractionSuccess: onInteractionSuccess,
+                      onPostUpdated: onPostUpdated,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -68,7 +72,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     key: ValueKey('recent_replies_desk_${post.id}'),
                     duration: secondaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
-                    child: const RecentGlobalReplies(limit: 5),
+                    child: RecentGlobalReplies(limit: 5,post: post),
                   ),
                 ],
               ),

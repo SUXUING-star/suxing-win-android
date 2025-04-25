@@ -143,7 +143,7 @@ class _ReplyItemState extends State<ReplyItem> {
             children: [
               Expanded(child: UserInfoBadge(userId: widget.reply.userId, showFollowButton: false, mini: true)),
               const SizedBox(width: 8),
-              Text(DateTimeFormatter.formatRelative(widget.reply.createTime) + (widget.reply.isEdited ? ' (已编辑)' : ''), style: TextStyle(fontSize: 10, color: Colors.grey[600])),
+              Text(DateTimeFormatter.formatRelative(widget.reply.createTime) + (widget.reply.hasBeenEdited ? ' (已编辑)' : ''), style: TextStyle(fontSize: 10, color: Colors.grey[600])),
               _buildReplyActions(context, widget.reply), // 调用 actions
             ],
           ),

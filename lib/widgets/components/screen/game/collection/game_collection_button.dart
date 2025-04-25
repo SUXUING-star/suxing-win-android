@@ -63,7 +63,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     if (widget.initialCollectionStatus != oldWidget.initialCollectionStatus &&
         !_isLoading) {
       bool contentChanged = _collectionStatus?.status !=
-              widget.initialCollectionStatus?.status ||
+          widget.initialCollectionStatus?.status ||
           _collectionStatus?.notes != widget.initialCollectionStatus?.notes ||
           _collectionStatus?.review != widget.initialCollectionStatus?.review ||
           _collectionStatus?.rating != widget.initialCollectionStatus?.rating;
@@ -93,7 +93,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54, // 半透明遮罩层
       transitionDuration:
-          const Duration(milliseconds: 350), // 动画时长，和 CustomConfirmDialog 一致
+      const Duration(milliseconds: 350), // 动画时长，和 CustomConfirmDialog 一致
 
       pageBuilder: (BuildContext buildContext, Animation<double> animation,
           Animation<double> secondaryAnimation) {
@@ -151,8 +151,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
 
           // 调用 Service
           final (item, returnedStatus) =
-              await _collectionService.setGameCollection(widget.game.id, status,
-                  notes: notes, review: review, rating: rating);
+          await _collectionService.setGameCollection(widget.game.id, status,
+              notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
             finalNewStatus = item; // API 调用成功，记录新状态
@@ -170,7 +170,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
         } else if (action == 'remove') {
           // 调用 Service
           final success =
-              await _collectionService.removeGameCollection(widget.game.id);
+          await _collectionService.removeGameCollection(widget.game.id);
           if (success) {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***
@@ -316,7 +316,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           elevation: 2,
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         onPressed: _isLoading ? null : _showCollectionDialog,
       );
@@ -376,7 +376,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           side: BorderSide(color: textColor.withOpacity(0.5), width: 1),
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         onPressed: _isLoading ? null : _showCollectionDialog,
       );

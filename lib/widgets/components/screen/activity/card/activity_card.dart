@@ -223,7 +223,7 @@ class _ActivityCardState extends State<ActivityCard> {
           _isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         ActivityHeader(
-          user: _activity.user,
+          userId: _activity.userId,
           createTime: _activity.createTime,
           updateTime: _activity.updateTime,
           isEdited: _activity.isEdited,

@@ -201,7 +201,7 @@ class _CommentItemState extends State<CommentItem> {
               alignment: Alignment.centerRight,
               child: Text(
                 DateTimeFormatter.formatRelative(widget.comment.createTime) +
-                    (widget.comment.isEdited ? ' (已编辑)' : ''),
+                    (widget.comment.hasBeenEdited? ' (已编辑)' : ''),
                 style: TextStyle(
                   fontSize: 11,
                   color: Colors.grey[600],

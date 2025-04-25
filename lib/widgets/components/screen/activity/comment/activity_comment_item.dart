@@ -1,33 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
-// 需要 Provider 获取 AuthProvider
+import 'package:provider/provider.dart'; // 需要 Provider (虽然代码里没直接用，但 userService 可能内部依赖)
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 需要评论模型
-// 需要 AuthProvider
-import 'package:suxingchahui/services/main/user/user_service.dart'; // 仍然需要 UserService 判断所有者
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider (用于判断删除权限)
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-// 需要确认对话框
-import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 使用安全头像组件
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心 UI 组件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 需要 Snackbar
 
 class ActivityCommentItem extends StatefulWidget {
   final ActivityComment comment;
-  final String activityId; // 仍然需要活动 ID，传递给回调
+  final String activityId;
   final bool isAlternate;
-
-  // --- !!! 修改回调函数 !!! ---
-  // onLikeToggled 拆分为 onLike 和 onUnlike
-  final VoidCallback? onLike;        // 点赞回调
-  final VoidCallback? onUnlike;      // 取消点赞回调
-  final VoidCallback? onCommentDeleted; // 删除评论回调 (保持 VoidCallback?)
-  // 或者可以改为 Future<bool> Function()? onDelete，让父级处理确认和加载？
-  // 暂时保持 VoidCallback，父级在收到回调后处理
+  final VoidCallback? onLike;
+  final VoidCallback? onUnlike;
+  final VoidCallback? onCommentDeleted;
 
   const ActivityCommentItem({
     super.key,
     required this.comment,
-    required this.activityId, // 父级需要知道是哪个活动的评论
+    required this.activityId,
     this.isAlternate = false,
-    // --- !!! 修改构造函数参数 !!! ---
     this.onLike,
     this.onUnlike,
     this.onCommentDeleted,
@@ -38,35 +30,35 @@ class ActivityCommentItem extends StatefulWidget {
 }
 
 class _ActivityCommentItemState extends State<ActivityCommentItem> {
-  late ActivityComment _comment; // 内部状态，用于前端补偿
-  final UserService _userService = UserService(); // 仍需要判断所有者
-  final bool _isDeleting = false; // 内部删除加载状态
+  late ActivityComment _comment;
+  // 不再需要 _isDeleting 状态，因为删除逻辑移交父级
 
   @override
   void initState() {
     super.initState();
-    _comment = widget.comment; // 初始化内部状态
+    _comment = widget.comment;
   }
 
-  // 当外部传入的 comment 更新时，同步内部状态
   @override
   void didUpdateWidget(ActivityCommentItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 简单比较 ID 和更新时间，如果不同则更新内部状态
-    if (oldWidget.comment.id != widget.comment.id) {
+    // 使用 comment ID 和 likesCount/isLiked 作为更新依据更可靠
+    if (oldWidget.comment.id != widget.comment.id ||
+        oldWidget.comment.likesCount != widget.comment.likesCount ||
+        oldWidget.comment.isLiked != widget.comment.isLiked) {
       setState(() {
         _comment = widget.comment;
       });
     }
   }
 
-  // --- 处理点赞/取消点赞 ---
-  Future<void> _handleLike() async {
+  // --- 点赞/取消点赞 (前端补偿 + 调用回调) ---
+  void _handleLike() { // 改为同步方法，异步由父级处理
     HapticFeedback.lightImpact();
     final originalLikedState = _comment.isLiked;
     final originalLikesCount = _comment.likesCount;
 
-    // --- 前端补偿 (UI 立即响应) ---
+    // 前端补偿
     setState(() {
       _comment.isLiked = !originalLikedState;
       _comment.likesCount = _comment.isLiked
@@ -74,150 +66,180 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
           : (originalLikesCount > 0 ? originalLikesCount - 1 : 0);
     });
 
-    // --- 调用父级传递的回调 ---
+    // 调用父级回调
     try {
-      if (_comment.isLiked) { // 如果补偿后是点赞状态，调用 onLike
+      if (_comment.isLiked) {
         widget.onLike?.call();
-      } else { // 否则调用 onUnlike
+      } else {
         widget.onUnlike?.call();
       }
-      // 假设父级的回调会处理 API 调用和最终状态同步
-      // 如果父级回调失败，这里无法直接知道，父级需要通过某种方式通知子组件回滚
-      // (或者更简单的方式是：父级在 Service 失败时不更新数据，下次 UI 监听缓存变化时会自动修正)
     } catch (e) {
-      // 如果调用回调本身出错 (理论上不应该)，或者需要处理父级抛出的异常
-      //debugPrint("Error calling like/unlike callback: $e");
-      // --- 回滚前端补偿 ---
+      debugPrint("Error calling like/unlike callback: $e");
+      // 回滚补偿
       if (mounted) {
         setState(() {
           _comment.isLiked = originalLikedState;
           _comment.likesCount = originalLikesCount;
         });
-        AppSnackBar.showError(context, '操作失败'); // 通用错误提示
+        AppSnackBar.showError(context, '操作失败');
       }
     }
   }
 
-
-  // --- 处理删除评论 ---
-  Future<void> _handleDelete() async {
-    if (_isDeleting) return;
-
-    // --- 调用父级传递的删除回调 ---
-    // 父级 (`ActivityFeedScreen`) 会负责显示确认对话框和调用 Service
-    if (widget.onCommentDeleted != null) {
-      widget.onCommentDeleted!(); // 直接调用父级方法
-      // 父级方法内部会处理确认、调用 Service、缓存失效等
-      // 这个组件不再需要管理 _isDeleting 状态或调用 Service
-    } else {
-      //print("WARN: onDeleteComment callback is null in ActivityCommentItem.");
-      // 可以选择显示一个错误，表明无法删除
-      if (mounted) AppSnackBar.showError(context, '无法执行删除操作');
-    }
-    
+  // --- 处理删除 (调用回调) ---
+  void _handleDelete() { // 改为同步方法
+    // 直接调用父级回调，父级处理确认和 Service 调用
+    widget.onCommentDeleted?.call();
+    // if (widget.onCommentDeleted == null && mounted) {
+    //   AppSnackBar.showError(context, '无法执行删除操作');
+    // }
   }
 
+  // --- 判断是否是评论所有者或管理员 (更完整) ---
+  Future<bool> _canDeleteComment() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!authProvider.isLoggedIn) return false; // 未登录不能删
+    final currentUserId = authProvider.currentUserId;
+    final isAdmin = authProvider.isAdmin;
+    final String commentUserId = _comment.userId; // 直接用 comment 的 userId
 
-  // --- 判断是否是评论所有者 (不变) ---
-  Future<bool> _isCommentOwner() async {
-    final currentUserId = await _userService.currentUserId;
-    final commentUserIdObject = _comment.user?['userId'];
-    final String? commentUserId = commentUserIdObject?.toString();
-    return currentUserId != null && commentUserId != null && commentUserId.isNotEmpty && commentUserId == currentUserId;
+    // 管理员或评论所有者可以删除
+    return isAdmin || (currentUserId != null && commentUserId == currentUserId);
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- 从内部状态 _comment 获取数据 ---
-    final Map<String, dynamic>? userData = _comment.user;
-    final String? userId = userData?['userId']?.toString();
-    final String? avatarUrl = userData?['avatar'] as String?;
-    final String username = userData?['username'] as String? ?? '未知用户';
     final theme = Theme.of(context);
+    final timeAgo = DateTimeFormatter.formatTimeAgo(_comment.createTime);
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    // --- 构建用户信息和操作按钮区域 ---
+    Widget buildUserInfoAndActions() {
+      return Row(
+        // Row 包含 UserInfoBadge 和 Actions
+        crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐
         textDirection: widget.isAlternate ? TextDirection.rtl : TextDirection.ltr,
         children: [
-          // --- 头像 ---
-          SafeUserAvatar(
-            userId: userId, avatarUrl: avatarUrl, username: username,
-            radius: 16, enableNavigation: true,
-          ),
-          const SizedBox(width: 10),
-          // --- 评论内容区域 ---
+          // --- UserInfoBadge ---
+          // 将 UserInfoBadge 放在 Expanded 里，允许名字过长时换行或省略
           Expanded(
-            child: Column(
-              crossAxisAlignment: widget.isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                // 用户名和时间行
-                Row(
-                  textDirection: widget.isAlternate ? TextDirection.rtl : TextDirection.ltr,
-                  children: [
-                    Flexible( // 让用户名可省略
-                      child: Text(username, style: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold), overflow: TextOverflow.ellipsis),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(DateTimeFormatter.formatTimeAgo(_comment.createTime), style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey.shade600)),
-                    const Spacer(), // 推向右边
-                    // --- 删除按钮 ---
-                    FutureBuilder<bool>(
-                      future: _isCommentOwner(),
-                      builder: (context, snapshot) {
-                        if (snapshot.connectionState == ConnectionState.done && snapshot.hasData && snapshot.data == true) {
-                          // --- 直接调用 _handleDelete ---
-                          return InkWell(
-                            onTap: _handleDelete, // 调用修改后的删除处理
-                            borderRadius: BorderRadius.circular(10),
-                            child: Padding(
-                              padding: const EdgeInsets.all(4.0),
-                              child: Icon(Icons.delete_outline, size: 16, color: Colors.grey.shade600),
-                            ),
-                          );
-                        }
-                        return const SizedBox.shrink(); // 不显示或占位
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                // 评论内容
-                Text(_comment.content, style: theme.textTheme.bodyMedium, textAlign: widget.isAlternate ? TextAlign.right : TextAlign.left),
-                const SizedBox(height: 6),
-                // --- 点赞区域 ---
-                Row(
-                  mainAxisAlignment: widget.isAlternate ? MainAxisAlignment.start : MainAxisAlignment.end,
-                  children: [
-                    InkWell(
-                      onTap: _handleLike, // 调用修改后的点赞处理
-                      borderRadius: BorderRadius.circular(4),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _comment.isLiked ? Icons.favorite : Icons.favorite_border, // 使用内部状态
-                              size: 16,
-                              color: _comment.isLiked ? Colors.red : Colors.grey.shade600,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${_comment.likesCount}', // 使用内部状态
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: _comment.isLiked ? Colors.red : Colors.grey.shade600,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+            child: UserInfoBadge(
+              userId: _comment.userId,
+              showFollowButton: false,
+              showLevel: true, // 评论区简化，不显示等级
+              mini: true, // 使用紧凑模式
+              backgroundColor: Colors.transparent, // 透明背景
+              // nameStyle: theme.textTheme.bodySmall?.copyWith(fontWeight: FontWeight.bold), // 可以自定义名字样式
+              // avatarSize: 28, // 可以微调头像大小
             ),
+          ),
+          const SizedBox(width: 8), // 用户信息和操作按钮之间的间距
+
+          // --- 时间文本 ---
+          Text(
+            timeAgo,
+            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600], fontSize: 11), // 调整样式
+          ),
+          const SizedBox(width: 4), // 时间和删除按钮间距
+
+          // --- 删除按钮 (FutureBuilder 判断权限) ---
+          FutureBuilder<bool>(
+            future: _canDeleteComment(), // 使用更新后的权限检查
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  snapshot.hasData &&
+                  snapshot.data == true) {
+                return InkWell(
+                  onTap: _handleDelete,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4.0),
+                    child: Icon(
+                      Icons.delete_outline,
+                      size: 16,
+                      color: Colors.grey.shade600,
+                      semanticLabel: '删除评论', // 增加语义标签
+                    ),
+                  ),
+                );
+              }
+              // 加载中或无权限时返回空 SizedBox
+              return const SizedBox(width: 16); // 保持占位，避免布局跳动
+            },
+          ),
+        ],
+      );
+    }
+
+    // --- 构建评论内容和点赞区域 ---
+    Widget buildContentAndLikes() {
+      return Column(
+        crossAxisAlignment: widget.isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          // 评论内容
+          Text(
+            _comment.content,
+            style: theme.textTheme.bodyMedium,
+            textAlign: widget.isAlternate ? TextAlign.right : TextAlign.left,
+          ),
+          const SizedBox(height: 8), // 内容和点赞按钮间距增大
+
+          // --- 点赞按钮 ---
+          InkWell(
+            onTap: _handleLike,
+            borderRadius: BorderRadius.circular(12), // 增大点击区域和圆角
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 增加 Padding
+              child: Row(
+                mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
+                children: [
+                  Icon(
+                    _comment.isLiked ? Icons.favorite : Icons.favorite_border,
+                    size: 16,
+                    color: _comment.isLiked ? theme.colorScheme.error : Colors.grey.shade600,
+                  ),
+                  const SizedBox(width: 6), // 图标和数字间距增大
+                  Text(
+                    '${_comment.likesCount}',
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      fontSize: 12, // 稍微增大字体
+                      fontWeight: _comment.isLiked ? FontWeight.bold : FontWeight.normal, // 点赞时加粗
+                      color: _comment.isLiked ? theme.colorScheme.error : Colors.grey.shade700, // 调整未点赞颜色
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // --- 整体布局 (不再使用 Row 包裹 UserInfoBadge 和 Expanded Column) ---
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16), // 增大评论间距
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // 调整内边距
+      // 可以加个背景色或边框，让评论更清晰
+      // decoration: BoxDecoration(
+      //   color: Colors.grey.shade50,
+      //   borderRadius: BorderRadius.circular(8),
+      // ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start, // 默认左对齐
+        children: [
+          // --- 第一行：用户信息 + 操作按钮 ---
+          buildUserInfoAndActions(),
+          const SizedBox(height: 6), // 用户信息和评论内容间距
+
+          // --- 第二行：评论内容 + 点赞按钮 ---
+          // 这里根据 isAlternate 调整内容的对齐和 Padding
+          Padding(
+            padding: EdgeInsets.only(
+              // *** 左侧缩进，与 UserInfoBadge 的文本大致对齐 ***
+              // 这个值需要根据 UserInfoBadge 的实际头像大小和内边距调整
+              left: widget.isAlternate ? 0 : 40.0,
+              right: widget.isAlternate ? 40.0 : 0,
+            ),
+            child: buildContentAndLikes(),
           ),
         ],
       ),

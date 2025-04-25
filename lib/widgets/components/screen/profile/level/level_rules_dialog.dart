@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/profile/level/level_rules_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../services/main/user/user_level_service.dart';
 import '../../../../../utils/font/font_config.dart';
 
 class LevelRulesDialog extends StatefulWidget {
@@ -18,7 +18,7 @@ class LevelRulesDialog extends StatefulWidget {
 }
 
 class _LevelRulesDialogState extends State<LevelRulesDialog> {
-  final UserLevelService _levelService = UserLevelService();
+  final UserService _userService = UserService();
   List<Map<String, dynamic>> _levelRequirements = [];
   bool _isLoading = true;
 
@@ -30,7 +30,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
 
   Future<void> _loadLevelRequirements() async {
     try {
-      final requirements = await _levelService.getLevelRequirements();
+      final requirements = await _userService.getLevelRequirements();
       if (mounted) {
         setState(() {
           _levelRequirements = requirements;
@@ -110,7 +110,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    _levelService.getLevelDescription(widget.currentLevel),
+                    _userService.getLevelDescription(widget.currentLevel),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],

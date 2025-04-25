@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
@@ -98,10 +97,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void _tryIncrementViewCount() {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
-            widget.gameId != null &&
-            _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
-            widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
-        ) {
+        widget.gameId != null &&
+        _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
+        widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
+    ) {
       print(
           "GameDetailScreen (${widget.gameId}): Game is approved and history needed, incrementing view count.");
       _gameService.incrementGameView(widget.gameId!).catchError((error) {
@@ -293,7 +292,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     // 4. 计算补偿后的新评分统计数据和平均分
     final int newRatingCount =
-        (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
+    (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
     final double newTotalRatingSum = (newRatingCount == 0)
         ? 0.0
         : (currentGame.totalRatingSum + deltaRatingSum);
@@ -312,15 +311,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final Game updatedGame = currentGame.copyWith(
       // 补偿收藏计数
       wantToPlayCount:
-          (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
-              .clamp(0, 1000000),
+      (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
+          .clamp(0, 1000000),
       playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0))
           .clamp(0, 1000000),
       playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0))
           .clamp(0, 1000000),
       totalCollections:
-          (currentGame.totalCollections + (countDeltas['total'] ?? 0))
-              .clamp(0, 1000000),
+      (currentGame.totalCollections + (countDeltas['total'] ?? 0))
+          .clamp(0, 1000000),
       // *** 补偿评分相关字段 ***
       ratingCount: newRatingCount,
       totalRatingSum: newTotalRatingSum,
@@ -339,9 +338,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _collectionStatus = result.newStatus; // 更新收藏按钮状态
       _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
       _refreshCounter++; // 强制子组件重建
-      print(
-          "GameDetailScreen (${widget.gameId}): Frontend compensation applied. New Rating: ${updatedGame.rating}, New RatingCount: ${updatedGame.ratingCount}, New Want: ${updatedGame.wantToPlayCount}");
     });
+    _gameService.cachedNewData(updatedGame, _collectionStatus);
   }
 
   // *** 核心改动：处理点赞切换的回调函数 ***
@@ -467,10 +465,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               foregroundColor: _isLiked! ? primaryColor : greyColor,
               onPressed: _handleToggleLike, // 点击回调保持不变
               isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
-              mini:  DeviceUtils.isDesktop ? false : true
+              // 可以调整大小，比如都用 mini？或者保持默认大小
+              // mini: true,
             )
           else
-            // 加载占位符 (保持不变)
+          // 加载占位符 (保持不变)
             const SizedBox(
               width: 56,
               height: 56,
@@ -485,7 +484,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           if (canEdit)
             GenericFloatingActionButton(
               heroTag: editHeroTag, // 使用区分后的 heroTag
-              mini: DeviceUtils.isDesktop ? false : true, // 统一使用 mini 尺寸，或根据需要调整
+              mini: true, // 统一使用 mini 尺寸，或根据需要调整
               tooltip: '编辑',
               icon: Icons.edit,
               onPressed: () => _handleEditPressed(context, game),
@@ -563,7 +562,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   game: game,
                   initialCollectionStatus: _collectionStatus, // <--- 传递状态
                   onCollectionChanged:
-                      _handleCollectionStateChangedInButton, // <--- 传递这个函数
+                  _handleCollectionStateChangedInButton, // <--- 传递这个函数
                   onNavigate: _handleNavigate,
                   navigationInfo: _navigationInfo,
                   isPreviewMode: isPending,
@@ -576,7 +575,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // --- 直接调用辅助方法构建 FAB 组 ---
       floatingActionButton: _buildActionButtonsGroup(context, game),
       floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat, // 保持位置
+      FloatingActionButtonLocation.endFloat, // 保持位置
     );
   }
 
@@ -597,7 +596,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             game: game,
             initialCollectionStatus: _collectionStatus,
             onCollectionChanged:
-                _handleCollectionStateChangedInButton, // <--- 传递这个函数
+            _handleCollectionStateChangedInButton, // <--- 传递这个函数
             onNavigate: _handleNavigate,
             navigationInfo: _navigationInfo,
             isPreviewMode: isPreview,
@@ -606,7 +605,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       ),
       floatingActionButton: _buildActionButtonsGroup(context, game),
       floatingActionButtonLocation:
-          FloatingActionButtonLocation.endFloat, // 指定位置
+      FloatingActionButtonLocation.endFloat, // 指定位置
     );
   }
 

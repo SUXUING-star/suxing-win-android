@@ -5,6 +5,7 @@ import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import '../../utils/activity_utils.dart';
 
 class HotActivitiesList extends StatelessWidget {
@@ -49,8 +50,6 @@ class HotActivitiesList extends StatelessWidget {
 
   // 构建单个热门动态项
   Widget _buildHotActivityItem(BuildContext context, UserActivity activity, int index) {
-    final username = activity.user?['username'] ?? '未知用户';
-    final avatarUrl = activity.user?['avatar'];
 
     String activityTitle = ActivityUtils.getActivityDescription(activity);
     final typeColor = getActivityTypeColor(activity.type);
@@ -79,38 +78,10 @@ class HotActivitiesList extends StatelessWidget {
               // 用户信息
               Row(
                 children: [
-                  InkWell(
-                    onTap: () => _navigateToUserProfile(context, activity.userId),
-                    child: CircleAvatar(
-                      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-                      radius: 16,
-                      child: avatarUrl == null ? Text(username[0].toUpperCase()) : null,
-                    ),
-                  ),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          username,
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        Text(
-                          activityTitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey.shade600,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
+                  UserInfoBadge(
+                    userId: activity.userId,
+                    showFollowButton: false, // 可能不需要关注按钮
+                    showLevel: false, // 可能不需要等级
                   ),
                 ],
               ),

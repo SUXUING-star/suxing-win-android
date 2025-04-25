@@ -18,6 +18,12 @@ class IdempotencyApiErrorEvent {
   }) : timestamp = DateTime.now();
 }
 
+/// 表示发生了未授权访问（通常是 JWT Token 失效/过期）
+class UnauthorizedAccessEvent {
+  final String? message; // 可以选择性地携带错误信息
+  UnauthorizedAccessEvent({this.message});
+}
+
 
 // 全局事件流控制器
 class AppEventBus {

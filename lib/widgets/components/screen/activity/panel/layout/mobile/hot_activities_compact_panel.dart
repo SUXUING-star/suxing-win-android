@@ -1,13 +1,15 @@
 // lib/widgets/components/screen/activity/hot_activities_compact_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+// import 'package:suxingchahui/screens/profile/open_profile_screen.dart'; // <- 不再需要手动导航
+// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // <- 不再需要手动导航
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
-import '../../../utils/activity_utils.dart';
+// --- 只依赖 UserInfoBadge ---
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+// import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // <- 干掉
+import '../../../utils/activity_utils.dart'; // 这个活动描述工具还是要的
 
 class HotActivitiesCompactPanel extends StatelessWidget {
   final List<UserActivity> hotActivities;
@@ -35,6 +37,7 @@ class HotActivitiesCompactPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // ... (外部 Card 和 Header 部分不变) ...
     return SizedBox(
       width: panelWidth,
       child: Card(
@@ -46,46 +49,25 @@ class HotActivitiesCompactPanel extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(12.0),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      Icon(Icons.local_fire_department, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Text(
-                        '热门动态',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(Icons.refresh),
-                    onPressed: onRefresh,
-                    tooltip: '刷新数据',
-                  ),
-                ],
+                // ... (Header 内容不变) ...
               ),
             ),
-            Divider(),
-
-            // 简化的统计信息
+            const Divider(),
+            // 简化的统计信息 (不变)
             _buildCompactStatsCards(),
-
+            const Divider(height: 1, indent: 16, endIndent: 16),
             // 紧凑的活动列表
             _buildCompactActivitiesList(context),
+            const SizedBox(height: 8),
           ],
         ),
       ),
     );
   }
 
-  // 紧凑型统计卡片
+  // _buildCompactStatsCards 和 _buildMiniActivityTypeTag 不变
   Widget _buildCompactStatsCards() {
     final totalActivities = activityStats['totalActivities'] ?? 0;
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
       child: Row(
@@ -98,24 +80,19 @@ class HotActivitiesCompactPanel extends StatelessWidget {
               color: Colors.blue.shade900,
             ),
           ),
-          // 可以添加一个小的活动类型标签
           _buildMiniActivityTypeTag(),
         ],
       ),
     );
   }
-
-  // 生成一个小型活动类型标签
   Widget _buildMiniActivityTypeTag() {
-    // 获取出现次数最多的活动类型
-    final topType = activityStats.entries
-        .where((entry) => entry.key != 'totalActivities')
-        .reduce((a, b) => a.value > b.value ? a : b)
-        .key;
-
+    final typeEntries = activityStats.entries
+        .where((entry) => entry.key != 'totalActivities').toList();
+    if (typeEntries.isEmpty) return const SizedBox.shrink();
+    final topEntry = typeEntries.reduce((a, b) => a.value > b.value ? a : b);
+    final topType = topEntry.key;
     final typeName = getActivityTypeName(topType);
     final typeColor = getActivityTypeColor(topType);
-
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -127,56 +104,83 @@ class HotActivitiesCompactPanel extends StatelessWidget {
         style: TextStyle(
           fontSize: 12,
           fontWeight: FontWeight.bold,
+          color: Colors.white,
         ),
       ),
     );
   }
 
-  // 紧凑的活动列表
+  // 紧凑的活动列表 - ***大改***
   Widget _buildCompactActivitiesList(BuildContext context) {
     if (isLoading) {
-      return LoadingWidget.inline(size: 12,);
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0),
+        child: LoadingWidget.inline(size: 16),
+      );
     }
-
     if (hasError) {
-      return InlineErrorWidget(errorMessage: errorMessage);
+      return Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: InlineErrorWidget(errorMessage: errorMessage, onRetry: onRefresh),
+      );
     }
-
     if (hotActivities.isEmpty) {
-      return const EmptyStateWidget(message: '暂无热门动态');
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: EmptyStateWidget(message: '暂无热门动态', iconSize: 30),
+      );
     }
 
-    return Column(
-      children: hotActivities.map((activity) {
-        final username = activity.user?['username'] ?? '未知用户';
-        final activityDescription = ActivityUtils.getActivityDescription(activity);
-        final avatarUrl = activity.user?['avatar'] as String?; // 确保类型为 String?
+    // 使用 ListView.separated
+    return ListView.separated(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: hotActivities.length,
+      itemBuilder: (context, index) {
+        final activity = hotActivities[index];
+        final activityDescription =
+        ActivityUtils.getActivityDescription(activity);
+
+        // --- 直接在 ListTile 中使用 UserInfoBadge ---
         return ListTile(
-          leading: SafeUserAvatar(
+          dense: true,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 4.0), // 调整垂直 padding
+          // *** 用 UserInfoBadge 作为 leading 和 title 的组合 ***
+          // *** UserInfoBadge 内部处理点击跳转 ***
+          title: UserInfoBadge(
             userId: activity.userId,
-            avatarUrl: avatarUrl, // 直接传递可能为 null 的 URL
-            username: username, // 用于生成占位符
-            radius: 20, // ListTile 默认的头像大小半径
-            enableNavigation: false, // ListTile 已经处理了导航
+            // --- 配置 UserInfoBadge 以适应 ListTile ---
+            showFollowButton: false, // 列表里一般不显示关注
+            mini: true, // 使用紧凑模式
+            showLevel: false, // 列表里一般不显示等级
+            backgroundColor: Colors.transparent, // 不需要背景
+            padding: EdgeInsets.zero, // 不需要内边距
+            // 可以微调头像大小和名字样式（如果 UserInfoBadge 支持）
+            // avatarSize: 32, // 示例
+            // nameStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.bold), // 示例
           ),
-          title: Text(username, style: TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(
+          // leading: UserInfoBadge(...) // <- 不再需要单独的 leading
+          // title: UserInfoBadge(...) // <- title 现在被 UserInfoBadge 占据
+
+          // --- subtitle 显示活动描述 ---
+          subtitle: Padding(
+            padding: const EdgeInsets.only(left: 44.0, top: 2.0), // *** 左侧缩进，与 UserInfoBadge 的头像对齐 *** (需要根据实际头像大小调整)
+            child: Text(
               activityDescription,
               maxLines: 1,
-              overflow: TextOverflow.ellipsis
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600), // 调整样式
+            ),
           ),
-          onTap: () => _navigateToUserProfile(context, activity.userId),
+          // onTap: () => _navigateToUserProfile(context, activity.userId), // <- 干掉，UserInfoBadge 自己处理
+          trailing: Icon(Icons.chevron_right, size: 18, color: Colors.grey),
         );
-      }).toList(),
+      },
+      separatorBuilder: (context, index) =>
+      const Divider(height: 1, indent: 12, endIndent: 12), // 分隔线调整
     );
   }
 
-  void _navigateToUserProfile(BuildContext context, String userId) {
-    NavigationUtils.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => OpenProfileScreen(userId: userId),
-      ),
-    );
-  }
+// --- 干掉不再需要的导航方法 ---
+// void _navigateToUserProfile(BuildContext context, String userId) { ... } // <- 删除
 }

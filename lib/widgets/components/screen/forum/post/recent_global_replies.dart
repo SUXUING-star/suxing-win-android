@@ -1,9 +1,13 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
 import 'package:suxingchahui/models/post/global_reply_item.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 确认 ErrorWidget 改名为 InlineErrorWidget 或反之
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -14,8 +18,13 @@ import '../../../../ui/badges/safe_user_avatar.dart';
 
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
+  final Post post;
 
-  const RecentGlobalReplies({super.key, this.limit = 5});
+  const RecentGlobalReplies({
+    super.key,
+    this.limit = 5,
+    required this.post,
+  });
 
   @override
   _RecentGlobalRepliesState createState() => _RecentGlobalRepliesState();
@@ -39,7 +48,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // 封装加载逻辑，方便复用
   void _loadReplies() {
     // 注意这里直接赋值给 Future 变量，不需要 setState
-    _repliesFuture = _forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
+    _repliesFuture =
+        _forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
   }
 
   @override
@@ -54,7 +64,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     print("Refreshing RecentGlobalReplies...");
     // 调用强制刷新方法，并用 setState 更新 Future，让 FutureBuilder 重新构建
     setState(() {
-      _repliesFuture = _forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+      _repliesFuture =
+          _forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
     });
   }
 
@@ -126,14 +137,16 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
               if (snapshot.hasError) {
                 print("Error loading replies: ${snapshot.error}"); // 打印错误方便调试
                 // 确保你的 InlineErrorWidget 存在并且签名匹配
-                return InlineErrorWidget( // 或者叫 ErrorWidget，看你实际命名
+                return InlineErrorWidget(
+                  // 或者叫 ErrorWidget，看你实际命名
                   onRetry: _handleRefresh, // 提供重试回调
                   errorMessage: "加载失败: ${snapshot.error}", // 显示错误信息
                 );
               }
 
               // 3. 处理成功状态 (加载完成后且无错误)
-              if (snapshot.connectionState == ConnectionState.done && snapshot.hasData) {
+              if (snapshot.connectionState == ConnectionState.done &&
+                  snapshot.hasData) {
                 final replies = snapshot.data ?? []; // 获取数据
                 if (replies.isEmpty) {
                   // 数据为空
@@ -156,8 +169,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
               // 4. 其他情况 (理论上 FutureBuilder 主要关注 waiting 和 done)
               // 可以返回一个初始占位符或者加载指示器
               return SizedBox(
-                  height: 200,
-                  child: LoadingWidget.inline(size: 12));
+                  height: 200, child: LoadingWidget.inline(size: 12));
             },
           ),
         ],
@@ -175,12 +187,10 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
       ),
       child: InkWell(
         onTap: () {
-          NavigationUtils.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => PostDetailScreen(postId: reply.postId),
-            ),
-          );
+          if (widget.post.id != reply.postId) {
+            NavigationUtils.pushNamed(context, AppRoutes.postDetail,
+                arguments: reply.postId);
+          }
         },
         borderRadius: BorderRadius.circular(8),
         child: Padding(
@@ -189,50 +199,14 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  SafeUserAvatar(
-                    userId: reply.author['id'],
-                    avatarUrl: reply.author['avatar'],
-                    username: reply.author['username'] ?? '未知用户',
-                    radius: 14,
-                    enableNavigation: true,
-                    onTap: () {
-                      if (reply.author['id'] != null) {
-                        NavigationUtils.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                OpenProfileScreen(userId: reply.author['id']),
-                          ),
-                        );
-                      }
-                    },
+                  UserInfoBadge(
+                    userId: reply.authorId,
+                    showFollowButton: false,
+                    mini: true,
                   ),
                   const SizedBox(width: 8),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          reply.author['username'] ?? '未知用户',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          '回复了: ${reply.postTitle}',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 12,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ],
-                    ),
-                  ),
                   Text(
                     DateTimeFormatter.formatTimeAgo(reply.createTime),
                     style: TextStyle(
@@ -247,6 +221,16 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 reply.content,
                 style: const TextStyle(fontSize: 14),
                 maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                '回复了帖子 ${reply.postTitle}',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 12,
+                ),
+                maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
             ],

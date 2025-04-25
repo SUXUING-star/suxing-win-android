@@ -73,7 +73,9 @@ class ActivityCommentsSection extends StatelessWidget {
         physics: const NeverScrollableScrollPhysics(), // 在 SingleChildScrollView 内部不需要自己的滚动
         itemCount: comments.length,
         itemBuilder: (context, index) {
+
           final comment = comments[index];
+          print(comment.toJson());
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(

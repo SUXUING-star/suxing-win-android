@@ -45,7 +45,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   int _currentPage = 1;
   int _totalPages = 1;
-  final int _limit = 10;
+  final int _limit = 20;
 
   // --- 状态变量 ---
   bool _isVisible = false; // Widget 是否可见

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
@@ -7,15 +8,17 @@ import '../reply/reply_list.dart';
 
 class PostDetailMobileLayout extends StatelessWidget {
   final Post post;
+  final UserPostActions userActions;
   final String postId;
   // 添加交互成功回调
-  final VoidCallback? onInteractionSuccess;
+  final Function(Post,UserPostActions) onPostUpdated;
 
   const PostDetailMobileLayout({
     super.key,
     required this.post,
+    required this.userActions,
     required this.postId,
-    this.onInteractionSuccess,
+    required this.onPostUpdated,
   });
 
   @override
@@ -35,8 +38,9 @@ class PostDetailMobileLayout extends StatelessWidget {
           duration: contentDuration,
           delay: baseDelay, // 先出现
           child: PostContent(
+            userActions: userActions,
             post: post,
-            onInteractionSuccess: onInteractionSuccess,
+            onPostUpdated: onPostUpdated,
           ),
         ),
         const Divider(height: 1), // 分隔线无动画

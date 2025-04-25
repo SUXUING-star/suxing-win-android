@@ -1,5 +1,4 @@
-// lib/models/comment.dart
-import 'package:mongo_dart/mongo_dart.dart';
+// lib/models/comment/comment.dart (或类似路径)
 
 class Comment {
   final String id;
@@ -7,11 +6,10 @@ class Comment {
   final String userId;
   final String content;
   final DateTime createTime;
-  final DateTime updateTime;
-  final bool isEdited;
+  final DateTime updateTime; // 用这个和 createTime 比较
   final String username;
   final String? parentId;
-  final List<Comment> replies;
+  final List<Comment> replies; // 注意：嵌套回复的处理
 
   Comment({
     required this.id,
@@ -20,61 +18,55 @@ class Comment {
     required this.content,
     required this.createTime,
     required this.updateTime,
-    required this.isEdited,
     required this.username,
     this.parentId,
-    List<Comment>? replies,
-  }) : replies = replies ?? [];
+    this.replies = const [],
+  });
 
   factory Comment.fromJson(Map<String, dynamic> json) {
-    String commentId = json['_id'] is ObjectId
-        ? json['_id'].toHexString()
-        : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
-
-    String gameId = json['gameId'] is ObjectId
-        ? json['gameId'].toHexString()
-        : json['gameId']?.toString() ?? '';
-
-    String userId = json['userId'] is ObjectId
-        ? json['userId'].toHexString()
-        : json['userId']?.toString() ?? '';
-
-    String? parentId = json['parentId'] is ObjectId
-        ? json['parentId'].toHexString()
-        : json['parentId']?.toString();
+    // 处理嵌套的 replies
+    List<Comment> parsedReplies = [];
+    if (json['replies'] is List) {
+      parsedReplies = (json['replies'] as List)
+          .map((replyJson) {
+        try {
+          return Comment.fromJson(Map<String, dynamic>.from(replyJson));
+        } catch (e) { return null; } // 防错
+      })
+          .whereType<Comment>()
+          .toList();
+    }
 
     return Comment(
-      id: commentId,
-      gameId: gameId,
-      userId: userId,
-      content: json['content']?.toString() ?? '',
-      createTime: json['createTime'] is DateTime
-          ? json['createTime']
-          : DateTime.parse(json['createTime'] ?? DateTime.now().toIso8601String()),
-      updateTime: json['updateTime'] is DateTime
-          ? json['updateTime']
-          : DateTime.parse(json['updateTime'] ?? DateTime.now().toIso8601String()),
-      isEdited: json['isEdited'] ?? false,
-      username: json['username']?.toString() ?? '',
-      parentId: parentId,
-      replies: (json['replies'] as List<dynamic>?)
-          ?.map((reply) => Comment.fromJson(reply))
-          .toList() ?? [],
+      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
+      gameId: json['gameId']?.toString() ?? '',
+      userId: json['userId']?.toString() ?? '',
+      content: json['content'] ?? '',
+      createTime: DateTime.parse(json['createTime']),
+      updateTime: DateTime.parse(json['updateTime']),
+      username: json['username'] ?? '未知用户',
+      parentId: json['parentId']?.toString(),
+      replies: parsedReplies,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      '_id': id,
+      'id': id,
       'gameId': gameId,
       'userId': userId,
       'content': content,
       'createTime': createTime.toIso8601String(),
       'updateTime': updateTime.toIso8601String(),
-      'isEdited': isEdited,
       'username': username,
       'parentId': parentId,
-      'replies': replies.map((reply) => reply.toJson()).toList(),
+      'replies': replies.map((r) => r.toJson()).toList(), // 递归转换
     };
+  }
+
+  // UI 判断是否编辑过
+  bool get hasBeenEdited {
+    const Duration tolerance = Duration(seconds: 1);
+    return updateTime.difference(createTime).abs() > tolerance;
   }
 }

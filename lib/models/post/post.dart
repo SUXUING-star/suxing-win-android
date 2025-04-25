@@ -1,5 +1,6 @@
 // lib/models/post.dart
 import 'package:mongo_dart/mongo_dart.dart';
+
 enum PostStatus {
   active,
   locked,
@@ -15,16 +16,13 @@ class Post {
   final DateTime updateTime;
   final int viewCount;
   final int replyCount;
-  final int likeCount;       // 新增：点赞数
-  final int agreeCount;      // 新增：赞成数
-  final int favoriteCount;   // 新增：收藏数
+  final int likeCount;       // 点赞总数
+  final int agreeCount;      // 赞成总数
+  final int favoriteCount;   // 收藏总数
   final List<String> tags;
   final PostStatus status;
 
-  // 新增用户交互状态属性 - 这些属性不会被序列化
-  bool isLiked = false;      // 当前用户是否点赞
-  bool isAgreed = false;     // 当前用户是否赞成
-  bool isFavorited = false;  // 当前用户是否收藏
+  // 移除了 isLiked, isAgreed, isFavorited
 
   Post({
     required this.id,
@@ -35,21 +33,17 @@ class Post {
     required this.updateTime,
     this.viewCount = 0,
     this.replyCount = 0,
-    this.likeCount = 0,       // 初始化点赞数
-    this.agreeCount = 0,      // 初始化赞成数
-    this.favoriteCount = 0,   // 初始化收藏数
+    this.likeCount = 0,
+    this.agreeCount = 0,
+    this.favoriteCount = 0,
     this.tags = const [],
     this.status = PostStatus.active,
-    this.isLiked = false,
-    this.isAgreed = false,
-    this.isFavorited = false,
+    // 移除了构造函数中的 isLiked 等
   });
 
   factory Post.fromJson(Map<String, dynamic> json) {
-    // 处理 MongoDB 的 _id 字段
     String postId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
-    final userActions = json['userActions'] as Map<String, dynamic>?; // 后端返回时嵌套在 post 对象里
-
+    // 不再尝试解析 userActions
     return Post(
       id: postId,
       title: json['title'] ?? '',
@@ -63,17 +57,15 @@ class Post {
           : DateTime.parse(json['updateTime']),
       viewCount: json['viewCount']?.toInt() ?? 0,
       replyCount: json['replyCount']?.toInt() ?? 0,
-      likeCount: json['likeCount']?.toInt() ?? 0,       // 新增：点赞数
-      agreeCount: json['agreeCount']?.toInt() ?? 0,     // 新增：赞成数
-      favoriteCount: json['favoriteCount']?.toInt() ?? 0, // 新增：收藏数
+      likeCount: json['likeCount']?.toInt() ?? 0,
+      agreeCount: json['agreeCount']?.toInt() ?? 0,
+      favoriteCount: json['favoriteCount']?.toInt() ?? 0,
       tags: List<String>.from(json['tags'] ?? []),
       status: PostStatus.values.firstWhere(
             (e) => e.toString().split('.').last == json['status'],
         orElse: () => PostStatus.active,
       ),
-      isLiked: userActions?['liked'] ?? false,
-      isAgreed: userActions?['agreed'] ?? false,
-      isFavorited: userActions?['favorited'] ?? false,
+      // 不再设置 isLiked 等
     );
   }
 
@@ -87,19 +79,16 @@ class Post {
       'updateTime': updateTime.toIso8601String(),
       'viewCount': viewCount,
       'replyCount': replyCount,
-      'likeCount': likeCount,       // 新增：点赞数
-      'agreeCount': agreeCount,     // 新增：赞成数
-      'favoriteCount': favoriteCount, // 新增：收藏数
+      'likeCount': likeCount,
+      'agreeCount': agreeCount,
+      'favoriteCount': favoriteCount,
       'tags': tags,
       'status': status.toString().split('.').last,
-      'isLiked': isLiked,
-      'isAgreed': isAgreed,
-      'isFavorited': isFavorited,
+      // 不再包含 isLiked 等
     };
   }
 
-  // 创建 Post 的副本，可以更新部分属性
-  Post copyWith({
+  Post copyWith({ // 移除 isLiked 等参数
     String? id,
     String? title,
     String? content,
@@ -113,9 +102,6 @@ class Post {
     int? favoriteCount,
     List<String>? tags,
     PostStatus? status,
-    bool? isLiked,
-    bool? isAgreed,
-    bool? isFavorited,
   }) {
     return Post(
       id: id ?? this.id,
@@ -131,14 +117,11 @@ class Post {
       favoriteCount: favoriteCount ?? this.favoriteCount,
       tags: tags ?? this.tags,
       status: status ?? this.status,
-      isLiked: isLiked ?? this.isLiked,
-      isAgreed: isAgreed ?? this.isAgreed,
-      isFavorited: isFavorited ?? this.isFavorited,
-
     );
   }
 }
 
+// Reply 模型保持不变...
 enum ReplyStatus {
   active,
   deleted

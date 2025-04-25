@@ -163,12 +163,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
   }
 
-  void _shareActivity() {
-    if (_activity == null) return;
-    final String shareText =
-        '来自宿星茶会的动态：${_activity!.content}\n\n来自用户：${_activity!.user?['username'] ?? '未知用户'}';
-    Share.share(shareText);
-  }
+
 
   void _handleCommentDeleted(String commentId) {
     // --- 这里应该调用 Service 删除，并处理 UI 更新 (移除) ---
@@ -265,7 +260,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                   isPublic: currentActivity.isPublic, // 复制旧值
                   isLiked: currentActivity.isLiked, // 复制旧值
                   metadata: currentActivity.metadata, // 复制旧值
-                  user: currentActivity.user, // 复制旧值
                   target: currentActivity.target, // 复制旧值
                   comments: currentActivity.comments, // 复制旧值
                 );
@@ -391,12 +385,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               actions: _activity == null
                   ? []
                   : [
-                      // 确保 _activity 不为空
-                      IconButton(
-                        icon: const Icon(Icons.share_outlined),
-                        onPressed: _shareActivity,
-                        tooltip: '分享动态',
-                      ),
+
                       IconButton(
                         icon: Icon(_activity!.isLiked
                             ? Icons.favorite
@@ -410,15 +399,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
             )
           : CustomAppBar(
               title: '动态详情',
-              actions: _activity == null
-                  ? []
-                  : [
-                      IconButton(
-                        icon: const Icon(Icons.share_outlined),
-                        onPressed: _shareActivity,
-                        tooltip: '分享动态',
-                      ),
-                    ],
             ),
       body: body,
       floatingActionButton: (!isDesktop && _activity != null) // 移动端且活动已加载

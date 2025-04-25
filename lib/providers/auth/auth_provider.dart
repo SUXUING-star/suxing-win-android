@@ -2,6 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // 保留，可能其他地方用到
+import 'package:suxingchahui/events/app_events.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import 'dart:async';
@@ -22,6 +23,8 @@ class AuthProvider with ChangeNotifier {
   bool _initialized = false;
   final _initializationLock = Lock();
 
+  StreamSubscription? _unauthorizedSubscription;
+
   User? get currentUser => _currentUser;
   bool get isInitializing => _isInitializing;
   bool get isRefreshing => _isRefreshing;
@@ -33,7 +36,24 @@ class AuthProvider with ChangeNotifier {
 
   // 私有构造函数
   AuthProvider._internal() {
-    // 初始化逻辑在 initialize() 中
+    // 在构造函数或初始化时开始监听
+    _listenForUnauthorizedEvent();
+  }
+  void _listenForUnauthorizedEvent() {
+    // 确保只监听一次
+    if (_unauthorizedSubscription != null) return;
+    _unauthorizedSubscription =
+        appEventBus.on<UnauthorizedAccessEvent>().listen((event) {
+      print(
+          "AuthProvider: Received UnauthorizedAccessEvent. Clearing current user state.");
+      // 检查当前是否确实是登录状态，避免不必要的通知
+      if (_currentUser != null) {
+        _currentUser = null;
+        // 不需要在这里调用 userService.clearAuthData()，让 UserService 自己监听处理
+        notifyListeners(); // 通知 UI 更新 (非常重要！)
+      }
+    });
+    print("AuthProvider: Subscribed to UnauthorizedAccessEvent.");
   }
 
   //公共初始化方法
@@ -54,7 +74,6 @@ class AuthProvider with ChangeNotifier {
             _currentUser = null;
             // *** 原始版本这里会清除 Token ***
             await _userService.clearAuthData();
-
           }
         } else {
           _currentUser = null; // 本地无 UserId
@@ -94,13 +113,8 @@ class AuthProvider with ChangeNotifier {
       await _userService.signOut();
 
       _currentUser = null;
-      print(
-          "AuthProvider: State cleared after successful user service sign out.");
     } catch (e) {
-      print("AuthProvider: Error during sign out delegation: $e");
       _currentUser = null;
-      print(
-          "AuthProvider: State cleared despite error during sign out delegation.");
       // 可以选择性地 rethrow(e) 或处理错误
     } finally {
       // 最终确保通知 UI 更新
@@ -146,8 +160,13 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  Future getAuthToken() {
+    return _userService.getToken();
+  }
+
   @override
   void dispose() {
+    _unauthorizedSubscription?.cancel();
     super.dispose();
   }
 }
