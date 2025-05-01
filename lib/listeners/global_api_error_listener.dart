@@ -1,9 +1,11 @@
 // lib/widgets/listeners/global_api_error_listener.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/events/app_events.dart'; // 导入全局 EventBus
-import 'package:suxingchahui/models/error/idempotency_error_code.dart'; // 导入错误码枚举/类
-import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart'; // 导入你的弹窗 Dialog
+import 'package:suxingchahui/app.dart';
+import 'package:suxingchahui/events/app_events.dart';
+import 'package:suxingchahui/models/error/idempotency_error_code.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 
 class GlobalApiErrorListener extends StatefulWidget {
   final Widget child;
@@ -15,62 +17,109 @@ class GlobalApiErrorListener extends StatefulWidget {
 
 class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
   StreamSubscription? _idempotencyErrorSubscription;
-  // 用于防止短时间内对完全相同的事件重复弹窗 (基于时间戳去重更可靠)
-  DateTime? _lastErrorTimestamp;
-  final Duration _debounceDuration = const Duration(milliseconds: 500); // 500毫秒内同一个错误不再弹
+  StreamSubscription? _unauthorizedSubscription; // <--- 添加 401 监听器
+
+  // 用于防止短时间内对*同类型*错误重复弹窗
+  DateTime? _lastIdempotencyErrorTimestamp;
+  DateTime? _lastUnauthorizedTimestamp; // <--- 添加 401 时间戳
+  // 可以为不同错误类型设置不同的防抖时间
+  final Duration _idempotencyDebounceDuration =
+      const Duration(milliseconds: 500);
+  final Duration _unauthorizedDebounceDuration =
+      const Duration(seconds: 2); // 2秒内不重复弹401
+
+  // --- 新增：标记是否有 401 对话框正在显示 ---
+  bool _isUnauthorizedDialogShowing = false;
 
   @override
   void initState() {
     super.initState();
-    _listenForErrors();
-    print("GlobalApiErrorListener initialized and listening...");
+    _listenForIdempotencyErrors();
+    _listenForUnauthorizedErrors(); // <--- 初始化时开始监听 401
   }
 
-  void _listenForErrors() {
-    _idempotencyErrorSubscription?.cancel(); // 先取消旧的监听，以防万一
+  void _listenForIdempotencyErrors() {
+    _idempotencyErrorSubscription?.cancel();
     _idempotencyErrorSubscription = appEventBus
         .on<IdempotencyApiErrorEvent>() // 只精确监听这个类型的事件
-        .listen(
-        _handleIdempotencyError,
-        onError: (error) {
-          // 处理事件流本身的错误（理论上很少发生）
-          print("Error in IdempotencyApiErrorEvent stream: $error");
-        },
-        onDone: () {
-          // 事件流关闭时（理论上 App 退出时）
-          print("IdempotencyApiErrorEvent stream closed.");
-        }
-    );
+        .listen(_handleIdempotencyError, onError: (error) {
+      // 处理事件流本身的错误（理论上很少发生）
+      print("Error in IdempotencyApiErrorEvent stream: $error");
+    }, onDone: () {
+      // 事件流关闭时（理论上 App 退出时）
+      print("IdempotencyApiErrorEvent stream closed.");
+    });
+  }
+
+  // --- 新增：监听 UnauthorizedAccessEvent ---
+  void _listenForUnauthorizedErrors() {
+    _unauthorizedSubscription?.cancel();
+    _unauthorizedSubscription = appEventBus
+        .on<UnauthorizedAccessEvent>()
+        .listen(_handleUnauthorizedAccess, onError: (error) {
+      print("Error in UnauthorizedAccessEvent stream: $error");
+    }, onDone: () {
+      print("UnauthorizedAccessEvent stream closed.");
+    });
   }
 
   void _handleIdempotencyError(IdempotencyApiErrorEvent event) {
-    print("Received IdempotencyApiErrorEvent: Code=${event.code.name}, Msg=${event.message}");
+    print(
+        "Received IdempotencyApiErrorEvent: Code=${event.code.name}, Msg=${event.message}");
     final now = DateTime.now();
 
-    // 防抖：如果上一个错误的时间戳存在，并且当前事件时间戳与上一个非常接近，则忽略
-    if (_lastErrorTimestamp != null && now.difference(_lastErrorTimestamp!) < _debounceDuration) {
+    if (_lastIdempotencyErrorTimestamp != null &&
+        now.difference(_lastIdempotencyErrorTimestamp!) <
+            _idempotencyDebounceDuration) {
       print("Debouncing IdempotencyApiErrorEvent (too close to last one).");
       return;
     }
 
-    // 检查 Widget 是否还在树上，只有 mounted 状态才能安全地使用 context
     if (mounted) {
-      // 更新最后处理的时间戳
-      _lastErrorTimestamp = now;
-      // 显示弹窗
-      _showErrorDialog(context, event);
+      _lastIdempotencyErrorTimestamp = now;
+      _showIdempotencyErrorDialog(context, event); // <--- 改用专门的方法显示
     } else {
-      print("Listener is not mounted, cannot show dialog for idempotency error.");
+      print(
+          "Listener is not mounted, cannot show dialog for idempotency error.");
     }
   }
 
+  // --- 新增：处理 UnauthorizedAccessEvent ---
+  void _handleUnauthorizedAccess(UnauthorizedAccessEvent event) {
+    print("Received UnauthorizedAccessEvent: Msg=${event.message}");
+    final now = DateTime.now();
 
-  void _showErrorDialog(BuildContext context, IdempotencyApiErrorEvent event) {
+    // 如果已经有一个 401 对话框在显示，或者离上次太近，就忽略
+    if (_isUnauthorizedDialogShowing ||
+        (_lastUnauthorizedTimestamp != null &&
+            now.difference(_lastUnauthorizedTimestamp!) <
+                _unauthorizedDebounceDuration)) {
+      //print("Debouncing UnauthorizedAccessEvent (dialog already showing or too close to last one).");
+      return;
+    }
+
+    if (mounted) {
+      _lastUnauthorizedTimestamp = now;
+      _isUnauthorizedDialogShowing = true; // 标记对话框即将显示
+      _showUnauthorizedDialog(context, event);
+    } else {
+      //print("Listener is not mounted, cannot show dialog for unauthorized access.");
+    }
+  }
+
+  // 保持原来的 Idempotency 弹窗逻辑
+  void _showIdempotencyErrorDialog(
+      BuildContext _, IdempotencyApiErrorEvent event) {
+    final navigatorContext = mainNavigatorKey.currentContext;
+    if (navigatorContext == null) {
+      print("Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
+      // 这里可以考虑加个日志或者备用方案，但通常不应该为 null
+      return;
+    }
+
     String title;
     IconData icon;
     Color iconColor;
-
-    // 根据错误码设置弹窗样式
     switch (event.code) {
       case IdempotencyExceptionCode.alreadyProcessed:
         title = '操作已完成';
@@ -82,7 +131,6 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
         icon = Icons.hourglass_empty_rounded;
         iconColor = Colors.orange;
         break;
-    // 添加对其他可能错误码的处理（来自后端的特定错误）
       case IdempotencyExceptionCode.dbReadError:
       case IdempotencyExceptionCode.lockError:
       case IdempotencyExceptionCode.dbUpdateError:
@@ -91,38 +139,63 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
         iconColor = Colors.redAccent;
         break;
       case IdempotencyExceptionCode.unknown:
-      default:
         title = '请求冲突';
         icon = Icons.warning_amber_rounded;
         iconColor = Colors.deepOrange;
         break;
     }
 
-    // 调用你的 CustomInfoDialog 显示
     CustomInfoDialog.show(
-      context: context, // 使用当前 Widget 的 context
+      context: navigatorContext,
       title: title,
-      message: event.message, // 使用事件中携带的消息
+      message: event.message,
       iconData: icon,
       iconColor: iconColor,
       closeButtonText: '知道了',
-      barrierDismissible: true, // 允许点击外部关闭
-      // onClose 回调现在是可选的，因为我们不需要在关闭时清除 Provider 状态了
-      // onClose: () { print("Idempotency error dialog closed."); },
+      barrierDismissible: true,
+      // onClose 是可选的
+      onClose: () {
+        print("Idempotency error dialog closed.");
+      },
+    );
+  }
+
+  // --- 新增：显示 401 未授权对话框 ---
+  void _showUnauthorizedDialog(BuildContext _, UnauthorizedAccessEvent event) {
+    final navigatorContext = mainNavigatorKey.currentContext;
+    if (navigatorContext == null) {
+      //print("Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
+      // 这里可以考虑加个日志或者备用方案，但通常不应该为 null
+      return;
+    }
+
+    CustomInfoDialog.show(
+      context: navigatorContext,
+      title: '认证失效',
+      message: event.message ?? '您的登录状态已过期或无效，请重新登录以继续操作。', // 友好的提示信息
+      iconData: Icons.lock_person_outlined, // 或者 Icons.security_outlined
+      iconColor: Colors.orangeAccent, // 醒目但不过于刺眼的颜色
+      closeButtonText: '前往登录', // 清晰的行动指引
+      barrierDismissible: false, // 强制用户交互
+      onClose: () {
+        print("Unauthorized dialog closed by button, navigating to login.");
+        _isUnauthorizedDialogShowing = false; // 关闭对话框时重置标记
+
+        NavigationUtils.navigateToLogin(context);
+      },
     );
   }
 
   @override
   void dispose() {
-    print("Disposing GlobalApiErrorListener, cancelling subscription.");
-    _idempotencyErrorSubscription?.cancel(); // 非常重要：在 Widget 销毁时取消监听，防止内存泄漏
+    print("Disposing GlobalApiErrorListener, cancelling subscriptions.");
+    _idempotencyErrorSubscription?.cancel();
+    _unauthorizedSubscription?.cancel(); // <--- 别忘了取消 401 监听
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 这个 Widget 本身不渲染任何东西，只是一个监听器容器
-    // 它直接返回子 Widget
     return widget.child;
   }
 }

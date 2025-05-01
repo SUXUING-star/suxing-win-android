@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 // --- 移除 VisibilityDetector (Builder会处理初始状态) ---
 // import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/form/gameform/config/category_list.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/game_category_tag.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -26,10 +28,6 @@ class CommonGameListScreen extends StatefulWidget {
   // *** 修改: 接收 Future 或 Stream ***
   final Future<List<Game>>? gamesFuture; // 用于一次性加载
   final Stream<List<Game>>? gamesStream; // 用于流式更新 (可选)
-  // *** 移除: loadGamesFunction, refreshFunction ***
-  // final Future<List<Game>> Function(String? selectedTag) loadGamesFunction;
-  // final Future<void> Function()? refreshFunction;
-  // *** 新增: 简单的下拉刷新回调 ***
   final Future<void> Function()? onRefreshTriggered;
 
   // --- UI 控制参数 (保持不变或微调) ---
@@ -85,7 +83,7 @@ class CommonGameListScreen extends StatefulWidget {
     // *** 移除: initialError, isInitiallyLoading ***
     required this.onDeleteGameAction,
     this.onTagSelectedInPanel,
-  })  : assert(gamesFuture != null || gamesStream != null,
+  }) : assert(gamesFuture != null || gamesStream != null,
             'Either gamesFuture or gamesStream must be provided');
 
   @override
@@ -138,7 +136,7 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
   // === UI 交互处理 ===
 
   // 处理标签选择 (调用父级回调 - 不变)
-  void _onTagSelected(String tag) {
+  void _onTagSelected(String? tag) {
     if (!widget.showTagSelection) return;
     String? newTag = (_selectedTag == tag) ? null : tag;
     widget.onTagSelectedInPanel?.call(newTag);
@@ -409,6 +407,8 @@ class _CommonGameListScreenState extends State<CommonGameListScreen> {
             totalGamesCount: 0, // Base 不知道总数，除非父级传入
             selectedTag: widget.selectedTag,
             onTagSelected: _onTagSelected,
+            onCategorySelected: null,
+            availableCategories: CategoryList.defaultCategory,
           ),
       ],
     );

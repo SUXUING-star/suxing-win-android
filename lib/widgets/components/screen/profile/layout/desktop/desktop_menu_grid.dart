@@ -15,7 +15,6 @@ class DesktopMenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    int crossAxisCount = screenWidth < 800 ? 2 : (screenWidth < 1200 ? 3 : 4);
 
     return Card(
       elevation: 2,

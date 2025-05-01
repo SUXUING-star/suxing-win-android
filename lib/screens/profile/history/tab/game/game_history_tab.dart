@@ -34,7 +34,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   bool _isLoading = false;
   bool _isInitialLoading = true;
   int _page = 1;
-  final int _pageSize = 10;
+  final int _pageSize = 15;
 
   @override
   bool get wantKeepAlive => true; // 保持状态，避免切换标签页时重建

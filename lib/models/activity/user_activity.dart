@@ -9,15 +9,14 @@ class UserActivity {
   final String targetType;
   final String content;
   final DateTime createTime;
-  final DateTime updateTime;  // 新增字段
-  final bool isEdited;        // 新增字段
+  final DateTime updateTime;
+  final bool isEdited;
   int likesCount;
   int commentsCount;
   final bool isPublic;
   bool isLiked;
-  final Map<String, dynamic>? metadata;
+  final Map<String, dynamic>? metadata; // <--- 这个保留，信息从这里取
 
-  final Map<String, dynamic>? target;
   List<ActivityComment> comments;
 
   UserActivity({
@@ -29,57 +28,74 @@ class UserActivity {
     required this.targetType,
     required this.content,
     required this.createTime,
-    required this.updateTime,  // 新增字段
-    required this.isEdited,    // 新增字段
+    required this.updateTime,
+    required this.isEdited,
     required this.likesCount,
     required this.commentsCount,
     required this.isPublic,
     this.isLiked = false,
     this.metadata,
-    this.target,
+    // this.target, // <--- *** 从构造函数删除 ***
     this.comments = const [],
   });
 
   factory UserActivity.fromJson(Map<String, dynamic> json) {
-    // 安全解析日期，提供默认值或处理错误
+    // 日期解析逻辑保持不变
     DateTime parseDateTime(String? dateString) {
-      if (dateString == null) return DateTime.now();
+      if (dateString == null || dateString.isEmpty)
+        return DateTime(1970); // 返回一个明确的默认值，而不是 now()
       try {
-        // 尝试多种格式，或者确保后端总是返回 ISO 8601
-        return DateTime.parse(dateString);
+        return DateTime.parse(dateString).toLocal(); // 确保转为本地时间
       } catch (e) {
         print("Error parsing date: $dateString. Error: $e");
-        return DateTime.now(); // Fallback to now if parsing fails
+        return DateTime(1970); // 解析失败也返回默认值
       }
     }
+
     List<ActivityComment> comments = [];
-    if (json['comments'] != null) {
-      comments = (json['comments'] as List)
-          .map((comment) => ActivityComment.fromJson(comment))
-          .toList();
+    if (json['comments'] != null && json['comments'] is List) {
+      // 增加类型检查
+      try {
+        // 添加 try-catch 处理评论解析错误
+        comments = (json['comments'] as List)
+            .map((comment) => ActivityComment.fromJson(
+                comment as Map<String, dynamic>)) // 确保类型转换
+            .toList();
+      } catch (e) {
+        print("Error parsing comments: ${json['comments']}. Error: $e");
+        // 解析评论列表失败，返回空列表，避免整个活动解析失败
+      }
     }
 
     return UserActivity(
-      id: json['id'],
-      userId: json['userId'],
-      type: json['type'],
+      id: json['id'] ?? '', // 提供默认空字符串防止 null
+      userId: json['userId'] ?? '',
+      type: json['type'] ?? '',
       sourceId: json['sourceId'] ?? '',
       targetId: json['targetId'] ?? '',
       targetType: json['targetType'] ?? '',
       content: json['content'] ?? '',
       createTime: parseDateTime(json['createTime']),
-      updateTime: parseDateTime(json['updateTime']),
-      isEdited: json['isEdited'] ?? false,  // 新增字段
+      // updateTime 可能不存在，需要更安全的处理
+      updateTime: json['updateTime'] == null || json['updateTime'] == ""
+          ? parseDateTime(
+              json['createTime']) // 如果 updateTime 为空或不存在，用 createTime
+          : parseDateTime(json['updateTime']),
+      isEdited: json['isEdited'] ?? false,
       likesCount: json['likesCount'] ?? 0,
       commentsCount: json['commentsCount'] ?? 0,
-      isPublic: json['isPublic'] ?? true,
+      isPublic: json['isPublic'] ?? true, // 默认公开
       isLiked: json['isLiked'] ?? false,
-      metadata: json['metadata'],
-      target: json['target'],
+      metadata:
+          json['metadata'] != null && json['metadata'] is Map<String, dynamic>
+              ? Map<String, dynamic>.from(json['metadata']) // 确保是 Map
+              : null,
+      // target: json['target'], // <--- *** 从 fromJson 删除 ***
       comments: comments,
     );
   }
 
+  // toJson 方法保持不变，只是没有 target 了
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -90,21 +106,28 @@ class UserActivity {
       'targetType': targetType,
       'content': content,
       'createTime': createTime.toIso8601String(),
-      'updateTime': updateTime.toIso8601String(),  // 新增字段
-      'isEdited': isEdited,  // 新增字段
+      'updateTime': updateTime.toIso8601String(),
+      'isEdited': isEdited,
       'likesCount': likesCount,
       'commentsCount': commentsCount,
       'isPublic': isPublic,
       'isLiked': isLiked,
       'metadata': metadata,
-      'target': target,
       'comments': comments.map((comment) => comment.toJson()).toList(),
     };
   }
+
+  // --- 添加 Helper 方法从 metadata 获取信息 ---
+  String? get gameTitle => metadata?['gameTitle'] as String?;
+  String? get gameCoverImage => metadata?['gameCoverImage'] as String?;
+  String? get postTitle => metadata?['postTitle'] as String?;
+  String? get targetUsername =>
+      metadata?['targetUsername'] as String?; // 如果关注用户时存了
 }
+
 class ActivityComment {
   final String id;
-  final String userId;
+  final String userId; // <--- 直接用这个
   final String content;
   final DateTime createTime;
   int likesCount;
@@ -120,23 +143,24 @@ class ActivityComment {
   });
 
   factory ActivityComment.fromJson(Map<String, dynamic> json) {
-    // 安全解析日期
+    // 日期解析逻辑保持不变
     DateTime parseDateTime(String? dateString) {
-      if (dateString == null) return DateTime.now();
+      if (dateString == null || dateString.isEmpty) return DateTime(1970);
       try {
-        return DateTime.parse(dateString);
+        return DateTime.parse(dateString).toLocal();
       } catch (e) {
         print("Error parsing comment date: $dateString. Error: $e");
-        return DateTime.now();
+        return DateTime(1970);
       }
     }
 
-    // 从 user map 中提取 userId
-    String extractedUserId = (json['user'] as Map?)?['userId'] as String? ??
-        json['userId'] as String? ?? ''; // 兼容顶层 userId
+    // --- *** 直接从顶层获取 userId *** ---
+    String extractedUserId =
+        json['userId'] as String? ?? ''; // 如果后端保证有，可以去掉 ?? ''
+
     return ActivityComment(
-      id: json['id'],
-      userId: extractedUserId,
+      id: json['id'] ?? '',
+      userId: extractedUserId, // <--- 使用顶层 userId
       content: json['content'] ?? '',
       createTime: parseDateTime(json['createTime']),
       likesCount: json['likesCount'] ?? 0,
@@ -154,5 +178,4 @@ class ActivityComment {
       'isLiked': isLiked,
     };
   }
-
 }

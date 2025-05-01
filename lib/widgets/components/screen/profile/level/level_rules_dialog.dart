@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/level/level_rules_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../utils/font/font_config.dart';
@@ -18,7 +19,6 @@ class LevelRulesDialog extends StatefulWidget {
 }
 
 class _LevelRulesDialogState extends State<LevelRulesDialog> {
-  final UserService _userService = UserService();
   List<Map<String, dynamic>> _levelRequirements = [];
   bool _isLoading = true;
 
@@ -30,7 +30,8 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
 
   Future<void> _loadLevelRequirements() async {
     try {
-      final requirements = await _userService.getLevelRequirements();
+      final userService = context.read<UserService>();
+      final requirements = await userService.getLevelRequirements();
       if (mounted) {
         setState(() {
           _levelRequirements = requirements;
@@ -51,6 +52,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
     final theme = Theme.of(context);
     final isDesktop = MediaQuery.of(context).size.width > 900;
     final dialogWidth = isDesktop ? 500.0 : MediaQuery.of(context).size.width * 0.9;
+    final userService = context.read<UserService>();
 
     return Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -110,7 +112,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
                   ),
                   SizedBox(height: 4),
                   Text(
-                    _userService.getLevelDescription(widget.currentLevel),
+                    userService.getLevelDescription(widget.currentLevel),
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.grey[700],

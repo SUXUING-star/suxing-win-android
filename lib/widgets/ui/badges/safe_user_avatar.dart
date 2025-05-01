@@ -1,10 +1,9 @@
-// lib/widgets/ui/image/safe_user_avatar.dart
+// lib/widgets/ui/badge/safe_user_avatar.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../services/main/user/user_service.dart';
 import '../image/safe_cached_image.dart';
 
 /// 安全的用户头像组件
@@ -63,7 +62,6 @@ class SafeUserAvatar extends StatefulWidget {
 }
 
 class _SafeUserAvatarState extends State<SafeUserAvatar> {
-  UserService get _userService  => UserService();
   bool _isLoading = false;
   String? _avatarUrl;
   String? _username;
@@ -110,10 +108,6 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
 
     try {
       User user;
-      if (widget.user == null){
-        final userInfo  = await _userService.getUserInfoById(widget.userId!);
-        user = User.fromJson(userInfo);
-      }
       user = widget.user!;
 
       // Check mounted again before setState
@@ -156,14 +150,13 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
     if (_isLoading) {
       // 加载状态
       avatarContent = Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: widget.backgroundColor ?? Colors.grey.shade200,
-        ),
-        child: LoadingWidget.inline()
-      );
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: widget.backgroundColor ?? Colors.grey.shade200,
+          ),
+          child: LoadingWidget.inline());
     } else if (_avatarUrl != null) {
       // 有头像URL的情况
       avatarContent = SafeCachedImage(
@@ -182,9 +175,8 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
       );
     } else {
       // 无头像的情况，显示首字母或占位图标
-      final String displayChar = (_username?.isNotEmpty == true)
-          ? _username![0].toUpperCase()
-          : '?';
+      final String displayChar =
+          (_username?.isNotEmpty == true) ? _username![0].toUpperCase() : '?';
 
       avatarContent = Container(
         width: size,
@@ -194,14 +186,15 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
           color: widget.backgroundColor ?? Colors.grey.shade200,
         ),
         child: Center(
-          child: widget.placeholder ?? Text(
-            displayChar,
-            style: TextStyle(
-              fontSize: widget.radius * 0.8,
-              fontWeight: FontWeight.bold,
-              color: Colors.grey.shade700,
-            ),
-          ),
+          child: widget.placeholder ??
+              Text(
+                displayChar,
+                style: TextStyle(
+                  fontSize: widget.radius * 0.8,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
         ),
       );
     }
@@ -221,12 +214,15 @@ class _SafeUserAvatarState extends State<SafeUserAvatar> {
     }
 
     // 添加点击事件
-    if (widget.onTap != null || (widget.enableNavigation && widget.userId != null)) {
+    if (widget.onTap != null ||
+        (widget.enableNavigation && widget.userId != null)) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
           onTap: widget.onTap ??
-              (widget.enableNavigation ? () => _navigateToProfile(context) : null),
+              (widget.enableNavigation
+                  ? () => _navigateToProfile(context)
+                  : null),
           child: avatarContent,
         ),
       );

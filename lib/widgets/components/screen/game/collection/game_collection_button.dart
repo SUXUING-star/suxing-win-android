@@ -32,7 +32,6 @@ class GameCollectionButton extends StatefulWidget {
 }
 
 class _GameCollectionButtonState extends State<GameCollectionButton> {
-  final GameCollectionService _collectionService = GameCollectionService();
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
 
@@ -141,6 +140,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
         'played': 0,
         'total': 0
       }; // 默认增量为0
+      final collectionService = context.read<GameCollectionService>();
 
       try {
         if (action == 'set') {
@@ -151,7 +151,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
 
           // 调用 Service
           final (item, returnedStatus) =
-          await _collectionService.setGameCollection(widget.game.id, status,
+
+          await collectionService.setGameCollection(widget.game.id, status,
               notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
@@ -170,7 +171,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
         } else if (action == 'remove') {
           // 调用 Service
           final success =
-          await _collectionService.removeGameCollection(widget.game.id);
+          await collectionService.removeGameCollection(widget.game.id);
           if (success) {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***

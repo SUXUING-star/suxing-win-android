@@ -8,12 +8,14 @@ import '../../../../../models/post/user_post_actions.dart';
 import '../../../../../services/main/forum/forum_service.dart';
 import '../../../../../providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保导入
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';  // 确保导入
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确保导入
 
-class PostInteractionButtons extends StatefulWidget { // 改回 StatefulWidget 以便管理按钮加载状态
+class PostInteractionButtons extends StatefulWidget {
+  // 改回 StatefulWidget 以便管理按钮加载状态
   final Post post;
   final UserPostActions userActions; // *** 接收父组件传递的用户状态 ***
-  final Function(Post,UserPostActions) onPostUpdated; // 回调函数，通知父组件 Post 核心数据（计数）已更新
+  final Function(Post, UserPostActions)
+      onPostUpdated; // 回调函数，通知父组件 Post 核心数据（计数）已更新
 
   const PostInteractionButtons({
     super.key,
@@ -27,8 +29,6 @@ class PostInteractionButtons extends StatefulWidget { // 改回 StatefulWidget �
 }
 
 class _PostInteractionButtonsState extends State<PostInteractionButtons> {
-  final ForumService _forumService = ForumService();
-
   // *** 只维护按钮的加载状态 ***
   bool _isLiking = false;
   bool _isAgreeing = false;
@@ -58,8 +58,10 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         oldWidget.post.agreeCount != widget.post.agreeCount ||
         oldWidget.post.favoriteCount != widget.post.favoriteCount;
     if (countsChanged) {
-      print("PostInteractionButtons (${widget.post.id}): External post counts changed. Syncing local counts.");
-      if(mounted) { // 确保组件挂载
+      print(
+          "PostInteractionButtons (${widget.post.id}): External post counts changed. Syncing local counts.");
+      if (mounted) {
+        // 确保组件挂载
         setState(() {
           _likeCount = widget.post.likeCount;
           _agreeCount = widget.post.agreeCount;
@@ -70,7 +72,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     // 不需要检查 userActions 的变化来更新内部状态，因为没有内部状态了
   }
 
-
   // --- 通用的交互处理函数 ---
   Future<void> _handleInteraction({
     required Future<bool> Function() apiCall,
@@ -79,9 +80,15 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     required String actionName, // 'like', 'agree', 'favorite'
   }) async {
     final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (!auth.isLoggedIn) { _showLoginDialog(); return; }
+    if (!auth.isLoggedIn) {
+      _showLoginDialog();
+      return;
+    }
     final userId = auth.currentUserId;
-    if (userId == null) { print("Error: User ID is null."); return; }
+    if (userId == null) {
+      print("Error: User ID is null.");
+      return;
+    }
     if (getLoadingState()) return;
 
     // --- 获取当前状态（从 widget.userActions）和计数（从本地状态）用于计算 ---
@@ -98,10 +105,20 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     bool optimisticNewStatus;
     int optimisticCountChange;
     switch (actionName) {
-      case 'like': optimisticNewStatus = !currentliked; optimisticCountChange = optimisticNewStatus ? 1 : -1; break;
-      case 'agree': optimisticNewStatus = !currentagreed; optimisticCountChange = optimisticNewStatus ? 1 : -1; break;
-      case 'favorite': optimisticNewStatus = !currentfavorited; optimisticCountChange = optimisticNewStatus ? 1 : -1; break;
-      default: return;
+      case 'like':
+        optimisticNewStatus = !currentliked;
+        optimisticCountChange = optimisticNewStatus ? 1 : -1;
+        break;
+      case 'agree':
+        optimisticNewStatus = !currentagreed;
+        optimisticCountChange = optimisticNewStatus ? 1 : -1;
+        break;
+      case 'favorite':
+        optimisticNewStatus = !currentfavorited;
+        optimisticCountChange = optimisticNewStatus ? 1 : -1;
+        break;
+      default:
+        return;
     }
 
     // --- 乐观更新 UI 计数并显示加载 ---
@@ -109,9 +126,15 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
       setLoadingState(true);
       // *** 只更新本地的计数用于即时显示 ***
       switch (actionName) {
-        case 'like': _likeCount += optimisticCountChange; break;
-        case 'agree': _agreeCount += optimisticCountChange; break;
-        case 'favorite': _favoriteCount += optimisticCountChange; break;
+        case 'like':
+          _likeCount += optimisticCountChange;
+          break;
+        case 'agree':
+          _agreeCount += optimisticCountChange;
+          break;
+        case 'favorite':
+          _favoriteCount += optimisticCountChange;
+          break;
       }
     });
 
@@ -122,26 +145,38 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
       if (mounted) {
         // --- 计算最终正确的计数 ---
         int finalCountChange = actualNewStatus ? 1 : -1;
-        int finalLikeCount = originalLikeCount + (actionName == 'like' ? finalCountChange : 0);
-        int finalAgreeCount = originalAgreeCount + (actionName == 'agree' ? finalCountChange : 0);
-        int finalFavoriteCount = originalFavoriteCount + (actionName == 'favorite' ? finalCountChange : 0);
+        int finalLikeCount =
+            originalLikeCount + (actionName == 'like' ? finalCountChange : 0);
+        int finalAgreeCount =
+            originalAgreeCount + (actionName == 'agree' ? finalCountChange : 0);
+        int finalFavoriteCount = originalFavoriteCount +
+            (actionName == 'favorite' ? finalCountChange : 0);
 
         // --- 构建新的 Post (只更新计数) ---
         final newPost = widget.post.copyWith(
-          likeCount: finalLikeCount, agreeCount: finalAgreeCount, favoriteCount: finalFavoriteCount,
+          likeCount: finalLikeCount,
+          agreeCount: finalAgreeCount,
+          favoriteCount: finalFavoriteCount,
         );
 
         // --- 构建新的 UserPostActions (包含确认的状态) ---
         final newActions = UserPostActions(
           postId: postId, userId: userId,
           // 使用 API 返回的状态更新对应项，其他项保持 widget 传入的值
-          liked: (actionName == 'like') ? actualNewStatus : widget.userActions.liked,
-          agreed: (actionName == 'agree') ? actualNewStatus : widget.userActions.agreed,
-          favorited: (actionName == 'favorite') ? actualNewStatus : widget.userActions.favorited,
+          liked: (actionName == 'like')
+              ? actualNewStatus
+              : widget.userActions.liked,
+          agreed: (actionName == 'agree')
+              ? actualNewStatus
+              : widget.userActions.agreed,
+          favorited: (actionName == 'favorite')
+              ? actualNewStatus
+              : widget.userActions.favorited,
         );
+        final forumService = context.read<ForumService>();
 
         // --- 调用 Service 写入缓存 ---
-        await _forumService.cachedNewPostData(newPost, newActions);
+        await forumService.cachedNewPostData(newPost, newActions);
 
         // --- 更新本地 UI 计数为最终确认的值 ---
         // （如果 API 返回的状态与乐观更新不符，这里会修正计数的显示）
@@ -151,16 +186,14 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
           _favoriteCount = newPost.favoriteCount;
         });
 
-        // *** 不再需要更新内部的 _isLiked 等状态 ***
-
         // --- 通知父组件 Post 数据已更新 ---
-        widget.onPostUpdated(newPost,newActions);
+        widget.onPostUpdated(newPost, newActions);
       }
     } catch (e) {
       // --- API 失败，回滚 UI 计数 ---
       if (mounted) {
-        print("$actionName 操作失败 (API Error): $e");
-        AppSnackBar.showError(context, '操作失败: ${e.toString().replaceFirst("Exception: ", "")}');
+        AppSnackBar.showError(
+            context, '操作失败: ${e.toString().replaceFirst("Exception: ", "")}');
         // *** 只回滚本地计数 ***
         setState(() {
           _likeCount = originalLikeCount;
@@ -171,30 +204,36 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
       }
     } finally {
       // --- 结束加载状态 ---
-      if (mounted) { setState(() { setLoadingState(false); }); }
+      if (mounted) {
+        setState(() {
+          setLoadingState(false);
+        });
+      }
     }
   }
 
   // 各个按钮的 onTap 调用 _handleInteraction 的方式不变
-  Future<void> _toggleLike() async {
+  Future<void> _toggleLike(ForumService forumService) async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostLike(widget.post.id),
+      apiCall: () => forumService.togglePostLike(widget.post.id),
       getLoadingState: () => _isLiking,
       setLoadingState: (isLoading) => _isLiking = isLoading,
       actionName: 'like',
     );
   }
-  Future<void> _toggleAgree() async {
+
+  Future<void> _toggleAgree(ForumService forumService) async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostAgree(widget.post.id),
+      apiCall: () => forumService.togglePostAgree(widget.post.id),
       getLoadingState: () => _isAgreeing,
       setLoadingState: (isLoading) => _isAgreeing = isLoading,
       actionName: 'agree',
     );
   }
-  Future<void> _toggleFavorite() async {
+
+  Future<void> _toggleFavorite(ForumService forumService) async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostFavorite(widget.post.id),
+      apiCall: () => forumService.togglePostFavorite(widget.post.id),
       getLoadingState: () => _isFavoriting,
       setLoadingState: (isLoading) => _isFavoriting = isLoading,
       actionName: 'favorite',
@@ -206,9 +245,9 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     NavigationUtils.showLoginDialog(context);
   }
 
-
   @override
   Widget build(BuildContext context) {
+    final forumService = context.read<ForumService>();
     final bool isDesktop = DeviceUtils.isDesktop;
     final double iconSize = isDesktop ? 20.0 : 18.0;
     final double fontSize = isDesktop ? 14.0 : 12.0;
@@ -217,39 +256,38 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         : const EdgeInsets.symmetric(horizontal: 12, vertical: 6);
 
     // *** 使用 widget.userActions 来决定按钮的图标和颜色 ***
-    final bool liked= widget.userActions.liked;
+    final bool liked = widget.userActions.liked;
     final bool agreed = widget.userActions.agreed;
     final bool favorited = widget.userActions.favorited;
-
 
     // *** 使用本地状态 _likeCount 等来显示计数值 ***
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
         _buildInteractionButton(
-          // *** 根据 widget.userActions.isLiked 显示图标和颜色 ***
+          // *** 根据 widget.userActions.liked 显示图标和颜色 ***
           icon: liked ? Icons.thumb_up : Icons.thumb_up_outlined,
           label: '$_likeCount', // 显示本地乐观计数
           color: liked ? Theme.of(context).primaryColor : Colors.grey,
-          onTap: _toggleLike,
+          onTap: () => _toggleLike(forumService),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isLiking, // 使用加载状态
         ),
         _buildInteractionButton(
-          // *** 根据 widget.userActions.isAgreed 显示图标和颜色 ***
+          // *** 根据 widget.userActions.agreed 显示图标和颜色 ***
           icon: liked ? Icons.check_circle : Icons.check_circle_outline,
           label: '$_agreeCount', // 显示本地乐观计数
           color: agreed ? Colors.green : Colors.grey,
-          onTap: _toggleAgree,
+          onTap: () => _toggleAgree(forumService),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isAgreeing, // 使用加载状态
         ),
         _buildInteractionButton(
-          // *** 根据 widget.userActions.isFavorited 显示图标和颜色 ***
+          // *** 根据 widget.userActions.favorited 显示图标和颜色 ***
           icon: favorited ? Icons.star : Icons.star_border,
           label: '$_favoriteCount', // 显示本地乐观计数
           color: favorited ? Colors.amber : Colors.grey,
-          onTap: _toggleFavorite,
+          onTap: () => _toggleFavorite(forumService),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isFavoriting, // 使用加载状态
         ),
@@ -259,9 +297,14 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
 
   // 构建单个交互按钮的 Widget (完整, 无变化)
   Widget _buildInteractionButton({
-    required IconData icon, required String label, required Color color,
-    required VoidCallback onTap, required double iconSize, required double fontSize,
-    required EdgeInsets padding, required bool isLoading,
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback onTap,
+    required double iconSize,
+    required double fontSize,
+    required EdgeInsets padding,
+    required bool isLoading,
   }) {
     return IgnorePointer(
       ignoring: isLoading,
@@ -274,14 +317,24 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (isLoading)
-                SizedBox( width: iconSize, height: iconSize,
-                  child: CircularProgressIndicator( strokeWidth: 2.0, valueColor: AlwaysStoppedAnimation<Color>(color),),
+                SizedBox(
+                  width: iconSize,
+                  height: iconSize,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2.0,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
                 )
               else
                 Icon(icon, size: iconSize, color: color),
               const SizedBox(width: 4),
-              Text( label,
-                style: TextStyle( fontSize: fontSize, color: isLoading ? Colors.grey : color, fontWeight: FontWeight.w500,),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: isLoading ? Colors.grey : color,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),

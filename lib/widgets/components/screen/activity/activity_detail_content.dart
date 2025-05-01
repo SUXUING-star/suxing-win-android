@@ -13,7 +13,8 @@ import 'sections/activity_description_section.dart';
 import 'sections/activity_target_section.dart';
 import 'sections/activity_comments_section.dart';
 
-class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget，因为动画依赖 Key 触发
+class ActivityDetailContent extends StatelessWidget {
+  // 保持 StatelessWidget，因为动画依赖 Key 触发
   final UserActivity activity;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
@@ -128,19 +129,19 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
     );
   }
 
-
   // --- Mobile Layout (应用动画和解耦后的构建器) ---
   Widget _buildMobileLayout(
-      BuildContext context,
-      Duration baseDelay,
-      Duration delayIncrement,
-      double slideOffset,
-      Duration slideDuration,
-      Duration fadeDuration,
-      ) {
+    BuildContext context,
+    Duration baseDelay,
+    Duration delayIncrement,
+    double slideOffset,
+    Duration slideDuration,
+    Duration fadeDuration,
+  ) {
     int delayIndex = 0;
     final bool isDesktop = false;
-    final NumberFormat compactFormatter = NumberFormat.compact(); // 需要时传递给 Comments Section
+    final NumberFormat compactFormatter =
+        NumberFormat.compact(); // 需要时传递给 Comments Section
 
     // --- 为每个 Section 定义唯一的 Key ---
     final infoKey = ValueKey('info_mob_${activity.id}');
@@ -172,7 +173,7 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
           const SizedBox(height: 16), // Section 间距
         ],
 
-        if (activity.target != null) ...[
+        ...[
           _buildTargetSection(
             isDesktop: isDesktop,
             duration: fadeDuration, // 使用 FadeIn 动画时长
@@ -194,7 +195,10 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
             padding: const EdgeInsets.only(bottom: 8.0), // 标题和内容间距
             child: Text(
               '评论 (${compactFormatter.format(activity.commentsCount)})',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+              style: Theme.of(context)
+                  .textTheme
+                  .titleLarge
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ),
@@ -214,13 +218,13 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
 
   // --- Desktop Layout (应用动画和解耦后的构建器) ---
   Widget _buildDesktopLayout(
-      BuildContext context,
-      Duration baseDelay,
-      Duration delayIncrement,
-      double slideOffset,
-      Duration slideDuration,
-      Duration fadeDuration,
-      ) {
+    BuildContext context,
+    Duration baseDelay,
+    Duration delayIncrement,
+    double slideOffset,
+    Duration slideDuration,
+    Duration fadeDuration,
+  ) {
     int leftDelayIndex = 0;
     int rightDelayIndex = 0;
     final bool isDesktop = true;
@@ -254,7 +258,7 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
         const SizedBox(height: 24),
       ],
 
-      if (activity.target != null) ...[
+      ...[
         _buildTargetSection(
           isDesktop: isDesktop,
           duration: fadeDuration,
@@ -271,13 +275,18 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
         key: commentsTitleKey,
         duration: slideDuration,
         // 稍微延迟于左侧第一个元素，制造层次感
-        delay: baseDelay + (delayIncrement * rightDelayIndex) + Duration(milliseconds: 100),
+        delay: baseDelay +
+            (delayIncrement * rightDelayIndex) +
+            Duration(milliseconds: 100),
         slideOffset: slideOffset,
         child: Padding(
           padding: const EdgeInsets.only(bottom: 12.0), // 标题和内容间距
           child: Text(
             '评论 (${compactFormatter.format(activity.commentsCount)})',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            style: Theme.of(context)
+                .textTheme
+                .titleLarge
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
       ),
@@ -286,7 +295,9 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
         isDesktop: isDesktop,
         duration: slideDuration,
         // 和标题一起出现
-        delay: baseDelay + (delayIncrement * rightDelayIndex++) + Duration(milliseconds: 100),
+        delay: baseDelay +
+            (delayIncrement * rightDelayIndex++) +
+            Duration(milliseconds: 100),
         slideOffset: slideOffset,
         key: commentsKey,
       ),
@@ -339,10 +350,13 @@ class ActivityDetailContent extends StatelessWidget { // 保持 StatelessWidget�
     return Padding(
       key: ValueKey('activity_detail_content_${activity.id}'),
       // 移除这里的内边距，因为布局方法内部已经处理了
-      padding: EdgeInsets.zero, // 或者 EdgeInsets.all(isDesktop ? 0 : 16.0) 如果需要外层padding
+      padding: EdgeInsets
+          .zero, // 或者 EdgeInsets.all(isDesktop ? 0 : 16.0) 如果需要外层padding
       child: isDesktop
-          ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset, slideDuration, fadeDuration)
-          : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset, slideDuration, fadeDuration),
+          ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
+              slideDuration, fadeDuration)
+          : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,
+              slideDuration, fadeDuration),
     );
   }
 }

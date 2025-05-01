@@ -1,13 +1,11 @@
 // lib/widgets/components/screen/game/game_download_links.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/buttons/open_url_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:provider/provider.dart';
 import '../../../../../models/game/game.dart'; // 你的数据模型
 import '../../../../../providers/auth/auth_provider.dart'; // 你的认证 Provider
@@ -50,44 +48,40 @@ class GameDownloadLinks extends StatelessWidget {
           ),
         ),
         // 链接列表
-        ...downloadLinks
-            .map((link) => Card(
-                  margin: const EdgeInsets.symmetric(
-                      horizontal: 12.0, vertical: 6.0), // 调整卡片间距
-                  elevation: 2, // 给点阴影
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10)), // 圆角
-                  child: ListTile(
-                    leading: const Icon(Icons.download_for_offline_outlined,
-                        color: Colors.blue), // 加个图标
-                    title: Text(link.title,
-                        style: const TextStyle(fontWeight: FontWeight.w500)),
-                    subtitle: Text(link.description,
-                        style: TextStyle(color: Colors.grey[600])),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        OpenUrlButton(
-                          url: link.url,
-                          webViewTitle: link.title, // 把链接标题传给 WebView
-                          color: Colors.teal, // 可以保持颜色
-                          tooltip: '打开链接', // 可以改个更明确的 tooltip
-                        ),
-                        // --- 复制链接按钮 ---
-                        IconButton(
-                          icon: const Icon(Icons.copy),
-                          tooltip: '复制链接',
-                          color: Colors.grey[700],
-                          onPressed: link.url == null
-                              ? null
-                              : () => _copyToClipboard(context, link.url),
-                        ),
-                      ],
+        ...downloadLinks.map((link) => Card(
+              margin: const EdgeInsets.symmetric(
+                  horizontal: 12.0, vertical: 6.0), // 调整卡片间距
+              elevation: 2, // 给点阴影
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)), // 圆角
+              child: ListTile(
+                leading: const Icon(Icons.download_for_offline_outlined,
+                    color: Colors.blue), // 加个图标
+                title: Text(link.title,
+                    style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text(link.description,
+                    style: TextStyle(color: Colors.grey[600])),
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OpenUrlButton(
+                      url: link.url,
+                      webViewTitle: link.title, // 把链接标题传给 WebView
+                      color: Colors.teal, // 可以保持颜色
+                      tooltip: '打开链接', // 可以改个更明确的 tooltip
                     ),
-                    // onTap: link.url == null ? null : () => _openInAppBrowser(context, link.url!, link.title), // 让整个 Tile 也能点击打开
-                  ),
-                ))
-            ,
+                    // --- 复制链接按钮 ---
+                    IconButton(
+                      icon: const Icon(Icons.copy),
+                      tooltip: '复制链接',
+                      color: Colors.grey[700],
+                      onPressed: () => _copyToClipboard(context, link.url),
+                    ),
+                  ],
+                ),
+                // onTap: link.url == null ? null : () => _openInAppBrowser(context, link.url!, link.title), // 让整个 Tile 也能点击打开
+              ),
+            )),
       ],
     );
   }
@@ -134,33 +128,6 @@ class GameDownloadLinks extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  /// 在应用内浏览器打开链接
-  void _openInAppBrowser(BuildContext context, String url, String title) {
-    NavigationUtils.pushNamed(context, AppRoutes.webView,
-        arguments: {"url": url, "title": title});
-  }
-
-  /// 在外部浏览器打开链接
-  Future<void> _launchURL(BuildContext context, String? url) async {
-    if (url != null) {
-      final Uri uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        try {
-          await launchUrl(
-            uri,
-            mode: LaunchMode.externalApplication, // 确保在外部打开
-          );
-        } catch (e) {
-          AppSnackBar.showError(context, '无法打开外部链接: $e');
-        }
-      } else {
-        AppSnackBar.showError(context, '不支持的链接类型或无法打开');
-      }
-    } else {
-      AppSnackBar.showError(context, '链接无效');
-    }
   }
 
   /// 复制链接到剪贴板

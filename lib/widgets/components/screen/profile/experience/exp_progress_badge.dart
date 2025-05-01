@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/experience/exp_progress_badge.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../../../services/main/user/user_service.dart';
@@ -27,7 +28,6 @@ class ExpProgressBadge extends StatefulWidget {
 }
 
 class _ExpProgressBadgeState extends State<ExpProgressBadge> {
-  final UserService _userService = UserService();
   Map<String, dynamic>? _progressData;
   bool _isLoading = true;
   String? _error;
@@ -44,8 +44,9 @@ class _ExpProgressBadgeState extends State<ExpProgressBadge> {
         _isLoading = true;
         _error = null;
       });
+      final userService = context.read<UserService>();
 
-      final data = await _userService.getDailyExperienceProgressWithCache();
+      final data = await userService.getDailyExperienceProgressWithCache();
 
       if (mounted) {
         setState(() {

@@ -341,7 +341,7 @@ class ForumRightPanel extends StatelessWidget {
                       Icon(Icons.visibility, size: 12, color: Colors.grey[600]),
                       SizedBox(width: 2),
                       Text(
-                        '${post.viewCount ?? 0}',
+                        '${post.viewCount}',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey[600],
@@ -355,7 +355,7 @@ class ForumRightPanel extends StatelessWidget {
                       Icon(Icons.forum, size: 12, color: Colors.grey[600]),
                       SizedBox(width: 2),
                       Text(
-                        '${post.replyCount ?? 0}',
+                        '${post.replyCount}',
                         style: TextStyle(
                           fontSize: 10,
                           color: Colors.grey[600],

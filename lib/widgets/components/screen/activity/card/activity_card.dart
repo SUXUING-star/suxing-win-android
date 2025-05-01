@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/screens/profile/open_profile_screen.dart'; // 需要用户 Profile 页面
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
@@ -96,20 +94,16 @@ class _ActivityCardState extends State<ActivityCard> {
   void _initializeCardProperties() {
     final random = math.Random(widget.activity.id.hashCode);
     final bool hasContent = _activity.content.isNotEmpty;
-    final bool hasTarget = _activity.targetType != null;
     double minHeight = 1.0, maxHeight = 1.5;
-    if (hasContent && hasTarget) {
+    if (hasContent) {
       minHeight = 1.0;
       maxHeight = 1.8;
     } else if (hasContent) {
       minHeight = 0.9;
       maxHeight = 1.5;
-    } else if (hasTarget) {
+    } else {
       minHeight = 1.0;
       maxHeight = 1.4;
-    } else {
-      minHeight = 0.8;
-      maxHeight = 1.2;
     }
     double contentLengthFactor =
         hasContent ? math.min(_activity.content.length / 200, 0.3) : 0;
@@ -196,16 +190,6 @@ class _ActivityCardState extends State<ActivityCard> {
     }
   }
 
-  // --- 导航到用户 Profile ---
-  void _navigateToUserProfile(String userId) {
-    // 这个方法之前写的是空的，现在补全
-    print("Navigating to user profile: $userId");
-    NavigationUtils.push(
-        context,
-        MaterialPageRoute(
-            builder: (context) => OpenProfileScreen(userId: userId)));
-  }
-
   void _handleActivityTap() {
     if (widget.isInDetailView || widget.onActivityTap == null) return;
     HapticFeedback.selectionClick();
@@ -244,13 +228,12 @@ class _ActivityCardState extends State<ActivityCard> {
                 textAlign: _isAlternate ? TextAlign.right : TextAlign.left),
           ),
         ...[
-        SizedBox(height: 12 * _cardHeight),
-        ActivityTarget(
-            target: _activity.target,
-            targetType: _activity.targetType,
-            isAlternate: _isAlternate,
-            cardHeight: _cardHeight),
-      ],
+          SizedBox(height: 12 * _cardHeight),
+          ActivityTarget(
+              activity: _activity,
+              isAlternate: _isAlternate,
+              cardHeight: _cardHeight),
+        ],
         ActivityTargetNavigation(
             activity: _activity, isAlternate: _isAlternate),
         SizedBox(height: 16 * _cardHeight),

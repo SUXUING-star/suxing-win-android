@@ -101,7 +101,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
       // 如果遇到已销毁的服务错误，尝试重置并重新初始化
       if (e.toString().contains('disposed') && mounted) {
         try {
-          final announcementService = AnnouncementService();
+          final announcementService = context.read<AnnouncementService>();
           await announcementService.reset(); // 使用我们添加的reset方法
           await announcementService.init();
 
@@ -342,12 +342,12 @@ class AnnouncementChecker {
         // 如果出现服务已销毁的错误，尝试重置
         if (e.toString().contains('disposed') && context.mounted) {
           try {
-            final service = AnnouncementService();
-            await service.reset();
-            await service.init();
+            final announcementService = context.read<AnnouncementService>();
+            await announcementService.reset();
+            await announcementService.init();
 
             if (context.mounted) {
-              final unreadAnnouncements = service.getUnreadAnnouncements();
+              final unreadAnnouncements = announcementService.getUnreadAnnouncements();
               if (unreadAnnouncements.isNotEmpty &&
                   !_AnnouncementIndicatorState._isShowingAnnouncement) {
                 _AnnouncementIndicatorState._isShowingAnnouncement = true;

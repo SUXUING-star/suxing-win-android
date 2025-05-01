@@ -1,14 +1,34 @@
+// lib/path/to/your/dialogs/tool_form_dialog.dart
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+// 假设 LoadingWidget 在这里，如果不用可以移除
+// import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
+// 导入你的 Tool 和 ToolDownload 模型
 import '../../../../models/linkstools/tool.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
+// 导入 SnackBar 工具类 (如果需要在 onPopInvoked 中提示)
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ToolFormDialog extends StatefulWidget {
-  final Tool? tool;
+  final Tool? tool; // 编辑时传入的对象，添加时为 null
 
   const ToolFormDialog({super.key, this.tool});
+
+  // 静态方法用于显示对话框并返回结果
+  // 返回 Future<Map<String, dynamic>?> 因为用户可能取消
+  static Future<Map<String, dynamic>?> show(BuildContext context,
+      {Tool? tool}) {
+    return showDialog<Map<String, dynamic>>(
+      // 指定 showDialog 的返回类型
+      context: context,
+      // barrierDismissible: false, // 可以根据需要设置点击外部是否关闭，默认为 true
+      builder: (BuildContext dialogContext) {
+        return ToolFormDialog(tool: tool);
+      },
+    );
+  }
 
   @override
   _ToolFormDialogState createState() => _ToolFormDialogState();
@@ -17,21 +37,27 @@ class ToolFormDialog extends StatefulWidget {
 class _ToolFormDialogState extends State<ToolFormDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
+  // 使用 TextEditingController 通常更好，可以避免在 onChanged 中频繁 setState
+  // 但如果你习惯用变量存储，也可以保持，这里暂时保持原样
   late String _name;
   late String _description;
   late String _color;
-  late List<Map<String, String>> _downloads;
+  // 下载链接的内部状态仍然使用 Map<String, String> 来驱动 UI 输入字段
+  late List<Map<String, String>> _downloadsState;
 
-  // 添加一个标志来跟踪表单是否正在提交
-  bool _isSubmitting = false;
+  bool _isSubmitting = false; // 跟踪提交状态
+
+  // 用于颜色预览的 State 变量
+  late Color _previewColor;
 
   @override
   void initState() {
     super.initState();
     _name = widget.tool?.name ?? '';
     _description = widget.tool?.description ?? '';
-    _color = widget.tool?.color ?? '#228b6e';
-    _downloads = widget.tool != null
+    _color = widget.tool?.color ?? '#228b6e'; // 默认颜色
+    // 初始化下载链接的 UI 状态
+    _downloadsState = widget.tool != null
         ? widget.tool!.downloads
             .map((download) => {
                   'name': download.name,
@@ -40,11 +66,32 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                 })
             .toList()
         : [];
+
+    // 初始化颜色预览
+    _updatePreviewColor(_color);
+  }
+
+  // 更新颜色预览的辅助函数
+  void _updatePreviewColor(String hexColor) {
+    try {
+      final colorValue = int.parse(hexColor.replaceFirst('#', '0xFF'));
+      setState(() {
+        _previewColor = Color(colorValue);
+      });
+    } catch (e) {
+      // 如果颜色值无效，可以设置一个默认颜色或保持不变
+      print("Invalid color format: $hexColor. Using default preview.");
+      setState(() {
+        _previewColor = Colors.grey; // 或其他默认色
+      });
+    }
   }
 
   void _addDownloadLink() {
+    // 如果正在提交，不允许添加
+    if (_isSubmitting) return;
     setState(() {
-      _downloads.add({
+      _downloadsState.add({
         'name': '',
         'description': '',
         'url': '',
@@ -53,90 +100,154 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
   }
 
   void _removeDownloadLink(int index) {
+    // 如果正在提交，不允许移除
+    if (_isSubmitting) return;
     setState(() {
-      _downloads.removeAt(index);
+      _downloadsState.removeAt(index);
     });
   }
 
   bool _validateColor(String value) {
-    final colorRegex = RegExp(r'^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{3})$');
-    return colorRegex.hasMatch(value);
+    final colorRegex =
+        RegExp(r'^#([0-9A-Fa-f]{6}|[0-9A-Fa-f]{8})$'); // 支持6位和8位Hex
+    return colorRegex.hasMatch(value.trim());
   }
 
   void _submitForm() {
-    // 防止重复提交
     if (_isSubmitting) return;
 
-    if (_formKey.currentState!.validate()) {
+    // 先验证表单
+    if (_formKey.currentState?.validate() ?? false) {
+      // 设置提交状态
       setState(() {
         _isSubmitting = true;
       });
 
-      // 关键修改：返回 Map<String, dynamic> 而不是 Tool 对象
-      final Map<String, dynamic> toolData = {
-        '_id': widget.tool?.id ?? mongo.ObjectId().toHexString(),
-        'name': _name.trim(),
-        'description': _description.trim(),
-        'color': _color.trim(),
-        'downloads': _downloads
-            .map((download) => {
-                  'name': download['name']!.trim(),
-                  'description': download['description']!.trim(),
-                  'url': download['url']!.trim(),
-                })
-            .toList(),
-        'createTime': widget.tool?.createTime ?? DateTime.now(),
-        'isActive': true,
-      };
+      // *** 使用 Tool 模型来构建对象 ***
+      try {
+        // 1. 将下载链接的 UI 状态 (_downloadsState) 转换为 List<ToolDownload>
+        final List<ToolDownload> toolDownloads = _downloadsState
+            .map((downloadMap) => ToolDownload(
+                  name: downloadMap['name']!.trim(),
+                  description: downloadMap['description']!.trim(),
+                  url: downloadMap['url']!.trim(),
+                ))
+            .toList();
 
-      // 使用Future.delayed给Flutter一些时间来完成状态更新
-      Future.delayed(Duration.zero, () {
+        // 2. 创建 Tool 实例
+        final toolObject = Tool(
+          id: widget.tool?.id ??
+              mongo.ObjectId().toHexString(), // 保留原有 ID 或生成新 ID
+          name: _name.trim(),
+          description: _description.trim(),
+          color: _color.trim(),
+          downloads: toolDownloads, // 使用转换后的 List<ToolDownload>
+          createTime:
+              widget.tool?.createTime ?? DateTime.now(), // 保留原有创建时间或用当前时间
+          isActive: widget.tool?.isActive ?? true, // 保留原有状态或默认为 true
+          // 保留编辑时可能存在的 icon 和 type
+          icon: widget.tool?.icon,
+          type: widget.tool?.type,
+        );
+
+        // 3. 调用 toJson() 获取 Map
+        final Map<String, dynamic> toolData = toolObject.toJson();
+
+        // 4. 关闭对话框并返回 toolData Map
+        // 使用 Future.delayed 确保 setState 完成渲染后再 pop
+        Future.delayed(Duration.zero, () {
+          if (mounted) {
+            Navigator.of(context).pop(toolData);
+          }
+        });
+      } catch (e) {
+        print("Error creating Tool object or toJson: $e");
         if (mounted) {
-          Navigator.of(context).pop(toolData);
+          AppSnackBar.showError(context, "保存失败：数据格式错误");
+          setState(() {
+            _isSubmitting = false; // 出错时重置提交状态
+          });
         }
-      });
+      }
+    } else {
+      // 验证失败提示
+      AppSnackBar.showError(context, "请检查表单中的错误");
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      // 防止在提交过程中通过返回按钮关闭对话框
-      onWillPop: () async => !_isSubmitting,
+    // *** 使用 PopScope 替换 WillPopScope ***
+    return PopScope<Map<String, dynamic>?>(
+      // <-- 1. 添加泛型 (匹配 Navigator.pop 的结果类型)
+      canPop: !_isSubmitting,
+      // <-- 2. 使用 onPopInvokedWithResult 并更新签名
+      onPopInvokedWithResult: (bool didPop, Map<String, dynamic>? result) {
+        // <-- 添加 result 参数
+        // <-- 3. 内部逻辑不变，忽略 result
+        if (!didPop && _isSubmitting) {
+          // 最好检查 context
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null && mounted) {
+            AppSnackBar.showInfo(context, '正在保存中，请稍候...');
+          }
+        }
+      },
       child: Dialog(
+        // 增加圆角和 clipBehavior 以匹配 Card
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+        clipBehavior: Clip.antiAlias, // 裁剪内容以符合圆角
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.8,
+            // 稍微调整最大宽度和高度，或根据需要设置
+            maxWidth: MediaQuery.of(context).size.width * 0.85,
             maxHeight: MediaQuery.of(context).size.height * 0.8,
           ),
-          child: Card(
+          // Card 提供背景色、阴影和形状，Dialog 本身通常是透明的
+          child: Material(
+            // 使用 Material 包裹 Card 的内容，确保主题效果正确应用
+            type: MaterialType.card, // 模拟 Card 的材质类型
+            elevation: 4.0, // 卡片阴影
+            borderRadius: BorderRadius.circular(12.0), // 确保圆角一致
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min, // 高度自适应内容
               children: [
+                // --- 标题栏 ---
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding:
+                      const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 8.0), // 调整内边距
                   child: Text(
                     widget.tool == null ? '添加工具' : '编辑工具',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                 ),
+                Divider(height: 1, thickness: 1), // 添加分割线
+
+                // --- 表单内容区域 (可滚动) ---
                 Expanded(
                   child: Form(
                     key: _formKey,
                     child: Padding(
-                      padding: const EdgeInsets.all(16.0),
+                      // 稍微减小滚动区域的内边距，让卡片边距更明显
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16.0, vertical: 8.0),
                       child: CustomScrollView(
+                        // 使用 CustomScrollView 优化长表单
                         slivers: [
                           SliverList(
                             delegate: SliverChildListDelegate([
-                              // 工具名称
+                              SizedBox(height: 8), // 顶部留白
+                              // --- 工具名称 ---
                               FormTextInputField(
                                 initialValue: _name,
                                 decoration: InputDecoration(
-                                  labelText: '工具名称',
+                                  labelText: '工具名称 *', // 标记必填
                                   border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.title),
                                 ),
-                                onChanged: (value) => _name = value,
+                                onChanged: (value) => _name = value, // 保存输入值
+                                enabled: !_isSubmitting, // 提交中禁用
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return '请输入工具名称';
@@ -146,15 +257,20 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                               ),
                               SizedBox(height: 16),
 
-                              // 工具描述
+                              // --- 工具描述 ---
                               FormTextInputField(
                                 initialValue: _description,
                                 decoration: InputDecoration(
-                                  labelText: '工具描述',
+                                  labelText: '工具描述 *',
                                   border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.description),
+                                  alignLabelWithHint: true, // 标签与提示对齐
                                 ),
-                                maxLines: 2,
+                                maxLines: 3, // 增加行数
+                                minLines: 2,
+                                maxLength: 200, // 可以加个字数限制
                                 onChanged: (value) => _description = value,
+                                enabled: !_isSubmitting,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return '请输入工具描述';
@@ -164,147 +280,197 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                               ),
                               SizedBox(height: 16),
 
-                              // 颜色选择
+                              // --- 颜色选择 ---
                               FormTextInputField(
                                 initialValue: _color,
                                 decoration: InputDecoration(
-                                  labelText: '颜色',
+                                  labelText: '颜色 (Hex) *',
+                                  hintText: '#RRGGBB 或 #AARRGGBB',
                                   border: OutlineInputBorder(),
-                                  prefixIcon: Container(
-                                    padding: EdgeInsets.all(8),
+                                  prefixIcon: Padding(
+                                    // 使用 Padding 调整预览方块位置
+                                    padding: const EdgeInsets.all(12.0),
                                     child: Container(
                                       width: 20,
                                       height: 20,
                                       decoration: BoxDecoration(
-                                        color: Color(int.parse(
-                                            _color.replaceFirst('#', '0xFF'))),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
+                                          color: _previewColor, // 使用状态变量驱动预览
+                                          borderRadius:
+                                              BorderRadius.circular(4),
+                                          border: Border.all(
+                                              color:
+                                                  Colors.grey.shade400) // 加个边框
+                                          ),
                                     ),
                                   ),
                                 ),
-                                onChanged: (value) => _color = value,
+                                onChanged: (value) {
+                                  _color = value; // 保存输入值
+                                  _updatePreviewColor(value); // 实时更新预览
+                                },
+                                enabled: !_isSubmitting,
                                 validator: (value) {
-                                  if (value == null || !_validateColor(value)) {
-                                    return '请输入有效的颜色值（如 #228b6e）';
+                                  if (value == null || value.trim().isEmpty) {
+                                    return '请输入颜色值';
+                                  }
+                                  if (!_validateColor(value)) {
+                                    return '格式无效 (例: #228b6e)';
                                   }
                                   return null;
                                 },
                               ),
-                              SizedBox(height: 16),
+                              SizedBox(height: 20), // 增加间距
 
+                              // --- 下载链接标题 ---
                               Text(
                                 '下载链接',
-                                style: Theme.of(context).textTheme.titleSmall,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .titleMedium, // 稍大一点的标题
                               ),
-                              SizedBox(height: 8),
+                              Divider(height: 16, thickness: 0.5),
                             ]),
                           ),
-                          // 下载链接列表
+                          // --- 下载链接列表 ---
                           SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                if (index >= _downloads.length) return null;
+                                if (index >= _downloadsState.length)
+                                  return null;
+                                // 使用 Card 包裹每个下载链接表单，增加视觉分隔
                                 return Card(
-                                  margin: EdgeInsets.only(bottom: 16),
+                                  elevation: 1.0, // 稍微一点阴影
+                                  margin: EdgeInsets.only(bottom: 12),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
                                   child: Padding(
-                                    padding: EdgeInsets.all(16),
+                                    padding: EdgeInsets.all(12),
                                     child: Column(
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
+                                        // 下载名称
                                         FormTextInputField(
-                                          initialValue: _downloads[index]
+                                          initialValue: _downloadsState[index]
                                               ['name'],
                                           decoration: InputDecoration(
-                                            labelText: '下载名称',
+                                            labelText: '下载项名称 *',
                                             border: OutlineInputBorder(),
+                                            isDense: true, // 更紧凑
                                           ),
                                           onChanged: (value) {
-                                            _downloads[index]['name'] = value;
-                                          },
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.trim().isEmpty) {
-                                              return '请输入下载名称';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        SizedBox(height: 8),
-                                        FormTextInputField(
-                                          initialValue: _downloads[index]
-                                              ['description'],
-                                          decoration: InputDecoration(
-                                            labelText: '下载描述',
-                                            border: OutlineInputBorder(),
-                                          ),
-                                          onChanged: (value) {
-                                            _downloads[index]['description'] =
+                                            _downloadsState[index]['name'] =
                                                 value;
                                           },
+                                          enabled: !_isSubmitting,
                                           validator: (value) {
                                             if (value == null ||
                                                 value.trim().isEmpty) {
-                                              return '请输入下载描述';
+                                              return '请输入名称';
                                             }
                                             return null;
                                           },
                                         ),
-                                        SizedBox(height: 8),
+                                        SizedBox(height: 10),
+                                        // 下载描述
                                         FormTextInputField(
-                                          initialValue: _downloads[index]
-                                              ['url'],
+                                          initialValue: _downloadsState[index]
+                                              ['description'],
                                           decoration: InputDecoration(
-                                            labelText: '下载链接',
+                                            labelText: '下载项描述 *',
                                             border: OutlineInputBorder(),
+                                            isDense: true,
                                           ),
                                           onChanged: (value) {
-                                            _downloads[index]['url'] = value;
+                                            _downloadsState[index]
+                                                ['description'] = value;
                                           },
+                                          enabled: !_isSubmitting,
                                           validator: (value) {
                                             if (value == null ||
                                                 value.trim().isEmpty) {
-                                              return '请输入下载链接';
+                                              return '请输入描述';
                                             }
-                                            try {
-                                              Uri.parse(value);
-                                              return null;
-                                            } catch (e) {
-                                              return '请输入有效的 URL';
-                                            }
+                                            return null;
                                           },
                                         ),
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.end,
-                                          children: [
-                                            IconButton(
-                                              icon: Icon(Icons.delete,
-                                                  color: Colors.red),
-                                              onPressed: () =>
-                                                  _removeDownloadLink(index),
-                                            ),
-                                          ],
+                                        SizedBox(height: 10),
+                                        // 下载链接
+                                        FormTextInputField(
+                                          initialValue: _downloadsState[index]
+                                              ['url'],
+                                          decoration: InputDecoration(
+                                            labelText: '下载链接 (URL) *',
+                                            border: OutlineInputBorder(),
+                                            isDense: true,
+                                          ),
+                                          onChanged: (value) {
+                                            _downloadsState[index]['url'] =
+                                                value;
+                                          },
+                                          enabled: !_isSubmitting,
+                                          keyboardType:
+                                              TextInputType.url, // URL 键盘
+                                          validator: (value) {
+                                            if (value == null ||
+                                                value.trim().isEmpty) {
+                                              return '请输入链接';
+                                            }
+                                            // 更严格的 URL 验证
+                                            final uri =
+                                                Uri.tryParse(value.trim());
+                                            if (uri == null ||
+                                                !uri.isAbsolute ||
+                                                (!uri.scheme
+                                                    .startsWith('http'))) {
+                                              return '请输入有效的 URL (http/https)';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        // 删除按钮
+                                        Align(
+                                          // 使用 Align 控制按钮位置
+                                          alignment: Alignment.centerRight,
+                                          child: IconButton(
+                                            icon: Icon(Icons.delete_outline,
+                                                color: Colors.redAccent),
+                                            tooltip: '移除此链接',
+                                            padding:
+                                                EdgeInsets.zero, // 移除默认padding
+                                            visualDensity:
+                                                VisualDensity.compact, // 更紧凑
+                                            onPressed: _isSubmitting
+                                                ? null
+                                                : () =>
+                                                    _removeDownloadLink(index),
+                                          ),
                                         ),
                                       ],
                                     ),
                                   ),
                                 );
                               },
-                              childCount: _downloads.length,
+                              childCount: _downloadsState.length,
                             ),
                           ),
-                          // 添加下载链接按钮
+                          // --- 添加下载链接按钮 ---
                           SliverToBoxAdapter(
                             child: Padding(
                               padding:
-                                  const EdgeInsets.symmetric(vertical: 16.0),
-                              child: ElevatedButton.icon(
+                                  const EdgeInsets.symmetric(vertical: 12.0),
+                              child: OutlinedButton.icon(
+                                // 使用 OutlinedButton 视觉上更轻量
                                 onPressed:
                                     _isSubmitting ? null : _addDownloadLink,
-                                icon: Icon(Icons.add),
+                                icon: Icon(Icons.add_link),
                                 label: Text('添加下载链接'),
+                                style: OutlinedButton.styleFrom(
+                                  side: BorderSide(
+                                      color: Theme.of(context)
+                                          .primaryColor
+                                          .withOpacity(0.5)),
+                                ),
                               ),
                             ),
                           ),
@@ -313,30 +479,35 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                     ),
                   ),
                 ),
-                // 底部按钮
+                Divider(height: 1, thickness: 1), // 底部按钮上方的分割线
+                // --- 底部按钮区域 ---
                 Padding(
-                  padding: const EdgeInsets.all(16.0),
+                  padding: const EdgeInsets.all(12.0), // 调整按钮区域边距
                   child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.end, // 按钮靠右
                     children: [
+                      // 取消按钮
                       TextButton(
                         onPressed: _isSubmitting
                             ? null
                             : () {
-                                // 延迟执行pop操作
+                                // 延迟执行 pop 操作确保状态更新完成
                                 Future.delayed(Duration.zero, () {
                                   if (mounted) {
-                                    Navigator.of(context).pop();
+                                    Navigator.of(context).pop(); // 取消直接返回 null
                                   }
                                 });
                               },
                         child: Text('取消'),
                       ),
                       SizedBox(width: 8),
+                      // 保存按钮
                       FunctionalButton(
-                        onPressed: _isSubmitting ? () {} : _submitForm,
-                        isEnabled: !_isSubmitting,
+                        onPressed: _submitForm, // 直接调用 _submitForm
                         label: '保存',
+                        icon: Icons.save_alt_outlined,
+                        isLoading: _isSubmitting, // 控制加载状态
+                        isEnabled: !_isSubmitting, // 控制是否可点击
                       ),
                     ],
                   ),

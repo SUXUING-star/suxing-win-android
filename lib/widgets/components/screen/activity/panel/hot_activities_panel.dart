@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/activity/hot_activities_panel.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import '../utils/activity_utils.dart';
@@ -14,7 +15,8 @@ class HotActivitiesPanel extends StatefulWidget {
 }
 
 class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticKeepAliveClientMixin {
-  final UserActivityService _activityService = UserActivityService();
+
+
   List<UserActivity> _hotActivities = [];
   Map<String, int> _activityStats = {};
   bool _isLoading = true;
@@ -38,10 +40,11 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
     });
 
     try {
+      final activityService = context.read<UserActivityService>();
       // 并行加载数据
       final results = await Future.wait([
-        _activityService.getHotActivities(limit: 5),
-        _activityService.getActivityTypeStats(),
+        activityService.getHotActivities(limit: 5),
+        activityService.getActivityTypeStats(),
       ]);
 
       if (mounted) {

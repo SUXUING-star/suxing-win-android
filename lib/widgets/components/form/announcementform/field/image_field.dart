@@ -1,30 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 暂时不用
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'dart:io';
-// 移除 FileUpload import，不再直接上传
-// import '../../../../../services/common/upload/file_upload_service.dart';
-import '../../../../../services/common/upload/file_upload_service.dart'; // 需要 baseUrl for preview
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 import '../../gameform/field/dialogs/image_url_dialog.dart'; // 复用 URL 对话框
 import '../../../../ui/snackbar/app_snackbar.dart'; // 使用 AppSnackBar
 
 class AnnouncementImageField extends StatelessWidget {
-  // final String? imageUrl; // 不再直接接收 URL，而是接收图片源
   final dynamic imageSource; // 可以是 XFile, String (URL), or null
   final ValueChanged<dynamic> onImageSourceChanged; // 回调 XFile, String, or null
-  // 移除 isLoading 和 onLoadingChanged
-  // final bool isLoading;
-  // final ValueChanged<bool> onLoadingChanged;
 
   const AnnouncementImageField({
     super.key,
     required this.imageSource,
     required this.onImageSourceChanged,
-    // this.imageUrl, // 移除
-    // required this.isLoading, // 移除
-    // required this.onLoadingChanged, // 移除
   });
 
   Future<void> _pickImage(BuildContext context) async {
@@ -155,6 +146,7 @@ class AnnouncementImageField extends StatelessWidget {
   // 新的预览方法，处理 XFile 和 String
   Widget _buildImagePreview(BuildContext context) {
     final source = imageSource;
+    final uploadService = context.read<RateLimitedFileUpload>();
 
     if (source == null) {
       return const Center(
@@ -184,7 +176,7 @@ class AnnouncementImageField extends StatelessWidget {
       // 预览网络 URL
       final imageUrl = source;
       // 确保 URL 完整 (假设 FileUpload.baseUrl 已定义)
-      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${FileUpload.baseUrl}/$imageUrl';
+      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${uploadService.baseUrl}/$imageUrl';
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,
         fit: BoxFit.cover,

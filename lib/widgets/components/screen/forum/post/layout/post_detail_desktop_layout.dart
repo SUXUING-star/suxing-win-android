@@ -4,7 +4,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
 import '../post_content.dart';
-import '../reply/reply_list.dart';
+import '../reply/post_reply_list.dart';
 import '../community_guidelines.dart';
 import '../recent_global_replies.dart';
 
@@ -12,15 +12,13 @@ class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;
   final UserPostActions userActions;
   final String postId;
-  final Widget replyInput;
-  final Function(Post,UserPostActions) onPostUpdated;
+  final Function(Post, UserPostActions) onPostUpdated;
 
   const PostDetailDesktopLayout({
     super.key,
     required this.post,
     required this.userActions,
     required this.postId,
-    required this.replyInput,
     required this.onPostUpdated,
   });
 
@@ -72,7 +70,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     key: ValueKey('recent_replies_desk_${post.id}'),
                     duration: secondaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
-                    child: RecentGlobalReplies(limit: 5,post: post),
+                    child: RecentGlobalReplies(limit: 5, post: post),
                   ),
                 ],
               ),
@@ -87,16 +85,6 @@ class PostDetailDesktopLayout extends StatelessWidget {
             child: Column(
               children: [
                 // Reply Input
-                FadeInSlideUpItem(
-                  // 输入框也用滑动
-                  key: ValueKey('reply_input_desk_${post.id}'),
-                  duration: primaryDuration,
-                  // 右侧第一个元素稍微延迟一点
-                  delay: baseDelay +
-                      (incrementDelay * rightDelayIndex++) +
-                      incrementDelay,
-                  child: replyInput,
-                ),
                 const SizedBox(height: 16),
                 // Reply List
                 Expanded(
@@ -107,7 +95,10 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     delay: baseDelay +
                         (incrementDelay * rightDelayIndex++) +
                         incrementDelay,
-                    child: ReplyList(postId: postId),
+                    child: PostReplyList(
+                      postId: postId,
+                      isScrollableInternally: true,
+                    ),
                   ),
                 ),
               ],

@@ -1,5 +1,6 @@
 // lib/screens/profile/follow/user_follows_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'dart:async';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -22,10 +23,9 @@ class UserFollowsScreen extends StatefulWidget {
   _UserFollowsScreenState createState() => _UserFollowsScreenState();
 }
 
-class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTickerProviderStateMixin {
+class _UserFollowsScreenState extends State<UserFollowsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final UserFollowService _followService = UserFollowService();
-
 
   List<Map<String, dynamic>> _followings = [];
   List<Map<String, dynamic>> _followers = [];
@@ -60,8 +60,10 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     // 只加载当前选中标签页的数据
     _loadInitialData();
 
+    final followService = context.read<UserFollowService>();
     // 监听关注状态变化
-    _followStatusSubscription = _followService.followStatusStream.listen((userId) {
+    _followStatusSubscription =
+        followService.followStatusStream.listen((userId) {
       if (_mounted) {
         // 关注状态变化时重新加载数据
         _refreshCurrentTab(forceRefresh: true);
@@ -93,7 +95,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
   // 初始化加载当前选中标签的数据
   Future<void> _loadInitialData() async {
     // 在桌面模式下，同时加载关注和粉丝列表
-    if (DeviceUtils.isDesktop || (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
+    if (DeviceUtils.isDesktop ||
+        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
       await Future.wait([
         _loadFollowings(),
         _loadFollowers(),
@@ -119,8 +122,9 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     });
 
     try {
+      final followService = context.read<UserFollowService>();
       // 使用普通加载方法，优先使用缓存
-      final data = await _followService.getFollowing(widget.userId);
+      final data = await followService.getFollowing(widget.userId);
 
       if (_mounted) {
         setState(() {
@@ -150,8 +154,9 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     });
 
     try {
+      final followService = context.read<UserFollowService>();
       // 使用普通加载方法，优先使用缓存
-      final data = await _followService.getFollowers(widget.userId);
+      final data = await followService.getFollowers(widget.userId);
 
       if (_mounted) {
         setState(() {
@@ -176,7 +181,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     final currentTab = _tabController.index;
 
     // 桌面模式下，刷新两个列表
-    if (DeviceUtils.isDesktop || (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
+    if (DeviceUtils.isDesktop ||
+        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
       await Future.wait([
         _refreshFollowings(forceRefresh: forceRefresh),
         _refreshFollowers(forceRefresh: forceRefresh),
@@ -211,8 +217,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
     });
 
     try {
-      // 使用强制刷新方法，从API获取最新数据
-      final data = await _followService.refreshFollowing(widget.userId);
+      final followService = context.read<UserFollowService>();
+      final data = await followService.refreshFollowing(widget.userId);
       _lastFollowingsRefresh = now;
 
       if (_mounted) {
@@ -253,7 +259,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
 
     try {
       // 使用强制刷新方法，从API获取最新数据
-      final data = await _followService.refreshFollowers(widget.userId);
+      final followService = context.read<UserFollowService>();
+      final data = await followService.refreshFollowers(widget.userId);
       _lastFollowersRefresh = now;
 
       if (_mounted) {
@@ -291,13 +298,15 @@ class _UserFollowsScreenState extends State<UserFollowsScreen> with SingleTicker
       appBar: CustomAppBar(
         title: widget.username,
         // 在桌面布局中不显示底部标签栏
-        bottom: isDesktopLayout ? null : TabBar(
-          controller: _tabController,
-          tabs: [
-            Tab(text: '关注 ${_followings.length}'),
-            Tab(text: '粉丝 ${_followers.length}'),
-          ],
-        ),
+        bottom: isDesktopLayout
+            ? null
+            : TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(text: '关注 ${_followings.length}'),
+                  Tab(text: '粉丝 ${_followers.length}'),
+                ],
+              ),
       ),
       body: ResponsiveFollowsLayout(
         tabController: _tabController,

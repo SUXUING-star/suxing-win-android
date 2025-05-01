@@ -1,8 +1,8 @@
-// lib/widgets/forum/post_form.dart
 import 'package:flutter/material.dart';
+// *** 1. 导入 RequestLockService ***
+import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/services/form/post_form_cache_service.dart';
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 确保路径正确
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart'; // 确保路径正确
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
@@ -28,8 +28,8 @@ class PostForm extends StatefulWidget {
   final String initialContent;
   final List<String> initialTags;
   final List<String> availableTags;
-  final bool isSubmitting;
-  final Function(PostFormData) onSubmit;
+  final bool isSubmitting; // 由父组件控制的提交状态
+  final Function(PostFormData) onSubmit; // 提交回调
   final String submitButtonText;
   final String? postIdInfo;
   final String? updatetimeInfo;
@@ -42,7 +42,7 @@ class PostForm extends StatefulWidget {
     this.initialContent = '',
     this.initialTags = const [],
     required this.availableTags,
-    required this.isSubmitting,
+    required this.isSubmitting, // 接收外部状态
     required this.onSubmit,
     required this.submitButtonText,
     this.postIdInfo,
@@ -61,10 +61,14 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
 
   bool _isDraftRestored = false;
-  bool _isInternalSubmitting = false; // 内部逻辑状态，区分 widget.isSubmitting
+  // --- 移除内部提交状态，依赖 widget.isSubmitting 和 RequestLockService ---
+  // bool _isInternalSubmitting = false;
 
-  // Optional: Key for Scaffold if needed for ScaffoldMessenger or drawers
-  // final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  // --- 定义用于锁定的 Key ---
+  // 如果是编辑，可以用 postId 保证唯一性；如果是新建，用一个固定的 key
+  String get _submitOperationKey => widget.postIdInfo != null
+      ? 'submit_post_${widget.postIdInfo}'
+      : 'submit_new_post';
 
   @override
   void initState() {
@@ -72,65 +76,60 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
     _titleController = TextEditingController(text: widget.initialTitle);
     _contentController = TextEditingController(text: widget.initialContent);
     _selectedTags = List.from(widget.initialTags);
-    // *** 再注册 observer 和检查草稿 ***
     WidgetsBinding.instance.addObserver(this);
-    _checkAndRestoreDraft(); // <--- 添加检查草稿调用
+    _checkAndRestoreDraft();
   }
 
   @override
   void dispose() {
-    // *** 如果不是内部正在提交，就保存草稿 ***
-    if (!_isInternalSubmitting) {
-      _saveDraft(); // <--- 添加保存草稿调用
+    // *** 检查是否正在提交 (通过锁服务) ***
+    // 如果操作正在进行，不保存草稿（因为提交成功后会清除）
+    if (!RequestLockService.instance.isLocked(_submitOperationKey)) {
+      _saveDraft();
     }
-    // *** 移除 observer ***
     WidgetsBinding.instance.removeObserver(this);
-    // dispose 控制器
     _titleController.dispose();
     _contentController.dispose();
     super.dispose();
   }
 
-  // 新增生命周期监听方法
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    // 应用暂停或后台时，如果没在提交就保存草稿
     if (state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
-      if (!_isInternalSubmitting) {
-        _saveDraft(); // <--- 添加保存草稿调用
+      // *** 检查是否正在提交 (通过锁服务) ***
+      if (!RequestLockService.instance.isLocked(_submitOperationKey)) {
+        _saveDraft();
       }
     }
   }
 
+  // --- 使用 widget.isSubmitting 来决定按钮文本和状态 ---
   String get _effectiveSubmitButtonText =>
       widget.isSubmitting ? '处理中...' : widget.submitButtonText;
 
+  // --- build 方法保持不变 ---
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width >= 960;
 
-    // Note: No Scaffold.of() here anymore
-
     return Scaffold(
-      // key: _scaffoldKey, // Assign key if needed
       appBar: CustomAppBar(
-        // Assuming CustomAppBar works like a standard AppBar
         title: widget.title,
       ),
       body: Form(
         key: _formKey,
         child: useDesktopLayout
-            ? _buildDesktopLayout(context) // Pass the correct context
-            : _buildMobileLayout(context), // Pass the correct context
+            ? _buildDesktopLayout(context)
+            : _buildMobileLayout(context),
       ),
     );
   }
 
-  // --- Desktop Layout ---
+  // --- 布局方法 (_buildDesktopLayout, _buildMobileLayout) 保持不变 ---
   Widget _buildDesktopLayout(BuildContext context) {
     // Context is fine here
     final screenSize = MediaQuery.of(context).size;
@@ -234,6 +233,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
     );
   }
 
+  // --- 草稿相关方法 (_checkAndRestoreDraft, _loadAndApplyDraft, _saveDraft, _isFormEmpty) 保持不变 ---
   Future<void> _checkAndRestoreDraft() async {
     // 如果是编辑帖子 (通过 widget.postIdInfo 判断) 或已恢复过，就不弹窗
     if (widget.postIdInfo != null || _isDraftRestored) return;
@@ -284,9 +284,11 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
   }
 
   Future<void> _saveDraft() async {
-    // 如果表单是空的或内部正在提交，就不保存
-    if (_isFormEmpty() || _isInternalSubmitting) {
-      print("表单空或正在提交，不保存帖子草稿。");
+    // 如果表单是空的就不保存
+    if (_isFormEmpty()) {
+      print("表单空，不保存帖子草稿。");
+      // 在 dispose 或 AppLifecycle 检查时，如果正在提交，也不应该保存
+      // （这个检查已移到调用 _saveDraft 的地方）
       return;
     }
     // 创建草稿对象
@@ -308,7 +310,7 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
         _selectedTags.isEmpty;
   }
 
-  // --- Reusable UI Component Builders ---
+  // --- UI 构建辅助方法 (_buildSectionTitle, _buildTitleField, _buildTagsSection, _buildContentField, _buildMetadataInfo, _buildMobileInfoCard, _buildMobileContentCard, _buildMobileTagsCard) 保持不变 ---
 
   Widget _buildSectionTitle(String text) {
     return Column(
@@ -386,16 +388,17 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
                   width: 1,
                 ),
               ),
+              // *** 使用 widget.isSubmitting 控制 FilterChip 是否可选 ***
               onSelected: widget.isSubmitting
-                  ? null
+                  ? null // 如果正在提交，不允许修改标签
                   : (selected) {
+                      // 检查锁状态不是必须的，因为isSubmitting应该已经反映了
+                      // if (RequestLockService.instance.isLocked(_submitOperationKey)) return;
                       setState(() {
                         if (selected) {
                           if (_selectedTags.length < 3) {
                             _selectedTags.add(tag);
                           } else {
-                            // Show snackbar - context here *should* be okay
-                            // because it's from user interaction after build.
                             AppSnackBar.showWarning(context, '最多只能选择 3 个标签');
                           }
                         } else {
@@ -435,13 +438,14 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
     );
   }
 
+  // --- 修改提交按钮逻辑 ---
   Widget _buildSubmitButton() {
-    // Pass context IF showing Snackbar here
     return Center(
       child: FunctionalButton(
-        onPressed: widget.isSubmitting ? () => {} : _submit,
-        // Call _submit directly
-        label: _effectiveSubmitButtonText,
+        // *** 使用 widget.isSubmitting 来禁用按钮 ***
+        // 同时 RequestLockService 会在 _submit 内部再次检查
+        onPressed: widget.isSubmitting ? null : _submit, // 禁用时为 null
+        label: _effectiveSubmitButtonText, // 文本根据 widget.isSubmitting 变化
       ),
     );
   }
@@ -468,8 +472,6 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
       return const SizedBox.shrink();
     }
   }
-
-  // --- Mobile Layout Specific Card Builders ---
 
   Widget _buildMobileInfoCard() {
     return Card(
@@ -520,9 +522,9 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
 
   // --- Form Submission Logic ---
 
-  // --- 提交逻辑 ---
-  void _submit() {
-
+  // *** 修改提交逻辑以使用 RequestLockService ***
+  Future<void> _submit() async {
+    // 改为 async
     FocusScope.of(context).unfocus(); // 收起键盘
 
     // 1. 验证表单
@@ -530,41 +532,57 @@ class _PostFormState extends State<PostForm> with WidgetsBindingObserver {
       AppSnackBar.showWarning(context, '请检查标题和内容是否填写完整');
       return;
     }
-    // 2. 验证标签 (如果需要)
+    // 2. 验证标签
     if (_selectedTags.isEmpty) {
       AppSnackBar.showWarning(context, '请至少选择一个标签');
       return;
     }
 
-    // *** 3. 标记内部提交开始 ***
-    _isInternalSubmitting = true;
+    // 3. 使用 RequestLockService 尝试锁定并执行
+    bool didExecute = await RequestLockService.instance.tryLockAsync(
+      _submitOperationKey, // 使用定义的 key
+      action: () async {
+        // --- 锁定成功后执行的核心逻辑 ---
+        // a. 准备数据
+        final data = PostFormData(
+          title: _titleController.text.trim(),
+          content: _contentController.text.trim(),
+          tags: _selectedTags,
+        );
 
-    // 4. 准备数据
-    final data = PostFormData(
-      title: _titleController.text.trim(),
-      content: _contentController.text.trim(),
-      tags: _selectedTags,
+        // b. 调用外部提交函数 (这里假设外部会处理 loading 状态的变更)
+        // 注意：widget.onSubmit 本身不一定是 async 的，但它触发的动作通常是
+        // tryLockAsync 会等待这个 Future 完成（如果 action 是 async）
+        try {
+          widget.onSubmit(data); // 调用父组件传入的回调
+
+          // c. 提交动作已发出，异步清除草稿
+          // 最好是在父组件确认提交成功后再清除，但如果 onSubmit
+          // 本身就代表了“开始提交”，在这里清除也是一种策略
+          await PostFormCacheService().clearDraft();
+          // print("提交操作已触发，草稿已清除。");
+        } catch (e) {
+          // 如果 onSubmit 或 clearDraft 内部抛出同步或异步异常
+          print("执行提交操作时出错: $e");
+          if (mounted) AppSnackBar.showError(context, '提交时发生错误');
+          // 异常会被 tryLockAsync 捕获，并确保 unlock
+          // 如果需要向上层传递错误，可以在这里 rethrow
+          // rethrow;
+        }
+        // --- 核心逻辑结束 ---
+      },
+      onLockFailed: () {
+        // --- 锁定失败时的回调 ---
+        if (mounted) {
+          AppSnackBar.showInfo(context, '正在提交中，请稍候...');
+        }
+      },
     );
 
-    // 5. 调用外部提交，并处理后续
-    try {
-      widget.onSubmit(data); // 调用外部传入的提交函数
-
-      // 6. 提交动作已发出，异步清除草稿 (不阻塞 UI)
-      //    假设 onSubmit 调用后就可以清除，如果需要等结果，逻辑要改
-      PostFormCacheService().clearDraft().then((_) {
-        // print("提交后尝试清除草稿：成功");
-      }).catchError((e) {
-        print("提交后尝试清除草稿：失败 - $e");
-      });
-    } catch (e) {
-      // 如果 onSubmit 抛出同步异常
-      print("调用 onSubmit 出错: $e");
-      if (mounted) AppSnackBar.showError(context, '提交时发生错误');
-    } finally {
-      // *** 7. 标记内部提交结束 ***
-      // 注意：外部的 widget.isSubmitting 状态由父组件控制，这里只管内部状态
-      _isInternalSubmitting = false;
+    // `didExecute` 可以用来判断 action 是否真的执行了
+    if (didExecute) {
+      // print('提交操作已开始执行...');
+      // 这里不需要再手动管理 _isInternalSubmitting 了
     }
   }
 }

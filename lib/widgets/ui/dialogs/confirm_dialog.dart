@@ -1,93 +1,89 @@
 // lib/widgets/ui/dialogs/custom_confirm_dialog.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'base_input_dialog.dart'; // *** 引入底层对话框 ***
+import 'base_input_dialog.dart';
 
-// --- CustomConfirmDialog 本身可以简化为一个包含静态 show 方法的类 ---
-// 因为实际的 UI 和状态由 BaseInputDialog 处理
 class CustomConfirmDialog {
-
   /// 显示自定义【确认】对话框的静态方法 (调用 BaseInputDialog.show)
   /// 返回 Future<void>: 确认时完成，取消或关闭时也完成（可能带错误）
   static Future<void> show({
     required BuildContext context,
     required String title,
     required String message,
-    required Future<void> Function() onConfirm, // 保持 onConfirm 的签名
+    required Future<void> Function() onConfirm,
+    // --- 设置交互参数的默认值 ---
+    bool isDraggable = true, // <<--- 默认允许拖拽
+    bool isScalable = false, // <<--- 默认不允许缩放
+    double minScale = 0.7, // 默认值
+    double maxScale = 2.0, // 默认值
+    // ---------------------------
     String cancelButtonText = '取消',
     String confirmButtonText = '确认',
-    Color confirmButtonColor = Colors.blue, // 默认确认按钮颜色改为蓝色
+    Color confirmButtonColor =
+        Colors.blue, // 考虑使用 Theme.of(context).primaryColor
     VoidCallback? onCancel,
-    IconData iconData = Icons.info_outline, // 默认改为信息图标
-    Color iconColor = Colors.blue,       // 默认改为蓝色
-    bool barrierDismissible = false,      // 确认对话框通常不允许点击外部关闭
+    IconData iconData = Icons.help_outline, // 确认对话框用 help 图标可能更合适
+    Color iconColor = Colors.orange, // 确认对话框用警告色或主题色
+    bool barrierDismissible = false, // 确认对话框通常不允许点击外部关闭
     double maxWidth = 300,
-    // 动画参数可以省略，使用 BaseInputDialog 的默认值
-  }) {
+  }) async {
+    // 改为 async，因为 BaseInputDialog.show 返回 Future
     final theme = Theme.of(context);
-    // 确定图标和按钮颜色
-    final effectiveIconColor = iconColor; // 直接使用传入的
-    final effectiveConfirmButtonColor = confirmButtonColor;
+    // 使用主题色作为默认确认按钮颜色和图标颜色可能更好
+    final effectiveConfirmButtonColor =
+        confirmButtonColor ?? theme.primaryColor;
+    final effectiveIconColor = iconColor ?? Colors.orange; // 默认橙色或传入值
 
-    // 使用 Completer 包装 onConfirm 的 Future<void>
-    final completer = Completer<void>();
-
-    // 调用 BaseInputDialog.show，泛型类型设为 bool (仅用于内部判断是否确认)
-    BaseInputDialog.show<bool>(
-      context: context,
-      title: title,
-      iconData: iconData,
-      iconColor: effectiveIconColor,
-      cancelButtonText: cancelButtonText,
-      confirmButtonText: confirmButtonText,
-      confirmButtonColor: effectiveConfirmButtonColor,
-      maxWidth: maxWidth,
-      barrierDismissible: barrierDismissible, // 传递 barrierDismissible
-      onCancel: onCancel, // 传递 onCancel
-
-      // --- 构建消息文本作为内容 ---
-      contentBuilder: (dialogContext) {
-        return Text(
-          message,
-          textAlign: TextAlign.center,
-          style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
-            height: 1.5,
-            color: Colors.black54,
-          ),
-        );
-      },
-
-      // --- 确认回调: 执行原始 onConfirm 并完成 Completer ---
-      onConfirm: () async {
-        try {
-          // 调用外部传入的 onConfirm (Future<void>)
-          await onConfirm();
-          // 如果 onConfirm 成功完成且 completer 未完成
-          if (!completer.isCompleted) {
-            completer.complete(); // 正常完成
+    // 不再需要手动管理 Completer，让 BaseInputDialog.show 返回的 Future 来处理
+    try {
+      await BaseInputDialog.show<bool>(
+        // 等待 BaseInputDialog.show 完成
+        context: context,
+        title: title,
+        iconData: iconData,
+        iconColor: effectiveIconColor,
+        cancelButtonText: cancelButtonText,
+        confirmButtonText: confirmButtonText,
+        confirmButtonColor: effectiveConfirmButtonColor,
+        maxWidth: maxWidth,
+        barrierDismissible: barrierDismissible,
+        allowDismissWhenNotProcessing: barrierDismissible, // 保持一致
+        onCancel: onCancel,
+        contentBuilder: (dialogContext) {
+          return Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(dialogContext).textTheme.bodyMedium?.copyWith(
+                  height: 1.5,
+                  color: Colors.black54,
+                ),
+          );
+        },
+        onConfirm: () async {
+          // 注意：这里的 onConfirm 是 BaseInputDialog 的，它需要返回 T? (这里是 bool?)
+          // 外部传入的 onConfirm 是 Future<void>
+          try {
+            await onConfirm(); // 执行外部传入的确认逻辑
+            return true; // 成功执行，返回 true 关闭对话框
+          } catch (e) {
+            // 如果外部 onConfirm 抛出异常，重新抛出
+            // BaseInputDialog 的 show 会捕获并使 Future fail
+            rethrow;
           }
-          return true; // 返回 true 表示确认成功，BaseInputDialog 会关闭
-        } catch (e) {
-          // 如果 onConfirm 抛出异常
-          if (!completer.isCompleted) {
-            completer.completeError(e); // 以错误完成
-          }
-          // 把异常继续抛给 BaseInputDialog 处理 (它会关闭对话框并 rethrow)
-          rethrow;
-        }
-      },
-    ).then((confirmed) {
-      // 当 BaseInputDialog 关闭时 (无论是确认返回 true，还是取消/外部点击返回 null)
-      // 检查 completer 是否已经完成
-      if (!completer.isCompleted) {
-        // 如果是因取消或外部点击关闭 (confirmed 为 null)
-        // 并且 onConfirm 没有被调用或没有出错（completer 未完成）
-        // 这里不需要做什么，因为 show 方法返回 Future<void>，不关心返回值
-        // 调用者可以通过 try-catch 捕获 onConfirm 的错误
-      }
-    });
-
-    // 返回 completer.future，调用者可以 await 它，并通过 try-catch 处理错误
-    return completer.future;
+        },
+        // --- 传递交互参数 ---
+        isDraggable: isDraggable, // 传递从 show 方法接收或默认的值
+        isScalable: isScalable, // 传递从 show 方法接收或默认的值
+        minScale: minScale,
+        maxScale: maxScale,
+        // ------------------
+      );
+      // 如果 BaseInputDialog.show 正常完成（无论是确认还是取消关闭），
+      // 这个 Future<void> 就正常完成。
+    } catch (e) {
+      // 如果 BaseInputDialog.show 的 Future 失败了（通常是因为 onConfirm 抛异常）
+      // 重新抛出错误，让调用者知道确认操作失败了。
+      rethrow;
+    }
   }
 }

@@ -12,6 +12,8 @@ import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../services/main/user/cache/account_cache_service.dart';
 import '../../utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
+// *** 新增导入 InputStateService ***
+import '../../providers/inputs/input_state_provider.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import './widgets/account_bubble_menu.dart';
 
@@ -24,9 +26,11 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _emailFieldKey = GlobalKey();
+  // --- 移除 TextEditingController ---
+  // final _emailController = TextEditingController();
+  // final _passwordController = TextEditingController();
+  // ------------------------------
+  final _emailFieldKey = GlobalKey(); // 这个 GlobalKey 仍然需要用于定位气泡菜单
 
   bool _rememberMe = true;
   bool _obscurePassword = true;
@@ -36,18 +40,20 @@ class _LoginScreenState extends State<LoginScreen> {
   // 账号缓存服务
   final _accountCache = AccountCacheService();
 
+  // --- 定义 slot 名称 ---
+  static const String emailSlotName = 'login_email';
+  static const String passwordSlotName = 'login_password';
+  // --------------------
+
   @override
   void initState() {
     super.initState();
-    // 为了防止界面构建过程中弹出菜单导致的问题，使用延迟
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkSavedAccounts());
   }
 
-  // 检查是否有保存的账号
   Future<void> _checkSavedAccounts() async {
     final accounts = _accountCache.getAllAccounts();
     if (accounts.isNotEmpty) {
-      // 延迟一下再显示气泡菜单，确保界面已完全构建
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
           _showAccountBubbleMenu();
@@ -56,29 +62,25 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-  // 显示账号气泡菜单
   void _showAccountBubbleMenu() {
     final accounts = _accountCache.getAllAccounts();
     if (accounts.isEmpty) return;
-
-    // 获取账号图标按钮的位置
     final RenderBox? renderBox =
         _emailFieldKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;
-
-    // 计算按钮在屏幕中的位置
     final position = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
-    final offset = Offset(position.dx + size.width - 120, position.dy);
+    // 稍微调整偏移量以更好地定位菜单
+    final offset =
+        Offset(position.dx + size.width / 2 - 50, position.dy + size.height);
 
-    // 显示气泡菜单
     NavigationUtils.of(context).push(
       PageRouteBuilder(
         opaque: false,
         barrierDismissible: true,
         pageBuilder: (BuildContext context, _, __) {
           return AccountBubbleMenu(
-            anchorContext: context,
+            anchorContext: context, // 使用 LoginScreen 的 context 作为 anchor
             anchorOffset: offset,
             onAccountSelected: _autoLoginWithAccount,
           );
@@ -87,18 +89,30 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // 使用选择的账号自动登录
+  // --- 修改：使用选择的账号自动登录，更新 InputStateService ---
   void _autoLoginWithAccount(SavedAccount account) {
-    setState(() {
-      _emailController.text = account.email;
-      _passwordController.text = account.password;
-    });
+    // 获取 InputStateService 并更新状态
+    try {
+      final inputService =
+          Provider.of<InputStateService>(context, listen: false);
+      // 使用 getController().text = ... 来触发更新，这样 TextInputField 会自动刷新
+      inputService.getController(emailSlotName).text = account.email;
+      inputService.getController(passwordSlotName).text = account.password;
+      // 更新记住我状态（如果需要的话，或者保持当前选择）
+      // setState(() { _rememberMe = true; });
+    } catch (e) {
+      print("Error accessing InputStateService in _autoLoginWithAccount: $e");
+      // 可以考虑显示一个错误提示
+      AppSnackBar.showError(context, "无法自动填充账号信息");
+      return; // 无法更新，直接返回
+    }
 
-    // 自动登录
+    // 触发登录
     _login();
   }
+  // --- 结束修改 ---
 
-  // 登录操作
+  // --- 修改：登录操作，从 InputStateService 获取值，并在成功后清除状态 ---
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -107,21 +121,33 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
+    // 获取 InputStateService
+    final InputStateService inputService;
     try {
-      final email = _emailController.text.trim();
-      final password = _passwordController.text.trim();
+      inputService = Provider.of<InputStateService>(context, listen: false);
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = '内部错误：无法访问输入状态服务。';
+      });
+      AppSnackBar.showError(context, _errorMessage!);
+      return;
+    }
 
+    // 从 Service 获取值
+    final email = inputService.getText(emailSlotName).trim();
+    final password = inputService.getText(passwordSlotName).trim();
+
+    try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       await authProvider.signIn(email, password);
 
       // 如果勾选了记住账号，保存登录信息
       if (_rememberMe) {
         final user = authProvider.currentUser;
-
-        // 创建登录账号缓存
         final savedAccount = SavedAccount(
           email: email,
-          password: password,
+          password: password, // 注意：这里保存的是用户输入的密码
           username: user?.username,
           avatarUrl: user?.avatar,
           userId: user?.id,
@@ -129,12 +155,15 @@ class _LoginScreenState extends State<LoginScreen> {
           experience: user?.experience,
           lastLogin: DateTime.now(),
         );
-
-        // 保存到缓存
         await _accountCache.saveAccount(savedAccount);
       }
+      // *** 登录成功后，清除输入状态 ***
+      inputService.clearText(emailSlotName);
+      inputService.clearText(passwordSlotName);
+      // **************************
 
-      // 登录成功后跳转到首页
+      await Future.delayed(Duration(milliseconds: 500)); // 稍微减少延迟
+
       if (mounted) {
         const String successMessage = "登录成功~🎉";
         NavigationUtils.navigateToHome(context, tabIndex: 0);
@@ -144,19 +173,26 @@ class _LoginScreenState extends State<LoginScreen> {
       if (mounted) {
         setState(() {
           _errorMessage = '登录失败：${e.toString()}';
-          _isLoading = false;
+          _isLoading = false; // 登录失败也要结束 loading
         });
         if (_errorMessage != null) {
           AppSnackBar.showError(context, _errorMessage!);
         }
       }
+    } finally {
+      // 确保无论成功失败，如果组件还在挂载，都结束 loading 状态
+      if (mounted && _isLoading) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+  // --- 结束修改 ---
 
   Widget _buildErrorMessageField() {
     return _errorMessage != null
         ? FadeInItem(
-            // 使用 FadeInItem 包裹
             child: Padding(
               padding: const EdgeInsets.only(bottom: 16),
               child: Text(
@@ -166,28 +202,28 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           )
-        // --- 结束修改 ---
         : SizedBox.shrink();
   }
 
+  // --- 修改：使用 slotName ---
   Widget _buildEmailFormField() {
-    return FormTextInputField( // <--- 替换
+    return FormTextInputField(
       key: _emailFieldKey, // GlobalKey 保持
-      controller: _emailController,
+      slotName: emailSlotName, // <-- 使用 slotName
       enabled: !_isLoading,
       decoration: InputDecoration(
         labelText: '邮箱',
         prefixIcon: Icon(Icons.email),
-        // border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), // FormTextInputField 有默认边框
         suffixIcon: _accountCache.getAllAccounts().isNotEmpty
             ? IconButton(
-          icon: Icon(Icons.account_circle),
-          tooltip: '选择已保存的账号',
-          onPressed: _showAccountBubbleMenu,
-        )
+                icon:
+                    Icon(Icons.account_circle_outlined), // 使用 outlined 图标可能更清晰
+                tooltip: '选择已保存的账号',
+                onPressed: _showAccountBubbleMenu,
+              )
             : null,
       ),
-      keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
+      keyboardType: TextInputType.emailAddress,
       textInputAction: TextInputAction.next,
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入邮箱';
@@ -197,40 +233,40 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+  // --- 修改：使用 slotName ---
   Widget _buildPassWordFormField() {
-    return FormTextInputField( // <--- 替换
-      controller: _passwordController,
+    return FormTextInputField(
+      slotName: passwordSlotName, // <-- 使用 slotName
+      // controller: _passwordController, // <-- 移除 controller
       enabled: !_isLoading,
-      obscureText: _obscurePassword, // <--- 设置 obscureText
+      obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: '密码',
-        prefixIcon: Icon(Icons.lock),
+        prefixIcon: Icon(Icons.lock_outline), // 使用 outlined 图标
         suffixIcon: IconButton(
-          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-          onPressed: () => setState(() { _obscurePassword = !_obscurePassword; }),
+          icon:
+              Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () => setState(() {
+            _obscurePassword = !_obscurePassword;
+          }),
         ),
-        // border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
       ),
-      keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
-      textInputAction: TextInputAction.done, // 登录页密码后通常是 done
+      keyboardType: TextInputType.visiblePassword,
+      textInputAction: TextInputAction.done, // 保留 done
       validator: (value) {
         if (value == null || value.isEmpty) return '请输入密码';
         if (value.length < 6) return '密码至少6位';
         if (value.length > 30) return '密码长度过长';
         return null;
       },
-      // 可以在这里添加 onSubmitted，尝试直接登录
-      // onSubmitted: (_) {
-      //   if (!_isLoading) _login();
-      // },
     );
   }
+  // --- 结束修改 ---
 
   @override
   Widget build(BuildContext context) {
-    // 定义基础延迟和间隔
-    const Duration initialDelay = Duration(milliseconds: 200); // 登录页可以稍微慢点开始
-    const Duration stagger = Duration(milliseconds: 80); // 元素间间隔
+    const Duration initialDelay = Duration(milliseconds: 200);
+    const Duration stagger = Duration(milliseconds: 80);
 
     return Scaffold(
       appBar: CustomAppBar(title: '登录'),
@@ -238,7 +274,6 @@ class _LoginScreenState extends State<LoginScreen> {
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Container(
-            // 这个外部容器可以不加动画，让内部元素滑入
             width: 400,
             padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
@@ -258,8 +293,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // --- 修改这里：添加动画 ---
-                  // 欢迎标题
                   FadeInSlideUpItem(
                     delay: initialDelay,
                     child: AppText(
@@ -270,27 +303,19 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // 错误消息 (在 _buildErrorMessageField 内部添加动画)
                   _buildErrorMessageField(),
-
-                  // 邮箱输入框
                   FadeInSlideUpItem(
-                    delay: initialDelay + stagger, // 延迟
-                    child: _buildEmailFormField(),
+                    delay: initialDelay + stagger,
+                    child: _buildEmailFormField(), // 已修改为使用 slotName
                   ),
                   const SizedBox(height: 16),
-
-                  // 密码输入框
                   FadeInSlideUpItem(
-                    delay: initialDelay + stagger * 2, // 再延迟
-                    child: _buildPassWordFormField(),
+                    delay: initialDelay + stagger * 2,
+                    child: _buildPassWordFormField(), // 已修改为使用 slotName
                   ),
                   const SizedBox(height: 16),
-
-                  // 记住密码和忘记密码行
                   FadeInSlideUpItem(
-                    delay: initialDelay + stagger * 3, // 再延迟
+                    delay: initialDelay + stagger * 3,
                     child: Row(
                       children: [
                         Checkbox(
@@ -303,36 +328,31 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Spacer(),
                         FunctionalTextButton(
                             onPressed: () => NavigationUtils.pushNamed(
-                                context, '/forgot-password'), // 路由可能需要调整
+                                context, '/forgot-password'),
                             label: '忘记密码?'),
                       ],
                     ),
                   ),
                   const SizedBox(height: 24),
-
-                  // 登录按钮
                   FadeInSlideUpItem(
-                    delay: initialDelay + stagger * 4, // 再延迟
+                    delay: initialDelay + stagger * 4,
                     child: FunctionalButton(
                       onPressed:
-                          _isLoading ? ()=> {} : _login, // 保持 loading 状态禁用逻辑
+                          _isLoading ? () {} : _login, // 保持 loading 状态禁用逻辑
                       label: '登录',
-                      isEnabled: !_isLoading, // 保持 isEnabled
+                      isLoading: _isLoading, // <-- 传递 isLoading 状态
+                      isEnabled: !_isLoading, // 明确传递 isEnabled
                     ),
                   ),
                   const SizedBox(height: 16),
-
-                  // 注册跳转按钮
                   FadeInSlideUpItem(
-                    delay: initialDelay + stagger * 5, // 最后出现
+                    delay: initialDelay + stagger * 5,
                     child: FunctionalTextButton(
-                      // onPressed: () => NavigationUtils.navigateToLogin(context), // 这里应该是去注册页
-                      onPressed: () => NavigationUtils.pushNamed(
-                          context, '/register'), // 假设注册页路由是 /register
+                      onPressed: () =>
+                          NavigationUtils.pushNamed(context, '/register'),
                       label: '还没有账号？立即注册',
                     ),
                   ),
-                  // --- 结束修改 ---
                 ],
               ),
             ),
@@ -344,8 +364,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
     super.dispose();
   }
 }

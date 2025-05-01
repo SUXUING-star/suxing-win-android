@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/home/section/home_hot_posts.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 引入 Service
@@ -11,7 +12,6 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:async'; // 需要 Timer (如果之前没有)
 
-
 // *** 修改：改为 StatefulWidget ***
 class HomeHotPosts extends StatefulWidget {
   // 移除 Stream 参数
@@ -20,8 +20,7 @@ class HomeHotPosts extends StatefulWidget {
   _HomeHotPostsState createState() => _HomeHotPostsState();
 }
 
-class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
-  final ForumService _forumService = ForumService(); // Service 实例
+class _HomeHotPostsState extends State<HomeHotPosts> {
 
   // 内部状态
   List<Post>? _cachedPosts;
@@ -39,24 +38,25 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
   Future<void> _fetchData() async {
     if (!mounted) return;
     if (_isLoading) {
-      print("HomeHotPosts _fetchData called while loading, ignoring.");
       return;
     }
-    print("HomeHotPosts _fetchData called");
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      // *** 核心：调用 Service 的 Stream 方法，并用 .first 获取 Future<List<Post>> ***
-      // 假设 getHotPosts 默认 limit 是需要的
-      final posts = await _forumService.getHotPosts().first;
+      final forumService = context.read<ForumService>(); // 安全获取
+      final posts = await forumService.getHotPosts();
 
-      if (mounted) {
+      if (mounted && posts.isNotEmpty) {
         setState(() {
           _cachedPosts = posts;
-          // _isLoading = false; // 在 finally 处理
+        });
+      } else {
+        _errorMessage = '加载热门帖子失败';
+        setState(() {
+          _isLoading = true;
         });
       }
     } catch (error, stackTrace) {
@@ -64,7 +64,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
       if (mounted) {
         setState(() {
           _errorMessage = '加载热门帖子失败'; // 简化错误信息
-          // _isLoading = false; // 在 finally 处理
+
           _cachedPosts = null;
         });
       }
@@ -77,7 +77,6 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     // 整体结构和样式保持不变
@@ -89,7 +88,12 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
-          boxShadow: [ BoxShadow( color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 2) ) ],
+          boxShadow: [
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2))
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -97,12 +101,24 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
             // --- 标题栏保持不变 ---
             Container(
               padding: EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration( border: Border( bottom: BorderSide( color: Colors.grey.shade200, width: 1))),
+              decoration: BoxDecoration(
+                  border: Border(
+                      bottom:
+                          BorderSide(color: Colors.grey.shade200, width: 1))),
               child: Row(
                 children: [
-                  Container( width: 6, height: 22, decoration: BoxDecoration( color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(3))),
+                  Container(
+                      width: 6,
+                      height: 22,
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(3))),
                   SizedBox(width: 12),
-                  Text( '热门帖子', style: TextStyle( fontSize: 20, fontWeight: FontWeight.w700, color: Colors.grey[900])),
+                  Text('热门帖子',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey[900])),
                   Spacer(),
                   // 可选：如果需要更多按钮
                   // InkWell(...)
@@ -113,7 +129,6 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
 
             // --- 使用内部状态构建列表区域 ---
             _buildPostListArea(context),
-
           ],
         ),
       ),
@@ -158,13 +173,19 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
     final posts = _cachedPosts ?? []; // 使用缓存或空列表
     final displayPosts = posts.take(5).toList(); // 最多显示 5 条
 
-    return Stack( // 使用 Stack 添加加载覆盖层
+    return Stack(
+      // 使用 Stack 添加加载覆盖层
       children: [
         ListView.separated(
           shrinkWrap: true,
           physics: NeverScrollableScrollPhysics(),
           itemCount: displayPosts.length,
-          separatorBuilder: (context, index) => Divider( height: 20, thickness: 1, indent: 16, endIndent: 16, color: Colors.grey.withOpacity(0.15)),
+          separatorBuilder: (context, index) => Divider(
+              height: 20,
+              thickness: 1,
+              indent: 16,
+              endIndent: 16,
+              color: Colors.grey.withOpacity(0.15)),
           itemBuilder: (context, index) {
             final post = displayPosts[index];
             // 调用列表项构建方法
@@ -175,14 +196,12 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
         if (_isLoading && posts.isNotEmpty)
           Positioned.fill(
               child: Container(
-                color: Colors.white.withOpacity(0.5),
-                child: Center(child: LoadingWidget.inline(size: 30)),
-              )
-          ),
+            color: Colors.white.withOpacity(0.5),
+            child: Center(child: LoadingWidget.inline(size: 30)),
+          )),
       ],
     );
   }
-
 
   // --- _buildPostListItem, _buildPostStats, _buildStatItem 保持不变 ---
   Widget _buildPostListItem(BuildContext context, Post post) {
@@ -206,14 +225,32 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 4.0),
-                    child: Text( post.title, style: TextStyle( fontWeight: FontWeight.w600, color: Colors.grey[850], fontSize: 15, height: 1.3), maxLines: 2, overflow: TextOverflow.ellipsis),
+                    child: Text(post.title,
+                        style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[850],
+                            fontSize: 15,
+                            height: 1.3),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis),
                   ),
                   SizedBox(height: 8),
                   Row(
                     children: [
-                      UserInfoBadge( userId: post.authorId, mini: true, showLevel: false, showFollowButton: false, padding: EdgeInsets.zero),
+                      UserInfoBadge(
+                          userId: post.authorId,
+                          mini: true,
+                          showLevel: false,
+                          showFollowButton: false,
+                          padding: EdgeInsets.zero),
                       SizedBox(width: 8),
-                      Flexible( child: Text( '· ${DateTimeFormatter.formatTimeAgo(post.createTime)}', style: TextStyle( color: Colors.grey[500], fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis)),
+                      Flexible(
+                          child: Text(
+                              '· ${DateTimeFormatter.formatTimeAgo(post.createTime)}',
+                              style: TextStyle(
+                                  color: Colors.grey[500], fontSize: 12),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis)),
                     ],
                   ),
                 ],
@@ -226,28 +263,37 @@ class _HomeHotPostsState extends State<HomeHotPosts> { // *** 改为 State ***
       ),
     );
   }
+
   Widget _buildPostStats(BuildContext context, Post post) {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        _buildStatItem(context, Icons.mode_comment_outlined, post.replyCount, Colors.blueGrey[400]),
+        _buildStatItem(context, Icons.mode_comment_outlined, post.replyCount,
+            Colors.blueGrey[400]),
         SizedBox(height: 8),
-        _buildStatItem(context, Icons.thumb_up_alt_outlined, post.likeCount, Colors.pink[300]),
+        _buildStatItem(context, Icons.thumb_up_alt_outlined, post.likeCount,
+            Colors.pink[300]),
         SizedBox(height: 8),
-        _buildStatItem(context, Icons.bookmark_border_outlined, post.favoriteCount, Colors.teal[400]),
-      ],
-    );
-  }
-  Widget _buildStatItem(BuildContext context, IconData icon, int count, Color? iconColor) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon( icon, color: iconColor ?? Colors.grey[500], size: 16),
-        SizedBox(width: 5),
-        Text( '$count', style: TextStyle( color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.w500)),
+        _buildStatItem(context, Icons.bookmark_border_outlined,
+            post.favoriteCount, Colors.teal[400]),
       ],
     );
   }
 
+  Widget _buildStatItem(
+      BuildContext context, IconData icon, int count, Color? iconColor) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, color: iconColor ?? Colors.grey[500], size: 16),
+        SizedBox(width: 5),
+        Text('$count',
+            style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+                fontWeight: FontWeight.w500)),
+      ],
+    );
+  }
 } // End of _HomeHotPostsState

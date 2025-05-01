@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -24,7 +25,6 @@ class MessageScreen extends StatefulWidget {
 }
 
 class _MessageScreenState extends State<MessageScreen> {
-  final MessageService _messageService = MessageService();
   bool _isLoading = true; // 是否正在加载数据
   bool _allMessagesRead = false; // 是否所有消息都已读
 
@@ -49,7 +49,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
   @override
   void dispose() {
-    _messageService.dispose(); // 清理消息流监听器
+    final messageService = context.read<MessageService>();
+    messageService.dispose(); // 清理消息流监听器
     super.dispose();
   }
 
@@ -59,10 +60,10 @@ class _MessageScreenState extends State<MessageScreen> {
     setState(() {
       _isLoading = true;
     }); // 开始加载，显示加载指示器
-
+    final messageService = context.read<MessageService>();
     try {
       // 调用服务获取分组消息
-      final groupedMessages = await _messageService.getGroupedMessagesOnce();
+      final groupedMessages = await messageService.getGroupedMessagesOnce();
       if (!mounted) return; // 获取数据后再次检查页面是否还在
 
       // 对每个分组内部的消息按时间倒序排序 (最新的在前)
@@ -143,7 +144,8 @@ class _MessageScreenState extends State<MessageScreen> {
   Future<void> _markAllAsRead() async {
     if (_allMessagesRead || !mounted) return; // 如果已全部已读或页面已销毁，则不操作
     try {
-      await _messageService.markAllAsRead(); // 调用 API
+      final messageService = context.read<MessageService>();
+      await messageService.markAllAsRead(); // 调用 API
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
       if (mounted) {
@@ -167,6 +169,7 @@ class _MessageScreenState extends State<MessageScreen> {
     if (!mounted) return;
     bool needsStateUpdate = false; // 是否需要更新 UI (例如移除未读标记)
     Message messageForUi = message; // 用于后续操作的消息对象 (可能被更新)
+    final messageService = context.read<MessageService>();
 
     // 步骤 1: 如果消息未读，标记为已读 (本地乐观更新 + 远程 API调用)
     if (!message.isRead) {
@@ -200,7 +203,7 @@ class _MessageScreenState extends State<MessageScreen> {
           }
 
           // 异步调用 API 在后端标记已读 (不需要 await，避免阻塞 UI)
-          _messageService.markAsRead(message.id).then((_) {
+          messageService.markAsRead(message.id).then((_) {
             // 可以在这里再次检查全局已读状态，确保精确
             if (mounted) _checkAllMessagesReadStatus();
           }).catchError((e, stackTrace) {
@@ -210,9 +213,7 @@ class _MessageScreenState extends State<MessageScreen> {
             if (mounted) {}
           });
         } else {
-          // 如果在列表中找不到消息（理论上不应发生），记录警告并尝试直接调用 API
-          print("警告: 未在 _groupedMessages 中找到要标记已读的消息 ID: ${message.id}");
-          await _messageService.markAsRead(message.id); // 尝试直接调用
+          await messageService.markAsRead(message.id); // 尝试直接调用
           _loadGroupedMessages(); // 作为后备，重新加载列表
         }
       } catch (e, stackTrace) {
@@ -280,7 +281,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
   /// 显示不支持导航的提示对话框 (移动端)
   void _showUnsupportedNavigationDialog() {
-    CustomInfoDialog(
+    CustomInfoDialog.show(
+      context: context,
       title: '提示',
       message: '此消息没有可查看的关联页面。',
       onClose: () => Navigator.of(context).pop(),
@@ -310,7 +312,8 @@ class _MessageScreenState extends State<MessageScreen> {
 
         try {
           // 调用服务执行删除操作
-          await _messageService.deleteMessage(message.id);
+          final messageService = context.read<MessageService>();
+          await messageService.deleteMessage(message.id);
           if (!mounted) return; // 异步操作后再次检查
 
           // --- 删除成功 ---
@@ -562,26 +565,26 @@ class _MessageScreenState extends State<MessageScreen> {
             },
             child: _showMessageDetails && _selectedMessage != null
                 ? Container(
-              // Key is important for AnimatedSwitcher to detect changes
-              key: ValueKey<String>(_selectedMessage!.id),
-              width: sidePanelWidth,
-              // --- 修改开始: 移除无限高度 ---
-              // height: double.infinity, // REMOVE THIS LINE
-              // --- 修改结束 ---
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 5,
-                    offset: Offset(-2, 0),
-                  ),
-                ],
-              ),
-              // Ensure the MessageDetail widget itself can handle height correctly
-              child: _buildRightPanel(),
-            )
-            // Use SizedBox.shrink() for the 'empty' state
+                    // Key is important for AnimatedSwitcher to detect changes
+                    key: ValueKey<String>(_selectedMessage!.id),
+                    width: sidePanelWidth,
+                    // --- 修改开始: 移除无限高度 ---
+                    // height: double.infinity, // REMOVE THIS LINE
+                    // --- 修改结束 ---
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 5,
+                          offset: Offset(-2, 0),
+                        ),
+                      ],
+                    ),
+                    // Ensure the MessageDetail widget itself can handle height correctly
+                    child: _buildRightPanel(),
+                  )
+                // Use SizedBox.shrink() for the 'empty' state
                 : SizedBox.shrink(key: ValueKey<String>('empty_panel')),
           ),
         ],

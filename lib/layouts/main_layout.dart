@@ -13,10 +13,8 @@ import '../providers/auth/auth_provider.dart';
 import '../providers/navigation/sidebar_provider.dart'; // *** 引入 SidebarProvider ***
 import '../services/main/update/update_service.dart';
 import '../services/main/user/user_ban_service.dart';
-import '../services/main/user/user_service.dart';
 import '../services/main/announcement/announcement_service.dart';
 import '../services/main/network/network_manager.dart';
-// --- 引入其他 Widgets 和 Utils ---
 import '../utils/device/device_utils.dart';
 import 'mobile/top_navigation_bar.dart';
 import 'mobile/bottom_navigation_bar.dart';
@@ -34,11 +32,6 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> with RouteAware {
-  // *** 不再需要 _currentIndex 本地状态，由 Provider 控制 ***
-  // int _currentIndex = 0;
-
-  final UserService _userService = UserService();
-  final UserBanService _banService = UserBanService();
   late List<Widget> _screens;
 
   @override
@@ -65,6 +58,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
       _updateSubRouteStatus(false); // Set initial state
     });
   }
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -84,28 +78,19 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   /// Called when the current route has been pushed.
   @override
   void didPush() {
-    //print("MainLayout: didPush - Route became visible.");
-    // We might need to reset the flag if we are returning TO MainLayout
-    // But didPopNext is usually better for that. Let's see.
-    _updateSubRouteStatus(false); // Assume becoming visible means no sub-route initially
+    _updateSubRouteStatus(
+        false); // Assume becoming visible means no sub-route initially
   }
 
   /// Called when the current route has been popped off.
   @override
-  void didPop() {
-    //print("MainLayout: didPop - Route was popped off.");
-    // Not typically useful here as the widget is being disposed.
-  }
-
+  void didPop() {}
 
   /// Called when a new route has been pushed, and the current route is no longer visible.
   @override
   void didPushNext() {
-    //print("MainLayout: didPushNext - New route pushed ON TOP of MainLayout.");
-    // A new route is covering MainLayout, so a sub-route IS active
     _updateSubRouteStatus(true);
   }
-
 
   /// Called when the top route has been popped off, and the current route is visible again.
   @override
@@ -117,10 +102,9 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
 
   // Helper method to update the provider
   void _updateSubRouteStatus(bool isActive) {
-    // Use WidgetsBinding to delay update slightly after navigation finishes
-    // This can sometimes prevent race conditions or build errors.
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) { // Check if still mounted before accessing provider
+      if (mounted) {
+        // Check if still mounted before accessing provider
         Provider.of<SidebarProvider>(context, listen: false)
             .setSubRouteActive(isActive);
       }
@@ -130,7 +114,8 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   // 确保网络管理器已初始化
   Future<void> _ensureNetworkManagerInitialized() async {
     try {
-      final networkManager = Provider.of<NetworkManager>(context, listen: false);
+      final networkManager =
+          Provider.of<NetworkManager>(context, listen: false);
       if (!networkManager.isInitialized) {
         await networkManager.init();
       }
@@ -144,7 +129,8 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
     try {
       if (!mounted) return;
 
-      final announcementService = Provider.of<AnnouncementService>(context, listen: false);
+      final announcementService =
+          Provider.of<AnnouncementService>(context, listen: false);
 
       // 确保服务已初始化
       if (!announcementService.isInitialized) {
@@ -170,16 +156,16 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   // 检查封禁状态 (保持不变)
   Future<void> _checkBanStatus() async {
     try {
-      final userId = await _userService.currentUserId;
-      if (userId != null) {
-        final ban = await _banService.checkUserBan(userId);
+      final banService = context.read<UserBanService>();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final userId = authProvider.currentUserId;
+      final isLogged = authProvider.isLoggedIn;
+      if (userId != null && isLogged) {
+        final ban = await banService.checkUserBan(userId);
         if (ban != null && mounted) {
           // 显示封禁对话框
-          showDialog(
-            context: context,
-            barrierDismissible: false,
-            builder: (context) => UserBanDialog(ban: ban),
-          );
+
+          UserBanDialog.show(ban: ban, context: context);
         }
       }
     } catch (e) {
@@ -196,16 +182,13 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
 
     // 如果有强制更新并且界面还在挂载状态，显示对话框
     if (mounted && updateService.updateAvailable && updateService.forceUpdate) {
-      showDialog(
+      ForceUpdateDialog.show(
         context: context,
-        barrierDismissible: false,
-        builder: (context) => ForceUpdateDialog(
-          currentVersion: updateService.latestVersion ?? '',
-          latestVersion: updateService.latestVersion ?? '',
-          updateMessage: updateService.updateMessage,
-          changelog: updateService.changelog,
-          updateUrl: updateService.updateUrl ?? '',
-        ),
+        currentVersion: updateService.latestVersion ?? '',
+        latestVersion: updateService.latestVersion ?? '',
+        updateMessage: updateService.updateMessage,
+        changelog: updateService.changelog,
+        updateUrl: updateService.updateUrl ?? '',
       );
     }
   }
@@ -213,10 +196,8 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   void _handleProfileTap() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (authProvider.isLoggedIn) {
-      // *** 用户已登录，更新 SidebarProvider 以导航到 Profile 页 (索引 5) ***
       Provider.of<SidebarProvider>(context, listen: false).setCurrentIndex(5);
     } else {
-
       NavigationUtils.navigateToLogin(context);
     }
   }
@@ -233,19 +214,18 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         ? selectedIndex
         : 0; // 如果索引无效，默认显示第一个页面 (Home)
 
-    //print("MainLayout build: watched selectedIndex=$selectedIndex, using validIndex=$validIndex"); // 添加日志
 
     return Scaffold(
       // 移动平台显示顶部导航栏 (逻辑不变，但 onTap 回调需要修改)
       appBar: !isDesktop
           ? TopNavigationBar(
-        onLogoTap: () {
-          // *** 点击 Logo，更新 SidebarProvider 回到首页 (索引 0) ***
-          Provider.of<SidebarProvider>(context, listen: false)
-              .setCurrentIndex(0);
-        },
-        onProfileTap: _handleProfileTap, // 使用更新后的 _handleProfileTap
-      )
+              onLogoTap: () {
+                // *** 点击 Logo，更新 SidebarProvider 回到首页 (索引 0) ***
+                Provider.of<SidebarProvider>(context, listen: false)
+                    .setCurrentIndex(0);
+              },
+              onProfileTap: _handleProfileTap, // 使用更新后的 _handleProfileTap
+            )
           : null,
       body: Stack(
         children: [
@@ -260,12 +240,13 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
       // 移动平台显示底部导航栏 (逻辑不变，但 onTap 回调需要修改)
       bottomNavigationBar: !isDesktop
           ? CustomBottomNavigationBar(
-        // *** 使用从 Provider 获取的 validIndex 作为当前索引 ***
-        currentIndex: validIndex,
-        // *** 点击底部导航项时，更新 SidebarProvider ***
-        onTap: (index) => Provider.of<SidebarProvider>(context, listen: false)
-            .setCurrentIndex(index),
-      )
+              // *** 使用从 Provider 获取的 validIndex 作为当前索引 ***
+              currentIndex: validIndex,
+              // *** 点击底部导航项时，更新 SidebarProvider ***
+              onTap: (index) =>
+                  Provider.of<SidebarProvider>(context, listen: false)
+                      .setCurrentIndex(index),
+            )
           : null,
     );
   }

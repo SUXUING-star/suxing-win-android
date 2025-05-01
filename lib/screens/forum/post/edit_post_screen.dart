@@ -1,5 +1,6 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -19,7 +20,6 @@ class EditPostScreen extends StatefulWidget {
 }
 
 class _EditPostScreenState extends State<EditPostScreen> {
-  final _forumService = ForumService();
   final List<String> _availableTags = PostTagLists.availableTags;
   bool _isSubmitting = false;
   bool _isLoading = true;
@@ -34,7 +34,9 @@ class _EditPostScreenState extends State<EditPostScreen> {
   Future<void> _loadPostData() async {
     try {
       setState(() => _isLoading = true);
-      final post = await _forumService.getPost(widget.postId);
+
+      final forumService = context.read<ForumService>();
+      final post = await forumService.getPost(widget.postId);
       setState(() {
         _post = post;
         _isLoading = false;
@@ -94,7 +96,8 @@ class _EditPostScreenState extends State<EditPostScreen> {
   Future<void> _submitEdit(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      await _forumService.updatePost(_post!.id, data.title, data.content, data.tags);
+      final forumService = context.read<ForumService>();
+      await forumService.updatePost(_post!.id, data.title, data.content, data.tags);
       AppSnackBar.showSuccess(context, "编辑成功");
       NavigationUtils.pop(context, true);
     } catch (e) {

@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/gamelist/panel/game_left_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/device/device_utils.dart';
 
@@ -104,9 +104,9 @@ class GameLeftPanel extends StatelessWidget {
 
   Widget _buildTagsGrid(BuildContext context) {
     if (tags.isEmpty) {
-      return EmptyStateWidget(
-        message: '没有可用的标签',
-        iconData: Icons.label_off,
+      return InlineErrorWidget(
+        errorMessage: '加载标签发生错误',
+        icon: Icons.label_off,
         iconSize: 32,
         iconColor: Colors.grey[400],
       );

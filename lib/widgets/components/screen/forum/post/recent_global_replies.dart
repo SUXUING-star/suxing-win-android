@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/global_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -9,12 +9,8 @@ import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 确认 ErrorWidget 改名为 InlineErrorWidget 或反之
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../screens/forum/post/post_detail_screen.dart';
-import '../../../../../screens/profile/open_profile_screen.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/badges/safe_user_avatar.dart';
 
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
@@ -31,7 +27,6 @@ class RecentGlobalReplies extends StatefulWidget {
 }
 
 class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
-  final ForumService _forumService = ForumService();
   // 把 Stream 换成 Future
   Future<List<GlobalReplyItem>>? _repliesFuture;
   // 不需要 _isLoading 了，FutureBuilder 自己会管加载状态
@@ -39,41 +34,36 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   @override
   void initState() {
     super.initState();
-    print(
-        'Initializing RecentGlobalReplies widget with limit: ${widget.limit}');
     // 初始化时调用 Future 方法
     _loadReplies();
   }
 
   // 封装加载逻辑，方便复用
   void _loadReplies() {
+    final forumService = context.read<ForumService>();
     // 注意这里直接赋值给 Future 变量，不需要 setState
     _repliesFuture =
-        _forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
+        forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
   }
 
   @override
   void dispose() {
-    print('Disposing RecentGlobalReplies widget for limit: ${widget.limit}');
     // Future 不需要像 Stream 那样手动关闭
     super.dispose();
   }
 
   // 主动刷新的方法
   void _handleRefresh() {
-    print("Refreshing RecentGlobalReplies...");
+    final forumService = context.read<ForumService>();
     // 调用强制刷新方法，并用 setState 更新 Future，让 FutureBuilder 重新构建
     setState(() {
       _repliesFuture =
-          _forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+          forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop ||
-        DeviceUtils.isWeb ||
-        DeviceUtils.isTablet(context);
 
     return Container(
       margin: const EdgeInsets.only(top: 16),

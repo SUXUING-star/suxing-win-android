@@ -2,10 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import '../../routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 
 /// A unified screen to handle all route navigation errors
-/// 
+///
 /// This screen centralizes error handling for invalid routes or route parameters,
 /// providing a consistent user experience when navigation errors occur.
 class RouteErrorScreen extends StatelessWidget {
@@ -112,22 +112,17 @@ class RouteErrorScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32),
               if (onAction != null) ...[
-                ElevatedButton(
-                  onPressed: onAction,
-                  style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                  ),
-                  child: Text(buttonText),
+                FunctionalButton(
+                  onPressed: () => onAction,
+                  label: buttonText,
                 ),
                 const SizedBox(height: 16),
               ],
-              if (showHomeButton && (onAction == null || buttonText != '返回首页')) ...[
+              if (showHomeButton &&
+                  (onAction == null || buttonText != '返回首页')) ...[
                 TextButton(
                   onPressed: () {
-                    NavigationUtils.of(context).pushNamedAndRemoveUntil(
-                      AppRoutes.home,
-                          (route) => false,
-                    );
+                    NavigationUtils.navigateToHome(context);
                   },
                   child: const Text('返回首页'),
                 ),

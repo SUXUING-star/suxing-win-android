@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/home/section/home_game_hot.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -20,7 +21,6 @@ class HomeHotGames extends StatefulWidget {
 }
 
 class _HomeHotGamesState extends State<HomeHotGames> {
-  final GameService _gameService = GameService(); // Service 实例
   final PageController _pageController = PageController();
   Timer? _timer;
   int _currentPage = 0;
@@ -69,30 +69,38 @@ class _HomeHotGamesState extends State<HomeHotGames> {
 
     try {
       // *** 核心：调用 Service 的 Stream 方法，并用 .first 获取 Future<List<Game>> ***
-      final games = await _gameService.getHotGames().first;
+      final gameService = context.read<GameService>();
+      final games = await gameService.getHotGames();
 
       if (mounted) {
-        setState(() {
-          _cachedGames = games;
-          _latestGamesForAutoScroll = games; // 更新给自动滚动
-          // _isLoading = false; // 在 finally 处理
-          _isInitialLoading = false;
-          if (_pageController.hasClients && _pageController.page != 0) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (mounted && _pageController.hasClients) {
-                _pageController.jumpToPage(0);
-                setState(() { _currentPage = 0; });
-              }
-            });
-          }
-        });
+        if (games.isNotEmpty){
+          setState(() {
+            _cachedGames = games;
+            _latestGamesForAutoScroll = games; // 更新给自动滚动
+            _isInitialLoading = false;
+            if (_pageController.hasClients && _pageController.page != 0) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _pageController.hasClients) {
+                  _pageController.jumpToPage(0);
+                  setState(() { _currentPage = 0; });
+                }
+              });
+            }
+          });
+        }else{
+          _errorMessage = "加载发生错误";
+          setState(() {
+            _isLoading= true;
+            _isInitialLoading = true;
+          });
+        }
+
       }
     } catch (error, stackTrace) {
       print("HomeHotGames _fetchData error: $error\n$stackTrace");
       if (mounted) {
         setState(() {
           _errorMessage = '加载热门游戏失败'; // 简化错误信息
-          // _isLoading = false; // 在 finally 处理
           _isInitialLoading = false;
           _cachedGames = null;
           _latestGamesForAutoScroll = null;

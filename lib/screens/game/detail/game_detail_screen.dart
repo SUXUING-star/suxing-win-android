@@ -30,7 +30,6 @@ class GameDetailScreen extends StatefulWidget {
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
-  final GameService _gameService = GameService();
   late AuthProvider _authProvider;
 
   Game? _game;
@@ -97,16 +96,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void _tryIncrementViewCount() {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
-        widget.gameId != null &&
-        _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
-        widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
-    ) {
-      print(
-          "GameDetailScreen (${widget.gameId}): Game is approved and history needed, incrementing view count.");
-      _gameService.incrementGameView(widget.gameId!).catchError((error) {
-        print(
-            "GameDetailScreen (${widget.gameId}): Failed to increment view count: $error");
-      });
+            widget.gameId != null &&
+            _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
+            widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
+        ) {
+      final gameService = context.read<GameService>();
+      gameService.incrementGameView(widget.gameId!).catchError((error) {});
     } else {
       // 打印跳过原因，方便调试
       //print(
@@ -131,17 +126,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     bool gameWasRemoved = false; // 新增标志位
 
     try {
-      result = await _gameService.getGameDetailsWithStatus(widget.gameId!);
-      // 注意: 如果 service 返回 null 但没抛异常，也视为未找到 (虽然现在 service 会抛异常)
-      if (result == null && mounted) {
-        errorMsg = 'not_found'; // 标记为未找到
-        gameWasRemoved = true;
-      }
+      final gameService = context.read<GameService>();
+      result = await gameService.getGameDetailsWithStatus(widget.gameId!);
     } catch (e) {
       if (!mounted) return;
-      print(
-          "GameDetailScreen (${widget.gameId}): Error loading details with status: $e");
-
       // 检查是否是 "not_found" 异常
       if (e.toString().contains('not_found')) {
         errorMsg = 'not_found';
@@ -164,8 +152,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               onClose: () {
                 // 用户点击“知道了”之后的操作
                 if (mounted) {
-                  print(
-                      "GameDetailScreen (${widget.gameId}): User acknowledged game removal. Navigating back.");
                   // 安全地执行 Pop 操作
                   // 使用 try-catch 增加健壮性，防止 pop 时 context 无效
                   try {
@@ -177,7 +163,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                           context, AppRoutes.home);
                     }
                   } catch (popError) {
-                    print("Error during Navigator.pop after dialog: $popError");
                     // 备用方案：导航到主页
                     NavigationUtils.pushReplacementNamed(
                         context, AppRoutes.home);
@@ -202,6 +187,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           if (errorMsg == null && result != null) {
             // 成功
+            print("设置_game状态");
             _game = result.game;
             _collectionStatus = result.collectionStatus;
             _navigationInfo = result.navigationInfo;
@@ -247,16 +233,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     await _loadGameDetailsWithStatus(forceRefresh: true);
   }
 
-  void _handleCollectionStateChangedInButton(CollectionChangeResult result) {
+  Future<void> _handleCollectionStateChangedInButton(
+      CollectionChangeResult result) async {
     // 1. 安全检查
     if (!mounted || _game == null) {
-      print(
-          'GameDetailScreen (${widget.gameId}): Cannot handle collection change, component unmounted or game data is null.');
       return;
     }
-
-    print(
-        'GameDetailScreen (${widget.gameId}): Received collection change from button. New status: ${result.newStatus?.status}. Applying frontend compensation.');
 
     // 2. 获取当前状态和变化信息
     final Game currentGame = _game!;
@@ -292,7 +274,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     // 4. 计算补偿后的新评分统计数据和平均分
     final int newRatingCount =
-    (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
+        (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
     final double newTotalRatingSum = (newRatingCount == 0)
         ? 0.0
         : (currentGame.totalRatingSum + deltaRatingSum);
@@ -311,35 +293,42 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final Game updatedGame = currentGame.copyWith(
       // 补偿收藏计数
       wantToPlayCount:
-      (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
-          .clamp(0, 1000000),
+          (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
+              .clamp(0, 1000000),
       playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0))
           .clamp(0, 1000000),
       playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0))
           .clamp(0, 1000000),
       totalCollections:
-      (currentGame.totalCollections + (countDeltas['total'] ?? 0))
-          .clamp(0, 1000000),
+          (currentGame.totalCollections + (countDeltas['total'] ?? 0))
+              .clamp(0, 1000000),
       // *** 补偿评分相关字段 ***
       ratingCount: newRatingCount,
       totalRatingSum: newTotalRatingSum,
       rating: newAverageRating, // *** 使用前端计算的新平均分 ***
-      // *** 更新时间戳（使用模型中已有的 updateTime 和 ratingUpdateTime） ***
       updateTime: DateTime.now(), // 更新游戏整体更新时间
-      // 如果评分有变化，更新 ratingUpdateTime，否则保持原来的值
       ratingUpdateTime: (deltaRatingCount != 0 || deltaRatingSum != 0)
           ? DateTime.now()
           : currentGame.ratingUpdateTime,
-      // *** 不再有 collectionUpdateTime 这个字段 ***
     );
 
-    // 6. 使用 setState 更新状态
-    setState(() {
-      _collectionStatus = result.newStatus; // 更新收藏按钮状态
-      _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
-      _refreshCounter++; // 强制子组件重建
-    });
-    _gameService.cachedNewData(updatedGame, _collectionStatus);
+    try {
+      // 确保使用 dialog 返回的最新 status (result.newStatus) 来缓存
+      final gameService = context.read<GameService>();
+      await gameService.cachedNewData(updatedGame, result.newStatus);
+      //print("GameDetailScreen (${widget.gameId}): Cache updated successfully before setState.");
+
+      // 6. 使用 setState 更新状态 (在缓存成功后)
+      // 不再需要加延迟，await 已经保证了顺序
+      if (mounted) {
+        // 再次检查 mounted 状态，因为 await 可能耗时
+        setState(() {
+          _collectionStatus = result.newStatus; // 更新收藏按钮状态
+          _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
+          _refreshCounter++; // 强制子组件重建
+        });
+      }
+    } catch (cacheError) {}
   }
 
   // *** 核心改动：处理点赞切换的回调函数 ***
@@ -359,7 +348,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 调用返回 Future<bool> 的 service 方法
-      final newIsLikedStatus = await _gameService.toggleLike(widget.gameId!);
+      final gameService = context.read<GameService>();
+      final newIsLikedStatus = await gameService.toggleLike(widget.gameId!);
 
       // *** 直接用返回结果更新状态 ***
       if (mounted) {
@@ -403,13 +393,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
         arguments: game);
     if (result == true && mounted) {
-      //print(
-      //    "GameDetailScreen (${widget.gameId}): Game edited, refreshing details.");
       _refreshGameDetails(); // 强制刷新
-    } else {
-      //print(
-      //    "GameDetailScreen (${widget.gameId}): Edit page returned without saving or widget unmounted.");
-    }
+    } else {}
   }
 
   // --- UI 构建方法 ---
@@ -469,7 +454,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               // mini: true,
             )
           else
-          // 加载占位符 (保持不变)
+            // 加载占位符 (保持不变)
             const SizedBox(
               width: 56,
               height: 56,
@@ -491,8 +476,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               backgroundColor: Colors.white, // 白色背景
               foregroundColor: Theme.of(context).primaryColor, // 主题色图标
             ),
-
-          // --- 如果有其他通用按钮，可以加在这里 ---
         ],
       ),
     );
@@ -562,7 +545,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   game: game,
                   initialCollectionStatus: _collectionStatus, // <--- 传递状态
                   onCollectionChanged:
-                  _handleCollectionStateChangedInButton, // <--- 传递这个函数
+                      _handleCollectionStateChangedInButton, // <--- 传递这个函数
                   onNavigate: _handleNavigate,
                   navigationInfo: _navigationInfo,
                   isPreviewMode: isPending,
@@ -575,7 +558,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // --- 直接调用辅助方法构建 FAB 组 ---
       floatingActionButton: _buildActionButtonsGroup(context, game),
       floatingActionButtonLocation:
-      FloatingActionButtonLocation.endFloat, // 保持位置
+          FloatingActionButtonLocation.endFloat, // 保持位置
     );
   }
 
@@ -596,7 +579,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             game: game,
             initialCollectionStatus: _collectionStatus,
             onCollectionChanged:
-            _handleCollectionStateChangedInButton, // <--- 传递这个函数
+                _handleCollectionStateChangedInButton, // <--- 传递这个函数
             onNavigate: _handleNavigate,
             navigationInfo: _navigationInfo,
             isPreviewMode: isPreview,
@@ -605,7 +588,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       ),
       floatingActionButton: _buildActionButtonsGroup(context, game),
       floatingActionButtonLocation:
-      FloatingActionButtonLocation.endFloat, // 指定位置
+          FloatingActionButtonLocation.endFloat, // 指定位置
     );
   }
 
@@ -735,7 +718,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     // 如果 _game 为 null 但不在加载也没错误，显示错误
     if (_game == null) {
-      return InlineErrorWidget(errorMessage: '无法加载游戏数据');
+      return CustomErrorWidget(
+        title: "无法加载数据",
+        errorMessage: '游戏数据不存在',
+      );
     }
 
     final bool isPending = _game!.approvalStatus == 'pending';

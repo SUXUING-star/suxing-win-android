@@ -1,5 +1,6 @@
 import 'dart:async'; // For Future
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 // *** 确保这些 import 路径是正确的 ***
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -26,7 +27,7 @@ class GameManagement extends StatefulWidget {
 // *** 移除 WidgetsBindingObserver，因为 BaseGameListScreen 不再依赖 visibility ***
 class _GameManagementState extends State<GameManagement>
     with SingleTickerProviderStateMixin {
-  final GameService _gameService = GameService();
+
   late TabController _tabController;
 
   // State for Pending and Rejected tabs
@@ -90,6 +91,7 @@ class _GameManagementState extends State<GameManagement>
 
   /// Loads data for Pending or Rejected tabs. **(Complete)**
   Future<void> _loadPendingOrRejectedData() async {
+    final gameService = context.read<GameService>();
     if (!mounted || _isLoadingPendingRejected) return;
     setState(() {
       _isLoadingPendingRejected = true;
@@ -97,16 +99,15 @@ class _GameManagementState extends State<GameManagement>
     });
     try {
       if (_tabController.index == 1) {
-        final result =
-            await _gameService.getPendingGamesWithInfo(page: 1, pageSize: 100);
+        final result = await gameService.getPendingGamesWithInfo(page: 1);
         if (mounted) {
           setState(() {
             _pendingGames = result['games'];
           });
         }
       } else if (_tabController.index == 2) {
-        final result = await _gameService.getUserRejectedGamesWithInfo(
-            page: 1, pageSize: 100);
+
+        final result = await gameService.getUserRejectedGamesWithInfo(page: 1);
         if (mounted) {
           setState(() {
             _rejectedGames = result['games'];
@@ -134,9 +135,10 @@ class _GameManagementState extends State<GameManagement>
   Future<List<Game>> _loadAllGames() async {
     // This method now simply returns the Future, no state changes here
     try {
-      final result = await _gameService.getGamesPaginatedWithInfo(
+      final gameService = context.read<GameService>();
+      final result = await gameService.getGamesPaginatedWithInfo(
         page: 1,
-        pageSize: 200,
+        pageSize: 20,
         sortBy: 'createTime',
         descending: true,
       );
@@ -160,6 +162,7 @@ class _GameManagementState extends State<GameManagement>
 
   /// Handles deleting a game. **(Complete)**
   Future<void> _handleDeleteGame(String gameId, String gameTitle) async {
+    final gameService = context.read<GameService>();
     await CustomConfirmDialog.show(
         context: context,
         title: '确认删除',
@@ -170,7 +173,7 @@ class _GameManagementState extends State<GameManagement>
         iconColor: Colors.red,
         onConfirm: () async {
           try {
-            await _gameService.deleteGame(gameId);
+            await gameService.deleteGame(gameId);
             if (mounted) {
               AppSnackBar.showSuccess(context, '游戏已删除');
               _refreshAllGames();
@@ -285,7 +288,8 @@ class _GameManagementState extends State<GameManagement>
   Future<void> _reviewGameApiCall(
       String gameId, String status, String comment) async {
     try {
-      await _gameService.reviewGame(gameId, status, comment);
+      final gameService = context.read<GameService>();
+      await gameService.reviewGame(gameId, status, comment);
       if (mounted) {
         AppSnackBar.showSuccess(
             context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');

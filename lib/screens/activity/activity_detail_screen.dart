@@ -6,7 +6,6 @@ import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/activity_detail_content.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 引入 AuthProvider
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -31,7 +30,7 @@ class ActivityDetailScreen extends StatefulWidget {
 }
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
-  final UserActivityService _activityService = UserActivityService();
+
   UserActivity? _activity;
   bool _isLoading = true;
   final bool _isLoadingComments = false;
@@ -89,8 +88,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       _error = '';
     });
     try {
+      final activityService = context.read<UserActivityService>();
       final activity =
-          await _activityService.getActivityDetail(widget.activityId);
+          await activityService.getActivityDetail(widget.activityId);
       setStateIfMounted(() {
         _activity = activity;
         _isLoading = false;
@@ -121,9 +121,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           currentlyLiked ? currentLikesCount - 1 : currentLikesCount + 1;
     });
     try {
+      final activityService = context.read<UserActivityService>();
       bool success = currentlyLiked
-          ? await _activityService.unlikeActivity(_activity!.id)
-          : await _activityService.likeActivity(_activity!.id);
+          ? await activityService.unlikeActivity(_activity!.id)
+          : await activityService.likeActivity(_activity!.id);
       if (!success) {
         throw Exception('API call failed'); // 抛出异常以便 catch 处理回滚
       }
@@ -142,8 +143,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Future<void> _addComment(String content) async {
     if (content.trim().isEmpty || _activity == null) return;
     try {
+      final activityService = context.read<UserActivityService>();
       final comment =
-          await _activityService.commentOnActivity(_activity!.id, content);
+          await activityService.commentOnActivity(_activity!.id, content);
       if (comment != null) {
         setStateIfMounted(() {
           _activity!.comments.insert(0, comment);
@@ -163,20 +165,24 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
   }
 
-
-
   void _handleCommentDeleted(String commentId) {
     // --- 这里应该调用 Service 删除，并处理 UI 更新 (移除) ---
     // 这个方法现在由 ActivityCommentItem -> ActivityCommentsSection -> 这里 最终调用
     // 之前在 ActivityFeedScreen 的实现是正确的，应该类似：
     CustomConfirmDialog.show(
-        context: context, title: "确认删除", message: "确定删除这条评论吗？",
-        confirmButtonText: "删除", confirmButtonColor: Colors.red,
-        iconData: Icons.delete_outline, iconColor: Colors.red,
+        context: context,
+        title: "确认删除",
+        message: "确定删除这条评论吗？",
+        confirmButtonText: "删除",
+        confirmButtonColor: Colors.red,
+        iconData: Icons.delete_outline,
+        iconColor: Colors.red,
         onConfirm: () async {
           print("Delete comment confirmed for $commentId");
           try {
-            final success = await _activityService.deleteComment(_activity!.id, commentId);
+            final activityService = context.read<UserActivityService>();
+            final success =
+                await activityService.deleteComment(_activity!.id, commentId);
             if (success && mounted) {
               // --- 从本地列表移除评论并更新计数 ---
               setStateIfMounted(() {
@@ -188,16 +194,19 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
             } else if (mounted) {
               throw Exception("删除评论失败");
             }
-          } catch (e) { if (mounted) AppSnackBar.showError(context, '删除失败: $e'); rethrow; }
-        }
-    );
+          } catch (e) {
+            if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+            rethrow;
+          }
+        });
   }
 
   void _handleCommentLikeToggled(ActivityComment updatedComment) {
     if (_activity == null) return;
     setStateIfMounted(() {
       // 在 _activity!.comments 中找到对应的评论并替换
-      final index = _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
+      final index =
+          _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
       if (index != -1) {
         _activity!.comments[index] = updatedComment; // 使用更新后的对象替换旧的
         // 不需要强制刷新计数器了，因为 Service 调用 -> 缓存失效 -> 监听器刷新 会处理
@@ -206,11 +215,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     });
   }
 
-
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {
     if (_activity == null) return;
-    final authProvider = context.read<AuthProvider>(); // 使用 context.read 获取 Provider
+    final authProvider =
+        context.read<AuthProvider>(); // 使用 context.read 获取 Provider
 
     // 权限检查：必须是作者本人
     if (!authProvider.isLoggedIn ||
@@ -234,8 +243,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           if (newText == _activity!.content) return; // 内容未改变则不提交
 
           try {
+            final activityService = context.read<UserActivityService>();
             // 调用服务更新活动
-            final success = await _activityService.updateActivity(
+            final success = await activityService.updateActivity(
                 _activity!.id, newText, _activity!.metadata);
 
             if (success) {
@@ -260,7 +270,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                   isPublic: currentActivity.isPublic, // 复制旧值
                   isLiked: currentActivity.isLiked, // 复制旧值
                   metadata: currentActivity.metadata, // 复制旧值
-                  target: currentActivity.target, // 复制旧值
                   comments: currentActivity.comments, // 复制旧值
                 );
                 _refreshCounter++; // 强制刷新UI
@@ -314,8 +323,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           // onConfirm 是异步的
           try {
+            final activityService = context.read<UserActivityService>();
             final success =
-                await _activityService.deleteActivity(_activity!.id);
+                await activityService.deleteActivity(_activity!.id);
             if (success) {
               if (mounted) {
                 // 删除成功后，关闭当前页面
@@ -385,7 +395,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               actions: _activity == null
                   ? []
                   : [
-
                       IconButton(
                         icon: Icon(_activity!.isLiked
                             ? Icons.favorite

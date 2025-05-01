@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 引入 User 模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 引入上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
@@ -39,17 +40,20 @@ class EditableUserAvatar extends StatelessWidget {
     final Uint8List? croppedBytes = await ModernCropDialog.show(context);
 
     // 2. 处理裁剪结果
-    if (croppedBytes != null && context.mounted) { // 检查 context 是否有效
+    if (croppedBytes != null && context.mounted) {
+      // 检查 context 是否有效
       onUploadStateChanged(true); // 通知开始上传
       try {
         // 保存到临时文件
         final tempDir = await getTemporaryDirectory();
-        final tempFileName = 'cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png';
+        final tempFileName =
+            'cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png';
         final tempFile = File('${tempDir.path}/$tempFileName');
         await tempFile.writeAsBytes(croppedBytes);
 
         // 调用上传服务
-        final avatarUrl = await RateLimitedFileUpload.uploadAvatar(
+        final fileUploadService = context.read<RateLimitedFileUpload>();
+        final avatarUrl = await fileUploadService.uploadAvatar(
           tempFile,
           maxWidth: 300, // 可根据需要调整最终尺寸
           maxHeight: 300,
@@ -58,14 +62,14 @@ class EditableUserAvatar extends StatelessWidget {
         );
 
         // 更新用户资料
-        await UserService().updateUserProfile(avatar: avatarUrl);
+        final userService = context.read<UserService>();
+        await userService.updateUserProfile(avatar: avatarUrl);
 
         // 上传和更新成功
         if (context.mounted) {
           AppSnackBar.showSuccess(context, '头像更新成功');
         }
         onUploadSuccess(); // 通知父组件成功，父组件负责刷新
-
       } catch (e) {
         print("EditableUserAvatar: Error uploading avatar: $e");
         if (context.mounted) {
@@ -82,7 +86,8 @@ class EditableUserAvatar extends StatelessWidget {
         }
       } finally {
         // 确保在任何情况下都通知加载结束
-        if (context.mounted) { // 再次检查 context
+        if (context.mounted) {
+          // 再次检查 context
           onUploadStateChanged(false); // 通知结束上传
         }
       }
@@ -94,7 +99,8 @@ class EditableUserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconSize = radius * iconSizeRatio;
-    final bool hasValidAvatar = user.avatar != null && user.avatar!.trim().isNotEmpty;
+    final bool hasValidAvatar =
+        user.avatar != null && user.avatar!.trim().isNotEmpty;
 
     return GestureDetector(
       onTap: () => _handleAvatarUpdate(context),
@@ -108,7 +114,8 @@ class EditableUserAvatar extends StatelessWidget {
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: placeholderColor.withOpacity(0.2), // 占位背景色
-              boxShadow: [ // 可选：加点阴影提升质感
+              boxShadow: [
+                // 可选：加点阴影提升质感
                 BoxShadow(
                   color: Colors.black.withOpacity(0.1),
                   blurRadius: 5,
@@ -119,20 +126,21 @@ class EditableUserAvatar extends StatelessWidget {
             child: ClipOval(
               child: hasValidAvatar
                   ? SafeCachedImage(
-                key: ValueKey(user.avatar!), // URL 变化时强制刷新
-                imageUrl: user.avatar!,
-                width: radius * 2,
-                height: radius * 2,
-                fit: BoxFit.cover,
-                // SafeCachedImage 自带占位和错误处理
-              )
-                  : Center( // 无有效头像时的占位图标
-                child: Icon(
-                  placeholderIcon,
-                  size: radius, // 图标大小约为半径
-                  color: placeholderColor,
-                ),
-              ),
+                      key: ValueKey(user.avatar!), // URL 变化时强制刷新
+                      imageUrl: user.avatar!,
+                      width: radius * 2,
+                      height: radius * 2,
+                      fit: BoxFit.cover,
+                      // SafeCachedImage 自带占位和错误处理
+                    )
+                  : Center(
+                      // 无有效头像时的占位图标
+                      child: Icon(
+                        placeholderIcon,
+                        size: radius, // 图标大小约为半径
+                        color: placeholderColor,
+                      ),
+                    ),
             ),
           ),
 

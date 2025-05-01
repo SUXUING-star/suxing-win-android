@@ -1,5 +1,6 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/post/post.dart';
 import '../../../../services/main/forum/forum_service.dart';
@@ -24,7 +25,6 @@ class PostFavoritesTab extends StatefulWidget {
 }
 
 class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepAliveClientMixin {
-  final ForumService _forumService = ForumService();
   final ScrollController _scrollController = ScrollController();
 
   List<Post> _favoritePosts = [];
@@ -32,7 +32,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   bool _isLoading = false;
   int _currentPage = 1;
   int _totalPages = 1; // 添加总页数状态
-  final int _limit = 10; // 假设每页加载10条，应与 Service 和后端一致
+  final int _limit = 15; // 假设每页加载10条，应与 Service 和后端一致
   bool _hasMoreData = true; // 这个可以根据 totalPages 计算
 
 
@@ -72,7 +72,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final result = await _forumService.getUserFavoritePostsPage(
+      final forumService = context.read<ForumService>();
+      final result = await forumService.getUserFavoritePostsPage(
           page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---
@@ -135,7 +136,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
     // 不显示确认对话框，直接取消收藏
     try {
       // 调用 Service 取消收藏 (toggle 会自动处理状态)
-      final success = await _forumService.togglePostFavorite(postId);
+      final forumService = context.read<ForumService>();
+      final success = await forumService.togglePostFavorite(postId);
 
       if (success && mounted) {
         AppSnackBar.showSuccess(context, '已取消收藏');
@@ -175,7 +177,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
     // setState(() => _isLoading = true);
 
     try {
-      await _forumService.togglePostLock(postId);
+      final forumService = context.read<ForumService>();
+      await forumService.togglePostLock(postId);
       if (!mounted) return;
 
       AppSnackBar.showSuccess(context, '帖子状态已切换');

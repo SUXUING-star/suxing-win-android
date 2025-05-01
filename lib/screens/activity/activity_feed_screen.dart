@@ -2,6 +2,7 @@ import 'dart:async'; // Timer, StreamSubscription
 import 'package:flutter/material.dart';
 // HapticFeedback
 import 'package:hive/hive.dart'; // BoxEvent
+import 'package:provider/provider.dart';
 // 需要 Provider 获取 AuthProvider (如果 Card 里需要)
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
@@ -42,7 +43,6 @@ class ActivityFeedScreen extends StatefulWidget {
 class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   // --- 依赖 ---
-  final UserActivityService _activityService = UserActivityService();
 
   // --- UI 控制状态 ---
   final ScrollController _scrollController = ScrollController();
@@ -97,7 +97,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   @override
   void dispose() {
-    print("ActivityFeedScreen (${widget.title}) dispose.");
     // 移除监听和控制器
     WidgetsBinding.instance.removeObserver(this);
     _stopWatchingCache(); // 确保取消缓存监听
@@ -112,9 +111,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // 处理 App 从后台恢复
     if (state == AppLifecycleState.resumed) {
-      print("ActivityFeedScreen (${widget.title}): App resumed.");
       if (_isVisible && _needsRefresh) {
-        print("   - Triggering refresh due to NeedsRefresh flag.");
         _refreshCurrentPageData(reason: "App Resumed with NeedsRefresh");
         _needsRefresh = false; // 重置标记
       } else if (_isVisible) {
@@ -122,7 +119,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         _refreshCurrentPageData(reason: "App Resumed and Visible Check");
       }
     } else if (state == AppLifecycleState.paused) {
-      print("ActivityFeedScreen (${widget.title}): App paused.");
       // 可以考虑在这里设置 _needsRefresh = true;
     }
   }
@@ -131,7 +127,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void _startOrUpdateWatchingCache() {
     final String feedType = _getFeedType();
     final List<String>? types = _selectedType != null ? [_selectedType!] : null;
-    // 使用更精确的标识符，包含所有影响查询的参数
     final String newWatchIdentifier =
         "${feedType}_${widget.userId ?? 'none'}_p${_currentPage}_l20_t${types?.join('_') ?? 'all'}"; // 假设 limit 是 20
 
@@ -140,41 +135,46 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       return; // 监听目标未变
     }
 
-    _stopWatchingCache();
+    _stopWatchingCache(); // 停止旧监听
     _currentWatchIdentifier = newWatchIdentifier;
 
     try {
-      _cacheSubscription = _activityService
+      final activityService = context.read<UserActivityService>();
+      _cacheSubscription = activityService
           .watchActivityFeedChanges(
         feedType: feedType, page: _currentPage, limit: 20, // 使用固定 limit
         userId: widget.userId, types: types,
       )
           .listen(
         (BoxEvent event) {
-          if (_isVisible) {
-            _refreshCurrentPageData(reason: "Cache Changed");
+          // --- 关键判断在这里！ ---
+          // 只在数据被删除时才触发刷新逻辑
+          if (event.deleted) {
+            if (_isVisible) {
+              _refreshCurrentPageData(reason: "Cache Deleted Event");
+            } else {
+              _needsRefresh = true; // 标记在下次可见时刷新
+            }
           } else {
-            _needsRefresh = true; // 标记在下次可见时刷新
+            // 对于写入/更新事件 (event.deleted == false)，直接忽略，啥也不干
           }
+          // --- 判断结束 ---
         },
         onError: (error, stackTrace) {
-          print(
-              "ActivityFeedScreen (${widget.title}): Error listening to cache changes (Identifier: $_currentWatchIdentifier): $error\n$stackTrace");
-          _stopWatchingCache();
+          _stopWatchingCache(); // 出错时停止监听
+          _currentWatchIdentifier = ''; // 重置标识符，以便下次可以重新监听
         },
         onDone: () {
-          print(
-              "ActivityFeedScreen (${widget.title}): Cache watch stream is done (Identifier: $_currentWatchIdentifier).");
+          // 可选：监听流关闭时的处理
+          // 只有当监听目标仍然是当前目标时才清除标识符
           if (_currentWatchIdentifier == newWatchIdentifier) {
             _currentWatchIdentifier = '';
           }
         },
-        cancelOnError: true,
+        cancelOnError: true, // 出错时自动取消订阅
       );
     } catch (e) {
-      print(
-          "ActivityFeedScreen (${widget.title}): Failed to start watching cache (Identifier: $_currentWatchIdentifier): $e");
-      _currentWatchIdentifier = '';
+      _currentWatchIdentifier = ''; // 启动失败，重置标识符
     }
   }
 
@@ -193,21 +193,15 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      print(
-          "ActivityFeedScreen (${widget.title}): UI refresh throttled (Reason: $reason). Last refresh: $_lastRefreshTime");
       return;
     }
 
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
-      print(
-          "ActivityFeedScreen (${widget.title}): Debounced refresh triggered by: $reason for page $_currentPage");
       if (mounted && !_isLoadingData && !_isLoadingMore) {
         _loadActivities(
             isRefresh: true, pageToLoad: _currentPage); // 标记为刷新，加载当前页
       } else {
-        print(
-            "ActivityFeedScreen (${widget.title}): Refresh debounced but widget not mounted or still loading.");
         if (mounted) _needsRefresh = true; // 标记稍后刷新
       }
     });
@@ -216,7 +210,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   // === 数据加载 ===
   void _triggerInitialLoad() {
     if (_isVisible && !_isInitialized && !_isLoadingData) {
-      print("ActivityFeedScreen (${widget.title}): Triggering initial load.");
       _isInitialized = true;
       _loadActivities(isInitialLoad: true, pageToLoad: 1);
     }
@@ -228,17 +221,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       int pageToLoad = 1}) async {
     // --- 防止并发加载 ---
     if (_isLoadingData && !isRefresh) {
-      print("...Load skipped: already loading data.");
       return;
     }
     if (_isLoadingMore && isRefresh) {
-      print("...Load skipped: refresh blocked by load more.");
       return;
     } // 刷新不能打断加载更多
     if (!mounted) return;
-
-    print(
-        "ActivityFeedScreen (${widget.title}): Loading activities. Initial: $isInitialLoad, Refresh: $isRefresh, Page: $pageToLoad");
 
     // --- 停止/更新监听器 ---
     final String feedType = _getFeedType();
@@ -269,16 +257,17 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       const int limit = 20; // 保持一致的 limit
       List<String>? currentTypes =
           _selectedType != null ? [_selectedType!] : null;
+      final activityService = context.read<UserActivityService>();
 
       // --- 调用 Service 获取数据 (无节流，无 forceRefresh) ---
       if (feedType == 'user') {
-        result = await _activityService.getUserActivities(widget.userId!,
+        result = await activityService.getUserActivities(widget.userId!,
             page: pageToLoad, limit: limit, types: currentTypes);
       } else if (feedType == 'feed') {
-        result = await _activityService.getActivityFeed(
+        result = await activityService.getActivityFeed(
             page: pageToLoad, limit: limit);
       } else {
-        result = await _activityService.getPublicActivities(
+        result = await activityService.getPublicActivities(
             page: pageToLoad, limit: limit);
       }
 
@@ -287,21 +276,24 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       final List<UserActivity> fetchedActivities = result['activities'] ?? [];
       final PaginationData? fetchedPagination = result['pagination'];
 
-      setState(() {
-        _activities = fetchedActivities; // 替换为当前页数据
-        _pagination = fetchedPagination;
-        _currentPage = pageToLoad; // 确认当前页
-        _isLoadingData = false; // 结束加载
-        _error = ''; // 清除错误
-        _lastRefreshTime = DateTime.now(); // 记录成功加载时间
-        print(
-            "ActivityFeedScreen (${widget.title}): Load/Refresh successful. Page: $_currentPage. Received ${_activities.length} activities.");
-      });
+      if (fetchedActivities.isNotEmpty) {
+        setState(() {
+          _activities = fetchedActivities; // 替换为当前页数据
+          _pagination = fetchedPagination;
+          _currentPage = pageToLoad; // 确认当前页
+          _isLoadingData = false; // 结束加载
+          _error = ''; // 清除错误
+          _lastRefreshTime = DateTime.now(); // 记录成功加载时间
+        });
+      } else {
+        setState(() {
+          _error = "发生错误无法获取数据";
+          _isLoadingData = true; // 结束加载
+        });
+      }
 
       _startOrUpdateWatchingCache(); // 成功后启动/更新监听
-    } catch (e, s) {
-      print(
-          'ActivityFeedScreen (${widget.title}): Load activities error: $e\n$s');
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         // 只在列表为空时显示全局错误
@@ -329,13 +321,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      print("ActivityFeedScreen (${widget.title}): Pull-to-refresh throttled.");
       await Future.delayed(Duration(milliseconds: 300)); // 给用户一个反馈
       return;
     }
 
-    print(
-        "ActivityFeedScreen (${widget.title}): Pull-to-refresh triggered (loading page 1).");
     _stopWatchingCache(); // 停止旧监听
     setState(() {
       _currentPage = 1; // 重置到第一页
@@ -365,23 +354,22 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     }
     if (!mounted) return;
     final nextPage = _currentPage + 1;
-    print(
-        "ActivityFeedScreen (${widget.title}): Loading more activities (page: $nextPage)");
     _stopWatchingCache(); // 停止监听旧页
     setState(() => _isLoadingMore = true);
     try {
       Map<String, dynamic> result;
+      final activityService = context.read<UserActivityService>();
       const int limit = 20;
       List<String>? types = _selectedType != null ? [_selectedType!] : null;
       final String feedType = _getFeedType();
       if (feedType == 'user') {
-        result = await _activityService.getUserActivities(widget.userId!,
+        result = await activityService.getUserActivities(widget.userId!,
             page: nextPage, limit: limit, types: types);
       } else if (feedType == 'feed') {
-        result = await _activityService.getActivityFeed(
-            page: nextPage, limit: limit);
+        result =
+            await activityService.getActivityFeed(page: nextPage, limit: limit);
       } else {
-        result = await _activityService.getPublicActivities(
+        result = await activityService.getPublicActivities(
             page: nextPage, limit: limit);
       }
 
@@ -486,8 +474,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   void _navigateToActivityDetail(UserActivity activity) {
     _stopWatchingCache();
-    print(
-        "ActivityFeedScreen: Navigating to detail, stopped watching feed cache.");
     NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
         arguments: {'activityId': activity.id, 'activity': activity}).then((_) {
       if (mounted) {
@@ -500,7 +486,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   // --- 新增：传递给 CollapsibleActivityFeed 的具体回调实现 ---
 
   Future<void> _handleDeleteActivity(String activityId) async {
-    print("Requesting delete activity $activityId from FeedScreen");
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -512,7 +497,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         print("Delete confirmed for $activityId");
         try {
-          final success = await _activityService.deleteActivity(activityId);
+          final activityService = context.read<UserActivityService>();
+          final success = await activityService.deleteActivity(activityId);
           if (success && mounted) AppSnackBar.showSuccess(context, '动态已删除');
           // 刷新由监听器处理
         } catch (e) {
@@ -524,24 +510,18 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   Future<void> _handleLikeActivity(String activityId) async {
-    print("Requesting like for activity $activityId");
-    // 可以先做前端补偿（如果 ActivityCard 内部不做的话）
-    // final index = _activities.indexWhere((a) => a.id == activityId);
-    // if (index != -1 && mounted) {
-    //    setState(() { _activities[index].isLiked = true; _activities[index].likesCount++; });
-    // }
     try {
-      await _activityService.likeActivity(activityId);
+      final activityService = context.read<UserActivityService>();
+      await activityService.likeActivity(activityId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞失败: $e'); /* 回滚补偿 */
     }
   }
 
   Future<void> _handleUnlikeActivity(String activityId) async {
-    print("Requesting unlike for activity $activityId");
-    // 前端补偿...
     try {
-      await _activityService.unlikeActivity(activityId);
+      final activityService = context.read<UserActivityService>();
+      await activityService.unlikeActivity(activityId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e'); /* 回滚补偿 */
     }
@@ -549,10 +529,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
-    print("Requesting add comment to activity $activityId");
     try {
+      final activityService = context.read<UserActivityService>();
       final comment =
-          await _activityService.commentOnActivity(activityId, content);
+          await activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // 刷新由监听器处理
@@ -579,8 +559,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         print("Delete comment confirmed for $commentId");
         try {
+          final activityService = context.read<UserActivityService>();
           final success =
-              await _activityService.deleteComment(activityId, commentId);
+              await activityService.deleteComment(activityId, commentId);
           if (success && mounted) AppSnackBar.showSuccess(context, '评论已删除');
           // 刷新由监听器处理
         } catch (e) {
@@ -592,20 +573,20 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    print("Requesting like for comment $commentId in activity $activityId");
     // 前端补偿在 ActivityCommentItem 内部处理
     try {
-      await _activityService.likeComment(activityId, commentId);
+      final activityService = context.read<UserActivityService>();
+      await activityService.likeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
     }
   }
 
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    print("Requesting unlike for comment $commentId in activity $activityId");
     // 前端补偿在 ActivityCommentItem 内部处理
     try {
-      await _activityService.unlikeComment(activityId, commentId);
+      final activityService = context.read<UserActivityService>();
+      await activityService.unlikeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
     }
@@ -620,8 +601,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onVisibilityChanged: (VisibilityInfo info) {
         final bool currentlyVisible = info.visibleFraction > 0.8;
         if (currentlyVisible != _isVisible) {
-          print(
-              "ActivityFeedScreen (${widget.title}) Visibility Changed: ${currentlyVisible ? 'Visible' : 'Hidden'}");
           final bool wasVisible = _isVisible;
           _isVisible = currentlyVisible;
           if (mounted) setState(() {});
@@ -649,7 +628,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       return LoadingWidget.fullScreen(message: "正在加载动态...");
     }
     if (_error.isNotEmpty && _activities.isEmpty) {
-      return InlineErrorWidget(
+      return CustomErrorWidget(
           errorMessage: _error,
           onRetry: () => _loadActivities(isRefresh: true, pageToLoad: 1));
     }
@@ -742,7 +721,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                         onRefresh: _refreshData, // 传递给 RefreshIndicator
                         onLoadMore: _loadMoreActivities,
                         scrollController: _scrollController,
-                        // --- 传递所有操作回调 ---
                         onDeleteActivity: _handleDeleteActivity,
                         onLikeActivity: _handleLikeActivity,
                         onUnlikeActivity: _handleUnlikeActivity,

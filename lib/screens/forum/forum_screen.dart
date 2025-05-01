@@ -7,6 +7,7 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -37,7 +38,6 @@ class ForumScreen extends StatefulWidget {
 }
 
 class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
-  final ForumService _forumService = ForumService();
   final List<String> _tags = PostTagLists.filterTags;
   String _selectedTag = '全部';
   List<Post>? _posts;
@@ -77,7 +77,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       _selectedTag = widget.tag!;
     }
     WidgetsBinding.instance.addObserver(this);
-    print("ForumScreen initState: Tag=$_selectedTag");
     // 不在此处加载，依赖 VisibilityDetector
   }
 
@@ -100,23 +99,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // print("ForumScreen: App resumed.");
-      // 如果需要刷新，并且当前可见，则刷新
       if (_needsRefresh && _isVisible) {
-        // print(
-        //     "ForumScreen: Needs refresh on resume and visible, triggering refresh.");
-        // 使用 Debounce 避免过于频繁的刷新
         _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
         _needsRefresh = false; // 重置标记
       } else if (_isVisible) {
-        // 如果只是恢复且可见，也检查一下
-        //print(
-        //    "ForumScreen: App resumed and visible, checking for potential refresh.");
         _refreshDataIfNeeded(reason: "App Resumed");
       }
       // 如果恢复时不可见，则在 VisibilityDetector 变为可见时处理 _needsRefresh
     } else if (state == AppLifecycleState.paused) {
-      // print("ForumScreen: App paused.");
       _needsRefresh = true; // App 进入后台，标记下次回来时需要检查刷新
     }
   }
@@ -124,14 +114,11 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
   Future<void> _handleToggleLockFromCard(String postId) async {
     try {
+      final forumService = context.read<ForumService>();
       // 调用 ForumService
-      await _forumService.togglePostLock(postId);
+      await forumService.togglePostLock(postId);
       if (!mounted) return; // 检查组件是否还在
       AppSnackBar.showSuccess(context, '帖子状态已切换');
-
-      // --- 刷新当前页数据 ---
-      // 重新加载当前页是确保数据一致性的最安全方法
-      // print("ForumScreen: Post lock toggled, refreshing current page ($_currentPage).");
       await _loadPosts(page: _currentPage, isRefresh: true);
     } catch (e) {
       if (!mounted) return;
@@ -149,13 +136,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       bool isRefresh = false}) async {
     // 防止在加载过程中重复触发（除非是强制刷新）
     if (_isLoadingData && !isRefresh) {
-      // print("ForumScreen _loadPosts: Skipped, already loading page $page.");
       return;
     }
     if (!mounted) return;
 
-    // print(
-    //     "ForumScreen _loadPosts: Loading page $page. Initial: $isInitialLoad, Refresh: $isRefresh");
     _isInitialized = true; // 标记已尝试加载
 
     // --- 设置加载状态，触发 UI 重建显示 Loading ---
@@ -166,14 +150,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       _errorMessage = null; // 清除旧错误
       if (isInitialLoad || isRefresh || _posts == null) {
         // 首次加载、刷新、或之前就没有数据时，清空
-        print("ForumScreen _loadPosts: Clearing posts to show loading state.");
         _posts = null;
       }
       // 分页加载时，不清空 _posts，让旧数据显示，只在分页控件显示 loading
     });
     // --- 调用 Service 获取数据 ---
     try {
-      final result = await _forumService.getPostsPage(
+      final forumService = context.read<ForumService>();
+      final result = await forumService.getPostsPage(
         tag: _selectedTag == '全部' ? null : _selectedTag,
         page: page,
         limit: _limit,
@@ -193,15 +177,11 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         _currentPage = serverPage; // 使用服务器返回的页码
         _totalPages = serverTotalPages;
         _errorMessage = null; // 清除错误
-        // print(
-        //     "ForumScreen _loadPosts: Success. setState triggered. Page: $_currentPage/$_totalPages. Posts: ${_posts
-        //         ?.length}");
       });
 
       // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
       _startOrUpdateWatchingCache();
-        } catch (e, s) {
-      print('ForumScreen _loadPosts: Error (page $page): $e\nStackTrace: $s');
+    } catch (e, s) {
       if (!mounted) return;
       // *** 出错也要 setState 更新错误信息 ***
       setState(() {
@@ -243,10 +223,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   // --- 触发首次加载 (仅在未初始化时调用) ---
   void _triggerInitialLoad() {
     if (!_isInitialized && !_isLoadingData) {
-      print("ForumScreen: Triggering initial load (page 1).");
       _loadPosts(page: 1, isInitialLoad: true); // 加载第一页
     } else if (!_isLoadingData && _posts == null) {
-      print("ForumScreen: Initialized but no posts, triggering reload.");
       // 如果初始化了但没数据（可能上次失败），也重新加载
       _loadPosts(page: 1, isInitialLoad: true, isRefresh: true);
     }
@@ -263,11 +241,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     _stopWatchingCache(); // 停止旧的
     _currentWatchIdentifier = newWatchIdentifier;
-    print(
-        "ForumScreen: Starting/Updating cache watch for Identifier: $_currentWatchIdentifier");
 
     try {
-      _cacheSubscription = _forumService
+      final forumService = context.read<ForumService>();
+      _cacheSubscription = forumService
           .watchForumPageChanges(
         tag: _selectedTag == '全部' ? null : _selectedTag,
         page: _currentPage,
@@ -276,27 +253,17 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           .listen(
         (dynamic event) {
           // --- *** 监听到变化后的核心处理 *** ---
-          print(
-              "ForumScreen: Cache change detected for $_currentWatchIdentifier. Event: ${event?.runtimeType}");
           if (_isVisible) {
-            print(
-                "ForumScreen: Visible, triggering debounced refresh due to cache change.");
             // 使用 Debounce 避免短时间内多次无效的刷新
             _refreshDataIfNeeded(reason: "Cache Changed");
           } else {
-            print(
-                "ForumScreen: Not visible, marking for refresh on next visibility/resume.");
             _needsRefresh = true; // 标记需要刷新
           }
         },
         onError: (Object error, StackTrace stackTrace) {
-          print(
-              "ForumScreen: Error listening to cache changes ($_currentWatchIdentifier): $error\n$stackTrace");
           _stopWatchingCache();
         },
         onDone: () {
-          print(
-              "ForumScreen: Cache watch stream done ($_currentWatchIdentifier).");
           // 如果是当前监听结束，清空标识符
           if (_currentWatchIdentifier == newWatchIdentifier) {
             _currentWatchIdentifier = '';
@@ -453,7 +420,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _handleDeletePostFromCard(String postId) async {
-    print("ForumScreen: Received delete request for post $postId from card.");
     // 使用确认对话框，确保用户意图
     await CustomConfirmDialog.show(
       context: context,
@@ -463,8 +429,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       confirmButtonColor: Colors.red,
       onConfirm: () async {
         try {
+          final forumService = context.read<ForumService>();
           // 调用 Service 删除
-          await _forumService.deletePost(postId);
+          await forumService.deletePost(postId);
           if (!mounted) return;
           AppSnackBar.showSuccess(context, '帖子已删除');
           // 删除成功后，刷新列表（通常回到第一页）
@@ -509,10 +476,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         isDesktop && _showRightPanel && canShowRightPanelBasedOnWidth;
     final Color secondaryColor = Theme.of(context).colorScheme.secondary;
     final Color disabledColor = Colors.white54;
-    final Color enabledColor = Colors.white;
-
-    print(
-        "ForumScreen build: Tag=$_selectedTag, Page=$_currentPage, IsLoading=$_isLoadingData, IsVisible=$_isVisible, Posts=${_posts?.length}, Error=$_errorMessage");
+    final Color enabledColor = Colors.amber;
 
     return VisibilityDetector(
       // *** 使用 Tag 和 Page 作为 Key，确保切换时重建 VisibilityDetector 状态 ***
@@ -520,8 +484,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       onVisibilityChanged: (VisibilityInfo info) {
         final bool currentlyVisible = info.visibleFraction > 0;
         if (currentlyVisible != _isVisible) {
-          print(
-              "ForumScreen Visibility Changed: now ${currentlyVisible ? 'Visible' : 'Hidden'} (Tag: $_selectedTag, Page: $_currentPage)");
           _isVisible = currentlyVisible;
           if (mounted) setState(() {}); // 更新可见状态
 
@@ -531,14 +493,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             _startOrUpdateWatchingCache(); // 启动或更新监听
             // 如果需要刷新（例如后台回来，或缓存事件发生时不可见）
             if (_needsRefresh) {
-              print(
-                  "ForumScreen: Became visible and needs refresh, triggering refresh.");
               _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
               _needsRefresh = false; // 重置标记
             } else if (_isInitialized && _posts == null && !_isLoadingData) {
               // 如果初始化过但没数据（可能上次加载失败），也尝试重新加载
-              print(
-                  "ForumScreen: Became visible, initialized but no posts, triggering reload.");
               _loadPosts(page: _currentPage, isRefresh: true);
             }
           } else {
@@ -552,58 +510,82 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         appBar: CustomAppBar(
           title: '论坛',
           actions: [
-            // AppBar 按钮
-            // 桌面端左侧面板切换按钮
-            IconButton(
-              icon: Icon(Icons.search, color: Colors.white),
-              onPressed: () =>
-                  NavigationUtils.pushNamed(context, AppRoutes.searchPost),
-              tooltip: '搜索游戏',
+            // --- 使用 Padding 包裹每个按钮 ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0), // 控制按钮左右间距
+              child: FunctionalIconButton(
+                icon: Icons.search,
+                iconColor: Colors.blue[300],
+                buttonBackgroundColor: Colors.white,
+                onPressed: () =>
+                    NavigationUtils.pushNamed(context, AppRoutes.searchPost),
+                tooltip: '搜索帖子', // 改为搜索帖子更合适？
+                iconButtonPadding: EdgeInsets.zero, // 可以覆盖内部默认值，让间距更小
+              ),
             ),
             if (isDesktop)
-              IconButton(
-                icon: Icon(Icons.menu_open,
-                    color: actuallyShowLeftPanel
-                        ? secondaryColor
-                        : (_showLeftPanel ? disabledColor : enabledColor)),
-                onPressed:
-                    canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
-                tooltip: _showLeftPanel
-                    ? (canShowLeftPanelBasedOnWidth ? '隐藏分类' : '屏幕宽度不足')
-                    : (canShowLeftPanelBasedOnWidth ? '显示分类' : '屏幕宽度不足'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: FunctionalIconButton(
+                  icon: Icons.menu_open,
+                  buttonBackgroundColor: Colors.white,
+                  iconColor: actuallyShowLeftPanel
+                      ? secondaryColor
+                      : (_showLeftPanel ? disabledColor : enabledColor),
+                  onPressed:
+                      canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
+                  tooltip: _showLeftPanel
+                      ? (canShowLeftPanelBasedOnWidth ? '隐藏分类' : '屏幕宽度不足')
+                      : (canShowLeftPanelBasedOnWidth ? '显示分类' : '屏幕宽度不足'),
+                  iconButtonPadding: EdgeInsets.zero,
+                ),
               ),
-            // 桌面端右侧面板切换按钮
             if (isDesktop)
-              IconButton(
-                icon: Icon(Icons.bar_chart,
-                    color: actuallyShowRightPanel
-                        ? secondaryColor
-                        : (_showRightPanel ? disabledColor : enabledColor)),
-                onPressed:
-                    canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
-                tooltip: _showRightPanel
-                    ? (canShowRightPanelBasedOnWidth ? '隐藏统计' : '屏幕宽度不足')
-                    : (canShowRightPanelBasedOnWidth ? '显示统计' : '屏幕宽度不足'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                child: FunctionalIconButton(
+                  icon: Icons.bar_chart,
+                  buttonBackgroundColor: Colors.white,
+                  iconColor: actuallyShowRightPanel
+                      ? secondaryColor
+                      : (_showRightPanel ? disabledColor : enabledColor),
+                  onPressed:
+                      canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
+                  tooltip: _showRightPanel
+                      ? (canShowRightPanelBasedOnWidth ? '隐藏统计' : '屏幕宽度不足')
+                      : (canShowRightPanelBasedOnWidth ? '显示统计' : '屏幕宽度不足'),
+                  iconButtonPadding: EdgeInsets.zero,
+                ),
               ),
-            // 刷新按钮 (加载中禁用)
-            IconButton(
-              icon: Icon(Icons.refresh, color: Colors.white),
-              onPressed: _isLoadingData ? null : _refreshData, // 核心加载锁
-              tooltip: '刷新帖子',
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 4.0),
+              child: FunctionalIconButton(
+                icon: Icons.refresh,
+                iconColor: Colors.green[300],
+                buttonBackgroundColor: Colors.white,
+                onPressed: _isLoadingData ? null : _refreshData,
+                tooltip: '刷新帖子',
+                iconButtonPadding: EdgeInsets.zero,
+              ),
             ),
-            // 发布新帖按钮 (登录后可见)
             Consumer<AuthProvider>(
               builder: (context, authProvider, child) {
                 return authProvider.isLoggedIn
-                    ? IconButton(
-                        icon:
-                            Icon(Icons.add_circle_outline, color: Colors.white),
-                        onPressed: _navigateToCreatePost,
-                        tooltip: '发布新帖子',
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                        child: FunctionalIconButton(
+                          icon: Icons.add_circle_outline,
+                          buttonBackgroundColor: Colors.white,
+                          iconColor: Colors.orange,
+                          onPressed: _navigateToCreatePost,
+                          tooltip: '发布新帖子',
+                          iconButtonPadding: EdgeInsets.zero,
+                        ),
                       )
-                    : const SizedBox.shrink(); // 未登录不显示
+                    : const SizedBox.shrink();
               },
             ),
+            // --- 移除所有 SizedBox(width: 8) ---
           ],
         ),
         // Body 使用 Column 包含 Filter(Mobile)/Content/Pagination
@@ -640,9 +622,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     // 1. 如果出错，并且没有帖子数据显示（或者帖子为空）
     if (_errorMessage != null && (_posts == null || _posts!.isEmpty)) {
-      print("  -> Showing ErrorWidget");
       return FadeInItem(
-          child: InlineErrorWidget(
+          child: CustomErrorWidget(
         errorMessage: _errorMessage!,
         onRetry: () => _loadPosts(page: _currentPage, isRefresh: true), // 重试当前页
       ));

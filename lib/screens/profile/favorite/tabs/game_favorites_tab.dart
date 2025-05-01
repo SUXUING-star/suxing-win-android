@@ -1,5 +1,6 @@
 // lib/screens/profile/tabs/game_favorites_tab.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/game/game.dart';
 import '../../../../services/main/game/game_service.dart';
@@ -21,7 +22,6 @@ class GameFavoritesTab extends StatefulWidget {
 }
 
 class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepAliveClientMixin {
-  final GameService _gameService = GameService();
 
   List<Game>? _favoriteGames;
   String? _error;
@@ -42,7 +42,8 @@ class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepA
     });
 
     try {
-      final games = await _gameService.getUserFavoriteGames();
+      final gameService = context.read<GameService>();
+      final games = await gameService.getUserFavoriteGames();
 
       if (mounted) {
         setState(() {
@@ -67,7 +68,8 @@ class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepA
 
   Future<void> _toggleGameFavorite(String gameId) async {
     try {
-      await _gameService.toggleLike(gameId);
+      final gameService = context.read<GameService>();
+      await gameService.toggleLike(gameId);
       await _loadFavoriteGames();
     } catch (e) {
       if (mounted) {

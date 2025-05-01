@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import '../../app.dart'; // For mainNavigatorKey
 import '../../routes/app_routes.dart'; // For route constants
 
@@ -230,40 +231,76 @@ class NavigationUtils {
     }
   }
 
+  /// 显示提示登录的对话框 (使用 BaseInputDialog 样式)
+  ///
+  /// 返回 `Future<bool>`: 用户选择 "去登录" 返回 true, 否则返回 false.
   static Future<bool> showLoginDialog(BuildContext context,
-      {String message = '请登录后继续操作', int? redirectIndex}) {
-    // 使用 rootNavigator 的 context 显示对话框
+      {String message = '请登录后继续操作', int? redirectIndex}) async {
+    // 返回值是 Future<bool>
     final rootContext = mainNavigatorKey.currentContext;
     if (rootContext == null) {
       print(
           "NavigationUtils Error: Cannot show login dialog, root context is null.");
-      return Future.value(false); // 无法显示对话框
+      return false; // 无法显示对话框，返回 false
     }
-    return showDialog<bool>(
+
+    // --- 使用 BaseInputDialog 来显示提示信息 ---
+    // 注意泛型是 <bool?> 因为 BaseInputDialog 的 show 静态方法可能返回 null (如果直接 dismiss)
+    final bool? shouldLogin = await BaseInputDialog.show<bool?>(
       context: rootContext,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('需要登录'),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('取消'),
+      title: '需要登录', // 对话框标题
+      // --- contentBuilder 只显示文本信息 ---
+      contentBuilder: (BuildContext dialogContext) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0), // 加点垂直间距
+          child: Text(
+            message,
+            textAlign: TextAlign.center, // 文本居中
+            style: Theme.of(dialogContext).textTheme.bodyMedium, // 使用主题默认样式
           ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop(true);
-              // 使用原始 context 或 rootContext 调用导航均可，navigateToLogin 内部会找到根 navigator
-              navigateToLogin(
-                context, // 使用调用处的 context
-                redirectAfterLogin: true,
-                redirectIndex: redirectIndex,
-              );
-            },
-            child: const Text('去登录'),
-          ),
-        ],
-      ),
-    ).then((value) => value ?? false);
+        );
+      },
+      // --- 确认按钮 ("去登录") 的行为 ---
+      confirmButtonText: '去登录', // 按钮文字
+      onConfirm: () async {
+        // 点了“去登录”，我们希望这个函数最终返回 true
+        // BaseInputDialog 的 onConfirm 需要一个 Future<T?>，这里 T 是 bool?
+        // 我们返回 true 来表示“确认”操作完成了，并且结果是 true
+        return Future.value(true);
+      },
+      // --- 取消按钮的行为 ---
+      cancelButtonText: '取消', // 按钮文字
+      showCancelButton: true, // 显示取消按钮
+      onCancel: () {
+        // 点了“取消”，我们希望这个函数最终返回 false
+        // onCancel 是 VoidCallback，不直接返回值
+        // BaseInputDialog 在取消时会 pop(context)，其 show 方法的 Future 会完成并返回 null
+        // 我们会在下面的 .then() 中处理 null 情况
+      },
+      // --- 其他 BaseInputDialog 参数 ---
+      isDraggable: false, // 这种提示框通常不需要拖拽
+      isScalable: false, // 也不需要缩放
+      barrierDismissible: true, // 允许点击外部区域关闭 (视为取消)
+      allowDismissWhenNotProcessing: true, // 允许在非处理状态下关闭
+    );
+
+    // --- 处理 BaseInputDialog 的返回结果 ---
+    if (shouldLogin == true) {
+      // 如果 BaseInputDialog 返回了 true (意味着用户点了 "去登录")
+      // 执行跳转到登录页的操作
+      // 使用原始 context 或 rootContext 调用导航均可，navigateToLogin 内部会找到根 navigator
+      navigateToLogin(
+        context, // 使用调用处的 context 更好，保留调用栈信息
+        redirectAfterLogin: true, // 登录后需要重定向
+        redirectIndex: redirectIndex, // 传递重定向目标索引
+      );
+      return true; // 返回 true 给调用者
+    } else {
+      // 如果 BaseInputDialog 返回了 false (理论上不会，我们 onConfirm 返回的是 true)
+      // 或者返回了 null (用户点了取消、点了外部区域、或按了返回键)
+      // 都视为用户不想登录
+      return false; // 返回 false 给调用者
+    }
   }
 
   // --- 安全调用包装器 ---

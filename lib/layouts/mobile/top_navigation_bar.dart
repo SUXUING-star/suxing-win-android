@@ -5,10 +5,8 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../utils/device/device_utils.dart';
 import '../../screens/search/search_game_screen.dart';
 import '../../models/user/user.dart';
-import '../../services/main/user/user_service.dart';
 import '../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/common/logo/star_logo.dart';
 import '../../widgets/components/badge/layout/update_button.dart';
 import '../../widgets/components/badge/layout/message_badge.dart';
 import '../../widgets/components/indicators/announcement_indicator.dart';
@@ -96,18 +94,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildLeadingLogo(BuildContext context, double size, double padding) {
-    return MouseRegion(
-      cursor: SystemMouseCursors.click,
-      child: GestureDetector(
-        onTap: onLogoTap,
-        child: Padding(
-          padding: EdgeInsets.all(padding),
-          child: StarLogo(size: size),
-        ),
-      ),
-    );
-  }
 
   Widget _buildSearchBar(BuildContext context, double height, double iconSize) {
     return MouseRegion(

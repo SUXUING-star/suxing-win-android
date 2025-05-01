@@ -62,8 +62,6 @@ class DesktopSidebar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop;
-    final bool canGoBack = Navigator.canPop(context);
-    //print("cangoback: $canGoBack");
     // 侧边栏宽度
 
     return Row(

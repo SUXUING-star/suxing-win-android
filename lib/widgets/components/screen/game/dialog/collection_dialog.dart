@@ -25,7 +25,7 @@ class CollectionDialog extends StatelessWidget {
     final isEditing = currentStatus != null && currentStatus!.isNotEmpty;
     final title = isEditing ? '编辑收藏' : '添加收藏';
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    final theme = Theme.of(context); // 获取主题
+    // final theme = Theme.of(context); // 获取主题
 
     return Center(
       // 1. 使用 Center 包裹，让对话框居中

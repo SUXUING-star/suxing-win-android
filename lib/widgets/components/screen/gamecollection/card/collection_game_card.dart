@@ -12,33 +12,4 @@ class CollectionGameCard extends CommonGameCard {
     this.collectionStatus,
     super.isGridItem = false,
   });
-
-
-
-
-  // 收藏状态图标
-  Widget _buildStatusIcon(String status) {
-    IconData icon;
-    Color color;
-
-    switch (status) {
-      case 'want_to_play':
-        icon = Icons.star_border;
-        color = Colors.blue;
-        break;
-      case 'playing':
-        icon = Icons.videogame_asset;
-        color = Colors.green;
-        break;
-      case 'played':
-        icon = Icons.check_circle;
-        color = Colors.purple;
-        break;
-      default:
-        icon = Icons.bookmark;
-        color = Colors.grey;
-    }
-
-    return Icon(icon, size: 16, color: color);
-  }
 }

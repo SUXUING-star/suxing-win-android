@@ -1,5 +1,6 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -25,7 +26,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final UserService _authService = UserService();
   String? _error;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
@@ -48,7 +48,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     });
 
     try {
-      await _authService.resetPassword(
+      final userService = context.read<UserService>();
+      await userService.resetPassword(
         widget.email,
         _passwordController.text,
       );

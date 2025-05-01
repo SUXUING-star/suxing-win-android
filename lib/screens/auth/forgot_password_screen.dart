@@ -1,5 +1,6 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 // --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -74,7 +75,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      await EmailService.requestVerificationCode(
+      final emailService = context.read<EmailService>();
+      await emailService.requestVerificationCode(
           _emailController.text, 'reset');
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {

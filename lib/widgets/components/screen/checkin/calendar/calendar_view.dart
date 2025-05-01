@@ -169,7 +169,7 @@ class CalendarView extends StatelessWidget {
 
   // --- 构建日历网格 (包括星期标题和日期格子) ---
   Widget _buildCalendarGrid(BuildContext context) {
-    final theme = Theme.of(context);
+    //final theme = Theme.of(context);
 
     // 星期标题
     final weekdayTitles = ['一', '二', '三', '四', '五', '六', '日'];

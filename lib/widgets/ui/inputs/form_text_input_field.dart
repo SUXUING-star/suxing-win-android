@@ -1,20 +1,19 @@
 // lib/widgets/ui/inputs/form_text_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'text_input_field.dart'; // 导入我们修改后的 TextInputField
+import 'text_input_field.dart'; // 导入 TextInputField
 
 class FormTextInputField extends FormField<String> {
+  // 接收 slotName
+  final String? slotName;
   final TextEditingController? controller;
-
-  // 直接暴露 TextInputField 的常用属性
   final FocusNode? focusNode;
   final String? hintText;
   final int? maxLines;
   final bool enabled;
-  // final Function(String)? onSubmitted; // FormField 应该用 onSaved
   final EdgeInsetsGeometry? contentPadding;
-  final EdgeInsetsGeometry? padding; // 这个是 TextInputField 的外边距
-  final InputDecoration? decoration; // 允许完全覆盖
+  final EdgeInsetsGeometry? padding;
+  final InputDecoration? decoration;
   final TextStyle? textStyle;
   final TextStyle? hintStyle;
   final bool autofocus;
@@ -26,22 +25,21 @@ class FormTextInputField extends FormField<String> {
   final ValueChanged<String>? onChanged;
   final bool obscureText;
 
-
   FormTextInputField({
     super.key,
-    required FormFieldValidator<String> validator, // FormField 必须的验证器
-    super.onSaved, // FormField 的 onSaved 回调
-    super.initialValue, // 可以设置初始值，但通常用 controller
+    required FormFieldValidator<String> validator,
+    super.onSaved,
+    super.initialValue, // 只有在没有 controller 和 slotName 时才可能用到
     this.controller,
+    this.slotName, // 接收 slotName
     this.decoration = const InputDecoration(),
-    // --- TextInputField 的属性 ---
+    // 其他属性...
     this.focusNode,
     this.hintText,
     this.maxLines = 1,
     this.enabled = true,
-    // this.onSubmitted, // 移除，用 onSaved
-    this.contentPadding, // 可以传给 TextInputField
-    this.padding = EdgeInsets.zero, // FormField 包装器通常不需要 TextInputField 的外边距
+    this.contentPadding,
+    this.padding = EdgeInsets.zero,
     this.textStyle,
     this.hintStyle,
     this.autofocus = false,
@@ -50,161 +48,187 @@ class FormTextInputField extends FormField<String> {
     this.minLines,
     this.textInputAction,
     this.keyboardType,
-    this.obscureText = false, // 默认 false
+    this.obscureText = false,
     this.onChanged,
 
-  }) : super(
-    validator: validator,
-    enabled: enabled,
-    // --- builder 是 FormField 的核心 ---
-    builder: (FormFieldState<String> field) {
-      final _FormTextInputFieldState state = field as _FormTextInputFieldState;
+  }) : assert(controller == null || slotName == null,
+  'Cannot provide both a controller and a slotName.'),
+        super(
+        validator: validator,
+        enabled: enabled,
+        // --- builder ---
+        builder: (FormFieldState<String> field) {
+          final _FormTextInputFieldState state = field as _FormTextInputFieldState;
 
-      // --- 构建传递给 TextInputField 的 InputDecoration ---
-      // 合并外部传入的 decoration 和错误状态
-      final InputDecoration effectiveDecoration = (decoration ?? const InputDecoration())
-          .applyDefaults(Theme.of(field.context).inputDecorationTheme) // 应用主题默认值
-          .copyWith(
-        hintText: hintText ?? decoration?.hintText, // 优先用直接传的 hintText
-        errorText: field.errorText, // 显示验证错误
-        // 可以根据 field.hasError 改变其他样式
-        // enabledBorder: field.hasError ? ... : ...,
-      );
+          final InputDecoration effectiveDecoration = (decoration ?? const InputDecoration())
+              .applyDefaults(Theme.of(field.context).inputDecorationTheme)
+              .copyWith(
+            hintText: hintText ?? decoration?.hintText,
+            errorText: field.errorText,
+          );
 
-      // --- 构建并返回 TextInputField ---
-      return TextInputField(
-        controller: state._effectiveController, // 使用内部管理的 controller
-        focusNode: focusNode,
-        hintText: hintText ,// 传递 hintText
-        maxLines: maxLines,
-        enabled: enabled, // 使用外部传入的 enabled
-        contentPadding: contentPadding,
-        padding: padding, // 传递 padding (通常是 zero)
-        decoration: effectiveDecoration, // 传递处理过的 decoration
-        textStyle: textStyle,
-        hintStyle: hintStyle,
-        autofocus: autofocus,
-        maxLength: maxLength,
-        maxLengthEnforcement: maxLengthEnforcement,
-        minLines: minLines,
-        textInputAction: textInputAction,
-        keyboardType: keyboardType,     // <--- 传递 keyboardType
-        obscureText: obscureText,       // <--- 传递 obscureText
-        showSubmitButton: false, // FormField 内部不需要提交按钮
-        handleEnterKey: false, // 表单字段通常不处理 Enter 提交
-        // 当 TextInputField 内部值变化时，通知 FormField
-        onChanged: (String value) {
-          // 调用 FormField 的 didChange 来更新状态并可能触发验证
-          field.didChange(value);
-          // 同时调用外部传入的 onChanged 回调 (如果提供了)
-          onChanged?.call(value);
+          // --- 核心逻辑简化 ---
+          // 如果提供了 slotName，直接把它传给 TextInputField，controller 传 null
+          // 如果没提供 slotName，才使用 FormFieldState 管理的 controller (_effectiveController)
+          final bool useSlotName = slotName != null && slotName.isNotEmpty;
+
+          return TextInputField(
+            slotName: useSlotName ? slotName : null,
+            controller: useSlotName ? null : state._effectiveController, // **关键**
+            // 传递其他属性...
+            focusNode: focusNode,
+            hintText: hintText,
+            maxLines: maxLines,
+            enabled: enabled,
+            contentPadding: contentPadding,
+            padding: padding,
+            decoration: effectiveDecoration,
+            textStyle: textStyle,
+            hintStyle: hintStyle,
+            autofocus: autofocus,
+            maxLength: maxLength,
+            maxLengthEnforcement: maxLengthEnforcement,
+            minLines: minLines,
+            textInputAction: textInputAction,
+            keyboardType: keyboardType,
+            obscureText: obscureText,
+            showSubmitButton: false,
+            handleEnterKey: false,
+            // --- TextInputField 的 onChanged 直接驱动 FormField ---
+            onChanged: (String value) {
+              field.didChange(value); // 更新 FormField 的值
+              onChanged?.call(value); // 调用外部的 onChanged
+            },
+            // clearOnSubmit: false, // FormField 场景下不需要这个
+          );
         },
       );
-    },
-  );
 
-  // 重写 createState 以返回自定义的 State
   @override
   FormFieldState<String> createState() => _FormTextInputFieldState();
 }
 
-// 自定义 FormFieldState 来处理 Controller
+// --- _FormTextInputFieldState 简化 ---
+// 这个 State 只在 *没有* slotName 的时候才管理 Controller
 class _FormTextInputFieldState extends FormFieldState<String> {
-  // 内部持有的 Controller
+
+  // 内部 Controller，仅当 widget.controller 为 null 且 widget.slotName 为 null 时创建
   TextEditingController? _controller;
 
-  // 获取有效的 Controller (优先用外部传入的，否则用内部创建的)
-  TextEditingController get _effectiveController => widget.controller ?? _controller!;
+  // 获取有效的 Controller (仅当 widget.slotName 为 null 时才有意义)
+  TextEditingController? get _effectiveController => widget.controller ?? _controller;
 
-  // 获取外部传入的 FormTextInputField widget 配置
   @override
   FormTextInputField get widget => super.widget as FormTextInputField;
 
   @override
   void initState() {
     super.initState();
-    if (widget.controller == null) {
-      // 如果外部没传 controller，内部创建一个
-      _controller = TextEditingController(text: widget.initialValue);
+    // --- 只处理 Controller 情况 ---
+    if (widget.slotName == null) { // **关键判断**
+      if (widget.controller == null) {
+        // 外部没提供 controller，内部创建
+        _controller = TextEditingController(text: widget.initialValue);
+      } else {
+        // 外部提供了 controller，添加监听
+        widget.controller!.addListener(_handleControllerChanged);
+      }
+      // 用 controller 或 initialValue 初始化 FormField 的值
+      setValue(_effectiveController?.text ?? widget.initialValue ?? '');
     } else {
-      // 如果外部传了 controller，添加监听器，当外部 controller 改变时同步 FormField 的值
-      widget.controller!.addListener(_handleControllerChanged);
+      // --- 如果有 slotName，这个 State 什么都不用做 ---
+      // TextInputField 会自己去 Service 加载状态
+      // 但 FormField 仍然需要一个初始值，否则可能是 null。
+      // 这里我们不能直接访问 Service，所以暂时设为空字符串或 initialValue。
+      // TextInputField 初始化后会通过 onChanged 更新 FormField 的值。
+      setValue(widget.initialValue ?? ''); // 或者直接设为 ''
+      // *** 更好的做法可能是在 builder 中读取 TextInputField 的初始值，但这比较复杂 ***
+      // *** 依赖 TextInputField 初始化后的第一次 onChanged 更新 FormField 是更简单的模式 ***
     }
-    // 设置 FormField 的初始值 (从 controller 或 initialValue)
-    setValue(_effectiveController.text);
   }
 
   @override
   void didUpdateWidget(FormTextInputField oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 当 widget 更新时，检查 controller 是否发生变化
-    if (widget.controller != oldWidget.controller) {
-      // 移除旧 controller 的监听器 (如果存在且是外部的)
-      oldWidget.controller?.removeListener(_handleControllerChanged);
-      // 为新 controller 添加监听器 (如果是外部的)
-      widget.controller?.addListener(_handleControllerChanged);
 
-      // 如果之前是内部 controller，现在是外部 controller
-      if (oldWidget.controller == null && widget.controller != null) {
-        // 不再需要内部 controller，但不要 dispose 它，因为外部可能还在用
-        _controller = null; // 只需置空引用
+    // --- 只处理 Controller 的变化 ---
+    if (widget.slotName == null && oldWidget.slotName == null) { // **关键判断**
+      if (widget.controller != oldWidget.controller) {
+        // 移除旧监听
+        oldWidget.controller?.removeListener(_handleControllerChanged);
+        // 添加新监听
+        widget.controller?.addListener(_handleControllerChanged);
+
+        // 处理 Controller 类型切换
+        if (oldWidget.controller != null && widget.controller == null) {
+          // 从外部变为内部
+          _controller?.dispose(); // Dispose 之前的内部 controller (如果有)
+          _controller = TextEditingController.fromValue(oldWidget.controller!.value);
+        } else if (oldWidget.controller == null && widget.controller != null) {
+          // 从内部变为外部
+          _controller?.dispose(); // Dispose 内部 controller
+          _controller = null;
+        }
+        // 更新 FormField 的值以匹配新的 Controller
+        setValue(_effectiveController?.text ?? widget.initialValue ?? '');
       }
-      // 如果之前是外部 controller，现在是内部 controller
-      if (oldWidget.controller != null && widget.controller == null) {
-        // 需要创建内部 controller
-        _controller = TextEditingController.fromValue(oldWidget.controller!.value);
+      // 如果 controller 实例没变，但外部修改了 text，_handleControllerChanged 会处理
+    } else if (widget.slotName != oldWidget.slotName) {
+      // --- 如果 slotName 状态发生变化 (从无到有，或从有到无) ---
+      // 需要清理或设置 Controller 监听
+      if (widget.slotName != null && oldWidget.slotName == null) {
+        // 从 Controller 模式切换到 slotName 模式
+        widget.controller?.removeListener(_handleControllerChanged); // 移除外部监听
+        _controller?.dispose(); // Dispose 内部 Controller
+        _controller = null;
+        // FormField 的值会在 TextInputField 初始化并触发 onChanged 后更新
+        setValue(widget.initialValue ?? ''); // 重置初始值
+      } else if (widget.slotName == null && oldWidget.slotName != null) {
+        // 从 slotName 模式切换到 Controller 模式
+        initState(); // 重新执行 Controller 初始化逻辑可能最简单
+        // setValue(...) 已经在 initState 里面了
       }
-      // 如果 controller 从一个外部实例换成另一个外部实例
-      if (oldWidget.controller != null && widget.controller != null) {
-        setValue(widget.controller!.text); // 更新 FormField 的值
-      }
-      // 如果 controller 从内部变为 null (理论上不该发生，除非外部设为 null)
-      // (此情况已包含在上面)
     }
-    // 如果 controller 类型没变，但外部 controller 的文本变了，_handleControllerChanged 会处理
   }
-
 
   @override
   void dispose() {
-    // 移除监听器 (如果是外部 controller)
+    // --- 只处理 Controller 情况 ---
     widget.controller?.removeListener(_handleControllerChanged);
-    // 如果是内部创建的 controller，需要 dispose
-    // 注意：在 didUpdateWidget 中，如果从内部变为外部，_controller 会被设为 null
-    // 所以这里的 dispose 只会作用于真正由这个 State 创建并持有的 Controller
-    _controller?.dispose();
+    _controller?.dispose(); // 只 dispose 内部创建的
     super.dispose();
   }
 
   @override
   void reset() {
-    super.reset();
-    // 重置时，将 controller 的文本设为 FormField 的初始值
-    setState(() {
-      _effectiveController.text = widget.initialValue ?? '';
-    });
+    super.reset(); // 重置 FormField 内部状态
+    final resetValue = widget.initialValue ?? '';
+    setValue(resetValue); // 更新 FormField 的值
+    // --- 只处理 Controller 情况 ---
+    if (widget.slotName == null) { // **关键判断**
+      setState(() { // 需要 setState 触发 UI 更新
+        _effectiveController?.text = resetValue;
+      });
+    }
+    // 如果使用 slotName，不需要（也不应该）在这里操作 Service
   }
 
-  // 监听外部 controller 的变化，并更新 FormField 的值
+  // 监听外部 controller 的变化 (仅当 widget.slotName == null 时)
   void _handleControllerChanged() {
-    if (_effectiveController.text != value) {
-      // 当外部 controller 的文本变化时，调用 didChange 更新 FormField 的内部值
-      // 这也会触发可能的重新验证 (如果 autovalidateMode 开启)
-      didChange(_effectiveController.text);
+    if (mounted && widget.slotName == null) { // **关键判断**
+      if (_effectiveController?.text != value) {
+        didChange(_effectiveController!.text);
+      }
+    } else if (mounted && widget.controller != null) {
+      // 如果 state 变成了 slotName 模式，尝试移除监听
+      try { widget.controller?.removeListener(_handleControllerChanged); } catch (e) { /* ignore */ }
     }
   }
 
-  // didChange 由 builder 中的 onChanged 或者 _handleControllerChanged 调用
+  // didChange 由 builder 中的 onChanged 调用
   @override
   void didChange(String? value) {
+    // 只更新 FormField 的内部值
     super.didChange(value);
-    // 如果 FormField 的值改变了 (可能是用户输入或外部 controller)，
-    // 并且 *不是* 外部 controller 引起的 (避免循环)，
-    // 就更新 controller 的文本。
-    // (这个检查在 _handleControllerChanged 中做了，这里理论上不需要，
-    // 因为 didChange 最终会更新 FormField 的 `value` 属性)
-    // if (widget.controller != null && widget.controller!.text != value) {
-    //   widget.controller!.text = value ?? '';
-    // }
   }
 }

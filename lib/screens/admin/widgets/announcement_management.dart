@@ -1,5 +1,6 @@
 // lib/screens/admin/widgets/announcement_management.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../models/announcement/announcement.dart';
 import '../../../services/main/announcement/announcement_service.dart';
@@ -14,7 +15,7 @@ class AnnouncementManagement extends StatefulWidget {
 }
 
 class _AnnouncementManagementState extends State<AnnouncementManagement> {
-  final AnnouncementService _announcementService = AnnouncementService();
+
 
   bool _isLoading = false;
   List<AnnouncementFull> _announcements = [];
@@ -36,8 +37,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
     });
 
     try {
+      final announcementService = context.read<AnnouncementService>();
       // 获取公告列表
-      final result = await _announcementService.getAllAnnouncements(_currentPage, 10);
+      final result = await announcementService.getAllAnnouncements(_currentPage, 10);
 
       setState(() {
         if (result['announcements'] != null) {
@@ -65,6 +67,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
   // 显示创建/编辑公告对话框
   Future<void> _showAnnouncementForm({AnnouncementFull? existingAnnouncement}) async {
     final announcement = existingAnnouncement ?? AnnouncementFull.createNew();
+    final announcementService = context.read<AnnouncementService>();
 
     final result = await showDialog<AnnouncementFull>(
       context: context,
@@ -90,7 +93,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
       try {
         if (existingAnnouncement == null) {
           // 创建新公告
-          await _announcementService.createAnnouncement(result);
+          await announcementService.createAnnouncement(result);
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -99,7 +102,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
           }
         } else {
           // 更新现有公告
-          await _announcementService.updateAnnouncement(existingAnnouncement.id, result);
+          await announcementService.updateAnnouncement(existingAnnouncement.id, result);
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
@@ -157,7 +160,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
     });
 
     try {
-      await _announcementService.deleteAnnouncement(id);
+
+      final announcementService = context.read<AnnouncementService>();
+      await announcementService.deleteAnnouncement(id);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -311,7 +316,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
   }
 
   Widget _buildAnnouncementCard(AnnouncementFull announcement) {
-    final theme = Theme.of(context);
     final bool isActive = announcement.isActive;
     final String type = announcement.type;
     final Color typeColor = _getTypeColor(type);

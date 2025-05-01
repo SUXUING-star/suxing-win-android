@@ -8,7 +8,6 @@ import 'level_progress_bar.dart'; // 导入进度条
 
 class LevelProgressCard extends StatelessWidget {
   final CheckInStats stats; // **保留 CheckInStats 用于签到天数等**
-  // final UserLevel? userLevel; // <--- 删除
   final User currentUser; // **接收当前用户 User 对象**
   final bool isLoading; // 签到按钮的加载状态
   final bool hasCheckedToday;
@@ -20,7 +19,6 @@ class LevelProgressCard extends StatelessWidget {
   const LevelProgressCard({
     super.key,
     required this.stats,
-    // required this.userLevel, // <--- 删除
     required this.currentUser, // **添加 currentUser**
     required this.isLoading,
     required this.hasCheckedToday,

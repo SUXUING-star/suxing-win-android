@@ -1,5 +1,6 @@
 // lib/screens/game/add/add_game_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -10,7 +11,7 @@ import '../../../widgets/components/form/gameform/game_form.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // <--- 导入你的自定义对话框
 
 class AddGameScreen extends StatelessWidget {
-  final GameService _gameService = GameService();
+
 
   AddGameScreen({super.key});
 
@@ -23,7 +24,8 @@ class AddGameScreen extends StatelessWidget {
       body: GameForm(
         onSubmit: (Game game) async {
           try {
-            await _gameService.addGame(game);
+            final gameService = context.read<GameService>();
+            await gameService.addGame(game);
             AppSnackBar.showSuccess(context, "添加成功");
             // 显示审核通知对话框 (使用新的方法)
             _showReviewNoticeDialog(context); // <--- 调用更新后的方法

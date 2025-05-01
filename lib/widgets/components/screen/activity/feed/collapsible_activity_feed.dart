@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
-// LinkedHashMap
-import 'dart:math' as math; // math.Random 等
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
@@ -74,21 +72,18 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   late AnimationController _animationController;
   late UserService _userService;
 
-
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
         duration: const Duration(milliseconds: 300), vsync: this);
     _initExpandedGroups();
-    _userService = UserService();
   }
 
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
-
   }
 
   @override
@@ -507,16 +502,22 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   }
 
   String _getTargetTitle(UserActivity activity) {
-    if (activity.target == null) return '未知目标';
     switch (activity.targetType) {
       case 'game':
-        return activity.target!['title'] ?? '未知游戏';
+        // 使用 UserActivity 模型中添加的 helper getter
+        return activity.gameTitle ?? '未知游戏';
       case 'post':
-        return activity.target!['title'] ?? '未知帖子';
+        // 使用 UserActivity 模型中添加的 helper getter
+        return activity.postTitle ?? '未知帖子';
       case 'user':
-        return activity.target!['username'] ?? '未知用户';
+        // 使用 UserActivity 模型中添加的 helper getter
+        return activity.targetUsername ??
+            '未知用户'; // 假设关注时 metadata 里存了 targetUsername
       default:
-        return '未知目标';
+        // 如果 targetId 有值，可以显示 ID 作为 fallback
+        return activity.targetId.isNotEmpty
+            ? '目标: ${activity.targetId}'
+            : '未知目标类型';
     }
   }
 

@@ -1,3 +1,4 @@
+// --- 保持 GenericFloatingActionButton 不变 ---
 // lib/widgets/ui/buttons/generic_fab.dart
 import 'package:flutter/material.dart';
 
@@ -9,8 +10,11 @@ class GenericFloatingActionButton extends StatelessWidget {
   /// 如果为 null 或 [isLoading] 为 true，按钮将被禁用。
   final VoidCallback? onPressed;
 
-  /// 按钮上显示的图标数据。
-  final IconData icon;
+  /// 按钮上显示的图标数据。 (如果提供了 child，则忽略此项)
+  final IconData? icon;
+
+  /// 按钮内部的子 Widget。如果提供，将覆盖 [icon]。
+  final Widget? child;
 
   /// 悬浮提示文本。
   final String? tooltip;
@@ -54,7 +58,8 @@ class GenericFloatingActionButton extends StatelessWidget {
   const GenericFloatingActionButton({
     super.key,
     required this.onPressed,
-    required this.icon,
+    this.icon, // 改为可选，因为可能用 child
+    this.child, // 添加 child 参数
     this.tooltip,
     this.heroTag,
     this.backgroundColor = Colors.white,
@@ -63,48 +68,44 @@ class GenericFloatingActionButton extends StatelessWidget {
     this.isLoading = false,
     this.mini = false,
     this.shape,
-    this.iconSize, // 通常 FAB 会自动处理图标大小
-    this.loadingIndicatorSize = 20.0, // 加载圈的大小
-    this.loadingIndicatorStrokeWidth = 2.5, // 加载圈的粗细
-  });
+    this.iconSize,
+    this.loadingIndicatorSize = 20.0,
+    this.loadingIndicatorStrokeWidth = 2.5,
+  }) : assert(icon != null || child != null, 'Must provide either an icon or a child'); // 断言确保 icon 或 child 至少有一个
 
   @override
   Widget build(BuildContext context) {
-    // 确定实际的 onPressed 回调 (加载中或传入 null 时禁用)
     final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
-
-    // 确定加载指示器的颜色
     final Color effectiveLoadingIndicatorColor = loadingIndicatorColor ??
-        foregroundColor ?? // 优先用指定的加载颜色，其次用前景色
-        Theme.of(context).colorScheme.onSecondaryContainer; // 最后用主题色（根据FAB背景推断）
+        foregroundColor ??
+        Theme.of(context).colorScheme.onSecondaryContainer;
 
-    // 确定按钮子组件 (图标或加载指示器)
-    final Widget child = isLoading
+    // 优先使用 child，然后是 icon，最后是加载指示器
+    final Widget buttonContent = isLoading
         ? SizedBox(
       width: loadingIndicatorSize,
       height: loadingIndicatorSize,
       child: CircularProgressIndicator(
         strokeWidth: loadingIndicatorStrokeWidth,
-        color: effectiveLoadingIndicatorColor, // 使用计算出的颜色
+        color: effectiveLoadingIndicatorColor,
       ),
     )
-        : Icon(
-      icon,
-      size: iconSize, // 应用图标大小 (如果指定)
-      // color: foregroundColor, // FAB 会自动处理前景色，除非你想强制覆盖
+        : child ?? Icon( // 如果 child 不为 null 则用 child，否则用 icon
+      icon!, // 断言保证了此时 icon 不为 null
+      size: iconSize,
     );
 
-    // 构建 FAB
     return FloatingActionButton(
       onPressed: effectiveOnPressed,
       tooltip: tooltip,
       heroTag: heroTag,
-      backgroundColor: backgroundColor, // 应用背景色
-      foregroundColor: foregroundColor, // 应用前景色 (图标颜色)
-      mini: mini,                     // 应用迷你模式
-      shape: shape,                   // 应用形状
-      elevation: isLoading ? 0 : null, // 加载时可以移除阴影，看起来更像禁用
-      child: Center(child: child), // 使用 Center 确保加载指示器居中
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      mini: mini,
+      shape: shape,
+      elevation: isLoading ? 0 : null,
+      // 使用 Center 确保加载指示器或提供的 child 居中
+      child: Center(child: buttonContent),
     );
   }
 }

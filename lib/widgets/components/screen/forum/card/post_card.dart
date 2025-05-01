@@ -43,7 +43,7 @@ class PostCard extends StatelessWidget {
     required this.post,
     this.isDesktopLayout = false,
     this.onDeleteAction, // 已设为可选
-    this.onEditAction,   // 已设为可选
+    this.onEditAction, // 已设为可选
     this.onToggleLockAction, // 已设为可选
   });
 
@@ -52,8 +52,6 @@ class PostCard extends StatelessWidget {
     // 获取设备和屏幕信息，用于调整布局
     final isAndroidPortrait =
         DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
-    final screenWidth = MediaQuery.of(context).size.width;
-    // final isSmallScreen = screenWidth < 360; // 这个判断条件可以根据 LayoutBuilder 调整
 
     // 获取认证信息以判断用户权限
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
@@ -61,8 +59,8 @@ class PostCard extends StatelessWidget {
     final isAdmin = authProvider.currentUser?.isAdmin ?? false;
     // 判断当前用户是否有权修改此帖子（作者本人或管理员） - 用于显示菜单按钮
     // 注意：确保比较的是字符串 ID
-    final canPotentiallyModify = (post.authorId.toString() == currentUserId) || isAdmin;
-
+    final canPotentiallyModify =
+        (post.authorId.toString() == currentUserId) || isAdmin;
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
@@ -94,7 +92,7 @@ class PostCard extends StatelessWidget {
             } else if (result['updated'] == true) {
               //print(
               //    "PostCard onTap: Detail page indicated update. Parent should handle refresh via its own logic.");
-            }//
+            } //
           } else if (result == true) {
             //print(
             //    "PostCard onTap: Detail page returned generic interaction (true). Assuming ForumScreen._navigateToPostDetail handles refresh.");
@@ -122,7 +120,8 @@ class PostCard extends StatelessWidget {
                     ),
                   ),
                   // 操作菜单（靠右，仅在有权限且有对应回调时显示部分或全部选项）
-                  _buildPopupMenu(context, canPotentiallyModify, isAdmin, currentUserId), // 传递权限信息
+                  _buildPopupMenu(context, canPotentiallyModify, isAdmin,
+                      currentUserId), // 传递权限信息
                 ],
               ),
             ),
@@ -179,7 +178,7 @@ class PostCard extends StatelessWidget {
                           likeCount: post.likeCount,
                           favoriteCount: post.favoriteCount,
                           isSmallScreen:
-                          constraints.maxWidth < 320, // 基于实际宽度判断是否为小屏幕样式
+                              constraints.maxWidth < 320, // 基于实际宽度判断是否为小屏幕样式
                         ),
                       ],
                     );
@@ -220,16 +219,20 @@ class PostCard extends StatelessWidget {
 
   /// 构建帖子操作的弹出菜单。
   /// 现在会检查回调是否为 null 来决定是否显示对应菜单项。
-  Widget _buildPopupMenu(BuildContext context, bool canPotentiallyModify, bool isAdmin, String? currentUserId) {
+  Widget _buildPopupMenu(BuildContext context, bool canPotentiallyModify,
+      bool isAdmin, String? currentUserId) {
     // 再次确认权限细节
     final bool canModifyContent = (post.authorId.toString() == currentUserId);
-    final bool showEditDeletePermission = canModifyContent || isAdmin; // 管理员也能删改
+    final bool showEditDeletePermission =
+        canModifyContent || isAdmin; // 管理员也能删改
     final bool showLockUnlockPermission = isAdmin; // 只有管理员能锁定
 
     // --- 检查每个操作是否 *实际可用* (有权限 + 有回调) ---
     final bool canShowEdit = showEditDeletePermission && onEditAction != null;
-    final bool canShowDelete = showEditDeletePermission && onDeleteAction != null;
-    final bool canShowLock = showLockUnlockPermission && onToggleLockAction != null;
+    final bool canShowDelete =
+        showEditDeletePermission && onDeleteAction != null;
+    final bool canShowLock =
+        showLockUnlockPermission && onToggleLockAction != null;
 
     // 如果没有任何可用的操作，则不显示菜单按钮
     if (!canShowEdit && !canShowDelete && !canShowLock) {
@@ -237,17 +240,21 @@ class PostCard extends StatelessWidget {
     }
 
     // 确保在有任何一个可用操作时才构建按钮
-    return StylishPopupMenuButton<String>( // T is String here
+    return StylishPopupMenuButton<String>(
+      // T is String here
       icon: Icons.more_horiz,
       iconSize: 20,
       iconColor: Colors.grey[600],
       menuColor: Colors.white,
+
       tooltip: '帖子选项',
       onSelected: (value) => _handleMenuItemSelected(context, value),
-      items: [ // 直接使用 List literal，类型是 List<StylishMenuItemData<String>>
+      items: [
+        // 直接使用 List literal，类型是 List<StylishMenuItemData<String>>
         // 编辑选项 (作者或管理员，并且 onEditAction 可用)
         if (canShowEdit)
-          StylishMenuItemData( // value is 'edit' (String)
+          StylishMenuItemData(
+            // value is 'edit' (String)
             value: 'edit',
             child: Row(
               children: [
@@ -260,7 +267,8 @@ class PostCard extends StatelessWidget {
           ),
         // 删除选项 (作者或管理员，并且 onDeleteAction 可用)
         if (canShowDelete)
-          StylishMenuItemData( // value is 'delete' (String)
+          StylishMenuItemData(
+            // value is 'delete' (String)
             value: 'delete',
             child: Row(
               children: [
@@ -273,7 +281,8 @@ class PostCard extends StatelessWidget {
 
         // --- 锁定/解锁选项 (仅管理员，并且 onToggleLockAction 可用) ---
         if (canShowLock)
-          StylishMenuItemData( // value is 'toggle_lock' (String)
+          StylishMenuItemData(
+            // value is 'toggle_lock' (String)
             value: 'toggle_lock',
             child: Row(
               children: [
@@ -287,7 +296,8 @@ class PostCard extends StatelessWidget {
                       : Colors.orange[800], // 锁定颜色
                 ),
                 const SizedBox(width: 10),
-                Text(post.status == PostStatus.locked ? '解锁' : '锁定'), // 根据状态切换文本
+                Text(
+                    post.status == PostStatus.locked ? '解锁' : '锁定'), // 根据状态切换文本
               ],
             ),
           ),
@@ -303,12 +313,12 @@ class PostCard extends StatelessWidget {
     if (value == 'edit') {
       // 使用空安全调用 ?.call()
       if (onEditAction != null) {
-        print("PostCard: Edit option selected for post ${post.id}. Calling onEditAction.");
+        print(
+            "PostCard: Edit option selected for post ${post.id}. Calling onEditAction.");
         onEditAction!(post); // 明确知道非空后可以加 !，或者直接用 onEditAction(post)
       } else {
         print("PostCard: Edit option selected, but onEditAction is null.");
       }
-
     } else if (value == 'delete') {
       final callback = onDeleteAction; // 存储到局部变量以便检查
       if (callback != null) {
@@ -329,7 +339,6 @@ class PostCard extends StatelessWidget {
       } else {
         print("PostCard: Delete option selected, but onDeleteAction is null.");
       }
-
     } else if (value == 'toggle_lock') {
       final callback = onToggleLockAction; // 存储到局部变量以便检查
       if (callback != null) {
@@ -350,7 +359,8 @@ class PostCard extends StatelessWidget {
           }
         }
       } else {
-        print("PostCard: Toggle lock option selected, but onToggleLockAction is null.");
+        print(
+            "PostCard: Toggle lock option selected, but onToggleLockAction is null.");
       }
     }
   }

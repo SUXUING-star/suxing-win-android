@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
 import 'common_game_list_screen.dart'; // 引入新的 Base
@@ -11,7 +12,6 @@ class HotGamesScreen extends StatefulWidget {
 }
 
 class _HotGamesScreenState extends State<HotGamesScreen> {
-  final GameService _gameService = GameService();
   // *** 用于触发 FutureBuilder 重建 ***
   late Future<List<Game>> _hotGamesFuture;
 
@@ -25,7 +25,8 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
   Future<List<Game>> _loadHotGames() async {
     try {
       // .first 仍然适用，因为 getHotGames 是 Stream，我们取第一个结果
-      return await _gameService.getHotGames().first;
+      final gameService = context.read<GameService>();
+      return await gameService.getHotGames();
     } catch (e) {
       //print("Error loading hot games: $e");
       // 可以选择向上抛出异常让 FutureBuilder 处理

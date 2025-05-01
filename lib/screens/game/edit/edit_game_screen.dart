@@ -1,5 +1,6 @@
 // lib/screens/game/edit/edit_game_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -11,7 +12,6 @@ import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // <--- 导入你的�
 
 class EditGameScreen extends StatelessWidget {
   final Game game;
-  final GameService _gameService = GameService();
 
   EditGameScreen({super.key, required this.game});
 
@@ -51,7 +51,8 @@ class EditGameScreen extends StatelessWidget {
               game: game,
               onSubmit: (Game updatedGame) async {
                 try {
-                  await _gameService.updateGame(updatedGame);
+                  final gameService = context.read<GameService>();
+                  await gameService.updateGame(updatedGame);
                   AppSnackBar.showSuccess(context, "修改成功");
                   // 显示审核通知对话框 (使用新的方法)
                   _showReviewNoticeDialog(context); // <--- 调用更新后的方法

@@ -6,8 +6,6 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
-// *** Import AppButton ***
-import '../../../../ui/buttons/app_button.dart'; // 确认路径正确
 import 'game_preview_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 

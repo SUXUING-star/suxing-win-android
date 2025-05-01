@@ -1,61 +1,61 @@
 // lib/widgets/components/screen/activity/card/activity_target.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
 // Import the SafeCachedImage widget
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class ActivityTarget extends StatelessWidget {
-  final Map<String, dynamic>? target;
-  final String? targetType;
+  final UserActivity activity;
   final bool isAlternate;
   final double cardHeight;
 
   const ActivityTarget({
     super.key,
-    required this.target,
-    required this.targetType,
+    required this.activity,
     this.isAlternate = false,
-    this.cardHeight = 1.0, // Default to 1.0 if not provided elsewhere
+    this.cardHeight = 1.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (target == null) {
-      return const SizedBox.shrink();
-    }
-
     Widget targetWidget;
 
-    switch (targetType) {
+    // --- 直接用 activity.targetType ---
+    switch (activity.targetType) {
       case 'game':
-        targetWidget = _buildGameTarget(context); // Pass context for devicePixelRatio
+        targetWidget =
+            _buildGameTarget(context);
         break;
       case 'post':
         targetWidget = _buildPostTarget(context);
         break;
       case 'user':
-        targetWidget = _buildUserTarget(context); // Pass context for devicePixelRatio
+        targetWidget =
+            _buildUserTarget(context); // 目标是用户
+        break;
+    // --- 新增: 处理 download 类型 (如果 metadata 里有信息) ---
+      case 'download':
+        targetWidget = _buildDownloadTarget(context); // 你可以创建一个新的方法
         break;
       default:
-        targetWidget = const SizedBox.shrink();
+      // 可以考虑显示一个通用目标或者基于 targetId 的链接（如果需要）
+        targetWidget = Text('未知或不支持的目标类型: ${activity.targetType}');
+    // targetWidget = const SizedBox.shrink();
     }
 
     return targetWidget;
   }
 
-  // Helper to calculate cache size based on display size and pixel ratio
-  int _calculateCacheSize(BuildContext context, double displaySize) {
-    final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
-    return (displaySize * devicePixelRatio).round();
-  }
 
   Widget _buildGameTarget(BuildContext context) {
-    final title = target?['title'] ?? '未知游戏';
-    final coverImage = target?['coverImage'];
+    // --- 使用 helper getter ---
+    final title = activity.gameTitle ?? '未知游戏';
+    final coverImage = activity.gameCoverImage; // 使用 helper getter
     final double imageSize = 60 * cardHeight;
     final double borderRadiusValue = 4 * math.sqrt(cardHeight);
-    final int cacheSize = _calculateCacheSize(context, imageSize);
 
     return Container(
       padding: EdgeInsets.all(12 * cardHeight),
@@ -67,20 +67,16 @@ class ActivityTarget extends StatelessWidget {
       child: Row(
         textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
         children: [
-          // Use SafeCachedImage for the game cover
-          coverImage != null
+          coverImage != null && coverImage.isNotEmpty // 增加非空判断
               ? SafeCachedImage(
             imageUrl: coverImage,
             width: imageSize,
             height: imageSize,
             fit: BoxFit.cover,
             borderRadius: BorderRadius.circular(borderRadiusValue),
-            // memCacheWidth: cacheSize,
-            // memCacheHeight: cacheSize,
-            // Optional: Add specific background if needed for placeholder/error
-            // backgroundColor: Colors.grey.shade300,
           )
-              : _buildPlaceholderImage('game'), // Fallback if no cover image URL
+              : _buildPlaceholderImage(
+              'game'), // Fallback if no cover image URL
           SizedBox(width: 12 * cardHeight),
           Expanded(
             child: Text(
@@ -90,6 +86,8 @@ class ActivityTarget extends StatelessWidget {
                 fontSize: 16 * math.sqrt(cardHeight),
               ),
               textAlign: isAlternate ? TextAlign.right : TextAlign.left,
+              maxLines: 2, // 允许标题显示两行
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -98,7 +96,8 @@ class ActivityTarget extends StatelessWidget {
   }
 
   Widget _buildPostTarget(BuildContext context) {
-    final title = target?['title'] ?? '未知帖子';
+    // --- 使用 helper getter ---
+    final title = activity.postTitle ?? '未知帖子';
 
     return Container(
       padding: EdgeInsets.all(12 * cardHeight),
@@ -110,7 +109,8 @@ class ActivityTarget extends StatelessWidget {
       child: Row(
         textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
         children: [
-          Icon(Icons.article, color: Colors.blue.shade700, size: 24 * math.sqrt(cardHeight)),
+          Icon(Icons.article,
+              color: Colors.blue.shade700, size: 24 * math.sqrt(cardHeight)),
           SizedBox(width: 12 * cardHeight),
           Expanded(
             child: Text(
@@ -121,6 +121,8 @@ class ActivityTarget extends StatelessWidget {
                 color: Colors.blue.shade900,
               ),
               textAlign: isAlternate ? TextAlign.right : TextAlign.left,
+              maxLines: 2, // 允许标题显示两行
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -129,12 +131,16 @@ class ActivityTarget extends StatelessWidget {
   }
 
   Widget _buildUserTarget(BuildContext context) {
-    final username = target?['username'] ?? '未知用户';
-    final avatar = target?['avatar'];
-    final double avatarDiameter = 40 * math.sqrt(cardHeight); // Diameter = radius * 2
-    final double avatarRadius = avatarDiameter / 2;
-    final int cacheSize = _calculateCacheSize(context, avatarDiameter);
+    // --- *** 使用 activity.targetId *** ---
+    final targetUserId = activity.targetId;
+    // 如果 targetUserId 为空，则不显示任何内容
+    if (targetUserId.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
+    // 如果 metadata 里没有 targetUsername，UserInfoBadge 会自己去获取
+    // 所以这里直接传递 targetUserId 即可
+    // 返回外部容器 (紫色背景)
     return Container(
       padding: EdgeInsets.all(12 * cardHeight),
       decoration: BoxDecoration(
@@ -142,33 +148,62 @@ class ActivityTarget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8 * math.sqrt(cardHeight)),
         border: Border.all(color: Colors.purple.shade100),
       ),
+      // 使用 Align 控制内部 UserInfoBadge 的对齐
+      child: Align(
+        alignment: isAlternate ? Alignment.centerRight : Alignment.centerLeft,
+        // --- 直接使用未修改的 UserInfoBadge ---
+        child: UserInfoBadge(
+          key: ValueKey('target_badge_${targetUserId}'), // 给 Badge 一个 Key
+          userId: targetUserId, // 传递目标用户 ID
+          showFollowButton: true, // 在 Target 显示时通常需要关注按钮
+          showLevel: true,
+          mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini
+        ),
+      ),
+    );
+  }
+
+  // --- 新增: 构建 Download Target ---
+  Widget _buildDownloadTarget(BuildContext context) {
+    // --- 从 metadata 获取下载信息 ---
+    final title = activity.metadata?['download_title'] as String? ?? '未知下载';
+    final url = activity.metadata?['download_url'] as String?; // 下载链接（如果需要直接点击）
+
+    return Container(
+      padding: EdgeInsets.all(12 * cardHeight),
+      decoration: BoxDecoration(
+        color: Colors.green.shade50,
+        borderRadius: BorderRadius.circular(8 * math.sqrt(cardHeight)),
+        border: Border.all(color: Colors.green.shade100),
+      ),
       child: Row(
         textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
         children: [
-          // Use SafeCachedImage for the user avatar
-          avatar != null
-              ? SafeCachedImage(
-            imageUrl: avatar,
-            width: avatarDiameter,
-            height: avatarDiameter,
-            fit: BoxFit.cover,
-            borderRadius: BorderRadius.circular(avatarRadius), // Make it circular
-            memCacheWidth: cacheSize,
-            memCacheHeight: cacheSize,
-            // Optional: Background for placeholder/error
-            // backgroundColor: Colors.purple.shade100,
-          )
-              : _buildFallbackAvatar(username, avatarDiameter), // Fallback if no avatar URL
+          Icon(Icons.download_for_offline_outlined, color: Colors.green.shade700, size: 24 * math.sqrt(cardHeight)),
           SizedBox(width: 12 * cardHeight),
           Expanded(
-            child: Text(
-              username,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16 * math.sqrt(cardHeight),
-                color: Colors.purple.shade900,
-              ),
-              textAlign: isAlternate ? TextAlign.right : TextAlign.left,
+            child: Column( // 使用 Column 显示标题和可能的链接
+              crossAxisAlignment: isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16 * math.sqrt(cardHeight),
+                    color: Colors.green.shade900,
+                  ),
+                  textAlign: isAlternate ? TextAlign.right : TextAlign.left,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                // 如果有 URL，可以显示一个可点击的链接或按钮
+                if (url != null && url.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  // Text('链接: $url', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                  // 或者一个按钮
+                  // TextButton(onPressed: () { /* 打开链接 */ }, child: Text('打开链接'))
+                ]
+              ],
             ),
           ),
         ],
@@ -176,31 +211,8 @@ class ActivityTarget extends StatelessWidget {
     );
   }
 
-  // Fallback for User avatar (when URL is null)
-  Widget _buildFallbackAvatar(String username, double diameter) {
-    return Container(
-      width: diameter,
-      height: diameter,
-      decoration: BoxDecoration(
-        color: Colors.purple.shade200, // Use a slightly darker shade maybe
-        shape: BoxShape.circle,
-      ),
-      child: Center(
-        child: Text(
-          (username.isNotEmpty) ? username[0].toUpperCase() : '?',
-          style: TextStyle(
-            fontSize: diameter * 0.4, // Adjust font size relative to avatar size
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
-          ),
-        ),
-      ),
-    );
-  }
 
-
-  // Placeholder for Game image (when URL is null)
-  // This remains needed for the case where coverImage URL itself is null
+  // Placeholder image (保持不变)
   Widget _buildPlaceholderImage(String type) {
     final double size = 60 * cardHeight;
     return Container(
@@ -211,7 +223,9 @@ class ActivityTarget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4 * math.sqrt(cardHeight)),
       ),
       child: Icon(
-        type == 'game' ? Icons.gamepad_outlined : Icons.image_not_supported_outlined,
+        type == 'game'
+            ? Icons.videogame_asset_outlined
+            : Icons.image_not_supported_outlined,
         size: 24 * math.sqrt(cardHeight),
         color: Colors.grey.shade600,
       ),

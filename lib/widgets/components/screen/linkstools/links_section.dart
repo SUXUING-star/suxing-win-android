@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/buttons/open_url_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/linkstools/link.dart';
 import '../../../../services/main/linktool/link_tool_service.dart';

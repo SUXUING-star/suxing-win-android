@@ -1,10 +1,13 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:provider/provider.dart';
+
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../services/main/linktool/link_tool_service.dart';
 import '../../../models/linkstools/tool.dart';
 import '../../../widgets/components/form/toolform/tool_form_dialog.dart';
 
@@ -16,210 +19,192 @@ class ToolManagement extends StatefulWidget {
 }
 
 class _ToolManagementState extends State<ToolManagement> {
-  final LinkToolService _linkToolService = LinkToolService();
-  // 添加一个刷新触发器
-  int _refreshTrigger = 0;
-  // 添加加载状态
-  bool _isLoading = false;
 
-  // 刷新数据
-  void _refreshData() {
+  // --- 修改: 使用 Future 状态 ---
+  late Future<List<Tool>> _toolsFuture;
+  bool _isProcessing = false; // 防止重复点击
+  // --- 结束修改 ---
+
+  @override
+  void initState() {
+    super.initState();
+    // --- 修改: 初始化 Future ---
+    _loadTools();
+    // --- 结束修改 ---
+  }
+
+  // --- 新增: 加载数据的方法 ---
+  void _loadTools({bool forceRefresh = false}) {
+    final linkToolService = context.read<LinkToolService>();
     setState(() {
-      _refreshTrigger++; // 增加计数器以触发StreamBuilder重建
+      _toolsFuture = linkToolService.getTools(forceRefresh: forceRefresh);
     });
   }
+
+  // --- 修改: 刷新数据方法 ---
+  Future<void> _refreshData() async {
+    _loadTools(forceRefresh: true);
+    await _toolsFuture; // 等待 Future 完成给 RefreshIndicator
+  }
+  // --- 结束修改 ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<List<Tool>>(
-        // 使用刷新触发器作为key，确保数据改变时重建
-        key: ValueKey("tools_$_refreshTrigger"),
-        stream: _linkToolService.getTools(),
+      // --- 修改: 使用 FutureBuilder ---
+      body: FutureBuilder<List<Tool>>(
+        future: _toolsFuture, // 绑定 Future
         builder: (context, snapshot) {
+          // 处理加载状态
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return LoadingWidget.inline();
+          }
+          // 处理错误状态
           if (snapshot.hasError) {
-            return Center(child: Text('错误: ${snapshot.error}'));
+            return CustomErrorWidget(
+              onRetry:()=> _loadTools(forceRefresh: true),
+              errorMessage: '错误: ${snapshot.error}',
+            );
+          }
+          // 处理无数据或空数据状态
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              child: Stack(
+                children: [ListView(), Center(child: Text('暂无工具数据'))],
+              ),
+            );
           }
 
-          if (!snapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
+          // 有数据时
           final tools = snapshot.data!;
-
           return RefreshIndicator(
-            onRefresh: () async {
-              _refreshData();
-            },
+            onRefresh: _refreshData, // 下拉刷新
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _showAddToolDialog,
-                    icon: _isLoading
+                    onPressed:
+                        _isProcessing ? null : _showAddToolDialog, // 防止重复
+                    icon: _isProcessing
                         ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white)))
                         : const Icon(Icons.add),
-                    label: Text(_isLoading ? '处理中...' : '添加工具'),
+                    label: Text(_isProcessing ? '处理中...' : '添加工具'),
                   ),
                 ),
                 Expanded(
-                  child: tools.isEmpty
-                      ? Center(child: Text('暂无工具数据'))
-                      : ListView.builder(
-                          itemCount: tools.length,
-                          itemBuilder: (context, index) {
-                            final tool = tools[index];
-                            return Card(
-                              margin: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                                vertical: 8,
-                              ),
-                              child: ListTile(
-                                leading: const Icon(Icons.build),
-                                title: Text(tool.name),
-                                subtitle: Text(tool.description),
-                                trailing: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    IconButton(
-                                      icon: const Icon(Icons.edit),
-                                      onPressed: _isLoading
-                                          ? null
-                                          : () => _showEditToolDialog(tool),
-                                    ),
-                                    IconButton(
-                                      icon: const Icon(Icons.delete,
-                                          color: Colors.red),
-                                      onPressed: _isLoading
-                                          ? null
-                                          : () => _showDeleteConfirmation(tool),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            );
-                          },
+                  child: ListView.builder(
+                    itemCount: tools.length,
+                    itemBuilder: (context, index) {
+                      final tool = tools[index];
+                      return Card(
+                        margin: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
                         ),
+                        child: ListTile(
+                          leading: const Icon(Icons.build), // 可以改成 Tool 的图标
+                          title: Text(tool.name),
+                          subtitle: Text(tool.description,
+                              maxLines: 2, overflow: TextOverflow.ellipsis),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit),
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () => _showEditToolDialog(tool),
+                              ),
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () => _showDeleteConfirmation(tool),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
           );
         },
       ),
+      // --- 结束修改 ---
     );
   }
 
+  // --- 修改: 添加/编辑/删除操作后刷新数据 ---
   Future<void> _showAddToolDialog() async {
-    // 防止重复操作
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
     try {
-      final result = await showDialog(
+      final result = await showDialog<Map<String, dynamic>>(
+        // 指定泛型类型
         context: context,
         builder: (context) => const ToolFormDialog(),
       );
 
-      if (result != null) {
+      if (result != null && mounted) {
         try {
-          // 转换为Tool对象
-          final tool = Tool.fromJson(result);
-          await _linkToolService.addTool(tool);
-
-          // 刷新UI
-          _refreshData();
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('工具添加成功')),
-            );
-          }
+          final tool = Tool.fromJson(result); // 转换
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.addTool(tool);
+          _loadTools(forceRefresh: true); // 强制刷新
+          AppSnackBar.showSuccess(context, '工具添加成功');
         } catch (e) {
           print('添加工具错误: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('添加失败：$e')),
-            );
-          }
+          if (mounted) AppSnackBar.showError(context, '添加失败：$e');
         }
       }
     } finally {
-      // 确保状态重置
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _showEditToolDialog(Tool tool) async {
-    // 防止重复操作
-    if (_isLoading) return;
-
-    setState(() {
-      _isLoading = true;
-    });
-
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
     try {
-      final result = await showDialog(
+      final result = await showDialog<Map<String, dynamic>>(
+        // 指定泛型类型
         context: context,
         builder: (context) => ToolFormDialog(tool: tool),
       );
 
-      if (result != null) {
+      if (result != null && mounted) {
         try {
-          // 修改：使用fromJson转换Map为Tool对象
-          final updatedTool = Tool.fromJson(result);
-          await _linkToolService.updateTool(updatedTool);
-
-          // 刷新UI
-          _refreshData();
-
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('工具更新成功')),
-            );
-          }
+          final linkToolService = context.read<LinkToolService>();
+          final updatedTool = Tool.fromJson(result); // 转换
+          await linkToolService.updateTool(updatedTool);
+          _loadTools(forceRefresh: true); // 强制刷新
+          AppSnackBar.showSuccess(context, '工具更新成功');
         } catch (e) {
           print('更新工具错误: $e');
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('更新失败：$e')),
-            );
-          }
+          if (mounted) AppSnackBar.showError(context, '更新失败：$e');
         }
       }
     } finally {
-      // 确保状态重置
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _showDeleteConfirmation(Tool tool) async {
-    // 防止重复操作
-    if (_isLoading) return;
+    if (_isProcessing) return;
 
-    setState(() {
-      _isLoading = true;
-    });
-
+    setState(() => _isProcessing = true);
     try {
       final confirmed = await showDialog<bool>(
         context: context,
@@ -228,38 +213,28 @@ class _ToolManagementState extends State<ToolManagement> {
           content: Text('确定要删除工具"${tool.name}"吗？'),
           actions: [
             FunctionalTextButton(
-                onPressed: () => NavigationUtils.pop(context, false),
+                onPressed: () => Navigator.pop(context, false),
                 label: '取消'),
             FunctionalButton(
-                onPressed: () => NavigationUtils.pop(context, true),
+                onPressed: () => Navigator.pop(context, true),
                 label: '删除'),
           ],
         ),
       );
 
-      if (confirmed == true) {
+      if (confirmed == true && mounted) {
         try {
-          await _linkToolService.deleteTool(tool.id);
-
-          // 刷新UI
-          _refreshData();
-
-          if (mounted) {
-            AppSnackBar.showSuccess(context, '工具删除成功');
-          }
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.deleteTool(tool.id);
+          _loadTools(forceRefresh: true); // 强制刷新
+          AppSnackBar.showSuccess(context, '工具删除成功');
         } catch (e) {
-          if (mounted) {
-            AppSnackBar.showError(context, '删除失败：$e');
-          }
+          if (mounted) AppSnackBar.showError(context, '删除失败：$e');
         }
       }
     } finally {
-      // 确保状态重置
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
-      }
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
+// --- 结束修改 ---
 }

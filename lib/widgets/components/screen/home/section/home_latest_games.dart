@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/home/section/home_latest_games.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -18,7 +19,6 @@ class HomeLatestGames extends StatefulWidget {
 }
 
 class _HomeLatestGamesState extends State<HomeLatestGames> {
-  final GameService _gameService = GameService(); // Service 实例
 
   // 恢复内部状态
   List<Game>? _cachedGames;
@@ -28,37 +28,35 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
   @override
   void initState() {
     super.initState();
-    print("HomeLatestGames initState triggered (Key: ${widget.key})");
     _fetchData(); // initState 获取数据
   }
-
-
 
   // 获取数据的 Future 方法
   Future<void> _fetchData() async {
     if (!mounted) return;
     if (_isLoading) {
-      print("HomeLatestGames _fetchData called while loading, ignoring.");
       return;
     }
-    print("HomeLatestGames _fetchData called");
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
-      // *** 核心：调用 Service 的 Stream 方法，并用 .first 获取 Future<List<Game>> ***
-      final games = await _gameService.getLatestGames().first; // 使用 .first 获取 Future
+      final gameService = context.read<GameService>();
+      final games = await gameService.getLatestGames();
 
-      if (mounted) {
+      if (mounted && games.isNotEmpty) {
         setState(() {
           _cachedGames = games;
-          // _isLoading = false; // 在 finally 处理
+        });
+      } else {
+        _errorMessage = "加载最新游戏失败";
+        setState(() {
+          _isLoading = true;
         });
       }
-    } catch (error, stackTrace) {
-      print("HomeLatestGames _fetchData error: $error\n$stackTrace");
+    } catch (error) {
       if (mounted) {
         setState(() {
           _errorMessage = '加载最新游戏失败'; // 简化错误信息
@@ -87,7 +85,10 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
           color: Colors.white,
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
-            BoxShadow( color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: Offset(0, 2)),
+            BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: Offset(0, 2)),
           ],
         ),
         child: Column(
@@ -96,14 +97,42 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
             // --- 标题栏保持不变 ---
             Container(
               padding: EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration( border: Border( bottom: BorderSide( color: Colors.grey.shade200, width: 1))),
+              decoration: BoxDecoration(
+                  border: Border(
+                      bottom:
+                          BorderSide(color: Colors.grey.shade200, width: 1))),
               child: Row(
                 children: [
-                  Container( width: 6, height: 22, decoration: BoxDecoration( color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(3))),
+                  Container(
+                      width: 6,
+                      height: 22,
+                      decoration: BoxDecoration(
+                          color: Theme.of(context).primaryColor,
+                          borderRadius: BorderRadius.circular(3))),
                   SizedBox(width: 12),
-                  Text( '最新发布', style: TextStyle( fontSize: 20, fontWeight: FontWeight.w700, color: Colors.grey[900])),
+                  Text('最新发布',
+                      style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.grey[900])),
                   Spacer(),
-                  InkWell( borderRadius: BorderRadius.circular(8), onTap: () { NavigationUtils.pushNamed(context, AppRoutes.latestGames); }, child: Padding( padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: Row( children: [ Text( '更多', style: TextStyle( color: Colors.grey[700], fontSize: 14)), SizedBox(width: 4), Icon( Icons.arrow_forward_ios, size: 14, color: Colors.grey[700]) ]))),
+                  InkWell(
+                      borderRadius: BorderRadius.circular(8),
+                      onTap: () {
+                        NavigationUtils.pushNamed(
+                            context, AppRoutes.latestGames);
+                      },
+                      child: Padding(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          child: Row(children: [
+                            Text('更多',
+                                style: TextStyle(
+                                    color: Colors.grey[700], fontSize: 14)),
+                            SizedBox(width: 4),
+                            Icon(Icons.arrow_forward_ios,
+                                size: 14, color: Colors.grey[700])
+                          ]))),
                 ],
               ),
             ),
@@ -111,7 +140,6 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
 
             // --- 使用内部状态构建列表区域 ---
             _buildGameListArea(context),
-
           ],
         ),
       ),
@@ -154,17 +182,17 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
 
     // 4. 正常显示列表 (或加载中但有旧数据)
     final games = _cachedGames ?? []; // 使用缓存或空列表
-    return Stack( // 使用 Stack 添加加载覆盖层
+    return Stack(
+      // 使用 Stack 添加加载覆盖层
       children: [
         _buildVerticalGameList(games, context),
         // 加载覆盖层
         if (_isLoading && games.isNotEmpty)
           Positioned.fill(
               child: Container(
-                color: Colors.white.withOpacity(0.5), // 半透明覆盖
-                child: Center(child: LoadingWidget.inline(size: 30)),
-              )
-          ),
+            color: Colors.white.withOpacity(0.5), // 半透明覆盖
+            child: Center(child: LoadingWidget.inline(size: 30)),
+          )),
       ],
     );
   }
@@ -172,13 +200,20 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
   Widget _buildVerticalGameList(List<Game> games, BuildContext context) {
     final displayGames = games.take(3).toList();
     if (displayGames.isEmpty) {
-      return SizedBox( height: 100, child: Center(child: Text("没有最新游戏可显示", style: TextStyle(color: Colors.grey))) );
+      return SizedBox(
+          height: 100,
+          child: Center(
+              child: Text("没有最新游戏可显示", style: TextStyle(color: Colors.grey))));
     }
     return ListView.separated(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       itemCount: displayGames.length,
-      separatorBuilder: (context, index) => Divider( height: 16, indent: 88, endIndent: 16, color: Colors.grey.withOpacity(0.1)),
+      separatorBuilder: (context, index) => Divider(
+          height: 16,
+          indent: 88,
+          endIndent: 16,
+          color: Colors.grey.withOpacity(0.1)),
       itemBuilder: (context, index) {
         final game = displayGames[index];
         // *** 调用完整的列表项构建方法 ***
@@ -198,7 +233,8 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
           arguments: game,
         );
       },
-      child: Padding( // 改用 Padding 增加点击区域
+      child: Padding(
+        // 改用 Padding 增加点击区域
         padding: EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           children: [
@@ -268,11 +304,14 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.center, // 居中对齐
       children: [
-        _buildStatItem(Icons.remove_red_eye_outlined, game.viewCount, Colors.blueGrey[300]),
+        _buildStatItem(Icons.remove_red_eye_outlined, game.viewCount,
+            Colors.blueGrey[300]),
         SizedBox(height: 6),
-        _buildStatItem(Icons.star_border_purple500_outlined, game.ratingCount, Colors.orange[400]), // 收藏数改为 ratingCount? 确认下字段
+        _buildStatItem(Icons.star_border_purple500_outlined, game.ratingCount,
+            Colors.orange[400]), // 收藏数改为 ratingCount? 确认下字段
         SizedBox(height: 6),
-        _buildStatItem(Icons.thumb_up_off_alt_outlined, game.likeCount, Colors.redAccent[100]), // 点赞数改为 likeCount? 确认下字段
+        _buildStatItem(Icons.thumb_up_off_alt_outlined, game.likeCount,
+            Colors.redAccent[100]), // 点赞数改为 likeCount? 确认下字段
       ],
     );
   }
@@ -299,5 +338,4 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
       ],
     );
   }
-
 } // End of _HomeLatestGamesState

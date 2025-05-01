@@ -4,13 +4,11 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
-import '../../services/main/user/user_service.dart';
 import '../../models/user/user.dart';
 import '../../widgets/ui/image/safe_cached_image.dart'; // Import the new widget
 
 class DesktopSidebarUserProfile extends StatelessWidget {
   final VoidCallback onProfileTap;
-  final UserService _userService = UserService();
 
   DesktopSidebarUserProfile({
     super.key,
@@ -106,21 +104,22 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                       ),
                       child: user.avatar != null
                           ? SafeCachedImage(
-                        imageUrl: user.avatar!,
-                        width: 40,
-                        height: 40,
-                        fit: BoxFit.cover,
-                        borderRadius: BorderRadius.circular(20),
-                        memCacheWidth: cacheSize,
-                        memCacheHeight: cacheSize,
-                      )
+                              imageUrl: user.avatar!,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                              borderRadius: BorderRadius.circular(20),
+                              memCacheWidth: cacheSize,
+                              memCacheHeight: cacheSize,
+                            )
                           : _fallbackAvatar(user.username),
                     ),
                     Positioned(
                       right: 0,
                       bottom: 0,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                         decoration: BoxDecoration(
                           color: _getLevelColor(user.level),
                           borderRadius: BorderRadius.circular(8),
@@ -128,7 +127,10 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                         ),
                         child: Text(
                           'Lv.${user.level}',
-                          style: TextStyle(fontSize: 8, color: Colors.white, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                              fontSize: 8,
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold),
                         ),
                       ),
                     ),
@@ -138,15 +140,19 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(top: 2.0),
                   child: Text(
-                    user.username ?? '',
-                    style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                    user.username,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold),
                     overflow: TextOverflow.ellipsis,
                     maxLines: 1,
                   ),
                 ),
                 Text(
                   '${user.experience} XP',
-                  style: TextStyle(fontSize: 10, color: Colors.white.withOpacity(0.8)),
+                  style: TextStyle(
+                      fontSize: 10, color: Colors.white.withOpacity(0.8)),
                 ),
               ],
             ),
@@ -166,10 +172,13 @@ class DesktopSidebarUserProfile extends StatelessWidget {
         shape: BoxShape.circle,
         color: Colors.white.withOpacity(0.2), // Background color for the circle
       ),
-      child: Center( // Center the text within the container
+      child: Center(
+        // Center the text within the container
         child: Text(
           // Ensure username is not null and not empty before accessing index 0
-          (username != null && username.isNotEmpty) ? username[0].toUpperCase() : '?',
+          (username != null && username.isNotEmpty)
+              ? username[0].toUpperCase()
+              : '?',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
@@ -179,7 +188,6 @@ class DesktopSidebarUserProfile extends StatelessWidget {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -202,11 +210,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
             return _buildLoginPrompt(context); // 或者暂时显示登录入口，避免界面崩溃
           }
 
-          // 确定有用户信息，显示用户信息
-          print("DesktopSidebar: AuthProvider says logged in. User: ${currentUser.username}. Rendering profile."); // 调试日志
           return _buildLoggedInProfile(context, currentUser);
-
-
         },
       ),
     );

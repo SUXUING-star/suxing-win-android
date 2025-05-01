@@ -4,7 +4,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
 import '../post_content.dart';
-import '../reply/reply_list.dart';
+import '../reply/post_reply_list.dart';
 
 class PostDetailMobileLayout extends StatelessWidget {
   final Post post;
@@ -56,7 +56,7 @@ class PostDetailMobileLayout extends StatelessWidget {
                 kToolbarHeight -
                 MediaQuery.of(context).padding.top -
                 80,
-            child: ReplyList(postId: postId),
+            child: PostReplyList(postId: postId),
           ),
         ),
       ],

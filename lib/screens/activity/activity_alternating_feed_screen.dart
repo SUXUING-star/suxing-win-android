@@ -1,6 +1,7 @@
 // lib/screens/activity/activity_alternating_feed_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
@@ -25,7 +26,6 @@ class ActivityAlternatingFeedScreen extends StatefulWidget {
 }
 
 class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedScreen> {
-  final UserActivityService _activityService = UserActivityService();
   final ScrollController _scrollController = ScrollController();
 
   List<UserActivity> _activities = [];
@@ -82,6 +82,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
 
     try {
       Map<String, dynamic> result;
+      final activityService = context.read<UserActivityService>();
 
       if (widget.userId != null) {
         // 加载特定用户的动态
@@ -90,7 +91,8 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
           types = [_selectedType!];
         }
 
-        result = await _activityService.getUserActivities(
+
+        result = await activityService.getUserActivities(
           widget.userId!,
           page: _currentPage,
           limit: 20,
@@ -98,7 +100,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
         );
       } else {
         // 加载公开动态流
-        result = await _activityService.getPublicActivities(
+        result = await activityService.getPublicActivities(
           page: _currentPage,
           limit: 20,
         );
@@ -129,6 +131,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
     try {
       final nextPage = _currentPage + 1;
       Map<String, dynamic> result;
+      final activityService = context.read<UserActivityService>();
 
       if (widget.userId != null) {
         // 加载特定用户的更多动态
@@ -137,7 +140,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
           types = [_selectedType!];
         }
 
-        result = await _activityService.getUserActivities(
+        result = await activityService.getUserActivities(
           widget.userId!,
           page: nextPage,
           limit: 20,
@@ -145,7 +148,7 @@ class _ActivityAlternatingFeedScreenState extends State<ActivityAlternatingFeedS
         );
       } else {
         // 加载更多公开动态
-        result = await _activityService.getPublicActivities(
+        result = await activityService.getPublicActivities(
           page: nextPage,
           limit: 20,
         );

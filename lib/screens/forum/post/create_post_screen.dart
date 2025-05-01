@@ -1,5 +1,6 @@
 // lib/screens/forum/create_post_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
@@ -14,7 +15,6 @@ class CreatePostScreen extends StatefulWidget {
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
-  final _forumService = ForumService();
   final List<String> _availableTags = PostTagLists.availableTags;
   bool _isSubmitting = false;
 
@@ -40,7 +40,8 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _submitPost(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      await _forumService.createPost(data.title, data.content, data.tags);
+      final forumService = context.read<ForumService>();
+      await forumService.createPost(data.title, data.content, data.tags);
       AppSnackBar.showSuccess(context, "编辑成功");
       Navigator.pop(context);
     } catch (e) {

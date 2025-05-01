@@ -5,7 +5,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 引入 GameCollectionStatus
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart'; // 确认路径
-import 'package:suxingchahui/widgets/components/screen/game/comment/comments_section.dart';
+import 'package:suxingchahui/widgets/components/screen/game/comment/game_comments_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/coverImage/game_cover_image.dart';
 import 'package:suxingchahui/widgets/components/screen/game/description/game_description.dart';
 import 'package:suxingchahui/widgets/components/screen/game/header/game_header.dart';

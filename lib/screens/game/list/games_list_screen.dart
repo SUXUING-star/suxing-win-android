@@ -9,17 +9,18 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/form/gameform/config/category_list.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // Your Dialog
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // Correct widget
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // Correct widget
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -41,9 +42,6 @@ class GamesListScreen extends StatefulWidget {
 
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
-  final GameService _gameService = GameService();
-
-
   // --- State Variables ---
   bool _isLoadingData = false;
   bool _isInitialized = false;
@@ -59,13 +57,15 @@ class _GamesListScreenState extends State<GamesListScreen>
   String _currentSortBy = 'createTime';
   bool _isDescending = true;
   String? _currentTag;
+  String? _currentCategory;
   GameListFilterProvider? _filterProvider;
   List<Tag> _availableTags = [];
+  final List<String> _availableCategories = CategoryList.defaultCategory;
   StreamSubscription<BoxEvent>? _cacheSubscription;
   String _currentWatchIdentifier = '';
   Timer? _refreshDebounceTimer;
 
-  static const int _pageSize = 10;
+  static const int _pageSize = 20;
   static const Duration _cacheDebounceDuration = Duration(milliseconds: 300);
   final Map<String, String> _sortOptions = {
     'createTime': '最新发布',
@@ -79,41 +79,29 @@ class _GamesListScreenState extends State<GamesListScreen>
   @override
   void initState() {
     super.initState();
-    //print("GamesListScreen initState: widget.selectedTag = ${widget.selectedTag}");
-    // 获取 Provider 实例
-    // listen: false 因为我们会在 VisibilityDetector 里主动检查
-    _filterProvider = Provider.of<GameListFilterProvider>(context, listen: false);
+    _filterProvider =
+        Provider.of<GameListFilterProvider>(context, listen: false);
 
     // 初始化 _currentTag
     _initializeCurrentTag();
 
     WidgetsBinding.instance.addObserver(this);
     _loadTags(); // 异步加载可用标签列表
-    // 初始数据加载现在主要由 VisibilityDetector 变为可见时触发
   }
 
   void _initializeCurrentTag() {
     final initialProviderTag = _filterProvider?.selectedTag;
     final tagWasSet = _filterProvider?.tagHasBeenSet ?? false;
-    //print("GamesListScreen _initializeCurrentTag: Provider state -> tag='$initialProviderTag', wasSet=$tagWasSet");
-
-    // 规则：如果 Provider 的 tag 被设置过 (wasSet=true)，就用 Provider 的值；否则看 widget.selectedTag
     _currentTag = tagWasSet ? initialProviderTag : widget.selectedTag;
-    //print("GamesListScreen _initializeCurrentTag: Initial _currentTag set to '$_currentTag'");
-
-    // 注意：不在 initState 重置 Provider 的 flag，让第一次可见性检查来处理
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // 确保 Provider 实例存在
-    if (_filterProvider == null) {
-      _filterProvider = Provider.of<GameListFilterProvider>(context, listen: false);
-      print("GamesListScreen didChangeDependencies: Got provider instance.");
-    }
-  }
 
+    _filterProvider =
+        Provider.of<GameListFilterProvider>(context, listen: false);
+  }
 
   @override
   void dispose() {
@@ -127,12 +115,12 @@ class _GamesListScreenState extends State<GamesListScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      if (_isVisible) { // 页面当前可见
-        print("GamesListScreen: App resumed and visible. Checking provider & refreshing data if needed.");
-        _checkProviderAndApplyTagIfNeeded(reason: "App Resumed"); // 检查 Provider
+      if (_isVisible) {
+        // 页面当前可见
+        _checkProviderAndApplyFilterIfNeeded(
+            reason: "App Resumed"); // 检查 Provider
         _refreshDataIfNeeded(reason: "App Resumed"); // 刷新当前页数据
       } else {
-        print("GamesListScreen: App resumed but hidden. Marking for refresh.");
         _needsRefresh = true; // 标记，等可见时刷新
       }
     } else if (state == AppLifecycleState.paused) {
@@ -147,71 +135,75 @@ class _GamesListScreenState extends State<GamesListScreen>
     if (!mounted) return; // 组件已卸载，不处理
 
     if (nowVisible && !_isVisible) {
-      print("GamesListScreen: Became visible.");
       _isVisible = true;
       // 1. 检查 Provider 是否有新的 tag 指令
-      _checkProviderAndApplyTagIfNeeded(reason: "Became Visible");
+      _checkProviderAndApplyFilterIfNeeded(reason: "Became Visible");
 
       // 2. 处理加载逻辑
       if (!_isInitialized) {
-        print("GamesListScreen: Triggering initial load.");
         // 初始加载使用当前的 _currentTag (可能已被 _checkProvider 更新)
         _loadGames(pageToFetch: 1, isInitialLoad: true);
       } else if (_needsRefresh) {
-        print("GamesListScreen: Triggering refresh on visibility.");
         _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
         _needsRefresh = false;
       } else {
-        print("GamesListScreen: Already initialized and no refresh needed. Ensuring cache watcher is active.");
         // 确保缓存监听器在监听当前状态
         _startOrUpdateWatchingCache();
       }
     } else if (!nowVisible && _isVisible) {
-      print("GamesListScreen: Became hidden.");
       _isVisible = false;
       _stopWatchingCache(); // 页面隐藏时停止监听缓存
       _refreshDebounceTimer?.cancel(); // 取消可能存在的刷新定时器
     }
   }
+
   // === Provider Check Logic ===
-  void _checkProviderAndApplyTagIfNeeded({required String reason}) {
+  void _checkProviderAndApplyFilterIfNeeded({required String reason}) {
     if (_filterProvider == null) {
-      print("GamesListScreen _checkProvider...: Error - Provider instance is null.");
       return;
     }
 
     final providerTag = _filterProvider!.selectedTag;
+    final providerCategory = _filterProvider!.selectedCategory;
     final tagWasSet = _filterProvider!.tagHasBeenSet;
-
-    print("GamesListScreen _checkProvider... (Reason: $reason): "
-        "Provider state -> tag='$providerTag', wasSet=$tagWasSet. "
-        "Current state -> _currentTag='$_currentTag'");
+    final categoryWasSet = _filterProvider!.categoryHasBeenSet;
 
     // 核心逻辑：只有当 Provider 标记被设置过，并且 Provider 的 tag 和当前页面的 tag 不同时，才需要动作
-    if (tagWasSet && providerTag != _currentTag) {
-      print("GamesListScreen _checkProvider...: Mismatch detected! Applying tag '$providerTag' from Provider.");
+    if (tagWasSet && !categoryWasSet && providerTag != _currentTag) {
       // 应用新的 tag，这会更新 _currentTag 并触发刷新
-      _applyTagAndSort(providerTag, _currentSortBy, _isDescending);
+      _applyFilterAndSort(
+          tag: providerTag,
+          category: null,
+          sortBy: _currentSortBy,
+          descending: _isDescending);
       // !!! 关键：处理完后，重置 Provider 中的标志位 !!!
       _filterProvider!.resetTagFlag();
-      print("GamesListScreen _checkProvider...: Provider tag flag has been reset.");
     } else if (tagWasSet && providerTag == _currentTag) {
-      // 如果 tag 相同，但标志位是 true (比如重复导航到同一 tag)，我们不刷新，但要重置标志位
-      print("GamesListScreen _checkProvider...: Provider tag matches current tag, but flag was set. Resetting flag only.");
       _filterProvider!.resetTagFlag();
-    } else {
-      // Provider 没被设置过，或者 tag 没变，啥也不用做
-      print("GamesListScreen _checkProvider...: No action needed based on provider state.");
+    }
+
+    if (categoryWasSet && !tagWasSet && providerTag != _currentTag) {
+      // 应用新的 tag，这会更新 _currentTag 并触发刷新
+      _applyFilterAndSort(
+          tag: null,
+          category: providerCategory,
+          sortBy: _currentSortBy,
+          descending: _isDescending);
+      // !!! 关键：处理完后，重置 Provider 中的标志位 !!!
+      _filterProvider!.resetCategoryFlag();
+    } else if (tagWasSet && providerTag == _currentTag) {
+      _filterProvider!.resetCategoryFlag();
     }
   }
+
   // === Data Loading & Cache ===
   Future<void> _loadTags() async {
     try {
-      final tags = await _gameService.getAllTags();
+      final gameService = context.read<GameService>();
+      final tags = await gameService.getAllTags();
       if (mounted) setState(() => _availableTags = tags);
     } catch (e) {
       if (mounted) {
-        print("加载标签失败: $e");
         setState(() => _availableTags = []);
       }
     }
@@ -232,7 +224,6 @@ class _GamesListScreenState extends State<GamesListScreen>
             !isRefresh &&
             _totalPages > 1 &&
             targetPage > _totalPages)) {
-      print("请求页码 $targetPage 无效或超出范围 (总页数: $_totalPages)");
       return;
     }
 
@@ -246,19 +237,27 @@ class _GamesListScreenState extends State<GamesListScreen>
       }
     });
 
-    print("开始加载 第 $targetPage 页...");
-
     try {
       Map<String, dynamic> result;
-      if (_currentTag != null) {
-        result = await _gameService.getGamesByTagWithInfo(
+      final gameService = context.read<GameService>();
+      if (_currentCategory != null) {
+        // *** 优先检查分类 ***
+        result = await gameService.getGamesByCategoryWithInfo(
+            categoryName: _currentCategory!, // 使用分类 API
+            page: targetPage,
+            pageSize: _pageSize,
+            sortBy: _currentSortBy,
+            descending: _isDescending);
+      } else if (_currentTag != null) {
+        result = await gameService.getGamesByTagWithInfo(
             tag: _currentTag!,
             page: targetPage,
             pageSize: _pageSize,
             sortBy: _currentSortBy,
             descending: _isDescending);
       } else {
-        result = await _gameService.getGamesPaginatedWithInfo(
+        // *** 最后是默认分页 ***
+        result = await gameService.getGamesPaginatedWithInfo(
             page: targetPage,
             pageSize: _pageSize,
             sortBy: _currentSortBy,
@@ -272,9 +271,6 @@ class _GamesListScreenState extends State<GamesListScreen>
       final int serverPage = pagination['page'] ?? targetPage;
       final int serverTotalPages = pagination['totalPages'] ?? 1;
 
-      print(
-          "加载成功 第 $serverPage 页 / 共 $serverTotalPages 页, 获取到 ${games.length} 条数据");
-
       setState(() {
         _gamesList = games;
         _currentPage = serverPage;
@@ -285,10 +281,9 @@ class _GamesListScreenState extends State<GamesListScreen>
 
       _startOrUpdateWatchingCache(); // 监听当前页
     } catch (e, s) {
-      print("加载第 $targetPage 页失败: $e\n$s");
       if (mounted) {
         setState(() {
-          _errorMessage = '加载第 $targetPage 页失败，请稍后重试。';
+          _errorMessage = '加载失败，请稍后重试。';
           if (isRefresh || isInitialLoad) {
             _gamesList = [];
             _currentPage = 1;
@@ -308,19 +303,34 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// Starts/Updates cache listener. (监听当前页)
   void _startOrUpdateWatchingCache() {
+    // 确定当前的筛选类型和值
+    final String filterType;
+    final String? filterValue;
+    if (_currentCategory != null) {
+      filterType = 'category';
+      filterValue = _currentCategory;
+    } else if (_currentTag != null) {
+      filterType = 'tag';
+      filterValue = _currentTag;
+    } else {
+      filterType = 'all';
+      filterValue = null; // 或者 'none'
+    }
     final String newWatchIdentifier =
-        "${_currentTag ?? 'all'}_${_currentPage}_${_currentSortBy}_$_isDescending";
+        "${filterType}_${filterValue ?? 'none'}_${_currentPage}_${_currentSortBy}_$_isDescending";
+
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
-      return;
+      return; // 已经在监听同一个状态
     }
     _stopWatchingCache();
     _currentWatchIdentifier = newWatchIdentifier;
-    print("尝试启动缓存监听: $newWatchIdentifier");
     try {
-      _cacheSubscription = _gameService
+      final gameService = context.read<GameService>();
+      _cacheSubscription = gameService
           .watchGameListPageChanges(
         tag: _currentTag,
+        categoryName: _currentCategory,
         page: _currentPage,
         pageSize: _pageSize,
         sortBy: _currentSortBy,
@@ -328,22 +338,17 @@ class _GamesListScreenState extends State<GamesListScreen>
         scope: _currentTag != null ? 'tag' : 'all',
       )
           .listen((BoxEvent event) {
-        print(
-            "缓存事件接收 (监听 $newWatchIdentifier): key=${event.key}, deleted=${event.deleted}");
         if (_isVisible) {
           _refreshDataIfNeeded(reason: "Cache Change on page $_currentPage");
         } else {
           _needsRefresh = true;
         }
       }, onError: (e, s) {
-        print("缓存监听错误 ($newWatchIdentifier): $e\n$s");
         _stopWatchingCache();
       }, onDone: () {
-        print("缓存监听结束 ($newWatchIdentifier).");
         _stopWatchingCache();
       }, cancelOnError: true);
     } catch (e, s) {
-      print("启动缓存监听失败 ($newWatchIdentifier): $e\n$s");
       _currentWatchIdentifier = '';
     }
   }
@@ -351,7 +356,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// Stops cache listener.
   void _stopWatchingCache() {
     if (_cacheSubscription != null) {
-      print("停止缓存监听: $_currentWatchIdentifier");
       _cacheSubscription?.cancel();
       _cacheSubscription = null;
       _currentWatchIdentifier = '';
@@ -363,10 +367,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
       if (mounted && _isVisible && !_isLoadingData) {
-        print("触发刷新 (Debounced): $reason");
         _loadGames(pageToFetch: 1, isRefresh: true); // 强制刷新第一页
       } else if (mounted && !_isVisible) {
-        print("标记需要刷新 (Debounced): $reason");
         _needsRefresh = true;
       }
     });
@@ -385,7 +387,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// Handles pull-to-refresh. (调用 _loadGames 刷新第一页)
   Future<void> _refreshData() async {
     if (_isLoadingData) return;
-    print("用户触发下拉刷新");
     _stopWatchingCache();
     await _loadGames(pageToFetch: 1, isRefresh: true); // 加载第一页并标记为刷新
   }
@@ -396,42 +397,28 @@ class _GamesListScreenState extends State<GamesListScreen>
       print("导航到上一页 (目标: ${_currentPage - 1})");
       _stopWatchingCache();
       await _loadGames(pageToFetch: _currentPage - 1); // 加载上一页
-    } else {
-      print("无法导航到上一页 (当前页: $_currentPage, 加载中: $_isLoadingData)");
-    }
+    } else {}
   }
 
   /// Go to Next Page (Internal - Called by Grid Tile)
   Future<void> _goToNextPageInternal() async {
     if (_currentPage < _totalPages && !_isLoadingData) {
-      print("导航到下一页 (目标: ${_currentPage + 1})");
       _stopWatchingCache();
       await _loadGames(pageToFetch: _currentPage + 1); // 加载下一页
-    } else {
-      print(
-          "无法导航到下一页 (当前页: $_currentPage, 总页数: $_totalPages, 加载中: $_isLoadingData)");
-    }
+    } else {}
   }
 
   /// Go to Specific Page (Internal - Called by Dialog/Controls)
   Future<void> _goToPage(int pageNumber) async {
-    print("尝试跳转到指定页 (来自 PaginationControls): $pageNumber");
     if (pageNumber >= 1 &&
         pageNumber <= _totalPages &&
         pageNumber != _currentPage &&
         !_isLoadingData) {
       _stopWatchingCache();
-      print("执行跳转到页: $pageNumber");
       await _loadGames(pageToFetch: pageNumber);
     } else if (pageNumber == _currentPage && mounted) {
-      print("已经在目标页: $pageNumber");
-      // AppSnackBar.showInfo(context, '已在第 $pageNumber 页'); // 可以选择性保留提示
     } else if (!_isLoadingData && mounted) {
-      print("跳转页码无效: $pageNumber (总页数: $_totalPages)");
-      // AppSnackBar.showWarning(context, '无效的页码: $pageNumber'); // 可以选择性保留提示
-    } else if (_isLoadingData) {
-      print("正在加载中，无法跳转");
-    }
+    } else if (_isLoadingData) {}
   }
 
   /// Shows filter/sort dialog.
@@ -439,6 +426,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     // 改为 async
     // 1. 在调用 show 之前定义临时状态变量
     String? tempSelectedTag = _currentTag;
+    String? tempSelectedCategory = _currentCategory;
     String tempSortBy = _currentSortBy;
     bool tempDescending = _isDescending;
 
@@ -458,6 +446,32 @@ class _GamesListScreenState extends State<GamesListScreen>
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Text('按分类筛选:',
+                      style: Theme.of(context).textTheme.titleMedium),
+                  const SizedBox(height: 8),
+                  DropdownButton<String?>(
+                    value: tempSelectedCategory, // 使用临时变量
+                    hint: const Text('所有分类'),
+                    isExpanded: true,
+                    items: [
+                      const DropdownMenuItem<String?>(
+                          value: null, child: Text('所有分类')),
+                      ..._availableCategories
+                          .map((category) => DropdownMenuItem<String?>(
+                              // 使用常量
+                              value: category,
+                              child: Text(category))),
+                    ],
+                    onChanged: (String? newValue) {
+                      setDialogState(() {
+                        tempSelectedCategory = newValue;
+                        if (newValue != null) {
+                          tempSelectedTag = null; // *** 选择分类时，清除临时标签 ***
+                        }
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
                   Text('按标签筛选:',
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
@@ -511,7 +525,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     // 5. 对话框关闭后，如果用户点击了 "应用" (confirmed == true)
     if (confirmed == true && mounted) {
       // 使用更新后的临时变量调用应用逻辑
-      _handleFilterDialogConfirm(tempSelectedTag, tempSortBy, tempDescending);
+      _handleFilterDialogConfirm(
+          tempSelectedCategory, tempSelectedTag, tempSortBy, tempDescending);
     }
   }
 
@@ -568,61 +583,113 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
-  /// Applies filter/sort and triggers refresh. (调用 _loadGames 刷新第一页)
-  void _applyTagAndSort(String? newTag, String newSortBy, bool newDescending) {
-    bool tagChanged = _currentTag != newTag;
-    bool sortChanged = _currentSortBy != newSortBy || _isDescending != newDescending;
+  /// 应用筛选（标签或分类）和排序，并触发刷新
+  void _applyFilterAndSort(
+      {String? tag, // 要应用的标签 (null 表示不按标签筛选)
+      String? category, // <<< 新增：要应用的分类 (null 表示不按分类筛选)
+      required String sortBy, // 排序字段
+      required bool descending // 是否降序
+      }) {
+    // 确定新的筛选状态，并强制互斥
+    String? finalTag = tag;
+    String? finalCategory = category;
 
-    if (tagChanged || sortChanged) {
-      print("GamesListScreen _applyTagAndSort: Applying state -> tag='$newTag', sort='$newSortBy', desc=$newDescending");
-      _stopWatchingCache(); // 停止旧状态的监听
+    if (finalCategory != null && finalTag != null) {
+      finalTag = null; // *** 优先分类，清除标签 ***
+    }
+
+    // 检查状态是否真的改变了
+    bool categoryChanged = _currentCategory != finalCategory;
+    bool tagChanged = _currentTag != finalTag;
+    bool sortChanged = _currentSortBy != sortBy || _isDescending != descending;
+
+    if (categoryChanged || tagChanged || sortChanged) {
+      _stopWatchingCache(); // 停止旧监听
       setState(() {
         // 更新内部状态
-        _currentTag = newTag;
-        _currentSortBy = newSortBy;
-        _isDescending = newDescending;
+        _currentCategory = finalCategory; // <<< 更新分类状态
+        _currentTag = finalTag; // <<< 更新标签状态 (可能是 null)
+        _currentSortBy = sortBy;
+        _isDescending = descending;
         // 重置分页和错误信息
         _currentPage = 1;
         _totalPages = 1;
         _errorMessage = null;
-        _gamesList = []; // 立即清空列表以提供视觉反馈
+        _gamesList = []; // 清空列表
       });
-      // 触发第一页加载
-      _loadGames(pageToFetch: 1, isRefresh: true);
-    } else {
-      print("GamesListScreen _applyTagAndSort: State unchanged.");
-    }
+      _loadGames(pageToFetch: 1, isRefresh: true); // 触发第一页加载
+    } else {}
   }
 
   void _clearTagFilter() {
-    print("GamesListScreen: Clear tag button pressed.");
-    // 1. 调用 apply 函数更新页面状态并触发加载
-    _applyTagAndSort(null, _currentSortBy, _isDescending);
-    // 2. 同步更新 Provider 状态
-    _filterProvider?.clearTag(); // clearTag 会设置 tag=null 并标记
-    // 3. 因为是页面内部操作触发，立即重置标志位
-    _filterProvider?.resetTagFlag();
+    // 清除标签，保持当前分类（如果选择了的话）
+    _applyFilterAndSort(
+        tag: null, // <<< 清除标签
+        category: _currentCategory, // <<< 保持分类
+        sortBy: _currentSortBy,
+        descending: _isDescending);
+    // *** Provider 只处理 Tag ***
+    _filterProvider?.clearTag(); // 更新 Provider 状态为 null
+    _filterProvider?.resetTagFlag(); // 标记处理完成
   }
+
+  // <<< 新增：清除分类筛选的处理 >>>
+  void _clearCategoryFilter() {
+    // 清除分类，保持当前标签（如果选择了的话）
+    _applyFilterAndSort(
+        tag: _currentTag, // <<< 保持标签
+        category: null, // <<< 清除分类
+        sortBy: _currentSortBy,
+        descending: _isDescending);
+    // Category 状态只在本地，不需要更新 Provider
+  }
+
   // 筛选对话框确认
-  void _handleFilterDialogConfirm(String? newTag, String newSortBy, bool newDescending) {
-    print("GamesListScreen: Filter dialog confirmed -> tag='$newTag', sort='$newSortBy', desc=$newDescending");
+  void _handleFilterDialogConfirm(String? newCategory, String? newTag,
+      String newSortBy, bool newDescending) {
     // 1. 调用 apply 函数更新页面状态并触发加载
-    _applyTagAndSort(newTag, newSortBy, newDescending);
+    _applyFilterAndSort(
+      category: newCategory, // 传递分类
+      tag: newTag, // 传递标签
+      sortBy: newSortBy,
+      descending: newDescending,
+    );
     // 2. 同步更新 Provider 状态
     if (_filterProvider?.selectedTag != newTag) {
       _filterProvider?.setTag(newTag);
     }
+    if (_filterProvider?.selectedCategory != newCategory) {
+      _filterProvider?.setCategory(newCategory);
+    }
     // 3. 因为是页面内部操作触发，立即重置标志位
     _filterProvider?.resetTagFlag();
   }
 
+  // <<< 新增：处理左右面板或未来可能的分类选择器点击 >>>
+  void _handleCategorySelected(String? category) {
+    final newCategory = (_currentCategory == category) ? null : category;
+    // 选择分类时，清除当前标签筛选
+    _applyFilterAndSort(
+        tag: null, // <<< 清除标签
+        category: newCategory, // <<< 应用新分类
+        sortBy: _currentSortBy,
+        descending: _isDescending);
+    // *** Provider 只处理 Tag，如果当前有 Tag，需要清除 Provider 的 Tag 状态 ***
+    if (_currentTag != null) {
+      _filterProvider?.clearTag();
+      _filterProvider?.resetTagFlag();
+    }
+  }
 
   // 移动端 TagBar 选择
   void _handleTagBarSelected(String? tag) {
     final newTag = (_currentTag == tag) ? null : tag; // 点击相同 tag 则取消
-    print("GamesListScreen: TagBar selected -> newTag='$newTag'");
     // 1. 调用 apply 函数更新页面状态并触发加载
-    _applyTagAndSort(newTag, _currentSortBy, _isDescending);
+    _applyFilterAndSort(
+        tag: newTag,
+        category: null,
+        sortBy: _currentSortBy,
+        descending: _isDescending);
     // 2. 同步更新 Provider 状态
     if (_filterProvider?.selectedTag != newTag) {
       _filterProvider?.setTag(newTag);
@@ -643,14 +710,12 @@ class _GamesListScreenState extends State<GamesListScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         // onConfirm 是 AsyncCallback?
-        print("尝试删除游戏: $gameId");
         try {
-          await _gameService.deleteGame(gameId);
-          print("游戏删除成功: $gameId");
+          final gameService = context.read<GameService>();
+          await gameService.deleteGame(gameId);
           // 刷新由 cache watcher 触发
         } catch (e) {
           print("删除游戏失败: $gameId, Error: $e");
-          if (mounted) AppSnackBar.showError(context, '删除失败: $e');
         }
       },
     );
@@ -660,7 +725,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   void _handleAddGame() {
     NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
       if (result == true && mounted) {
-        print("添加游戏成功，触发刷新");
         _refreshDataIfNeeded(reason: "Add Game Completed"); // 触发刷新
       }
     });
@@ -692,7 +756,13 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// Builds the AppBar. (移除了跳页按钮)
   PreferredSizeWidget _buildAppBar() {
     final isDesktop = DeviceUtils.isDesktop;
-    final title = _currentTag != null ? '标签: $_currentTag' : '游戏列表';
+    String title = '游戏列表';
+
+    if (_currentCategory != null) {
+      title = '分类: $_currentCategory';
+    } else if (_currentTag != null) {
+      title = '标签: $_currentTag';
+    }
     final theme = Theme.of(context);
     final appBarColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
     final iconColor =
@@ -708,56 +778,84 @@ class _GamesListScreenState extends State<GamesListScreen>
     return CustomAppBar(
       title: title,
       actions: [
+        if (isDesktop) SizedBox(width: 8),
         if (isDesktop)
-          IconButton(
-            icon: Icon(Icons.menu_open,
-                color: _showLeftPanel && canShowLeftPanelBasedOnWidth
-                    ? secondaryColor
-                    : iconColor),
+          FunctionalIconButton(
+            buttonBackgroundColor: Colors.white,
+            icon: Icons.menu_open,
+            iconColor: _showLeftPanel && canShowLeftPanelBasedOnWidth
+                ? Colors.black38
+                : Colors.amber,
             tooltip: _showLeftPanel ? '隐藏左侧面板' : '显示左侧面板',
             onPressed: canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
           ),
+        if (isDesktop) SizedBox(width: 8),
         if (isDesktop)
-          IconButton(
-            icon: Icon(Icons.bar_chart_outlined,
-                color: _showRightPanel && canShowRightPanelBasedOnWidth
-                    ? secondaryColor
-                    : iconColor),
+          FunctionalIconButton(
+            buttonBackgroundColor: Colors.white,
+            icon: Icons.bar_chart_outlined,
+            iconColor: _showRightPanel && canShowRightPanelBasedOnWidth
+                ? Colors.black38
+                : Colors.amber,
             tooltip: _showRightPanel ? '隐藏右侧面板' : '显示右侧面板',
             onPressed: canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
           ),
-        // 有审核机制
+        SizedBox(width: 8),
+        // 业务逻辑有审核机制
         // 不需要admincheck
-        IconButton(
-          icon: Icon(Icons.add, color: iconColor),
+        FunctionalIconButton(
+          icon: Icons.add,
+          buttonBackgroundColor: Colors.white,
+          iconColor: Colors.green[300],
           onPressed: _isLoadingData ? null : _handleAddGame,
           tooltip: '添加游戏',
         ),
-        IconButton(
-          icon: Icon(Icons.history_edu, color: iconColor),
+        SizedBox(width: 8),
+        FunctionalIconButton(
+          icon: Icons.history_edu,
+          iconColor: Colors.orange[300],
+          buttonBackgroundColor: Colors.white,
           onPressed: _isLoadingData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
           tooltip: '我的提交',
         ),
-        IconButton(
-          icon: Icon(Icons.search, color: iconColor),
+        SizedBox(width: 8),
+        FunctionalIconButton(
+          icon: Icons.search,
+          iconColor: Colors.blue[300],
+          buttonBackgroundColor: Colors.white,
           onPressed: _isLoadingData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.searchGame),
           tooltip: '搜索游戏',
         ),
-        IconButton(
-          icon: Icon(Icons.filter_list, color: iconColor),
+        SizedBox(width: 8),
+        FunctionalIconButton(
+          icon: Icons.filter_list,
+          iconColor: Colors.deepOrangeAccent,
+          buttonBackgroundColor: Colors.white,
           onPressed: _isLoadingData ? null : () => _showFilterDialog(context),
           tooltip: '筛选与排序',
         ),
+        // 清除分类按钮
+        if (_currentCategory != null) SizedBox(width: 8),
+        if (_currentCategory != null)
+          IconButton(
+            icon: Icon(Icons.filter_list_off_outlined), // 使用清除筛选图标
+            color: Colors.red.shade300, // 使用柔和一点的红色
+            onPressed: _isLoadingData ? null : _clearCategoryFilter,
+            tooltip: '清除分类筛选 ($_currentCategory)',
+          ),
+        if (_currentTag != null) SizedBox(width: 8),
         if (_currentTag != null)
           IconButton(
-            icon: Icon(Icons.clear),
-            onPressed: _isLoadingData ? null : _clearTagFilter, // 调用新的处理函数
-            tooltip: '清除标签筛选',
+            icon: Icon(Icons.label_off_outlined), // 使用清除标签图标
+            color: Colors.red.shade300, // 使用柔和一点的红色
+            onPressed: _isLoadingData ? null : _clearTagFilter,
+            tooltip: '清除标签筛选 ($_currentTag)',
           ),
+        if (!isDesktop) SizedBox(width: 8),
         if (!isDesktop)
           IconButton(
             icon: Icon(Icons.tag,
@@ -767,19 +865,17 @@ class _GamesListScreenState extends State<GamesListScreen>
             tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
           ),
       ],
-      bottom: (!DeviceUtils.isDesktop && _showMobileTagBar && _availableTags.isNotEmpty)
+      bottom: (!DeviceUtils.isDesktop &&
+              _showMobileTagBar &&
+              _availableTags.isNotEmpty)
           ? TagBar(
-        tags: _availableTags,
-        selectedTag: _currentTag, // 使用内部状态
-        onTagSelected: _handleTagBarSelected, // 调用新的处理函数
-      )
+              tags: _availableTags,
+              selectedTag: _currentTag, // 使用内部状态
+              onTagSelected: _handleTagBarSelected, // 调用新的处理函数
+            )
           : null,
     );
   }
-
-
-
-
 
   /// Builds the main body content.
   Widget _buildBodyContent() {
@@ -834,6 +930,10 @@ class _GamesListScreenState extends State<GamesListScreen>
                           onTagSelected: _isLoadingData
                               ? null
                               : _handleTagBarSelected, // onTagSelected 需要 Function(String?)?
+                          selectedCategory: _currentCategory,
+                          availableCategories: _availableCategories,
+                          onCategorySelected:
+                              _isLoadingData ? null : _handleCategorySelected,
                         ),
                       ),
                   ],
@@ -858,9 +958,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
 
     if (_errorMessage != null && _gamesList.isEmpty && !_isLoadingData) {
-      return InlineErrorWidget(
+      return CustomErrorWidget(
         errorMessage: _errorMessage!,
-        // --- 修正: 明确使用函数体 ---
         onRetry: () {
           _loadGames(pageToFetch: 1, isRefresh: true);
         }, // onRetry 是 VoidCallback?
@@ -877,7 +976,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         if (_isLoadingData && _gamesList.isNotEmpty)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withAlpha(240),
               child: LoadingWidget.inline(message: '加载中...'),
             ),
           ),
@@ -889,8 +988,9 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   // !!!!!!!!!!!!!!!!!!!
   // 这是判断对于目前用户哪一个游戏能够有删除权限的
-  bool _checkPermissionDeleteGame(Game game,BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context,listen: false);
+  // 虽然内部gamecard是做了判断但是这个gamelistscreen也做，双重保护
+  bool _checkPermissionDeleteGame(Game game, BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (game.authorId == authProvider.currentUserId) {
       return true;
     }
@@ -909,8 +1009,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         leftPanelVisible: showLeftPanel,
         rightPanelVisible: showRightPanel);
     if (cardsPerRow <= 0) {
-      print("错误：计算出的每行卡片数为 $cardsPerRow");
-      return InlineErrorWidget(errorMessage: "无法计算布局 (cardsPerRow <= 0)");
+      //print("错误：计算出的每行卡片数为 $cardsPerRow");
+      return CustomErrorWidget(errorMessage: "无法计算布局 (cardsPerRow <= 0)");
     }
     final useCompactMode = cardsPerRow > 3 || (cardsPerRow == 3 && withPanels);
     final cardRatio = withPanels
@@ -919,8 +1019,8 @@ class _GamesListScreenState extends State<GamesListScreen>
             showTags: true)
         : DeviceUtils.calculateSimpleCardRatio(context, showTags: true);
     if (cardRatio <= 0) {
-      print("错误：计算出的卡片宽高比为 $cardRatio");
-      return InlineErrorWidget(errorMessage: "无法计算布局 (cardRatio <= 0)");
+      //print("错误：计算出的卡片宽高比为 $cardRatio");
+      return CustomErrorWidget(errorMessage: "无法计算布局 (cardRatio <= 0)");
     }
 
     int totalItemCount = _gamesList.length;
@@ -967,8 +1067,6 @@ class _GamesListScreenState extends State<GamesListScreen>
                 isPrevious: false, cardRatio: cardRatio);
           } else {
             if (gameIndex < 0 || gameIndex >= _gamesList.length) {
-              print(
-                  "警告: 计算出的 gameIndex ($gameIndex) 超出列表范围 (0-${_gamesList.length - 1}) at Grid index $index");
               return const SizedBox.shrink();
             }
             final game = _gamesList[gameIndex];
@@ -986,11 +1084,12 @@ class _GamesListScreenState extends State<GamesListScreen>
                 forceCompact: useCompactMode,
                 maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
                 // 当加载中传递空回调，即使加载成功(加载成功后是false)如果没有权限也传递空回调
-                onDeleteAction: _isLoadingData && !_checkPermissionDeleteGame(game,context)
-                    ? null
-                    : () {
-                        _handleDeleteGame(game.id);
-                      }, // onDeleteAction 是 VoidCallback?
+                onDeleteAction:
+                    _isLoadingData && !_checkPermissionDeleteGame(game, context)
+                        ? null
+                        : () {
+                            _handleDeleteGame(game.id);
+                          }, // onDeleteAction 是 VoidCallback?
               ),
             );
           }
@@ -1071,26 +1170,34 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// Builds the empty state widget. (Corrected onPressed)
   Widget _buildEmptyState() {
-    String message =
-        _currentTag != null ? '没有找到标签为 “$_currentTag” 的游戏' : '这里还没有游戏呢';
+    String message;
+    Widget? actionButton;
+
+    // --- vv 修改空状态消息和按钮 vv ---
+    if (_currentCategory != null) {
+      message = '没有找到分类为 “$_currentCategory” 的游戏';
+      actionButton = FunctionalButton(
+          onPressed: _isLoadingData ? null : _clearCategoryFilter, // <<< 清除分类
+          label: '查看全部游戏',
+          icon: Icons.list_alt);
+    } else if (_currentTag != null) {
+      message = '没有找到标签为 “$_currentTag” 的游戏';
+      actionButton = FunctionalButton(
+          onPressed: _isLoadingData ? null : _clearTagFilter, // <<< 清除标签
+          label: '查看全部游戏',
+          icon: Icons.list_alt);
+    } else {
+      message = '这里还没有游戏呢';
+      actionButton = FunctionalButton(
+          onPressed: _isLoadingData ? null : _handleAddGame,
+          label: '添加一个游戏',
+          icon: Icons.add);
+    }
+
     return EmptyStateWidget(
       iconData: Icons.videogame_asset_off_outlined,
       message: message,
-      action: _currentTag != null
-          ? FunctionalButton(
-              onPressed: _isLoadingData
-                  ? () {}
-                  : () =>
-                      // 使用明确的函数体
-                      _applyTagAndSort(null, _currentSortBy, _isDescending),
-              label: '查看全部游戏',
-              icon: Icons.list_alt,
-            )
-          : FunctionalButton(
-              onPressed: _isLoadingData ? () {} : _handleAddGame, // 直接传递引用，签名匹配
-              label: '添加一个游戏',
-              icon: Icons.add,
-            ),
+      action: actionButton,
     );
   }
 

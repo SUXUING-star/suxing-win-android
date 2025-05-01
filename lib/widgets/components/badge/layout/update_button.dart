@@ -32,23 +32,23 @@ class UpdateButton extends StatelessWidget {
           onTap: () => _handleUpdateTap(context, updateService),
           child: updateService.updateAvailable
               ? Container(
-            width: 24,
-            height: 24,
-            decoration: BoxDecoration(
-              color: updateService.forceUpdate ? Colors.red : Colors.blue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.system_update_outlined,
-              size: 16,
-              color: Colors.white,
-            ),
-          )
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: updateService.forceUpdate ? Colors.red : Colors.blue,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.system_update_outlined,
+                    size: 16,
+                    color: Colors.white,
+                  ),
+                )
               : Icon(
-            Icons.system_update_outlined,
-            size: 24,
-            color: Colors.white,
-          ),
+                  Icons.system_update_outlined,
+                  size: 24,
+                  color: Colors.white,
+                ),
         );
       },
     );
@@ -63,7 +63,8 @@ class UpdateButton extends StatelessWidget {
     return '\n\n更新内容:\n${changelog.map((change) => '• $change').join('\n')}';
   }
 
-  Future<void> _handleUpdateTap(BuildContext context, UpdateService updateService) async {
+  Future<void> _handleUpdateTap(
+      BuildContext context, UpdateService updateService) async {
     if (!updateService.updateAvailable) {
       // 手动检查更新 (保持不变)
       await updateService.checkForUpdates();
@@ -78,16 +79,14 @@ class UpdateButton extends StatelessWidget {
     if (updateService.forceUpdate) {
       // 强制更新：仍然使用 ForceUpdateDialog (保持不变)
       if (context.mounted) {
-        showDialog(
+        ForceUpdateDialog.show(
           context: context,
-          barrierDismissible: false,
-          builder: (context) => ForceUpdateDialog(
-            currentVersion: updateService.currentVersion ?? '', // 确保传递 currentVersion
-            latestVersion: updateService.latestVersion ?? '',
-            updateMessage: updateService.updateMessage,
-            changelog: updateService.changelog,
-            updateUrl: updateService.updateUrl ?? '',
-          ),
+          currentVersion:
+              updateService.currentVersion ?? '', // 确保传递 currentVersion
+          latestVersion: updateService.latestVersion ?? '',
+          updateMessage: updateService.updateMessage,
+          changelog: updateService.changelog,
+          updateUrl: updateService.updateUrl ?? '',
         );
       }
     } else {
@@ -105,7 +104,7 @@ class UpdateButton extends StatelessWidget {
           cancelButtonText: '稍后', // 取消按钮文字
           confirmButtonColor: Colors.blue, // 确认按钮颜色 (蓝色适用于普通更新)
           iconData: Icons.system_update_outlined, // 使用更新相关的图标
-          iconColor: Colors.blue,          // 图标颜色
+          iconColor: Colors.blue, // 图标颜色
 
           // --- 确认回调：执行更新操作 ---
           onConfirm: () async {
@@ -125,7 +124,8 @@ class UpdateButton extends StatelessWidget {
                   await launchUrl(uri, mode: LaunchMode.externalApplication);
                 } else {
                   print('无法启动 URL: ${updateService.updateUrl}');
-                  if (context.mounted) { // 再次检查
+                  if (context.mounted) {
+                    // 再次检查
                     ScaffoldMessenger.of(context).showSnackBar(
                       SnackBar(content: Text('无法打开更新链接')),
                     );
@@ -133,7 +133,8 @@ class UpdateButton extends StatelessWidget {
                 }
               } catch (e) {
                 print('启动 URL 时出错: $e');
-                if (context.mounted) { // 再次检查
+                if (context.mounted) {
+                  // 再次检查
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(content: Text('打开更新链接时出错')),
                   );
@@ -141,7 +142,8 @@ class UpdateButton extends StatelessWidget {
               }
             } else {
               print('更新 URL 为空');
-              if (context.mounted) { // 再次检查
+              if (context.mounted) {
+                // 再次检查
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('未找到有效的更新链接')),
                 );

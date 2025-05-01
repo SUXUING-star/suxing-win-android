@@ -1,5 +1,6 @@
 // lib/screens/admin/widgets/announcement_management/edit_announcement_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/announcement/announcement.dart';
@@ -8,12 +9,13 @@ import '../../../../widgets/components/form/announcementform/announcement_form.d
 
 class EditAnnouncementScreen extends StatelessWidget {
   final AnnouncementFull announcement;
-  final AnnouncementService _announcementService = AnnouncementService();
+
 
   EditAnnouncementScreen({super.key, required this.announcement});
 
   @override
   Widget build(BuildContext context) {
+    final announcementService = context.read<AnnouncementService>();
     return Scaffold(
       appBar: CustomAppBar(title: announcement.id.isEmpty ? '创建新公告' : '编辑公告'),
       body: AnnouncementForm(
@@ -22,14 +24,14 @@ class EditAnnouncementScreen extends StatelessWidget {
           try {
             if (announcement.id.isEmpty) {
               // 创建新公告
-              await _announcementService
+              await announcementService
                   .createAnnouncement(updatedAnnouncement);
               if (context.mounted) {
                 AppSnackBar.showSuccess(context, '新公告已创建');
               }
             } else {
               // 更新现有公告
-              await _announcementService.updateAnnouncement(
+              await announcementService.updateAnnouncement(
                   announcement.id, updatedAnnouncement);
               if (context.mounted) {
                 AppSnackBar.showSuccess(context, '公告已更新');

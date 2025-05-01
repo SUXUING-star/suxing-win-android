@@ -32,7 +32,6 @@ class FollowUserButton extends StatefulWidget {
 }
 
 class _FollowUserButtonState extends State<FollowUserButton> {
-  final UserFollowService _followService = UserFollowService();
   late bool _isFollowing;
   bool _isLoading = false; // 只在 API 调用期间为 true
   bool _internalStateInitialized = false; // 标记内部状态是否已初始化
@@ -50,13 +49,11 @@ class _FollowUserButtonState extends State<FollowUserButton> {
         widget.initialIsFollowing ?? false; // 如果父组件没传（理论上不该发生），默认 false
     _isLoading = false; // 初始时不加载
     _internalStateInitialized = true; // 标记内部状态已根据父组件初始化
-    print(
-        'FollowUserButton (${widget.userId}): initState - Initial state from parent: $_isFollowing');
-
+    final followService = context.read<UserFollowService>();
     // --- 仍然监听全局流，但触发时不自己调用API，而是通知父组件刷新（如果需要） ---
     // 或者更简单：依赖父组件的 AuthProvider 刷新机制
     _followStatusSubscription =
-        _followService.followStatusStream.listen((changedUserId) {
+        followService.followStatusStream.listen((changedUserId) {
       if (changedUserId == widget.userId && _mounted) {
         // 当接收到流事件时，可以认为状态可能已过期，但这里我们信任父组件的刷新
         // 可以选择性地强制父组件刷新，但 AuthProvider.refreshUserState 应该已经处理了
@@ -102,6 +99,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
   /// 处理关注/取消关注按钮的点击事件 (基本不变，但调用 authProvider.refreshUserState)
   Future<void> _handleFollowTap() async {
     if (!_mounted) return;
+    final followService = context.read<UserFollowService>();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
       AppSnackBar.showInfo(context, '请先登录');
@@ -118,13 +116,14 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     });
 
     bool success = false;
+
     try {
       if (!oldState) {
         // 如果之前是 false (未关注)，现在是 true (已关注)
-        success = await _followService.followUser(widget.userId);
+        success = await followService.followUser(widget.userId);
       } else {
         // 如果之前是 true (已关注)，现在是 false (未关注)
-        success = await _followService.unfollowUser(widget.userId);
+        success = await followService.unfollowUser(widget.userId);
       }
 
       if (!_mounted) return;

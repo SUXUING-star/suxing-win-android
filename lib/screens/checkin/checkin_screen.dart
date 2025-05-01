@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/models/user/user.dart'; // **导入 User 模型**
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // **导入 AuthProvider**
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../services/main/user/user_checkin_service.dart';
-// import '../../services/main/user/user_level_service.dart'; // <--- 已删除
-import '../../models/user/user_checkin.dart'; // 导入修改后的 CheckInStats, CheckInUser, CheckInUserList
-// import '../../models/user/user_level.dart'; // <--- 已删除
+import '../../models/user/user_checkin.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/components/screen/checkin/layout/responsive_checkin_layout.dart';
 import '../../widgets/components/screen/checkin/effects/particle_effect.dart';
@@ -21,17 +19,18 @@ class CheckInScreen extends StatefulWidget {
   _CheckInScreenState createState() => _CheckInScreenState();
 }
 
-class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateMixin {
+class _CheckInScreenState extends State<CheckInScreen>
+    with TickerProviderStateMixin {
   // 状态变量
-  bool _isLoading = true;           // 页面整体加载状态
-  bool _checkInLoading = false;    // 签到按钮的加载状态
-  CheckInStats? _checkInStats;    // 签到统计信息 (使用修改后的模型)
-  User? _currentUser;             // 当前登录用户信息 (包含等级经验)
+  bool _isLoading = true; // 页面整体加载状态
+  bool _checkInLoading = false; // 签到按钮的加载状态
+  CheckInStats? _checkInStats; // 签到统计信息 (使用修改后的模型)
+  User? _currentUser; // 当前登录用户信息 (包含等级经验)
   Map<String, dynamic>? _monthlyData; // 月度签到日历数据
   int _selectedYear = DateTime.now().year;
   int _selectedMonth = DateTime.now().month;
-  String? _errorMessage;          // 加载错误信息
-  int _missedDays = 0;            // 本月漏签天数 (仅当前月份计算)
+  String? _errorMessage; // 加载错误信息
+  int _missedDays = 0; // 本月漏签天数 (仅当前月份计算)
   int _consecutiveMissedDays = 0; // 断签天数 (自上次签到后)
 
   // 动画控制器
@@ -88,7 +87,8 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       // await _checkInService.initialize(); // 如果需要初始化
       final results = await Future.wait([
         _checkInService.getCheckInStats(), // 获取签到统计 (返回精简后的 CheckInStats)
-        _checkInService.getMonthlyCheckInData(year: _selectedYear, month: _selectedMonth), // 获取日历数据
+        _checkInService.getMonthlyCheckInData(
+            year: _selectedYear, month: _selectedMonth), // 获取日历数据
         _checkInService.calculateConsecutiveMissedDays(), // 计算断签天数
       ]);
 
@@ -116,7 +116,8 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       if (mounted) {
         setState(() {
           // 显示更友好的错误信息
-          _errorMessage = '加载数据失败，请稍后重试 (${e.toString().replaceAll('Exception: ', '')})';
+          _errorMessage =
+              '加载数据失败，请稍后重试 (${e.toString().replaceAll('Exception: ', '')})';
           _isLoading = false;
         });
       }
@@ -127,7 +128,9 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
   Future<int> _calculateMissedDays(Map<String, dynamic>? monthlyData) async {
     // 如果不是当前年月，或数据为空，则不计算漏签
     final now = DateTime.now();
-    if (monthlyData == null || _selectedYear != now.year || _selectedMonth != now.month) {
+    if (monthlyData == null ||
+        _selectedYear != now.year ||
+        _selectedMonth != now.month) {
       return 0;
     }
 
@@ -138,12 +141,15 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       // 收集已签到的日期数字
       for (final rawDay in rawDays) {
         if (rawDay is Map) {
-          final Map<String, dynamic> dayData = Map<String, dynamic>.from(rawDay);
+          final Map<String, dynamic> dayData =
+              Map<String, dynamic>.from(rawDay);
           if (dayData['checkedIn'] == true && dayData['day'] != null) {
             // 安全解析日期数字
             int? dayNum;
-            if (dayData['day'] is int) dayNum = dayData['day'];
-            else if (dayData['day'] is String) dayNum = int.tryParse(dayData['day']);
+            if (dayData['day'] is int)
+              dayNum = dayData['day'];
+            else if (dayData['day'] is String)
+              dayNum = int.tryParse(dayData['day']);
             if (dayNum != null) checkedDays.add(dayNum);
           }
         }
@@ -167,9 +173,13 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
   /// 处理签到按钮点击事件
   Future<void> _handleCheckIn() async {
     // 防止重复点击或在未加载/已签到时点击
-    if ((_checkInStats?.hasCheckedToday ?? true) || _checkInLoading || _isLoading) return;
+    if ((_checkInStats?.hasCheckedToday ?? true) ||
+        _checkInLoading ||
+        _isLoading) return;
 
-    setState(() { _checkInLoading = true; }); // 进入签到按钮加载状态
+    setState(() {
+      _checkInLoading = true;
+    }); // 进入签到按钮加载状态
 
     try {
       // 调用签到服务接口
@@ -201,13 +211,16 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       print('签到失败: $e');
       if (mounted) {
         // 显示更具体的错误信息
-        final String errorMessage ='签到失败: ${e.toString().replaceAll('Exception: ', '')}';
-        AppSnackBar.showError(context,errorMessage);
+        final String errorMessage =
+            '签到失败: ${e.toString().replaceAll('Exception: ', '')}';
+        AppSnackBar.showError(context, errorMessage);
       }
     } finally {
       // 无论成功或失败，结束签到按钮的加载状态
       if (mounted) {
-        setState(() { _checkInLoading = false; });
+        setState(() {
+          _checkInLoading = false;
+        });
       }
     }
   }
@@ -226,7 +239,8 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
     if (result['consecutiveCheckIn'] is int) {
       consecutiveDays = result['consecutiveCheckIn'];
     } else if (result['consecutiveCheckIn'] != null) {
-      consecutiveDays = int.tryParse(result['consecutiveCheckIn'].toString()) ?? 1;
+      consecutiveDays =
+          int.tryParse(result['consecutiveCheckIn'].toString()) ?? 1;
     }
 
     // 构建提示信息
@@ -255,12 +269,13 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
       _selectedYear = year;
       _selectedMonth = month;
       _monthlyData = null; // 清空旧数据，触发 Loading
-      _missedDays = 0;    // 切换月份后重置漏签天数
+      _missedDays = 0; // 切换月份后重置漏签天数
       // _consecutiveMissedDays 不在这里重置，它是全局的
     });
 
     // 异步加载新月份的签到数据
-    _checkInService.getMonthlyCheckInData(year: year, month: month)
+    _checkInService
+        .getMonthlyCheckInData(year: year, month: month)
         .then((data) {
       if (mounted) {
         setState(() {
@@ -299,45 +314,47 @@ class _CheckInScreenState extends State<CheckInScreen> with TickerProviderStateM
           ),
         ],
       ),
-      body: Stack( // 使用 Stack 放置粒子效果
+      body: Stack(
+        // 使用 Stack 放置粒子效果
         children: [
           // --- 内容区域 ---
           // 根据加载和错误状态显示不同内容
           _isLoading
               ? LoadingWidget.fullScreen(message: '正在加载签到数据...') // 全屏加载动画
               : _errorMessage != null
-              ? Center( // 错误信息居中显示
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: InlineErrorWidget(
-                errorMessage: _errorMessage!,
-                onRetry: _loadData, // 提供重试按钮
-              ),
-            ),
-          )
-              : (_checkInStats == null || _currentUser == null) // 确保核心数据已加载
-              ? Center(child: Text('数据异常，请稍后重试')) // 理论上不应发生
-              : ResponsiveCheckInLayout( // **传递核心数据给布局组件**
-            checkInStats: _checkInStats!, // 传递签到统计
-            currentUser: _currentUser!,   // 传递当前用户信息
-            monthlyData: _monthlyData,    // 传递月度日历数据
-            selectedYear: _selectedYear,
-            selectedMonth: _selectedMonth,
-            isCheckInLoading: _checkInLoading, // 传递签到按钮状态
-            hasCheckedToday: _checkInStats!.hasCheckedToday, // 传递今天是否已签到
-            animationController: _particleController, // 传递动画控制器
-            onChangeMonth: _handleChangeMonth, // 传递月份切换回调
-            onCheckIn: _handleCheckIn,         // 传递签到按钮回调
-            missedDays: _missedDays,           // 传递漏签天数
-            consecutiveMissedDays: _consecutiveMissedDays, // 传递断签天数
-          ),
+                  ? CustomErrorWidget(
+                      errorMessage: _errorMessage!,
+                      onRetry: _loadData, // 提供重试按钮
+                    )
+                  : (_checkInStats == null || _currentUser == null) // 确保核心数据已加载
+                      ? Center(child: Text('数据异常，请稍后重试')) // 理论上不应发生
+                      : ResponsiveCheckInLayout(
+                          // **传递核心数据给布局组件**
+                          checkInStats: _checkInStats!, // 传递签到统计
+                          currentUser: _currentUser!, // 传递当前用户信息
+                          monthlyData: _monthlyData, // 传递月度日历数据
+                          selectedYear: _selectedYear,
+                          selectedMonth: _selectedMonth,
+                          isCheckInLoading: _checkInLoading, // 传递签到按钮状态
+                          hasCheckedToday:
+                              _checkInStats!.hasCheckedToday, // 传递今天是否已签到
+                          animationController: _particleController, // 传递动画控制器
+                          onChangeMonth: _handleChangeMonth, // 传递月份切换回调
+                          onCheckIn: _handleCheckIn, // 传递签到按钮回调
+                          missedDays: _missedDays, // 传递漏签天数
+                          consecutiveMissedDays:
+                              _consecutiveMissedDays, // 传递断签天数
+                        ),
           // --- 结束内容区域 ---
 
           // --- 粒子效果层 ---
           // 仅在今天未签到时显示粒子效果容器
-          if (!(_checkInStats?.hasCheckedToday ?? true) && !_isLoading && _errorMessage == null)
+          if (!(_checkInStats?.hasCheckedToday ?? true) &&
+              !_isLoading &&
+              _errorMessage == null)
             Positioned.fill(
-              child: IgnorePointer( // 让粒子效果不响应触摸事件
+              child: IgnorePointer(
+                // 让粒子效果不响应触摸事件
                 child: ParticleEffect(
                   controller: _particleController, // 控制动画播放
                   color: Theme.of(context).primaryColor, // 粒子颜色

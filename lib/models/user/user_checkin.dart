@@ -262,16 +262,16 @@ class CheckInUser {
   }
 }
 
-// --- CheckInUserList 模型 ---
-// 包含精简后的 CheckInUser 列表
+// --- CheckInUserList 模型 (修改后) ---
+// 包含用户 ID 列表
 class CheckInUserList {
   final String date;
-  final List<CheckInUser> users;
+  final List<String> users; // <-- 修改这里：从 List<CheckInUser> 改为 List<String>
   final int count;
 
   CheckInUserList({
     required this.date,
-    required this.users,
+    required this.users,    // <-- 修改这里
     required this.count,
   });
 
@@ -291,38 +291,35 @@ class CheckInUserList {
       return defaultValue;
     }
 
-    List<CheckInUser> userList = [];
-    if (json['list'] != null && json['list'] is List) {
-      userList = (json['list'] as List)
-          .map((item) {
-            if (item is Map) {
-              try {
-                // 使用修改后的 CheckInUser.fromJson
-                return CheckInUser.fromJson(Map<String, dynamic>.from(item));
-              } catch (e) {
-                print("Error parsing CheckInUser item: $e, item: $item");
-                return null;
-              }
-            }
-            return null;
-          })
-          .where((user) => user != null)
-          .cast<CheckInUser>()
+    List<String> userIdList = []; // <-- 修改这里：初始化为空的 String 列表
+    if (json['users'] != null && json['users'] is List) { // <-- 修改这里：检查 'users' 字段
+      userIdList = (json['users'] as List)
+          .map((item) => item?.toString() ?? '') // 将每个元素转为 String
+          .where((id) => id.isNotEmpty) // 过滤掉空的 ID
           .toList();
+    } else if (json['list'] != null && json['list'] is List) {
+      // 兼容旧的 'list' 字段，如果后端可能返回两种格式
+      userIdList = (json['list'] as List)
+          .map((item) => item?.toString() ?? '') // 将每个元素转为 String
+          .where((id) => id.isNotEmpty) // 过滤掉空的 ID
+          .toList();
+      print("Warning: Received 'list' field instead of 'users' for check-in list. Assuming it contains user IDs.");
     }
+
 
     return CheckInUserList(
       date: json['date']?.toString() ??
           DateTime.now().toIso8601String().substring(0, 10),
-      users: userList,
-      count: safeInt(json['count'], userList.length),
+      users: userIdList, // <-- 修改这里：使用解析出的 userIdList
+      // count 优先使用后端返回的，其次使用列表长度
+      count: safeInt(json['count'], userIdList.length),
     );
   }
 
   factory CheckInUserList.empty() {
     return CheckInUserList(
       date: DateTime.now().toIso8601String().substring(0, 10),
-      users: [],
+      users: [], // <-- 修改这里：空列表
       count: 0,
     );
   }

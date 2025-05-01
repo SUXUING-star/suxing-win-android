@@ -1,41 +1,103 @@
-// lib/providers/gamelist/game_list_filter_provider.dart (新建文件)
+// lib/providers/gamelist/game_list_filter_provider.dart
 import 'package:flutter/foundation.dart';
 
 class GameListFilterProvider with ChangeNotifier {
   String? _selectedTag;
-  bool _tagHasBeenSet = false; // 标记是否是主动设置的
+  bool _tagHasBeenSet = false; // 标记 Tag 是否是主动设置的
 
+  String? _selectedCategory; // *** 新增: 选中的分类 ***
+  bool _categoryHasBeenSet = false; // *** 新增: 分类是否主动设置 ***
+
+  // --- Getters ---
   String? get selectedTag => _selectedTag;
   bool get tagHasBeenSet => _tagHasBeenSet;
 
-  void setTag(String? newTag, {bool fromWidget = false}) {
-    // fromWidget 用于区分是页面内操作(如清空按钮)还是外部导航触发
-    // 避免在页面内点击标签后，再次触发不必要的加载
+  String? get selectedCategory => _selectedCategory; // *** 新增 ***
+  bool get categoryHasBeenSet => _categoryHasBeenSet; // *** 新增 ***
 
-    // 只有当新标签与当前标签不同时才更新并通知
+  // --- Setters (包含互斥逻辑) ---
+
+  /// 设置选中的标签。如果设置了非 null 的标签，会自动清除选中的分类。
+  void setTag(String? newTag) {
+    // 只有当新标签与当前标签不同时才更新
     if (_selectedTag != newTag) {
       print('GameListFilterProvider: Setting tag to -> $newTag');
       _selectedTag = newTag;
-      _tagHasBeenSet = true; // 标记为已设置
-      notifyListeners(); // 通知监听者 (GamesListScreen)
+      _tagHasBeenSet = true; // 标记 Tag 已设置
+
+      // *** 互斥逻辑: 设置 Tag 时清除 Category ***
+      if (newTag != null && _selectedCategory != null) {
+        print('GameListFilterProvider: Clearing category because tag was set.');
+        _selectedCategory = null;
+        _categoryHasBeenSet = false; // 分类被清除了，重置标记
+      }
+      notifyListeners(); // 通知监听者
     } else if (newTag != null && !_tagHasBeenSet) {
-      // 如果标签相同，但之前未被主动设置过（例如从 null -> 'tagA'，然后又导航到 'tagA'），
-      // 也需要标记为已设置，以确保 GamesListScreen 能响应
+      // 如果标签相同，但之前未被主动设置过，也标记为已设置
       _tagHasBeenSet = true;
-      // 也许还需要通知？取决于 GamesListScreen 的逻辑是否依赖 _tagHasBeenSet
-      // notifyListeners(); // 可以考虑是否需要，如果 GamesListScreen 只看 tag 值可以不用
+      // 这里可能不需要 notifyListeners，因为值没变
       //print('GameListFilterProvider: Tag "$newTag" re-confirmed.');
-    } else {
-      //print('GameListFilterProvider: Tag "$newTag" is the same as current. No change.');
     }
   }
 
+  /// 设置选中的分类。如果设置了非 null 的分类，会自动清除选中的标签。
+  void setCategory(String? newCategory) {
+    // 只有当新分类与当前分类不同时才更新
+    if (_selectedCategory != newCategory) {
+      print('GameListFilterProvider: Setting category to -> $newCategory');
+      _selectedCategory = newCategory;
+      _categoryHasBeenSet = true; // 标记 Category 已设置
+
+      // *** 互斥逻辑: 设置 Category 时清除 Tag ***
+      if (newCategory != null && _selectedTag != null) {
+        print('GameListFilterProvider: Clearing tag because category was set.');
+        _selectedTag = null;
+        _tagHasBeenSet = false; // 标签被清除了，重置标记
+      }
+      notifyListeners(); // 通知监听者
+    } else if (newCategory != null && !_categoryHasBeenSet) {
+      // 如果分类相同，但之前未被主动设置过，也标记为已设置
+      _categoryHasBeenSet = true;
+      //print('GameListFilterProvider: Category "$newCategory" re-confirmed.');
+    }
+  }
+
+  // --- 清除方法 ---
+
+  /// 清除选中的标签 (不影响分类)。
   void clearTag() {
     setTag(null);
   }
 
-  // 重置标记，当 GamesListScreen 处理完 tag 后可以调用
+  /// 清除选中的分类 (不影响标签)。
+  void clearCategory() {
+    setCategory(null);
+  }
+
+  // --- 重置标记 ---
+
+  /// 重置 Tag 的 "已设置" 标记。当 UI 处理完 Tag 变化后调用。
   void resetTagFlag() {
+    //print("GameListFilterProvider: Resetting tag flag.");
     _tagHasBeenSet = false;
+    // 注意：这里不调用 notifyListeners，因为它只是重置内部状态，不应触发 UI 重建
+  }
+
+  /// 重置 Category 的 "已设置" 标记。当 UI 处理完 Category 变化后调用。
+  void resetCategoryFlag() {
+    //print("GameListFilterProvider: Resetting category flag.");
+    _categoryHasBeenSet = false;
+    // 注意：同样不调用 notifyListeners
+  }
+
+  /// 重置所有 "已设置" 标记。
+  void resetFlags() {
+    //bool changed = _tagHasBeenSet || _categoryHasBeenSet;
+    _tagHasBeenSet = false;
+    _categoryHasBeenSet = false;
+    // if (changed) {
+    //   // 理论上不需要通知，因为 UI 应该已经响应了 setTag/setCategory
+    // }
+    //print("GameListFilterProvider: Resetting all flags.");
   }
 }

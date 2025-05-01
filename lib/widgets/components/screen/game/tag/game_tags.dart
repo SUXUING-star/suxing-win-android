@@ -4,9 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../../models/game/game.dart';
-// *** 导入 NavigationUtils 和 AppRoutes ***
 import '../../../../../../utils/navigation/navigation_utils.dart';
-import '../../../../../../routes/app_routes.dart';
 
 class GameTags extends StatelessWidget {
   final Game game;
@@ -81,7 +79,6 @@ class GameTags extends StatelessWidget {
     // *** 使用 InkWell 包裹，使其可点击 ***
     return InkWell(
       onTap: !navigateToGameListOnClick ? null : () { // 根据新参数决定是否响应点击
-        print('Tag tapped: $tag -> Navigating to GamesList');
 
         // 1. 更新 Provider 中的状态
         Provider.of<GameListFilterProvider>(context, listen: false).setTag(tag);

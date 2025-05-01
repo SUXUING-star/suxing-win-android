@@ -8,15 +8,15 @@ import '../../services/main/user/user_service.dart';
 import 'dart:async';
 
 class AuthProvider with ChangeNotifier {
-  // 静态实例，确保全局唯一
-  static final AuthProvider _singleton = AuthProvider._internal();
+  // // 静态实例，确保全局唯一
+  // static final AuthProvider _singleton = AuthProvider._internal();
+  //
+  // // 工厂构造函数，始终返回同一个实例
+  // factory AuthProvider() {
+  //   return _singleton;
+  // }
 
-  // 工厂构造函数，始终返回同一个实例
-  factory AuthProvider() {
-    return _singleton;
-  }
-
-  final UserService _userService = UserService();
+  //final UserService _userService = UserService();
   User? _currentUser;
   bool _isInitializing = false;
   bool _isRefreshing = false;
@@ -24,6 +24,10 @@ class AuthProvider with ChangeNotifier {
   final _initializationLock = Lock();
 
   StreamSubscription? _unauthorizedSubscription;
+
+  final Duration _refreshNotifyDelay = const Duration(milliseconds: 500);
+  final Duration _signInNotifyDelay = const Duration(milliseconds: 1000);
+  final Duration _signOutNotifyDelay = const Duration(milliseconds: 1000);
 
   User? get currentUser => _currentUser;
   bool get isInitializing => _isInitializing;
@@ -34,9 +38,14 @@ class AuthProvider with ChangeNotifier {
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
   String? get currentUserId => _currentUser?.id;
 
-  // 私有构造函数
-  AuthProvider._internal() {
-    // 在构造函数或初始化时开始监听
+  // // 私有构造函数
+  // AuthProvider._internal() {
+  //   // 在构造函数或初始化时开始监听
+  //   _listenForUnauthorizedEvent();
+  // }
+  final UserService _userService;
+  AuthProvider(this._userService) { // <--- 改成公共的，并接收参数
+    // 监听事件放在构造函数里执行
     _listenForUnauthorizedEvent();
   }
   void _listenForUnauthorizedEvent() {
@@ -44,8 +53,6 @@ class AuthProvider with ChangeNotifier {
     if (_unauthorizedSubscription != null) return;
     _unauthorizedSubscription =
         appEventBus.on<UnauthorizedAccessEvent>().listen((event) {
-      print(
-          "AuthProvider: Received UnauthorizedAccessEvent. Clearing current user state.");
       // 检查当前是否确实是登录状态，避免不必要的通知
       if (_currentUser != null) {
         _currentUser = null;
@@ -53,41 +60,50 @@ class AuthProvider with ChangeNotifier {
         notifyListeners(); // 通知 UI 更新 (非常重要！)
       }
     });
-    print("AuthProvider: Subscribed to UnauthorizedAccessEvent.");
   }
 
   //公共初始化方法
   Future<void> initialize() async {
     if (_initialized || _isInitializing) return;
+
     await _initializationLock.synchronized(() async {
       if (_initialized || _isInitializing) return;
-      print("AuthProvider: Initializing...");
+
       _isInitializing = true;
-      notifyListeners(); // UI 显示加载
+
+      User? determinedUser;
+
       try {
-        final savedUserId = await _userService.currentUserId; // 1. 读 UserId
-        if (savedUserId != null && savedUserId.isNotEmpty) {
-          try {
-            // 2. 尝试用 Future 获取 User
-            _currentUser = await _userService.getCurrentUser();
-          } catch (e) {
-            _currentUser = null;
-            // *** 原始版本这里会清除 Token ***
-            await _userService.clearAuthData();
-          }
+        final String? token = await _userService.getToken();
+
+        if (token == null) {
+          determinedUser = null;
+          // Assuming userService.getToken() already cleared data if expired
         } else {
-          _currentUser = null; // 本地无 UserId
+          final savedUserId = await _userService.currentUserId;
+          if (savedUserId != null && savedUserId.isNotEmpty) {
+            try {
+              determinedUser = await _userService.getCurrentUser();
+            } catch (e) {
+              determinedUser = null;
+              // Consider specific error handling, e.g., logging 'e'
+            }
+          } else {
+            determinedUser = null;
+            await _userService.clearAuthData(); // Clear inconsistent state
+          }
         }
       } catch (e) {
-        print("AuthProvider: Error during outer initialization steps: $e");
-        _currentUser = null;
+        determinedUser = null;
+        try {
+          await _userService.clearAuthData();
+        } catch (_) {}
+        // Consider specific error handling, e.g., logging 'e'
       } finally {
-        // *** 关键点：finally 块总会执行 ***
+        _currentUser = determinedUser;
         _isInitializing = false;
         _initialized = true;
-        print(
-            "AuthProvider: Initialization finally block. Final user state before notify: ${_currentUser?.username}");
-        notifyListeners(); // *** 最后的通知 ***
+        notifyListeners();
       }
     });
   }
@@ -97,9 +113,12 @@ class AuthProvider with ChangeNotifier {
     // 不需要 _isLoading 状态，让调用者处理 UI
     try {
       _currentUser = await _userService.signIn(email, password);
-      notifyListeners();
+      await Future.delayed(_signInNotifyDelay);
+      if (_currentUser != null) {
+        // 再次确认用户非空（虽然理论上是的）
+        notifyListeners(); // 通知 UI 登录状态已更新
+      } else {}
     } catch (e) {
-      print("AuthProvider: Sign in failed: $e");
       _currentUser = null; // 确保登录失败时用户为空
       notifyListeners(); // 通知UI状态已清除
       rethrow; // 将异常抛出给调用者处理
@@ -117,6 +136,7 @@ class AuthProvider with ChangeNotifier {
       _currentUser = null;
       // 可以选择性地 rethrow(e) 或处理错误
     } finally {
+      await Future.delayed(_signOutNotifyDelay);
       // 最终确保通知 UI 更新
       notifyListeners();
     }
@@ -126,14 +146,12 @@ class AuthProvider with ChangeNotifier {
   Future<void> refreshUserState() async {
     if (_isInitializing || _isRefreshing) return;
     if (!_initialized) {
-      print(
-          "AuthProvider: refreshUserState called before initialized. Calling initialize()...");
       await initialize();
       return;
     }
 
-    print("AuthProvider: Refreshing user state...");
     _isRefreshing = true;
+    await Future.delayed(_refreshNotifyDelay);
     notifyListeners();
 
     try {
@@ -143,7 +161,6 @@ class AuthProvider with ChangeNotifier {
           _currentUser = await _userService.getCurrentUser();
           // 如果之前没有订阅成功，或者为了确保，重新订阅
         } catch (e) {
-          print("AuthProvider: Refresh - Failed to get current user: $e");
           _currentUser = null;
           await _userService.clearAuthData();
         }
@@ -151,11 +168,9 @@ class AuthProvider with ChangeNotifier {
         _currentUser = null;
       }
     } catch (e) {
-      print("AuthProvider: Refresh - Error during refresh: $e");
       _currentUser = null;
     } finally {
       _isRefreshing = false;
-      print("AuthProvider: Refresh finished. User: ${_currentUser?.username}");
       notifyListeners();
     }
   }

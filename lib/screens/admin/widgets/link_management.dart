@@ -1,7 +1,10 @@
 // lib/screens/admin/widgets/link_management.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../services/main/linktool/link_tool_service.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 引入 SnackBar
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 引入 Button
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 引入 Button
 import '../../../models/linkstools/link.dart';
 import '../../../widgets/components/form/linkform/link_form_dialog.dart';
 
@@ -13,53 +16,104 @@ class LinkManagement extends StatefulWidget {
 }
 
 class _LinkManagementState extends State<LinkManagement> {
-  final LinkToolService _linkToolService = LinkToolService();
-  // 添加刷新触发器
-  int _refreshTrigger = 0;
+  // --- 修改: 使用 Future 状态 ---
+  late Future<List<Link>> _linksFuture;
+  bool _isProcessing = false; // 用于防止重复点击按钮
+  // --- 结束修改 ---
 
-  // 刷新数据方法
-  void _refreshData() {
+  @override
+  void initState() {
+    super.initState();
+    // --- 修改: 初始化 Future ---
+    _loadLinks();
+    // --- 结束修改 ---
+  }
+
+  // --- 新增: 加载数据的方法 ---
+  void _loadLinks({bool forceRefresh = false}) {
+    final linkToolService = context.read<LinkToolService>();
     setState(() {
-      _refreshTrigger++; // 增加计数器触发 StreamBuilder 重建
+      _linksFuture = linkToolService.getLinks(forceRefresh: forceRefresh);
     });
   }
+
+  // --- 修改: 刷新数据方法 ---
+  Future<void> _refreshData() async {
+    // 强制刷新
+    _loadLinks(forceRefresh: true);
+    // FutureBuilder 会自动处理状态，这里不需要更多操作
+    // 但为了 RefreshIndicator 完成动画，返回一个 Future
+    await _linksFuture; // 等待新的 Future 完成
+  }
+  // --- 结束修改 ---
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: StreamBuilder<List<Link>>(
-        // 使用刷新触发器作为key，确保数据改变时重建
-        key: ValueKey("links_$_refreshTrigger"),
-        stream: _linkToolService.getLinks(),
+      // --- 修改: 使用 FutureBuilder ---
+      body: FutureBuilder<List<Link>>(
+        future: _linksFuture, // 绑定 Future 状态
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return Center(child: Text('错误: ${snapshot.error}'));
-          }
-
-          if (!snapshot.hasData) {
+          // 处理加载状态
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            // 保持加载指示器在中间
             return const Center(child: CircularProgressIndicator());
           }
+          // 处理错误状态
+          if (snapshot.hasError) {
+            return Center(
+                child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('错误: ${snapshot.error}'),
+                SizedBox(height: 10),
+                ElevatedButton(
+                  onPressed: () => _loadLinks(forceRefresh: true),
+                  child: Text('重试'),
+                )
+              ],
+            ));
+          }
+          // 处理无数据或空数据状态
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            // 允许下拉刷新空列表
+            return RefreshIndicator(
+              onRefresh: _refreshData,
+              child: Stack(
+                // 使用 Stack 让 "暂无数据" 能响应下拉刷新
+                children: [
+                  ListView(), // 空 ListView 使得 RefreshIndicator 可用
+                  Center(child: Text('暂无链接数据'))
+                ],
+              ),
+            );
+          }
 
+          // 有数据时
           final links = snapshot.data!;
-
           return RefreshIndicator(
-            onRefresh: () async {
-              _refreshData();
-            },
+            onRefresh: _refreshData, // 下拉刷新调用
             child: Column(
               children: [
                 Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: ElevatedButton.icon(
-                    onPressed: _showAddLinkDialog,
-                    icon: const Icon(Icons.add),
-                    label: const Text('添加链接'),
+                    onPressed:
+                        _isProcessing ? null : _showAddLinkDialog, // 防止重复点击
+                    icon: _isProcessing
+                        ? SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white)))
+                        : const Icon(Icons.add),
+                    label: Text(_isProcessing ? '处理中...' : '添加链接'),
                   ),
                 ),
                 Expanded(
-                  child: links.isEmpty
-                      ? Center(child: Text('暂无链接数据'))
-                      : ListView.builder(
+                  child: ListView.builder(
                     itemCount: links.length,
                     itemBuilder: (context, index) {
                       final link = links[index];
@@ -92,11 +146,16 @@ class _LinkManagementState extends State<LinkManagement> {
                             children: [
                               IconButton(
                                 icon: const Icon(Icons.edit),
-                                onPressed: () => _showEditLinkDialog(link),
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () => _showEditLinkDialog(link),
                               ),
                               IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.red),
-                                onPressed: () => _showDeleteConfirmation(link),
+                                icon:
+                                    const Icon(Icons.delete, color: Colors.red),
+                                onPressed: _isProcessing
+                                    ? null
+                                    : () => _showDeleteConfirmation(link),
                               ),
                             ],
                           ),
@@ -110,89 +169,100 @@ class _LinkManagementState extends State<LinkManagement> {
           );
         },
       ),
+      // --- 结束修改 ---
     );
   }
 
+  // --- 修改: 添加/编辑/删除操作后刷新数据 ---
   Future<void> _showAddLinkDialog() async {
-    final result = await showDialog(
-      context: context,
-      builder: (context) => const LinkFormDialog(),
-    );
 
-    if (result != null) {
-      try {
-        await _linkToolService.addLink(Link.fromJson(result));
-        // 刷新UI
-        _refreshData();
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      final result = await showDialog<Map<String, dynamic>>(
+        // 指定泛型类型
+        context: context,
+        builder: (context) => const LinkFormDialog(),
+      );
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('链接添加成功')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('添加失败：$e')),
-        );
+      if (result != null && mounted) {
+        try {
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.addLink(Link.fromJson(result));
+          _loadLinks(forceRefresh: true); // 成功后强制刷新
+          AppSnackBar.showSuccess(context, '链接添加成功');
+        } catch (e) {
+          if (mounted) AppSnackBar.showError(context, '添加失败：$e');
+        }
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _showEditLinkDialog(Link link) async {
-    final result = await showDialog(
-      context: context,
-      builder: (context) => LinkFormDialog(link: link),
-    );
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      final result = await showDialog<Map<String, dynamic>>(
+        // 指定泛型类型
+        context: context,
+        builder: (context) => LinkFormDialog(link: link),
+      );
 
-    if (result != null) {
-      try {
-        await _linkToolService.updateLink(Link.fromJson(result));
-        // 刷新UI
-        _refreshData();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('链接更新成功')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('更新失败：$e')),
-        );
+      if (result != null && mounted) {
+        try {
+          final linkToolService = context.read<LinkToolService>();
+          // 使用 Link.fromJson 将 Map 转换为 Link 对象
+          await linkToolService.updateLink(Link.fromJson(result));
+          _loadLinks(forceRefresh: true); // 成功后强制刷新
+          AppSnackBar.showSuccess(context, '链接更新成功');
+        } catch (e) {
+          if (mounted) AppSnackBar.showError(context, '更新失败：$e');
+        }
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
 
   Future<void> _showDeleteConfirmation(Link link) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: Text('确定要删除链接"${link.title}"吗？'),
-        actions: [
-          TextButton(
-            onPressed: () => NavigationUtils.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => NavigationUtils.pop(context, true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    );
+    if (_isProcessing) return;
+    setState(() => _isProcessing = true);
+    try {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('确认删除'),
+          content: Text('确定要删除链接"${link.title}"吗？'),
+          actions: [
+            FunctionalTextButton(
+              // 使用自定义按钮
+              onPressed: () => Navigator.pop(context, false),
+              label: '取消',
+            ),
+            FunctionalButton(
+              // 使用自定义按钮
+              onPressed: () => Navigator.pop(context, true),
+              label: '删除',
+            ),
+          ],
+        ),
+      );
 
-    if (confirmed == true) {
-      try {
-        await _linkToolService.deleteLink(link.id);
-        // 刷新UI
-        _refreshData();
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('链接删除成功')),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败：$e')),
-        );
+      if (confirmed == true && mounted) {
+        try {
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.deleteLink(link.id);
+          _loadLinks(forceRefresh: true); // 成功后强制刷新
+          AppSnackBar.showSuccess(context, '链接删除成功');
+        } catch (e) {
+          if (mounted) AppSnackBar.showError(context, '删除失败：$e');
+        }
       }
+    } finally {
+      if (mounted) setState(() => _isProcessing = false);
     }
   }
+// --- 结束修改 ---
 }

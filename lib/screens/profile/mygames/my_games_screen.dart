@@ -1,5 +1,6 @@
 // lib/screens/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -27,7 +28,6 @@ class MyGamesScreen extends StatefulWidget {
 }
 
 class _MyGamesScreenState extends State<MyGamesScreen> {
-  final GameService _gameService = GameService();
   final ScrollController _scrollController = ScrollController();
 
   List<Game> _myGames = [];
@@ -64,7 +64,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     });
 
     try {
-      final result = await _gameService.getMyGamesWithInfo(
+      final gameService = context.read<GameService>();
+      final result = await gameService.getMyGamesWithInfo(
         page: 1, // Always load page 1 initially
         pageSize: 10, // Or your preferred page size
         // sortBy: 'updateTime', // Example sorting, adjust as needed
@@ -105,7 +106,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     try {
       final nextPage = _currentPage + 1;
-      final result = await _gameService.getMyGamesWithInfo(
+      final gameService = context.read<GameService>();
+      final result = await gameService.getMyGamesWithInfo(
         page: nextPage,
         pageSize: 10,
         // sortBy: 'updateTime', // Consistent sorting
@@ -166,7 +168,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     // 这里可以加一个 Loading 状态，但确认对话框自带了，所以可能不需要
     try {
-      await _gameService.resubmitGame(game.id);
+      final gameService = context.read<GameService>();
+      await gameService.resubmitGame(game.id);
       if (!mounted) return; // 检查 context 是否有效
 
       // 使用 AppSnackBar 显示成功信息
@@ -228,21 +231,20 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   Widget _buildBody() {
     // 4. 计算卡片宽高比
     //    根据是否有面板，调用不同的 DeviceUtils 方法
-    final cardRatio =
-
-        DeviceUtils.calculateSimpleCardRatio(context); // 使用 widget 的 showTagSelection
+    final cardRatio = DeviceUtils.calculateSimpleCardRatio(
+        context); // 使用 widget 的 showTagSelection
     if (_isLoading) {
       return LoadingWidget.inline();
     }
     // 2. 计算每行卡片数
     final cardsPerRow = DeviceUtils.calculateCardsPerRow(context);
-    if (cardsPerRow <= 0) return InlineErrorWidget(errorMessage: "渲染错误");
+    if (cardsPerRow <= 0) return CustomErrorWidget(errorMessage: "渲染错误");
     final isDesktop = DeviceUtils.isDesktop;
 
     // 使用 _errorMessage 来显示具体的错误信息
     if (_hasError) {
       // 错误提示也加个动画
-      return InlineErrorWidget(
+      return CustomErrorWidget(
         onRetry: _loadInitialGames,
         errorMessage: _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',
       );

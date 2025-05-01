@@ -1,5 +1,7 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -30,10 +32,6 @@ class OpenProfileScreen extends StatefulWidget {
 
 class _OpenProfileScreenState extends State<OpenProfileScreen>
     with SingleTickerProviderStateMixin {
-  final UserService _userService = UserService();
-  final ForumService _forumService = ForumService();
-  final GameService _gameService = GameService();
-
   User? _user;
   List<Post>? _recentPosts;
   List<Game>? _publishedGames;
@@ -64,21 +62,23 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     });
 
     try {
+      final userService = context.read<UserService>();
+      final forumService = context.read<ForumService>();
+      final gameService = context.read<GameService>();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       // 获取当前登录用户ID
-      final currentUserId = await _userService.currentUserId;
+      final currentUserId = await authProvider.currentUserId;
       _isCurrentUser = currentUserId == widget.userId;
 
       // 获取用户信息
-      final userInfo = await _userService.getUserInfoById(widget.userId);
-      _user = User.fromJson(userInfo);
-
+      _user = await userService.getUserInfoById(widget.userId);
 
       // 加载用户帖子
       final userPosts =
-          await _forumService.getRecentUserPosts(widget.userId, limit: 5);
+          await forumService.getRecentUserPosts(widget.userId, limit: 10);
 
       // 加载用户发布的游戏
-      final userGames = await _gameService.getGamesPaginated(
+      final userGames = await gameService.getGamesPaginated(
         page: 1,
         pageSize: 10,
         sortBy: 'createTime',
@@ -129,7 +129,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
     if (_error != null) {
       // 错误提示加个动画
-      return InlineErrorWidget(
+      return CustomErrorWidget(
         onRetry: _loadUserProfile,
         errorMessage: _error,
       );

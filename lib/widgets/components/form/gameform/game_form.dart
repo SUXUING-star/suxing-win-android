@@ -6,18 +6,18 @@ import 'dart:async';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:collection/collection.dart'; // 引入 collection 包进行深度比较
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
-import 'package:suxingchahui/services/common/upload/file_upload_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart'; // 全局锁服务
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 提示框
 
 // --- UI 和辅助组件 ---
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -81,7 +81,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   final GameFormCacheService _cacheService = GameFormCacheService();
   String? _draftKey; // 当前表单使用的草稿 Key (add_draft 或 edit_game_draft_ID)
   // 特殊字符串，用于在草稿中标记本地文件位置
-  static const String _localFilePlaceholder = "__LOCAL_XFILE_PLACEHOLDER__";
+  //static const String _localFilePlaceholder = "__LOCAL_XFILE_PLACEHOLDER__";
 
   // --- 编辑模式下的初始状态，用于比较变更 ---
   // 保存 widget.game 的初始副本，用于判断是否有修改
@@ -547,7 +547,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Future<String?> _copyDraftImage(XFile sourceFile) async {
     try {
       final Directory appDocDir = await getApplicationDocumentsDirectory();
-      final String draftImagesDirPath = '${appDocDir.path}/suxingchahui/draft_images';
+      final String draftImagesDirPath =
+          '${appDocDir.path}/suxingchahui/draft_images';
       // Ensure the directory exists
       await Directory(draftImagesDirPath).create(recursive: true);
 
@@ -595,11 +596,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         imagePath = source; // Existing URL
       } else if (source is XFile) {
         // Copy XFile to persistent storage
-        imagePath = await _copyDraftImage(source as XFile);
+        imagePath = await _copyDraftImage(source);
         // If copy failed, imagePath will be null, and won't be added below
       } else if (source is File) {
         // If it's already a File, save its path
-        imagePath = (source as File).path;
+        imagePath = (source).path;
       }
 
       // Only add valid URLs or persistent paths to the list
@@ -807,6 +808,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     // 3. 设置处理状态，请求锁
     if (mounted) setState(() => _isProcessing = true);
+    final uploadService = context.read<RateLimitedFileUpload>();
 
     bool actionExecuted = await RequestLockService.instance.tryLockAsync(
       operationKey,
@@ -819,13 +821,14 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // 3a. 处理封面图上传 (XFile -> 上传, String -> 使用)
           final dynamic currentCoverSource = _coverImageSource;
           if (currentCoverSource is XFile) {
-            print("Uploading new cover image...");
+            //print("Uploading new cover image...");
             final fileToUpload = File(currentCoverSource.path);
+
             // 注意：FileUpload.uploadImage 需要处理可能发生的异常
-            finalCoverImageUrl = await FileUpload.uploadImage(fileToUpload,
+            finalCoverImageUrl = await uploadService.uploadImage(fileToUpload,
                 folder: 'games/covers');
-            print("New cover URL: $finalCoverImageUrl");
-            if (finalCoverImageUrl == null || finalCoverImageUrl.isEmpty) {
+            //print("New cover URL: $finalCoverImageUrl");
+            if (finalCoverImageUrl.isEmpty) {
               throw Exception(
                   "Cover image upload failed or returned empty URL.");
             }
@@ -860,16 +863,16 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // 如果有文件需要上传
           List<String> uploadedUrls = [];
           if (filesToUpload.isNotEmpty) {
-            print("Uploading ${filesToUpload.length} new screenshots...");
+            //print("Uploading ${filesToUpload.length} new screenshots...");
             // 注意：FileUpload.uploadFiles 需要处理异常
-            uploadedUrls = await FileUpload.uploadFiles(filesToUpload,
+            uploadedUrls = await uploadService.uploadImages(filesToUpload,
                 folder: 'games/screenshots');
             if (uploadedUrls.length != filesToUpload.length) {
               // 上传数量不匹配，是个严重问题
               throw Exception(
                   "Screenshot upload count mismatch! Expected ${filesToUpload.length}, got ${uploadedUrls.length}");
             }
-            print("New screenshot URLs: $uploadedUrls");
+            //print("New screenshot URLs: $uploadedUrls");
 
             // 第二次遍历：将上传后的 URL 填回 tempFinalUrls 的对应位置
             int uploadedIndex = 0;
@@ -879,16 +882,16 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 uploadedIndex++;
               } else {
                 // 这理论上不应该发生，因为前面检查了数量匹配
-                print(
-                    "Warning: Ran out of uploaded URLs while mapping back. Index: $originalIndex");
+                // print(
+                //     "Warning: Ran out of uploaded URLs while mapping back. Index: $originalIndex");
               }
             }
           }
 
           // 从临时列表过滤掉 null，得到最终的 URL 列表
           finalGameImagesUrls = tempFinalUrls.whereType<String>().toList();
-          print(
-              "Final submitted screenshot URLs (${finalGameImagesUrls.length}): $finalGameImagesUrls");
+          //print(
+          //    "Final submitted screenshot URLs (${finalGameImagesUrls.length}): $finalGameImagesUrls");
 
           // 3c. 构建 Game 对象
           final game = Game(
@@ -932,22 +935,13 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 ? null
                 : _bvidController.text.trim(),
             lastViewedAt: widget.game?.lastViewedAt, // 编辑时保留
-            // 审核状态字段：添加/编辑后应由后端重置为 pending 或根据逻辑处理
-            // approvalStatus: widget.game?.approvalStatus, // 不应由前端设置
-            // reviewComment: widget.game?.reviewComment,
-            // reviewedAt: widget.game?.reviewedAt,
-            // reviewedBy: widget.game?.reviewedBy,
           );
 
           // 3d. 调用外部 onSubmit 回调 (执行 API 请求)
-          print("Calling widget.onSubmit for operation $operationKey...");
           await widget.onSubmit(game); // 等待 API 调用完成
-          print("widget.onSubmit for $operationKey completed successfully.");
 
           // 3e. 清除当前模式的草稿 (只有在 action 完全成功后才清除)
           if (_draftKey != null) {
-            print(
-                "Starting cleanup for successful submission. Key: $_draftKey");
             GameFormDraft? draftBeforeDeletion; // 用来保存包含文件路径的旧草稿数据
             try {
               // 关键步骤 1: 在删除 Hive 条目之前，先加载它！
@@ -955,21 +949,21 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
               draftBeforeDeletion = await _cacheService.loadDraft(_draftKey!);
 
               if (draftBeforeDeletion != null) {
-                print("Loaded draft data before deletion for file cleanup.");
+                //print("Loaded draft data before deletion for file cleanup.");
               } else {
-                print(
-                    "Warning: Could not load draft data before deletion. File cleanup might be incomplete. Key: $_draftKey");
+                //print(
+                //    "Warning: Could not load draft data before deletion. File cleanup might be incomplete. Key: $_draftKey");
               }
 
               // 关键步骤 2: 清除 Hive 中的草稿条目
               await _cacheService.clearDraft(_draftKey!);
-              print("Local draft cleared from Hive for key: $_draftKey.");
+              //print("Local draft cleared from Hive for key: $_draftKey.");
 
               // 关键步骤 3: 使用刚才加载出来的数据去删除对应的文件
               await _deleteDraftFiles(draftBeforeDeletion); // 传入加载出来的旧数据
             } catch (e) {
-              print(
-                  "Error during draft cleanup (load, clear Hive, or delete files) for key $_draftKey after submission: $e");
+              //print(
+              //    "Error during draft cleanup (load, clear Hive, or delete files) for key $_draftKey after submission: $e");
               // 即使清理失败，提交本身是成功的，所以一般不需要打断用户流程，记录错误即可
               if (mounted) {
                 // 可以选择性地给用户一个提示，说明后台清理可能有点问题
@@ -977,14 +971,14 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
               }
             }
           } else {
-            print(
-                "Warning: Draft key was null, cannot clear draft after submission.");
+            //print(
+            //    "Warning: Draft key was null, cannot clear draft after submission.");
           }
 
           // ================== 核心操作结束 ==================
         } catch (e) {
           // action 内部错误处理
-          print('Error during submission action ($operationKey): $e');
+          //print('Error during submission action ($operationKey): $e');
           // 确保在 mounted 状态下显示 SnackBar
           if (mounted) {
             // 提取更友好的错误信息，避免显示整个堆栈
@@ -1002,7 +996,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       },
       onLockFailed: () {
         // 锁定时（操作已在进行中）的回调
-        print("Operation ($operationKey) is already in progress.");
+        //print("Operation ($operationKey) is already in progress.");
         if (mounted) {
           AppSnackBar.showInfo(context, '操作正在进行中，请稍候...');
         }
@@ -1023,7 +1017,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     // actionExecuted 会告诉你 action 是否真的被执行了
     if (actionExecuted) {
-      print("Submission action attempt finished for $operationKey.");
+      //print("Submission action attempt finished for $operationKey.");
       // 成功的 SnackBar 应该由调用方 (Add/Edit Screen) 在 onSubmit 回调成功后显示
     }
   }
@@ -1033,18 +1027,31 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
-    // 稍微调整桌面布局的阈值
     final bool useDesktopLayout = isDesktop && screenSize.width > 950;
+
+    // --- NEW: Determine canPop value ---
+    // Block pop initially if processing OR if there are unsaved changes requiring confirmation
+    bool hasUnsavedChanges = widget.game != null && _hasChanges();
+    bool isAddModeWithContent = widget.game == null && !_isFormEmpty();
+    // If processing, OR if there are changes that need confirmation, set canPop to false initially.
+    final bool allowImmediatePop =
+        !(_isProcessing || hasUnsavedChanges || isAddModeWithContent);
 
     // 使用 Stack 包裹，方便显示全局加载指示器
     return Stack(
       children: [
-        // WillPopScope 用于处理返回按钮事件，可以提示保存草稿
-        WillPopScope(
-          onWillPop: _onWillPop, // 添加返回拦截
+        // *** REPLACE WillPopScope WITH PopScope ***
+        PopScope<Object?>(
+          // <-- 1. 添加泛型 (Object? 因为 GameForm 本身不pop带特定结果)
+          canPop: allowImmediatePop,
+          // <-- 2. 使用 onPopInvokedWithResult 并更新签名
+          onPopInvokedWithResult: (bool didPop, Object? result) {
+            if (!didPop) {
+              _handleBlockedPopAttempt(); // Call the handler logic
+            }
+          },
           child: Form(
             key: _formKey,
-            // 可以添加 autovalidateMode 按需自动验证
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             child: useDesktopLayout
                 ? _buildDesktopLayout(context)
@@ -1052,7 +1059,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           ),
         ),
         // 使用 _isProcessing 控制 LoadingWidget.inline 的显示
-        // 确保加载指示器在最上层
         if (_isProcessing)
           Positioned.fill(
             child: Container(
@@ -1064,24 +1070,21 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
-  // --- 处理返回按钮 ---
-  Future<bool> _onWillPop() async {
+  // --- NEW: Handler for pop attempts blocked by canPop: false ---
+  Future<void> _handleBlockedPopAttempt() async {
+    // First, check if it was blocked due to processing
     if (_isProcessing) {
       if (mounted) AppSnackBar.showInfo(context, '正在处理中，请稍候...');
-      return false; // 阻止返回
+      return; // Do nothing more, pop remains blocked
     }
 
+    // If not processing, it was blocked due to unsaved changes/content.
+    // Re-check the condition just in case state changed rapidly.
     bool hasUnsavedChanges = widget.game != null && _hasChanges();
     bool isAddModeWithContent = widget.game == null && !_isFormEmpty();
 
     if (hasUnsavedChanges || isAddModeWithContent) {
-      // *** 使用 CustomConfirmDialog.show 并获取用户的选择 ***
-      // 我们需要知道用户是点了确认离开还是取消，CustomConfirmDialog.show 本身不返回这个
-      // 所以我们创建一个 Completer 来接收结果
-      final Completer<bool> allowPopCompleter = Completer<bool>();
-
-      // 不能直接 await CustomConfirmDialog.show，因为它返回 void
-      // 我们在回调里完成 Completer
+      // Show the confirmation dialog
       CustomConfirmDialog.show(
         context: context,
         title: '离开页面?',
@@ -1090,49 +1093,38 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             : '您填写的内容尚未提交。如果离开，会尝试保存为草稿。确定离开吗？',
         confirmButtonText: '确定离开',
         cancelButtonText: '取消',
-        iconData: Icons.warning_amber_rounded, // 警告图标
+        iconData: Icons.warning_amber_rounded,
         iconColor: Colors.amber,
-        confirmButtonColor: Colors.red, // 离开按钮用红色警示
-        barrierDismissible: false, // 必须选一个
+        confirmButtonColor: Colors.red,
+        barrierDismissible: false,
 
-        // --- 确认离开的回调 ---
+        // --- Confirm Leave Callback ---
         onConfirm: () async {
           try {
-            // 尝试保存草稿
+            // Try saving the draft
             await _saveDraftIfNecessary();
           } catch (e) {
-            print("Error saving draft during onWillPop confirmation: $e");
-            // 保存草稿失败，但用户仍选择离开，也允许离开
+            print("Error saving draft during PopScope confirmation: $e");
+            // Saving draft failed, but user chose to leave anyway.
           } finally {
-            // 无论保存成功与否，完成 Completer 表示允许离开
-            if (!allowPopCompleter.isCompleted) {
-              allowPopCompleter.complete(true); // true = 允许 pop
+            // IMPORTANT: Manually trigger the pop now!
+            if (mounted && Navigator.canPop(context)) {
+              Navigator.of(context).pop();
             }
           }
         },
 
-        // --- 取消离开的回调 ---
+        // --- Cancel Leave Callback ---
         onCancel: () {
-          // 用户点击取消，完成 Completer 表示不允许离开
-          if (!allowPopCompleter.isCompleted) {
-            allowPopCompleter.complete(false); // false = 不允许 pop
-          }
+          // User cancelled. Do nothing. The pop remains blocked.
         },
       ).catchError((error) {
-        // 如果 CustomConfirmDialog.show 本身或 onConfirm 内部抛出未捕获的错误
-        print("Error in CustomConfirmDialog for onWillPop: $error");
-        // 发生错误，默认不允许离开，防止状态不一致
-        if (!allowPopCompleter.isCompleted) {
-          allowPopCompleter.complete(false);
-        }
+        // Handle potential errors showing the dialog itself
+        // Pop remains blocked if dialog fails.
       });
-
-      // 等待用户通过对话框做出选择
-      return await allowPopCompleter.future;
     }
-
-    // 没有未保存内容，直接允许返回
-    return true;
+    // If, somehow, this method is called but there are no unsaved changes
+    // and not processing (e.g., state changed), do nothing, pop remains blocked.
   }
 
   // --- 桌面布局构建 ---

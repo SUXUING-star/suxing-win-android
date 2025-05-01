@@ -1,10 +1,10 @@
 import 'dart:io'; // 需要导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 需要导入 image_picker
-// import 'package:intl/intl.dart'; // 这个文件不再需要 intl
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入 AppSnackBar
 import '../../../../models/announcement/announcement.dart';
-import '../../../../services/common/upload/file_upload_service.dart'; // 导入上传服务
 import '../../../../utils/device/device_utils.dart';
 import 'field/basic_info_field.dart';
 import 'field/display_settings_field.dart';
@@ -78,20 +78,14 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       if (_imageSource is XFile) {
         // 1. 需要上传新图片
         final fileToUpload = File((_imageSource as XFile).path);
-        // 仅当编辑模式且图片已更改时，传递 oldImageUrl
-        String? oldUrlToReplace = (widget.announcement.id.isNotEmpty &&
-                _imageSource != _originalImageUrl)
-            ? _originalImageUrl
-            : null;
+
+        final uploadService = context.read<RateLimitedFileUpload>();
 
         //print("准备上传新图片... 旧 URL (如替换): $oldUrlToReplace");
-        finalImageUrl = await FileUpload.uploadImage(
+        finalImageUrl = await uploadService.uploadImage(
           fileToUpload,
           folder: 'announcements', // 指定文件夹
-          // 根据需要设置 maxWidth, maxHeight, quality
-          maxWidth: 1200,
-          quality: 85,
-          oldImageUrl: oldUrlToReplace,
+
         );
         //print("新图片上传成功，URL: $finalImageUrl");
       } else if (_imageSource is String &&
@@ -109,7 +103,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           //print("未设置图片或图片为空。");
         }
       }
-      // --- 图片处理结束 ---
 
       // 创建最终要提交的 AnnouncementFull 对象
       // 合并表单数据和处理后的图片 URL
@@ -120,8 +113,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         // 其他字段已通过各自的 onChanged 在 _formData 中更新
       );
 
-      // 调用外部提交函数
-      print("准备提交公告数据: ${announcementToSubmit.toJson()}"); // 打印 JSON 方便调试
       widget.onSubmit(announcementToSubmit);
     } catch (e) {
       // 捕获上传或处理过程中的错误

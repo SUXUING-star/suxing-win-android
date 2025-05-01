@@ -1,12 +1,13 @@
 // lib/screens/linkstools/linkstools_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../services/main/linktool/link_tool_service.dart';
+// --- 确保引入正确的 Service ---
 import '../../models/linkstools/link.dart';
 import '../../models/linkstools/tool.dart';
 import '../../providers/auth/auth_provider.dart';
@@ -17,10 +18,7 @@ import '../../widgets/components/screen/linkstools/links_section.dart';
 import '../../widgets/components/screen/linkstools/tools_section.dart';
 import '../../widgets/ui/common/loading_widget.dart';
 import '../../widgets/ui/common/error_widget.dart';
-
-// --- 引入动画组件 ---
 import '../../widgets/ui/animation/fade_in_slide_up_item.dart';
-// --- 结束引入 ---
 
 class LinksToolsScreen extends StatefulWidget {
   const LinksToolsScreen({super.key});
@@ -30,8 +28,6 @@ class LinksToolsScreen extends StatefulWidget {
 }
 
 class _LinksToolsScreenState extends State<LinksToolsScreen> {
-  final LinkToolService _linkToolService = LinkToolService();
-
 
   // --- 数据状态 (保持不变) ---
   List<Link>? _links;
@@ -41,7 +37,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   // --- 懒加载核心状态 (保持不变) ---
   bool _isInitialized = false;
   bool _isVisible = false;
-  bool _isLoadingData = false;
+  bool _isLoadingData = false; // 这个状态仍然控制加载指示器
 
   final double _desktopBreakpoint = 900.0;
 
@@ -49,6 +45,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   void initState() {
     super.initState();
     print("LinksToolsScreen initState: Initialized, waiting for visibility.");
+    // 注意：这里不加载数据，等待 VisibilityDetector 触发
   }
 
   @override
@@ -59,47 +56,57 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 核心：触发首次数据加载 (保持不变) ---
   void _triggerInitialLoad() {
+    // 逻辑完全不变
     if (_isVisible && !_isInitialized && mounted) {
-      // 添加 mounted 检查
       print(
           "LinksToolsScreen: Now visible and not initialized. Triggering initial load.");
       _isInitialized = true;
-      _loadData();
+      _loadData(); // 调用时不带任何参数
     }
   }
 
-  // --- 加载链接和工具数据 (保持不变) ---
+  // --- 加载链接和工具数据 (只修改内部调用 Service 的方式) ---
   Future<void> _loadData() async {
-    if (_isLoadingData || !mounted) return;
-    print("LinksToolsScreen: Loading links and tools...");
+    // *** 函数签名恢复原样，没有 forceRefresh ***
+    if (_isLoadingData || !mounted) return; // 逻辑不变
+    print("LinksToolsScreen: Loading links and tools..."); // 日志不变
     setState(() {
+      // 状态更新逻辑不变
       _isLoadingData = true;
       _errorMessage = null;
     });
     try {
+      final linkToolService = context.read<LinkToolService>();
+      // *** 修改点：直接调用 Future 方法，不再有 .first 或 forceRefresh ***
       final results = await Future.wait([
-        _linkToolService.getLinks().first,
-        _linkToolService.getTools().first,
+        linkToolService.getLinks(), // 直接调用，不传 forceRefresh
+        linkToolService.getTools(), // 直接调用，不传 forceRefresh
       ]);
-      if (!mounted) return;
+      // *** 结束修改点 ***
+
+      if (!mounted) return; // 逻辑不变
       setState(() {
+        // 状态更新逻辑不变
+        // Future.wait 返回的是 List<dynamic>
         _links = List<Link>.from(results[0] as List? ?? []);
         _tools = List<Tool>.from(results[1] as List? ?? []);
         _isLoadingData = false;
       });
     } catch (e, s) {
+      // 错误处理逻辑不变
       print('LinksToolsScreen: Load data error: $e\nStackTrace: $s');
       if (!mounted) return;
       setState(() {
         _errorMessage = '加载失败：${e.toString()}';
-        _links = [];
+        _links = []; // 或保持旧数据？按原逻辑设为空
         _tools = [];
         _isLoadingData = false;
       });
     }
   }
+  // --- 结束修改 ---
 
-  // --- _launchURL, _showAddLinkDialog, _showAddToolDialog (保持不变) ---
+  // --- _launchURL (保持不变) ---
   Future<void> _launchURL(BuildContext context, String url) async {
     try {
       final uri = Uri.parse(url);
@@ -114,15 +121,17 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     }
   }
 
+  // --- _showAddLinkDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddLinkDialog(BuildContext context) {
     showDialog<Map<String, dynamic>>(
         context: context,
         builder: (context) => LinkFormDialog()).then((linkData) async {
       if (linkData != null) {
         try {
-          await _linkToolService.addLink(Link.fromJson(linkData));
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.addLink(Link.fromJson(linkData));
           if (mounted) AppSnackBar.showSuccess(context, '添加链接成功');
-          await _loadData();
+          await _loadData(); // *** 调用恢复原样 ***
         } catch (e) {
           if (mounted) AppSnackBar.showError(context, '添加链接失败: $e');
         }
@@ -130,6 +139,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     });
   }
 
+  // --- _showAddToolDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddToolDialog(BuildContext context) {
     showDialog<Map<String, dynamic>>(
         context: context,
@@ -137,9 +147,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         builder: (context) => ToolFormDialog()).then((toolData) async {
       if (toolData != null) {
         try {
-          await _linkToolService.addTool(Tool.fromJson(toolData));
+          final linkToolService = context.read<LinkToolService>();
+          await linkToolService.addTool(Tool.fromJson(toolData));
           if (mounted) AppSnackBar.showSuccess(context, '添加工具成功');
-          await _loadData();
+          await _loadData(); // *** 调用恢复原样 ***
         } catch (e) {
           if (mounted) AppSnackBar.showError(context, '添加工具失败: $e');
         }
@@ -147,9 +158,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     });
   }
 
+  // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context,listen: false);
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final isAdmin = authProvider.isAdmin;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= _desktopBreakpoint;
@@ -157,113 +169,99 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     return VisibilityDetector(
       key: Key('linkstools_screen_visibility'),
       onVisibilityChanged: (VisibilityInfo info) {
+        // 逻辑不变
         final bool currentlyVisible = info.visibleFraction > 0;
         if (currentlyVisible != _isVisible) {
           Future.microtask(() {
-            // 确保在 build 之后执行
             if (mounted) {
               setState(() => _isVisible = currentlyVisible);
             } else {
               _isVisible = currentlyVisible;
             }
             if (_isVisible) {
-              _triggerInitialLoad();
+              _triggerInitialLoad(); // 内部调用 _loadData()
             }
           });
         }
       },
       child: Scaffold(
-        appBar: CustomAppBar(title: '实用工具', actions: [
-          //if (isAdmin) ..._buildAdminActions(context),
-          // 不要了太丑了
-        ]),
+        appBar: CustomAppBar(title: '实用工具'), // actions 移除不变
         body: RefreshIndicator(
-          onRefresh: _loadData,
-          child: _buildLinksToolsContent(isAdmin, isDesktop),
+          onRefresh: _loadData, // *** 调用恢复原样 ***
+          child: _buildLinksToolsContent(isAdmin, isDesktop), // 内部逻辑不变
         ),
-        floatingActionButton: _buildFloatButtons(isAdmin, context),
+        floatingActionButton: _buildFloatButtons(isAdmin, context), // 逻辑不变
       ),
     );
   }
 
+  // --- _buildFloatButtons (保持不变) ---
   Widget _buildFloatButtons(bool isAdmin, BuildContext context) {
     if (!isAdmin) return SizedBox.shrink();
     return Padding(
-      // 给整个按钮组添加统一的外边距
       padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
       child: FloatingActionButtonGroup(
-        spacing: 16.0, // 按钮间距
-        alignment: MainAxisAlignment.end, // 底部对齐
+        spacing: 16.0,
+        alignment: MainAxisAlignment.end,
         children: [
           GenericFloatingActionButton(
-            onPressed: () =>
-                _showAddLinkDialog(context), // onPressed 是 VoidCallback?
+            onPressed: () => _showAddLinkDialog(context),
             icon: Icons.add_link,
             tooltip: '添加链接',
             heroTag: 'link_list_fab',
-            //mini: true,
           ),
           GenericFloatingActionButton(
             onPressed: () => _showAddToolDialog(context),
             icon: Icons.add_box_outlined,
             tooltip: '添加工具',
             heroTag: 'tool_list_fab',
-            //mini: true,
           )
         ],
       ),
     );
   }
 
-  // --- 构建 Body 内容的逻辑 (应用动画) ---
+  // --- _buildLinksToolsContent (保持不变, 重试调用 _loadData 时不传参数) ---
   Widget _buildLinksToolsContent(bool isAdmin, bool isDesktop) {
-    // State 1: 未初始化
+    // State 1: 未初始化 (逻辑不变)
     if (!_isInitialized && !_isLoadingData) {
-      // --- 修改：添加动画 ---
       return LoadingWidget.fullScreen(message: "等待加载...");
-      // --- 结束修改 ---
     }
-    // State 2: 加载中
-    else if (_isLoadingData) {
-      // --- 修改：添加动画 ---
+    // State 2: 加载中 (逻辑微调以匹配原意)
+    else if (_isLoadingData && (_links == null || _tools == null)) {
+      // 仅在首次加载且数据为 null 时显示全屏 Loading
       return LoadingWidget.fullScreen(message: "正在加载工具和链接...");
-      // --- 结束修改 ---
     }
-    // State 3: 错误
+    // State 3: 错误 (逻辑不变, 重试调用 _loadData())
     else if (_errorMessage != null) {
-      // --- 修改：添加动画 ---
       return FadeInSlideUpItem(
-        child: InlineErrorWidget(
+        child: CustomErrorWidget(
           errorMessage: _errorMessage!,
-          onRetry: _loadData,
+          onRetry: _loadData, // *** 调用恢复原样 ***
         ),
       );
-      // --- 结束修改 ---
     }
-    // State 4: 加载成功
+    // State 4: 加载成功 (逻辑不变)
     else {
       if (isDesktop) {
-        return _buildDesktopLayout(isAdmin); // 内部组件将应用动画
+        return _buildDesktopLayout(isAdmin);
       } else {
-        return _buildMobileLayout(isAdmin); // 内部组件将应用动画
+        return _buildMobileLayout(isAdmin);
       }
     }
   }
 
-  // --- 构建桌面端布局 (应用标题动画) ---
+  // --- _buildDesktopLayout (保持不变) ---
   Widget _buildDesktopLayout(bool isAdmin) {
-    // 定义动画延迟
     const Duration titleDelay1 = Duration(milliseconds: 150);
     const Duration titleDelay2 = Duration(milliseconds: 250);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Left: Links
         Expanded(
           child: CustomScrollView(
             slivers: [
-              // --- 修改：为标题行添加动画 ---
               SliverToBoxAdapter(
                 child: FadeInSlideUpItem(
                   delay: titleDelay1,
@@ -288,13 +286,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
                   ),
                 ),
               ),
-              // --- 结束修改 ---
-              // 链接内容区域 (内部将添加动画)
               _buildLinksContent(isAdmin),
             ],
           ),
         ),
-        // Separator (保持不变)
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 16.0),
           child: VerticalDivider(
@@ -304,14 +299,12 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
               indent: 8,
               endIndent: 8),
         ),
-        // Right: Tools
         Expanded(
           child: CustomScrollView(
             slivers: [
-              // --- 修改：为标题行添加动画 ---
               SliverToBoxAdapter(
                 child: FadeInSlideUpItem(
-                  delay: titleDelay2, // 稍微延迟出现
+                  delay: titleDelay2,
                   child: Padding(
                     padding: EdgeInsets.fromLTRB(16, 24, 16, 16),
                     child: Row(
@@ -333,8 +326,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
                   ),
                 ),
               ),
-              // --- 结束修改 ---
-              // 工具内容区域 (内部将添加动画)
               _buildToolsContent(isAdmin),
             ],
           ),
@@ -343,15 +334,13 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     );
   }
 
-  // --- 构建移动端布局 (应用标题动画) ---
+  // --- _buildMobileLayout (保持不变) ---
   Widget _buildMobileLayout(bool isAdmin) {
-    // 定义动画延迟
     const Duration titleDelay1 = Duration(milliseconds: 150);
-    const Duration titleDelay2 = Duration(milliseconds: 250); // 第二个标题延迟
+    const Duration titleDelay2 = Duration(milliseconds: 250);
 
     return CustomScrollView(
       slivers: [
-        // --- 修改：为标题添加动画 ---
         SliverToBoxAdapter(
           child: FadeInSlideUpItem(
             delay: titleDelay1,
@@ -365,11 +354,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
             ),
           ),
         ),
-        // --- 结束修改 ---
-        // 链接内容 (内部将添加动画)
         _buildLinksContent(isAdmin),
-
-        // --- 修改：为标题添加动画 ---
         SliverToBoxAdapter(
           child: FadeInSlideUpItem(
             delay: titleDelay2, // 延迟出现
@@ -383,78 +368,76 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
             ),
           ),
         ),
-        // --- 结束修改 ---
-        // 工具内容 (内部将添加动画)
         _buildToolsContent(isAdmin),
-
-        // 增加底部安全区域或间距，防止内容被遮挡
         SliverToBoxAdapter(
-            child:
-                SizedBox(height: MediaQuery.of(context).padding.bottom + 16)),
+            child: SizedBox(
+                height: MediaQuery.of(context).padding.bottom +
+                    80)), // 增加底部安全区域或间距，防止内容被遮挡 (FAB)
       ],
     );
   }
 
-  // --- 构建链接区域内容 (应用空状态动画) ---
+  // --- _buildLinksContent (保持不变, 重试调用 _loadData()) ---
   Widget _buildLinksContent(bool isAdmin) {
-    if (_links == null || _links!.isEmpty) {
-      // --- 修改：为空状态添加动画 ---
+    final linkToolService = context.read<LinkToolService>();
+    if (_links == null && _isLoadingData) {
+      // 首次加载中
+      return SliverFillRemaining(child: LoadingWidget.inline());
+    } else if (_links == null || _links!.isEmpty) {
+      // 加载失败或为空
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
           child: Center(
             child: FadeInSlideUpItem(
-              // 添加动画
-              child: InlineErrorWidget(
-                errorMessage: '暂无常用链接',
+              child: CustomErrorWidget(
+                errorMessage: _errorMessage ?? '暂无链接', // 显示错误信息或空状态
                 icon: Icons.link_off,
-                // retryText: '刷新试试', // 可以简化，下拉刷新效果更好
-                onRetry: _loadData,
+                onRetry: _loadData, // *** 调用恢复原样 ***
               ),
             ),
           ),
         ),
       );
-      // --- 结束修改 ---
     }
     // LinksSection 内部将处理列表项动画
     return LinksSection(
       links: _links!,
       isAdmin: isAdmin,
-      onRefresh: _loadData,
+      onRefresh: _loadData, // *** 调用恢复原样 ***
       onLaunchURL: (url) => _launchURL(context, url),
-      linkToolService: _linkToolService,
+      linkToolService: linkToolService, // 传递 service 用于编辑删除
     );
   }
 
-  // --- 构建工具区域内容 (应用空状态动画) ---
+  // --- _buildToolsContent (保持不变, 重试调用 _loadData()) ---
   Widget _buildToolsContent(bool isAdmin) {
-    if (_tools == null || _tools!.isEmpty) {
-      // --- 修改：为空状态添加动画 ---
+    if (_tools == null && _isLoadingData) {
+      // 首次加载中
+      return SliverFillRemaining(child: LoadingWidget.inline());
+    } else if (_tools == null || _tools!.isEmpty) {
+      // 加载失败或为空
       return SliverToBoxAdapter(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 32.0),
           child: Center(
-            // 居中显示
             child: FadeInSlideUpItem(
-              // 添加动画
-              child: InlineErrorWidget(
-                errorMessage: '暂无实用工具',
+              child: CustomErrorWidget(
+                errorMessage: _errorMessage ?? '暂无工具',
                 icon: Icons.build_circle_outlined,
-                // retryText: '刷新试试',
-                onRetry: _loadData,
+                onRetry: _loadData, // *** 调用恢复原样 ***
               ),
             ),
           ),
         ),
       );
-      // --- 结束修改 ---
     }
     // ToolsSection 内部将处理列表项动画
     return ToolsSection(
       tools: _tools!,
       isAdmin: isAdmin,
       onLaunchURL: (url) => _launchURL(context, url),
+      // linkToolService, // ToolsSection 不需要 service
     );
   }
 }

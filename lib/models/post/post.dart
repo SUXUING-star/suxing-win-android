@@ -203,4 +203,9 @@ class Reply {
       rethrow;
     }
   }
+  // UI 判断是否编辑过
+  bool get hasBeenEdited {
+    const Duration tolerance = Duration(seconds: 1);
+    return updateTime.difference(createTime).abs() > tolerance;
+  }
 }

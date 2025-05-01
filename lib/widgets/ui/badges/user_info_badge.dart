@@ -1,14 +1,15 @@
 // lib/widgets/ui/badges/user_info_badge.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user.dart'; // 确保 User 模型路径正确
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 引入 UserInfoProvider
+import 'package:suxingchahui/providers/user/user_data_status.dart'; // 引入 UserDataStatus
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/level/level_color.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-// 确保路径是相对 lib 目录或者使用了正确的包导入
-import '../../../../services/main/user/user_service.dart';
-// 确保这些路径也正确
+
+// 确保这些组件的路径也正确
 import 'safe_user_avatar.dart';
 import '../buttons/follow_user_button.dart';
 
@@ -17,11 +18,10 @@ class UserInfoBadge extends StatelessWidget {
   final bool showFollowButton;
   final bool mini;
   final bool showLevel;
+  final bool showCheckInStats;
   final EdgeInsetsGeometry? padding;
   final Color? backgroundColor;
   final Color? textColor;
-
-  final UserService _userService = UserService();
 
   UserInfoBadge({
     super.key,
@@ -29,6 +29,7 @@ class UserInfoBadge extends StatelessWidget {
     this.showFollowButton = true,
     this.mini = false,
     this.showLevel = true,
+    this.showCheckInStats = false,
     this.padding,
     this.backgroundColor,
     this.textColor,
@@ -36,186 +37,315 @@ class UserInfoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: true);
-    return FutureBuilder<Map<String, dynamic>>(
-      // ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-      // 优化：可以考虑将 Future 提取到 StatefulWidget 的 initState 或使用 Provider/Riverpod 管理状态，避免重复请求
-      // ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
-      // 别你妈多管闲事，我她妈这个↓接口里面是加有本地缓存的，本身就是全局的，并且有批量请求
-      // 每个用户都是不同的没必要放状态里，当前用户才需要authprovider
-      future: _userService.getUserInfoById(userId),
-      builder: (context, snapshot) {
-        // 处理加载和错误状态会更健壮
-        if (snapshot.connectionState == ConnectionState.waiting &&
-            !snapshot.hasData) {
-          // 可以显示一个占位符或加载指示器
-          // return const SizedBox(height: 40); // 示例：返回一个固定高度的空盒子
-        }
-        if (snapshot.hasError) {
-          return Text('错误',
-              style: TextStyle(color: Colors.red, fontSize: mini ? 13 : 15));
-        }
-        // 安全地获取数据，提供默认值
-        final userInfo = snapshot.data ?? {};
-        final User targetUser = User.fromJson(userInfo); // 改个名，更清晰
-        final String username = targetUser.username ?? '未知用户';
-        final String? avatarUrl = targetUser.avatar;
-        final int experience = targetUser.experience ?? 0;
-        final int level = targetUser.level ?? 1;
-        final List<String> targetUserFollowers = targetUser.followers; // 目标用户的粉丝
-        // final List<String> targetUserFollowing = targetUser.following; // 目标用户的关注列表 (如果需要算互关)
+    // 1. 获取 Provider 实例
+    // 使用 watch 监听变化，确保 Provider 更新时 Widget 重建
+    final userInfoProvider = context.watch<UserInfoProvider>();
+    // AuthProvider 可能也需要 watch，因为它影响关注按钮的显示和状态
+    final authProvider = context.watch<AuthProvider>();
+
+    // 2. 触发用户信息加载（如果需要）
+    // Provider 内部会处理重复调用和状态管理
+    // 这个调用是必要的，以确保数据开始被获取
+    userInfoProvider.ensureUserInfoLoaded(userId);
+
+    // 3. 获取当前 userId 的数据状态
+    final userDataStatus = userInfoProvider.getUserStatus(userId);
+
+    // 定义颜色变量
+    final Color defaultTextColor = textColor ?? Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87;
+    final Color secondaryTextColor = Colors.grey[600]!;
+
+    // 4. 根据数据状态构建 UI
+    switch (userDataStatus.status) {
+      case LoadStatus.initial:
+      case LoadStatus.loading:
+      // 显示加载占位符
+        return _buildPlaceholder(context);
+
+      case LoadStatus.error:
+      // 显示错误占位符
+      // 可以选择性地使用日志记录错误: Logger.error('Failed to load user $userId: ${userDataStatus.error}');
+        return _buildErrorPlaceholder(context, mini);
+
+      case LoadStatus.loaded:
+      // 数据加载成功，获取 User 对象
+      // 在 loaded 状态下，user 不应为 null，如果为 null 是 provider 的逻辑错误
+        final User targetUser = userDataStatus.user!;
+
+        // --- 从 User 对象提取信息 ---
+        final String username = targetUser.username.isNotEmpty ? targetUser.username : '未知用户';
+        // avatarUrl 可以直接从 targetUser.avatar 获取，SafeUserAvatar 内部会处理
+        final int experience = targetUser.experience;
+        final int level = targetUser.level;
+
+        // 获取签到信息
+        final int consecutiveDays = targetUser.consecutiveCheckIn ?? 0;
+        final int totalDays = targetUser.totalCheckIn ?? 0;
+        final bool checkedInToday = targetUser.hasCheckedInToday;
 
         // --- 计算关注状态 ---
-        bool iFollowTarget = false; // 我是否关注了目标用户
-        bool targetFollowsMe = false; // 目标用户是否关注了我
-        bool isMutual = false;       // 是否互关
+        bool iFollowTarget = false;
+        String? currentUserId = authProvider.currentUser?.id; // 安全获取当前用户ID
 
-        if (authProvider.isLoggedIn && authProvider.currentUser != null) { // **必须检查登录状态和 currentUser 是否为 null**
-          final User currentUser = authProvider.currentUser!;
-          final String currentUserId = currentUser.id;
-          final List<String> currentUserFollowing = currentUser.following; // 我关注的人
-
-          // 检查我是否关注了目标用户
-          iFollowTarget = currentUserFollowing.contains(targetUser.id);
-
-          // 检查目标用户是否关注了我 (需要目标用户的粉丝列表)
-          targetFollowsMe = targetUserFollowers.contains(currentUserId);
-
-          // 检查是否互关
-          isMutual = iFollowTarget && targetFollowsMe;
-
-          // 你还可以在这里显示互关状态的 UI，如果需要的话
-          // print('互关状态 for ${targetUser.username}: $isMutual');
+        if (authProvider.isLoggedIn && currentUserId != null && authProvider.currentUser != null) {
+          // 检查当前用户的关注列表是否包含目标用户的 ID
+          iFollowTarget = authProvider.currentUser!.following.contains(targetUser.id);
         }
+        // --- 结束关注状态计算 ---
 
+        final bool isCurrentUser = currentUserId == userId;
+        // 只有当 showFollowButton 为 true 且不是当前用户时，才显示关注按钮
+        final bool shouldShowFollowButton = showFollowButton && !isCurrentUser;
 
-        //final bool? initialIsFollowing = userInfo['isFollowing'] as bool?; // 可能为 null
-        // 根本就没有这个字段这句话完全没有任何用
-        // 这个关注状态会存在数据一致性的问题
-        // 如果每次获取一遍关注状态都关联刷新info有点过于抽象了
-        // 其实单独获取没有问题
+        // --- 构建最终的 Badge UI ---
+        return Container(
+          // 内边距根据 mini 状态和外部传入值调整
+          padding: padding ?? EdgeInsets.all(mini ? 4 : 8),
+          // 背景颜色和圆角
+          decoration: backgroundColor != null
+              ? BoxDecoration(
+            color: backgroundColor,
+            borderRadius: BorderRadius.circular(mini ? 12 : 16),
+          )
+              : null,
+          child: Row(
+            mainAxisSize: MainAxisSize.min, // Row 只包裹必要宽度
+            crossAxisAlignment: CrossAxisAlignment.center, // 子项垂直居中
+            children: [
+              // --- 头像 ---
+              SafeUserAvatar(
+                user: targetUser, // 直接传递 User 对象
+                userId: userId,    // userId 仍然需要，例如用于导航或 key
+                radius: mini ? 14 : 18,
+                backgroundColor: Colors.grey[100], // 占位背景色
+                enableNavigation: true,
+                onTap: () => NavigationUtils.pushNamed(
+                  context,
+                  AppRoutes.openProfile,
+                  arguments: userId, // 导航参数是 userId
+                ),
+              ),
+              const SizedBox(width: 8), // 头像和信息的间距
 
-        return FutureBuilder<String?>(
-            future: _userService.currentUserId, // 这个 Future 也可能重复执行
-            builder: (context, currentUserSnapshot) {
-              final bool isCurrentUser = currentUserSnapshot.data == userId;
-              final bool shouldShowFollowButton =
-                  showFollowButton && !isCurrentUser;
-
-              return Container(
-                padding: padding,
-                decoration: backgroundColor != null
-                    ? BoxDecoration(
-                        color: backgroundColor,
-                        borderRadius: BorderRadius.circular(mini ? 12 : 16),
-                      )
-                    : null,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
+              // --- 用户信息区域 (用户名、等级、签到) ---
+              Flexible( // 使用 Flexible 防止文本溢出
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
+                  mainAxisSize: MainAxisSize.min, // Column 包裹内容高度
                   children: [
-                    // 头像部分保持不变
-                    SafeUserAvatar(
-                      user: targetUser,
-                      userId: userId,
-                      avatarUrl: avatarUrl,
-                      username: username,
-                      radius: mini ? 14 : 18,
-                      backgroundColor: Colors.grey[100],
-                      enableNavigation: true,
-                      onTap: () => NavigationUtils.pushNamed(
-                        context,
-                        AppRoutes.openProfile,
-                        arguments: userId,
+                    // 用户名
+                    Text(
+                      username,
+                      style: TextStyle(
+                        fontSize: mini ? 13 : 15,
+                        color: defaultTextColor,
+                        fontWeight: FontWeight.w500,
                       ),
+                      overflow: TextOverflow.ellipsis, // 超长省略
+                      maxLines: 1,
                     ),
-                    const SizedBox(width: 8),
 
-                    // --- 修改这里：用 Flexible 包裹包含用户名的 Column ---
-                    Flexible(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min, // Column 也包裹内容
-                        children: [
-                          // --- 给用户名的 Text 添加 overflow 和 maxLines ---
-                          Text(
-                            username,
-                            style: TextStyle(
-                              fontSize: mini ? 13 : 15,
-                              color: textColor ?? Colors.grey[800],
-                              fontWeight: FontWeight.w500,
-                            ),
-                            overflow: TextOverflow.ellipsis, // 超出部分显示省略号
-                            maxLines: 1, // 最多显示一行
-                          ),
-                          // 等级信息部分保持不变
-                          if (showLevel)
-                            Padding(
-                              // 加一点上边距，避免和用户名贴太近
-                              padding: const EdgeInsets.only(top: 2.0),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                        horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: _getLevelColor(level),
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      'Lv.$level',
-                                      style: TextStyle(
-                                        fontSize: mini ? 10 : 11,
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  // 经验值文本也可能过长，虽然概率小，加上 Flexible 保险
-                                  Flexible(
-                                    child: Text(
-                                      '$experience XP',
-                                      style: TextStyle(
-                                        fontSize: mini ? 10 : 11,
-                                        color: Colors.grey[600],
-                                      ),
-                                      overflow: TextOverflow.ellipsis,
-                                      maxLines: 1,
-                                    ),
-                                  ),
-                                ],
+                    // 等级和经验 (如果 showLevel 为 true)
+                    if (showLevel)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2.0), // 与用户名的间距
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 等级徽章
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: _getLevelColor(level), // 使用辅助函数获取颜色
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Text(
+                                'Lv.$level',
+                                style: TextStyle(
+                                  fontSize: mini ? 10 : 11,
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
-                        ],
+                            const SizedBox(width: 4), // 徽章和经验值间距
+                            // 经验值 (Flexible 保证不溢出父 Row)
+                            Flexible(
+                              child: Text(
+                                '$experience XP',
+                                style: TextStyle(
+                                  fontSize: mini ? 10 : 11,
+                                  color: secondaryTextColor,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                                maxLines: 1,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ),
 
-                    // 关注按钮部分保持不变
-                    if (shouldShowFollowButton) ...[
-                      const SizedBox(width: 8),
-                      FollowUserButton(
-                        key: ValueKey('${userId}_${iFollowTarget}'), // **用 ValueKey 保证状态更新时按钮重建**
-                        userId: userId,
-                        mini: mini,
-                        showIcon: !mini,
-                        // **把算好的状态传给按钮**
-                        initialIsFollowing: iFollowTarget,
-                        onFollowChanged: () {
-                          // 这里可以留空，因为 AuthProvider 会刷新
-                          // 或者做一些额外的 UI 反馈
-                        },
+                    // 签到统计 (如果 showCheckInStats 为 true)
+                    if (showCheckInStats)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3.0), // 与上方元素的间距
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            // 今日已签图标 (如果 checkedInToday 为 true)
+                            if (checkedInToday) ...[
+                              Icon(
+                                Icons.check_circle,
+                                size: mini ? 11 : 12,
+                                color: Colors.green,
+                              ),
+                              SizedBox(width: mini? 2 : 4),
+                            ],
+                            // 连续签到图标和天数
+                            Icon(
+                              Icons.local_fire_department_rounded,
+                              size: mini ? 11 : 12,
+                              color: consecutiveDays > 0 ? Colors.orange : secondaryTextColor,
+                            ),
+                            SizedBox(width: 2),
+                            Text(
+                              '$consecutiveDays',
+                              style: TextStyle(
+                                fontSize: mini ? 10 : 11,
+                                color: secondaryTextColor,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            SizedBox(width: mini ? 4 : 6), // 连续和总计的间隔
+                            // 总签到图标和天数
+                            Icon(
+                              Icons.event_available_rounded,
+                              size: mini ? 11 : 12,
+                              color: secondaryTextColor,
+                            ),
+                            SizedBox(width: 2),
+                            Text(
+                              '$totalDays',
+                              style: TextStyle(
+                                fontSize: mini ? 10 : 11,
+                                color: secondaryTextColor,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
                   ],
                 ),
-              );
-            });
-      },
+              ),
+
+              // --- 关注按钮 (如果 shouldShowFollowButton 为 true) ---
+              if (shouldShowFollowButton) ...[
+                const SizedBox(width: 8), // 信息区域和按钮的间距
+                FollowUserButton(
+                  // 使用 ValueKey 包含 userId 和关注状态，确保状态变化时按钮能正确重建
+                  key: ValueKey('${userId}_$iFollowTarget'),
+                  userId: userId,
+                  mini: mini,
+                  showIcon: !mini, // mini 模式下隐藏图标以节省空间
+                  initialIsFollowing: iFollowTarget, // 传递计算好的初始关注状态
+                  onFollowChanged: () {
+                    // 关注状态变化通常由 AuthProvider 通知并触发全局状态更新
+                    // 如果有需要，可以在这里触发特定用户信息的刷新:
+                    // context.read<UserInfoProvider>().refreshUserInfo(userId);
+                    // 但通常不是必需的，除非关注操作直接影响此 Badge 显示的其他信息（如粉丝数）
+                  },
+                ),
+              ],
+            ],
+          ),
+        );
+    }
+  }
+
+  // --- 辅助方法 ---
+
+  // 获取等级对应的颜色
+  Color _getLevelColor(int level) {
+    return LevelColor.getLevelColor(level); // 假设 LevelColor 工具类存在且可用
+  }
+
+  // 构建加载状态的占位符 UI
+  Widget _buildPlaceholder(BuildContext context) {
+    return Opacity(
+      opacity: 0.6, // 半透明效果模拟加载
+      child: Container(
+        padding: padding ?? EdgeInsets.all(mini ? 4 : 8),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: mini ? 14 : 18,
+              backgroundColor: Colors.grey[200], // 灰色占位
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // 用户名占位符
+                  Container(
+                    height: mini ? 10 : 12,
+                    width: mini ? 60 : 80,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                  ),
+                  // 等级/签到信息占位符（如果需要显示的话）
+                  if (showLevel || showCheckInStats) SizedBox(height: 4),
+                  if (showLevel || showCheckInStats)
+                    Container(
+                      height: mini ? 8 : 10,
+                      width: mini? 80 : 100,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[200],
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            // 如果关注按钮可能显示，也可以加一个占位符，但这会增加复杂性，通常省略
+          ],
+        ),
+      ),
     );
   }
 
-  Color _getLevelColor(int level) {
-    return LevelColor.getLevelColor(level);
+  // 构建错误状态的占位符 UI
+  Widget _buildErrorPlaceholder(BuildContext context, bool isMini) {
+    return Container(
+      padding: padding ?? EdgeInsets.all(mini ? 4 : 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          CircleAvatar(
+            radius: isMini ? 14 : 18,
+            backgroundColor: Colors.red[100], // 使用淡红色背景表示错误
+            child: Icon(
+              Icons.error_outline_rounded,
+              size: isMini ? 14 : 18,
+              color: Colors.red[700], // 深红色图标
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '加载失败', // 简洁的错误提示
+            style: TextStyle(
+                fontSize: isMini ? 12 : 14,
+                color: Colors.grey[600]
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

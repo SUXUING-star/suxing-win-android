@@ -80,8 +80,7 @@ class ActivityTargetSection extends StatelessWidget {
 
           // --- 原有的内容 ---
           ActivityTarget(
-            target: activity.target,
-            targetType: activity.targetType,
+            activity: activity,
             isAlternate: false, // 注意：isAlternate
           ),
           // Target 和 Navigation 之间通常需要一点间距

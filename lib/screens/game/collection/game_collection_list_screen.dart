@@ -31,7 +31,6 @@ class GameCollectionListScreen extends StatefulWidget {
 }
 
 class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
-  final GameCollectionService _collectionService = GameCollectionService();
   List<GameWithCollection> _games = [];
   bool _isLoading = true;
   String? _errorMessage;
@@ -76,8 +75,9 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
         default:
           status = widget.collectionType; // Should not normally happen
       }
+      final collectionService = context.read<GameCollectionService>();
 
-      final games = await _collectionService.getUserGamesByStatus(status);
+      final games = await collectionService.getUserGamesByStatus(status);
       setState(() {
         _games = games;
         _isLoading = false;
@@ -112,7 +112,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       if (_errorMessage == '请先登录后再查看收藏') {
         return LoginPromptWidget();
       }
-      return InlineErrorWidget(
+      return CustomErrorWidget(
           errorMessage: _errorMessage, onRetry: _refreshData);
     }
 

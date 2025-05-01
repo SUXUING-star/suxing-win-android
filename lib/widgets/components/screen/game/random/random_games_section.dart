@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
@@ -17,7 +18,7 @@ class RandomGamesSection extends StatefulWidget {
 }
 
 class _RandomGamesSectionState extends State<RandomGamesSection> {
-  final GameService _gameService = GameService();
+
   List<Game> _randomGames = [];
   bool _isLoading = true;
 
@@ -41,7 +42,8 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     });
 
     try {
-      final games = await _gameService.getRandomGames(
+      final gameService = context.read<GameService>();
+      final games = await gameService.getRandomGames(
         limit: 5,
         excludeId: widget.currentGameId,
       );

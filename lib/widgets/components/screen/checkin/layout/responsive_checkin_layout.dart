@@ -265,7 +265,7 @@ class ResponsiveCheckInLayout extends StatelessWidget {
                   icon: Icons.link_off_outlined, // 换个图标
                   title: '已断签',
                   value: '$consecutiveMissedDays 天',
-                  color: Colors.red.shade400!, // 断签用红色
+                  color: Colors.red.shade400, // 断签用红色
                   isBold: false,
                 ),
               ),

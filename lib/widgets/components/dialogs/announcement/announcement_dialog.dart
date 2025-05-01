@@ -1,30 +1,31 @@
 import 'dart:io'; // 导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 导入 XFile
+import 'package:path/path.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 确认以下导入路径正确
 import '../../../../models/announcement/announcement.dart';
-import '../../../../services/common/upload/file_upload_service.dart'; // 需要 baseUrl
 import '../../../../services/main/announcement/announcement_service.dart';
-// import '../../../../utils/navigation/navigation_utils.dart'; // 暂时不用 NavigationUtils
 import '../../../ui/buttons/functional_text_button.dart';
 import '../../../ui/image/safe_cached_image.dart';
 import '../../../ui/snackbar/app_snackbar.dart';
 
-
 // --- 显示公告对话框的辅助函数 (修改：增加 imageSource 参数) ---
 void showAnnouncementDialog(
-    BuildContext context,
-    Announcement announcement, {
-      dynamic imageSource, // 新增：可选的图片源 (XFile or String)
-      VoidCallback? onClose,
-      bool barrierDismissible = false,
-      Duration transitionDuration = const Duration(milliseconds: 300),
-      Curve transitionCurve = Curves.fastOutSlowIn,
-    }) {
+  BuildContext context,
+  Announcement announcement, {
+  dynamic imageSource, // 新增：可选的图片源 (XFile or String)
+  VoidCallback? onClose,
+  bool barrierDismissible = false,
+  Duration transitionDuration = const Duration(milliseconds: 300),
+  Curve transitionCurve = Curves.fastOutSlowIn,
+}) {
   final ThemeData theme = Theme.of(context);
-  final Color borderColor = _getAnnouncementBorderColor(theme, announcement.type);
+  final Color borderColor =
+      _getAnnouncementBorderColor(theme, announcement.type);
 
   showGeneralDialog<void>(
     context: context,
@@ -32,8 +33,8 @@ void showAnnouncementDialog(
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
     barrierColor: Colors.black.withOpacity(0.4),
     transitionDuration: transitionDuration,
-
-    pageBuilder: (BuildContext buildContext, Animation<double> animation, Animation<double> secondaryAnimation) {
+    pageBuilder: (BuildContext buildContext, Animation<double> animation,
+        Animation<double> secondaryAnimation) {
       return Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 420, maxHeight: 700),
@@ -56,12 +57,17 @@ void showAnnouncementDialog(
         ),
       );
     },
-
-    transitionBuilder: (BuildContext buildContext, Animation<double> animation, Animation<double> secondaryAnimation, Widget child) {
+    transitionBuilder: (BuildContext buildContext, Animation<double> animation,
+        Animation<double> secondaryAnimation, Widget child) {
       // 动画保持不变
       return ScaleTransition(
-        scale: CurvedAnimation(parent: animation, curve: transitionCurve, reverseCurve: Curves.easeOutCubic),
-        child: FadeTransition(opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn), child: child),
+        scale: CurvedAnimation(
+            parent: animation,
+            curve: transitionCurve,
+            reverseCurve: Curves.easeOutCubic),
+        child: FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
+            child: child),
       );
     },
   );
@@ -69,7 +75,6 @@ void showAnnouncementDialog(
 
 // --- _getAnnouncementBorderColor 函数 (保持不变) ---
 Color _getAnnouncementBorderColor(ThemeData theme, String type) {
-  // ... (代码不变) ...
   switch (type) {
     case 'warning':
       return Colors.orange.shade500; // 使用稍亮的橙色
@@ -82,9 +87,9 @@ Color _getAnnouncementBorderColor(ThemeData theme, String type) {
     case 'event':
       return Colors.purple.shade400; // 稍亮紫色
     default: // info 或未知
-    // 默认给一个比较柔和的主题色或灰色边框
+      // 默认给一个比较柔和的主题色或灰色边框
       return theme.colorScheme.primary.withOpacity(0.7);
-  // 或者 return theme.dividerColor.withOpacity(0.9);
+    // 或者 return theme.dividerColor.withOpacity(0.9);
   }
 }
 
@@ -106,6 +111,8 @@ class AnnouncementDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final Color iconColor = _getTypeIconColor(theme, announcement.type);
 
+    final fileUploadService = context.read<RateLimitedFileUpload>();
+
     return Material(
       color: Colors.transparent,
       elevation: 0,
@@ -123,15 +130,18 @@ class AnnouncementDialog extends StatelessWidget {
                 children: [
                   const SizedBox(height: 16),
                   // --- 修改：调用新的图片构建方法 ---
-                  _buildImage(context), // 不再传递 imageUrl
+                  _buildImage(context, fileUploadService), // 不再传递 imageUrl
                   // 根据是否有图片决定是否添加间距
                   if (_shouldShowImage()) const SizedBox(height: 20),
                   _buildContent(context, theme),
                   const SizedBox(height: 24),
-                  if (announcement.actionUrl != null && announcement.actionText != null)
+                  if (announcement.actionUrl != null &&
+                      announcement.actionText != null)
                     _buildActionButton(context, theme),
                   // 如果没有按钮，但有内容，也加点底部间距
-                  if (!(announcement.actionUrl != null && announcement.actionText != null) && announcement.content.isNotEmpty)
+                  if (!(announcement.actionUrl != null &&
+                          announcement.actionText != null) &&
+                      announcement.content.isNotEmpty)
                     const SizedBox(height: 16),
                 ],
               ),
@@ -147,14 +157,16 @@ class AnnouncementDialog extends StatelessWidget {
   Widget _buildHeader(BuildContext context, ThemeData theme, Color iconColor) {
     // ... (代码不变) ...
     final Color titleColor = theme.colorScheme.onSurface;
-    final Color closeButtonColor = theme.colorScheme.onSurfaceVariant.withOpacity(0.8);
+    final Color closeButtonColor =
+        theme.colorScheme.onSurfaceVariant.withOpacity(0.8);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20.0, 16.0, 12.0, 16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Icon(_getTypeIcon(announcement.type), color: iconColor, size: 26), // 传递 type
+          Icon(_getTypeIcon(announcement.type),
+              color: iconColor, size: 26), // 传递 type
           const SizedBox(width: 12),
           Expanded(
             child: Text(
@@ -185,15 +197,18 @@ class AnnouncementDialog extends StatelessWidget {
   // --- 判断是否应该显示图片 ---
   bool _shouldShowImage() {
     if (imageSource is XFile) return true;
-    if (imageSource is String && (imageSource as String).isNotEmpty) return true;
+    if (imageSource is String && (imageSource as String).isNotEmpty)
+      return true;
     // 如果 imageSource 为空，则检查 announcement.imageUrl
-    if (imageSource == null && announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty) return true;
+    if (imageSource == null &&
+        announcement.imageUrl != null &&
+        announcement.imageUrl!.isNotEmpty) return true;
     return false;
   }
 
-
   // --- 构建图片 (修改：优先使用 imageSource) ---
-  Widget _buildImage(BuildContext context) {
+  Widget _buildImage(
+      BuildContext context, RateLimitedFileUpload fileUploadService) {
     Widget imageWidget;
     final source = imageSource; // 获取传入的 source
 
@@ -202,24 +217,29 @@ class AnnouncementDialog extends StatelessWidget {
       imageWidget = Image.file(
         File(source.path),
         fit: BoxFit.contain, // Contain 可能更适合对话框
-        errorBuilder: (context, error, stackTrace) => _buildImageErrorPlaceholder('本地图片加载失败'),
+        errorBuilder: (context, error, stackTrace) =>
+            _buildImageErrorPlaceholder('本地图片加载失败'),
       );
     } else if (source is String && source.isNotEmpty) {
       // 显示网络 URL (来自 imageSource)
-      final String displayUrl = source.startsWith('http') ? source : '${FileUpload.baseUrl}/$source';
+      final String displayUrl = source.startsWith('http')
+          ? source
+          : '${fileUploadService.baseUrl}/$source';
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,
         fit: BoxFit.contain,
       );
-    } else if (announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty) {
+    } else if (announcement.imageUrl != null &&
+        announcement.imageUrl!.isNotEmpty) {
       // imageSource 为空，但 announcement.imageUrl 存在
-      final String displayUrl = announcement.imageUrl!.startsWith('http') ? announcement.imageUrl! : '${FileUpload.baseUrl}/${announcement.imageUrl!}';
+      final String displayUrl = announcement.imageUrl!.startsWith('http')
+          ? announcement.imageUrl!
+          : '${fileUploadService.baseUrl}/${announcement.imageUrl!}';
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,
         fit: BoxFit.contain,
       );
-    }
-    else {
+    } else {
       // 没有图片源，返回空 SizedBox
       return const SizedBox.shrink();
     }
@@ -227,11 +247,11 @@ class AnnouncementDialog extends StatelessWidget {
     // 返回带约束和圆角的图片容器
     return ConstrainedBox(
         constraints: const BoxConstraints(maxHeight: 250), // 保持最大高度约束
-        child: ClipRRect( // 添加圆角
+        child: ClipRRect(
+          // 添加圆角
           borderRadius: BorderRadius.circular(12.0),
           child: imageWidget,
-        )
-    );
+        ));
   }
 
   // 辅助方法：图片错误占位符
@@ -245,16 +265,18 @@ class AnnouncementDialog extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: Colors.redAccent, size: 36),
+              const Icon(Icons.error_outline,
+                  color: Colors.redAccent, size: 36),
               const SizedBox(height: 4),
-              Text(message, style: const TextStyle(color: Colors.redAccent, fontSize: 12), textAlign: TextAlign.center),
+              Text(message,
+                  style: const TextStyle(color: Colors.redAccent, fontSize: 12),
+                  textAlign: TextAlign.center),
             ],
           ),
         ),
       ),
     );
   }
-
 
   // --- 构建内容区域 (保持不变) ---
   Widget _buildContent(BuildContext context, ThemeData theme) {
@@ -276,7 +298,8 @@ class AnnouncementDialog extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 30.0),
           child: Text(
             '(暂无详细内容)',
-            style: theme.textTheme.bodyMedium?.copyWith(color: placeholderColor),
+            style:
+                theme.textTheme.bodyMedium?.copyWith(color: placeholderColor),
           ),
         ),
       );
@@ -294,7 +317,8 @@ class AnnouncementDialog extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           backgroundColor: buttonBackgroundColor,
           foregroundColor: buttonTextColor,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           elevation: 2,
           shadowColor: buttonBackgroundColor.withOpacity(0.4),
@@ -331,7 +355,6 @@ class AnnouncementDialog extends StatelessWidget {
 
   // --- 构建底部 (保持不变) ---
   Widget _buildFooter(BuildContext context, ThemeData theme) {
-    // ... (代码不变) ...
     final Color footerTextColor = theme.colorScheme.onSurfaceVariant;
     final Color dividerColor = theme.dividerColor.withOpacity(0.5);
     final Color buttonCustomColor = theme.colorScheme.secondary; // 直接用次要色
@@ -352,7 +375,7 @@ class AnnouncementDialog extends StatelessWidget {
           FunctionalTextButton(
             label: '不再显示',
             onPressed: () => _closeDialog(context, markAsRead: true),
-            customColor: buttonCustomColor,
+            foregroundColor: buttonCustomColor,
             fontSize: 14.0,
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           ),
@@ -363,9 +386,8 @@ class AnnouncementDialog extends StatelessWidget {
 
   // --- Helper 方法 (保持不变) ---
   void _closeDialog(BuildContext context, {bool markAsRead = false}) {
-    // ... (代码不变) ...
     if (markAsRead) {
-      _markAsRead();
+      _markAsRead(context);
     }
     if (context.mounted) {
       Navigator.of(context, rootNavigator: true).pop();
@@ -374,38 +396,47 @@ class AnnouncementDialog extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    // ... (代码不变) ...
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 
-  void _markAsRead() {
-    // ... (代码不变) ...
-    AnnouncementService().markAsRead(announcement.id);
+  Future<void> _markAsRead(BuildContext context) async {
+    final announcementService = context.read<AnnouncementService>();
+    await announcementService.markAsRead(announcement.id);
   }
 
   IconData _getTypeIcon(String type) {
-    // ... (代码不变) ...
     switch (type) {
-      case 'warning': return Icons.warning_amber_rounded;
-      case 'error': return Icons.error_outline_rounded;
-      case 'success': return Icons.check_circle_outline_rounded;
-      case 'update': return Icons.system_update_alt_rounded;
-      case 'event': return Icons.event_available_rounded;
-      default: return Icons.info_outline_rounded;
+      case 'warning':
+        return Icons.warning_amber_rounded;
+      case 'error':
+        return Icons.error_outline_rounded;
+      case 'success':
+        return Icons.check_circle_outline_rounded;
+      case 'update':
+        return Icons.system_update_alt_rounded;
+      case 'event':
+        return Icons.event_available_rounded;
+      default:
+        return Icons.info_outline_rounded;
     }
   }
 
   Color _getTypeIconColor(ThemeData theme, String type) {
-    // ... (代码不变) ...
     Color defaultColor = theme.colorScheme.secondary; // 默认用次要颜色
 
     switch (type) {
-      case 'warning': return Colors.orange.shade600;
-      case 'error': return theme.colorScheme.error;
-      case 'success': return Colors.green.shade600;
-      case 'update': return Colors.blue.shade600;
-      case 'event': return Colors.purple.shade500;
-      default: return defaultColor; // info 或未知
+      case 'warning':
+        return Colors.orange.shade600;
+      case 'error':
+        return theme.colorScheme.error;
+      case 'success':
+        return Colors.green.shade600;
+      case 'update':
+        return Colors.blue.shade600;
+      case 'event':
+        return Colors.purple.shade500;
+      default:
+        return defaultColor; // info 或未知
     }
   }
 }

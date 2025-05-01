@@ -147,7 +147,7 @@ class StylishPopupMenuButton<T> extends StatelessWidget {
 
   // --- 内部辅助方法，构建禁用的提示 Item ---
   PopupMenuItem<T> _buildDisabledItem(BuildContext context, String text) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     return PopupMenuItem<T>(
       value: null, // 没有有效值
       enabled: false,

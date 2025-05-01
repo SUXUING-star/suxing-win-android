@@ -10,6 +10,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final List<Widget>? actions;
   final Widget? leading;
   final PreferredSizeWidget? bottom;
+  final bool showTitleInDesktop;
 
   // --- 可调参数 ---
   // 你可以在这里调整桌面端的 AppBar 高度比例 (比如 0.75 就是原高度的 75%)
@@ -44,6 +45,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   const CustomAppBar({
     super.key,
     required this.title,
+    this.showTitleInDesktop = false,
+    // 桌面端我塞入了自定义的窗口控件，这里这个appbar再写标题真的巨丑，除了必要的就别显示
+    // 返回键不需要显式写出我desktopSidebar会自行判断出是否要加返回键
     this.actions,
     this.leading,
     this.bottom,
@@ -108,8 +112,6 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
         ? _desktopFontSize
         : (isAndroidLandscape ? _androidLandscapeFontSize : _defaultFontSize);
 
-
-
     // *** 修改点 3: 计算 AppBar 实际的 toolbarHeight (不包含 bottom 的高度) ***
     // 需要从 preferredSize 的总高度里减去 bottom 部分的高度
     final double actualBottomHeight = bottom?.preferredSize.height ??
@@ -124,14 +126,14 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     // 这个判断的意思是appbar不承担任何actions和leading时
     // 在桌面端不显示否则就是摆设
+    final needShowTile = !(showTitleInDesktop == false && isDesktop) ;
 
     if (leading == null && isDesktop && hasNoActions) return SizedBox.shrink();
 
     return AppBar(
       title: AppText(
-        // 原逻辑：桌面端不显示标题
-        !isDesktop ? title : '',
-        color: Colors.white,
+        needShowTile ? title : '',
+        color: Colors.black,
         fontWeight: FontWeight.bold,
         fontSize: fontSize, // 使用根据平台调整后的字体大小
       ),
@@ -164,9 +166,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [
-              ...appBarColors
-            ],
+            colors: [...appBarColors],
           ),
         ),
       ),

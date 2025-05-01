@@ -11,7 +11,6 @@ class ActivityType {
   static const String checkIn = "check_in";            // 签到
   static const String collection = "collection";       // 游戏收藏
   static const String follow = "follow";               // 关注用户
-  static const String achievement = "achievement";     // 成就解锁
 }
 
 class ActivityUtils {
@@ -19,21 +18,19 @@ class ActivityUtils {
   static String getActivityDescription(UserActivity activity) {
     switch (activity.type) {
       case ActivityType.gameComment:
-        return '评论了游戏 ${activity.target?['title'] ?? '未知游戏'}';
+        return '评论了游戏 ${activity.metadata?['gameTitle'] ?? '未知游戏'}';
       case ActivityType.gameLike:
-        return '点赞了游戏 ${activity.target?['title'] ?? '未知游戏'}';
+        return '点赞了游戏 ${activity.metadata?['gameTitle'] ?? '未知游戏'}';
       case ActivityType.postCreate:
-        return '发布了帖子 ${activity.target?['title'] ?? '未知帖子'}';
+        return '发布了帖子 ${activity.metadata?['postTitle'] ?? '未知帖子'}';
       case ActivityType.postReply:
-        return '回复了帖子 ${activity.target?['title'] ?? '未知帖子'}';
+        return '回复了帖子 ${activity.metadata?['postTitle'] ?? '未知帖子'}';
       case ActivityType.checkIn:
         return '完成了每日签到';
       case ActivityType.collection:
-        return '收藏了游戏 ${activity.target?['title'] ?? '未知游戏'}';
-      case ActivityType.follow:
-        return '关注了用户 ${activity.target?['username'] ?? '未知用户'}';
-      case ActivityType.achievement:
-        return '解锁了成就 ${activity.target?['name'] ?? '未知成就'}';
+        return '收藏了游戏 ${activity.metadata?['gameTitle'] ?? '未知游戏'}';
+      // case ActivityType.follow:
+      //   return '关注了用户 ${activity.metadata?['targetName'] ?? '未知用户'}';
       default:
         return '发布了动态';
     }
@@ -56,8 +53,7 @@ class ActivityUtils {
         return '游戏收藏';
       case ActivityType.follow:
         return '用户关注';
-      case ActivityType.achievement:
-        return '成就解锁';
+
       default:
         return '其他动态';
     }
@@ -80,8 +76,7 @@ class ActivityUtils {
         return Colors.purple.shade200;
       case ActivityType.follow:
         return Colors.orange.shade200;
-      case ActivityType.achievement:
-        return Colors.indigo.shade200;
+
       default:
         return Colors.grey.shade200;
     }
@@ -104,8 +99,6 @@ class ActivityUtils {
         return Icons.collections_bookmark;
       case ActivityType.follow:
         return Icons.person_add_outlined;
-      case ActivityType.achievement:
-        return Icons.military_tech_outlined;
       default:
         return Icons.dynamic_feed;
     }

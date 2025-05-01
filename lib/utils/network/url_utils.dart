@@ -1,4 +1,4 @@
-// lib/utils/network/url_utils.dart
+// lib/utils/network/open_web_url_utils.dart
 
 /// URL处理工具类
 ///

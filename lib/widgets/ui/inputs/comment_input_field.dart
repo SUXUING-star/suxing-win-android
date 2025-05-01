@@ -1,19 +1,20 @@
 // lib/widgets/ui/inputs/comment_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import '../buttons/app_button.dart';
-import '../../../providers/auth/auth_provider.dart';
-import '../../../utils/navigation/navigation_utils.dart';
-import '../buttons/login_prompt.dart';
-import 'text_input_field.dart'; // <--- 导入咱们牛逼的组件
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 直接使用
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 直接使用
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 直接使用
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart'; // 直接使用
+import 'text_input_field.dart'; // 导入修改后的 TextInputField
 
 class CommentInputField extends StatefulWidget {
-  final Function(String) onSubmit;
+  final String? slotName;
   final TextEditingController? controller;
+  final Function(String) onSubmit;
   final String hintText;
   final int maxLines;
-  final int maxLength;
+  final int? maxLength;
   final String submitButtonText;
   final bool isSubmitting;
   final bool isReply;
@@ -23,12 +24,13 @@ class CommentInputField extends StatefulWidget {
   final TextStyle? hintStyle;
   final double buttonSpacing;
   final VoidCallback? onLoginRequired;
-  final Widget? loginPrompt;
-  final Widget? lockedContent;
+  final Widget? loginPrompt; // 允许自定义登录提示 Widget
+  final Widget? lockedContent; // 允许传入锁定状态 Widget
   final VoidCallback? onCancel;
 
   const CommentInputField({
     super.key,
+    this.slotName,
     this.controller,
     required this.onSubmit,
     this.hintText = '发表评论...',
@@ -36,7 +38,7 @@ class CommentInputField extends StatefulWidget {
     this.isSubmitting = false,
     this.isReply = false,
     this.maxLines = 3,
-    this.maxLength = 100,
+    this.maxLength,
     this.padding = const EdgeInsets.all(16.0),
     this.contentPadding =
         const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -47,71 +49,105 @@ class CommentInputField extends StatefulWidget {
     this.loginPrompt,
     this.lockedContent,
     this.onCancel,
-  });
+  }) : assert(controller == null || slotName == null,
+            'Cannot provide both a controller and a slotName.');
 
   @override
   State<CommentInputField> createState() => _CommentInputFieldState();
 }
 
 class _CommentInputFieldState extends State<CommentInputField> {
-  late TextEditingController _controller;
-  late FocusNode _focusNode; // FocusNode 需要被管理
-  bool _isInternalController = false;
+  late FocusNode _focusNode;
   bool _isInternalFocusNode = false;
+  TextEditingController? _internalController; // 内部控制器（如果需要）
 
   @override
   void initState() {
     super.initState();
-    if (widget.controller == null) {
-      _controller = TextEditingController();
-      _isInternalController = true;
+    _initializeFocusNode();
+    _initializeInternalControllerIfNeeded();
+  }
+
+  void _initializeFocusNode() {
+    // 假设 CommentInputField 创建并向下传递 FocusNode
+    _focusNode = FocusNode();
+    _isInternalFocusNode = true;
+  }
+
+  void _initializeInternalControllerIfNeeded() {
+    if (widget.slotName == null && widget.controller == null) {
+      _internalController = TextEditingController();
     } else {
-      _controller = widget.controller!;
-      _isInternalController = false;
+      _internalController = null;
     }
-    // FocusNode 也需要同样的逻辑，如果外部没传，就内部创建
-    _focusNode = FocusNode(); // TextInputField 内部也会处理，但为了 unfocus，这里也保留
-    _isInternalFocusNode = true; // 假设总是内部创建，因为原代码就是这样
+  }
+
+  @override
+  void didUpdateWidget(covariant CommentInputField oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    bool needsInternalControllerUpdate =
+        (widget.slotName == null && widget.controller == null) !=
+            (oldWidget.slotName == null && oldWidget.controller == null);
+
+    if (needsInternalControllerUpdate) {
+      if (_internalController != null) {
+        _internalController!.dispose();
+        _internalController = null;
+      }
+      _initializeInternalControllerIfNeeded();
+    }
+    // FocusNode 更新逻辑（如果允许外部传入）
+    // if (widget.focusNode != oldWidget.focusNode) { ... }
   }
 
   @override
   void dispose() {
-    // 仅释放内部创建的 FocusNode
     if (_isInternalFocusNode) {
       _focusNode.dispose();
     }
-    // 仅释放内部创建的 Controller
-    if (_isInternalController) {
-      _controller.dispose();
-    }
+    _internalController?.dispose();
     super.dispose();
   }
 
-  void _handleSubmit() {
-    final text = _controller.text.trim();
-    if (text.isEmpty || widget.isSubmitting) return;
-    _focusNode.unfocus(); // 保留 unfocus 逻辑
-    widget.onSubmit(text);
-    // 清空逻辑可以保留在这里，或者依赖 TextInputField 的 clearOnSubmit (如果使用它的提交)
-    // _controller.clear(); // 如果需要提交后清空
+  void _handleSubmit(String text) {
+    final trimmedText = text.trim();
+    if (trimmedText.isEmpty || widget.isSubmitting) return;
+    _focusNode.unfocus();
+    widget.onSubmit(trimmedText);
+    // 清空由外部逻辑处理（成功回调后）
   }
 
   void _handleCancel() {
     if (widget.isSubmitting) return;
-    _controller.clear();
+
+    InputStateService? service;
+    try {
+      service = Provider.of<InputStateService>(context, listen: false);
+    } catch (_) {/* Service not found, ignore */}
+
+    if (widget.slotName != null &&
+        widget.slotName!.isNotEmpty &&
+        service != null) {
+      service.clearText(widget.slotName!);
+    } else if (widget.controller != null) {
+      widget.controller!.clear();
+    } else {
+      _internalController?.clear();
+    }
     _focusNode.unfocus();
     widget.onCancel?.call();
   }
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
+    final authProvider =
+        Provider.of<AuthProvider>(context); // 直接使用 AuthProvider
     final theme = Theme.of(context);
 
-    // --- 登录和锁定逻辑保持不变 ---
     if (widget.lockedContent != null) {
       return Padding(padding: widget.padding, child: widget.lockedContent!);
     }
+
     if (!authProvider.isLoggedIn) {
       if (widget.loginPrompt != null) {
         return Padding(padding: widget.padding, child: widget.loginPrompt!);
@@ -119,57 +155,63 @@ class _CommentInputFieldState extends State<CommentInputField> {
       if (widget.isReply) {
         return const SizedBox.shrink();
       }
+      // 使用你的 LoginPrompt 组件
       return Padding(
         padding: widget.padding,
         child: LoginPrompt(
           message: widget.isReply ? '登录后回复' : '登录后发表评论',
           buttonText: '登录',
           onLoginPressed: widget.onLoginRequired ??
-              () => NavigationUtils.pushNamed(context, '/login'),
+              () => NavigationUtils.pushNamed(
+                  context, '/login'), // 直接使用 NavigationUtils
         ),
       );
     }
 
     final bool showCancelButton = widget.onCancel != null;
+    final TextEditingController? effectiveController =
+        widget.controller ?? _internalController;
 
-    // --- 使用 Row + TextInputField + Buttons 的布局 ---
     return Padding(
       padding: widget.padding,
       child: Row(
-        // CrossAxisAlignment 对齐方式很重要
-        crossAxisAlignment: CrossAxisAlignment.end, // 通常希望按钮和输入框底部对齐
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // --- 使用 TextInputField ---
           Expanded(
             child: TextInputField(
-              controller: _controller,
-              focusNode: _focusNode, // 传递 FocusNode
+              slotName: widget.slotName,
+              controller: effectiveController,
+              focusNode: _focusNode,
               hintText: widget.hintText,
               maxLines: widget.maxLines,
               maxLength: widget.maxLength,
-              enabled: !widget.isSubmitting, // 传递 enabled 状态
+              enabled: !widget.isSubmitting,
               contentPadding: widget.contentPadding,
               textStyle: widget.textStyle,
               hintStyle: widget.hintStyle,
-              // !!! 关键：不显示 TextInputField 自带的按钮，并且不需要它处理 padding !!!
-              showSubmitButton: false,
-              padding: EdgeInsets.zero, // TextInputField 外层不需要 padding
-              handleEnterKey: false, // 多行文本框通常不希望 Enter 提交
-              // 可以传递 decoration 来进一步定制样式，如果需要的话
-              // decoration: InputDecoration(...)
+              showSubmitButton: false, // 禁用内部提交按钮
+              padding: EdgeInsets.zero,
+              handleEnterKey: (widget.maxLines ?? 1) == 1, // 单行允许 Enter
+              onSubmitted: _handleSubmit, // 内部 Enter 提交也走这个逻辑
+              clearOnSubmit: false, // 清空由外部控制
+              keyboardType: (widget.maxLines ?? 1) == 1
+                  ? TextInputType.text
+                  : TextInputType.multiline,
+              textInputAction: (widget.maxLines ?? 1) == 1
+                  ? TextInputAction.send
+                  : TextInputAction.newline,
             ),
           ),
           SizedBox(width: widget.buttonSpacing),
 
-          // --- 取消按钮 (逻辑不变) ---
           if (showCancelButton) ...[
-            // 为了和 AppButton 高度尽量一致，可以包一层 SizedBox 或调整样式
+            // 取消按钮通常用 TextButton
             SizedBox(
-              height: 44, // 尝试和 AppButton 高度一致
+              height: 44, // 尝试匹配高度
               child: TextButton(
                 onPressed: widget.isSubmitting ? null : _handleCancel,
                 style: TextButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(horizontal: 12), // 调整内边距
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
                   foregroundColor: Colors.grey.shade700,
                 ),
                 child: const Text('取消'),
@@ -178,10 +220,26 @@ class _CommentInputFieldState extends State<CommentInputField> {
             SizedBox(width: widget.buttonSpacing / 2),
           ],
 
-          // --- 提交按钮 (逻辑不变) ---
+          // 使用你的 FunctionalButton
           FunctionalButton(
             label: widget.submitButtonText,
-            onPressed: _handleSubmit, // 按下时调用这里的 _handleSubmit
+            onPressed: () {
+              String currentText = '';
+              InputStateService? service;
+              try {
+                service =
+                    Provider.of<InputStateService>(context, listen: false);
+              } catch (_) {/* Service not found */}
+
+              if (widget.slotName != null &&
+                  widget.slotName!.isNotEmpty &&
+                  service != null) {
+                currentText = service.getText(widget.slotName!);
+              } else if (effectiveController != null) {
+                currentText = effectiveController.text;
+              }
+              _handleSubmit(currentText);
+            },
             isLoading: widget.isSubmitting,
           ),
         ],

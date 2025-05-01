@@ -2,14 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-// 确认导入 AppButton
 import '../../../../ui/buttons/app_button.dart';
-// 其他必要的 import
-import '../../../../../services/common/upload/file_upload_service.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 import 'dialogs/image_url_dialog.dart';
-
 
 class CoverImageField extends StatelessWidget {
   final dynamic coverImageSource;
@@ -34,7 +30,8 @@ class CoverImageField extends StatelessWidget {
 
   Future<void> _showUrlDialog(BuildContext context) async {
     if (isLoading) return;
-    final currentUrl = coverImageSource is String ? coverImageSource as String : '';
+    final currentUrl =
+        coverImageSource is String ? coverImageSource as String : '';
     final result = await showDialog<String>(
       context: context,
       builder: (context) => ImageUrlDialog(initialUrl: currentUrl),
@@ -56,11 +53,9 @@ class CoverImageField extends StatelessWidget {
         Text('封面图片', style: TextStyle(fontSize: fontSize)),
         SizedBox(height: verticalSpacing),
         Row(
-          // 让按钮自动分配空间可能更好看
-          // mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
-            // --- 使用 AppButton 替换本地图片按钮 ---
-            Expanded( // 使用 Expanded 让按钮填充可用空间
+            Expanded(
+              // 使用 Expanded 让按钮填充可用空间
               child: AppButton(
                 icon: const Icon(Icons.upload_file), // 传入图标
                 text: '本地图片',
@@ -73,7 +68,8 @@ class CoverImageField extends StatelessWidget {
             const SizedBox(width: 12), // 按钮间距
 
             // --- 使用 AppButton 替换图片链接按钮 ---
-            Expanded( // 使用 Expanded
+            Expanded(
+              // 使用 Expanded
               child: AppButton(
                 icon: const Icon(Icons.link), // 传入图标
                 text: '图片链接',
@@ -106,7 +102,10 @@ class CoverImageField extends StatelessWidget {
       return const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: [ Icon(Icons.image_outlined, size: 48, color: Colors.grey), Text('请添加封面图片') ],
+          children: [
+            Icon(Icons.image_outlined, size: 48, color: Colors.grey),
+            Text('请添加封面图片')
+          ],
         ),
       );
     }
@@ -119,21 +118,25 @@ class CoverImageField extends StatelessWidget {
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print("Error rendering XFile preview ${source.path}: $error");
-          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
+          return const Center(
+              child:
+                  Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );
-    } else if (source is File) { // <--- 新增: 处理 File 对象
+    } else if (source is File) {
+      // <--- 新增: 处理 File 对象
       print("Cover Preview: Rendering File: ${source.path}");
       imageWidget = Image.file(
-        source,             // <--- 直接使用 File 对象
+        source, // <--- 直接使用 File 对象
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           print("Error rendering File preview ${source.path}: $error");
-          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
+          return const Center(
+              child:
+                  Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );
-    }
-    else if (source is String) {
+    } else if (source is String) {
       print("Cover Preview: Rendering String URL: $source");
       final imageUrl = source;
       // 不需要再拼接 baseUrl，因为存的时候已经是完整路径或 URL

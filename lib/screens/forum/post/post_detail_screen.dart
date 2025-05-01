@@ -1,15 +1,12 @@
 // lib/screens/forum/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-// 确保所有必要的 imports 都存在
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
-import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 import '../../../models/post/post.dart';
 import '../../../models/post/user_post_actions.dart'; // 引入 UserPostActions
@@ -24,7 +21,6 @@ import '../../../widgets/components/screen/forum/post/layout/post_detail_mobile_
 // 导入 UI 组件
 import '../../../widgets/ui/common/error_widget.dart';
 import '../../../widgets/ui/common/loading_widget.dart';
-import '../../../widgets/ui/inputs/post_reply_input.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 
 class PostDetailScreen extends StatefulWidget {
@@ -37,14 +33,11 @@ class PostDetailScreen extends StatefulWidget {
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
-  final ForumService _forumService = ForumService();
   final TextEditingController _replyController = TextEditingController();
-  // *** 父组件维护核心状态 ***
   Post? _post;
   UserPostActions? _userActions;
   String? _error;
   bool _isLoading = true;
-  bool _isSubmitting = false;
   bool _hasInteraction = false; // 标记页面是否有过交互
   bool _isTogglingLock = false; // 标记是否正在切换锁定状态
 
@@ -61,8 +54,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (_isLoading && _post != null) {
       // 如果已经在加载中，并且已经有旧数据了（说明是刷新），可以先不强制 setState((){_isLoading=true})
       // 避免 UI 闪烁成加载状态，等 API 返回后再更新
-      print(
-          "PostDetailScreen (${widget.postId}): Refresh triggered while potentially loading.");
       // 但仍然需要执行后续的 API 调用逻辑
     } else if (!mounted) {
       // 如果 initState 调用后，在 Future 执行前 widget 被移除了
@@ -87,33 +78,32 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     try {
       // 调用 Service 获取聚合数据
+      final forumService = context.read<ForumService>();
       final details =
-          await _forumService.getPostDetailsWithActions(widget.postId);
+          await forumService.getPostDetailsWithActions(widget.postId);
 
       // *** 异步操作后，必须检查 mounted 状态！ ***
       if (!mounted) return;
 
       if (details != null) {
         // 成功获取数据
-        if (widget.needHistory) {
+        if (widget.needHistory && _post?.status != PostStatus.locked) {
           try {
-            _forumService.incrementPostView(widget.postId);
-          } catch (viewError) {
-            //print("Warning: Failed to increment view count: $viewError");
-          }
+            forumService.incrementPostView(widget.postId);
+          } catch (viewError) {}
         }
         // 更新状态
         setState(() {
           _post = details.post;
           _userActions = details.userActions;
-          _isLoading = false; // *** 加载成功，结束加载状态 ***
+          _isLoading = false;
           _error = null;
         });
       } else {
         // Service 返回 null
         setState(() {
           _error = '无法加载帖子，请稍后重试';
-          _isLoading = false; // *** 加载结束（虽然失败） ***
+          _isLoading = false;
           _post = null;
           _userActions = null;
         });
@@ -155,7 +145,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       // 统一设置错误状态和结束加载
       setState(() {
         _error = errorMessage;
-        _isLoading = false; // *** 加载结束（出错） ***
+        _isLoading = false;
         _post = null;
         _userActions = null;
       });
@@ -184,47 +174,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   // 父组件只负责更新自己的 _post 状态
   void _handlePostUpdateFromInteraction(
       Post updatedPostCore, UserPostActions updatedUserActions) {
-    print(
-        "PostDetailScreen: Received updated post core data (ID: ${updatedPostCore.id}). Syncing state.");
     if (mounted && _post?.id == updatedPostCore.id) {
       setState(() {
-        _post = updatedPostCore; // 只更新 Post 对象
+        _post = updatedPostCore;
         _userActions = updatedUserActions;
       });
       _hasInteraction = true; // 标记页面发生过交互
     } else {}
-  }
-
-  // 提交回复
-  Future<void> _submitReply(BuildContext context) async {
-    final content = _replyController.text.trim();
-    if (content.isEmpty || _post == null || _isSubmitting) return;
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    try {
-      await _forumService.addReply(widget.postId, content);
-      if (mounted) {
-        _replyController.clear();
-        _hasInteraction = true;
-        AppSnackBar.showSuccess(context, '回复成功');
-        // 可选：刷新帖子以更新回复数
-        // await _refreshPost();
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.showError(
-            context, '回复失败: ${e.toString().replaceFirst("Exception: ", "")}');
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
-    }
   }
 
   // 处理删除帖子
@@ -244,7 +200,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           _isLoading = true;
         });
         try {
-          await _forumService.deletePost(widget.postId);
+          final forumService = context.read<ForumService>();
+          await forumService.deletePost(widget.postId);
           if (!mounted) return;
           _hasInteraction = true;
           AppSnackBar.showSuccess(context, '帖子已删除');
@@ -287,14 +244,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       _isTogglingLock = true;
     });
     try {
-      await _forumService.togglePostLock(widget.postId);
+      final forumService = context.read<ForumService>();
+      await forumService.togglePostLock(widget.postId);
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '帖子状态已切换');
       _hasInteraction = true;
       await _refreshPost(); // 刷新获取最新状态
     } catch (e) {
       if (!mounted) return;
-      print("PostDetailScreen: Failed to toggle lock: $e");
       AppSnackBar.showError(
           context, '操作失败: ${e.toString().replaceFirst("Exception: ", "")}');
     } finally {
@@ -324,7 +281,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       return Scaffold(
         appBar: CustomAppBar(title: '帖子详情'),
         body: FadeInItem(
-            child: InlineErrorWidget(
+            child: CustomErrorWidget(
                 errorMessage: _error!, onRetry: _loadPostDetails)),
       );
     }
@@ -360,13 +317,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
-                replyInput: PostReplyInput(
-                  post: _post,
-                  controller: _replyController,
-                  onSubmitReply: (ctx, text) => _submitReply(ctx),
-                  isSubmitting: _isSubmitting,
-                  isDesktopLayout: true,
-                ),
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
               )
             : PostDetailMobileLayout(
@@ -379,15 +329,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       floatingActionButton:
           _buildPostActionButtonsGroup(context, _post!), // FAB 依赖 _post 状态
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-      bottomNavigationBar: isDesktop
-          ? null
-          : PostReplyInput(
-              post: _post,
-              controller: _replyController,
-              onSubmitReply: (ctx, text) => _submitReply(ctx),
-              isSubmitting: _isSubmitting,
-              isDesktopLayout: false,
-            ),
     );
   }
 

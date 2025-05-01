@@ -20,7 +20,7 @@ class CheckInButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    //final theme = Theme.of(context);
     final isEnabled = !hasCheckedToday && !isLoading;
 
     return Stack(

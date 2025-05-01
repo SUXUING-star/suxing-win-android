@@ -23,7 +23,6 @@ class GameCollectionScreen extends StatefulWidget {
 
 class _GameCollectionScreenState extends State<GameCollectionScreen>
     with SingleTickerProviderStateMixin {
-  final GameCollectionService _collectionService = GameCollectionService();
   late TabController _tabController;
 
   // --- 状态管理 (不变) ---
@@ -48,11 +47,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    print("GameCollectionScreen initState");
-
-    // *** initState 中不应直接访问 Provider (如果 listen: true)，但可以 listen: false ***
-    // *** 这里改为在 didChangeDependencies 中首次加载 ***
-    // _loadDataIfNeeded(); // 不在这里加载，移到 didChangeDependencies
   }
 
   @override
@@ -155,7 +149,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     }
 
     try {
-      final groupedData = await _collectionService.getAllUserGamesGrouped(
+      final collectionService = context.read<GameCollectionService>();
+      final groupedData = await collectionService.getAllUserGamesGrouped(
           forceRefresh: forceRefresh);
       if (mounted) {
         if (groupedData != null) {

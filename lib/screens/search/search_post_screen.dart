@@ -38,8 +38,6 @@ class SearchPostScreen extends StatefulWidget {
 }
 
 class _SearchPostScreenState extends State<SearchPostScreen> {
-  final ForumService _forumService = ForumService();
-  final UserService _userService = UserService();
   final TextEditingController _searchController = TextEditingController();
   List<String> _searchHistory = [];
   List<Post> _searchResults = [];
@@ -111,7 +109,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       return;
     }
     try {
-      final history = await _userService.loadLocalSearchHistory();
+      final userService = context.read<UserService>();
+      final history = await userService.loadLocalSearchHistory();
       if (!mounted) return;
       print("SearchPostScreen: Search history loaded: $history");
       setState(() {
@@ -131,12 +130,11 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
 
   Future<void> _saveSearchHistory() async {
-    print("SearchPostScreen: Saving search history: $_searchHistory");
+    final userService = context.read<UserService>();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn || !mounted) return;
     try {
-      await _userService.saveLocalSearchHistory(_searchHistory);
-      print("SearchPostScreen: Search history saved successfully.");
+      await userService.saveLocalSearchHistory(_searchHistory);
     } catch (e) {
       print("SearchPostScreen: Error saving search history: $e");
     }
@@ -216,8 +214,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        print("SearchPostScreen: Calling ForumService.searchPosts...");
-        final resultsData = await _forumService.searchPosts(
+        final forumService = context.read<ForumService>(); // 安全获取
+
+        final resultsData = await forumService.searchPosts(
           keyword: trimmedQuery,
           page: _currentPage,
           limit: _limit,
@@ -227,8 +226,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         final List<Post> newPosts = resultsData['posts'];
         final pagination = resultsData['pagination'];
         final int serverTotalPages = pagination['pages'] ?? 1;
-        print(
-            "SearchPostScreen: Search results received. Posts: ${newPosts.length}, Total Pages: $serverTotalPages");
 
         setState(() {
           if (isNewSearch) {
@@ -308,7 +305,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               "SearchPostScreen: Delete confirmed for post $postId. Calling service...");
           // *** 这里可以考虑加一个临时的按钮加载状态，但不影响全局 ***
           try {
-            await _forumService.deletePost(postId);
+            final forumService = context.read<ForumService>(); // 安全获取
+            await forumService.deletePost(postId);
             if (!mounted) return;
             print(
                 "SearchPostScreen: Post $postId deleted successfully from service.");
@@ -323,8 +321,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
           }
         },
       );
-      print(
-          "SearchPostScreen: Delete process completed successfully for post $postId.");
     } catch (e) {
       print(
           "SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
@@ -332,7 +328,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
 
   void _handleEditPostAction(Post postToEdit) {
-    print("SearchPostScreen: Handling edit action for post ${postToEdit.id}");
     if (!mounted) return;
     NavigationUtils.pushNamed(
       context,
@@ -340,8 +335,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       arguments: postToEdit.id,
     ).then((updated) {
       if (updated == true && mounted) {
-        print(
-            "SearchPostScreen: Returned from edit post with update signal. Refreshing search...");
         // 强制刷新当前搜索结果
         _performSearch(_searchController.text.trim(), isNewSearch: true);
       } else {
@@ -352,12 +345,12 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
 
   Future<void> _handleToggleLockAction(String postId) async {
-    print("SearchPostScreen: Handling toggle lock action for $postId");
     if (!mounted) return;
     // LoadingRouteObserver 相关代码已删除
     // *** 可以考虑加一个临时的按钮加载状态 ***
     try {
-      await _forumService.togglePostLock(postId);
+      final forumService = context.read<ForumService>(); // 安全获取
+      await forumService.togglePostLock(postId);
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '帖子状态已切换');
       // 更新列表中的状态
@@ -451,8 +444,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     if (_error != null) {
       // 如果搜索框有内容，显示搜索错误
       if (_searchController.text.isNotEmpty) {
-        print("SearchPostScreen: Displaying search error widget.");
-        return InlineErrorWidget(
+        return CustomErrorWidget(
           errorMessage: _error!,
           onRetry: () {
             setState(() {
@@ -465,8 +457,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       }
       // 如果搜索框为空，显示历史加载错误
       else {
-        print("SearchPostScreen: Displaying history error widget.");
-        return InlineErrorWidget(
+        return CustomErrorWidget(
           errorMessage: _error!,
           onRetry: () {
             setState(() {

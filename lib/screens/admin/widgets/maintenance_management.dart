@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../services/main/maintenance/maintenance_service.dart';
 
 class MaintenanceManagement extends StatefulWidget {
@@ -27,7 +30,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
   final List<String> _maintenanceTypes = [
     'scheduled', // 计划维护
     'emergency', // 紧急维护
-    'upgrade'    // 升级维护
+    'upgrade' // 升级维护
   ];
 
   @override
@@ -40,14 +43,17 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
   }
 
   Future<void> _loadCurrentMaintenanceStatus() async {
-    final maintenanceService = Provider.of<MaintenanceService>(context, listen: false);
+    final maintenanceService =
+        Provider.of<MaintenanceService>(context, listen: false);
 
     try {
       // 强制刷新维护状态
       await maintenanceService.checkMaintenanceStatus();
 
       // 如果当前有维护状态，则加载到表单中
-      if (mounted && maintenanceService.isInMaintenance && maintenanceService.maintenanceInfo != null) {
+      if (mounted &&
+          maintenanceService.isInMaintenance &&
+          maintenanceService.maintenanceInfo != null) {
         final info = maintenanceService.maintenanceInfo!;
         setState(() {
           _isActive = true;
@@ -70,6 +76,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
       }
     }
   }
+
   Future<void> _saveMaintenanceSettings() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -80,7 +87,8 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
     });
 
     try {
-      final maintenanceService = Provider.of<MaintenanceService>(context, listen: false);
+      final maintenanceService =
+          Provider.of<MaintenanceService>(context, listen: false);
 
       final success = await maintenanceService.setMaintenanceMode(
         isActive: _isActive,
@@ -93,27 +101,12 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
       );
 
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(_isActive ? '系统维护模式已开启' : '系统维护模式已关闭'),
-            backgroundColor: _isActive ? Colors.orange : Colors.green,
-          ),
-        );
+        AppSnackBar.showSuccess(context, _isActive ? '系统维护模式已开启' : '系统维护模式已关闭');
       } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('设置维护模式失败'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.showError(context, '设置维护模式失败');
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('发生错误: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      AppSnackBar.showError(context, '发生错误: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -132,7 +125,8 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
     if (pickedDate != null) {
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
-        initialTime: TimeOfDay.fromDateTime(isStartTime ? _startTime : _endTime),
+        initialTime:
+            TimeOfDay.fromDateTime(isStartTime ? _startTime : _endTime),
       );
 
       if (pickedTime != null) {
@@ -275,7 +269,8 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                               // 如果开启维护模式，默认设置开始时间为现在，结束时间为1小时后
                               if (_isActive) {
                                 _startTime = DateTime.now();
-                                _endTime = DateTime.now().add(const Duration(hours: 1));
+                                _endTime = DateTime.now()
+                                    .add(const Duration(hours: 1));
                               }
                             });
                           },
@@ -354,7 +349,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       const SizedBox(height: 8),
-                      TextFormField(
+                      FormTextInputField(
                         initialValue: _message,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
@@ -388,7 +383,8 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                               contentPadding: EdgeInsets.zero,
                               title: const Text('开始时间'),
                               subtitle: Text(
-                                DateFormat('yyyy-MM-dd HH:mm').format(_startTime),
+                                DateFormat('yyyy-MM-dd HH:mm')
+                                    .format(_startTime),
                               ),
                               onTap: () => _selectDateTime(context, true),
                             ),
@@ -439,14 +435,11 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                     const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _isLoading ? null : _saveMaintenanceSettings,
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 12),
-                        ),
-                        child: _isLoading
-                            ? const CircularProgressIndicator()
-                            : Text(_isActive ? '保存维护设置' : '关闭维护模式'),
+                      child: FunctionalButton(
+                        onPressed:
+                            _isLoading ? () {} : _saveMaintenanceSettings,
+                        isEnabled: !_isLoading,
+                        label: "保存",
                       ),
                     ),
                   ],
@@ -460,13 +453,13 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
   }
 
   Widget _buildMaintenanceTypeInfo(
-      BuildContext context,
-      String type,
-      String title,
-      String description,
-      IconData icon,
-      Color color,
-      ) {
+    BuildContext context,
+    String type,
+    String title,
+    String description,
+    IconData icon,
+    Color color,
+  ) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Row(

@@ -1,5 +1,6 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -15,8 +16,7 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
-  final GameService _gameService = GameService();
-  final ForumService _forumService = ForumService();
+
 
   TabController? _tabController;
   String? _error;
@@ -194,6 +194,8 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   }
 
   Widget _buildTabContent() {
+    final gameService = context.read<GameService>();
+    final forumService = context.read<ForumService>();
     return Expanded(
       child: TabBarView(
         controller: _tabController,
@@ -202,13 +204,13 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           GameHistoryTab(
             isLoaded: _gameHistoryLoaded,
             onLoad: _loadGameHistory,
-            gameService: _gameService,
+            gameService: gameService,
           ),
           // 帖子历史标签页 - 使用组件拆分提高性能
           PostHistoryTab(
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
-            forumService: _forumService,
+            forumService: forumService,
           ),
         ],
       ),
