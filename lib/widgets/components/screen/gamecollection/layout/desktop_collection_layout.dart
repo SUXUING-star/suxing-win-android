@@ -72,13 +72,6 @@ class DesktopCollectionLayout extends StatelessWidget {
                 overflow: TextOverflow.ellipsis, // 溢出时显示省略号
               ),
             ),
-            // 数量显示已包含在 title 中，可以移除这里的 Badge
-            /*
-            if (games.isNotEmpty) ...[
-              SizedBox(width: 8),
-              Container( ... ),
-            ],
-            */
           ],
         ),
       ),

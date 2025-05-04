@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心依赖
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
-import 'package:suxingchahui/utils/activity/activity_type_utils.dart';
+
 
 /// 活动卡片/详情的头部组件
 ///
@@ -70,7 +71,7 @@ class ActivityHeader extends StatelessWidget {
             Expanded(
               child: UserInfoBadge(
                 userId: userId, // *** 直接传递 userId ***
-                showFollowButton: true, // 可配置是否显示关注按钮
+                showFollowButton: false,
                 mini: true, // 使用紧凑模式
                 showLevel: true, // 可配置是否显示等级
                 backgroundColor: Colors.transparent, // 透明背景，融入父级
@@ -151,6 +152,7 @@ class ActivityHeader extends StatelessWidget {
   Widget _buildActionMenu(BuildContext context, ThemeData theme, bool canEdit, bool canDelete) {
     return StylishPopupMenuButton<String>(
       icon: Icons.more_vert,
+
       iconSize: 16 * math.sqrt(cardHeight * 0.8), // 使用 cardHeight 调整大小
       iconColor: Colors.grey.shade600,
       tooltip: '更多操作',

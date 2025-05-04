@@ -1,6 +1,6 @@
 // lib/widgets/auth/account_bubble_menu.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/user/cache/account_cache_service.dart';
 import '../../../widgets/ui/badges/safe_user_avatar.dart';
@@ -244,6 +244,6 @@ class AccountBubbleMenu extends StatelessWidget {
 
   // 根据等级返回不同的颜色
   Color _getLevelColor(int level) {
-    return LevelColor.getLevelColor(level);
+    return LevelUtils.getLevelColor(level);
   }
 }

@@ -12,9 +12,9 @@ import '../../../../../models/game/game.dart';
 // 需要路由
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
-import 'game_category_tag.dart';
+import '../../../../ui/components/game/game_category_tag.dart';
 import 'game_stats_widget.dart';
-import 'game_tag_list.dart';
+import '../../../../ui/components/game/game_tag_list.dart';
 import 'game_collection_dialog.dart'; // 保留，用于显示收藏统计
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能
@@ -27,8 +27,6 @@ class BaseGameCard extends StatelessWidget {
   final bool forceCompact;
   final bool showCollectionStats;
   final VoidCallback? onDeleteAction; // 删除按钮点击回调
-  // final VoidCallback? onEditAction; // 编辑按钮点击回调
-  // 通常gamelist后端返回的字段里不包含description字段，所以直接进行编辑回调，这里的game有些字段会缺失
 
   const BaseGameCard({
     super.key,
@@ -101,7 +99,10 @@ class BaseGameCard extends StatelessWidget {
                 fit: StackFit.expand, // 图片填满区域
                 children: [
                   SafeCachedImage(
-                      imageUrl: game.coverImage, fit: BoxFit.cover), // 封面图
+                    imageUrl: game.coverImage,
+                    fit: BoxFit.cover,
+                    memCacheWidth: DeviceUtils.isDesktop ? 480 : 280,
+                  ), // 封面图
                   Positioned(
                       top: 8,
                       left: 8,
@@ -270,7 +271,6 @@ class BaseGameCard extends StatelessWidget {
     final currentUserId = authProvider.currentUser?.id;
     final isAdmin = authProvider.currentUser?.isAdmin ?? false;
     final canModify = (game.authorId.toString() == currentUserId) || isAdmin;
-    // *** 直接检查 onDeleteAction 是否非 null ***
     final hasDeleteAction = onDeleteAction != null;
 
     // 如果不能修改或者没有删除回调，不显示

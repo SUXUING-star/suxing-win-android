@@ -72,6 +72,7 @@ class DesktopProfileCard extends StatelessWidget {
                     top: -avatarRadius * 0.2, // 稍微向上偏移
                     right: -avatarRadius * 0.2, // 稍微向右偏移
                     child: ExpProgressBadge(
+                      currentUser: user,
                       size: badgeSize,
                       backgroundColor: Theme.of(context).primaryColor,
                       isDesktop: true, // 传递桌面端标识（如果需要特殊逻辑）

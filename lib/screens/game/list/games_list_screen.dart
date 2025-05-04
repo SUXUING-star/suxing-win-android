@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/tag/tag.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -9,7 +10,7 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/form/gameform/config/category_list.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -26,6 +27,7 @@ import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
@@ -60,20 +62,22 @@ class _GamesListScreenState extends State<GamesListScreen>
   String? _currentCategory;
   GameListFilterProvider? _filterProvider;
   List<Tag> _availableTags = [];
-  final List<String> _availableCategories = CategoryList.defaultCategory;
+  final List<String> _availableCategories = GameConstants.defaultGameCategory;
   StreamSubscription<BoxEvent>? _cacheSubscription;
   String _currentWatchIdentifier = '';
   Timer? _refreshDebounceTimer;
 
   static const int _pageSize = 20;
   static const Duration _cacheDebounceDuration = Duration(milliseconds: 300);
-  final Map<String, String> _sortOptions = {
-    'createTime': '最新发布',
-    'viewCount': '最多浏览',
-    'rating': '最高评分'
-  };
+  final Map<String, String> _sortOptions = GameConstants.defaultFilter;
   static const double _hideRightPanelThreshold = 1000.0;
   static const double _hideLeftPanelThreshold = 800.0;
+
+  // --- 新增：下拉刷新节流相关状态 ---
+  bool _isPerformingRefresh = false; // 标记是否正在执行下拉刷新操作
+  DateTime? _lastRefreshAttemptTime; // 上次尝试下拉刷新的时间戳
+  // 定义最小刷新间隔 (1 分钟)
+  static const Duration _minRefreshInterval = Duration(minutes: 1);
 
   // === Lifecycle ===
   @override
@@ -384,17 +388,59 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   // === User Interactions ===
 
-  /// Handles pull-to-refresh. (调用 _loadGames 刷新第一页)
+  /// Handles pull-to-refresh. (调用 _loadGames 刷新第一页) - 加入节流
   Future<void> _refreshData() async {
-    if (_isLoadingData) return;
-    _stopWatchingCache();
-    await _loadGames(pageToFetch: 1, isRefresh: true); // 加载第一页并标记为刷新
+    // 1. 防止重复触发：如果已经在执行下拉刷新，直接返回
+    if (_isPerformingRefresh) {
+      return;
+    }
+
+    // 2. 检查时间间隔
+    final now = DateTime.now();
+    if (_lastRefreshAttemptTime != null &&
+        now.difference(_lastRefreshAttemptTime!) < _minRefreshInterval) {
+      // 可以给用户一个提示
+      if (mounted) {
+        AppSnackBar.showWarning(context,
+            '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshAttemptTime!).inSeconds)} 秒后再试');
+      }
+      return; // 时间不够，直接返回
+    }
+
+    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
+
+    if (mounted) {
+      setState(() {
+        _isPerformingRefresh = true; // 开始下拉刷新
+      });
+    }
+    _lastRefreshAttemptTime = now; // 记录本次尝试刷新的时间
+
+    try {
+      // --- 原有的刷新逻辑 ---
+      if (_isLoadingData)
+        return; // 如果其他数据加载正在进行，也阻止（虽然 _isPerformingRefresh 应该已经挡住了）
+      _stopWatchingCache();
+      await _loadGames(pageToFetch: 1, isRefresh: true); // 加载第一页并标记为刷新
+      // --- 刷新逻辑结束 ---
+    } catch (e) {
+      // print("下拉刷新执行过程中发生错误: $e");
+      // 可以在这里处理 specific refresh 错误
+    } finally {
+      // 4. 清除刷新状态标记 (无论成功失败)
+      if (mounted) {
+        setState(() {
+          _isPerformingRefresh = false; // 结束下拉刷新
+        });
+        // print("节流 (GameList): 下拉刷新操作完成 (finally)");
+      }
+    }
   }
 
   /// Go to Previous Page (Internal - Called by Grid Tile)
   Future<void> _goToPreviousPageInternal() async {
     if (_currentPage > 1 && !_isLoadingData) {
-      print("导航到上一页 (目标: ${_currentPage - 1})");
+      // print("导航到上一页 (目标: ${_currentPage - 1})");
       _stopWatchingCache();
       await _loadGames(pageToFetch: _currentPage - 1); // 加载上一页
     } else {}
@@ -699,7 +745,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// Handles delete action (using your original onConfirm logic).
-  Future<void> _handleDeleteGame(String gameId) async {
+  Future<void> _handleDeleteGame(Game game) async {
     await CustomConfirmDialog.show(
       context: context,
       title: '确认删除',
@@ -711,11 +757,12 @@ class _GamesListScreenState extends State<GamesListScreen>
       onConfirm: () async {
         // onConfirm 是 AsyncCallback?
         try {
+          final gameId = game.id;
           final gameService = context.read<GameService>();
-          await gameService.deleteGame(gameId);
+          await gameService.deleteGame(game);
           // 刷新由 cache watcher 触发
         } catch (e) {
-          print("删除游戏失败: $gameId, Error: $e");
+          // print("删除游戏失败: $gameId, Error: $e");
         }
       },
     );
@@ -774,6 +821,10 @@ class _GamesListScreenState extends State<GamesListScreen>
     final canShowLeftPanelBasedOnWidth = screenWidth >= _hideLeftPanelThreshold;
     final canShowRightPanelBasedOnWidth =
         screenWidth >= _hideRightPanelThreshold;
+    final defaultAppBarIconColor =
+        ThemeData.estimateBrightnessForColor(appBarColor) == Brightness.dark
+            ? Colors.white
+            : Colors.black;
 
     return CustomAppBar(
       title: title,
@@ -781,8 +832,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         if (isDesktop) SizedBox(width: 8),
         if (isDesktop)
           FunctionalIconButton(
-            buttonBackgroundColor: Colors.white,
-            icon: Icons.menu_open,
+            buttonBackgroundColor: AppBarAction.toggleLeftPanel.defaultBgColor,
+            icon: AppBarAction.toggleLeftPanel.icon,
             iconColor: _showLeftPanel && canShowLeftPanelBasedOnWidth
                 ? Colors.black38
                 : Colors.amber,
@@ -792,8 +843,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         if (isDesktop) SizedBox(width: 8),
         if (isDesktop)
           FunctionalIconButton(
-            buttonBackgroundColor: Colors.white,
-            icon: Icons.bar_chart_outlined,
+            buttonBackgroundColor: AppBarAction.toggleRightPanel.defaultBgColor,
+            icon: AppBarAction.toggleRightPanel.icon,
             iconColor: _showRightPanel && canShowRightPanelBasedOnWidth
                 ? Colors.black38
                 : Colors.amber,
@@ -804,65 +855,65 @@ class _GamesListScreenState extends State<GamesListScreen>
         // 业务逻辑有审核机制
         // 不需要admincheck
         FunctionalIconButton(
-          icon: Icons.add,
-          buttonBackgroundColor: Colors.white,
-          iconColor: Colors.green[300],
+          icon: AppBarAction.addGame.icon,
+          tooltip: AppBarAction.addGame.defaultTooltip!,
+          iconColor: AppBarAction.addGame.defaultIconColor,
+          buttonBackgroundColor: AppBarAction.addGame.defaultBgColor,
           onPressed: _isLoadingData ? null : _handleAddGame,
-          tooltip: '添加游戏',
         ),
         SizedBox(width: 8),
         FunctionalIconButton(
-          icon: Icons.history_edu,
-          iconColor: Colors.orange[300],
-          buttonBackgroundColor: Colors.white,
+          icon: AppBarAction.myGames.icon,
+          tooltip: AppBarAction.myGames.defaultTooltip!,
+          iconColor: AppBarAction.myGames.defaultIconColor,
+          buttonBackgroundColor: AppBarAction.myGames.defaultBgColor,
           onPressed: _isLoadingData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
-          tooltip: '我的提交',
         ),
         SizedBox(width: 8),
         FunctionalIconButton(
-          icon: Icons.search,
-          iconColor: Colors.blue[300],
-          buttonBackgroundColor: Colors.white,
+          icon: AppBarAction.searchGame.icon,
+          tooltip: AppBarAction.searchGame.defaultTooltip!,
+          iconColor: AppBarAction.searchGame.defaultIconColor,
+          buttonBackgroundColor: AppBarAction.searchGame.defaultBgColor,
           onPressed: _isLoadingData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.searchGame),
-          tooltip: '搜索游戏',
         ),
         SizedBox(width: 8),
         FunctionalIconButton(
-          icon: Icons.filter_list,
-          iconColor: Colors.deepOrangeAccent,
-          buttonBackgroundColor: Colors.white,
+          icon: AppBarAction.filterSort.icon,
+          tooltip: AppBarAction.filterSort.defaultTooltip!,
+          iconColor: AppBarAction.filterSort.defaultIconColor,
+          buttonBackgroundColor: AppBarAction.filterSort.defaultBgColor,
           onPressed: _isLoadingData ? null : () => _showFilterDialog(context),
-          tooltip: '筛选与排序',
         ),
         // 清除分类按钮
         if (_currentCategory != null) SizedBox(width: 8),
         if (_currentCategory != null)
           IconButton(
-            icon: Icon(Icons.filter_list_off_outlined), // 使用清除筛选图标
-            color: Colors.red.shade300, // 使用柔和一点的红色
+            icon: Icon(AppBarAction.clearCategoryFilter.icon),
+            color: AppBarAction.clearCategoryFilter.defaultIconColor,
             onPressed: _isLoadingData ? null : _clearCategoryFilter,
             tooltip: '清除分类筛选 ($_currentCategory)',
           ),
         if (_currentTag != null) SizedBox(width: 8),
         if (_currentTag != null)
           IconButton(
-            icon: Icon(Icons.label_off_outlined), // 使用清除标签图标
-            color: Colors.red.shade300, // 使用柔和一点的红色
+            icon: Icon(AppBarAction.clearTagFilter.icon),
+            color: AppBarAction.clearTagFilter.defaultIconColor,
             onPressed: _isLoadingData ? null : _clearTagFilter,
             tooltip: '清除标签筛选 ($_currentTag)',
           ),
         if (!isDesktop) SizedBox(width: 8),
         if (!isDesktop)
           IconButton(
-            icon: Icon(Icons.tag,
-                color: _showMobileTagBar ? secondaryColor : iconColor),
+            icon: Icon(AppBarAction.toggleMobileTagBar.icon),
+            tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
+            color: _showMobileTagBar ? secondaryColor : defaultAppBarIconColor,
             onPressed: () =>
                 setState(() => _showMobileTagBar = !_showMobileTagBar),
-            tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
           ),
       ],
       bottom: (!DeviceUtils.isDesktop &&
@@ -1088,7 +1139,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                     _isLoadingData && !_checkPermissionDeleteGame(game, context)
                         ? null
                         : () {
-                            _handleDeleteGame(game.id);
+                            _handleDeleteGame(game);
                           }, // onDeleteAction 是 VoidCallback?
               ),
             );

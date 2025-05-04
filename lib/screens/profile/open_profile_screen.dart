@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -568,6 +568,6 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   }
 
   Color _getLevelColor(int level) {
-    return LevelColor.getLevelColor(level);
+    return LevelUtils.getLevelColor(level);
   }
 }

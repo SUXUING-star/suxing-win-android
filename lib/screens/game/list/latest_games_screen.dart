@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
-import 'common_game_list_screen.dart'; // 引入新的 Base
+import 'common_game_list_screen.dart'; // 引入纯净版
 
 class LatestGamesScreen extends StatefulWidget {
   const LatestGamesScreen({super.key});
@@ -12,56 +12,68 @@ class LatestGamesScreen extends StatefulWidget {
 }
 
 class _LatestGamesScreenState extends State<LatestGamesScreen> {
-  // *** 用于触发 FutureBuilder 重建 ***
-  late Future<List<Game>> _latestGamesFuture;
+  // *** 修改: 管理实际数据和状态 ***
+  List<Game> _latestGames = [];
+  bool _isLoading = true; // 初始为 true
+  String? _error;
 
   @override
   void initState() {
     super.initState();
-    _latestGamesFuture = _loadLatestGames(); // 初始化 Future
+    _fetchLatestGames(); // 初始化时开始加载数据
   }
 
-  // 加载最新游戏数据 (返回 Future)
-  Future<List<Game>> _loadLatestGames() async {
+  // *** 修改: 加载数据并更新状态 ***
+  Future<void> _fetchLatestGames() async {
+    if (!mounted) return;
+
+    setState(() {
+      _isLoading = true;
+      _error = null;
+      // if (_latestGames.isNotEmpty) _latestGames = []; // 刷新时不清除旧数据
+    });
+
     try {
-      // 使用 .first 获取 Stream 的第一个结果
       final gameService = context.read<GameService>();
-      return await gameService.getLatestGames();
+      final games = await gameService.getLatestGames(); // 直接 await 获取数据
+      if (!mounted) return;
+      setState(() {
+        _latestGames = games;
+        _isLoading = false;
+      });
     } catch (e) {
-      //print("Error loading latest games: $e");
-      // 向上抛出异常让 FutureBuilder 处理
-      throw Exception('Failed to load latest games: $e');
-      // 或返回空列表
-      // return [];
+      if (!mounted) return;
+      setState(() {
+        _error = '加载最新游戏失败: $e';
+        _isLoading = false;
+        _latestGames = []; // 出错时清空
+      });
     }
   }
 
-  // 下拉刷新触发的逻辑
+  // *** 修改: 下拉刷新直接调用加载方法 ***
   Future<void> _handleRefresh() async {
-    // 通过 setState 改变 Future 对象来触发 FutureBuilder 重建
-    setState(() {
-      _latestGamesFuture = _loadLatestGames();
-    });
+    await _fetchLatestGames(); // 重新加载数据
   }
 
   @override
   Widget build(BuildContext context) {
     return CommonGameListScreen(
-      key: ValueKey('latest_games'), // 可以用 Key 来辅助刷新
+      key: ValueKey('latest_games_${_latestGames.length}_$_isLoading$_error'),
       title: '最新发布',
-      gamesFuture: _latestGamesFuture,
-      // *** 传递下拉刷新回调 ***
-      onRefreshTriggered: _handleRefresh,
-      // --- 其他参数 ---
-      onDeleteGameAction: (gameId) async { /* No action needed */ },
-      // onEditGameAction: (game) async { /* No action needed */ },
+      // *** 传递当前状态 ***
+      games: _latestGames,
+      isLoading: _isLoading,
+      error: _error,
+      onRefreshTriggered: _handleRefresh, // 传递刷新回调
+      // --- 其他参数保持不变 ---
+      onDeleteGameAction: null,
       emptyStateMessage: '暂无最新游戏',
-      emptyStateIcon: Icon(Icons.new_releases, size: 48, color: Colors.grey), // 不加 const
-      showTagSelection: false,
-      showPanelToggles: false,
-      useScaffold: true, // 通常需要自己的 Scaffold
+      emptyStateIcon: Icon(Icons.new_releases, size: 48, color: Colors.grey),
+      useScaffold: true,
       showAddButton: false,
       showSortOptions: false,
+      // 移除了 showTagSelection, showPanelToggles
     );
   }
 }

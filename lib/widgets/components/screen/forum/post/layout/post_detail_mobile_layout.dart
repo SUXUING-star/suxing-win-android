@@ -11,7 +11,7 @@ class PostDetailMobileLayout extends StatelessWidget {
   final UserPostActions userActions;
   final String postId;
   // 添加交互成功回调
-  final Function(Post,UserPostActions) onPostUpdated;
+  final Function(Post, UserPostActions) onPostUpdated;
 
   const PostDetailMobileLayout({
     super.key,
@@ -23,7 +23,6 @@ class PostDetailMobileLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     // 定义动画参数
     const Duration contentDuration = Duration(milliseconds: 400);
     const Duration replyListDuration = Duration(milliseconds: 350);
@@ -46,18 +45,13 @@ class PostDetailMobileLayout extends StatelessWidget {
         const Divider(height: 1), // 分隔线无动画
 
         // --- ReplyList 的容器带动画 ---
-        FadeInItem( // 使用纯淡入
+        FadeInItem(
+          // 使用纯淡入
           key: ValueKey('reply_list_mob_${post.id}'), // Key
           duration: replyListDuration,
           delay: baseDelay + replyDelay, // 稍后出现
-          child: SizedBox(
-            // 保持原有高度计算
-            height: MediaQuery.of(context).size.height -
-                kToolbarHeight -
-                MediaQuery.of(context).padding.top -
-                80,
-            child: PostReplyList(postId: postId),
-          ),
+
+          child: PostReplyList(postId: postId),
         ),
       ],
     );

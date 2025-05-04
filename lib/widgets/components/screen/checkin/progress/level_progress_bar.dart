@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/checkin/level_progress_bar.dart
 import 'package:flutter/material.dart';
 
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 
 class LevelProgressBar extends StatelessWidget {
   final int level;
@@ -20,7 +20,7 @@ class LevelProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 根据等级选择颜色
-    Color levelColor =LevelColor.getLevelColor(level);
+    Color levelColor =LevelUtils.getLevelColor(level);
     // 安全的百分比值
     final widthFactor = percentage.clamp(0.0, 1.0);
 

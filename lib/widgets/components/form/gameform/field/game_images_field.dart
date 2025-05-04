@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'dart:io';
-import '../../../../../services/common/upload/file_upload_service.dart'; // 可能需要基础 URL
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart'; // 确认路径
 

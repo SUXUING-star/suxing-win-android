@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
@@ -84,7 +85,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
 
           return MaterialApp(
             navigatorKey: mainNavigatorKey,
-            title: '宿星茶会（跨平台版）',
+            title: GlobalConstants.appName,
             theme: themeProvider.lightTheme,
             darkTheme: themeProvider.darkTheme,
             themeMode: themeProvider.themeMode,

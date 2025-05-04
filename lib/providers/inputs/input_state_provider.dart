@@ -1,4 +1,4 @@
-// lib/providers/input_state_provider.dart
+// lib/providers/inputs/input_state_provider.dart
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 

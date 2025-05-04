@@ -6,7 +6,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 引入 UserInfoProvider
 import 'package:suxingchahui/providers/user/user_data_status.dart'; // 引入 UserDataStatus
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 // 确保这些组件的路径也正确
@@ -266,7 +266,7 @@ class UserInfoBadge extends StatelessWidget {
 
   // 获取等级对应的颜色
   Color _getLevelColor(int level) {
-    return LevelColor.getLevelColor(level); // 假设 LevelColor 工具类存在且可用
+    return LevelUtils.getLevelColor(level); // 假设 LevelColor 工具类存在且可用
   }
 
   // 构建加载状态的占位符 UI

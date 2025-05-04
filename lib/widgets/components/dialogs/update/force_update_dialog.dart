@@ -15,9 +15,8 @@ class ForceUpdateDialog {
     required String currentVersion,
     required String latestVersion,
     required String updateUrl,
-    String? updateMessage,    // 可选
-    List<String>? changelog,  // 可选
-    // ************************************
+    String? updateMessage,
+    List<String>? changelog,
   }) {
     // --- 内部固定的样式和行为 ---
     const String fixedTitle = '发现新版本';

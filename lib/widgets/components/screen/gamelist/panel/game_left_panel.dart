@@ -1,13 +1,14 @@
 // lib/widgets/components/screen/gamelist/panel/game_left_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/device/device_utils.dart';
 
 class GameLeftPanel extends StatelessWidget {
   final List<Tag> tags;
   final String? selectedTag;
-  final Function(String) onTagSelected;
+  final Function(String?) onTagSelected; // <--- 修改：允许传递 null 来清除选择
 
   const GameLeftPanel({
     super.key,
@@ -18,7 +19,6 @@ class GameLeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 使用自适应宽度
     final panelWidth = DeviceUtils.getSidePanelWidth(context);
 
     return Container(
@@ -27,16 +27,16 @@ class GameLeftPanel extends StatelessWidget {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Opacity(
-          opacity: 0.8, // 透明度调整为0.8
+          opacity: 0.8, // 透明度可以按需调整
           child: Container(
-            color: Colors.white,
+            color: Colors.white, // 背景色可以按需调整
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // 标题栏
                 Container(
                   padding: EdgeInsets.all(12),
-                  color: Colors.blue,
+                  color: Theme.of(context).primaryColor,
                   child: Row(
                     children: [
                       Icon(Icons.label, color: Colors.white, size: 16),
@@ -49,38 +49,34 @@ class GameLeftPanel extends StatelessWidget {
                           fontSize: 14,
                         ),
                       ),
+                      Spacer(), // <--- 使用 Spacer 把清除按钮推到最右边
                       if (selectedTag != null)
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              InkWell(
-                                onTap: () => onTagSelected(selectedTag!),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.close,
-                                          size: 12, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '清除',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
+                        InkWell(
+                          // onTap: () => onTagSelected(selectedTag!), // 旧逻辑
+                          onTap: () =>
+                              onTagSelected(null), // <--- 点击清除按钮时传递 null
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.close,
+                                    size: 12, color: Colors.white),
+                                SizedBox(width: 4),
+                                Text(
+                                  '清除',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.white,
                                   ),
                                 ),
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         ),
                     ],
@@ -112,63 +108,44 @@ class GameLeftPanel extends StatelessWidget {
       );
     }
 
-    // 使用Grid布局代替Wrap，更加整齐
+    // --- 参数可以调 ---
+    final double itemAspectRatio = 3.0; // 宽高比，可能还要调
+    final double cornerRadius = 12.0; // <--- 加大圆角！整个标签区域用这个圆角
+    final double gridSpacing = 1;
+
     return GridView.builder(
       shrinkWrap: true,
       physics: NeverScrollableScrollPhysics(),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
         crossAxisCount: 2,
-        childAspectRatio: 2.5,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+        childAspectRatio: itemAspectRatio,
+        crossAxisSpacing: gridSpacing,
+        mainAxisSpacing: gridSpacing,
       ),
       itemCount: tags.length,
       itemBuilder: (context, index) {
         final tag = tags[index];
         final isSelected = selectedTag == tag.name;
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
+        // 用 ClipRRect 来强制圆角，InkWell 的水波纹也会是圆角的
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(cornerRadius), // <--- 用统一的大圆角
           child: InkWell(
             onTap: () => onTagSelected(tag.name),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tag.name,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.blue,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: isSelected
-                          ? Colors.white.withOpacity(0.3)
-                          : Colors.blue.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Text(
-                      '${tag.count}',
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.blue,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ),
-                ],
+            child: Container(
+              // **核心改动：背景色处理**
+              color: isSelected
+                  ? Theme.of(context).primaryColor.withOpacity(0.1) // 选中时淡主色背景
+                  : Colors.transparent, // **未选中时完全透明！干掉那个傻逼边框和背景！**
+
+              child: Padding(
+                // 微调 GameTag 周围的 Padding，让它呼吸一下
+                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
+                child: GameTag(
+                  tag: tag.name,
+                  count: tag.count,
+                  isSelected: isSelected,
+                ),
               ),
             ),
           ),

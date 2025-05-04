@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 import '../../../models/game/game_collection.dart';
 import '../../../providers/auth/auth_provider.dart';
@@ -43,6 +44,12 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   // *** 新增：用于跟踪上一次的登录状态 ***
   bool? _previousIsLoggedIn;
 
+  // --- 新增：节流相关状态 ---
+  bool _isRefreshing = false; // 标记是否正在执行下拉刷新操作
+  DateTime? _lastForcedRefreshTime; // 上次强制刷新的时间戳
+  // 定义最小强制刷新间隔 (例如：3秒)
+  static const Duration _minForcedRefreshInterval = Duration(seconds: 15);
+
   @override
   void initState() {
     super.initState();
@@ -52,36 +59,22 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    print("GameCollectionScreen didChangeDependencies");
 
     // *** 这是监听 Provider 变化和进行初始加载的正确地方 ***
     final authProvider = Provider.of<AuthProvider>(context); // 获取实例，但不监听 build
     final currentIsLoggedIn = authProvider.isLoggedIn;
-
-    print(
-        "didChangeDependencies: currentIsLoggedIn=$currentIsLoggedIn, _previousIsLoggedIn=$_previousIsLoggedIn");
 
     // --- 处理登录状态变化 ---
     // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
     // 且当前登录状态与上次不同时，才处理变化
     if (_previousIsLoggedIn != null &&
         currentIsLoggedIn != _previousIsLoggedIn) {
-      print("登录状态发生变化: $_previousIsLoggedIn -> $currentIsLoggedIn");
       if (currentIsLoggedIn) {
         // 刚登录，触发数据加载
-        print("用户已登录，调用 _loadData");
         _loadData(); // 重新加载数据
       } else {
         // 刚登出，清空数据并显示提示
-        print("用户已登出，清空数据并设置错误状态");
         if (mounted) {
-          // 确保 widget 仍然挂载
-          // ** 不直接 setState，而是设置状态变量，让 build 方法去处理 UI **
-          // setState(() {
-          //   _isLoading = false;
-          //   _error = '请先登录后再查看收藏';
-          //   _clearData();
-          // });
           // 设置状态变量，build 会根据这些变量来渲染
           _isLoading = false;
           _error = '请先登录后再查看收藏';
@@ -95,12 +88,9 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     // 如果 _previousIsLoggedIn 是 null，表示这是第一次运行 didChangeDependencies
     // 或者是因为其他依赖变化（理论上这里只有 AuthProvider）
     else if (_previousIsLoggedIn == null) {
-      print("首次运行 didChangeDependencies 或依赖初始化");
       if (currentIsLoggedIn) {
-        print("用户已登录，执行首次数据加载");
         _loadData(); // 首次加载数据
       } else {
-        print("用户未登录，设置初始状态");
         _isLoading = false;
         _error = '请先登录后再查看收藏';
         _clearData();
@@ -122,14 +112,10 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   // --- 数据加载方法 (保持不变，但调用时机改变) ---
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (!mounted) return;
-    // 移除 !forceRefresh && _isLoading 的判断，因为调用时机已在外部控制
-    // if (!forceRefresh && _isLoading) return;
-
     final authProvider = Provider.of<AuthProvider>(context,
         listen: false); // listen: false 因为不希望 build 因此重绘
     // ** 再次检查登录状态，因为可能是异步调用 **
     if (!authProvider.isLoggedIn) {
-      print("_loadData: 用户未登录，取消加载");
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -139,8 +125,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
       }
       return;
     }
-
-    print("_loadData: 开始加载数据 (forceRefresh=$forceRefresh)");
     if (mounted) {
       setState(() {
         _isLoading = true;
@@ -150,8 +134,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
     try {
       final collectionService = context.read<GameCollectionService>();
-      final groupedData = await collectionService.getAllUserGamesGrouped(
-          forceRefresh: forceRefresh);
+      final groupedData = await collectionService
+          .getAllUserGameCollectionsGrouped(forceRefresh: forceRefresh);
       if (mounted) {
         if (groupedData != null) {
           setState(() {
@@ -168,18 +152,16 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
             _isLoading = false;
             _error = null;
           });
-          print("_loadData: 数据加载成功");
         } else {
           setState(() {
             _isLoading = false;
             _error = '加载收藏数据失败 (null response)';
             _clearData();
           });
-          print("_loadData: 加载失败 (null response)");
+          // print("_loadData: 加载失败 (null response)");
         }
       }
     } catch (e) {
-      print('!!! _loadData error: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -204,19 +186,50 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     };
   }
 
-  // 下拉刷新 (保持不变)
+  // --- 下拉刷新 (加入节流逻辑) ---
   Future<void> _handleRefresh() async {
-    print(">>> 执行下拉刷新...");
-    await _loadData(forceRefresh: true);
+    // 1. 防止重复触发：如果已经在刷新中，直接返回
+    if (_isRefreshing) {
+      print("节流：已经在刷新中，忽略本次触发");
+      return;
+    }
+
+    // 2. 设置刷新状态标记
+    if (mounted) {
+      setState(() {
+        _isRefreshing = true; // 开始刷新
+      });
+    }
+
+    final now = DateTime.now();
+    bool didForceRefresh = false; // 标记本次是否执行了强制刷新
+
+    try {
+      // 3. 检查时间间隔：判断离上次强制刷新是否足够久
+      if (_lastForcedRefreshTime == null ||
+          now.difference(_lastForcedRefreshTime!) > _minForcedRefreshInterval) {
+        // 4. 时间足够长 或 首次刷新 -> 执行强制刷新
+        await _loadData(forceRefresh: true);
+        _lastForcedRefreshTime = now; // 更新上次强制刷新的时间
+        didForceRefresh = true;
+      } else {
+        // 5. 时间间隔太短 -> 不执行强制刷新 (可以选择执行普通刷新或什么都不做)
+        AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
+      }
+    } catch (e) {
+      // 可以在这里显示 SnackBar 提示刷新失败
+    } finally {
+      // 6. 清除刷新状态标记 (无论成功失败)
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false; // 结束刷新
+        });
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    print("GameCollectionScreen build");
-    // *** 不再需要在这里监听 AuthProvider 或处理登录状态变化 ***
-    // final authProvider = context.watch<AuthProvider>();
-    // WidgetsBinding.instance.addPostFrameCallback((_) { ... }); // *** 移除这整块 ***
-
     // 直接使用当前状态变量来决定显示什么
     final authProvider =
         Provider.of<AuthProvider>(context, listen: false); // 获取实例用于判断
@@ -238,12 +251,10 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   // 构建 Body (逻辑基本不变，依赖状态变量)
   Widget _buildBody(bool isLoggedIn) {
-    print(
-        "_buildBody: isLoading=$_isLoading, error=$_error, isLoggedIn=$isLoggedIn");
     // 1. 未登录
     if (!isLoggedIn && _error == '请先登录后再查看收藏') {
       // 明确检查错误信息
-      print("_buildBody: 显示登录提示");
+
       return LoginPromptWidget(isDesktop: _isDesktopLayout);
     }
 
@@ -251,13 +262,12 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     if (_isLoading &&
         _gameCollections.values.every((list) => list.isEmpty) &&
         _error == null) {
-      print("_buildBody: 显示初始加载指示器");
       return LoadingWidget.fullScreen(message: "正在加载收藏数据");
     }
 
     // 3. 加载出错
     if (_error != null && _error != '请先登录后再查看收藏') {
-      return InlineErrorWidget(
+      return CustomErrorWidget(
         errorMessage: _error,
         onRetry: () {
           NavigationUtils.navigateToLogin(context);
@@ -266,7 +276,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     }
 
     // 4. 显示正常内容 (即使 _isLoading 为 true，只要有旧数据也显示，并允许刷新)
-    print("_buildBody: 显示收藏列表");
     return RefreshIndicator(
       onRefresh: _handleRefresh,
       child: _isDesktopLayout ? _buildDesktopLayout() : _buildMobileLayout(),

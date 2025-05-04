@@ -1,10 +1,9 @@
 // lib/widgets/components/screen/activity/hot_activities_panel.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
-import '../utils/activity_utils.dart';
-import 'layout/mobile/hot_activities_compact_panel.dart';
 import 'layout/desktop/hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
@@ -75,20 +74,7 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        // 如果屏幕太窄，返回一个紧凑的版本
-        if (constraints.maxWidth < 600) {
-          return HotActivitiesCompactPanel(
-            hotActivities: _hotActivities,
-            activityStats: _activityStats,
-            isLoading: _isLoading,
-            hasError: _hasError,
-            errorMessage: _errorMessage,
-            onRefresh: _loadData,
-            getActivityTypeName: ActivityUtils.getActivityTypeName,
-            getActivityTypeColor: ActivityUtils.getActivityTypeColor,
-            panelWidth: panelWidth,
-          );
-        }
+
 
         // 默认完整面板
         return HotActivitiesFullPanel(
@@ -98,8 +84,8 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
           hasError: _hasError,
           errorMessage: _errorMessage,
           onRefresh: _loadData,
-          getActivityTypeName: ActivityUtils.getActivityTypeName,
-          getActivityTypeColor: ActivityUtils.getActivityTypeColor,
+          getActivityTypeName: ActivityTypeUtils.getActivityTypeText,
+          getActivityTypeColor: ActivityTypeUtils.getActivityTypeBackgroundColor,
           panelWidth: panelWidth,
         );
       },

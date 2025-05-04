@@ -1,7 +1,7 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_user_profile.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../models/user/user.dart';
@@ -17,7 +17,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
 
   // 根据等级返回不同的颜色
   Color _getLevelColor(int level) {
-    return LevelColor.getLevelColor(level);
+    return LevelUtils.getLevelColor(level);
   }
 
   // 未登录状态的用户头像和登录入口

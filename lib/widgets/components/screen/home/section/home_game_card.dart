@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import '../../../../../models/game/game.dart';
 import 'animated_card_container.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -53,6 +54,10 @@ class HomeGameCard extends StatelessWidget {
                       },
                     ),
                   ),
+                  Positioned(
+                      top: 8,
+                      left: 8,
+                      child: GameCategoryTag(category: game.category)),
 
                   // 右下角添加统计信息
                   Positioned(

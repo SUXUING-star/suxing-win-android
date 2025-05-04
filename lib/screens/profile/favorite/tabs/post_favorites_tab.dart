@@ -16,7 +16,8 @@ class PostFavoritesTab extends StatefulWidget {
     _postTabKey.currentState?.refreshPosts();
   }
 
-  static final GlobalKey<_PostFavoritesTabState> _postTabKey = GlobalKey<_PostFavoritesTabState>();
+  static final GlobalKey<_PostFavoritesTabState> _postTabKey =
+      GlobalKey<_PostFavoritesTabState>();
 
   PostFavoritesTab() : super(key: _postTabKey);
 
@@ -24,7 +25,8 @@ class PostFavoritesTab extends StatefulWidget {
   _PostFavoritesTabState createState() => _PostFavoritesTabState();
 }
 
-class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepAliveClientMixin {
+class _PostFavoritesTabState extends State<PostFavoritesTab>
+    with AutomaticKeepAliveClientMixin {
   final ScrollController _scrollController = ScrollController();
 
   List<Post> _favoritePosts = [];
@@ -34,7 +36,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   int _totalPages = 1; // 添加总页数状态
   final int _limit = 15; // 假设每页加载10条，应与 Service 和后端一致
   bool _hasMoreData = true; // 这个可以根据 totalPages 计算
-
 
   @override
   void initState() {
@@ -51,7 +52,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels == _scrollController.position.maxScrollExtent) {
+    if (_scrollController.position.pixels ==
+        _scrollController.position.maxScrollExtent) {
       if (!_isLoading && _hasMoreData) {
         _loadMorePosts();
       }
@@ -78,7 +80,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
       // --- 从 Map 中提取数据 ---
       final List<Post> fetchedPosts = result['posts'] as List<Post>? ?? [];
-      final Map<String, dynamic> pagination = result['pagination'] as Map<String, dynamic>? ?? {};
+      final Map<String, dynamic> pagination =
+          result['pagination'] as Map<String, dynamic>? ?? {};
 
       final int serverPage = pagination['page'] ?? _currentPage;
       final int serverTotalPages = pagination['pages'] ?? 1;
@@ -130,9 +133,9 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   Future<void> refreshPosts() async {
     return _loadFavoritePosts();
   }
+
   // --- 新增：处理 PostCard 的删除（取消收藏）请求 ---
   Future<void> _handleUnfavoritePost(String postId) async {
-    print("PostFavoritesTab: Handling unfavorite request for $postId");
     // 不显示确认对话框，直接取消收藏
     try {
       // 调用 Service 取消收藏 (toggle 会自动处理状态)
@@ -144,8 +147,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
         // 优化：从列表中移除，而不是完全刷新
         setState(() {
           _favoritePosts.removeWhere((post) => post.id.toString() == postId);
-          // 如果当前页空了，并且还有上一页，可以考虑返回上一页？或者保持当前页等下次加载。
-          // 简单起见，只移除。或者直接调用 refreshPosts()。
         });
         // 可选：调用 refreshPosts() 保证数据完全同步，但会重新加载整页
         // await refreshPosts();
@@ -162,7 +163,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
   // --- 新增：处理 PostCard 的编辑请求 ---
   void _handleEditPostRequest(Post post) {
     // 在收藏夹里编辑帖子通常是不允许的，应该引导用户去原帖编辑
-    print("PostFavoritesTab: Edit requested for ${post.id}, showing info message.");
     AppSnackBar.showInfo(context, '请在帖子详情或我的帖子中进行编辑');
     // 或者可以考虑跳转到帖子详情页
     // NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
@@ -170,7 +170,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
   // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
   Future<void> _handleToggleLockAction(String postId) async {
-    print("PostFavoritesTab: Handling toggle lock action for $postId");
     if (!mounted) return;
 
     // 可选：显示加载状态
@@ -192,7 +191,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
               ? PostStatus.active
               : PostStatus.locked;
           _favoritePosts[index] = oldPost.copyWith(status: newStatus);
-          print("PostFavoritesTab: Updated post $postId status in favorites list.");
           // 如果帖子被锁定，它理论上不应该出现在普通用户的收藏夹了
           // 但管理员可能看到。如果非管理员，可以考虑直接移除
           // if (newStatus == PostStatus.locked && !Provider.of<AuthProvider>(context, listen: false).isAdmin) {
@@ -200,22 +198,17 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
           //   print("PostFavoritesTab: Removed locked post $postId from non-admin favorites.");
           // }
         } else {
-          print("PostFavoritesTab: Warning - Post $postId not found in favorites list after toggle.");
           // 可以选择刷新: refreshPosts();
         }
       });
-
     } catch (e) {
       if (!mounted) return;
-      print("PostFavoritesTab: Error toggling lock for post $postId: $e");
       AppSnackBar.showError(context, '操作失败: $e');
     } finally {
       // 可选：结束加载状态
       // if (mounted) setState(() => _isLoading = false);
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +217,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
 
     // 处理错误状态
     if (_error != null) {
-      return InlineErrorWidget(
+      return CustomErrorWidget(
         errorMessage: _error!,
         onRetry: _loadFavoritePosts,
       );
@@ -275,12 +268,12 @@ class _PostFavoritesTabState extends State<PostFavoritesTab> with AutomaticKeepA
         // onLoadMore: _loadMorePosts, // PostGridView 不直接使用 onLoadMore 回调
         isDesktopLayout: isDesktop, // 根据设备类型判断布局
         // --- 传递实现好的回调函数 ---
-        onDeleteAction: _handleUnfavoritePost,
         onEditAction: _handleEditPostRequest,
         onToggleLockAction: _handleToggleLockAction,
       ),
     );
   }
+
   @override
   bool get wantKeepAlive => true;
 }

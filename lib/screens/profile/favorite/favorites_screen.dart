@@ -11,10 +11,11 @@ class FavoritesScreen extends StatefulWidget {
   _FavoritesScreenState createState() => _FavoritesScreenState();
 }
 
-class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProviderStateMixin {
+class _FavoritesScreenState extends State<FavoritesScreen>
+    with SingleTickerProviderStateMixin {
   // Tab控制
   late TabController _tabController;
-  final List<String> _tabTitles = ['游戏收藏', '帖子收藏'];
+  final List<String> _tabTitles = ['游戏', '帖子'];
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> with SingleTickerProv
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: '我的收藏',
+        title: '我的喜欢',
         bottom: TabBar(
           controller: _tabController,
           tabs: _tabTitles.map((title) => Tab(text: title)).toList(),

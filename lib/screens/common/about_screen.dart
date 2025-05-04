@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/utils/network/open_web_url_utils.dart';
 import 'package:suxingchahui/utils/network/url_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 确保引入动画组件
@@ -13,26 +14,6 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
-  final String _donationUrl =
-      'https://afdian.net/a/your_project_id'; // 替换为你的爱发电 ID
-  final String _feedbackUrl = 'https://xingsu.fun/feedback'; // 替换为你的反馈链接
-  final String _githubUrl =
-      'https://github.com/SUXUING-star/suxing-win-android';
-  final String _bUrl =
-      'https://space.bilibili.com/32892805?spm_id_from=333.1007.0.0';
-
-  // --- 这里只保留你最初提供的技术栈数据 ---
-  final List<Map<String, dynamic>> techStacks = const [
-    {
-      "title": "本项目全栈开发技术",
-      "items": [
-        {"name": "Dart", "desc": "客户端开发"},
-        {"name": "Golang", "desc": "服务端开发"},
-      ]
-    }
-    // --- 没有其他示例了 ---
-  ];
-
   Future<void> _handleOpenLink(
       BuildContext context, String? title, String url) async {
     final validUrl = UrlUtils.getSafeUrl(url);
@@ -40,9 +21,6 @@ class AboutScreen extends StatelessWidget {
   }
 
   Future<void> _handlerQQGourp(BuildContext context) async {
-    final String groupNumber = '829701655'; // QQ群号
-    final String qrCodeAssetPath = 'assets/images/qq.png'; // 图片资源路径
-
     await BaseInputDialog.show<bool>(
       // 使用你提供的 BaseInputDialog
       context: context,
@@ -64,7 +42,7 @@ class AboutScreen extends StatelessWidget {
               // 给图片加个圆角，可选
               borderRadius: BorderRadius.circular(8.0),
               child: Image.asset(
-                qrCodeAssetPath,
+                GlobalConstants.qrCodeAssetPath,
                 width: 180, // 调整图片大小
                 height: 180,
                 fit: BoxFit.cover,
@@ -89,7 +67,7 @@ class AboutScreen extends StatelessWidget {
 
             // 2. 显示群号文本
             AppText(
-              'QQ群号：$groupNumber',
+              'QQ群号：$GlobalConstants.groupNumber',
               fontSize: 16,
               fontWeight: FontWeight.w500,
             ),
@@ -103,7 +81,8 @@ class AboutScreen extends StatelessWidget {
               label: '复制群号',
 
               onPressed: () {
-                Clipboard.setData(ClipboardData(text: groupNumber));
+                Clipboard.setData(
+                    ClipboardData(text: GlobalConstants.groupNumber));
                 // 显示提示信息
                 AppSnackBar.showSuccess(context, '群号已复制到剪贴板！');
               },
@@ -294,8 +273,8 @@ class AboutScreen extends StatelessWidget {
                                   icon: Icons.code,
                                   iconSize: 16,
                                   label: 'GitHub',
-                                  onPressed: () => _handleOpenLink(
-                                      context, "github仓库", _githubUrl),
+                                  onPressed: () => _handleOpenLink(context,
+                                      "github仓库", GlobalConstants.githubUrl),
                                 ),
                               ),
                               SizedBox(
@@ -316,8 +295,10 @@ class AboutScreen extends StatelessWidget {
                                   icon: Icons.video_library,
                                   iconSize: 16,
                                   label: 'bilibili',
-                                  onPressed: () => _handleOpenLink(context,
-                                      "我的b站账号", _bUrl), // 这里需要补充b站链接或逻辑
+                                  onPressed: () => _handleOpenLink(
+                                      context,
+                                      "我的b站账号",
+                                      GlobalConstants.bUrl), // 这里需要补充b站链接或逻辑
                                 ),
                               ),
                             ],
@@ -340,7 +321,7 @@ class AboutScreen extends StatelessWidget {
                 icon: Icons.coffee_outlined,
                 iconColor: Colors.brown.shade400,
                 trailing: OpenUrlButton(
-                  url: _donationUrl,
+                  url: GlobalConstants.donationUrl,
                   tooltip: '打开赞助页面',
                   icon: Icons.open_in_new,
                   color: primaryColor,
@@ -355,7 +336,7 @@ class AboutScreen extends StatelessWidget {
                 icon: Icons.feedback_outlined,
                 iconColor: Colors.green.shade500,
                 trailing: OpenUrlButton(
-                  url: _feedbackUrl,
+                  url: GlobalConstants.feedbackUrl,
                   tooltip: '前往发布页面',
                   icon: Icons.open_in_new,
                   color: primaryColor,
@@ -372,7 +353,7 @@ class AboutScreen extends StatelessWidget {
                     ? Colors.grey.shade400
                     : Colors.black87,
                 trailing: OpenUrlButton(
-                  url: _githubUrl,
+                  url: GlobalConstants.githubUrl,
                   tooltip: '访问 GitHub 仓库',
                   icon: Icons.open_in_new,
                   color: primaryColor,
@@ -383,9 +364,9 @@ class AboutScreen extends StatelessWidget {
               const SizedBox(height: 8.0), // 技术栈部分的间距稍微小一点
 
               // 遍历 techStacks 列表，为每个分类创建一个可展开项
-              ...techStacks.map((section) {
+              ...GlobalConstants.techStacks.map((section) {
                 // 计算延迟，让它们依次出现
-                int index = techStacks.indexOf(section);
+                int index = GlobalConstants.techStacks.indexOf(section);
                 int baseDelay = 600; // 基础延迟，接在支持部分之后
                 int itemDelay = 100; // 每个技术栈项之间的延迟差
                 int currentDelay = baseDelay + (index * itemDelay);
@@ -404,7 +385,7 @@ class AboutScreen extends StatelessWidget {
               }).toList(),
 
               // 如果 techStacks 为空，可以显示提示信息
-              if (techStacks.isEmpty)
+              if (GlobalConstants.techStacks.isEmpty)
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 20.0),
                   child: Center(child: AppText('暂无技术栈信息', color: Colors.grey)),

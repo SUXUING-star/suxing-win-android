@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 // *** 导入 LoadingWidget ***
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/components/common_game_card.dart';
+import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 // import '../../widgets/components/loading/loading_route_observer.dart'; // 已删除
 
 class SearchGameScreen extends StatefulWidget {
@@ -47,7 +47,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   @override
   void initState() {
     super.initState();
-    print("SearchGameScreen initState called");
   }
 
   @override
@@ -55,7 +54,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (_searchHistory.isEmpty && mounted) {
-        print("SearchGameScreen didChangeDependencies: Loading search history");
         _loadSearchHistory(); // 历史加载不需要 LoadingWidget
       }
     });
@@ -63,7 +61,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   @override
   void dispose() {
-    print("SearchGameScreen dispose called");
     _searchController.dispose();
     _debounceTimer?.cancel();
     super.dispose();
@@ -110,7 +107,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   void _addToHistory(String query) {
     final trimmedQuery = query.trim();
     if (trimmedQuery.isEmpty || !mounted) return;
-    print("SearchGameScreen: Adding '$trimmedQuery' to history.");
     setState(() {
       _searchHistory.remove(trimmedQuery);
       _searchHistory.insert(0, trimmedQuery);
@@ -123,7 +119,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   void _removeFromHistory(String query) {
     if (!mounted) return;
-    print("SearchGameScreen: Removing '$query' from history.");
     setState(() {
       _searchHistory.remove(query);
     });
@@ -132,20 +127,17 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   void _clearHistory() {
     if (!mounted) return;
-    print("SearchGameScreen: Clearing search history.");
     setState(() {
       _searchHistory.clear();
     });
     _saveSearchHistory();
   }
-  // --- 搜索历史结束 ---
 
   // --- 核心搜索逻辑 ---
   Future<void> _performSearch(String query) async {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(Duration(milliseconds: 500), () async {
       final trimmedQuery = query.trim();
-      print("SearchGameScreen: Performing search for '$trimmedQuery'");
       if (!mounted) return;
 
       // 如果搜索词为空，清空结果并重置状态
@@ -171,8 +163,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         final results = await gameService.searchGames(trimmedQuery);
         if (!mounted) return;
 
-        print(
-            "SearchGameScreen: Search results received. Count: ${results.length}");
         setState(() {
           _searchResults = results;
           _error = null; // 清除错误
@@ -195,8 +185,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         // *** 无论成功失败，最后都重置 isSearching 状态 ***
         if (mounted) {
           if (_isSearching) setState(() => _isSearching = false); // 重置搜索状态
-          print(
-              "SearchGameScreen: Search finished, isSearching: $_isSearching");
         }
       }
     });
@@ -206,7 +194,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
-    print("SearchGameScreen: Build method called. isSearching: $_isSearching");
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.transparent,
@@ -232,7 +219,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
           // 每次输入变化都触发搜索
           onChanged: _performSearch,
           onSubmitted: (query) {
-            print("SearchGameScreen: Submitted search for '$query'");
             // 提交时也触发搜索
             _performSearch(query.trim());
             // 添加历史在 performSearch 成功后处理
@@ -243,7 +229,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
             IconButton(
               icon: Icon(Icons.clear, color: Colors.white),
               onPressed: () {
-                print("SearchGameScreen: Clearing search input.");
                 _searchController.clear();
                 // 清空时也触发 performSearch('') 来重置状态并显示历史
                 _performSearch('');
@@ -281,7 +266,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
           },
         );
       } else {
-        print("SearchGameScreen: Displaying history error widget.");
         return InlineErrorWidget(
           errorMessage: _error!,
           onRetry: () {
@@ -296,12 +280,10 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
     // *** 3. 如果搜索框为空，显示历史记录 ***
     if (_searchController.text.isEmpty) {
-      print("SearchGameScreen: Displaying search history.");
       return _buildSearchHistory();
     }
 
     // *** 4. 显示搜索结果列表 (包括空状态) ***
-    print("SearchGameScreen: Displaying search results.");
     return _buildSearchResults();
   }
 
@@ -364,12 +346,8 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   // --- 构建搜索结果 UI ---
   Widget _buildSearchResults() {
-    print(
-        "SearchGameScreen: Building search results. Count: ${_searchResults.length}");
-
     // 空状态处理 (保持不变)
     if (!_isSearching && _searchResults.isEmpty && _error == null) {
-      print("SearchGameScreen: Displaying empty search results state.");
       return const EmptyStateWidget(
         message: '未找到相关游戏',
         iconData: Icons.search_off,

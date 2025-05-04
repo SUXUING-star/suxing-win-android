@@ -117,6 +117,7 @@ class ThemeProvider extends ChangeNotifier {
           fontWeight: FontWeight.w500,
         ),
       ),
+      canvasColor: Colors.white,
       cardTheme: CardTheme(
         elevation: 2,
         color: Colors.white,
@@ -172,6 +173,7 @@ class ThemeProvider extends ChangeNotifier {
           color: Colors.white,
         ),
       ),
+      canvasColor: Colors.white,
       cardTheme: CardTheme(
         elevation: 2,
         shape: RoundedRectangleBorder(

@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/checkin/widget/today_checkin_list.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/utils/level/level_color.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 // 导入修改后的 CheckInUserList (其内部 users 是 List<String>)
@@ -179,7 +179,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                   height: 24, // 固定高度
                   alignment: Alignment.center, // 文字居中
                   decoration: BoxDecoration(
-                    color: LevelColor.getLevelColor(index + 1), // 根据排名获取颜色
+                    color: LevelUtils.getLevelColor(index + 1), // 根据排名获取颜色
                     shape: BoxShape.circle, // 圆形背景
                   ),
                   child: Text(

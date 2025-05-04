@@ -33,7 +33,6 @@ class PostDetailScreen extends StatefulWidget {
 }
 
 class _PostDetailScreenState extends State<PostDetailScreen> {
-  final TextEditingController _replyController = TextEditingController();
   Post? _post;
   UserPostActions? _userActions;
   String? _error;
@@ -200,8 +199,10 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           _isLoading = true;
         });
         try {
-          final forumService = context.read<ForumService>();
-          await forumService.deletePost(widget.postId);
+          if (_post != null){
+            final forumService = context.read<ForumService>();
+            await forumService.deletePost(_post!);
+          }
           if (!mounted) return;
           _hasInteraction = true;
           AppSnackBar.showSuccess(context, '帖子已删除');
@@ -399,7 +400,6 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   // dispose 方法 (完整)
   @override
   void dispose() {
-    _replyController.dispose(); // 只清理 Controller
     super.dispose();
   }
 } // End of _PostDetailScreenState

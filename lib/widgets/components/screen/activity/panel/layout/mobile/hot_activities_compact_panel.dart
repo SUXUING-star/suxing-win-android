@@ -1,15 +1,11 @@
 // lib/widgets/components/screen/activity/hot_activities_compact_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-// import 'package:suxingchahui/screens/profile/open_profile_screen.dart'; // <- 不再需要手动导航
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // <- 不再需要手动导航
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-// --- 只依赖 UserInfoBadge ---
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
-// import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // <- 干掉
-import '../../../utils/activity_utils.dart'; // 这个活动描述工具还是要的
 
 class HotActivitiesCompactPanel extends StatelessWidget {
   final List<UserActivity> hotActivities;
@@ -139,7 +135,7 @@ class HotActivitiesCompactPanel extends StatelessWidget {
       itemBuilder: (context, index) {
         final activity = hotActivities[index];
         final activityDescription =
-        ActivityUtils.getActivityDescription(activity);
+        ActivityTypeUtils.getActivityDescription(activity);
 
         // --- 直接在 ListTile 中使用 UserInfoBadge ---
         return ListTile(

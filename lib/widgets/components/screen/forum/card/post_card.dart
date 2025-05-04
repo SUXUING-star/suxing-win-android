@@ -26,7 +26,7 @@ class PostCard extends StatelessWidget {
   /// 当用户触发删除操作时调用的回调函数 (可选)。
   /// 父组件应在此回调中处理确认对话框和实际的删除逻辑。
   /// 参数为要删除的帖子的 ID。
-  final Future<void> Function(String postId)? onDeleteAction;
+  final Future<void> Function(Post post)? onDeleteAction;
 
   /// 当用户触发编辑操作时调用的回调函数 (可选)。
   /// 父组件应在此回调中处理导航到编辑页面等逻辑。
@@ -313,55 +313,31 @@ class PostCard extends StatelessWidget {
     if (value == 'edit') {
       // 使用空安全调用 ?.call()
       if (onEditAction != null) {
-        print(
-            "PostCard: Edit option selected for post ${post.id}. Calling onEditAction.");
         onEditAction!(post); // 明确知道非空后可以加 !，或者直接用 onEditAction(post)
       } else {
-        print("PostCard: Edit option selected, but onEditAction is null.");
+        // print("PostCard: Edit option selected, but onEditAction is null.");
       }
     } else if (value == 'delete') {
       final callback = onDeleteAction; // 存储到局部变量以便检查
       if (callback != null) {
-        print(
-            "PostCard: Delete option selected for post ${post.id}. Calling onDeleteAction.");
         try {
-          await callback(post.id.toString());
-          print("PostCard: onDeleteAction call initiated for post ${post.id}.");
-        } catch (e) {
-          print("PostCard: Error occurred during onDeleteAction call: $e");
-          // 可以在这里显示错误提示，或者让父组件处理
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('删除失败: $e'), backgroundColor: Colors.red),
-            );
-          }
-        }
+          await callback(post);
+        } catch (e) {}
       } else {
-        print("PostCard: Delete option selected, but onDeleteAction is null.");
+        // print("PostCard: Delete option selected, but onDeleteAction is null.");
       }
     } else if (value == 'toggle_lock') {
       final callback = onToggleLockAction; // 存储到局部变量以便检查
       if (callback != null) {
-        print(
-            "PostCard: Toggle lock option selected for post ${post.id}. Calling onToggleLockAction.");
         try {
           await callback(post.id.toString());
-          print(
-              "PostCard: onToggleLockAction call initiated for post ${post.id}.");
           // 可以在这里或者父组件中提示成功
         } catch (e) {
-          print("PostCard: Error occurred during onToggleLockAction call: $e");
+          // print("PostCard: Error occurred during onToggleLockAction call: $e");
           // 可以在这里显示错误提示，或者让父组件处理
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('操作失败: $e'), backgroundColor: Colors.red),
-            );
-          }
+          if (context.mounted) {}
         }
-      } else {
-        print(
-            "PostCard: Toggle lock option selected, but onToggleLockAction is null.");
-      }
+      } else {}
     }
   }
 }

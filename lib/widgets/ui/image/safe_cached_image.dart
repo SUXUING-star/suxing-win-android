@@ -56,14 +56,30 @@ class SafeCachedImage extends StatelessWidget {
     // 获取安全URL
     final safeUrl = UrlUtils.getSafeUrl(imageUrl);
 
+    // --- 决定最终的缓存大小 ---
+    int? finalCacheWidth;
+    int? finalCacheHeight;
+
+    // 1. 最高优先级：使用外部直接传入的缓存大小
+    if (memCacheWidth != null || memCacheHeight != null) {
+      finalCacheWidth = memCacheWidth;
+      finalCacheHeight = memCacheHeight;
+    }
+    // 2. 次高优先级：如果没传缓存大小，但传了逻辑大小，则计算
+    else if (width != null || height != null) {
+      final dpr = MediaQuery.of(context).devicePixelRatio;
+      finalCacheWidth = (width != null) ? (width! * dpr).round() : null;
+      finalCacheHeight = (height != null) ? (height! * dpr).round() : null;
+    }
+
     // 构建图片组件
     Widget imageWidget = CachedNetworkImage(
       imageUrl: safeUrl,
       width: width,
       height: height,
       fit: fit,
-      memCacheWidth: memCacheWidth,
-      memCacheHeight: memCacheHeight,
+      memCacheWidth: finalCacheWidth,   // 使用最终决定的缓存宽度
+      memCacheHeight: finalCacheHeight,  // 使用最终决定的缓存高度
       placeholder: (context, url) => _buildPlaceholder(context),
       errorWidget: (context, url, error) {
         // 触发错误回调
@@ -128,7 +144,8 @@ class SafeCachedImage extends StatelessWidget {
       color: backgroundColor ?? Colors.grey[200],
       width: width,
       height: height,
-      child: Center( // 让图片居中显示
+      child: Center(
+        // 让图片居中显示
         child: Image.asset(
           'assets/images/icons/main.png', // <-- 使用你的图片路径
           // 你可以根据需要调整图片的显示方式：

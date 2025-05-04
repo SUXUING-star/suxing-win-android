@@ -287,8 +287,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   // --- 加载更多结束 ---
 
   // --- PostCard 回调处理方法 (删除 Observer 相关代码) ---
-  Future<void> _handleDeletePostAction(String postId) async {
-    print("SearchPostScreen: Handling delete action for post $postId");
+  Future<void> _handleDeletePostAction(Post post) async {
+    final postId = post.id;
     if (!mounted) return;
     // LoadingRouteObserver 相关代码已删除
     try {
@@ -301,21 +301,16 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         iconData: Icons.delete_forever_outlined,
         iconColor: Colors.red,
         onConfirm: () async {
-          print(
-              "SearchPostScreen: Delete confirmed for post $postId. Calling service...");
           // *** 这里可以考虑加一个临时的按钮加载状态，但不影响全局 ***
           try {
             final forumService = context.read<ForumService>(); // 安全获取
-            await forumService.deletePost(postId);
+            await forumService.deletePost(post);
             if (!mounted) return;
-            print(
-                "SearchPostScreen: Post $postId deleted successfully from service.");
             setState(() {
               _searchResults.removeWhere((p) => p.id == postId);
             });
             AppSnackBar.showSuccess(context, '帖子已删除');
           } catch (e) {
-            print("SearchPostScreen: Error deleting post $postId: $e");
             if (mounted) AppSnackBar.showError(context, '删除失败: $e');
             rethrow;
           }

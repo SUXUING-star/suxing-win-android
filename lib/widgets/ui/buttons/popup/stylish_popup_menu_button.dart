@@ -39,7 +39,7 @@ class StylishPopupMenuButton<T> extends StatelessWidget {
     this.tooltip,
     this.isEnabled = true,
     // --- 外观 ---
-    this.menuColor = Colors.white, // 允许为 null，使用默认
+    this.menuColor = Colors.white,
     this.elevation, // 允许为 null，使用默认
     this.shape,     // 允许为 null，使用默认
     this.offset = Offset.zero,

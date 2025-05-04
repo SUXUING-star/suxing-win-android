@@ -178,6 +178,7 @@ class AnnouncementImageField extends StatelessWidget {
       // 确保 URL 完整 (假设 FileUpload.baseUrl 已定义)
       final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${uploadService.baseUrl}/$imageUrl';
       imageWidget = SafeCachedImage(
+        memCacheWidth: 140,
         imageUrl: displayUrl,
         fit: BoxFit.cover,
       );

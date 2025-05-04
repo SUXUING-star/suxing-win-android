@@ -1,5 +1,7 @@
-// 5. game_tag_list.dart
+
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
 
 class GameTagList extends StatelessWidget {
   final List<String> tags;
@@ -32,22 +34,6 @@ class GameTagList extends StatelessWidget {
   }
 
   Widget _buildTagItem(String tag) {
-    return Padding(
-      padding: const EdgeInsets.only(right: 4.0),
-      child: Container(
-        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(4),
-        ),
-        child: Text(
-          tag,
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[700],
-          ),
-        ),
-      ),
-    );
+    return GameTag(tag: tag);
   }
 }

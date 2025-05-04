@@ -1,6 +1,7 @@
 // lib/widgets/game/tag/game_tags.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../../models/game/game.dart';
@@ -90,7 +91,7 @@ class GameTags extends StatelessWidget {
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Theme.of(context).primaryColor.withOpacity(0.1),
+          color: GameTagUtils.getTagColor(tag),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: Theme.of(context).primaryColor.withOpacity(0.3),
@@ -101,7 +102,7 @@ class GameTags extends StatelessWidget {
           tag,
           style: TextStyle(
             fontSize: fontSize ?? 12,
-            color: Theme.of(context).primaryColor,
+            color: Colors.white,
           ),
         ),
       ),

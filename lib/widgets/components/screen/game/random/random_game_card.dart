@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -20,13 +21,14 @@ class RandomGameCard extends StatelessWidget {
       cursor: SystemMouseCursors.click,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap: onTap ?? () {
-          NavigationUtils.pushReplacementNamed(
-            context,
-            '/game/detail',
-            arguments: game.id,
-          );
-        },
+        onTap: onTap ??
+            () {
+              NavigationUtils.pushReplacementNamed(
+                context,
+                '/game/detail',
+                arguments: game.id,
+              );
+            },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -47,7 +49,7 @@ class RandomGameCard extends StatelessWidget {
 
   Widget _buildGameCoverWithStats(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 4/3,
+      aspectRatio: 4 / 3,
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
@@ -68,7 +70,7 @@ class RandomGameCard extends StatelessWidget {
               SafeCachedImage(
                 imageUrl: game.coverImage,
                 fit: BoxFit.cover,
-                memCacheWidth: 320,
+                memCacheWidth: DeviceUtils.isDesktop ? 240 : 320,
                 onError: (url, error) {
                   print('随机游戏图片加载失败: $url, 错误: $error');
                 },

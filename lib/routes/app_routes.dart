@@ -40,7 +40,7 @@ import 'package:suxingchahui/screens/checkin/checkin_screen.dart';
 import 'package:suxingchahui/screens/profile/follow/user_follows_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_feed_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_detail_screen.dart';
-import 'package:suxingchahui/screens/activity/activity_alternating_feed_screen.dart';
+import 'package:suxingchahui/screens/activity/my_activity_feed_screen.dart';
 import 'package:suxingchahui/screens/common/route_error_screen.dart';
 
 class AppRoutes {
@@ -243,7 +243,7 @@ class AppRoutes {
         }
         final String userId = settings.arguments as String;
         return MaterialPageRoute(
-          builder: (_) => ActivityAlternatingFeedScreen(
+          builder: (_) => MyActivityFeedScreen(
             userId: userId,
             title: '用户动态',
           ),

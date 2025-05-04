@@ -17,8 +17,6 @@ class User {
   final DateTime? lastCheckInDate;
   final List<String> following; // 关注列表 (ID 字符串)
   final List<String> followers; // 粉丝列表 (ID 字符串)
-
-  // 新增后端计算好的等级详情字段
   final int currentLevelExp; // 当前等级起始经验
   final int nextLevelExp; // 下一级所需总经验
   final int expToNextLevel; // 距离下一级还差多少经验
@@ -258,7 +256,6 @@ class User {
       'followingCount': following.length, // 添加计数
       'followersCount': followers.length, // 添加计数
       'checkedInToday': hasCheckedInToday, // 添加今日签到状态
-      // --- 添加新字段 ---
       'currentLevelExp': currentLevelExp,
       'nextLevelExp': nextLevelExp,
       'expToNextLevel': expToNextLevel,

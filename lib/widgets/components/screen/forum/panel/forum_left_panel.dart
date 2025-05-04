@@ -1,12 +1,15 @@
 // lib/widgets/components/screen/forum/panel/forum_left_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag 和扩展
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // <--- 引入 PostTagItem
 import '../../../../../utils/device/device_utils.dart';
 
 class ForumLeftPanel extends StatelessWidget {
-  final List<String> tags;
-  final String selectedTag;
-  final Function(String) onTagSelected;
+  // --- 参数类型保持不变 ---
+  final List<PostTag> tags; // 接收枚举列表 (所有可用标签)
+  final PostTag? selectedTag; // 接收可空的枚举 (当前选中项)
+  final Function(PostTag?) onTagSelected; // 回调函数 (传递选中的枚举或 null)
 
   const ForumLeftPanel({
     super.key,
@@ -17,143 +20,146 @@ class ForumLeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 使用自适应宽度
     final panelWidth = DeviceUtils.getSidePanelWidth(context);
 
     return Container(
       width: panelWidth,
-      margin: EdgeInsets.all(8),
-      child: ClipRRect(
+      margin: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        // 使用 Decoration 代替旧的组合
+        color: Colors.white.withOpacity(0.9), // 轻微调整透明度
         borderRadius: BorderRadius.circular(12),
-        child: Opacity(
-          opacity: 0.8, // 透明度调整为0.8
-          child: Container(
-            color: Colors.white,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题栏
-                Container(
-                  padding: EdgeInsets.all(12),
-                  color: Colors.blue,
-                  child: Row(
-                    children: [
-                      Icon(Icons.label, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        '论坛分类',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      if (selectedTag != '全部')
-                        Expanded(
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08), // 调整阴影
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        // 内部内容需要裁剪圆角
+        borderRadius: BorderRadius.circular(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 标题栏
+            Container(
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 16, vertical: 12), // 调整 padding
+              decoration: BoxDecoration(
+                // 使用渐变或纯色
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Theme.of(context).primaryColor.withOpacity(0.9),
+                    Theme.of(context).primaryColor.withOpacity(0.7),
+                  ],
+                ),
+                // color: Theme.of(context).primaryColor.withOpacity(0.85),
+                // 不需要单独设置圆角，因为 ClipRRect 会处理
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.label_outline,
+                      color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  const Text(
+                    '分类标签',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const Spacer(), // 推到右边
+                  // --- 清除按钮逻辑 ---
+                  // 仅当选中了某个具体标签 (selectedTag != null) 时才显示
+                  if (selectedTag != null)
+                    Material(
+                      // 添加 Material 提供水波纹效果
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onTagSelected(null), // 点击时调用回调并传递 null
+                        borderRadius: BorderRadius.circular(12), // 匹配形状
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 10, vertical: 4), // 调整 padding
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.25), // 调整背景透明度
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Row(
+                            mainAxisSize: MainAxisSize.min,
                             children: [
-                              InkWell(
-                                onTap: () => onTagSelected('全部'),
-                                child: Container(
-                                  padding: EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.close,
-                                          size: 12, color: Colors.white),
-                                      SizedBox(width: 4),
-                                      Text(
-                                        '清除',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
+                              Icon(Icons.clear_all,
+                                  size: 14, color: Colors.white), // 换个更明确的图标
+                              SizedBox(width: 4),
+                              Text(
+                                '全部', // 显示 "全部" 更直观
+                                style: TextStyle(
+                                    fontSize: 12, color: Colors.white),
                               ),
                             ],
                           ),
                         ),
-                    ],
-                  ),
-                ),
-
-                // 标签区域
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(12),
-                    child: _buildTagsGrid(context),
-                  ),
-                ),
-              ],
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ),
+            // 标签区域
+            Expanded(
+              child: SingleChildScrollView(
+                // 保证内容可滚动
+                padding: const EdgeInsets.all(12), // 统一内边距
+                child: _buildTagsGrid(context), // 构建网格
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
+  // 构建标签网格 (使用 PostTagItem)
   Widget _buildTagsGrid(BuildContext context) {
-    if (tags.isEmpty) {
+    // 将 "全部" (null) 和其他标签组合起来
+    List<PostTag?> allOptions = [null, ...tags]; // null 在第一个
+
+    if (allOptions.length <= 1) {
+      // 只有 "全部" 或没有标签
       return const EmptyStateWidget(
-        iconData: Icons.label_off,
-        message: '没有可用的标签',
+        iconData: Icons.label_off_outlined,
+        message: '暂无分类标签',
       );
     }
 
-    // 使用Grid布局代替Wrap，更加整齐
     return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: 2.5,
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
+      shrinkWrap: true, // 在 SingleChildScrollView 中必须
+      physics: const NeverScrollableScrollPhysics(), // 禁止 GridView 自身滚动
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2, // 每行2个
+        childAspectRatio: 3.5, // 调整宽高比，让按钮更宽一点
+        crossAxisSpacing: 5, // 横向间距
+        mainAxisSpacing: 10, // 纵向间距
       ),
-      itemCount: tags.length,
+      itemCount: allOptions.length, // 包含 "全部"
       itemBuilder: (context, index) {
-        final tag = tags[index];
-        final isSelected = tag == selectedTag;
+        final PostTag? tagOption = allOptions[index]; // 获取当前项 (可能为 null)
+        // 1. 获取要显示的字符串
+        final String tagStringToShow =
+            tagOption?.displayText ?? '全部'; // null 时显示 '全部'
 
-        return Container(
-          decoration: BoxDecoration(
-            color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: InkWell(
-            onTap: () => onTagSelected(tag),
-            borderRadius: BorderRadius.circular(8),
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      tag,
-                      style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.blue,
-                        fontWeight:
-                            isSelected ? FontWeight.bold : FontWeight.normal,
-                        fontSize: 12,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        // 2. 构建 PostTagItem, 传递 tagString
+        return PostTagItem(
+          tagString: tagStringToShow, // <--- 传递字符串！
+          isSelected: selectedTag == tagOption, // 判断选中状态仍然用枚举比较
+          onTap: onTagSelected, // 回调函数不变，传递 PostTag?
+          isMini: false, // 左侧面板用标准大小
         );
       },
     );
   }
-}
+} // ForumLeftPanel 类结束

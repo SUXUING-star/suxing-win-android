@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-class LevelColor{
+class LevelUtils{
   // 根据等级返回不同的颜色
   static getLevelColor(int level) {
     if (level < 5) return Colors.green;

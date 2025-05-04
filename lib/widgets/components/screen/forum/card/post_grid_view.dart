@@ -13,7 +13,7 @@ class PostGridView extends StatelessWidget {
   final bool isDesktopLayout;
 
   // --- 新增：接收来自父组件的回调函数 ---
-  final Future<void> Function(String postId) onDeleteAction;
+  final Future<void> Function(Post post)? onDeleteAction;
   final void Function(Post post) onEditAction;
   final Future<void> Function(String postId) onToggleLockAction;
 
@@ -25,7 +25,7 @@ class PostGridView extends StatelessWidget {
     this.hasMoreData = false,
     // this.onLoadMore,
     this.isDesktopLayout = true, // 桌面布局默认为 true? 检查默认值是否合适
-    required this.onDeleteAction, // 设为 required
+    this.onDeleteAction, // 设为 required
     required this.onEditAction,   // 设为 required
     required this.onToggleLockAction,
   });

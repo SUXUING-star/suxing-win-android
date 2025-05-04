@@ -43,7 +43,7 @@ class GameDetailContent extends StatefulWidget {
 
 class _GameDetailContentState extends State<GameDetailContent> {
   final GlobalKey<GameReviewSectionState> _reviewSectionKey =
-  GlobalKey<GameReviewSectionState>();
+      GlobalKey<GameReviewSectionState>();
   GameCollectionItem? _previousCollectionStatus;
 
   @override
@@ -64,8 +64,6 @@ class _GameDetailContentState extends State<GameDetailContent> {
   }
 
   void _handleCollectionChangedInternal(CollectionChangeResult result) {
-    print(
-        'GameDetailContent (${widget.game.id}): Received collection change callback. New status: ${result.newStatus?.status}');
     final newStatusString = result.newStatus?.status;
     final oldStatusString = _previousCollectionStatus?.status;
     bool shouldRefreshReviews =
@@ -75,17 +73,9 @@ class _GameDetailContentState extends State<GameDetailContent> {
 
     if (shouldRefreshReviews) {
       if (!widget.isPreviewMode && _reviewSectionKey.currentState != null) {
-        print(
-            'GameDetailContent (${widget.game.id}): Status changed to/from Played. Calling refresh on GameReviewSection...');
         _reviewSectionKey.currentState!.refresh();
-      } else if (!widget.isPreviewMode) {
-        print(
-            'GameDetailContent (${widget.game.id}): _reviewSectionKey is null or in preview mode. Cannot refresh reviews.');
-      }
-    } else {
-      print(
-          'GameDetailContent (${widget.game.id}): Status change does not involve Played. Reviews section not refreshed.');
-    }
+      } else if (!widget.isPreviewMode) {}
+    } else {}
     _previousCollectionStatus = result.newStatus;
     widget.onCollectionChanged?.call(result);
   }
@@ -107,9 +97,9 @@ class _GameDetailContentState extends State<GameDetailContent> {
       padding: EdgeInsets.all(isDesktop ? 0 : 16.0),
       child: isDesktop
           ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
-          slideDuration, fadeDuration, scaleDuration)
+              slideDuration, fadeDuration, scaleDuration)
           : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,
-          slideDuration, fadeDuration, scaleDuration),
+              slideDuration, fadeDuration, scaleDuration),
     );
   }
 
@@ -156,15 +146,15 @@ class _GameDetailContentState extends State<GameDetailContent> {
     // 但目前看，GlobalKey 在 State 级别使用是常见的模式。
     return !isPreviewMode
         ? FadeInSlideUpItem(
-      key: key, // 动画组件的 Key
-      duration: duration,
-      delay: delay,
-      slideOffset: slideOffset,
-      child: GameReviewSection(
-        // key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
-        game: widget.game,
-      ),
-    )
+            key: key, // 动画组件的 Key
+            duration: duration,
+            delay: delay,
+            slideOffset: slideOffset,
+            child: GameReviewSection(
+              // key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
+              game: widget.game,
+            ),
+          )
         : SizedBox.shrink();
   }
 
@@ -209,12 +199,12 @@ class _GameDetailContentState extends State<GameDetailContent> {
       Duration delay, double slideOffset, Key key) {
     return !isPreviewMode
         ? FadeInSlideUpItem(
-      key: key,
-      duration: duration,
-      delay: delay,
-      slideOffset: slideOffset,
-      child: CommentsSection(gameId: widget.game.id),
-    )
+            key: key,
+            duration: duration,
+            delay: delay,
+            slideOffset: slideOffset,
+            child: CommentsSection(gameId: widget.game.id),
+          )
         : SizedBox.shrink();
   }
 
@@ -222,11 +212,11 @@ class _GameDetailContentState extends State<GameDetailContent> {
       bool isPreviewMode, Duration duration, Duration delay, Key key) {
     return !isPreviewMode
         ? FadeInItem(
-      key: key,
-      duration: duration,
-      delay: delay,
-      child: RandomGamesSection(currentGameId: widget.game.id),
-    )
+            key: key,
+            duration: duration,
+            delay: delay,
+            child: RandomGamesSection(currentGameId: widget.game.id),
+          )
         : SizedBox.shrink();
   }
 
@@ -234,15 +224,15 @@ class _GameDetailContentState extends State<GameDetailContent> {
       bool isPreviewMode, Duration duration, Duration delay, Key key) {
     return !isPreviewMode
         ? FadeInItem(
-      key: key,
-      duration: duration,
-      delay: delay,
-      child: GameNavigationSection(
-        currentGameId: widget.game.id,
-        navigationInfo: widget.navigationInfo,
-        onNavigate: widget.onNavigate,
-      ),
-    )
+            key: key,
+            duration: duration,
+            delay: delay,
+            child: GameNavigationSection(
+              currentGameId: widget.game.id,
+              navigationInfo: widget.navigationInfo,
+              onNavigate: widget.onNavigate,
+            ),
+          )
         : SizedBox.shrink();
   }
 
@@ -387,7 +377,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
                   borderRadius: BorderRadius.circular(12),
                   child: GameCoverImage(
                       imageUrl: widget.game.coverImage) // 传递 imageUrl
-              )),
+                  )),
         ),
         const SizedBox(height: 24),
         // Game Images: 缩放进入

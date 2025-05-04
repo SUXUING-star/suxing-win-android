@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/history/history_game_grid_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../routes/app_routes.dart';
@@ -48,6 +49,7 @@ class HistoryGameGridCard extends StatelessWidget {
                   SafeCachedImage(
                     imageUrl: historyItem['coverImage']?.toString() ?? '',
                     fit: BoxFit.cover,
+                    memCacheWidth: DeviceUtils.isDesktop ? 400 : 240,
                     onError: (url, error) {
                       print('历史游戏封面加载失败: $url, 错误: $error');
                     },

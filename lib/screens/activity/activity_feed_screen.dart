@@ -1,39 +1,34 @@
-import 'dart:async'; // Timer, StreamSubscription
+// lib/screens/activity/activity_feed_screen.dart
+
+import 'dart:async';
 import 'package:flutter/material.dart';
-// HapticFeedback
-import 'package:hive/hive.dart'; // BoxEvent
+import 'package:flutter/services.dart'; // For HapticFeedback
+import 'package:hive/hive.dart'; // For cache watching (optional but kept)
 import 'package:provider/provider.dart';
-// 需要 Provider 获取 AuthProvider (如果 Card 里需要)
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 只依赖 Service
+import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/activity/card/activity_type_filter.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activities_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-// 需要类型工具
-// 需要时间格式化
-import 'package:visibility_detector/visibility_detector.dart'; // 需要可见性检测
+import 'package:visibility_detector/visibility_detector.dart';
 
 class ActivityFeedScreen extends StatefulWidget {
-  final String? userId; // 目标用户 ID (null 表示公共或关注流)
-  final String? type; // 初始活动类型过滤
+  // Constructor for the top-level public feed screen
   final String title;
   final bool useAlternatingLayout;
   final bool showHotActivities;
 
   const ActivityFeedScreen({
     super.key,
-    this.userId,
-    this.type,
-    this.title = '动态流', // 默认标题
-    this.useAlternatingLayout = true, // 默认交替布局
-    this.showHotActivities = true, // 默认显示热门
+    this.title = '动态广场', // Default title for this screen
+    this.useAlternatingLayout = true,
+    this.showHotActivities = true, // Usually show hot panel on public feed
   });
 
   @override
@@ -42,64 +37,57 @@ class ActivityFeedScreen extends StatefulWidget {
 
 class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  // --- 依赖 ---
-
-  // --- UI 控制状态 ---
+  // UI Controllers
   final ScrollController _scrollController = ScrollController();
-  bool _useAlternatingLayout = true;
-  bool _showHotActivities = true;
-  FeedCollapseMode _collapseMode = FeedCollapseMode.none; // 默认不折叠
   late AnimationController _refreshAnimationController;
 
-  // --- 数据和分页状态 ---
+  // UI Mode State
+  bool _useAlternatingLayout = true;
+  bool _showHotActivities = true;
+  FeedCollapseMode _collapseMode = FeedCollapseMode.none;
+
+  // Data State
   List<UserActivity> _activities = [];
   PaginationData? _pagination;
-  String _error = ''; // 错误信息
-  int _currentPage = 1; // 当前页码
-  String? _selectedType; // 当前选中的过滤类型
+  String _error = '';
+  int _currentPage = 1;
 
-  // --- 加载和可见性状态 ---
-  bool _isInitialized = false; // 是否已完成首次加载调用
-  bool _isVisible = false; // 当前 Widget 是否可见
-  bool _isLoadingData = false; // 标记正在进行首次/刷新加载
-  bool _isLoadingMore = false; // 标记正在加载更多 (分页)
-  bool _needsRefresh = false; // 应用从后台恢复时是否需要刷新
+  // Loading & Visibility State
+  bool _isInitialized = false;
+  bool _isVisible = false;
+  bool _isLoadingData = false; // For initial load or full refresh
+  bool _isLoadingMore = false; // For pagination loading
+  bool _needsRefresh = false; // Flag to refresh when app resumes
 
-  // --- 缓存监听 ---
+  // Cache Watching State (Optional feature)
   StreamSubscription<BoxEvent>? _cacheSubscription;
-  String _currentWatchIdentifier = ''; // 记录当前监听的参数组合
-  Timer? _refreshDebounceTimer; // 刷新防抖计时器
+  String _currentWatchIdentifier = '';
+  Timer? _refreshDebounceTimer;
 
-  // --- UI 层刷新控制 ---
-  DateTime? _lastRefreshTime; // 记录上次成功刷新的时间
-  final Duration _minUiRefreshInterval =
-      const Duration(seconds: 5); // UI 层允许的最小刷新间隔
+  // UI Refresh Control
+  DateTime? _lastRefreshTime;
+  final Duration _minUiRefreshInterval = const Duration(seconds: 15);
 
-  // === 生命周期 ===
   @override
   void initState() {
     super.initState();
-    // 从 widget 初始化状态
+    // Initialize state from widget properties
     _useAlternatingLayout = widget.useAlternatingLayout;
     _showHotActivities = widget.showHotActivities;
-    _selectedType = widget.type;
-    // 初始化动画控制器
+
+    // Initialize controllers and listeners
     _refreshAnimationController = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 1000));
-    // 添加滚动监听
+        vsync: this, duration: const Duration(milliseconds: 800));
     _scrollController.addListener(_scrollListener);
-    // 添加 App 生命周期监听
     WidgetsBinding.instance.addObserver(this);
-    print(
-        "ActivityFeedScreen (${widget.title}) initState. Type: $_selectedType");
-    // 首次加载由 VisibilityDetector 触发
+    // Initial data load is triggered by the VisibilityDetector
   }
 
   @override
   void dispose() {
-    // 移除监听和控制器
+    // Clean up listeners and controllers
     WidgetsBinding.instance.removeObserver(this);
-    _stopWatchingCache(); // 确保取消缓存监听
+    _stopWatchingCache();
     _refreshDebounceTimer?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
@@ -109,362 +97,361 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    // 处理 App 从后台恢复
+    // Handle app lifecycle changes (e.g., refresh on resume)
     if (state == AppLifecycleState.resumed) {
       if (_isVisible && _needsRefresh) {
         _refreshCurrentPageData(reason: "App Resumed with NeedsRefresh");
-        _needsRefresh = false; // 重置标记
+        _needsRefresh = false;
       } else if (_isVisible) {
-        // 即使没有标记，也检查一下（例如，超过一定时间）
+        // Check if refresh is needed even if not explicitly flagged
         _refreshCurrentPageData(reason: "App Resumed and Visible Check");
       }
-    } else if (state == AppLifecycleState.paused) {
-      // 可以考虑在这里设置 _needsRefresh = true;
     }
+    // Optionally set _needsRefresh = true on pause
+    // else if (state == AppLifecycleState.paused) { _needsRefresh = true; }
   }
 
-  // === 缓存监听核心逻辑 ===
+  // --- Cache Watching Logic ---
   void _startOrUpdateWatchingCache() {
-    final String feedType = _getFeedType();
-    final List<String>? types = _selectedType != null ? [_selectedType!] : null;
-    final String newWatchIdentifier =
-        "${feedType}_${widget.userId ?? 'none'}_p${_currentPage}_l20_t${types?.join('_') ?? 'all'}"; // 假设 limit 是 20
+    // This screen always represents the public feed
+    const String feedTypeStr = 'public';
+    // Identifier includes feed type and current page
+    final String newWatchIdentifier = "${feedTypeStr}_p${_currentPage}_l20"; // Assuming limit 20
 
+    // Avoid restarting if already watching the same target
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
-      return; // 监听目标未变
+      return;
     }
 
-    _stopWatchingCache(); // 停止旧监听
-    _currentWatchIdentifier = newWatchIdentifier;
+    _stopWatchingCache(); // Stop previous watcher
+    _currentWatchIdentifier = newWatchIdentifier; // Update identifier
 
     try {
       final activityService = context.read<UserActivityService>();
       _cacheSubscription = activityService
           .watchActivityFeedChanges(
-        feedType: feedType, page: _currentPage, limit: 20, // 使用固定 limit
-        userId: widget.userId, types: types,
+        feedType: feedTypeStr, // Always 'public'
+        page: _currentPage,
+        limit: 20,
       )
           .listen(
-        (BoxEvent event) {
-          // --- 关键判断在这里！ ---
-          // 只在数据被删除时才触发刷新逻辑
+            (BoxEvent event) {
+          // Refresh only if an item is deleted (to update the list)
           if (event.deleted) {
             if (_isVisible) {
+              // Refresh immediately if visible
               _refreshCurrentPageData(reason: "Cache Deleted Event");
             } else {
-              _needsRefresh = true; // 标记在下次可见时刷新
+              // Mark for refresh when it becomes visible again
+              _needsRefresh = true;
             }
-          } else {
-            // 对于写入/更新事件 (event.deleted == false)，直接忽略，啥也不干
-          }
-          // --- 判断结束 ---
+          } // Ignore write/update events for now
         },
         onError: (error, stackTrace) {
-          _stopWatchingCache(); // 出错时停止监听
-          _currentWatchIdentifier = ''; // 重置标识符，以便下次可以重新监听
+          _stopWatchingCache(); // Stop on error
+          _currentWatchIdentifier = ''; // Reset identifier
         },
         onDone: () {
-          // 可选：监听流关闭时的处理
-          // 只有当监听目标仍然是当前目标时才清除标识符
+          // Clear identifier if the watched stream closes naturally
           if (_currentWatchIdentifier == newWatchIdentifier) {
             _currentWatchIdentifier = '';
           }
         },
-        cancelOnError: true, // 出错时自动取消订阅
+        cancelOnError: true, // Automatically cancel on error
       );
     } catch (e) {
-      _currentWatchIdentifier = ''; // 启动失败，重置标识符
+      // Failed to start watcher
+      _currentWatchIdentifier = '';
     }
   }
 
   void _stopWatchingCache() {
-    if (_cacheSubscription != null) {
-      _cacheSubscription!.cancel();
-      _cacheSubscription = null;
-      // 不清除 _currentWatchIdentifier，用于下次比较
-    }
+    _cacheSubscription?.cancel();
+    _cacheSubscription = null;
+    // Keep _currentWatchIdentifier for comparison in next start attempt
   }
 
-  // 刷新当前页数据（带 UI 层防抖和节流）
+  /// Refreshes the data for the current page with debouncing/throttling.
   void _refreshCurrentPageData({required String reason}) {
+    // Avoid refreshing if already loading or not mounted
     if (_isLoadingData || _isLoadingMore || !mounted) return;
 
+    // Throttle frequent refresh requests
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
       return;
     }
 
+    // Debounce the actual refresh call
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      // Check again if still mounted and not loading before refreshing
       if (mounted && !_isLoadingData && !_isLoadingMore) {
-        _loadActivities(
-            isRefresh: true, pageToLoad: _currentPage); // 标记为刷新，加载当前页
-      } else {
-        if (mounted) _needsRefresh = true; // 标记稍后刷新
+        // Load the *current* page again, marking it as a refresh
+        _loadActivities(isRefresh: true, pageToLoad: _currentPage);
+      } else if (mounted) {
+        // If conditions changed during debounce, mark for later refresh
+        _needsRefresh = true;
       }
     });
   }
 
-  // === 数据加载 ===
+  // --- Data Loading Logic ---
+  /// Called by VisibilityDetector when the widget becomes visible.
   void _triggerInitialLoad() {
     if (_isVisible && !_isInitialized && !_isLoadingData) {
-      _isInitialized = true;
-      _loadActivities(isInitialLoad: true, pageToLoad: 1);
+      _isInitialized = true; // Mark as initialized
+      _loadActivities(
+          isInitialLoad: true, pageToLoad: 1); // Load the first page
     }
   }
 
-  Future<void> _loadActivities(
-      {bool isInitialLoad = false,
-      bool isRefresh = false,
-      int pageToLoad = 1}) async {
-    // --- 防止并发加载 ---
-    if (_isLoadingData && !isRefresh) {
-      return;
-    }
-    if (_isLoadingMore && isRefresh) {
-      return;
-    } // 刷新不能打断加载更多
-    if (!mounted) return;
+  /// Fetches activities (always public feed for this screen).
+  Future<void> _loadActivities({bool isInitialLoad = false,
+    bool isRefresh = false,
+    int pageToLoad = 1}) async {
+    // Prevent concurrent loads unless it's a refresh interrupting idle state
+    if (_isLoadingData && !isRefresh) return;
+    // Prevent refresh from interrupting pagination load
+    if (_isLoadingMore && isRefresh) return;
+    if (!mounted) return; // Check if widget is still in the tree
 
-    // --- 停止/更新监听器 ---
-    final String feedType = _getFeedType();
-    final List<String>? types = _selectedType != null ? [_selectedType!] : null;
-    final String newWatchIdentifier =
-        "${feedType}_${widget.userId ?? 'none'}_${pageToLoad}_${types?.join('_') ?? 'all'}";
+    // Update cache watch target if the page is changing
+    const String feedTypeStr = 'public';
+    final String newWatchIdentifier = "${feedTypeStr}_p${pageToLoad}_l20";
     if (_currentWatchIdentifier != newWatchIdentifier) {
-      _stopWatchingCache(); // 停止监听旧的标识符
+      _stopWatchingCache();
     }
 
+    // Set loading state and clear errors
     setState(() {
-      _isLoadingData = true; // 开始加载
-      _error = ''; // 清除错误
+      _isLoadingData = true;
+      _error = '';
+      // Reset state if it's a refresh or initial load
       if (isRefresh || isInitialLoad) {
-        _currentPage = pageToLoad; // 确认目标页码
+        _currentPage = pageToLoad;
+        // Clear activities only on initial load or if list was empty before refresh
         if (isInitialLoad || _activities.isEmpty) {
-          _activities = []; // 初始或列表为空时清空
+          _activities = [];
         }
         _pagination = null;
       }
     });
+    // Start refresh animation only for page 1 refreshes
     if (isRefresh && pageToLoad == 1) {
-      _refreshAnimationController.forward(from: 0.0); // 只有刷新第一页才转圈
+      _refreshAnimationController.forward(from: 0.0);
     }
 
     try {
-      Map<String, dynamic> result;
-      const int limit = 20; // 保持一致的 limit
-      List<String>? currentTypes =
-          _selectedType != null ? [_selectedType!] : null;
+      const int limit = 20; // Define page size
       final activityService = context.read<UserActivityService>();
 
-      // --- 调用 Service 获取数据 (无节流，无 forceRefresh) ---
-      if (feedType == 'user') {
-        result = await activityService.getUserActivities(widget.userId!,
-            page: pageToLoad, limit: limit, types: currentTypes);
-      } else if (feedType == 'feed') {
-        result = await activityService.getActivityFeed(
-            page: pageToLoad, limit: limit);
-      } else {
-        result = await activityService.getPublicActivities(
-            page: pageToLoad, limit: limit);
-      }
+      // Always fetch the public activity feed
+      final result = await activityService.getPublicActivities(
+          page: pageToLoad, limit: limit);
 
-      if (!mounted) return;
+      if (!mounted) return; // Check mount status after async operation
 
+      // Process the result
       final List<UserActivity> fetchedActivities = result['activities'] ?? [];
       final PaginationData? fetchedPagination = result['pagination'];
 
-      if (fetchedActivities.isNotEmpty) {
+      // Check if the response structure is valid (e.g., pagination exists)
+      if (fetchedPagination != null) {
         setState(() {
-          _activities = fetchedActivities; // 替换为当前页数据
+          // Replace data if refreshing, initial load, or loading a different page than current
+          if (isRefresh || isInitialLoad || pageToLoad != _currentPage) {
+            _activities = fetchedActivities;
+          }
           _pagination = fetchedPagination;
-          _currentPage = pageToLoad; // 确认当前页
-          _isLoadingData = false; // 结束加载
-          _error = ''; // 清除错误
-          _lastRefreshTime = DateTime.now(); // 记录成功加载时间
+          _currentPage = pageToLoad; // Update current page
+          _isLoadingData = false; // Reset loading state
+          _error = ''; // Clear error
+          _lastRefreshTime = DateTime.now(); // Record success time
         });
+        _startOrUpdateWatchingCache(); // Start/update cache watcher
       } else {
-        setState(() {
-          _error = "发生错误无法获取数据";
-          _isLoadingData = true; // 结束加载
-        });
+        // Handle cases where the response format is unexpected
+        throw Exception("Invalid response format from server");
       }
-
-      _startOrUpdateWatchingCache(); // 成功后启动/更新监听
     } catch (e) {
       if (!mounted) return;
+      // Handle errors
       setState(() {
-        // 只在列表为空时显示全局错误
+        // Show full screen error only if there's no data to display
         if (_activities.isEmpty) {
           _error = '加载动态失败: $e';
         } else {
-          AppSnackBar.showError(context, '刷新动态失败: $e'); // 否则用 Snackbar 提示
+          // Otherwise, show a snackbar for refresh errors
+          AppSnackBar.showError(context, '刷新动态失败: $e');
         }
-        _isLoadingData = false; // 结束加载
-        // 保持旧数据以便 UI 显示
+        _isLoadingData = false; // Reset loading state
       });
-      _stopWatchingCache(); // 出错停止监听
+      _stopWatchingCache(); // Stop watcher on error
     } finally {
+      // Ensure loading state is always reset
       if (mounted && _isLoadingData) {
         setState(() => _isLoadingData = false);
-      } // 最终确保结束加载
+      }
+      // Ensure animation is reset
+      if (mounted) {
+        _refreshAnimationController.reset();
+      }
     }
   }
 
-  // --- !!! 添加回 _refreshData 方法，用于下拉刷新 !!! ---
-  /// 处理下拉刷新事件，强制加载第一页数据。
+  /// Handles the pull-to-refresh gesture.
   Future<void> _refreshData() async {
-    // UI 层防抖/节流 (与按钮点击逻辑类似)
+    // Avoid concurrent refreshes
     if (_isLoadingData || _isLoadingMore) return;
+
+    // Throttle pull-to-refresh
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      await Future.delayed(Duration(milliseconds: 300)); // 给用户一个反馈
+      await Future.delayed(
+          const Duration(milliseconds: 300)); // Brief delay for visual feedback
       return;
     }
 
-    _stopWatchingCache(); // 停止旧监听
+    _stopWatchingCache(); // Stop watching during manual refresh
     setState(() {
-      _currentPage = 1; // 重置到第一页
-      _error = ''; // 清除错误
-      // 不需要设置 isLoadingData，让 _loadActivities 处理
+      _currentPage = 1; // Reset to first page
+      _error = ''; // Clear error
     });
-    // --- 调用加载第一页的逻辑 ---
-    // 标记为刷新，这样 _loadActivities 知道是刷新操作
+    // Fetch page 1 with the refresh flag
     await _loadActivities(isRefresh: true, pageToLoad: 1);
   }
-  // --- 结束添加 ---
 
-  // --- !!! 修改 _handleRefreshButtonPress，调用 _refreshData !!! ---
+  /// Handles the press of the dedicated refresh button.
   void _handleRefreshButtonPress() {
-    // 直接调用统一的刷新方法，它内部包含了节流逻辑
-    _refreshData();
+    // Avoid concurrent refreshes
+    if (_isLoadingData || _isLoadingMore || !mounted) return;
+
+    // Throttle button presses
+    final now = DateTime.now();
+    if (_lastRefreshTime != null &&
+        now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
+      return;
+    }
+
+    // Debounce the refresh action
+    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+      if (mounted && !_isLoadingData && !_isLoadingMore) {
+        _refreshData(); // Call the main refresh logic
+      }
+    });
   }
 
+  /// Loads the next page of activities for pagination.
   Future<void> _loadMoreActivities() async {
-    if (!_isInitialized ||
-        _error.isNotEmpty ||
-        _isLoadingData ||
-        _isLoadingMore ||
-        _pagination == null ||
+    // Check conditions before loading more
+    if (!_isInitialized || _error.isNotEmpty || _isLoadingData ||
+        _isLoadingMore || _pagination == null ||
         _currentPage >= _pagination!.pages) {
       return;
     }
     if (!mounted) return;
-    final nextPage = _currentPage + 1;
-    _stopWatchingCache(); // 停止监听旧页
-    setState(() => _isLoadingMore = true);
+
+    final nextPage = _currentPage + 1; // Calculate next page number
+    _stopWatchingCache(); // Stop watching current page
+    setState(() => _isLoadingMore = true); // Set loading more state
+
     try {
-      Map<String, dynamic> result;
       final activityService = context.read<UserActivityService>();
       const int limit = 20;
-      List<String>? types = _selectedType != null ? [_selectedType!] : null;
-      final String feedType = _getFeedType();
-      if (feedType == 'user') {
-        result = await activityService.getUserActivities(widget.userId!,
-            page: nextPage, limit: limit, types: types);
-      } else if (feedType == 'feed') {
-        result =
-            await activityService.getActivityFeed(page: nextPage, limit: limit);
-      } else {
-        result = await activityService.getPublicActivities(
-            page: nextPage, limit: limit);
-      }
+
+      // Always fetch the public activity feed for the next page
+      final result = await activityService.getPublicActivities(
+          page: nextPage, limit: limit);
 
       if (!mounted) return;
+
+      // Process results
       final List<UserActivity> newActivities = result['activities'] ?? [];
       final PaginationData? newPagination = result['pagination'];
+
       setState(() {
-        _activities.addAll(newActivities);
-        _pagination = newPagination;
-        _currentPage = nextPage;
-        _isLoadingMore = false;
-        _lastRefreshTime = DateTime.now(); // 加载更多成功也算一次刷新
+        _activities.addAll(newActivities); // Append new data
+        _pagination = newPagination; // Update pagination info
+        _currentPage = nextPage; // Update current page number
+        _isLoadingMore = false; // Reset loading more state
+        _lastRefreshTime =
+            DateTime.now(); // Consider load more a type of refresh
       });
-      _startOrUpdateWatchingCache(); // 监听新页
+      _startOrUpdateWatchingCache(); // Start watching the new (current) page
     } catch (e, s) {
-      print(
-          'ActivityFeedScreen (${widget.title}): Load more activities error: $e\n$s');
+      // Handle errors during load more
       if (mounted) {
         AppSnackBar.showError(context, '加载更多失败: $e');
-        setState(() => _isLoadingMore = false);
+        setState(() => _isLoadingMore = false); // Reset loading state
       }
-      _startOrUpdateWatchingCache(); // 失败后尝试重新监听之前的页
+      // Attempt to restart watcher on the previous page after error
+      _startOrUpdateWatchingCache();
     } finally {
+      // Ensure loading state is always reset
       if (mounted && _isLoadingMore) {
         setState(() => _isLoadingMore = false);
       }
     }
   }
 
+  // --- Helper Methods & UI Toggles ---
+  /// Listens to scroll position to trigger loading more.
   void _scrollListener() {
-    if (_isInitialized && !_isLoadingMore && !_isLoadingData) {
-      if (_scrollController.position.pixels >=
-          _scrollController.position.maxScrollExtent * 0.9) {
-        _loadMoreActivities();
-      }
+    // Check conditions for loading more
+    if (_isInitialized &&
+        !_isLoadingMore &&
+        !_isLoadingData &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.9 &&
+        _pagination != null && _currentPage < _pagination!.pages
+    ) {
+      _loadMoreActivities();
     }
   }
 
-  String _getFeedType() {
-    if (widget.userId != null) return 'user';
-    if (widget.title == '关注') return 'feed';
-    return 'public';
-  }
-
-  void _onTypeFilterChanged(String? type) {
-    if (_selectedType != type) {
-      print(
-          "ActivityFeedScreen (${widget.title}): Type filter changed to: $type");
-      _stopWatchingCache();
-      setState(() {
-        _selectedType = type;
-        _isInitialized = false;
-        _isVisible = false;
-        _activities = [];
-        _error = '';
-        _isLoadingData = false;
-        _isLoadingMore = false;
-        _currentPage = 1;
-        _pagination = null;
-        _currentWatchIdentifier = '';
-        if (_scrollController.hasClients) _scrollController.jumpTo(0);
-      });
-      // VisibilityDetector or manual trigger if needed
-      if (_isVisible) _triggerInitialLoad(); // 如果仍然可见，尝试立即加载
-    }
-  }
-
+  /// Toggles the layout mode between alternating and standard.
   void _toggleLayoutMode() {
+    HapticFeedback.lightImpact(); // Provide tactile feedback
     setState(() => _useAlternatingLayout = !_useAlternatingLayout);
   }
 
+  /// Toggles the visibility of the hot activities panel.
   void _toggleHotActivitiesPanel() {
+    HapticFeedback.lightImpact();
     setState(() => _showHotActivities = !_showHotActivities);
   }
 
+  /// Cycles through the available collapse modes.
   void _toggleCollapseMode() {
-    setState(() => _collapseMode = FeedCollapseMode
+    HapticFeedback.lightImpact();
+    // Cycle through all available FeedCollapseMode values
+    setState(() =>
+    _collapseMode = FeedCollapseMode
         .values[(_collapseMode.index + 1) % FeedCollapseMode.values.length]);
   }
 
+  /// Gets the display text for the current collapse mode.
   String _getCollapseModeText() {
     switch (_collapseMode) {
       case FeedCollapseMode.none:
         return '标准视图';
       case FeedCollapseMode.byUser:
-        return '按用户折叠';
+        return '按用户折叠'; // Keep this for public feeds
       case FeedCollapseMode.byType:
         return '按类型折叠';
     }
   }
 
+  /// Gets the icon for the current collapse mode.
   IconData _getCollapseModeIcon() {
     switch (_collapseMode) {
       case FeedCollapseMode.none:
-        return Icons.view_agenda;
+        return Icons.view_agenda_outlined;
       case FeedCollapseMode.byUser:
         return Icons.people_outline;
       case FeedCollapseMode.byType:
@@ -472,82 +459,115 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     }
   }
 
+  /// Navigates to the detail screen for a specific activity.
   void _navigateToActivityDetail(UserActivity activity) {
-    _stopWatchingCache();
+    _stopWatchingCache(); // Pause watching while navigating away
     NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
         arguments: {'activityId': activity.id, 'activity': activity}).then((_) {
+      // When returning from the detail screen
       if (mounted) {
-        _startOrUpdateWatchingCache();
+        _startOrUpdateWatchingCache(); // Resume watching
+        // Refresh the current page in case data changed (e.g., like count)
         _refreshCurrentPageData(reason: "Returned from Detail");
       }
     });
   }
 
-  // --- 新增：传递给 CollapsibleActivityFeed 的具体回调实现 ---
+  // --- Interaction Callbacks (Passed to CollapsibleActivityFeed) ---
 
+  /// Handles deleting an activity after user confirmation.
   Future<void> _handleDeleteActivity(String activityId) async {
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
-      message: "确定删除这条动态吗？",
+      message: "确定删除这条动态吗？此操作无法撤销。",
       confirmButtonText: "删除",
       confirmButtonColor: Colors.red,
-      iconData: Icons.delete_outline,
+      iconData: Icons.delete_forever_outlined,
+      // More prominent icon
       iconColor: Colors.red,
       onConfirm: () async {
-        print("Delete confirmed for $activityId");
         try {
           final activityService = context.read<UserActivityService>();
           final success = await activityService.deleteActivity(activityId);
-          if (success && mounted) AppSnackBar.showSuccess(context, '动态已删除');
-          // 刷新由监听器处理
+          if (success && mounted) {
+            AppSnackBar.showSuccess(context, '动态已删除');
+            // Optimistically remove the item from the UI
+            setState(() {
+              final initialTotal = _pagination?.total ?? _activities.length;
+              _activities.removeWhere((act) => act.id == activityId);
+              // Adjust pagination total if available
+              if (_pagination != null && initialTotal > 0) {
+                _pagination = _pagination!.copyWith(total: initialTotal - 1);
+              }
+            });
+            // If the current page became empty after deletion, refresh
+            if (_activities.isEmpty && _currentPage > 1) {
+              _refreshCurrentPageData(reason: "Deleted last item on page");
+            }
+          } else if (mounted) {
+            // Handle cases where the service reports failure
+            throw Exception("服务未能成功删除动态");
+          }
         } catch (e) {
           if (mounted) AppSnackBar.showError(context, '删除失败: $e');
-          rethrow;
+          rethrow; // Let the dialog know about the error
         }
       },
     );
   }
 
+  /// Handles liking an activity.
   Future<void> _handleLikeActivity(String activityId) async {
+    // Note: Actual UI change (icon state, count) should ideally be handled
+    // optimistically within the ActivityCard component itself.
     try {
       final activityService = context.read<UserActivityService>();
       await activityService.likeActivity(activityId);
+      // Success: If optimistic update wasn't perfect, could force refresh item here.
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '点赞失败: $e'); /* 回滚补偿 */
+      if (mounted) AppSnackBar.showError(context, '点赞失败: $e');
+      // Failure: Trigger rollback of optimistic UI change in ActivityCard.
     }
   }
 
+  /// Handles unliking an activity.
   Future<void> _handleUnlikeActivity(String activityId) async {
+    // Optimistic UI update in ActivityCard.
     try {
       final activityService = context.read<UserActivityService>();
       await activityService.unlikeActivity(activityId);
+      // Success: Potentially update state if needed.
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e'); /* 回滚补偿 */
+      if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
+      // Failure: Trigger rollback in ActivityCard.
     }
   }
 
-  Future<ActivityComment?> _handleAddComment(
-      String activityId, String content) async {
+  /// Handles adding a comment to an activity.
+  Future<ActivityComment?> _handleAddComment(String activityId,
+      String content) async {
     try {
       final activityService = context.read<UserActivityService>();
-      final comment =
-          await activityService.commentOnActivity(activityId, content);
+      final comment = await activityService.commentOnActivity(
+          activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
-        // 刷新由监听器处理
-        return comment; // 返回新评论，如果 Card 需要的话
+        // Return the new comment object. The ActivityCard component should
+        // use this to update its internal list of comments.
+        return comment;
       } else if (mounted) {
-        throw Exception("未能添加评论");
+        // Handle cases where comment object is unexpectedly null
+        throw Exception("服务器未能返回评论数据");
       }
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '评论失败: $e');
     }
-    return null;
+    return null; // Return null indicates failure
   }
 
+  /// Handles deleting a comment after user confirmation.
   Future<void> _handleDeleteComment(String activityId, String commentId) async {
-    print("Requesting delete comment $commentId from activity $activityId");
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -557,189 +577,301 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       iconData: Icons.delete_outline,
       iconColor: Colors.red,
       onConfirm: () async {
-        print("Delete comment confirmed for $commentId");
         try {
           final activityService = context.read<UserActivityService>();
-          final success =
-              await activityService.deleteComment(activityId, commentId);
-          if (success && mounted) AppSnackBar.showSuccess(context, '评论已删除');
-          // 刷新由监听器处理
+          final success = await activityService.deleteComment(
+              activityId, commentId);
+          if (success && mounted) {
+            AppSnackBar.showSuccess(context, '评论已删除');
+            // Crucial: Need a mechanism to tell the specific ActivityCard
+            // to remove this comment from its display. This might involve
+            // passing down more specific callbacks or using a different state pattern.
+          } else if (mounted) {
+            throw Exception("服务未能成功删除评论");
+          }
         } catch (e) {
           if (mounted) AppSnackBar.showError(context, '删除评论失败: $e');
-          rethrow;
+          rethrow; // Let dialog know about failure
         }
       },
     );
   }
 
+  /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    // 前端补偿在 ActivityCommentItem 内部处理
+    // Optimistic UI update should happen within the Comment widget itself.
     try {
       final activityService = context.read<UserActivityService>();
       await activityService.likeComment(activityId, commentId);
+      // Success
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
+      // Failure: Trigger rollback in Comment widget.
     }
   }
 
+  /// Handles unliking a comment.
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    // 前端补偿在 ActivityCommentItem 内部处理
+    // Optimistic UI update in Comment widget.
     try {
       final activityService = context.read<UserActivityService>();
       await activityService.unlikeComment(activityId, commentId);
+      // Success
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
+      // Failure: Trigger rollback in Comment widget.
     }
   }
 
-  // === 构建 UI ===
+  // --- Build Method ---
   @override
   Widget build(BuildContext context) {
+    // VisibilityDetector wraps the main Scaffold to control loading and watchers
     return VisibilityDetector(
       key: Key(
           'activity_feed_visibility_${widget.key?.toString() ?? widget.title}'),
       onVisibilityChanged: (VisibilityInfo info) {
-        final bool currentlyVisible = info.visibleFraction > 0.8;
-        if (currentlyVisible != _isVisible) {
-          final bool wasVisible = _isVisible;
-          _isVisible = currentlyVisible;
-          if (mounted) setState(() {});
+        final bool currentlyVisible = info.visibleFraction >
+            0.8; // Consider visible if mostly on screen
+        if (currentlyVisible !=
+            _isVisible) { // Check if visibility state changed
+          final bool wasVisible = _isVisible; // Store previous state
+          _isVisible = currentlyVisible; // Update current state
+          // Trigger actions based on visibility change
           if (_isVisible) {
-            _triggerInitialLoad();
-            _startOrUpdateWatchingCache();
+            _triggerInitialLoad(); // Attempt initial load if becoming visible
+            _startOrUpdateWatchingCache(); // Start watching when visible
+            // If it just became visible, check if a refresh is needed
             if (!wasVisible) _refreshCurrentPageData(reason: "Became Visible");
           } else {
-            _stopWatchingCache();
+            _stopWatchingCache(); // Stop watching when not visible to save resources
           }
         }
       },
       child: Scaffold(
-        //appBar: CustomAppBar(title: "动态空间"),
-        body: SafeArea(child: _buildBodyContent()),
+        // AppBar might be handled globally, or add one here if needed for this specific screen
+        // appBar: AppBar(title: Text(widget.title)),
+        body: SafeArea( // Ensure content respects device safe areas
+          child: _buildBodyContent(), // Build the main content
+        ),
       ),
     );
   }
 
+  /// Builds the main content area (action bar + feed/panel).
   Widget _buildBodyContent() {
+    // State 1: Waiting for initial load (before VisibilityDetector triggers)
     if (!_isInitialized && !_isLoadingData) {
-      return LoadingWidget.fullScreen(message: "等待加载动态...");
+      return LoadingWidget.fullScreen(message: "准备加载动态...");
     }
+
+    // State 2: Initial data load is in progress
     if (_isLoadingData && _activities.isEmpty) {
       return LoadingWidget.fullScreen(message: "正在加载动态...");
     }
+
+    // State 3: Error occurred and no data is available to show
     if (_error.isNotEmpty && _activities.isEmpty) {
       return CustomErrorWidget(
           errorMessage: _error,
+          // Provide a way to retry the initial load
           onRetry: () => _loadActivities(isRefresh: true, pageToLoad: 1));
     }
 
-    return Column(
-      children: [
-        // Top Action Bar
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-          child: Row(
+    // State 4: Build the main UI (action bar + responsive feed/panel)
+    Widget topActionBar = _buildTopActionBar(); // Build the controls bar
+    Widget mainFeedContent = _buildMainFeedContent(); // Build the feed itself
+
+    // Use LayoutBuilder for responsive design (show hot panel on wide screens)
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const double desktopBreakpoint = 720.0; // Define width threshold
+
+        // Wide screen layout: Feed + Hot Panel (if enabled)
+        if (constraints.maxWidth >= desktopBreakpoint &&
+            widget.showHotActivities) {
+          return Column(
             children: [
+              topActionBar, // Show controls at the top
               Expanded(
-                  child: InkWell(
-                      onTap: _toggleCollapseMode,
-                      borderRadius: BorderRadius.circular(20),
-                      child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 12, vertical: 8),
-                          decoration: BoxDecoration(
-                              color: Theme.of(context)
-                                  .primaryColor
-                                  .withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
-                                  color: Theme.of(context)
-                                      .primaryColor
-                                      .withOpacity(0.3))),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(_getCollapseModeIcon(),
-                                size: 16,
-                                color: Theme.of(context).primaryColor),
-                            const SizedBox(width: 8),
-                            Text(_getCollapseModeText(),
-                                style: TextStyle(
-                                    color: Theme.of(context).primaryColor,
-                                    fontWeight: FontWeight.bold))
-                          ])))),
-              const SizedBox(width: 8),
-              RotationTransition(
-                  turns: Tween(begin: 0.0, end: 1.0)
-                      .animate(_refreshAnimationController),
-                  child: IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: (_isLoadingData || _isLoadingMore)
-                          ? null
-                          : _handleRefreshButtonPress,
-                      tooltip: '刷新')), // 使用带节流的按钮处理
-              IconButton(
-                  icon: Icon(_useAlternatingLayout
-                      ? Icons.view_stream_outlined
-                      : Icons.chat_bubble_outline),
-                  onPressed: _toggleLayoutMode,
-                  tooltip: _useAlternatingLayout ? '标准布局' : '气泡布局'),
-              IconButton(
-                  icon: Icon(_showHotActivities
-                      ? Icons.visibility_off_outlined
-                      : Icons.local_fire_department_outlined),
-                  onPressed: _toggleHotActivitiesPanel,
-                  tooltip: _showHotActivities ? '隐藏热门' : '显示热门'),
-            ],
-          ),
-        ),
-        // Main Content Area
-        Expanded(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Left Side
-              Expanded(
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  // Align items to top
                   children: [
-                    if (widget.userId != null)
-                      ActivityTypeFilter(
-                          selectedType: _selectedType,
-                          onTypeSelected: _onTypeFilterChanged),
-                    // Activity Feed
+                    // Main Feed area
                     Expanded(
-                      child: CollapsibleActivityFeed(
-                        key: ValueKey(
-                            'feed_${widget.userId}_${_selectedType}_${_collapseMode.index}'),
-                        activities: _activities,
-                        isLoading: _isLoadingData && _activities.isEmpty,
-                        isLoadingMore: _isLoadingMore,
-                        error: _error.isNotEmpty && _activities.isEmpty
-                            ? _error
-                            : '',
-                        collapseMode: _collapseMode,
-                        useAlternatingLayout: _useAlternatingLayout,
-                        onActivityTap: _navigateToActivityDetail,
-                        onRefresh: _refreshData, // 传递给 RefreshIndicator
-                        onLoadMore: _loadMoreActivities,
-                        scrollController: _scrollController,
-                        onDeleteActivity: _handleDeleteActivity,
-                        onLikeActivity: _handleLikeActivity,
-                        onUnlikeActivity: _handleUnlikeActivity,
-                        onAddComment: _handleAddComment,
-                        onDeleteComment: _handleDeleteComment,
-                        onLikeComment: _handleLikeComment,
-                        onUnlikeComment: _handleUnlikeComment,
-                        onEditActivity: null, // 示例
+                      flex: 3, // Feed takes more space
+                      child: mainFeedContent,
+                    ),
+                    // Vertical divider between feed and panel
+                    VerticalDivider(width: 1,
+                        thickness: 1,
+                        indent: 10,
+                        endIndent: 10,
+                        color: Colors.grey.shade200),
+                    // Hot Activities Panel area (conditional)
+                    if (_showHotActivities) // Only build if toggled on
+                      SizedBox(
+                        width: 300, // Fixed width for the side panel
+                        child: Padding(
+                          // Add padding for visual spacing
+                          padding: const EdgeInsets.only(
+                              top: 8.0, right: 8.0, bottom: 8.0),
+                          child: const HotActivitiesPanel(), // The hot activities widget
+                        ),
                       ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        // Narrow screen layout (or wide screen if hot panel is disabled)
+        else {
+          return Column(
+            children: [
+              topActionBar,
+              // Show controls at the top
+              Expanded(child: mainFeedContent),
+              // Feed takes all remaining space
+              // Hot panel is not rendered here
+            ],
+          );
+        }
+      },
+    );
+  }
+
+  /// Builds the CollapsibleActivityFeed widget.
+  Widget _buildMainFeedContent() {
+    return CollapsibleActivityFeed(
+      // Use a key that changes only when necessary (e.g., collapse mode)
+      key: ValueKey('public_feed_${_collapseMode.index}'),
+      activities: _activities,
+      // Pass the loaded activities
+      // Pass loading states
+      isLoading: _isLoadingData && _activities.isEmpty,
+      isLoadingMore: _isLoadingMore,
+      // Pass error only if list is empty
+      error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
+      collapseMode: _collapseMode,
+      // Pass current collapse mode
+      useAlternatingLayout: _useAlternatingLayout,
+      // Pass current layout mode
+      scrollController: _scrollController,
+      // IMPORTANT: Pass the scroll controller
+      // Pass callbacks
+      onActivityTap: _navigateToActivityDetail,
+      onRefresh: _refreshData,
+      onLoadMore: _loadMoreActivities,
+      // Let the feed handle triggering load more
+      // Pass interaction callbacks
+      onDeleteActivity: _handleDeleteActivity,
+      onLikeActivity: _handleLikeActivity,
+      onUnlikeActivity: _handleUnlikeActivity,
+      onAddComment: _handleAddComment,
+      onDeleteComment: _handleDeleteComment,
+      onLikeComment: _handleLikeComment,
+      onUnlikeComment: _handleUnlikeComment,
+      onEditActivity: null, // Edit function not implemented
+    );
+  }
+
+  /// Builds the top action bar with view controls.
+  Widget _buildTopActionBar() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
+      child: Row(
+        children: [
+          // Collapse Mode Toggle Button
+          Expanded(
+            child: InkWell(
+              onTap: _toggleCollapseMode,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  // Use theme colors for better adaptability
+                    color: Theme
+                        .of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Theme
+                        .of(context)
+                        .colorScheme
+                        .primaryContainer)
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                        _getCollapseModeIcon(),
+                        size: 18, // Slightly smaller icon
+                        color: Theme
+                            .of(context)
+                            .colorScheme
+                            .onPrimaryContainer
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                        _getCollapseModeText(),
+                        style: TextStyle(
+                          color: Theme
+                              .of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
+                          fontWeight: FontWeight.w500, // Medium weight
+                          fontSize: 13, // Slightly smaller text
+                        )
                     ),
                   ],
                 ),
               ),
-              // Right Side
-              if (_showHotActivities) const HotActivitiesPanel(),
-            ],
+            ),
           ),
-        ),
-      ],
+          const SizedBox(width: 8), // Spacer
+
+          // Refresh Button
+          IconButton(
+            icon: RotationTransition( // Apply rotation animation
+              turns: Tween(begin: 0.0, end: 1.0).animate(
+                  _refreshAnimationController),
+              child: const Icon(Icons.refresh_outlined), // Use outlined icon
+            ),
+            tooltip: '刷新',
+            // Disable when loading
+            onPressed: (_isLoadingData || _isLoadingMore)
+                ? null
+                : _handleRefreshButtonPress,
+            splashRadius: 20, // Smaller splash radius
+          ),
+
+          // Layout Toggle Button
+          IconButton(
+            icon: Icon(_useAlternatingLayout
+                ? Icons.view_stream_outlined // Icon when alternating
+                : Icons.view_agenda_outlined), // Icon when standard
+            tooltip: _useAlternatingLayout ? '切换标准布局' : '切换气泡布局',
+            onPressed: _toggleLayoutMode,
+            splashRadius: 20,
+          ),
+
+          // Hot Activities Panel Toggle Button (Conditional)
+          if (widget.showHotActivities) // Only show if widget allows it
+            IconButton(
+              icon: Icon(_showHotActivities
+                  ? Icons.visibility_off_outlined // Icon to hide
+                  : Icons.local_fire_department_outlined), // Icon to show
+              onPressed: _toggleHotActivitiesPanel,
+              tooltip: _showHotActivities ? '隐藏热门' : '显示热门',
+              splashRadius: 20,
+            ),
+        ],
+      ),
     );
   }
-} // _ActivityFeedScreenState 类结束
+}

@@ -29,10 +29,9 @@ class MyPostsScreen extends StatefulWidget {
 class _MyPostsScreenState extends State<MyPostsScreen> {
   // --- 依赖的服务 ---
 
-
   // --- 状态变量 ---
   List<Post> _posts = [];
-  bool _isLoading = true; // 初始设为 true
+  bool _isLoading = false; // 初始设为 true
   String? _error;
   String? _userId;
   bool _isMounted = false; // 跟踪 widget 是否挂载
@@ -57,47 +56,67 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
   // --- 数据加载/刷新逻辑 ---
   Future<void> _fetchPosts() async {
-    if (!_isMounted || _isLoading) return; // 防止重复加载或在卸载后执行
+    if (!_isMounted) {
+      print("MyPostsScreen _fetchPosts: Not mounted. Aborting.");
+      return; // 如果 Widget 已经被移除了，就不继续了
+    }
 
+    // 增加这个检查来防止并发请求
+    if (_isLoading) {
+      print(
+          "MyPostsScreen _fetchPosts: Already loading. Skipping concurrent request.");
+      return; // 如果当前已经在加载中了，就不要开始新的加载
+    }
+
+    print("MyPostsScreen _fetchPosts: Starting fetch process.");
+    // 在异步操作开始前，设置状态为加载中
     setState(() {
       _isLoading = true;
-      _error = null; // 清除旧错误
+      _error = null; // 清除之前的错误信息
     });
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       final currentUserId = await authProvider.currentUserId;
+
       if (currentUserId == null || currentUserId.isEmpty) {
+        print("MyPostsScreen _fetchPosts: User not logged in.");
         if (_isMounted) {
           setState(() {
-            _isLoading = false;
+            _isLoading = false; // 加载结束（虽然是未登录状态）
             _posts = [];
             _userId = null;
             _error = null; // 未登录不是错误
           });
         }
-        return;
+        return; // 未登录，直接返回
       }
 
+      print(
+          "MyPostsScreen _fetchPosts: Fetching posts for user $currentUserId.");
       // 调用修改后的 Future 方法
       final forumService = context.read<ForumService>();
       final fetchedPosts = await forumService.getUserPosts(currentUserId);
 
       if (_isMounted) {
+        print(
+            "MyPostsScreen _fetchPosts: Fetch successful. Count: ${fetchedPosts.length}. Updating state.");
         setState(() {
-          _isLoading = false;
+          _isLoading = false; // 加载完成
           _posts = fetchedPosts;
           _userId = currentUserId; // 保存用户ID
         });
-        print(
-            "MyPostsScreen: Fetched posts for user $currentUserId. Count: ${fetchedPosts.length}");
       }
     } catch (e) {
-      print("MyPostsScreen: Error fetching posts: $e");
+      print("MyPostsScreen _fetchPosts: Error fetching posts: $e");
       if (_isMounted) {
+        print(
+            "MyPostsScreen _fetchPosts: Fetch failed. Updating state with error.");
         setState(() {
-          _isLoading = false;
+          _isLoading = false; // 加载失败，也要结束加载状态
           _error = '加载我的帖子失败: $e';
+          // 考虑是否要清空 _posts 列表，取决于你的需求
+          // _posts = [];
         });
       }
     }
@@ -111,16 +130,14 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   // --- 处理删除帖子 ---
-  Future<void> _handleDeletePost(String postId) async {
-    print("MyPostsScreen: Handling delete request for $postId");
-
+  Future<void> _handleDeletePost(Post post) async {
+    final postId = post.id;
     // 乐观更新 UI
     final List<Post> originalPosts = List.from(_posts);
     setState(() {
       _posts.removeWhere((post) => post.id == postId);
       _error = null; // 清除可能存在的旧错误
     });
-    print("MyPostsScreen: Optimistically removed post $postId from state.");
 
     try {
       // 显示确认对话框
@@ -135,7 +152,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
             try {
               // 调用 Service 执行实际删除
               final forumService = context.read<ForumService>();
-              await forumService.deletePost(postId);
+              await forumService.deletePost(post);
               print(
                   "MyPostsScreen: Successfully deleted post $postId via service.");
               if (_isMounted) AppSnackBar.showSuccess(context, '帖子已删除');
@@ -342,7 +359,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
 
     // --- 显示帖子列表 ---
-    print("MyPostsScreen _buildContent: Building PostGridView.");
     return PostGridView(
       posts: _posts,
       scrollController: _scrollController,

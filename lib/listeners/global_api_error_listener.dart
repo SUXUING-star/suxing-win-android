@@ -64,8 +64,6 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
   }
 
   void _handleIdempotencyError(IdempotencyApiErrorEvent event) {
-    print(
-        "Received IdempotencyApiErrorEvent: Code=${event.code.name}, Msg=${event.message}");
     final now = DateTime.now();
 
     if (_lastIdempotencyErrorTimestamp != null &&
@@ -86,7 +84,6 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
 
   // --- 新增：处理 UnauthorizedAccessEvent ---
   void _handleUnauthorizedAccess(UnauthorizedAccessEvent event) {
-    print("Received UnauthorizedAccessEvent: Msg=${event.message}");
     final now = DateTime.now();
 
     // 如果已经有一个 401 对话框在显示，或者离上次太近，就忽略
@@ -112,7 +109,8 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
       BuildContext _, IdempotencyApiErrorEvent event) {
     final navigatorContext = mainNavigatorKey.currentContext;
     if (navigatorContext == null) {
-      print("Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
+      print(
+          "Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
       // 这里可以考虑加个日志或者备用方案，但通常不应该为 null
       return;
     }
@@ -178,7 +176,6 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
       closeButtonText: '前往登录', // 清晰的行动指引
       barrierDismissible: false, // 强制用户交互
       onClose: () {
-        print("Unauthorized dialog closed by button, navigating to login.");
         _isUnauthorizedDialogShowing = false; // 关闭对话框时重置标记
 
         NavigationUtils.navigateToLogin(context);
@@ -188,7 +185,6 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
 
   @override
   void dispose() {
-    print("Disposing GlobalApiErrorListener, cancelling subscriptions.");
     _idempotencyErrorSubscription?.cancel();
     _unauthorizedSubscription?.cancel(); // <--- 别忘了取消 401 监听
     super.dispose();

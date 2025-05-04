@@ -7,8 +7,8 @@
     </item>
     <!-- 确保使用与ParticleView相同大小的图标 -->
     <item
-        android:width="120dp"
-        android:height="120dp"
+        android:width="192dp"
+        android:height="192dp"
         android:gravity="center">
         <bitmap
             android:gravity="fill"

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
@@ -14,7 +15,7 @@ void main() async {
     WindowOptions windowOptions = const WindowOptions(
       size: Size(1280, 720),
       center: true,
-      title: "宿星茶会（windows版）",
+      title: GlobalConstants.appNameWindows,
       minimumSize: Size(800, 600),
       titleBarStyle: TitleBarStyle.hidden,
     );

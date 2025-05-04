@@ -1,35 +1,35 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/font/font_config.dart'; // 假设你的字体配置在这里
-import 'app_text_type.dart'; // 假设你的 Enum 在这里
+import 'package:suxingchahui/utils/font/font_config.dart';
+import 'app_text_type.dart';
 
 class AppText extends StatelessWidget {
   final String data;
   final AppTextType type;
 
   // --- 直接暴露的常用样式参数 ---
-  final Color? color;          // <--- 新增：直接设置颜色
-  final FontWeight? fontWeight; // <--- 新增：直接设置字重
-  final double? fontSize;       // <--- 新增：直接设置字号
-  final FontStyle? fontStyle;    // <--- 新增：直接设置字体样式 (italic)
-  final double? letterSpacing;  // <--- 新增：直接设置字间距
-  final double? height;         // <--- 新增：直接设置行高 (倍数)
-  final TextDecoration? decoration; // <--- 新增：文字装饰 (下划线等)
-  final Color? decorationColor; // <--- 新增：装饰颜色
-  final TextDecorationStyle? decorationStyle; // <--- 新增：装饰样式
-  final double? decorationThickness; // <--- 新增：装饰线粗细
+  final Color? color;
+  final FontWeight? fontWeight;
+  final double? fontSize;
+  final FontStyle? fontStyle;
+  final double? letterSpacing;
+  final double? height;
+  final TextDecoration? decoration;
+  final Color? decorationColor;
+  final TextDecorationStyle? decorationStyle;
+  final double? decorationThickness;
 
   // --- Text 的所有原生参数，一个不漏 ---
   @override
   final Key? key;
-  final TextStyle? style; // <--- 仍然保留，用于最终覆盖复杂或未直接暴露的样式！
+  final TextStyle? style;
   final StrutStyle? strutStyle;
   final TextAlign? textAlign;
   final TextDirection? textDirection;
   final Locale? locale;
   final bool? softWrap;
   final TextOverflow? overflow;
-  final double? textScaleFactor; // 仍然保留，但优先使用 textScaler
-  final TextScaler? textScaler; // Material 3 推荐
+  final double? textScaleFactor;
+  final TextScaler? textScaler;
   final int? maxLines;
   final String? semanticsLabel;
   final TextWidthBasis? textWidthBasis;

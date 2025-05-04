@@ -1,9 +1,13 @@
 // lib/widgets/ui/components/common_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../models/game/game.dart';
-import '../../../utils/device/device_utils.dart';
-import '../image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
+import '../../../../models/game/game.dart';
+import '../../../../utils/device/device_utils.dart';
+import '../../image/safe_cached_image.dart';
+
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 ///
 /// 该类实现了横向和网格两种布局模式的游戏卡片，子类可以通过重写特定方法来定制行为
@@ -29,7 +33,8 @@ class CommonGameCard extends StatelessWidget {
   Widget build(BuildContext context) {
     // --- 新增加的保险判断 ---
     // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
-    if (game.approvalStatus == GameStatus.rejected || game.approvalStatus == GameStatus.pending) {
+    if (game.approvalStatus == GameStatus.rejected ||
+        game.approvalStatus == GameStatus.pending) {
       // 返回一个空的、不占空间的Widget
       return const SizedBox.shrink();
     }
@@ -144,21 +149,28 @@ class CommonGameCard extends StatelessWidget {
   // 确定是否使用紧凑布局
   bool _shouldUseCompactLayout(BuildContext context) {
     // 获取设备信息
-    final isAndroidPortrait = DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
+    final isAndroidPortrait =
+        DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
 
     // 计算每行卡片数量（用于动态调整布局）
-    final cardsPerRow = DeviceUtils.calculateCardsPerRow(
-        context,
-        withPanels: adaptForPanels
-    );
+    final cardsPerRow =
+        DeviceUtils.calculateCardsPerRow(context, withPanels: adaptForPanels);
 
     // 确定是否使用紧凑布局
-    return forceCompact || (cardsPerRow > 3) || (cardsPerRow == 3 && adaptForPanels) || isAndroidPortrait;
+    return forceCompact ||
+        (cardsPerRow > 3) ||
+        (cardsPerRow == 3 && adaptForPanels) ||
+        isAndroidPortrait;
   }
 
   // 游戏封面（左侧）- 列表布局
   Widget _buildGameCover(BuildContext context, bool isDesktop) {
     final coverWidth = isDesktop ? 120.0 : 100.0;
+    final coverHeight = coverWidth * 0.75; // 计算出逻辑高度
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    // 计算物理缓存尺寸
+    final cacheWidth = (coverWidth * dpr).round();
+    final cacheHeight = (coverHeight * dpr).round();
 
     return Stack(
       children: [
@@ -168,7 +180,8 @@ class CommonGameCard extends StatelessWidget {
           child: SafeCachedImage(
             imageUrl: game.coverImage,
             fit: BoxFit.cover,
-            memCacheWidth: isDesktop ? 240 : 200,
+            memCacheWidth: cacheWidth,
+            memCacheHeight: cacheHeight,
             backgroundColor: Colors.grey[200],
             onError: (url, error) {
               print('游戏卡片图片加载失败: $url, 错误: $error');
@@ -188,25 +201,9 @@ class CommonGameCard extends StatelessWidget {
 
   // 类别标签
   Widget _buildCategoryTag(BuildContext context) {
-    final isCompact = _shouldUseCompactLayout(context);
-
-    return Container(
-      padding: EdgeInsets.symmetric(
-          horizontal: isCompact ? 6 : 8,
-          vertical: isCompact ? 2 : 4
-      ),
-      decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Text(
-        game.category,
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: isCompact ? 10 : 12,
-          fontWeight: FontWeight.bold,
-        ),
-      ),
+    final category = game.category;
+    return GameCategoryTag(
+      category: category,
     );
   }
 
@@ -253,7 +250,14 @@ class CommonGameCard extends StatelessWidget {
 
         // 标签
         if (showTags && game.tags.isNotEmpty)
-          _buildTags(game.tags),
+          Padding(
+            padding: const EdgeInsets.only(top: 4.0, bottom: 4.0), // 可以微调垂直间距
+            child: GameTagList(
+              tags: game.tags,       // 传递游戏标签列表
+              maxTags: maxTags,      // 传递最大显示数量
+              isScrollable: false, // 列表视图用 Wrap，不需要水平滚动
+            ),
+          ),
 
         Spacer(),
 
@@ -306,7 +310,8 @@ class CommonGameCard extends StatelessWidget {
                     return Padding(
                       padding: const EdgeInsets.only(right: 4.0),
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
                           color: Colors.grey[200],
                           borderRadius: BorderRadius.circular(4),
@@ -368,7 +373,8 @@ class CommonGameCard extends StatelessWidget {
         SizedBox(width: 12),
 
         // 查看数
-        Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.lightBlueAccent),
+        Icon(Icons.remove_red_eye_outlined,
+            size: 14, color: Colors.lightBlueAccent),
         SizedBox(width: 4),
         Text(
           game.viewCount.toString(),

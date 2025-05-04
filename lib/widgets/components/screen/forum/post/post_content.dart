@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
@@ -9,7 +10,7 @@ import 'post_interaction_buttons.dart';
 class PostContent extends StatefulWidget {
   final Post post;
   final UserPostActions userActions;
-  final Function(Post,UserPostActions) onPostUpdated;
+  final Function(Post, UserPostActions) onPostUpdated;
 
   const PostContent({
     super.key,
@@ -39,11 +40,11 @@ class _PostContentState extends State<PostContent> {
     }
   }
 
-
-
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop || DeviceUtils.isWeb || DeviceUtils.isTablet(context);
+    final bool isDesktop = DeviceUtils.isDesktop ||
+        DeviceUtils.isWeb ||
+        DeviceUtils.isTablet(context);
 
     return Opacity(
       opacity: 0.9,
@@ -56,12 +57,12 @@ class _PostContentState extends State<PostContent> {
           boxShadow: isDesktop
               ? [] // No shadow for desktop
               : [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -100,29 +101,21 @@ class _PostContentState extends State<PostContent> {
             if (_post.tags.isNotEmpty)
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
-                  children: _post.tags.map((tag) => Container(
-                    margin: const EdgeInsets.only(right: 8),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(
-                      tag,
-                      style: TextStyle(
-                        color: Theme.of(context).primaryColor,
-                        fontSize: 12,
+                  children: _post.tags.map((tagString) {
+                    // 遍历字符串列表
+                    return Padding(
+                      padding: const EdgeInsets.only(right: 8.0),
+                      child: PostTagItem(
+                        tagString: tagString, // <--- 传递字符串
+                        isMini: !isDesktop, // 根据是否桌面调整大小
                       ),
-                    ),
-                  )).toList(),
+                    );
+                  }).toList(),
                 ),
               ),
             if (_post.tags.isNotEmpty) const SizedBox(height: 20),
-
             // 内容栏
             Container(
               width: double.infinity,
@@ -130,9 +123,7 @@ class _PostContentState extends State<PostContent> {
               decoration: BoxDecoration(
                 color: isDesktop ? Colors.grey[50] : Colors.white,
                 borderRadius: BorderRadius.circular(8),
-                border: isDesktop
-                    ? Border.all(color: Colors.grey[200]!)
-                    : null,
+                border: isDesktop ? Border.all(color: Colors.grey[200]!) : null,
               ),
               child: Text(
                 _post.content,
@@ -159,7 +150,8 @@ class _PostContentState extends State<PostContent> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    Icon(Icons.remove_red_eye, size: 16, color: Colors.grey[500]),
+                    Icon(Icons.remove_red_eye,
+                        size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
                       '${_post.viewCount}',

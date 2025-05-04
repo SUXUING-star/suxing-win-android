@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/home/section/home_game_hot.dart
+// lib/widgets/components/screen/home/section/home_hot_games.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';

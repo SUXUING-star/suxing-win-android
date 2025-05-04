@@ -49,7 +49,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
   bool _initializationError = false;
   String _errorDetails = '';
   final List<StreamSubscription> _windowsSubscriptions = [];
-  String _lastWindowsUrl = ''; // <--- 新增：存储最后已知的 Windows URL
+  String _lastWindowsUrl = '';
 
   @override
   void initState() {
@@ -95,7 +95,6 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
   }
 
   Future<void> _initializeAndroidWebView() async {
-    // ... (Android 初始化代码保持不变) ...
     _androidController = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(const Color(0x00000000))

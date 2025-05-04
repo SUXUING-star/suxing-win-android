@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/components/form/gameform/config/category_list.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 
 class CategoryField extends StatelessWidget {
-  static const List<String> categoryOptions = CategoryList.defaultCategory;
+  static const List<String> categoryOptions = GameConstants.defaultGameCategory;
 
   // 将 selectedCategories 改为 selectedCategory，类型改为 String?
   final String? selectedCategory;

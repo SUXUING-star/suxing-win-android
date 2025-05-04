@@ -4,6 +4,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:suxingchahui/constants/common/app_bar_actions.dart';
+import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -18,7 +20,6 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/widgets/components/form/postform/config/post_taglists.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/tag_filter.dart';
@@ -38,8 +39,8 @@ class ForumScreen extends StatefulWidget {
 }
 
 class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
-  final List<String> _tags = PostTagLists.filterTags;
-  String _selectedTag = '全部';
+  final List<PostTag> _tags = PostConstants.availablePostTags;
+  PostTag? _selectedTag;
   List<Post>? _posts;
   String? _errorMessage;
 
@@ -58,8 +59,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   bool _showLeftPanel = true;
   bool _showRightPanel = true;
 
-  //LoadingRouteObserver? _routeObserver;
-
   // --- 缓存监听 ---
   StreamSubscription<dynamic>? _cacheSubscription;
   String _currentWatchIdentifier = ''; // 用于标识当前监听的参数组合
@@ -70,11 +69,26 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   static const double _hideRightPanelThreshold = 950.0;
   static const double _hideLeftPanelThreshold = 750.0;
 
+  // --- 新增：下拉刷新节流相关状态 ---
+  bool _isPerformingForumRefresh = false; // 标记是否正在执行论坛下拉刷新操作 (加个 Forum 区分)
+  DateTime? _lastForumRefreshAttemptTime; // 上次尝试论坛下拉刷新的时间戳
+  // 定义最小刷新间隔 (40 秒)
+  static const Duration _minForumRefreshInterval = Duration(seconds: 40);
+
   @override
   void initState() {
     super.initState();
-    if (widget.tag != null && _tags.contains(widget.tag!)) {
-      _selectedTag = widget.tag!;
+    // --- 初始化 selectedTag ---
+    if (widget.tag != null) {
+      // 尝试从路由字符串转换
+      _selectedTag = PostTagsUtils.tagFromString(widget.tag!);
+      // 如果转换结果是 other 但原始 tag 不是 other 的显示文本，视为无效，置为 null
+      if (_selectedTag == PostTag.other &&
+          widget.tag != PostTag.other.displayText) {
+        _selectedTag = null;
+      }
+    } else {
+      _selectedTag = null; // 默认 null (全部)
     }
     WidgetsBinding.instance.addObserver(this);
     // 不在此处加载，依赖 VisibilityDetector
@@ -83,7 +97,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Maybe trigger load if visible here? Or rely solely on VisibilityDetector
   }
 
   @override
@@ -130,10 +143,12 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 核心加载逻辑 ---
-  Future<void> _loadPosts(
-      {required int page,
-      bool isInitialLoad = false,
-      bool isRefresh = false}) async {
+  Future<void> _loadPosts({
+    required int page,
+    bool isInitialLoad = false,
+    bool isRefresh = false,
+    bool forceRefresh = false,
+  }) async {
     // 防止在加载过程中重复触发（除非是强制刷新）
     if (_isLoadingData && !isRefresh) {
       return;
@@ -157,10 +172,13 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // --- 调用 Service 获取数据 ---
     try {
       final forumService = context.read<ForumService>();
+
+      final String? tagParam = _selectedTag?.displayText;
       final result = await forumService.getPostsPage(
-        tag: _selectedTag == '全部' ? null : _selectedTag,
+        tag: tagParam,
         page: page,
         limit: _limit,
+        forceRefresh: forceRefresh,
       );
 
       if (!mounted) return; // 获取数据后检查组件是否还在
@@ -208,16 +226,81 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
   }
 
-  // --- 刷新数据 (调用 _loadPosts 强制刷新第一页) ---
+  // --- 刷新数据 (调用 _loadPosts 强制刷新第一页) - 加入节流 & 修正 ---
   Future<void> _refreshData() async {
-    if (_isLoadingData) return;
-    if (!mounted) return;
-    // print("ForumScreen: Refresh triggered, loading page 1 forcefully.");
-    setState(() {
-      _currentPage = 1; // 重置到第一页
-      // _totalPages = 1; // 可以在加载成功后更新
-    });
-    await _loadPosts(page: 1, isRefresh: true);
+    // 1. 防止重复触发
+    if (_isPerformingForumRefresh) {
+      // debugPrint("节流 (Forum): 已经在下拉刷新中，忽略本次触发"); // 可选调试日志
+      return;
+    }
+
+    // 2. 检查时间间隔
+    final now = DateTime.now();
+    if (_lastForumRefreshAttemptTime != null &&
+        now.difference(_lastForumRefreshAttemptTime!) <
+            _minForumRefreshInterval) {
+      final remainingSeconds = (_minForumRefreshInterval.inSeconds -
+          now.difference(_lastForumRefreshAttemptTime!).inSeconds);
+      if (mounted) {
+        // --- 使用 AppSnackBar ---
+        AppSnackBar.showInfo(
+          context,
+          '手速太快了！请 ${remainingSeconds} 秒后再刷新',
+          duration: const Duration(seconds: 2),
+        );
+      }
+      // --- 结束 RefreshIndicator 动画 ---
+      _refreshController.refreshCompleted();
+      return; // 时间不够，直接返回
+    }
+
+    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
+
+    // --- 设置节流状态 ---
+    _isPerformingForumRefresh = true;
+    _lastForumRefreshAttemptTime = now; // 记录本次尝试刷新的时间
+
+    // --- 执行实际刷新逻辑 ---
+    try {
+      if (_isLoadingData && !_isPerformingForumRefresh) {
+        _refreshController.refreshCompleted(); // 结束动画
+        _isPerformingForumRefresh = false; // 重置标记（因为本次刷新未执行）
+        return;
+      }
+      // 再次检查 mounted
+      if (!mounted) {
+        _isPerformingForumRefresh = false; // 重置标记
+        return;
+      }
+
+      // 重置到第一页
+      setState(() {
+        _currentPage = 1;
+      });
+
+      // *** 调用核心加载方法，标记为 isRefresh ***
+      await _loadPosts(page: 1, isRefresh: true);
+
+      // *** 加载成功后，结束 RefreshIndicator 动画 ***
+      if (mounted) {
+        _refreshController.refreshCompleted();
+      }
+    } catch (e) {
+      // 加载失败，也要结束 RefreshIndicator 动画
+      if (mounted) {
+        // 可以选择显示错误提示
+        _refreshController.refreshCompleted(); // 仍然调用 completed 结束动画
+      }
+    } finally {
+      // 4. 清除刷新状态标记 (无论成功失败)
+      // 必须检查 mounted
+      if (mounted) {
+        _isPerformingForumRefresh = false; // 结束下拉刷新
+      } else {
+        _isPerformingForumRefresh = false; // 组件已卸载也要清理状态
+      }
+      // debugPrint("节流 (Forum): 下拉刷新操作完成 (finally)"); // 可选调试日志
+    }
   }
 
   // --- 触发首次加载 (仅在未初始化时调用) ---
@@ -232,7 +315,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 开始/更新监听缓存 ---
   void _startOrUpdateWatchingCache() {
-    final String newWatchIdentifier = "${_selectedTag}_$_currentPage";
+    final String tagKey = _selectedTag?.name ?? 'all';
+    final String newWatchIdentifier = "${tagKey}_$_currentPage";
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
       // print("ForumScreen: Watch identifier hasn't changed ($newWatchIdentifier). Keeping current subscription.");
@@ -243,10 +327,11 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     _currentWatchIdentifier = newWatchIdentifier;
 
     try {
+      final String? tagParam = _selectedTag?.displayText;
       final forumService = context.read<ForumService>();
       _cacheSubscription = forumService
           .watchForumPageChanges(
-        tag: _selectedTag == '全部' ? null : _selectedTag,
+        tag: tagParam,
         page: _currentPage,
         limit: _limit,
       )
@@ -316,7 +401,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 处理标签选择 ---
-  void _onTagSelected(String tag) {
+  void _onTagSelected(PostTag? tag) {
     if (_selectedTag == tag || _isLoadingData) return;
     print("ForumScreen: Tag selected: $tag");
     setState(() {
@@ -419,7 +504,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _handleDeletePostFromCard(String postId) async {
+  Future<void> _handleDeletePostFromCard(Post post) async {
     // 使用确认对话框，确保用户意图
     await CustomConfirmDialog.show(
       context: context,
@@ -431,7 +516,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         try {
           final forumService = context.read<ForumService>();
           // 调用 Service 删除
-          await forumService.deletePost(postId);
+          await forumService.deletePost(post);
           if (!mounted) return;
           AppSnackBar.showSuccess(context, '帖子已删除');
           // 删除成功后，刷新列表（通常回到第一页）
@@ -439,8 +524,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         } catch (e) {
           if (!mounted) return;
           AppSnackBar.showError(context, '删除失败: $e');
-          // Rethrow ? 或许不需要，已经在 SnackBar 显示错误
-          // throw e; // 让 PostCard 那边的 try-catch 捕获 (但现在不需要了)
         }
       },
     );
@@ -478,6 +561,13 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     final Color disabledColor = Colors.white54;
     final Color enabledColor = Colors.amber;
 
+    final Color leftPanelIconColor = actuallyShowLeftPanel
+        ? secondaryColor
+        : (canShowLeftPanelBasedOnWidth ? Colors.amber : Colors.white54);
+    final Color rightPanelIconColor = actuallyShowRightPanel
+        ? secondaryColor
+        : (canShowRightPanelBasedOnWidth ? Colors.amber : Colors.white54);
+
     return VisibilityDetector(
       // *** 使用 Tag 和 Page 作为 Key，确保切换时重建 VisibilityDetector 状态 ***
       key: Key('forum_screen_visibility_${_selectedTag}_$_currentPage'),
@@ -514,12 +604,13 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0), // 控制按钮左右间距
               child: FunctionalIconButton(
-                icon: Icons.search,
-                iconColor: Colors.blue[300],
-                buttonBackgroundColor: Colors.white,
+                icon: AppBarAction.searchForumPost.icon,
+                tooltip: AppBarAction.searchForumPost.defaultTooltip!,
+                iconColor: AppBarAction.searchForumPost.defaultIconColor,
+                buttonBackgroundColor:
+                    AppBarAction.searchForumPost.defaultBgColor,
                 onPressed: () =>
                     NavigationUtils.pushNamed(context, AppRoutes.searchPost),
-                tooltip: '搜索帖子', // 改为搜索帖子更合适？
                 iconButtonPadding: EdgeInsets.zero, // 可以覆盖内部默认值，让间距更小
               ),
             ),
@@ -527,16 +618,18 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: FunctionalIconButton(
-                  icon: Icons.menu_open,
-                  buttonBackgroundColor: Colors.white,
-                  iconColor: actuallyShowLeftPanel
-                      ? secondaryColor
-                      : (_showLeftPanel ? disabledColor : enabledColor),
-                  onPressed:
-                      canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
+                  icon: AppBarAction.toggleLeftPanel.icon,
+                  buttonBackgroundColor:
+                      AppBarAction.toggleLeftPanel.defaultBgColor,
+                  iconColor: leftPanelIconColor, // 动态
                   tooltip: _showLeftPanel
                       ? (canShowLeftPanelBasedOnWidth ? '隐藏分类' : '屏幕宽度不足')
-                      : (canShowLeftPanelBasedOnWidth ? '显示分类' : '屏幕宽度不足'),
+                      : (canShowLeftPanelBasedOnWidth
+                          ? '显示分类'
+                          : '屏幕宽度不足'), // 动态
+                  onPressed: canShowLeftPanelBasedOnWidth
+                      ? _toggleLeftPanel
+                      : null, // 动态
                   iconButtonPadding: EdgeInsets.zero,
                 ),
               ),
@@ -544,27 +637,30 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 4.0),
                 child: FunctionalIconButton(
-                  icon: Icons.bar_chart,
-                  buttonBackgroundColor: Colors.white,
-                  iconColor: actuallyShowRightPanel
-                      ? secondaryColor
-                      : (_showRightPanel ? disabledColor : enabledColor),
-                  onPressed:
-                      canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
+                  icon: AppBarAction.toggleRightPanel
+                      .icon, // 注意这里用了 bar_chart_outlined，如果 Forum 要用 bar_chart，需要在枚举里调整或加新的
+                  buttonBackgroundColor:
+                      AppBarAction.toggleRightPanel.defaultBgColor,
+                  iconColor: rightPanelIconColor, // 动态
                   tooltip: _showRightPanel
                       ? (canShowRightPanelBasedOnWidth ? '隐藏统计' : '屏幕宽度不足')
-                      : (canShowRightPanelBasedOnWidth ? '显示统计' : '屏幕宽度不足'),
+                      : (canShowRightPanelBasedOnWidth
+                          ? '显示统计'
+                          : '屏幕宽度不足'), // 动态
+                  onPressed: canShowRightPanelBasedOnWidth
+                      ? _toggleRightPanel
+                      : null, // 动态
                   iconButtonPadding: EdgeInsets.zero,
                 ),
               ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 4.0),
               child: FunctionalIconButton(
-                icon: Icons.refresh,
-                iconColor: Colors.green[300],
-                buttonBackgroundColor: Colors.white,
-                onPressed: _isLoadingData ? null : _refreshData,
-                tooltip: '刷新帖子',
+                icon: AppBarAction.refreshForum.icon,
+                tooltip: AppBarAction.refreshForum.defaultTooltip!,
+                iconColor: AppBarAction.refreshForum.defaultIconColor,
+                buttonBackgroundColor: AppBarAction.refreshForum.defaultBgColor,
+                onPressed: _isLoadingData ? null : _refreshData, // 动态
                 iconButtonPadding: EdgeInsets.zero,
               ),
             ),
@@ -574,11 +670,13 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
                     ? Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 4.0),
                         child: FunctionalIconButton(
-                          icon: Icons.add_circle_outline,
-                          buttonBackgroundColor: Colors.white,
-                          iconColor: Colors.orange,
-                          onPressed: _navigateToCreatePost,
-                          tooltip: '发布新帖子',
+                          icon: AppBarAction.createForumPost.icon,
+                          tooltip: AppBarAction.createForumPost.defaultTooltip!,
+                          iconColor:
+                              AppBarAction.createForumPost.defaultIconColor,
+                          buttonBackgroundColor:
+                              AppBarAction.createForumPost.defaultBgColor,
+                          onPressed: _navigateToCreatePost, // 动态
                           iconButtonPadding: EdgeInsets.zero,
                         ),
                       )
@@ -593,7 +691,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           children: [
             if (!isDesktop)
               TagFilter(
-                tags: _tags,
+                tags: PostTagsUtils.tagsToStringList(_tags),
                 selectedTag: _selectedTag,
                 onTagSelected: _onTagSelected,
               ),
@@ -698,7 +796,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
                   delay: rightPanelDelay,
                   child: ForumRightPanel(
                     currentPosts: _posts!,
-                    selectedTag: _selectedTag == '全部' ? null : _selectedTag,
+                    selectedTag: _selectedTag,
                     onTagSelected: _onTagSelected,
                   ),
                 )
@@ -745,7 +843,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 构建移动端帖子列表 (ListView) ---
   Widget _buildMobilePostsList({
-    required Future<void> Function(String postId) onDeleteAction,
+    required Future<void> Function(Post post) onDeleteAction,
     required void Function(Post post) onEditAction,
   }) {
     if (_posts == null) return const SizedBox.shrink();
@@ -786,7 +884,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   Widget _buildDesktopPostsGrid(
     bool actuallyShowLeftPanel,
     bool actuallyShowRightPanel, {
-    required Future<void> Function(String postId) onDeleteAction,
+    required Future<void> Function(Post post) onDeleteAction,
     required void Function(Post post) onEditAction,
   }) {
     if (_posts == null) return const SizedBox.shrink();

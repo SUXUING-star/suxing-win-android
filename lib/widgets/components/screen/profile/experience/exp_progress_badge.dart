@@ -2,14 +2,19 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+// **** 导入模型和 Service ****
+import 'package:suxingchahui/models/user/daily_progress.dart';
+import 'package:suxingchahui/models/user/user.dart'; // **** 导入 User 模型 ****
+import 'package:suxingchahui/services/main/user/user_service.dart';
+// **** 导入 UI 组件 ****
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../../../services/main/user/user_service.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'exp_badge_widget.dart';
 import 'dialog/exp_dialog_content.dart';
 
-// 主组件：经验值进度徽章
 class ExpProgressBadge extends StatefulWidget {
+  // **** 接收 User 对象 ****
+  final User currentUser;
   final double size;
   final Color? backgroundColor;
   final Color? textColor;
@@ -17,6 +22,7 @@ class ExpProgressBadge extends StatefulWidget {
 
   const ExpProgressBadge({
     super.key,
+    required this.currentUser, // **** 必须传入 User ****
     this.size = 24.0,
     this.backgroundColor,
     this.textColor,
@@ -28,25 +34,28 @@ class ExpProgressBadge extends StatefulWidget {
 }
 
 class _ExpProgressBadgeState extends State<ExpProgressBadge> {
-  Map<String, dynamic>? _progressData;
+  DailyProgressData? _progressData;
   bool _isLoading = true;
   String? _error;
+  // **** 彻底删除 _currentUser 和 _isDialogLoading 状态 ****
 
   @override
   void initState() {
     super.initState();
-    _loadProgressData();
+    _loadProgressData(); // 初始只加载进度数据
   }
 
+  // 只加载每日进度数据
   Future<void> _loadProgressData() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-      final userService = context.read<UserService>();
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-      final data = await userService.getDailyExperienceProgressWithCache();
+    try {
+      final userService = context.read<UserService>();
+      final data = await userService.getDailyExperienceProgress();
 
       if (mounted) {
         setState(() {
@@ -57,7 +66,7 @@ class _ExpProgressBadgeState extends State<ExpProgressBadge> {
     } catch (e) {
       if (mounted) {
         setState(() {
-          _error = e.toString();
+          _error = "加载失败";
           _isLoading = false;
         });
       }
@@ -71,12 +80,21 @@ class _ExpProgressBadgeState extends State<ExpProgressBadge> {
     }
 
     if (_error != null || _progressData == null) {
-      return _buildErrorIndicator();
+      return InkWell(
+        onTap: _loadProgressData,
+        child: Tooltip(
+          message: _error ?? "加载失败，点击重试",
+          child: Icon(
+            Icons.error_outline,
+            color: Colors.red.shade300,
+            size: widget.size,
+          ),
+        ),
+      );
     }
 
-    // 提取进度值
-    final earnedToday = (_progressData!['todayProgress']['earnedToday'] as num).toInt();
-    final completionPercentage = (_progressData!['todayProgress']['completionPercentage'] as num).toDouble();
+    final earnedToday = _progressData!.todayProgress.earnedToday;
+    final completionPercentage = _progressData!.todayProgress.completionPercentage;
 
     return ExpBadgeWidget(
       size: widget.size,
@@ -84,77 +102,60 @@ class _ExpProgressBadgeState extends State<ExpProgressBadge> {
       textColor: widget.textColor ?? Colors.white,
       earnedToday: earnedToday,
       completionPercentage: completionPercentage,
+      // **** 点击时直接调用 _showProgressDialog ****
       onTap: () => _showProgressDialog(context),
     );
   }
 
-  // 加载中指示器
   Widget _buildLoadingIndicator() {
-    return LoadingWidget.inline();
-  }
-
-  // 错误指示器
-  Widget _buildErrorIndicator() {
-    return InlineErrorWidget();
-  }
-
-  // 显示经验值进度详情对话框
-  void _showProgressDialog(BuildContext context) {
-    if (_progressData == null) return;
-
-    // 获取任务列表并更新经验值
-    final List<Map<String, dynamic>> tasks = List<Map<String, dynamic>>.from(_progressData!['tasks']);
-    _updateTaskExpValues(tasks);
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            Icon(Icons.stars, color: Theme.of(context).primaryColor),
-            SizedBox(width: 8),
-            Text(
-              '今日经验进度',
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        content: ExpDialogContent(
-          progressData: _progressData!,
-          tasks: tasks,
-          isDesktop: widget.isDesktop,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              _loadProgressData(); // 关闭时刷新数据
-              Navigator.of(context).pop();
-            },
-            child: Text('关闭'),
-          ),
-        ],
-      ),
+    return SizedBox(
+      width: widget.size,
+      height: widget.size,
+      child: LoadingWidget.inline(size: widget.size * 0.6),
     );
   }
 
-  // 更新任务经验值
-  void _updateTaskExpValues(List<Map<String, dynamic>> tasks) {
-    for (var task in tasks) {
-      final type = task['type'];
+  // **** 彻底删除 _handleTap 方法 ****
 
-      // 根据任务类型设置经验值
-      switch (type) {
-        case 'checkin': // 签到
-          task['expPerTask'] = 15;
-          break;
-        case 'post': // 发帖
-          task['expPerTask'] = 10;
-          break;
-        default: // 其他所有任务类型（回复、点赞、关注、收藏、评论等）
-          task['expPerTask'] = 5;
+  // 显示经验值进度详情对话框
+  void _showProgressDialog(BuildContext context) {
+    // 确保进度数据已加载
+    if (_progressData == null) return;
+
+    // **** User 对象直接从 widget.currentUser 获取 ****
+    final User userToShow = widget.currentUser;
+    final List<Task> tasks = _progressData!.tasks;
+    final TodayProgressSummary todayProgress = _progressData!.todayProgress;
+
+    // Dialog 关闭时的刷新逻辑 (只刷新进度)
+    void refreshProgressCallback() {
+      if(mounted) { // 检查 Mouted 状态
+        _loadProgressData();
       }
     }
+
+    BaseInputDialog.show<void>(
+      context: context,
+      title: '今日经验进度',
+      iconData: Icons.stars,
+      contentBuilder: (dialogContext) {
+        // **** 直接传递 widget.currentUser 给 ExpDialogContent ****
+        return ExpDialogContent(
+          todayProgress: todayProgress,
+          tasks: tasks,
+          currentUser: userToShow, // **** 使用 widget.currentUser ****
+          isDesktop: widget.isDesktop,
+        );
+      },
+      confirmButtonText: '关闭',
+      showCancelButton: false,
+      // 关闭时刷新进度数据
+      onConfirm: () async { // onConfirm 是 Future，保持 async
+        refreshProgressCallback();
+      },
+      onCancel: refreshProgressCallback, // 点击背景关闭时也刷新
+      isDraggable: true,
+      isScalable: false,
+    );
   }
 }

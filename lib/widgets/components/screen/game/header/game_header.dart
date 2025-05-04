@@ -1,6 +1,7 @@
 // lib/widgets/game/game_header.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../models/game/game.dart';
 import '../tag/game_tags.dart'; // 导入游戏标签组件
@@ -38,19 +39,9 @@ class GameHeader extends StatelessWidget {
           children: [
             Row(
               children: [
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    game.category,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
+                GameCategoryTag(
+                  category: game.category,
+                  isMini: false,
                 ),
                 Spacer(),
                 Container(

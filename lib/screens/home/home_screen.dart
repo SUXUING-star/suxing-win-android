@@ -9,8 +9,9 @@ import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:suxingchahui/widgets/components/screen/home/section/home_game_hot.dart';
+import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart';
 import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart';
 import 'package:suxingchahui/widgets/components/screen/home/section/home_banner.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -29,15 +30,19 @@ class HomeScreen extends StatefulWidget {
 enum HomeDataType { hotGames, latestGames, hotPosts }
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-
-
   // --- 状态变量 ---
-  DateTime? _lastPullToRefreshTime; // 记录上次下拉刷新的时间 (可选)
+
   bool _isInitialized = false; // 标记整体页面是否已初始化加载过
   bool _isVisible = false;
   String? _errorMessage; // 保留用于可能的整体错误
-  bool _isLoadingOnPullToRefresh = false; // *只* 控制下拉刷新的 Loading 状态
+
   bool _hasPlayedEntryAnimation = false;
+
+  // --- 新增：下拉刷新节流相关状态 ---
+  bool _isPerformingHomeScreenRefresh = false; // 标记是否正在执行 HomeScreen 下拉刷新
+  DateTime? _lastHomeScreenRefreshAttemptTime; // 上次尝试 HomeScreen 下拉刷新的时间戳
+  // 定义最小刷新间隔 (60 秒)
+  static const Duration _minHomeScreenRefreshInterval = Duration(minutes: 1);
 
   // --- 用于强制重建子组件的 Key 状态 (由缓存监听器和下拉刷新驱动) ---
   int _hotGamesKeyCounter = 0;
@@ -147,31 +152,70 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   // *** 修改：_refreshData - 用于下拉刷新 ***
   Future<void> _refreshData() async {
-    // 注意：这个方法现在只由 RefreshIndicator 调用
-    if (!mounted || _isLoadingOnPullToRefresh) return; // 防止重复下拉刷新
-    print('HomeScreen: Pull-to-refresh triggered.');
-    setState(() {
-      _isLoadingOnPullToRefresh = true; // 设置下拉刷新的 Loading 状态
-    });
-    _lastPullToRefreshTime = DateTime.now();
-
-    // 强制刷新所有子组件
-    // 这里我们明确希望下拉刷新能获取所有部分的最新数据
-    setState(() {
-      _forceRefreshAllChildrenCounters();
-    });
-
-    // 给子组件一些时间去开始 fetch，然后解除下拉刷新的 loading 状态
-    // 这个时间需要调整，取决于子组件 fetch 的大概时间
-    // 或者更好的方式是让子组件 fetch 完成后通知 HomeScreen？（会更复杂）
-    // 暂时用固定延迟
-    await Future.delayed(Duration(seconds: 1)); // 模拟网络延迟 + 子组件处理
-
-    if (mounted) {
-      setState(() {
-        _isLoadingOnPullToRefresh = false; // 解除下拉刷新的 Loading 状态
-      });
+    // 1. 防止重复触发
+    if (_isPerformingHomeScreenRefresh) {
+      // debugPrint("节流 (HomeScreen): 已经在下拉刷新中，忽略本次触发");
+      return; // 直接返回 Future<void>
     }
+
+    // 2. 检查时间间隔
+    final now = DateTime.now();
+    if (_lastHomeScreenRefreshAttemptTime != null &&
+        now.difference(_lastHomeScreenRefreshAttemptTime!) <
+            _minHomeScreenRefreshInterval) {
+      final remainingSeconds = (_minHomeScreenRefreshInterval.inSeconds -
+          now.difference(_lastHomeScreenRefreshAttemptTime!).inSeconds);
+      // debugPrint("节流 (HomeScreen): 下拉刷新间隔太短，还需等待 $remainingSeconds 秒");
+      if (mounted) {
+        AppSnackBar.showInfo(
+          context,
+          '刷新太频繁啦，请 ${remainingSeconds} 秒后再试',
+          duration: const Duration(seconds: 2),
+        );
+      }
+      // 不需要手动控制 RefreshIndicator，直接 return 就会让它停止
+      return; // 时间不够，直接返回 Future<void>
+    }
+
+    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
+
+    // --- 设置节流状态 ---
+    // 这里不需要 setState，因为 UI 上没有直接依赖这个状态的 Loading
+    _isPerformingHomeScreenRefresh = true;
+    _lastHomeScreenRefreshAttemptTime = now; // 记录本次尝试刷新的时间
+
+    // --- 执行核心逻辑：触发子组件刷新 ---
+    try {
+      // 再次检查 mounted
+      if (!mounted) {
+        _isPerformingHomeScreenRefresh = false; // 清理状态
+        return;
+      }
+
+      // *** 核心：改变 Key Counter 来强制刷新子组件 ***
+      // 这个 setState 是必要的，因为它更新了 Key，触发子组件重建
+      setState(() {
+        _forceRefreshAllChildrenCounters();
+      });
+
+      // *** 父组件的工作到此结束，方法可以立即返回 ***
+      // RefreshIndicator 会因为这个 Future 完成而停止旋转
+    } catch (e) {
+      // 这个 try-catch 实际上可能没啥用，因为核心操作 setState 不太可能抛出需要这里捕获的异常
+      // 但保留着也没坏处
+      // debugPrint("HomeScreen _refreshData 内部发生预料之外的错误: $e");
+    } finally {
+      // 4. 清除刷新状态标记
+      // 确保 mounted 检查
+      if (mounted) {
+        // 同样，这里不需要 setState
+        _isPerformingHomeScreenRefresh = false; // 结束下拉刷新操作标记
+      } else {
+        _isPerformingHomeScreenRefresh = false;
+      }
+      // debugPrint("节流 (HomeScreen): 下拉刷新操作完成 (finally)");
+    }
+    // 方法自然结束，返回 Future<void>
   }
 
   // 辅助方法：增加所有 Key Counter (不变，但调用时机改变了)
@@ -231,7 +275,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_errorMessage != null) {
       return CustomErrorWidget(
         errorMessage: "发生错误 $_errorMessage",
-        onRetry: ()=> _refreshData(),
+        onRetry: () => _refreshData(),
       );
     }
 

@@ -110,7 +110,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // 加载游戏详情和收藏状态
-  // 加载游戏详情和收藏状态
   Future<void> _loadGameDetailsWithStatus({bool forceRefresh = false}) async {
     if (widget.gameId == null || !mounted) return;
 
@@ -332,7 +331,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // *** 核心改动：处理点赞切换的回调函数 ***
-  // *** 这个函数需要完全替换掉你原来的 _handleToggleLike ***
   Future<void> _handleToggleLike() async {
     // 保持前置检查
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
@@ -518,41 +516,45 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ),
       ],
     );
+    final ScrollController mobileScrollController = ScrollController();
 
     return Scaffold(
-      body: RefreshIndicator(
-        onRefresh: _refreshGameDetails,
-        child: CustomScrollView(
-          key: ValueKey('game_detail_mobile_${widget.gameId}_$_refreshCounter'),
-          slivers: [
-            CustomSliverAppBar(
-              titleText: game.title,
-              expandedHeight: 300,
-              pinned: true,
-              flexibleSpaceBackground: flexibleSpaceBackground,
-              actions: [
-                IconButton(
-                    icon: const Icon(Icons.share, color: Colors.white),
-                    onPressed: () {},
-                    tooltip: '分享'),
-              ],
-            ),
-            SliverPadding(
-              padding: const EdgeInsets.only(bottom: 80),
-              sliver: SliverToBoxAdapter(
-                child: GameDetailContent(
-                  // 传递数据给 Content
-                  game: game,
-                  initialCollectionStatus: _collectionStatus, // <--- 传递状态
-                  onCollectionChanged:
-                      _handleCollectionStateChangedInButton, // <--- 传递这个函数
-                  onNavigate: _handleNavigate,
-                  navigationInfo: _navigationInfo,
-                  isPreviewMode: isPending,
+      // **** [核心改动] 用 Scrollbar 包裹 RefreshIndicator ****
+      body: Scrollbar(
+        // <--- 添加 Scrollbar
+        interactive: false,
+        controller: mobileScrollController, // <--- 传入 Controller
+        thumbVisibility: true, // <--- 让滚动条一直可见 (或者 isAlwaysShown: true)
+        child: RefreshIndicator(
+          onRefresh: _refreshGameDetails,
+          child: CustomScrollView(
+            controller: mobileScrollController,
+            reverse: false,
+
+            key: ValueKey(
+                'game_detail_mobile_${widget.gameId}_$_refreshCounter'),
+
+            slivers: [
+              CustomSliverAppBar(
+                titleText: game.title,
+                expandedHeight: 300,
+                pinned: true,
+                flexibleSpaceBackground: flexibleSpaceBackground,
+                actions: [
+                  IconButton(
+                      icon: const Icon(Icons.share, color: Colors.white),
+                      onPressed: () {},
+                      tooltip: '分享'),
+                ],
+              ),
+              SliverPadding(
+                padding: const EdgeInsets.only(bottom: 80),
+                sliver: SliverToBoxAdapter(
+                  child: _buildGameContent(game, isPending),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
       // --- 直接调用辅助方法构建 FAB 组 ---
@@ -564,8 +566,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   // Desktop Layout 构建
   Widget _buildDesktopLayout(Game game, bool isPending) {
-    final bool canEdit = _canEditGame(context, game);
-    final bool isPreview = isPending ? true : false;
     return Scaffold(
       appBar: CustomAppBar(
         title: game.title,
@@ -575,20 +575,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         key: ValueKey('game_detail_desktop_${widget.gameId}_$_refreshCounter'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: GameDetailContent(
-            game: game,
-            initialCollectionStatus: _collectionStatus,
-            onCollectionChanged:
-                _handleCollectionStateChangedInButton, // <--- 传递这个函数
-            onNavigate: _handleNavigate,
-            navigationInfo: _navigationInfo,
-            isPreviewMode: isPreview,
-          ),
+          child: _buildGameContent(game, isPending),
         ),
       ),
       floatingActionButton: _buildActionButtonsGroup(context, game),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat, // 指定位置
+    );
+  }
+
+  Widget _buildGameContent(Game game, bool isPending) {
+    final bool isPreview = isPending ? true : false;
+    return GameDetailContent(
+      game: game,
+      initialCollectionStatus: _collectionStatus,
+      onCollectionChanged: _handleCollectionStateChangedInButton, // <--- 传递这个函数
+      onNavigate: _handleNavigate,
+      navigationInfo: _navigationInfo,
+      isPreviewMode: isPreview,
     );
   }
 

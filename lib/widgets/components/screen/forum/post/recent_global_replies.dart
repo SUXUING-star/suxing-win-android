@@ -11,6 +11,7 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
@@ -30,6 +31,11 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // 把 Stream 换成 Future
   Future<List<GlobalReplyItem>>? _repliesFuture;
   // 不需要 _isLoading 了，FutureBuilder 自己会管加载状态
+  // --- 新增：节流相关状态 ---
+  bool _isRefreshing = false; // 标记是否正在执行刷新操作
+  DateTime? _lastRefreshTime; // 上次刷新的时间戳
+  // 定义最小刷新间隔 (例如：3秒)
+  static const Duration _minRefreshInterval = Duration(seconds: 15);
 
   @override
   void initState() {
@@ -53,18 +59,49 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   }
 
   // 主动刷新的方法
+  // --- 主动刷新的方法 (加入节流逻辑) ---
   void _handleRefresh() {
-    final forumService = context.read<ForumService>();
-    // 调用强制刷新方法，并用 setState 更新 Future，让 FutureBuilder 重新构建
-    setState(() {
-      _repliesFuture =
-          forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+    // 1. 防止重复触发：如果已经在刷新中，直接返回
+    if (_isRefreshing) {
+      return;
+    }
+
+    final now = DateTime.now();
+
+    // 2. 检查时间间隔：判断离上次刷新是否足够久
+    if (_lastRefreshTime != null &&
+        now.difference(_lastRefreshTime!) < _minRefreshInterval) {
+      AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
+
+      return; // 时间不够，直接返回
+    }
+
+    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
+    if (mounted) {
+      setState(() {
+        _isRefreshing = true; // 开始刷新
+        _lastRefreshTime = now; // 更新上次刷新的时间
+
+        // 调用实际的刷新方法
+        final forumService = context.read<ForumService>();
+        _repliesFuture =
+            forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+      });
+    }
+
+    // 4. 刷新结束后清除状态 (使用 Future 的 whenComplete 回调)
+    //    注意：这里假设 forceRefreshRecentGlobalReplies 返回的 Future 完成时代表刷新操作结束
+    _repliesFuture?.whenComplete(() {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false; // 结束刷新
+        });
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(

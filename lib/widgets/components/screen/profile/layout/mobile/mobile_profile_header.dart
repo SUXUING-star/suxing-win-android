@@ -62,6 +62,7 @@ class MobileProfileHeader extends StatelessWidget {
                 top: 0, // 示例位置，可能需要你根据实际效果调整
                 right: 0, // 示例位置，可能需要你根据实际效果调整
                 child: ExpProgressBadge(
+                  currentUser: user,
                   size: badgeSize,
                   backgroundColor: Theme.of(context).primaryColor,
                   // isDesktop: false, // 移动端不需要 isDesktop 标志（除非 Badge 有差异化逻辑）

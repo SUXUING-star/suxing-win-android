@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
-import 'package:suxingchahui/utils/activity/activity_type_utils.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 enum FeedCollapseMode { none, byUser, byType }
@@ -70,7 +70,6 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     with SingleTickerProviderStateMixin {
   final Map<String, bool> _expandedGroups = {};
   late AnimationController _animationController;
-  late UserService _userService;
 
   @override
   void initState() {
@@ -126,15 +125,6 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
       grouped.putIfAbsent(key, () => []).add(activity);
     }
     return grouped;
-  }
-
-  String _getGroupTitle(String groupKey, List<UserActivity> activities) {
-    if (widget.collapseMode == FeedCollapseMode.byUser) {
-      final username = _userService.getUserInfoById(activities.first.userId);
-      return '${username} 的动态';
-    } else {
-      return ActivityTypeUtils.getActivityTypeDisplayInfo(groupKey).text;
-    }
   }
 
   IconData _getGroupIcon(String key) {
@@ -266,109 +256,179 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     );
   }
 
-  Widget _buildCollapsibleGroup(String groupKey, List<UserActivity> activities,
-      bool isExpanded, int groupIndex) {
-    final Color groupColor = _getGroupColor(groupKey);
-    final IconData groupIcon = _getGroupIcon(groupKey);
-    final String title = _getGroupTitle(groupKey, activities);
-    final Animation<double> rotationAnimation = Tween(begin: 0.0, end: 0.5)
-        .animate(CurvedAnimation(
-            parent: _animationController, curve: Curves.easeInOut));
+  // 构建单个可折叠的分组 UI
+  Widget _buildCollapsibleGroup(
+      String groupKey, // 分组的键 (可能是 userId 或 activityType)
+      List<UserActivity> activities, // 这个分组下的所有活动
+      bool isExpanded, // 当前分组是否展开
+      int groupIndex // 分组在列表中的索引 (用于动画)
+      ) {
+    // --- 1. 获取分组的视觉属性 ---
+    final Color groupColor = _getGroupColor(groupKey); // 根据 groupKey 获取颜色
+    final IconData groupIcon = _getGroupIcon(groupKey); // 根据 groupKey 获取图标
+
+    // --- 2. 设置折叠/展开图标的旋转动画 ---
+    final Animation<double> rotationAnimation =
+        Tween(begin: 0.0, end: 0.5) // 从 0 度转到 180 度
+            .animate(CurvedAnimation(
+                parent: _animationController, // 使用 state 里的动画控制器
+                curve: Curves.easeInOut // 使用缓动曲线
+                ));
+    // 根据当前展开状态，控制动画向前或向后播放
     if (isExpanded) {
-      _animationController.forward();
+      _animationController.forward(); // 展开时，箭头向下 (180度)
     } else {
-      _animationController.reverse();
+      _animationController.reverse(); // 折叠时，箭头向上 (0度)
     }
 
+    // --- 3. 构建分组的整体 UI (带动画效果) ---
     return AnimationConfiguration.staggeredList(
-      position: groupIndex,
-      duration: const Duration(milliseconds: 375),
+      position: groupIndex, // 列表项的位置，用于交错动画
+      duration: const Duration(milliseconds: 375), // 动画持续时间
       child: SlideAnimation(
-        verticalOffset: 50.0,
+        // 滑入动画
+        verticalOffset: 50.0, // 从下方 50px 处滑入
         child: FadeInAnimation(
+          // 淡入动画
           child: Container(
-            margin: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+            // --- 4. 分组容器样式 ---
+            margin:
+                const EdgeInsets.only(bottom: 16, left: 16, right: 16), // 外边距
             decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(12), // 圆角
                 boxShadow: [
+                  // 阴影效果
                   BoxShadow(
-                      color: groupColor.withOpacity(0.2),
+                      color: groupColor.withOpacity(0.2), // 阴影颜色使用分组颜色
                       blurRadius: 8,
                       offset: const Offset(0, 2))
                 ]),
+            // --- 5. 使用 Material 实现水波纹效果和裁剪 ---
             child: Material(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              clipBehavior: Clip.antiAlias,
+              color: Colors.white, // 背景色
+              borderRadius: BorderRadius.circular(12), // 圆角（与外层 Container 一致）
+              clipBehavior: Clip.antiAlias, // 裁剪超出圆角的内容
               child: Column(
+                // 垂直布局：标题栏 + 折叠内容
                 children: [
-                  // --- 分组标题栏 (完整实现) ---
+                  // --- 6. 分组标题栏 (点击可折叠/展开) ---
                   InkWell(
                     onTap: () {
-                      HapticFeedback.lightImpact();
+                      HapticFeedback.lightImpact(); // 轻微震动反馈
+                      // 点击时，切换当前分组的展开状态
                       setState(() => _expandedGroups[groupKey] = !isExpanded);
                     },
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
+                          horizontal: 16, vertical: 12), // 内边距
+                      // 标题栏背景渐变
                       decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [
                         groupColor.withOpacity(0.7),
                         groupColor.withOpacity(0.9)
                       ], begin: Alignment.topLeft, end: Alignment.bottomRight)),
+                      // --- 7. 标题栏内部 Row 布局 ---
                       child: Row(
                         children: [
+                          // --- 左侧图标 ---
                           Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
+                                  color:
+                                      Colors.white.withOpacity(0.3), // 半透明白色背景
                                   borderRadius: BorderRadius.circular(8)),
                               child: Icon(groupIcon,
-                                  color: Colors.white, size: 20)),
-                          const SizedBox(width: 12),
+                                  color: Colors.white, size: 20) // 分组图标
+                              ),
+                          const SizedBox(width: 12), // 图标和标题间距
+
+                          // --- 中间标题区域 (*** 核心修改点 ***) ---
                           Expanded(
+                              // 占据剩余空间
                               child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  // 垂直排列：主标题 + 副标题（动态数量）
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start, // 左对齐
                                   children: [
-                                Text(title,
-                                    style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 15,
-                                        color: Colors.white)),
-                                Text('共${activities.length}条动态',
+                                // **** 条件渲染：根据分组模式显示不同内容 ****
+                                if (widget.collapseMode ==
+                                    FeedCollapseMode.byUser)
+                                  // **** 按用户分组: 显示 UserInfoBadge ****
+                                  UserInfoBadge(
+                                    key: ValueKey(
+                                        "badge_$groupKey"), // 提供 Key 确保重建
+                                    userId:
+                                        groupKey, // 将 groupKey (即 userId) 传递给 Badge
+                                    mini: true, // 使用紧凑模式
+                                    showFollowButton: false, // 不显示关注按钮
+                                    showLevel: false, // 不显示等级
+                                    showCheckInStats: false, // 不显示签到
+                                    backgroundColor: Colors.transparent, // 透明背景
+                                    padding: EdgeInsets.zero, // 无内边距
+                                    textColor: Colors.white, // 设置文字颜色以适应背景
+                                  )
+                                else
+                                  // **** 按类型分组: 显示类型名称 Text ****
+                                  Text(
+                                      // 使用工具类获取类型显示名称
+                                      ActivityTypeUtils
+                                              .getActivityTypeDisplayInfo(
+                                                  groupKey)
+                                          .text,
+                                      style: const TextStyle(
+                                          // 标题文字样式
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          color: Colors.white)),
+
+                                // **** 显示动态数量 (通用) ****
+                                Text('共${activities.length}条动态', // 显示分组内动态数量
                                     style: TextStyle(
+                                        // 数量文字样式
                                         fontSize: 12,
-                                        color: Colors.white.withOpacity(0.8)))
+                                        color: Colors.white
+                                            .withOpacity(0.8) // 半透明白色
+                                        ))
                               ])),
+                          // --- 结束中间标题区域 ---
+
+                          // --- 右侧折叠/展开箭头 ---
                           RotationTransition(
-                              turns: rotationAnimation,
+                              turns: rotationAnimation, // 应用旋转动画
                               child: Container(
                                   decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.3),
-                                      shape: BoxShape.circle),
-                                  padding: const EdgeInsets.all(4),
+                                      color: Colors.white
+                                          .withOpacity(0.3), // 半透明背景
+                                      shape: BoxShape.circle // 圆形
+                                      ),
+                                  padding: const EdgeInsets.all(4), // 内边距
                                   child: const Icon(Icons.keyboard_arrow_down,
-                                      color: Colors.white, size: 24))),
+                                      color: Colors.white, size: 24) // 向下箭头图标
+                                  )),
                         ],
                       ),
                     ),
-                  ),
-                  // --- 折叠内容 ---
+                  ), // --- 结束分组标题栏 ---
+
+                  // --- 8. 折叠内容区域 ---
                   AnimatedSize(
-                    duration: const Duration(milliseconds: 300),
-                    curve: Curves.easeInOut,
+                    // 高度变化动画
+                    duration: const Duration(milliseconds: 300), // 动画时长
+                    curve: Curves.easeInOut, // 动画曲线
+                    // 根据 isExpanded 状态决定显示完整内容还是预览
                     child: isExpanded
-                        ? _buildExpandedContent(activities)
-                        : _buildCollapsedPreview(activities, groupColor),
-                  ),
+                        ? _buildExpandedContent(activities) // 展开时显示完整列表
+                        : _buildCollapsedPreview(
+                            activities, groupColor), // 折叠时显示预览
+                  ), // --- 结束折叠内容区域 ---
                 ],
               ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
+            ), // --- 结束 Material ---
+          ), // --- 结束 Container ---
+        ), // --- 结束 FadeInAnimation ---
+      ), // --- 结束 SlideAnimation ---
+    ); // --- 结束 AnimationConfiguration ---
+  } // --- _buildCollapsibleGroup 方法结束 ---
 
   Widget _buildExpandedContent(List<UserActivity> activities) {
     return ListView.separated(
@@ -381,28 +441,34 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
         final activity = activities[index];
         final bool isAlternate = widget.useAlternatingLayout && index % 2 == 1;
         // --- 创建 ActivityCard 并传递所有回调 ---
-        return ActivityCard(
-          // <--- **传递所有回调给 ActivityCard**
-          key: ValueKey(activity.id), activity: activity,
-          isAlternate: isAlternate,
-          onActivityTap: widget.onActivityTap, hasOwnBackground: false,
-          // --- 操作回调传递 ---
-          onDelete: widget.onDeleteActivity != null
-              ? () => widget.onDeleteActivity!(activity.id)
-              : null,
-          onEdit: widget.onEditActivity != null
-              ? () => widget.onEditActivity!(activity.id)
-              : null,
-          onLike: widget.onLikeActivity != null
-              ? () => widget.onLikeActivity!(activity.id)
-              : null,
-          onUnlike: widget.onUnlikeActivity != null
-              ? () => widget.onUnlikeActivity!(activity.id)
-              : null,
-          onAddComment: widget.onAddComment,
-          onDeleteComment: widget.onDeleteComment,
-          onLikeComment: widget.onLikeComment,
-          onUnlikeComment: widget.onUnlikeComment,
+        return Padding(
+          // 添加水平方向的边距，模拟标准视图中卡片的间距
+          // 你可以根据需要调整这个值，8.0 或 12.0 应该比较合适
+          padding: const EdgeInsets.symmetric(
+              horizontal: 8.0, vertical: 4.0), // 增加了垂直方向的微小间距
+          child: ActivityCard(
+            // <--- **传递所有回调给 ActivityCard**
+            key: ValueKey(activity.id), activity: activity,
+            isAlternate: isAlternate,
+            onActivityTap: widget.onActivityTap, hasOwnBackground: false,
+            // --- 操作回调传递 ---
+            onDelete: widget.onDeleteActivity != null
+                ? () => widget.onDeleteActivity!(activity.id)
+                : null,
+            onEdit: widget.onEditActivity != null
+                ? () => widget.onEditActivity!(activity.id)
+                : null,
+            onLike: widget.onLikeActivity != null
+                ? () => widget.onLikeActivity!(activity.id)
+                : null,
+            onUnlike: widget.onUnlikeActivity != null
+                ? () => widget.onUnlikeActivity!(activity.id)
+                : null,
+            onAddComment: widget.onAddComment,
+            onDeleteComment: widget.onDeleteComment,
+            onLikeComment: widget.onLikeComment,
+            onUnlikeComment: widget.onUnlikeComment,
+          ),
         );
       },
     );
@@ -451,17 +517,12 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                           style: TextStyle(
                               fontSize: 14, color: Colors.grey.shade800)),
                     Row(children: [
-                      Icon(_getTargetTypeIcon(latestActivity.targetType),
-                          size: 14, color: Colors.grey.shade600),
+                      Icon(
+                          ActivityTypeUtils.getActivityTypeIcon(
+                              latestActivity.type),
+                          size: 14,
+                          color: Colors.grey.shade600),
                       const SizedBox(width: 4),
-                      Expanded(
-                          child: Text(_getTargetTitle(latestActivity),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade600,
-                                  fontStyle: FontStyle.italic)))
                     ]),
                   ])),
             ]),
@@ -486,39 +547,6 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
         ),
       ),
     );
-  }
-
-  IconData _getTargetTypeIcon(String targetType) {
-    switch (targetType) {
-      case 'game':
-        return Icons.videogame_asset_outlined;
-      case 'post':
-        return Icons.article_outlined;
-      case 'user':
-        return Icons.person_outline;
-      default:
-        return Icons.link;
-    }
-  }
-
-  String _getTargetTitle(UserActivity activity) {
-    switch (activity.targetType) {
-      case 'game':
-        // 使用 UserActivity 模型中添加的 helper getter
-        return activity.gameTitle ?? '未知游戏';
-      case 'post':
-        // 使用 UserActivity 模型中添加的 helper getter
-        return activity.postTitle ?? '未知帖子';
-      case 'user':
-        // 使用 UserActivity 模型中添加的 helper getter
-        return activity.targetUsername ??
-            '未知用户'; // 假设关注时 metadata 里存了 targetUsername
-      default:
-        // 如果 targetId 有值，可以显示 ID 作为 fallback
-        return activity.targetId.isNotEmpty
-            ? '目标: ${activity.targetId}'
-            : '未知目标类型';
-    }
   }
 
   String _formatTimeAgo(DateTime dateTime) {

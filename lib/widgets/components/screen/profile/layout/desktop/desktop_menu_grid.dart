@@ -110,14 +110,19 @@ class DesktopMenuGrid extends StatelessWidget {
         'background': Colors.white.withOpacity(0.9),
         'icon': Color(0xFFFF69B4), // 热粉色
       },
-      '签到': {
-        'background': Colors.white.withOpacity(0.9),
-        'icon': Color(0xFF3CB371), // 中海绿
-      },
       '我的喜欢': {
         'background': Colors.white.withOpacity(0.9),
         'icon': Color(0xFFFF7F50), // 珊瑚色
       },
+      '我的动态':{
+        'background': Colors.white.withOpacity(0.9),
+        'icon': Color(0xFF43C2F9),
+      },
+      '签到': {
+        'background': Colors.white.withOpacity(0.9),
+        'icon': Color(0xFF3CB371), // 中海绿
+      },
+
       '浏览历史': {
         'background': Colors.white.withOpacity(0.9),
         'icon': Color(0xFF4169E1), // 皇家蓝

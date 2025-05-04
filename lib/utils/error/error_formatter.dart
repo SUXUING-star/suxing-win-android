@@ -42,6 +42,8 @@ class ErrorFormatter {
   static ErrorDefinition _identifyErrorDefinition(dynamic error) {
     // 优先使用原始的基于错误消息字符串的判断逻辑
     String message = error.toString();
+    print("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ original messgae ↓↓↓↓↓↓↓↓↓↓");
+    print(message);
 
     // **完全按照你原来的逻辑顺序进行判断，但返回的是 ErrorDefinition 常量**
     // Root environment detection
