@@ -136,11 +136,6 @@ class _FormTextInputFieldState extends FormFieldState<String> {
       // 用 controller 或 initialValue 初始化 FormField 的值
       setValue(_effectiveController?.text ?? widget.initialValue ?? '');
     } else {
-      // --- 如果有 slotName，这个 State 什么都不用做 ---
-      // TextInputField 会自己去 Service 加载状态
-      // 但 FormField 仍然需要一个初始值，否则可能是 null。
-      // 这里我们不能直接访问 Service，所以暂时设为空字符串或 initialValue。
-      // TextInputField 初始化后会通过 onChanged 更新 FormField 的值。
       setValue(widget.initialValue ?? ''); // 或者直接设为 ''
       // *** 更好的做法可能是在 builder 中读取 TextInputField 的初始值，但这比较复杂 ***
       // *** 依赖 TextInputField 初始化后的第一次 onChanged 更新 FormField 是更简单的模式 ***
@@ -149,48 +144,76 @@ class _FormTextInputFieldState extends FormFieldState<String> {
 
   @override
   void didUpdateWidget(FormTextInputField oldWidget) {
-    super.didUpdateWidget(oldWidget);
+    super.didUpdateWidget(oldWidget); // FormFieldState.didUpdateWidget 会处理 initialValue 的变化
 
-    // --- 只处理 Controller 的变化 ---
-    if (widget.slotName == null && oldWidget.slotName == null) { // **关键判断**
+    final bool wasUsingSlotName = oldWidget.slotName != null && oldWidget.slotName!.isNotEmpty;
+    final bool isUsingSlotName = widget.slotName != null && widget.slotName!.isNotEmpty;
+
+    // --- 情况1: 一直是 Controller 模式 ---
+    if (!isUsingSlotName && !wasUsingSlotName) {
       if (widget.controller != oldWidget.controller) {
-        // 移除旧监听
+        // 清理旧的 controller 监听
         oldWidget.controller?.removeListener(_handleControllerChanged);
-        // 添加新监听
-        widget.controller?.addListener(_handleControllerChanged);
+        _controller?.removeListener(_handleControllerChanged); // 如果是内部 controller
 
-        // 处理 Controller 类型切换
-        if (oldWidget.controller != null && widget.controller == null) {
-          // 从外部变为内部
-          _controller?.dispose(); // Dispose 之前的内部 controller (如果有)
+        // 处理 Controller 切换 (外部 <-> 内部)
+        if (oldWidget.controller != null && widget.controller == null) { // 从外部 controller 切换到内部 controller
+          _controller?.dispose(); // 清理可能存在的旧内部 controller
+          // 新的内部 controller 应该继承旧外部 controller 的值
           _controller = TextEditingController.fromValue(oldWidget.controller!.value);
-        } else if (oldWidget.controller == null && widget.controller != null) {
-          // 从内部变为外部
-          _controller?.dispose(); // Dispose 内部 controller
+          _controller!.addListener(_handleControllerChanged);
+        } else if (oldWidget.controller == null && widget.controller != null) { // 从内部 controller 切换到外部 controller
+          _controller?.dispose(); // 清理内部 controller
           _controller = null;
+          widget.controller!.addListener(_handleControllerChanged); // 监听新的外部 controller
+        } else if (widget.controller != null) { // 外部 controller 实例发生变化
+          widget.controller!.addListener(_handleControllerChanged);
         }
-        // 更新 FormField 的值以匹配新的 Controller
+        // 外部 controller 为 null, 且之前也是 null (意味着一直使用内部 controller)
+        // _controller 实例不变，不需要做什么特殊处理，除非 initialValue 驱动更新
+
+        // 同步 FormFieldState 的值
         setValue(_effectiveController?.text ?? widget.initialValue ?? '');
       }
-      // 如果 controller 实例没变，但外部修改了 text，_handleControllerChanged 会处理
-    } else if (widget.slotName != oldWidget.slotName) {
-      // --- 如果 slotName 状态发生变化 (从无到有，或从有到无) ---
-      // 需要清理或设置 Controller 监听
-      if (widget.slotName != null && oldWidget.slotName == null) {
-        // 从 Controller 模式切换到 slotName 模式
-        widget.controller?.removeListener(_handleControllerChanged); // 移除外部监听
-        _controller?.dispose(); // Dispose 内部 Controller
+      // 如果只是 initialValue 变了，并且我们用的是内部 controller, super.didUpdateWidget 会更新 FormFieldState.value
+      // 我们可能需要同步 _controller.text
+      else if (widget.controller == null && oldWidget.controller == null && widget.initialValue != oldWidget.initialValue) {
+        if (_controller != null && _controller!.text != (this.value ?? '')) { // this.value 是 FormFieldState.value
+          _controller!.text = this.value ?? '';
+        }
+      }
+    }
+    // --- 情况2: slotName 模式发生切换或 slotName 本身改变 ---
+    else if (isUsingSlotName != wasUsingSlotName || (isUsingSlotName && widget.slotName != oldWidget.slotName)) {
+      if (isUsingSlotName && !wasUsingSlotName) { // 从 Controller 模式切换到 slotName 模式
+        oldWidget.controller?.removeListener(_handleControllerChanged);
+        _controller?.dispose();
         _controller = null;
-        // FormField 的值会在 TextInputField 初始化并触发 onChanged 后更新
-        setValue(widget.initialValue ?? ''); // 重置初始值
-      } else if (widget.slotName == null && oldWidget.slotName != null) {
-        // 从 slotName 模式切换到 Controller 模式
-        initState(); // 重新执行 Controller 初始化逻辑可能最简单
-        // setValue(...) 已经在 initState 里面了
+        // FormField 的值会在 TextInputField 初始化并触发 onChanged (didChange) 后更新
+        // 将 FormFieldState.value 设为 initialValue 作为临时值，很快会被 TextInputField 更新
+        setValue(widget.initialValue ?? '');
+      } else if (!isUsingSlotName && wasUsingSlotName) { // 从 slotName 模式切换到 Controller 模式
+        // 保留从 slotName 模式带来的当前值
+        final String previousSlotValue = this.value ?? widget.initialValue ?? '';
+        if (widget.controller == null) { // 外部没提供 controller，内部创建
+          _controller?.dispose(); // 确保清理
+          _controller = TextEditingController(text: previousSlotValue);
+          _controller!.addListener(_handleControllerChanged);
+        } else { // 外部提供了 controller
+          _controller?.dispose();
+          _controller = null;
+          widget.controller!.addListener(_handleControllerChanged);
+        }
+        // 同步 FormFieldState 的值
+        setValue(_effectiveController?.text ?? previousSlotValue);
+      } else if (isUsingSlotName && wasUsingSlotName && widget.slotName != oldWidget.slotName) {
+        // slotName 改变了，但仍然是 slotName 模式
+        // TextInputField 会在其 didUpdateWidget 中处理新 slotName 并更新
+        // FormField 的值同样会通过 TextInputField 的 onChanged (didChange) 更新
+        setValue(widget.initialValue ?? ''); // 设为临时值
       }
     }
   }
-
   @override
   void dispose() {
     // --- 只处理 Controller 情况 ---
@@ -201,27 +224,26 @@ class _FormTextInputFieldState extends FormFieldState<String> {
 
   @override
   void reset() {
-    super.reset(); // 重置 FormField 内部状态
+    super.reset(); // 重置 FormField 内部状态 (value 会变成 initialValue)
     final resetValue = widget.initialValue ?? '';
-    setValue(resetValue); // 更新 FormField 的值
-    // --- 只处理 Controller 情况 ---
-    if (widget.slotName == null) { // **关键判断**
-      setState(() { // 需要 setState 触发 UI 更新
-        _effectiveController?.text = resetValue;
-      });
+    // setValue(resetValue); // super.reset() 已经做了类似的事情
+    if (widget.slotName == null) { // Controller 模式
+      // 更新 controller 的文本并触发UI更新
+      // setState(() { // FormFieldState.reset() 内部会调用 setState
+      _effectiveController?.text = resetValue;
+      // });
     }
-    // 如果使用 slotName，不需要（也不应该）在这里操作 Service
+    // 如果使用 slotName，TextInputField 会从 InputStateService 获取值（如果service也被重置的话）
+    // 或者依赖其自身的逻辑。这里不需要直接操作 InputStateService。
   }
+
 
   // 监听外部 controller 的变化 (仅当 widget.slotName == null 时)
   void _handleControllerChanged() {
-    if (mounted && widget.slotName == null) { // **关键判断**
-      if (_effectiveController?.text != value) {
+    if (mounted && widget.slotName == null) { // 仅在 Controller 模式下且未提供 slotName 时
+      if (_effectiveController?.text != value) { // value 是 FormFieldState.value
         didChange(_effectiveController!.text);
       }
-    } else if (mounted && widget.controller != null) {
-      // 如果 state 变成了 slotName 模式，尝试移除监听
-      try { widget.controller?.removeListener(_handleControllerChanged); } catch (e) { /* ignore */ }
     }
   }
 

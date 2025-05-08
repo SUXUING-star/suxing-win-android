@@ -24,6 +24,14 @@ class UnauthorizedAccessEvent {
   UnauthorizedAccessEvent({this.message});
 }
 
+/// 表示网络环境发生变化，可能需要API客户端重置
+class NetworkEnvironmentChangedEvent {
+  final String? newIpAddress; // 可以选择性携带新IP等信息
+  final String? newConnectionType;
+
+  NetworkEnvironmentChangedEvent({this.newIpAddress, this.newConnectionType});
+}
+
 
 // 全局事件流控制器
 class AppEventBus {

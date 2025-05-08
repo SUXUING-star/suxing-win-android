@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
+import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
@@ -45,8 +46,6 @@ class MainApp extends StatefulWidget {
 }
 
 class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
-  NetworkManager? _networkManager;
-
   @override
   void initState() {
     super.initState();
@@ -56,21 +55,30 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    try {
-      _networkManager = Provider.of<NetworkManager>(context, listen: false);
-    } catch (e) {
-      // NetworkManager not yet available
-    }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
-      // Delay a bit to let network state stabilize
-      Future.delayed(Duration(milliseconds: 500), () {
-        _networkManager?.getNetworkStatus(); // Trigger network status update
+      Future.delayed(const Duration(milliseconds: 500), () {
+        // 仍然可以通过 Provider 获取 NetworkManager 实例来更新状态
+        // NetworkErrorListenerWidget 也会监听到这个更新
+        if (mounted) {
+          // 再次检查 mounted
+          final networkManager =
+              Provider.of<NetworkManager?>(context, listen: false);
+          networkManager?.getNetworkStatus();
+        }
       });
     }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    // NetworkManager 相关的监听器清理已移至 NetworkErrorListenerWidget
+    super.dispose();
   }
 
   @override
@@ -92,23 +100,25 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
             debugShowCheckedModeBanner: false,
             navigatorObservers: [routeObserver],
             builder: (context, child) {
-              return GlobalApiErrorListener(
-                child: MaintenanceWrapper(
-                  child: Stack(
-                    children: [
-                      AppBackground(
-                        child: MouseTrailEffect(
-                          particleColor: particleColor,
-                          child: Navigator(
-                            onGenerateRoute: (settings) => MaterialPageRoute(
-                              builder: (_) => PlatformWrapper(
-                                child: child ?? Container(),
+              return NetworkErrorListenerWidget(
+                child: GlobalApiErrorListener(
+                  child: MaintenanceWrapper(
+                    child: Stack(
+                      children: [
+                        AppBackground(
+                          child: MouseTrailEffect(
+                            particleColor: particleColor,
+                            child: Navigator(
+                              onGenerateRoute: (settings) => MaterialPageRoute(
+                                builder: (_) => PlatformWrapper(
+                                  child: child ?? Container(),
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

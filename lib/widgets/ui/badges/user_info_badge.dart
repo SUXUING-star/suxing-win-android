@@ -74,7 +74,7 @@ class UserInfoBadge extends StatelessWidget {
 
         // --- 从 User 对象提取信息 ---
         final String username = targetUser.username.isNotEmpty ? targetUser.username : '未知用户';
-        // avatarUrl 可以直接从 targetUser.avatar 获取，SafeUserAvatar 内部会处理
+        final String? avatarUrl = targetUser.avatar;
         final int experience = targetUser.experience;
         final int level = targetUser.level;
 
@@ -82,6 +82,10 @@ class UserInfoBadge extends StatelessWidget {
         final int consecutiveDays = targetUser.consecutiveCheckIn ?? 0;
         final int totalDays = targetUser.totalCheckIn ?? 0;
         final bool checkedInToday = targetUser.hasCheckedInToday;
+
+        // --- 获取管理员状态 ---
+        final bool isAdmin = targetUser.isAdmin;
+        final bool isSuperAdmin = targetUser.isSuperAdmin;
 
         // --- 计算关注状态 ---
         bool iFollowTarget = false;
@@ -114,7 +118,10 @@ class UserInfoBadge extends StatelessWidget {
             children: [
               // --- 头像 ---
               SafeUserAvatar(
-                user: targetUser, // 直接传递 User 对象
+                username: username,
+                avatarUrl: avatarUrl,
+                isAdmin: isAdmin,
+                isSuperAdmin: isSuperAdmin,
                 userId: userId,    // userId 仍然需要，例如用于导航或 key
                 radius: mini ? 14 : 18,
                 backgroundColor: Colors.grey[100], // 占位背景色
@@ -133,16 +140,24 @@ class UserInfoBadge extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
                   mainAxisSize: MainAxisSize.min, // Column 包裹内容高度
                   children: [
-                    // 用户名
-                    Text(
-                      username,
-                      style: TextStyle(
-                        fontSize: mini ? 13 : 15,
-                        color: defaultTextColor,
-                        fontWeight: FontWeight.w500,
-                      ),
-                      overflow: TextOverflow.ellipsis, // 超长省略
-                      maxLines: 1,
+                    Row( // 将用户名和管理员标识放在一行
+                      mainAxisSize: MainAxisSize.min, // 包裹内容
+                      crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐
+                      children: [
+                        // 用户名 (用 Flexible 包裹，允许管理员标识有固定空间)
+                        Flexible(
+                          child: Text(
+                            username,
+                            style: TextStyle(
+                              fontSize: mini ? 13 : 15,
+                              color: defaultTextColor,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
+                          ),
+                        ),
+                      ],
                     ),
 
                     // 等级和经验 (如果 showLevel 为 true)

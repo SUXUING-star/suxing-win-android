@@ -121,7 +121,7 @@ class GameHeader extends StatelessWidget {
             // 使用新的用户信息组件
             UserInfoBadge(
               userId: game.authorId,
-              mini: true,
+              mini: false,
               showLevel: true,
             ),
             Container(

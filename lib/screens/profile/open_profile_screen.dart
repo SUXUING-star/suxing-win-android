@@ -8,18 +8,18 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../models/user/user.dart';
-import '../../services/main/user/user_service.dart';
-import '../../services/main/forum/forum_service.dart';
-import '../../services/main/game/game_service.dart';
-import '../../models/post/post.dart';
-import '../../models/game/game.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/ui/badges/safe_user_avatar.dart';
-import '../../utils/device/device_utils.dart';
-import '../../widgets/components/screen/profile/open/profile_game_card.dart';
-import '../../widgets/components/screen/profile/open/profile_post_card.dart';
-import '../../widgets/ui/buttons/follow_user_button.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/open/profile_game_card.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/open/profile_post_card.dart';
+import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -231,6 +231,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SafeUserAvatar(
+              isAdmin: _user?.isAdmin ?? false,
+              isSuperAdmin: _user?.isSuperAdmin ?? false,
               userId: _user?.id,
               avatarUrl: _user?.avatar,
               username: _user?.username ?? '',

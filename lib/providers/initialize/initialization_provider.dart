@@ -1,7 +1,7 @@
 // lib/providers/initialize/initialization_provider.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
-import 'package:suxingchahui/utils/error/error_formatter.dart';
+import 'package:suxingchahui/utils/error/app_error_formatter.dart';
 
 class InitializationProvider extends ChangeNotifier {
   InitializationStatus _status = InitializationStatus.inProgress;
@@ -27,7 +27,7 @@ class InitializationProvider extends ChangeNotifier {
 
   void setError(String error) {
     if (_isDisposed) return;
-    _message = ErrorFormatter.formatErrorMessage(error);
+    _message = AppErrorFormatter.formatErrorMessage(error);
     _status = InitializationStatus.error;
     notifyListeners();
   }

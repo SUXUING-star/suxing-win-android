@@ -140,7 +140,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       controller: _emailController,
       enabled: !_isSendingCode && !_isVerifying,
       decoration: const InputDecoration(
-        labelText: '注册邮箱',
+        labelText: '输入邮箱',
         prefixIcon: Icon(Icons.email_outlined),
       ),
       keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
@@ -293,12 +293,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         // if (_codeSent) SizedBox(height: 16), // 间距由 Padding 处理
 
                         // 按钮行
+                        // 按钮行
                         FadeInSlideUpItem(
                           delay: initialDelay + stagger * (_codeSent ? 4 : 3),
-                          // 根据验证码框是否显示调整延迟
                           child: Row(
                             children: [
-                              Expanded(
+                              Expanded( // “发送验证码”按钮会填充大部分空间
                                 child: FunctionalButton(
                                   onPressed: _sendVerificationCode,
                                   label: sendButtonLabel,
@@ -306,25 +306,27 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                   isEnabled: isSendButtonEnabled,
                                 ),
                               ),
-                              // 验证按钮也用 AnimatedOpacity 平滑显示
                               AnimatedOpacity(
                                 opacity: _codeSent ? 1.0 : 0.0,
                                 duration: Duration(milliseconds: 300),
+                                // 如果 _codeSent 为 false，AnimatedOpacity 的 child 理论上不应该有 Expanded
+                                // 且 SizedBox.shrink() 也不会导致问题。
+                                // 关键在于 _codeSent 为 true 时，内部 Row 不能有 Expanded
+                                // 或者 AnimatedOpacity 的父级（即外层 Row）需要给它一个确定的宽度。
                                 child: _codeSent
-                                    ? Row(
-                                        // 使用 Row 包装，避免 AnimatedOpacity 影响布局
-                                        children: [
-                                          SizedBox(width: 16),
-                                          Expanded(
-                                            child: FunctionalButton(
-                                              onPressed: _verifyCode,
-                                              label: '验证',
-                                              isLoading: _isVerifying,
-                                              isEnabled: isVerifyButtonEnabled,
-                                            ),
-                                          ),
-                                        ],
-                                      )
+                                    ? Row( // 这个 Row 不应该有 Expanded，除非外层给它宽度
+                                  mainAxisSize: MainAxisSize.min, // 让内部 Row 包裹内容
+                                  children: [
+                                    SizedBox(width: 16),
+                                    // 不再使用 Expanded，让 FunctionalButton 自适应内容宽度
+                                    FunctionalButton(
+                                      onPressed: _verifyCode,
+                                      label: '验证',
+                                      isLoading: _isVerifying,
+                                      isEnabled: isVerifyButtonEnabled,
+                                    ),
+                                  ],
+                                )
                                     : SizedBox.shrink(),
                               ),
                             ],

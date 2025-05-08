@@ -94,6 +94,19 @@ class _TextInputFieldState extends State<TextInputField> {
     _initializeFocusNode();
     _controller.addListener(_handleControllerChanged);
     _focusNode.addListener(_handleFocusChange);
+
+    // 如果这个 TextInputField 被 FormTextInputField 使用 (widget.onChanged 就是 field.didChange),
+    // 并且 controller 初始化后有文本 (可能来自 InputStateService 或外部 controller)，
+    // 需要在下一帧通知 FormFieldState 更新其内部 value。
+    if (widget.onChanged != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // 再次检查 widget 是否仍然 mounted 且 onChanged 仍然有效
+        if (mounted && widget.onChanged != null) {
+          // FormFieldState.didChange() 内部会检查值是否真的改变了
+          widget.onChanged!(_controller.text);
+        }
+      });
+    }
   }
 
   void _initializeController() {

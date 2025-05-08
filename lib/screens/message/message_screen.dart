@@ -437,10 +437,8 @@ class _MessageScreenState extends State<MessageScreen> {
                 ),
               )
             ];
-            // *** 结束修改 ***
           }
         }
-        // --- 结束提取 ---
 
         return ExpansionTile(
           key: PageStorageKey(typeKey), // 保持 Key 用于保存状态
@@ -484,7 +482,6 @@ class _MessageScreenState extends State<MessageScreen> {
           collapsedBackgroundColor: Colors.white,
           iconColor: Theme.of(context).primaryColor,
           collapsedIconColor: Colors.grey[600],
-          // --- 使用提取的 children 构建逻辑 ---
           children: buildExpansionChildren(),
         );
       },

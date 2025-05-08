@@ -1,4 +1,4 @@
-// lib/utils/error/error_formatter.dart (修改这个文件)
+// lib/utils/error/app_error_formatter.dart (修改这个文件)
 
 // 如果你需要检查 TimeoutException 类型
 // 如果你需要检查 SocketException 等类型
@@ -9,9 +9,9 @@
 
 import 'package:suxingchahui/utils/error/app_error_codes.dart';
 
-import 'error_definition.dart';
+import 'app_error_definition.dart';
 
-class ErrorFormatter {
+class AppErrorFormatter {
 
   /// **方法一: 格式化错误 (公共接口和返回值不变！)**
   /// Formats error messages to be user-friendly and secure, NOW INCLUDES ERROR CODE.
@@ -39,7 +39,7 @@ class ErrorFormatter {
   // --- 内部核心识别逻辑 ---
   // 这个私有方法负责根据输入的错误，匹配并返回相应的 ErrorDefinition
   // 它现在直接使用 AppErrorCodes 中定义的常量
-  static ErrorDefinition _identifyErrorDefinition(dynamic error) {
+  static AppErrorDefinition _identifyErrorDefinition(dynamic error) {
     // 优先使用原始的基于错误消息字符串的判断逻辑
     String message = error.toString();
     print("↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓ original messgae ↓↓↓↓↓↓↓↓↓↓");

@@ -8,15 +8,6 @@ import '../../services/main/user/user_service.dart';
 import 'dart:async';
 
 class AuthProvider with ChangeNotifier {
-  // // 静态实例，确保全局唯一
-  // static final AuthProvider _singleton = AuthProvider._internal();
-  //
-  // // 工厂构造函数，始终返回同一个实例
-  // factory AuthProvider() {
-  //   return _singleton;
-  // }
-
-  //final UserService _userService = UserService();
   User? _currentUser;
   bool _isInitializing = false;
   bool _isRefreshing = false;
@@ -38,13 +29,8 @@ class AuthProvider with ChangeNotifier {
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
   String? get currentUserId => _currentUser?.id;
 
-  // // 私有构造函数
-  // AuthProvider._internal() {
-  //   // 在构造函数或初始化时开始监听
-  //   _listenForUnauthorizedEvent();
-  // }
   final UserService _userService;
-  AuthProvider(this._userService) { // <--- 改成公共的，并接收参数
+  AuthProvider(this._userService) {
     // 监听事件放在构造函数里执行
     _listenForUnauthorizedEvent();
   }
@@ -56,7 +42,6 @@ class AuthProvider with ChangeNotifier {
       // 检查当前是否确实是登录状态，避免不必要的通知
       if (_currentUser != null) {
         _currentUser = null;
-        // 不需要在这里调用 userService.clearAuthData()，让 UserService 自己监听处理
         notifyListeners(); // 通知 UI 更新 (非常重要！)
       }
     });

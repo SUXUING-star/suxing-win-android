@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../models/game/game.dart'; // 确保这里引用的是你正确的模型路径
+import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/screen/game/card/base_game_card.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';

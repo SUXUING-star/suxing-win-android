@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 引入 ForumService
-import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入 UserService
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -43,32 +42,26 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     super.initState();
     _isMounted = true;
     _fetchPosts(); // 初始化时加载数据
-    print("MyPostsScreen initState: Fetching initial posts.");
   }
 
   @override
   void dispose() {
     _isMounted = false; // 标记为已卸载
     _scrollController.dispose();
-    print("MyPostsScreen disposed.");
     super.dispose();
   }
 
   // --- 数据加载/刷新逻辑 ---
   Future<void> _fetchPosts() async {
     if (!_isMounted) {
-      print("MyPostsScreen _fetchPosts: Not mounted. Aborting.");
       return; // 如果 Widget 已经被移除了，就不继续了
     }
 
     // 增加这个检查来防止并发请求
     if (_isLoading) {
-      print(
-          "MyPostsScreen _fetchPosts: Already loading. Skipping concurrent request.");
       return; // 如果当前已经在加载中了，就不要开始新的加载
     }
 
-    print("MyPostsScreen _fetchPosts: Starting fetch process.");
     // 在异步操作开始前，设置状态为加载中
     setState(() {
       _isLoading = true;
@@ -80,7 +73,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       final currentUserId = await authProvider.currentUserId;
 
       if (currentUserId == null || currentUserId.isEmpty) {
-        print("MyPostsScreen _fetchPosts: User not logged in.");
         if (_isMounted) {
           setState(() {
             _isLoading = false; // 加载结束（虽然是未登录状态）
@@ -92,15 +84,11 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         return; // 未登录，直接返回
       }
 
-      print(
-          "MyPostsScreen _fetchPosts: Fetching posts for user $currentUserId.");
       // 调用修改后的 Future 方法
       final forumService = context.read<ForumService>();
       final fetchedPosts = await forumService.getUserPosts(currentUserId);
 
       if (_isMounted) {
-        print(
-            "MyPostsScreen _fetchPosts: Fetch successful. Count: ${fetchedPosts.length}. Updating state.");
         setState(() {
           _isLoading = false; // 加载完成
           _posts = fetchedPosts;
@@ -108,10 +96,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         });
       }
     } catch (e) {
-      print("MyPostsScreen _fetchPosts: Error fetching posts: $e");
       if (_isMounted) {
-        print(
-            "MyPostsScreen _fetchPosts: Fetch failed. Updating state with error.");
         setState(() {
           _isLoading = false; // 加载失败，也要结束加载状态
           _error = '加载我的帖子失败: $e';
@@ -124,7 +109,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
   // --- 下拉刷新 ---
   Future<void> _refreshPosts() async {
-    print("MyPostsScreen: Refresh triggered.");
     // 重新调用加载逻辑
     await _fetchPosts();
   }
@@ -153,12 +137,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               // 调用 Service 执行实际删除
               final forumService = context.read<ForumService>();
               await forumService.deletePost(post);
-              print(
-                  "MyPostsScreen: Successfully deleted post $postId via service.");
               if (_isMounted) AppSnackBar.showSuccess(context, '帖子已删除');
             } catch (e) {
-              print(
-                  "MyPostsScreen: Error during actual delete for $postId: $e");
               if (_isMounted) {
                 // 删除失败，恢复之前的帖子列表，并显示错误
                 setState(() {
@@ -179,7 +159,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           });
     } catch (e) {
       // 处理 CustomConfirmDialog.show 本身可能抛出的异常（虽然不太可能）
-      print("MyPostsScreen: Error showing delete confirmation dialog: $e");
       if (_isMounted) {
         setState(() {
           _posts = originalPosts; // 恢复列表
@@ -191,7 +170,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
   // --- 处理编辑帖子 ---
   void _handleEditPost(Post post) async {
-    print("MyPostsScreen: Handling edit request for ${post.id}");
     final result = await NavigationUtils.pushNamed(
       context,
       AppRoutes.editPost,
@@ -199,21 +177,17 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     );
     // 如果编辑成功返回，触发刷新
     if (result == true && _isMounted) {
-      print("MyPostsScreen: Edit successful for ${post.id}. Refreshing posts.");
       _fetchPosts(); // 刷新列表
     }
   }
 
   // --- 处理切换锁定状态 ---
   Future<void> _handleToggleLockAction(String postId) async {
-    print("MyPostsScreen: Handling toggle lock action for $postId");
     if (!_isMounted) return;
 
     // 找到帖子并乐观更新 UI
     final postIndex = _posts.indexWhere((p) => p.id == postId);
     if (postIndex == -1) {
-      print(
-          "MyPostsScreen: Warning - Post $postId not found in state for lock toggle.");
       return; // 或者触发刷新
     }
 
@@ -228,15 +202,11 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       _posts[postIndex] = updatedPostOptimistic;
       _error = null; // 清除错误
     });
-    print(
-        "MyPostsScreen: Optimistically toggled lock for post $postId in state.");
 
     try {
       // 调用 Service 执行实际操作
       final forumService = context.read<ForumService>();
       await forumService.togglePostLock(postId);
-      print(
-          "MyPostsScreen: Successfully toggled lock for post $postId via service.");
       if (_isMounted) AppSnackBar.showSuccess(context, '状态切换成功');
     } catch (e) {
       print("MyPostsScreen: Error toggling lock for post $postId: $e");
@@ -293,7 +263,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
     // --- 优先处理加载状态 (仅在首次加载且无数据时显示全屏 Loading) ---
     if (_isLoading && _posts.isEmpty && _error == null) {
-      print("MyPostsScreen _buildContent: Showing initial loading widget.");
       return ListView(
         // 使用 ListView 包装
         children: [
@@ -305,14 +274,12 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
     // --- 处理未登录状态 ---
     if (_userId == null && !_isLoading) {
-      print("MyPostsScreen _buildContent: Showing login prompt widget.");
       return ListView(// 使用 ListView 包装
           children: const [LoginPromptWidget()]);
     }
 
     // --- 处理错误状态 ---
     if (_error != null && !_isLoading) {
-      print("MyPostsScreen _buildContent: Showing error widget.");
       return ListView(
         // 使用 ListView 包装，允许下拉刷新错误页面
         physics: const AlwaysScrollableScrollPhysics(), // 必须可以滚动才能触发刷新
@@ -332,7 +299,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
     // --- 处理空状态 (加载完成，无错误，但帖子列表为空) ---
     if (_posts.isEmpty && !_isLoading && _error == null) {
-      print("MyPostsScreen _buildContent: Showing empty state widget.");
       return LayoutBuilder(// 使用 LayoutBuilder 确保内容足够高以触发刷新
           builder: (context, constraints) {
         return SingleChildScrollView(

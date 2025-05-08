@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../models/user/user.dart';
 import '../../widgets/ui/image/safe_cached_image.dart'; // Import the new widget
@@ -103,14 +104,12 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                         border: Border.all(color: Colors.white, width: 1.5),
                       ),
                       child: user.avatar != null
-                          ? SafeCachedImage(
-                              imageUrl: user.avatar!,
-                              width: 40,
-                              height: 40,
-                              fit: BoxFit.cover,
-                              borderRadius: BorderRadius.circular(20),
-                              memCacheWidth: cacheSize,
-                              memCacheHeight: cacheSize,
+                          ? SafeUserAvatar(
+                              userId: user.id,
+                              avatarUrl: user.avatar,
+                              username: user.username ?? '',
+                              radius: 50,
+                              enableNavigation: false,
                             )
                           : _fallbackAvatar(user.username),
                     ),

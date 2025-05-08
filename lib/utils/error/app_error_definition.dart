@@ -1,7 +1,7 @@
-// lib/utils/error/error_definition.dart (新文件，干净独立)
+// lib/utils/error/app_error_definition.dart (新文件，干净独立)
 
 /// 定义一个标准化的错误信息结构
-class ErrorDefinition {
+class AppErrorDefinition {
   /// 唯一的错误代码 (e.g., "SEC-001", "NET-404")
   final String code;
 
@@ -11,7 +11,7 @@ class ErrorDefinition {
   /// 这个错误是否允许用户通过界面重试？
   final bool isRetryable;
 
-  const ErrorDefinition({
+  const AppErrorDefinition({
     required this.code,
     required this.userMessageTemplate,
     required this.isRetryable,

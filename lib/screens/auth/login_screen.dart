@@ -136,6 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     // 从 Service 获取值
     final email = inputService.getText(emailSlotName).trim();
+
     final password = inputService.getText(passwordSlotName).trim();
 
     try {
