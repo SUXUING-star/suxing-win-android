@@ -247,7 +247,7 @@ class _GameManagementState extends State<GameManagement>
         iconColor: Colors.green,
         onConfirm: () async {
           // Directly call the API helper which handles errors and refreshes
-          await _reviewGameApiCall(game.id, 'approved', '');
+          await _reviewGameApiCall(game, 'approved', '');
         },
       );
     } else {
@@ -276,7 +276,7 @@ class _GameManagementState extends State<GameManagement>
             iconColor: Colors.red,
             onConfirm: () async {
               // When the *final* confirmation is pressed, call the API helper
-              await _reviewGameApiCall(game.id, 'rejected', reason.trim());
+              await _reviewGameApiCall(game, 'rejected', reason.trim());
             },
           );
         },
@@ -285,10 +285,10 @@ class _GameManagementState extends State<GameManagement>
   }
 
   Future<void> _reviewGameApiCall(
-      String gameId, String status, String comment) async {
+      Game game, String status, String comment) async {
     try {
       final gameService = context.read<GameService>();
-      await gameService.reviewGame(gameId, status, comment);
+      await gameService.reviewGame(game, status, comment);
       if (mounted) {
         AppSnackBar.showSuccess(
             context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');

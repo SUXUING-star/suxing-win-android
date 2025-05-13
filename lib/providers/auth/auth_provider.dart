@@ -3,6 +3,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart'; // 保留，可能其他地方用到
 import 'package:suxingchahui/events/app_events.dart';
+import 'package:suxingchahui/models/user/account.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import 'dart:async';
@@ -94,10 +95,10 @@ class AuthProvider with ChangeNotifier {
   }
   // 公共初始化方法
 
-  Future<void> signIn(String email, String password) async {
+  Future<void> signIn(String email, String password,SavedAccount? account) async {
     // 不需要 _isLoading 状态，让调用者处理 UI
     try {
-      _currentUser = await _userService.signIn(email, password);
+      _currentUser = await _userService.signIn(email, password,account);
       await Future.delayed(_signInNotifyDelay);
       if (_currentUser != null) {
         // 再次确认用户非空（虽然理论上是的）

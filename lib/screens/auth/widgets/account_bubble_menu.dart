@@ -1,6 +1,8 @@
 // lib/widgets/auth/account_bubble_menu.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
+import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../services/main/user/cache/account_cache_service.dart';
 import '../../../widgets/ui/badges/safe_user_avatar.dart';
@@ -21,7 +23,7 @@ class AccountBubbleMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accountCache = AccountCacheService();
+    final accountCache = Provider.of<AccountCacheService>(context);
     final accounts = accountCache.getAllAccounts();
 
     // 获取屏幕宽度
@@ -73,12 +75,14 @@ class AccountBubbleMenu extends StatelessWidget {
                   children: [
                     // 标题
                     Container(
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
                         color: Theme.of(context).primaryColor.withOpacity(0.05),
                         border: Border(
                           bottom: BorderSide(
-                            color: Theme.of(context).dividerColor.withOpacity(0.3),
+                            color:
+                                Theme.of(context).dividerColor.withOpacity(0.3),
                             width: 0.5,
                           ),
                         ),
@@ -129,7 +133,8 @@ class AccountBubbleMenu extends StatelessWidget {
                             final account = accounts[index];
 
                             // 特殊处理最后一个项目，不显示分隔线
-                            final bool isLastItem = index == accounts.length - 1;
+                            final bool isLastItem =
+                                index == accounts.length - 1;
 
                             return InkWell(
                               onTap: () {
@@ -138,21 +143,27 @@ class AccountBubbleMenu extends StatelessWidget {
                               },
                               child: Container(
                                 decoration: BoxDecoration(
-                                  border: !isLastItem ? Border(
-                                    bottom: BorderSide(
-                                      color: Theme.of(context).dividerColor.withOpacity(0.3),
-                                      width: 0.5,
-                                    ),
-                                  ) : null,
+                                  border: !isLastItem
+                                      ? Border(
+                                          bottom: BorderSide(
+                                            color: Theme.of(context)
+                                                .dividerColor
+                                                .withOpacity(0.3),
+                                            width: 0.5,
+                                          ),
+                                        )
+                                      : null,
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 12),
                                 child: Row(
                                   children: [
                                     // 头像
                                     SafeUserAvatar(
                                       userId: account.userId ?? '',
                                       avatarUrl: account.avatarUrl,
-                                      username: account.username ?? account.email,
+                                      username:
+                                          account.username ?? account.email,
                                       radius: 16,
                                     ),
                                     const SizedBox(width: 12),
@@ -160,7 +171,8 @@ class AccountBubbleMenu extends StatelessWidget {
                                     // 用户信息
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
@@ -189,10 +201,12 @@ class AccountBubbleMenu extends StatelessWidget {
                                     // 等级标签
                                     if (account.level != null)
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 2),
                                         decoration: BoxDecoration(
                                           color: _getLevelColor(account.level!),
-                                          borderRadius: BorderRadius.circular(10),
+                                          borderRadius:
+                                              BorderRadius.circular(10),
                                         ),
                                         child: Text(
                                           'Lv.${account.level}',
@@ -217,7 +231,8 @@ class AccountBubbleMenu extends StatelessWidget {
                       child: TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
-                          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                          backgroundColor:
+                              Theme.of(context).primaryColor.withOpacity(0.1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

@@ -33,7 +33,6 @@ class FormTextInputField extends FormField<String> {
     this.controller,
     this.slotName, // 接收 slotName
     this.decoration = const InputDecoration(),
-    // 其他属性...
     this.focusNode,
     this.hintText,
     this.maxLines = 1,

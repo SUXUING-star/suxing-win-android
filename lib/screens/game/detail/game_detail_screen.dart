@@ -65,14 +65,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void didUpdateWidget(GameDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.gameId != widget.gameId) {
-      // *** 这里是改动：调用加载前，用 setState 设置 _isLoading = true ***
       setState(() {
         _game = null;
         _collectionStatus = null;
         _navigationInfo = null;
         _isLiked = null;
         _error = null;
-        _isLoading = true; // <--- 在 setState 里设置
+        _isLoading = true;
         _isTogglingLike = false;
         _refreshCounter = 0; // 可以重置
       });
@@ -186,7 +185,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           if (errorMsg == null && result != null) {
             // 成功
-            print("设置_game状态");
             _game = result.game;
             _collectionStatus = result.collectionStatus;
             _navigationInfo = result.navigationInfo;
@@ -314,7 +312,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     try {
       // 确保使用 dialog 返回的最新 status (result.newStatus) 来缓存
       final gameService = context.read<GameService>();
-      await gameService.cachedNewData(updatedGame, result.newStatus);
+      await gameService.cacheNewData(updatedGame, result.newStatus);
       //print("GameDetailScreen (${widget.gameId}): Cache updated successfully before setState.");
 
       // 6. 使用 setState 更新状态 (在缓存成功后)

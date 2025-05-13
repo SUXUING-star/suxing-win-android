@@ -55,6 +55,15 @@ class PostForm extends StatefulWidget {
   _PostFormState createState() => _PostFormState();
 }
 
+/// -------------------------------------------------------------------
+/// 后端payload参照
+/// var req struct {
+///		Title   string   `json:"title" binding:"required,min=2,max=100"`
+///		Content string   `json:"content" binding:"required,min=2"`
+///		Tags    []string `json:"tags"`
+///	}
+///-------------------------------------------------------------------
+
 class _PostFormState extends State<PostForm> {
   late List<PostTag> _selectedTags;
   final _formKey = GlobalKey<FormState>();
@@ -238,7 +247,7 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  // *** 修改：传递 _effectiveInitialTitle ***
+  // 私有函数，构建标题填写区域
   Widget _buildTitleField() {
     return FormTextInputField(
       slotName: _titleSlotName,
@@ -253,6 +262,12 @@ class _PostFormState extends State<PostForm> {
       validator: (value) {
         if (value == null || value.trim().isEmpty) {
           return '请输入标题';
+        }
+        if (value.length < 2) {
+          return '标题长度过短';
+        }
+        if (value.length > 100) {
+          return '标题长度过长';
         }
         return null;
       },
@@ -321,7 +336,7 @@ class _PostFormState extends State<PostForm> {
     );
   }
 
-  // *** 修改：传递 _effectiveInitialContent ***
+  // 构建内容输入区域
   Widget _buildContentField() {
     return FormTextInputField(
       slotName: _contentSlotName,
@@ -343,6 +358,13 @@ class _PostFormState extends State<PostForm> {
         if (value == null || value.trim().isEmpty) {
           return '请输入内容';
         }
+        if (value.length < 2) {
+          return '内容过短';
+        }
+        if (value.length > 500) {
+          return '内容过长';
+        }
+
         return null;
       },
     );
@@ -351,14 +373,14 @@ class _PostFormState extends State<PostForm> {
   Widget _buildSubmitButton() {
     return Center(
       child: FunctionalButton(
-        onPressed: widget.isSubmitting ? null : _submit,
+        isEnabled: !widget.isSubmitting,
+        onPressed: !widget.isSubmitting ? () => _submit() : null,
         label: _effectiveSubmitButtonText,
       ),
     );
   }
 
   Widget _buildMetadataInfo() {
-    // (保持不变)
     if (widget.updatetimeInfo != null) {
       return Row(
         mainAxisAlignment: MainAxisAlignment.start,

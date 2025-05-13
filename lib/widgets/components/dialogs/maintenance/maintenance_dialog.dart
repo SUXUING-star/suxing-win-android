@@ -4,14 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-// 移除 NavigationUtils 导入，BaseInputDialog 会处理 pop
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../services/main/maintenance/maintenance_service.dart';
-// 移除 AuthProvider 导入，登出逻辑应在调用此对话框之前处理
-// import '../../../../../providers/auth/auth_provider.dart';
-// 导入 BaseInputDialog
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-// 导入 AppText (假设路径正确)
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 // MaintenanceDialog 现在可以只是一个包含静态方法的类，不需要是 Widget

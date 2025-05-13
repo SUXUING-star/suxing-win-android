@@ -1,6 +1,7 @@
 // lib/screens/auth/login_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -12,7 +13,6 @@ import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import '../../services/main/user/cache/account_cache_service.dart';
 import '../../utils/navigation/navigation_utils.dart';
 import '../../providers/auth/auth_provider.dart';
-// *** 新增导入 InputStateService ***
 import '../../providers/inputs/input_state_provider.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import './widgets/account_bubble_menu.dart';
@@ -26,10 +26,6 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
-  // --- 移除 TextEditingController ---
-  // final _emailController = TextEditingController();
-  // final _passwordController = TextEditingController();
-  // ------------------------------
   final _emailFieldKey = GlobalKey(); // 这个 GlobalKey 仍然需要用于定位气泡菜单
 
   bool _rememberMe = true;
@@ -38,7 +34,8 @@ class _LoginScreenState extends State<LoginScreen> {
   String? _errorMessage;
 
   // 账号缓存服务
-  final _accountCache = AccountCacheService();
+  late AccountCacheService _accountCache;
+  bool _isAccountCacheInitialized = false;
 
   // --- 定义 slot 名称 ---
   static const String emailSlotName = 'login_email';
@@ -49,6 +46,17 @@ class _LoginScreenState extends State<LoginScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkSavedAccounts());
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_isAccountCacheInitialized) {
+      // 避免重复获取和调用
+      _accountCache = Provider.of<AccountCacheService>(context, listen: false);
+      _isAccountCacheInitialized = true;
+      _checkSavedAccounts(); // _checkSavedAccounts 会用 _accountCache
+    }
   }
 
   Future<void> _checkSavedAccounts() async {
@@ -141,12 +149,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
     try {
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      await authProvider.signIn(email, password);
 
+      SavedAccount? savedAccount;
       // 如果勾选了记住账号，保存登录信息
       if (_rememberMe) {
         final user = authProvider.currentUser;
-        final savedAccount = SavedAccount(
+        savedAccount = SavedAccount(
           email: email,
           password: password, // 注意：这里保存的是用户输入的密码
           username: user?.username,
@@ -156,12 +164,13 @@ class _LoginScreenState extends State<LoginScreen> {
           experience: user?.experience,
           lastLogin: DateTime.now(),
         );
-        await _accountCache.saveAccount(savedAccount);
       }
-      // *** 登录成功后，清除输入状态 ***
+      // 委托authProvider传递
+      // ui组件不需要管理添加和删除缓存
+      await authProvider.signIn(email, password, savedAccount);
+      // 登录成功后，清除输入状态
       inputService.clearText(emailSlotName);
       inputService.clearText(passwordSlotName);
-      // **************************
 
       await Future.delayed(Duration(milliseconds: 500)); // 稍微减少延迟
 

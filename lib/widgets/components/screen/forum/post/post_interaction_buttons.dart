@@ -176,7 +176,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         final forumService = context.read<ForumService>();
 
         // --- 调用 Service 写入缓存 ---
-        await forumService.cachedNewPostData(newPost, newActions);
+        await forumService.cacheNewPostData(newPost, newActions);
 
         // --- 更新本地 UI 计数为最终确认的值 ---
         // （如果 API 返回的状态与乐观更新不符，这里会修正计数的显示）

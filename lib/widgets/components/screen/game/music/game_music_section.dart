@@ -156,7 +156,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
   Widget _buildLandscapeWebView() {
     return SizedBox(
       key: const ValueKey('landscape_webview_container'),
-      height: 86.0, // 固定高度
+      height: DeviceUtils.isDesktop ? 100 : 86.0, // 固定高度
       child: Container(
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerLowest,

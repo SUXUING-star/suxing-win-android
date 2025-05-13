@@ -1,6 +1,8 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // *** 新增 Provider 导入 ***
+import 'package:suxingchahui/models/user/account.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 // --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -31,15 +33,6 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  // --- 移除 TextEditingControllers ---
-  // final _usernameController = TextEditingController();
-  // final _emailController = TextEditingController();
-  // final _passwordController = TextEditingController();
-  // final _confirmPasswordController = TextEditingController();
-  // final _verificationCodeController = TextEditingController();
-  // ---------------------------------
-
-
   // --- 定义 Slot 名称 ---
   static const String usernameSlotName = 'register_username';
   static const String emailSlotName = 'register_email';
@@ -54,19 +47,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
   bool _obscureConfirmPassword = true;
   bool _isSendingCode = false;
   bool _isRegistering = false;
+  bool _rememberMe = true;
 
   Timer? _timer;
   int _countDown = 0;
 
   @override
   void dispose() {
-    // --- 移除 Controller 的 dispose ---
-    // _usernameController.dispose();
-    // _emailController.dispose();
-    // _passwordController.dispose();
-    // _confirmPasswordController.dispose();
-    // _verificationCodeController.dispose();
-    // -------------------------------
     _timer?.cancel();
     super.dispose();
   }
@@ -117,8 +104,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final emailService = context.read<EmailService>();
-      await emailService.requestVerificationCode( // <--- 改成调用实例方法
-          email, 'register');
+      await emailService.requestVerificationCode(
+          // <--- 改成调用实例方法
+          email,
+          'register');
       if (!mounted) return;
       _startTimer();
       setState(() {
@@ -174,9 +163,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final verificationCode =
         inputService.getText(verificationCodeSlotName).trim();
 
-    // (确认密码的校验已经在 validator 里做了，这里理论上不需要再校验)
-    // if (password != confirmPassword) { ... }
-
     bool isCodeValid = false;
     String registrationError = '';
 
@@ -193,17 +179,32 @@ class _RegisterScreenState extends State<RegisterScreen> {
         return;
       }
       final userService = context.read<UserService>();
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      await userService.signUp(email, password, username);
+      SavedAccount? savedAccount;
+      if (_rememberMe) {
+        final user = authProvider.currentUser;
+        savedAccount = SavedAccount(
+          email: email,
+          password: password, // 注意：这里保存的是用户输入的密码
+          username: user?.username,
+          avatarUrl: user?.avatar,
+          userId: user?.id,
+          level: user?.level,
+          experience: user?.experience,
+          lastLogin: DateTime.now(),
+        );
+      }
+
+      await userService.signUp(email, password, username, savedAccount);
       if (!mounted) return;
 
-      // *** 注册成功后，清除所有相关的输入状态 ***
+      // 注册成功后，清除所有相关的输入状态
       inputService.clearText(usernameSlotName);
       inputService.clearText(emailSlotName);
       inputService.clearText(passwordSlotName);
       inputService.clearText(confirmPasswordSlotName);
       inputService.clearText(verificationCodeSlotName);
-      // **************************************
 
       AppSnackBar.showSuccess(context, "注册成功，即将跳转...");
       await Future.delayed(Duration(milliseconds: 1000));
@@ -477,7 +478,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             isEnabled: isRegisterButtonEnabled,
                           ),
                         ),
-                        SizedBox(height: 16),
+                        SizedBox(height: 8),
+                        Checkbox(
+                          value: _rememberMe,
+                          onChanged: (value) => setState(() {
+                            _rememberMe = value ?? false;
+                          }),
+                        ),
+                        Text('记住账号'),
+                        SizedBox(height: 8),
                         FadeInSlideUpItem(
                           delay: initialDelay + stagger * 7,
                           child: FunctionalTextButton(

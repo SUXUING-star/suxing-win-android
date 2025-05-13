@@ -23,7 +23,6 @@ class GameReviewSection extends StatefulWidget {
 }
 
 class GameReviewSectionState extends State<GameReviewSection> {
-
   List<GameReview> _entries = []; // *** 修改变量名 ***
   bool _isLoading = true;
   String? _error;

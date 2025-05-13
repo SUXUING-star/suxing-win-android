@@ -3,8 +3,6 @@ class UserPostActions {
   final bool liked;
   final bool agreed;
   final bool favorited;
-
-  // 可以添加一个 postId 和 userId，虽然缓存键已经包含了，但模型自身有也好
   final String postId;
   final String userId;
 

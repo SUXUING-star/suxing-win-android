@@ -1,6 +1,6 @@
 // lib/utils/error/api_error_definitions.dart
 
-// 后端 API 返回的业务错误码常量 (直接从你的 Go 代码中的 Code* 转换)
+// 后端 API 返回的业务错误码常量
 class BackendApiErrorCodes {
   static const String internalError = "INTERNAL_ERROR";
   static const String notFound = "NOT_FOUND";
@@ -10,7 +10,7 @@ class BackendApiErrorCodes {
   static const String validationFailed = "VALIDATION_FAILED";
   static const String invalidInput = "INVALID_INPUT";
   static const String databaseError = "DATABASE_ERROR"; // 你从 SERVER_ERROR 改的
-  static const String serverError = "SERVER_ERROR";   // 你保留的通用服务器错误
+  static const String serverError = "SERVER_ERROR"; // 你保留的通用服务器错误
   static const String invalidPayload = "INVALID_PAYLOAD";
   static const String missingParam = "MISSING_PARAM";
   static const String noChanges = "NO_CHANGES";
@@ -20,13 +20,20 @@ class BackendApiErrorCodes {
   static const String postLock = "POST_LOCK";
   static const String deleteLimit = "DELETE_LIMIT";
   static const String contentForbidden = "CONTENT_FORBIDDEN";
-  static const String duplicateData = "DUPLICATE_DATA";    // 对应 ErrDuplicateEntry
+  static const String duplicateData = "DUPLICATE_DATA"; // 对应 ErrDuplicateEntry
   static const String consistencyError = "CONSISTENCY_ERROR"; // 对应 ErrFindCheck
 
   static const String networkNoConnection = "NETWORK_NO_CONNECTION";
   static const String networkTimeout = "NETWORK_TIMEOUT";
   static const String networkGenericError = "NETWORK_GENERIC_ERROR"; // 其他网络问题
   static const String networkHostLookupFailed = "NETWORK_HOST_LOOKUP_FAILED";
+
+  static const String emailRateLimitedLocal = "EMAIL_RATE_LIMITED_LOCAL";
+  static const String emailMaxAttemptsLocal = "EMAIL_MAX_ATTEMPTS_LOCAL";
+  static const String emailAlreadyRegistered = "EMAIL_ALREADY_REGISTERED";
+  static const String emailNotRegistered = "EMAIL_NOT_REGISTERED";
+
+  static const String serverlessSendCodeFailed = "SL_SEND_CODE_FAILED";
 
   // 用于处理未在下面注册的错误码，或者当后端未返回明确code时
   static const String unknownFromApi = "UNKNOWN_FROM_API";
@@ -111,19 +118,22 @@ class ApiErrorRegistry {
       defaultHttpStatus: 400,
       isRetryable: false,
     ),
-    BackendApiErrorCodes.validationFailed: const ApiErrorDescriptor( // 假设它也是 400
+    BackendApiErrorCodes.validationFailed: const ApiErrorDescriptor(
+      // 假设它也是 400
       code: BackendApiErrorCodes.validationFailed,
       defaultUserMessage: "数据校验失败，请检查您的输入。",
       defaultHttpStatus: 400,
       isRetryable: false,
     ),
-    BackendApiErrorCodes.invalidPayload: const ApiErrorDescriptor( // 假设它也是 400
+    BackendApiErrorCodes.invalidPayload: const ApiErrorDescriptor(
+      // 假设它也是 400
       code: BackendApiErrorCodes.invalidPayload,
       defaultUserMessage: "请求体无效或格式错误。",
       defaultHttpStatus: 400,
       isRetryable: false,
     ),
-    BackendApiErrorCodes.missingParam: const ApiErrorDescriptor( // 假设它也是 400
+    BackendApiErrorCodes.missingParam: const ApiErrorDescriptor(
+      // 假设它也是 400
       code: BackendApiErrorCodes.missingParam,
       defaultUserMessage: "缺少必要的请求参数。",
       defaultHttpStatus: 400,
@@ -156,7 +166,6 @@ class ApiErrorRegistry {
       isRetryable: true,
     ),
 
-
     // --- Conflict (HTTP 409) ---
     BackendApiErrorCodes.duplicateData: const ApiErrorDescriptor(
       code: BackendApiErrorCodes.duplicateData,
@@ -186,6 +195,41 @@ class ApiErrorRegistry {
       isRetryable: false, // 这类限制通常不是简单重试能解决的
     ),
 
+    BackendApiErrorCodes.emailRateLimitedLocal: const ApiErrorDescriptor(
+      code: BackendApiErrorCodes.emailRateLimitedLocal,
+      defaultUserMessage:
+          "操作过于频繁，请稍后再试。", // Dynamic part will be in ApiException.effectiveMessage
+      defaultHttpStatus: 0,
+      isRetryable: true,
+    ),
+    BackendApiErrorCodes.emailMaxAttemptsLocal: const ApiErrorDescriptor(
+      code: BackendApiErrorCodes.emailMaxAttemptsLocal,
+      defaultUserMessage:
+          "尝试次数过多，请稍后再试。", // Dynamic part will be in ApiException.effectiveMessage
+      defaultHttpStatus: 0,
+      isRetryable: true,
+    ),
+    BackendApiErrorCodes.emailAlreadyRegistered: const ApiErrorDescriptor(
+      code: BackendApiErrorCodes.emailAlreadyRegistered,
+      defaultUserMessage: "该邮箱已被注册。",
+      defaultHttpStatus: 409, // Conflict
+      isRetryable: false,
+    ),
+    BackendApiErrorCodes.emailNotRegistered: const ApiErrorDescriptor(
+      code: BackendApiErrorCodes.emailNotRegistered,
+      defaultUserMessage: "该邮箱未注册。",
+      defaultHttpStatus: 404, // Not Found
+      isRetryable: false,
+    ),
+    BackendApiErrorCodes.serverlessSendCodeFailed: const ApiErrorDescriptor(
+      code: BackendApiErrorCodes.serverlessSendCodeFailed,
+      defaultUserMessage:
+          "请求发送验证码失败，请稍后重试。", // Fallback if SL doesn't provide 'error' field
+      defaultHttpStatus:
+          400, // Assume logical failure from SL is a client-type error
+      isRetryable: true,
+    ),
+
     // --- Server Errors (HTTP 500, 5xx) ---
     BackendApiErrorCodes.internalError: const ApiErrorDescriptor(
       code: BackendApiErrorCodes.internalError,
@@ -199,7 +243,8 @@ class ApiErrorRegistry {
       defaultHttpStatus: 500, // 假设也是500
       isRetryable: true,
     ),
-    BackendApiErrorCodes.serverError: const ApiErrorDescriptor( // 通用服务器错误
+    BackendApiErrorCodes.serverError: const ApiErrorDescriptor(
+      // 通用服务器错误
       code: BackendApiErrorCodes.serverError,
       defaultUserMessage: "服务器发生错误，请稍后再试。",
       defaultHttpStatus: 500,
@@ -222,7 +267,8 @@ class ApiErrorRegistry {
   };
 
   static ApiErrorDescriptor getDescriptor(String backendCode) {
-    return _descriptors[backendCode] ?? _descriptors[BackendApiErrorCodes.unknownFromApi]!;
+    return _descriptors[backendCode] ??
+        _descriptors[BackendApiErrorCodes.unknownFromApi]!;
   }
 
   // 为纯HTTP错误码（没有后端业务code的情况）提供一个描述符

@@ -279,7 +279,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       });
 
       // *** 调用核心加载方法，标记为 isRefresh ***
-      await _loadPosts(page: 1, isRefresh: true);
+      await _loadPosts(page: 1, isRefresh: true, forceRefresh: true);
 
       // *** 加载成功后，结束 RefreshIndicator 动画 ***
       if (mounted) {
@@ -858,7 +858,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       itemBuilder: (context, index) {
         final post = _posts![index];
         return FadeInSlideUpItem(
-          // <--- 包裹卡片
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
           delay: cardDelayIncrement * index, // 交错延迟
@@ -909,7 +908,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       itemBuilder: (context, index) {
         final post = _posts![index];
         return FadeInSlideUpItem(
-          // <--- 包裹卡片
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
           delay: cardDelayIncrement * index, // 交错延迟
@@ -919,7 +917,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,
             onToggleLockAction: _handleToggleLockFromCard,
-            // 桌面 PostCard 内部可能处理 onTap，如果需要外部处理，则加 GestureDetector
           ),
         );
       },

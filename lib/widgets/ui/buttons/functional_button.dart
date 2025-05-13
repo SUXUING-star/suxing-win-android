@@ -100,7 +100,6 @@ class FunctionalButton extends StatelessWidget {
         fontFamilyFallback: FontConfig.fontFallback,
         fontSize: fontSize,
         color: currentForegroundColor, // 显式使用当前前景色
-        fontWeight: FontWeight.w600,
       ),
     );
 

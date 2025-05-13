@@ -10,10 +10,13 @@ import 'package:provider/provider.dart';
 
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart'; // 全局锁服务
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 提示框
 
@@ -112,8 +115,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       try {
         return _cacheService.getEditDraftKey(widget.game!.id);
       } catch (e) {
-        print(
-            "Error getting edit draft key: $e. Falling back to add draft key.");
         // 异常情况，比如 ID 无效，退回到使用添加草稿的 key，或者返回 null
         // return null; // 或者返回 null 更好，这样不会误操作草稿
         return GameFormCacheService.addDraftKey; // 或者用添加key作为后备
@@ -133,13 +134,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     _descriptionController.dispose();
     _musicUrlController.dispose();
     _bvidController.dispose();
-    print("dispose: Resources disposed.");
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    print("didChangeAppLifecycleState：看看退出页面哪个被触发了？？");
     super.didChangeAppLifecycleState(state);
     // 在应用暂停或后台时根据条件保存草稿
     if (state == AppLifecycleState.paused ||
@@ -155,7 +154,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   }
 
   Future<void> _saveDraftAndExit() async {
-    print("Save Draft and Exit button pressed.");
     // 不需要检查 _isProcessing，因为这个按钮应该在非 processing 时才可点
     // 也不需要检查是否有修改，因为用户明确点了“保存”
 
@@ -163,7 +161,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     try {
       // 必须确保 draftKey 有效
       if (_draftKey == null) {
-        print("Error: Draft key is null. Cannot save draft.");
         if (mounted) AppSnackBar.showError(context, "无法保存草稿：内部错误");
         return; // 无法保存，不退出
       }
@@ -181,7 +178,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         }
       }
     } catch (e) {
-      print("Error saving draft and exiting: $e");
       if (mounted) AppSnackBar.showError(context, '保存草稿失败: ${e.toString()}');
       // 保存失败，暂时不退出，让用户看到错误信息
     }
@@ -249,11 +245,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
       _selectedTags = List<String>.from(game.tags); // 初始标签列表副本
     }
-    print(
-        "Form initialized. Mode: ${widget.game == null ? 'Add' : 'Edit'}. Draft key: $_draftKey");
+
     if (widget.game != null) {
-      print(
-          "Initial Cover: $_initialCoverImageUrl, Initial Images: $_initialGameImageUrls");
+      // print(
+      //     "Initial Cover: $_initialCoverImageUrl, Initial Images: $_initialGameImageUrls");
     }
   }
 
@@ -298,27 +293,23 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // --- 取消回调：清除草稿 ---
           onCancel: () async {
             if (_draftKey == null) {
-              print("Draft key is null in onCancel, cannot discard.");
               return; // Key 无效，无法操作
             }
-            print(
-                "User chose to discard draft. Starting cleanup. Key: $_draftKey");
+
             GameFormDraft? draftToDiscard; // 用来保存文件路径
             try {
               // 关键步骤 1: 加载要丢弃的草稿数据
               draftToDiscard = await _cacheService.loadDraft(_draftKey!);
 
               if (draftToDiscard != null) {
-                print("Loaded draft data before discarding for file cleanup.");
+                // print("Loaded draft data before discarding for file cleanup.");
               } else {
-                print(
-                    "Warning: Could not load draft data before discarding. File cleanup might be incomplete. Key: $_draftKey");
+                // print(
+                //     "Warning: Could not load draft data before discarding. File cleanup might be incomplete. Key: $_draftKey");
               }
 
               // 关键步骤 2: 从 Hive 中清除
               await _cacheService.clearDraft(_draftKey!);
-              print(
-                  "Discarded draft cleared from Hive for key: $_draftKey (via CustomConfirmDialog)");
 
               // 关键步骤 3: 删除关联的文件
               await _deleteDraftFiles(draftToDiscard);
@@ -328,8 +319,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 // AppSnackBar.showInfo(context, '草稿已丢弃'); // 暂时不需要，对话框关闭即可
               }
             } catch (e) {
-              print(
-                  "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
+              // print(
+              //     "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
               if (mounted) {
                 AppSnackBar.showError(context, '丢弃草稿时出错');
               }
@@ -341,14 +332,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // CustomConfirmDialog.show 返回 Future<void>，await 它会等待 onConfirm 完成
         // 如果 onConfirm 出错，错误会从这里抛出
       } catch (e) {
-        print(
-            "Error during CustomConfirmDialog.show or its callbacks for key $_draftKey: $e");
         if (mounted) AppSnackBar.showError(context, '处理草稿时出错: ${e.toString()}');
         // 即使对话框处理出错，也尝试清除草稿避免死循环
         try {
           await _cacheService.clearDraft(_draftKey!);
         } catch (clearError) {
-          print("Failed to clear draft after dialog error: $clearError");
+          // print("Failed to clear draft after dialog error: $clearError");
         }
       }
     }
@@ -382,14 +371,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
               await getApplicationDocumentsDirectory(); // Get base path
           if (coverPathOrUrl.startsWith(appDocDir.path) &&
               await File(coverPathOrUrl).exists()) {
-            print("Restoring cover from persistent file: $coverPathOrUrl");
             restoredCoverSource = File(coverPathOrUrl); // Use the File object
           } else if (coverPathOrUrl.startsWith('http')) {
-            print("Restoring cover from URL: $coverPathOrUrl");
             restoredCoverSource = coverPathOrUrl; // It's a URL
           } else {
-            print(
-                "Cover path/URL invalid or file missing: $coverPathOrUrl. Setting to null.");
             restoredCoverSource = null; // Path invalid or file deleted
           }
         } else {
@@ -405,14 +390,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           if (pathOrUrl.isNotEmpty) {
             if (pathOrUrl.startsWith(appDocDir.path) &&
                 await File(pathOrUrl).exists()) {
-              print("Restoring game image from persistent file: $pathOrUrl");
               restoredGameImageSources.add(File(pathOrUrl)); // Use File object
             } else if (pathOrUrl.startsWith('http')) {
-              print("Restoring game image from URL: $pathOrUrl");
               restoredGameImageSources.add(pathOrUrl); // Use URL String
             } else {
-              print(
-                  "Game image path/URL invalid or file missing: $pathOrUrl. Skipping.");
               // Optionally add null or a placeholder if needed, but skipping is cleaner
             }
           }
@@ -421,14 +402,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
         _coverImageError = null;
         _categoryError = null;
-        print(
-            "Draft applied for key: $_draftKey. Cover: $_coverImageSource, Images: $_gameImagesSources");
         setState(() {}); // Trigger UI update after async operations
       } else if (draft == null && mounted) {
-        print("Could not load draft or draft was null for key: $_draftKey.");
+        // print("Could not load draft or draft was null for key: $_draftKey.");
       }
     } catch (e) {
-      print("Error applying draft for key $_draftKey: $e");
+      // print("Error applying draft for key $_draftKey: $e");
       if (mounted) AppSnackBar.showError(context, '应用草稿时出错');
     } finally {
       if (mounted) {
@@ -461,24 +440,20 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         ));
 
     if (pathsToDelete.isEmpty) {
-      print("No local draft files found in draft data to delete.");
+      // print("No local draft files found in draft data to delete.");
       return;
     }
-
-    print(
-        "Attempting to delete ${pathsToDelete.length} draft files: $pathsToDelete");
 
     for (String path in pathsToDelete) {
       try {
         final file = File(path);
         if (await file.exists()) {
           await file.delete();
-          print("Deleted draft file: $path");
         } else {
-          print("Draft file not found for deletion (already deleted?): $path");
+          // print("Draft file not found for deletion (already deleted?): $path");
         }
       } catch (e) {
-        print("Error deleting draft file $path: $e");
+        // print("Error deleting draft file $path: $e");
         // 可以考虑是否需要上报这个错误
       }
     }
@@ -488,8 +463,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Future<void> _saveDraftIfNecessary() async {
     // 如果正在提交、草稿 Key 无效或 widget 已不存在，则不保存
     if (_isProcessing || _draftKey == null || !mounted) {
-      print(
-          "Skipping draft save: Processing=$_isProcessing, DraftKey=$_draftKey, Mounted=$mounted");
       return;
     }
 
@@ -499,12 +472,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // 编辑模式
         if (_hasChanges()) {
           // 检查是否有改动
-          print(
-              "Changes detected in edit mode. Will save draft for key: $_draftKey");
+
           shouldSave = true;
         } else {
-          print(
-              "No changes detected in edit mode. Skipping draft save for key: $_draftKey");
+          //print(
+          //    "No changes detected in edit mode. Skipping draft save for key: $_draftKey");
           // 如果没有改动，可以选择清除旧的草稿（如果存在）
           // await _cacheService.clearDraft(_draftKey!);
         }
@@ -512,12 +484,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // 添加模式
         if (!_isFormEmpty()) {
           // 检查表单是否为空
-          print(
-              "Form is not empty in add mode. Will save draft for key: $_draftKey");
+
           shouldSave = true;
         } else {
-          print(
-              "Form is empty in add mode. Skipping draft save for key: $_draftKey");
           // 如果表单为空，也清除可能存在的旧草稿
           await _cacheService.clearDraft(_draftKey!);
         }
@@ -527,7 +496,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         await _performSaveDraft();
       }
     } catch (e) {
-      print("Error during saveDraftIfNecessary for key $_draftKey: $e");
+      // print("Error during saveDraftIfNecessary for key $_draftKey: $e");
       // 保存草稿出错，可以选择通知用户
       // if (mounted) AppSnackBar.showError(context, '保存草稿失败');
     }
@@ -538,7 +507,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     try {
       return filePath.substring(filePath.lastIndexOf('.'));
     } catch (e) {
-      print("Error getting file extension for $filePath: $e");
       return '.jpg'; // Provide a default extension if parsing fails
     }
   }
@@ -560,10 +528,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       final File sourceIoFile = File(sourceFile.path);
       await sourceIoFile.copy(persistentPath);
 
-      print('Copied draft image from ${sourceFile.path} to $persistentPath');
       return persistentPath; // Return the new persistent path
     } catch (e) {
-      print('Error copying draft image ${sourceFile.path}: $e');
+      // print('Error copying draft image ${sourceFile.path}: $e');
       // Handle error, maybe return null or rethrow
       return null; // Indicate failure
     }
@@ -633,11 +600,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     try {
       await _cacheService.saveDraft(_draftKey!, draft);
-      print(
-          "Draft saved successfully for key: $_draftKey with image paths: $coverImageToSave, $gameImagesToSave");
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '保存草稿时发生错误');
-      print("Error in _cacheService.saveDraft: $e");
+      // print("Error in _cacheService.saveDraft: $e");
     }
   }
 
@@ -691,22 +656,18 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     // 2. 比较封面图片
     if (_coverImageSource is XFile) {
-      print("Change detected: Cover image is a new local file.");
       return true; // 新选了本地文件，肯定是更改
     }
     // 当前是 URL 或 null，与初始 URL (_initialCoverImageUrl) 比较
     final currentCoverUrl =
         (_coverImageSource is String) ? _coverImageSource as String : null;
     if (currentCoverUrl != _initialCoverImageUrl) {
-      print(
-          "Change detected: Cover URL differs ('$currentCoverUrl' vs '$_initialCoverImageUrl').");
       return true;
     }
 
     // 3. 比较游戏截图 (最复杂)
     // a) 检查是否有新添加的本地文件 (XFile)
     if (_gameImagesSources.any((s) => s is XFile)) {
-      print("Change detected: Game images contain new local file(s).");
       return true;
     }
     // b) 如果没有 XFile，比较当前 URL 列表和初始 URL 列表
@@ -716,17 +677,13 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     //    使用 ListEquality 比较（顺序敏感）
     if (!const ListEquality()
         .equals(currentGameImageUrls, _initialGameImageUrls)) {
-      print("Change detected: Game image URL list differs.");
-      print("Current URLs: $currentGameImageUrls");
-      print("Initial URLs: $_initialGameImageUrls");
       return true;
     }
 
     // 比较单个分类，注意 null 情况
     if (_selectedCategory != _initialCategory) {
       // <--- 新的比较
-      print(
-          "Change detected: Category differs ('$_selectedCategory' vs '$_initialCategory').");
+
       return true;
     }
 
@@ -734,7 +691,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     final initialTagsSet =
         initial.tags.toSet(); // 假设 initial.tags 是 List<String>
     if (!const SetEquality().equals(currentTagsSet, initialTagsSet)) {
-      print("Change detected: Tags differ.");
       return true;
     }
 
@@ -744,19 +700,32 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     final initialLinksJson =
         initial.downloadLinks.map((l) => l.toJson()).toList();
     if (!eq.equals(currentLinksJson, initialLinksJson)) {
-      print("Change detected: Download links differ.");
       return true;
     }
 
     // 所有检查都通过，说明没有更改
-    print("No changes detected compared to initial data.");
     return false;
   }
 
   // --- 表单验证 ---
   bool _validateForm() {
-    // 先触发表单自带的验证器
+    /// -------------------------------------------------------------------------------
+    /// var req struct {
+    /// 		Title         string   `json:"title" binding:"required"`       // 标题必需
+    /// 		Summary       string   `json:"summary" binding:"required"`     // 摘要必需
+    /// 		Description   string   `json:"description" binding:"required"` // 详细描述必须
+    /// 		CoverImage    string   `json:"coverImage" binding:"required"`  // 封面必需
+    /// 		Category      string   `json:"category" binding:"required"`    // 分类必需
+    ///  -------------------------------------------------------------------------------
+    /// 参照后端的验证
     bool isTextValid = _formKey.currentState?.validate() ?? false;
+
+    /// 标题必需 <- 在表单ui组件已经验证
+    /// 摘要必需 <- 在表单ui组件已经验证
+    /// 详细描述必须 <- 在表单ui组件已经验证
+    /// 封面必需
+    /// 分类必需
+    /// ↓ ↓ ↓ ↓ 二次验证
 
     // 再手动验证图片和分类
     bool hasCover = _coverImageSource != null; // 必须有来源 (URL 或 XFile)
@@ -794,7 +763,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   }
 
   // --- 核心提交逻辑 ---
-  Future<void> _submitForm() async {
+  Future<void> _submitForm(String userId) async {
     // 1. 表单验证
     if (!_validateForm()) {
       if (mounted) AppSnackBar.showError(context, '请检查表单中的错误并修正');
@@ -890,16 +859,13 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
           // 从临时列表过滤掉 null，得到最终的 URL 列表
           finalGameImagesUrls = tempFinalUrls.whereType<String>().toList();
-          //print(
-          //    "Final submitted screenshot URLs (${finalGameImagesUrls.length}): $finalGameImagesUrls");
 
           // 3c. 构建 Game 对象
           final game = Game(
             // ID: 编辑时用 widget.game.id，添加时生成新 ID
             id: widget.game?.id ?? mongo.ObjectId().toHexString(),
             // Author ID: 需要从当前登录用户获取，这里用占位符
-            authorId: widget.game?.authorId ??
-                'GET_CURRENT_USER_ID_FROM_AUTH_SERVICE', // TODO: 替换为实际用户ID
+            authorId: widget.game?.authorId ?? userId,
             title: _titleController.text.trim(),
             summary: _summaryController.text.trim(),
             description: _descriptionController.text.trim(),
@@ -1025,6 +991,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
+    final authProvider = Provider.of<AuthProvider>(context);
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width > 950;
@@ -1036,6 +1003,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     // If processing, OR if there are changes that need confirmation, set canPop to false initially.
     final bool allowImmediatePop =
         !(_isProcessing || hasUnsavedChanges || isAddModeWithContent);
+
+    final String? currentUserId = authProvider.currentUserId;
+
+    if (currentUserId == null) return LoginPromptWidget();
 
     // 使用 Stack 包裹，方便显示全局加载指示器
     return Stack(
@@ -1054,8 +1025,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             key: _formKey,
             // autovalidateMode: AutovalidateMode.onUserInteraction,
             child: useDesktopLayout
-                ? _buildDesktopLayout(context)
-                : _buildMobileLayout(context),
+                ? _buildDesktopLayout(context, currentUserId)
+                : _buildMobileLayout(context, currentUserId),
           ),
         ),
         // 使用 _isProcessing 控制 LoadingWidget.inline 的显示
@@ -1128,7 +1099,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   }
 
   // --- 桌面布局构建 ---
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(BuildContext context, String userId) {
     // 稍微调整高度限制
     final desktopCardMaxHeight =
         MediaQuery.of(context).size.height - 120; // 留出更多边距
@@ -1212,7 +1183,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                             const SizedBox(width: 16),
                             _buildExitAndSaveDraftButton(),
                             const SizedBox(width: 16),
-                            _buildSubmitButton(), // 提交按钮
+                            _buildSubmitButton(userId), // 提交按钮
                           ],
                         ),
                         const SizedBox(height: 20), // 底部留白
@@ -1229,7 +1200,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   }
 
   // --- 移动布局构建 ---
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(BuildContext context, String userId) {
     return Opacity(
       opacity: 0.9,
       child: Container(
@@ -1283,7 +1254,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             const SizedBox(height: 16),
             _buildExitAndSaveDraftButton(),
             const SizedBox(height: 16),
-            _buildSubmitButton(), // 提交按钮放下面
+            _buildSubmitButton(userId), // 提交按钮放下面
             const SizedBox(height: 24), // 底部额外留白
           ],
         ),
@@ -1530,19 +1501,24 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Widget _buildExitAndSaveDraftButton() {
     return FunctionalButton(
       label: '保存草稿并退出',
-      onPressed: _isProcessing ? () {} : _saveDraftAndExit, // 非处理中才可点
+      onPressed:
+          !_isProcessing ? () => _saveDraftAndExit() : () => {}, // 非处理中才可点
+      isEnabled: !_isProcessing,
       icon: Icons.drafts_outlined, // 草稿图标
       isLoading: false, // 这个按钮本身不触发长时间处理
     );
   }
 
   // --- 构建提交按钮 ---
-  Widget _buildSubmitButton() {
+  Widget _buildSubmitButton(String userId) {
     // 按钮是否可用: 未处于处理状态
     bool canPress = !_isProcessing;
 
     return FunctionalButton(
-        onPressed: canPress ? _submitForm : () {}, // 禁用时 onPressed 为 null
+        onPressed: canPress
+            ? () => _submitForm(userId)
+            : () => {}, // 禁用时 onPressed 为 null
+        isEnabled: canPress,
         isLoading: _isProcessing, // 控制按钮内是否显示加载指示器
         label: widget.game == null ? '添加游戏' : '保存修改',
         icon: widget.game == null

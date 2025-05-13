@@ -8,10 +8,9 @@ import 'package:suxingchahui/providers/user/user_data_status.dart'; // 引入 Us
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-
-// 确保这些组件的路径也正确
+import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 import 'safe_user_avatar.dart';
-import '../buttons/follow_user_button.dart';
+
 
 class UserInfoBadge extends StatelessWidget {
   final String userId;
@@ -52,28 +51,31 @@ class UserInfoBadge extends StatelessWidget {
     final userDataStatus = userInfoProvider.getUserStatus(userId);
 
     // 定义颜色变量
-    final Color defaultTextColor = textColor ?? Theme.of(context).textTheme.bodyMedium?.color ?? Colors.black87;
+    final Color defaultTextColor = textColor ??
+        Theme.of(context).textTheme.bodyMedium?.color ??
+        Colors.black87;
     final Color secondaryTextColor = Colors.grey[600]!;
 
     // 4. 根据数据状态构建 UI
     switch (userDataStatus.status) {
       case LoadStatus.initial:
       case LoadStatus.loading:
-      // 显示加载占位符
+        // 显示加载占位符
         return _buildPlaceholder(context);
 
       case LoadStatus.error:
-      // 显示错误占位符
-      // 可以选择性地使用日志记录错误: Logger.error('Failed to load user $userId: ${userDataStatus.error}');
+        // 显示错误占位符
+        // 可以选择性地使用日志记录错误: Logger.error('Failed to load user $userId: ${userDataStatus.error}');
         return _buildErrorPlaceholder(context, mini);
 
       case LoadStatus.loaded:
-      // 数据加载成功，获取 User 对象
-      // 在 loaded 状态下，user 不应为 null，如果为 null 是 provider 的逻辑错误
+        // 数据加载成功，获取 User 对象
+        // 在 loaded 状态下，user 不应为 null，如果为 null 是 provider 的逻辑错误
         final User targetUser = userDataStatus.user!;
 
         // --- 从 User 对象提取信息 ---
-        final String username = targetUser.username.isNotEmpty ? targetUser.username : '未知用户';
+        final String username =
+            targetUser.username.isNotEmpty ? targetUser.username : '未知用户';
         final String? avatarUrl = targetUser.avatar;
         final int experience = targetUser.experience;
         final int level = targetUser.level;
@@ -91,11 +93,13 @@ class UserInfoBadge extends StatelessWidget {
         bool iFollowTarget = false;
         String? currentUserId = authProvider.currentUser?.id; // 安全获取当前用户ID
 
-        if (authProvider.isLoggedIn && currentUserId != null && authProvider.currentUser != null) {
+        if (authProvider.isLoggedIn &&
+            currentUserId != null &&
+            authProvider.currentUser != null) {
           // 检查当前用户的关注列表是否包含目标用户的 ID
-          iFollowTarget = authProvider.currentUser!.following.contains(targetUser.id);
+          iFollowTarget =
+              authProvider.currentUser!.following.contains(targetUser.id);
         }
-        // --- 结束关注状态计算 ---
 
         final bool isCurrentUser = currentUserId == userId;
         // 只有当 showFollowButton 为 true 且不是当前用户时，才显示关注按钮
@@ -108,9 +112,9 @@ class UserInfoBadge extends StatelessWidget {
           // 背景颜色和圆角
           decoration: backgroundColor != null
               ? BoxDecoration(
-            color: backgroundColor,
-            borderRadius: BorderRadius.circular(mini ? 12 : 16),
-          )
+                  color: backgroundColor,
+                  borderRadius: BorderRadius.circular(mini ? 12 : 16),
+                )
               : null,
           child: Row(
             mainAxisSize: MainAxisSize.min, // Row 只包裹必要宽度
@@ -122,7 +126,7 @@ class UserInfoBadge extends StatelessWidget {
                 avatarUrl: avatarUrl,
                 isAdmin: isAdmin,
                 isSuperAdmin: isSuperAdmin,
-                userId: userId,    // userId 仍然需要，例如用于导航或 key
+                userId: userId, // userId 仍然需要，例如用于导航或 key
                 radius: mini ? 14 : 18,
                 backgroundColor: Colors.grey[100], // 占位背景色
                 enableNavigation: true,
@@ -135,12 +139,14 @@ class UserInfoBadge extends StatelessWidget {
               const SizedBox(width: 8), // 头像和信息的间距
 
               // --- 用户信息区域 (用户名、等级、签到) ---
-              Flexible( // 使用 Flexible 防止文本溢出
+              Flexible(
+                // 使用 Flexible 防止文本溢出
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
                   mainAxisSize: MainAxisSize.min, // Column 包裹内容高度
                   children: [
-                    Row( // 将用户名和管理员标识放在一行
+                    Row(
+                      // 将用户名和管理员标识放在一行
                       mainAxisSize: MainAxisSize.min, // 包裹内容
                       crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐
                       children: [
@@ -169,7 +175,8 @@ class UserInfoBadge extends StatelessWidget {
                           children: [
                             // 等级徽章
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: _getLevelColor(level), // 使用辅助函数获取颜色
                                 borderRadius: BorderRadius.circular(10),
@@ -214,13 +221,15 @@ class UserInfoBadge extends StatelessWidget {
                                 size: mini ? 11 : 12,
                                 color: Colors.green,
                               ),
-                              SizedBox(width: mini? 2 : 4),
+                              SizedBox(width: mini ? 2 : 4),
                             ],
                             // 连续签到图标和天数
                             Icon(
                               Icons.local_fire_department_rounded,
                               size: mini ? 11 : 12,
-                              color: consecutiveDays > 0 ? Colors.orange : secondaryTextColor,
+                              color: consecutiveDays > 0
+                                  ? Colors.orange
+                                  : secondaryTextColor,
                             ),
                             SizedBox(width: 2),
                             Text(
@@ -264,10 +273,7 @@ class UserInfoBadge extends StatelessWidget {
                   showIcon: !mini, // mini 模式下隐藏图标以节省空间
                   initialIsFollowing: iFollowTarget, // 传递计算好的初始关注状态
                   onFollowChanged: () {
-                    // 关注状态变化通常由 AuthProvider 通知并触发全局状态更新
-                    // 如果有需要，可以在这里触发特定用户信息的刷新:
-                    // context.read<UserInfoProvider>().refreshUserInfo(userId);
-                    // 但通常不是必需的，除非关注操作直接影响此 Badge 显示的其他信息（如粉丝数）
+                    context.read<UserInfoProvider>().refreshUserInfo(userId);
                   },
                 ),
               ],
@@ -318,7 +324,7 @@ class UserInfoBadge extends StatelessWidget {
                   if (showLevel || showCheckInStats)
                     Container(
                       height: mini ? 8 : 10,
-                      width: mini? 80 : 100,
+                      width: mini ? 80 : 100,
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(4),
@@ -354,10 +360,8 @@ class UserInfoBadge extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '加载失败', // 简洁的错误提示
-            style: TextStyle(
-                fontSize: isMini ? 12 : 14,
-                color: Colors.grey[600]
-            ),
+            style:
+                TextStyle(fontSize: isMini ? 12 : 14, color: Colors.grey[600]),
           ),
         ],
       ),

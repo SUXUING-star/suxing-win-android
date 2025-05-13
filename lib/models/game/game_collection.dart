@@ -28,8 +28,6 @@ class GameCollectionItem {
   });
 
   factory GameCollectionItem.fromJson(Map<String, dynamic> json) {
-    // 打印接收到的JSON数据，帮助调试
-    print('解析GameCollectionItem: $json');
 
     // 确保gameId是字符串
     String gameId;

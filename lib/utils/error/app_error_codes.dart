@@ -53,6 +53,7 @@ class AppErrorCodes {
       code: "CONF-002",
       userMessageTemplate: "应用初始化失败，请稍后重试",
       isRetryable: true); // 隐藏敏感信息时的提示，给个重试机会
+
   static const genericInitializationFailed = AppErrorDefinition(
       code: "INT-001",
       userMessageTemplate: "应用初始化失败，请稍后重试",

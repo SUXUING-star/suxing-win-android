@@ -17,6 +17,7 @@ class BaseInputDialog<T> extends StatefulWidget {
   final String cancelButtonText;
   final String confirmButtonText;
   final Color confirmButtonColor;
+  final Color confirmButtonTextColor;
   final Future<T?> Function() onConfirm; // 返回 T?
   final VoidCallback? onCancel;
   final IconData? iconData;
@@ -36,6 +37,7 @@ class BaseInputDialog<T> extends StatefulWidget {
     this.cancelButtonText = '取消',
     this.confirmButtonText = '确认',
     Color? confirmButtonColor,
+    this.confirmButtonTextColor = Colors.white,
     this.onCancel,
     this.iconData,
     this.iconColor,
@@ -374,6 +376,7 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
                 // --- 确认按钮 ---
                 FunctionalButton(
                   label: widget.confirmButtonText, // 确认按钮文字
+                  foregroundColor: widget.confirmButtonTextColor,
                   onPressed: _handleConfirm, // 确认按钮回调
                   isLoading: _isProcessing, // 显示加载状态
                   isEnabled: !_isProcessing, // 处理中时禁用

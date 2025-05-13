@@ -44,7 +44,6 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     try {
       final gameService = context.read<GameService>();
       final games = await gameService.getRandomGames(
-        limit: 5,
         excludeId: widget.currentGameId,
       );
 

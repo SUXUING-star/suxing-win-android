@@ -91,6 +91,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             forumService.incrementPostView(widget.postId);
           } catch (viewError) {}
         }
+
         // 更新状态
         setState(() {
           _post = details.post;

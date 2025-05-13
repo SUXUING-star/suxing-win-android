@@ -218,6 +218,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     int? pageToFetch, // 目标页码
     bool isInitialLoad = false,
     bool isRefresh = false,
+    bool forceRefresh = false,
   }) async {
     if (!mounted || _isLoadingData) return;
 
@@ -247,25 +248,31 @@ class _GamesListScreenState extends State<GamesListScreen>
       if (_currentCategory != null) {
         // *** 优先检查分类 ***
         result = await gameService.getGamesByCategoryWithInfo(
-            categoryName: _currentCategory!, // 使用分类 API
-            page: targetPage,
-            pageSize: _pageSize,
-            sortBy: _currentSortBy,
-            descending: _isDescending);
+          categoryName: _currentCategory!, // 使用分类 API
+          page: targetPage,
+          pageSize: _pageSize,
+          sortBy: _currentSortBy,
+          descending: _isDescending,
+          forceRefresh: forceRefresh,
+        );
       } else if (_currentTag != null) {
         result = await gameService.getGamesByTagWithInfo(
-            tag: _currentTag!,
-            page: targetPage,
-            pageSize: _pageSize,
-            sortBy: _currentSortBy,
-            descending: _isDescending);
+          tag: _currentTag!,
+          page: targetPage,
+          pageSize: _pageSize,
+          sortBy: _currentSortBy,
+          descending: _isDescending,
+          forceRefresh: forceRefresh,
+        );
       } else {
         // *** 最后是默认分页 ***
         result = await gameService.getGamesPaginatedWithInfo(
-            page: targetPage,
-            pageSize: _pageSize,
-            sortBy: _currentSortBy,
-            descending: _isDescending);
+          page: targetPage,
+          pageSize: _pageSize,
+          sortBy: _currentSortBy,
+          descending: _isDescending,
+          forceRefresh: forceRefresh,
+        );
       }
 
       if (!mounted) return;
@@ -421,7 +428,8 @@ class _GamesListScreenState extends State<GamesListScreen>
       if (_isLoadingData)
         return; // 如果其他数据加载正在进行，也阻止（虽然 _isPerformingRefresh 应该已经挡住了）
       _stopWatchingCache();
-      await _loadGames(pageToFetch: 1, isRefresh: true); // 加载第一页并标记为刷新
+      await _loadGames(
+          pageToFetch: 1, isRefresh: true, forceRefresh: true); // 加载第一页并标记为刷新
       // --- 刷新逻辑结束 ---
     } catch (e) {
       // print("下拉刷新执行过程中发生错误: $e");
