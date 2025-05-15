@@ -75,10 +75,12 @@ class _GameManagementState extends State<GameManagement>
     if (mounted) {
       setState(() {
         _isLoadingReviewQueue = false;
-        if (_pendingScrollController.hasClients)
+        if (_pendingScrollController.hasClients) {
           _pendingScrollController.jumpTo(0);
-        if (_rejectedScrollController.hasClients)
+        }
+        if (_rejectedScrollController.hasClients) {
           _rejectedScrollController.jumpTo(0);
+        }
       });
     }
   }
@@ -87,7 +89,9 @@ class _GameManagementState extends State<GameManagement>
     if (!mounted ||
         _isLoadingReviewQueue ||
         _isLoadingMoreReviewQueue ||
-        !_reviewQueueHasMore) return;
+        !_reviewQueueHasMore) {
+      return;
+    }
     setState(() {
       _isLoadingMoreReviewQueue = true;
     });

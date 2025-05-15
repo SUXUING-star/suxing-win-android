@@ -67,7 +67,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       final gameService = context.read<GameService>();
       final authProvider = Provider.of<AuthProvider>(context, listen: false);
       // 获取当前登录用户ID
-      final currentUserId = await authProvider.currentUserId;
+      final currentUserId = authProvider.currentUserId;
       _isCurrentUser = currentUserId == widget.userId;
 
       // 获取用户信息

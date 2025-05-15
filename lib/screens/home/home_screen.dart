@@ -203,7 +203,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     } catch (e) {
       // 这个 try-catch 实际上可能没啥用，因为核心操作 setState 不太可能抛出需要这里捕获的异常
       // 但保留着也没坏处
-      // debugPrint("HomeScreen _refreshData 内部发生预料之外的错误: $e");
     } finally {
       // 4. 清除刷新状态标记
       // 确保 mounted 检查

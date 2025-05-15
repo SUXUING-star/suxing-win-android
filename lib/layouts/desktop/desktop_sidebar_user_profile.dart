@@ -6,12 +6,11 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../models/user/user.dart';
-import '../../widgets/ui/image/safe_cached_image.dart'; // Import the new widget
 
 class DesktopSidebarUserProfile extends StatelessWidget {
   final VoidCallback onProfileTap;
 
-  DesktopSidebarUserProfile({
+  const DesktopSidebarUserProfile({
     super.key,
     required this.onProfileTap,
   });
@@ -107,7 +106,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                           ? SafeUserAvatar(
                               userId: user.id,
                               avatarUrl: user.avatar,
-                              username: user.username ?? '',
+                              username: user.username,
                               radius: 50,
                               enableNavigation: false,
                             )

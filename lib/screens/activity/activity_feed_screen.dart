@@ -116,7 +116,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // This screen always represents the public feed
     const String feedTypeStr = 'public';
     // Identifier includes feed type and current page
-    final String newWatchIdentifier = "${feedTypeStr}_p${_currentPage}_l20"; // Assuming limit 20
+    final String newWatchIdentifier =
+        "${feedTypeStr}_p${_currentPage}_l20"; // Assuming limit 20
 
     // Avoid restarting if already watching the same target
     if (_cacheSubscription != null &&
@@ -136,7 +137,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         limit: 20,
       )
           .listen(
-            (BoxEvent event) {
+        (BoxEvent event) {
           // Refresh only if an item is deleted (to update the list)
           if (event.deleted) {
             if (_isVisible) {
@@ -209,9 +210,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   /// Fetches activities (always public feed for this screen).
-  Future<void> _loadActivities({bool isInitialLoad = false,
-    bool isRefresh = false,
-    int pageToLoad = 1}) async {
+  Future<void> _loadActivities(
+      {bool isInitialLoad = false,
+      bool isRefresh = false,
+      bool forceRefresh = false,
+      int pageToLoad = 1}) async {
     // Prevent concurrent loads unless it's a refresh interrupting idle state
     if (_isLoadingData && !isRefresh) return;
     // Prevent refresh from interrupting pagination load
@@ -250,7 +253,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
       // Always fetch the public activity feed
       final result = await activityService.getPublicActivities(
-          page: pageToLoad, limit: limit);
+          page: pageToLoad, limit: limit, forceRefresh: forceRefresh);
 
       if (!mounted) return; // Check mount status after async operation
 
@@ -303,7 +306,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   /// Handles the pull-to-refresh gesture.
-  Future<void> _refreshData() async {
+  Future<void> _refreshData({bool forceRefresh = false}) async {
     // Avoid concurrent refreshes
     if (_isLoadingData || _isLoadingMore) return;
 
@@ -322,7 +325,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       _error = ''; // Clear error
     });
     // Fetch page 1 with the refresh flag
-    await _loadActivities(isRefresh: true, pageToLoad: 1);
+    await _loadActivities(
+        isRefresh: true, pageToLoad: 1, forceRefresh: forceRefresh);
   }
 
   /// Handles the press of the dedicated refresh button.
@@ -341,7 +345,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
       if (mounted && !_isLoadingData && !_isLoadingMore) {
-        _refreshData(); // Call the main refresh logic
+        _refreshData(forceRefresh: true); // Call the main refresh logic
       }
     });
   }
@@ -349,8 +353,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Loads the next page of activities for pagination.
   Future<void> _loadMoreActivities() async {
     // Check conditions before loading more
-    if (!_isInitialized || _error.isNotEmpty || _isLoadingData ||
-        _isLoadingMore || _pagination == null ||
+    if (!_isInitialized ||
+        _error.isNotEmpty ||
+        _isLoadingData ||
+        _isLoadingMore ||
+        _pagination == null ||
         _currentPage >= _pagination!.pages) {
       return;
     }
@@ -408,8 +415,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         !_isLoadingData &&
         _scrollController.position.pixels >=
             _scrollController.position.maxScrollExtent * 0.9 &&
-        _pagination != null && _currentPage < _pagination!.pages
-    ) {
+        _pagination != null &&
+        _currentPage < _pagination!.pages) {
       _loadMoreActivities();
     }
   }
@@ -430,8 +437,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void _toggleCollapseMode() {
     HapticFeedback.lightImpact();
     // Cycle through all available FeedCollapseMode values
-    setState(() =>
-    _collapseMode = FeedCollapseMode
+    setState(() => _collapseMode = FeedCollapseMode
         .values[(_collapseMode.index + 1) % FeedCollapseMode.values.length]);
   }
 
@@ -545,12 +551,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   /// Handles adding a comment to an activity.
-  Future<ActivityComment?> _handleAddComment(String activityId,
-      String content) async {
+  Future<ActivityComment?> _handleAddComment(
+      String activityId, String content) async {
     try {
       final activityService = context.read<UserActivityService>();
-      final comment = await activityService.commentOnActivity(
-          activityId, content);
+      final comment =
+          await activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // Return the new comment object. The ActivityCard component should
@@ -579,8 +585,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         try {
           final activityService = context.read<UserActivityService>();
-          final success = await activityService.deleteComment(
-              activityId, commentId);
+          final success =
+              await activityService.deleteComment(activityId, commentId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
             // Crucial: Need a mechanism to tell the specific ActivityCard
@@ -631,10 +637,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       key: Key(
           'activity_feed_visibility_${widget.key?.toString() ?? widget.title}'),
       onVisibilityChanged: (VisibilityInfo info) {
-        final bool currentlyVisible = info.visibleFraction >
-            0.8; // Consider visible if mostly on screen
-        if (currentlyVisible !=
-            _isVisible) { // Check if visibility state changed
+        final bool currentlyVisible =
+            info.visibleFraction > 0.8; // Consider visible if mostly on screen
+        if (currentlyVisible != _isVisible) {
+          // Check if visibility state changed
           final bool wasVisible = _isVisible; // Store previous state
           _isVisible = currentlyVisible; // Update current state
           // Trigger actions based on visibility change
@@ -651,7 +657,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       child: Scaffold(
         // AppBar might be handled globally, or add one here if needed for this specific screen
         // appBar: AppBar(title: Text(widget.title)),
-        body: SafeArea( // Ensure content respects device safe areas
+        body: SafeArea(
+          // Ensure content respects device safe areas
           child: _buildBodyContent(), // Build the main content
         ),
       ),
@@ -704,7 +711,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                       child: mainFeedContent,
                     ),
                     // Vertical divider between feed and panel
-                    VerticalDivider(width: 1,
+                    VerticalDivider(
+                        width: 1,
                         thickness: 1,
                         indent: 10,
                         endIndent: 10,
@@ -717,7 +725,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                           // Add padding for visual spacing
                           padding: const EdgeInsets.only(
                               top: 8.0, right: 8.0, bottom: 8.0),
-                          child: const HotActivitiesPanel(), // The hot activities widget
+                          child:
+                              const HotActivitiesPanel(), // The hot activities widget
                         ),
                       ),
                   ],
@@ -748,24 +757,15 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       // Use a key that changes only when necessary (e.g., collapse mode)
       key: ValueKey('public_feed_${_collapseMode.index}'),
       activities: _activities,
-      // Pass the loaded activities
-      // Pass loading states
       isLoading: _isLoadingData && _activities.isEmpty,
       isLoadingMore: _isLoadingMore,
-      // Pass error only if list is empty
       error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
       collapseMode: _collapseMode,
-      // Pass current collapse mode
       useAlternatingLayout: _useAlternatingLayout,
-      // Pass current layout mode
       scrollController: _scrollController,
-      // IMPORTANT: Pass the scroll controller
-      // Pass callbacks
       onActivityTap: _navigateToActivityDetail,
       onRefresh: _refreshData,
       onLoadMore: _loadMoreActivities,
-      // Let the feed handle triggering load more
-      // Pass interaction callbacks
       onDeleteActivity: _handleDeleteActivity,
       onLikeActivity: _handleLikeActivity,
       onUnlikeActivity: _handleUnlikeActivity,
@@ -789,45 +789,33 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
               onTap: _toggleCollapseMode,
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                  // Use theme colors for better adaptability
-                    color: Theme
-                        .of(context)
+                    // Use theme colors for better adaptability
+                    color: Theme.of(context)
                         .colorScheme
                         .primaryContainer
                         .withOpacity(0.5),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Theme
-                        .of(context)
-                        .colorScheme
-                        .primaryContainer)
-                ),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.primaryContainer)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                        _getCollapseModeIcon(),
+                    Icon(_getCollapseModeIcon(),
                         size: 18, // Slightly smaller icon
-                        color: Theme
-                            .of(context)
-                            .colorScheme
-                            .onPrimaryContainer
-                    ),
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer),
                     const SizedBox(width: 6),
-                    Text(
-                        _getCollapseModeText(),
+                    Text(_getCollapseModeText(),
                         style: TextStyle(
-                          color: Theme
-                              .of(context)
-                              .colorScheme
-                              .onPrimaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w500, // Medium weight
                           fontSize: 13, // Slightly smaller text
-                        )
-                    ),
+                        )),
                   ],
                 ),
               ),
@@ -837,9 +825,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
           // Refresh Button
           IconButton(
-            icon: RotationTransition( // Apply rotation animation
-              turns: Tween(begin: 0.0, end: 1.0).animate(
-                  _refreshAnimationController),
+            icon: RotationTransition(
+              // Apply rotation animation
+              turns: Tween(begin: 0.0, end: 1.0)
+                  .animate(_refreshAnimationController),
               child: const Icon(Icons.refresh_outlined), // Use outlined icon
             ),
             tooltip: '刷新',

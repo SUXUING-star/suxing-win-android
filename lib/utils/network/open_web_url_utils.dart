@@ -73,17 +73,18 @@ class OpenWebUrlUtils {
       return;
     }
 
-    if (await canLaunchUrl(uri)) {
+    final can = await canLaunchUrl(uri);
+    if (can) {
       try {
         await launchUrl(
           uri,
           mode: LaunchMode.externalApplication,
         );
       } catch (e) {
-        AppSnackBar.showError(context, '无法打开外部链接: $e');
+        //
       }
     } else {
-      AppSnackBar.showError(context, '不支持的链接类型或无法启动外部应用');
+      //
     }
   }
 }

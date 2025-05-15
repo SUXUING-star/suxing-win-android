@@ -1,6 +1,6 @@
 // lib/widgets/ui/buttons/follow_user_button.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
@@ -31,7 +31,8 @@ class FollowUserButton extends StatefulWidget {
   _FollowUserButtonState createState() => _FollowUserButtonState();
 }
 
-class _FollowUserButtonState extends State<FollowUserButton> {
+class _FollowUserButtonState extends State<FollowUserButton>
+    with SnackBarNotifierMixin {
   late bool _isFollowing;
   bool _isLoading = false; // 只在 API 调用期间为 true
   bool _internalStateInitialized = false; // 标记内部状态是否已初始化
@@ -71,8 +72,6 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     // 只有当父组件传递的状态确实变化了，才更新
     if (widget.initialIsFollowing != null &&
         widget.initialIsFollowing != _isFollowing) {
-      print(
-          'FollowUserButton (${widget.userId}): didUpdateWidget - State updated from parent: ${widget.initialIsFollowing}');
       // 只有在内部状态已经初始化后，才接受来自父组件的更新
       // 避免覆盖用户刚刚点击操作后的乐观 UI 状态
       // （或者，如果需要严格同步父状态，可以去掉 _internalStateInitialized 判断）
@@ -102,7 +101,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     final followService = context.read<UserFollowService>();
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isLoggedIn) {
-      AppSnackBar.showInfo(context, '请先登录');
+      showSnackbar(message: '请先登录', type: SnackbarType.info);
       return;
     }
     if (_isLoading) return; // 防止重复点击
@@ -141,7 +140,8 @@ class _FollowUserButtonState extends State<FollowUserButton> {
           _isFollowing = oldState; // 恢复旧状态
           _isLoading = false;
         });
-        AppSnackBar.showError(context, oldState ? '取消关注失败' : '关注失败');
+        showSnackbar(
+            message: oldState ? '取消关注失败' : '关注失败', type: SnackbarType.error);
       }
     } catch (e) {
       if (_mounted) {
@@ -150,13 +150,15 @@ class _FollowUserButtonState extends State<FollowUserButton> {
           _isFollowing = oldState; // 恢复旧状态
           _isLoading = false;
         });
-        AppSnackBar.showError(context, '操作失败: ${e.toString()}');
+        showSnackbar(
+            message: '操作失败: ${e.toString()}', type: SnackbarType.error);
       }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     // --- UI 构建逻辑基本不变，依赖 _isFollowing 和 _isLoading ---
     final themeColor = widget.color ?? Theme.of(context).primaryColor;
 

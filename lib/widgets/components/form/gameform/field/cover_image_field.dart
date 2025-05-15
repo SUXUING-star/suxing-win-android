@@ -28,18 +28,6 @@ class CoverImageField extends StatelessWidget {
     }
   }
 
-  Future<void> _showUrlDialog(BuildContext context) async {
-    if (isLoading) return;
-    final currentUrl =
-        coverImageSource is String ? coverImageSource as String : '';
-    final result = await showDialog<String>(
-      context: context,
-      builder: (context) => ImageUrlDialog(initialUrl: currentUrl),
-    );
-    if (result != null && result != currentUrl) {
-      onChanged(result);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -62,19 +50,6 @@ class CoverImageField extends StatelessWidget {
                 // 注意 onPressed 需要一个无参数回调
                 onPressed: () => _pickCoverImage(context),
                 isDisabled: isLoading, // 根据父组件状态禁用
-                isPrimaryAction: true,
-              ),
-            ),
-            const SizedBox(width: 12), // 按钮间距
-
-            // --- 使用 AppButton 替换图片链接按钮 ---
-            Expanded(
-              // 使用 Expanded
-              child: AppButton(
-                icon: const Icon(Icons.link), // 传入图标
-                text: '图片链接',
-                onPressed: () => _showUrlDialog(context),
-                isDisabled: isLoading,
                 isPrimaryAction: true,
               ),
             ),

@@ -7,7 +7,6 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 使用 AppText
 import '../menus/context_menu_bubble.dart'; // 使用 ContextMenuBubble
 
-
 class TextInputField extends StatefulWidget {
   final String? slotName; // 槽名称，用于状态管理
   final TextEditingController? controller;
@@ -260,6 +259,8 @@ class _TextInputFieldState extends State<TextInputField> {
     _hideContextMenu();
     _menuAnchorPosition = globalPosition;
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+    if (!mounted) return;
+
     final bool canPaste = clipboardData?.text?.isNotEmpty ?? false;
     final TextSelection selection = _controller.selection;
     final bool canCopy = selection.isValid && !selection.isCollapsed;
@@ -317,10 +318,11 @@ class _TextInputFieldState extends State<TextInputField> {
     }
 
     if (actions.isEmpty) return;
-    final OverlayState overlayState = Overlay.of(context);
+    final OverlayState overlayState = Overlay.of(this.context);
     final RenderBox? textFieldRenderBox =
         _textFieldKey.currentContext?.findRenderObject() as RenderBox?;
-    final Size screenSize = MediaQuery.of(context).size;
+
+    final Size screenSize = MediaQuery.of(this.context).size;
     Offset textFieldOrigin = Offset.zero;
     Size textFieldSize = Size.zero;
     if (textFieldRenderBox != null && textFieldRenderBox.hasSize) {

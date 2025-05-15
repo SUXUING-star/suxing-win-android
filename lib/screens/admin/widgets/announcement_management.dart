@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/announcement/announcement.dart';
 import '../../../services/main/announcement/announcement_service.dart';
 import '../../../widgets/components/dialogs/announcement/announcement_dialog.dart';
@@ -14,9 +15,8 @@ class AnnouncementManagement extends StatefulWidget {
   State<AnnouncementManagement> createState() => _AnnouncementManagementState();
 }
 
-class _AnnouncementManagementState extends State<AnnouncementManagement> {
-
-
+class _AnnouncementManagementState extends State<AnnouncementManagement>
+    with SnackBarNotifierMixin {
   bool _isLoading = false;
   List<AnnouncementFull> _announcements = [];
   int _currentPage = 1;
@@ -39,7 +39,8 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
     try {
       final announcementService = context.read<AnnouncementService>();
       // 获取公告列表
-      final result = await announcementService.getAllAnnouncements(_currentPage, 10);
+      final result =
+          await announcementService.getAllAnnouncements(_currentPage, 10);
 
       setState(() {
         if (result['announcements'] != null) {
@@ -65,7 +66,8 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
   }
 
   // 显示创建/编辑公告对话框
-  Future<void> _showAnnouncementForm({AnnouncementFull? existingAnnouncement}) async {
+  Future<void> _showAnnouncementForm(
+      {AnnouncementFull? existingAnnouncement}) async {
     final announcement = existingAnnouncement ?? AnnouncementFull.createNew();
     final announcementService = context.read<AnnouncementService>();
 
@@ -95,20 +97,13 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
           // 创建新公告
           await announcementService.createAnnouncement(result);
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('新公告已创建'), backgroundColor: Colors.green),
-            );
-          }
+          showSnackbar(message: '新公告已创建', type: SnackbarType.success);
         } else {
           // 更新现有公告
-          await announcementService.updateAnnouncement(existingAnnouncement.id, result);
+          await announcementService.updateAnnouncement(
+              existingAnnouncement.id, result);
 
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('公告已更新'), backgroundColor: Colors.green),
-            );
-          }
+          showSnackbar(message: '公告已更新', type: SnackbarType.success);
         }
 
         // 重新加载公告列表
@@ -118,39 +113,36 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
           _isLoading = false;
           _errorMessage = '保存公告失败: $e';
         });
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('操作失败: $e'), backgroundColor: Colors.red),
-          );
-        }
+        showSnackbar(message: '操作失败: $e', type: SnackbarType.error);
       }
     }
   }
 
   // 删除公告
   Future<void> _deleteAnnouncement(String id) async {
+    final announcementService = context.read<AnnouncementService>();
     // 显示确认对话框
     final bool confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('确认删除'),
-        content: const Text('确定要删除这条公告吗？此操作不可撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => NavigationUtils.of(context).pop(false),
-            child: const Text('取消'),
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('确认删除'),
+            content: const Text('确定要删除这条公告吗？此操作不可撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => NavigationUtils.of(context).pop(false),
+                child: const Text('取消'),
+              ),
+              TextButton(
+                onPressed: () => NavigationUtils.of(context).pop(true),
+                style: TextButton.styleFrom(
+                  foregroundColor: Colors.red,
+                ),
+                child: const Text('删除'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => NavigationUtils.of(context).pop(true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
-            child: const Text('删除'),
-          ),
-        ],
-      ),
-    ) ?? false;
+        ) ??
+        false;
 
     if (!confirm) return;
 
@@ -160,15 +152,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
     });
 
     try {
-
-      final announcementService = context.read<AnnouncementService>();
       await announcementService.deleteAnnouncement(id);
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('公告已删除'), backgroundColor: Colors.green),
-        );
-      }
+      showSnackbar(message: '公告已删除', type: SnackbarType.success);
 
       // 重新加载公告列表
       await _loadAnnouncements();
@@ -178,11 +164,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
         _errorMessage = '删除公告失败: $e';
       });
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('删除失败: $e'), backgroundColor: Colors.red),
-        );
-      }
+      showSnackbar(message: '删除失败: $e', type: SnackbarType.error);
     }
   }
 
@@ -209,6 +191,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -232,9 +215,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
     }
 
     return Scaffold(
-      body: _announcements.isEmpty
-          ? _buildEmptyState()
-          : _buildContent(),
+      body: _announcements.isEmpty ? _buildEmptyState() : _buildContent(),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAnnouncementForm(),
         tooltip: '创建新公告',
@@ -288,11 +269,11 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
                 IconButton(
                   onPressed: _currentPage > 1
                       ? () {
-                    setState(() {
-                      _currentPage--;
-                    });
-                    _loadAnnouncements();
-                  }
+                          setState(() {
+                            _currentPage--;
+                          });
+                          _loadAnnouncements();
+                        }
                       : null,
                   icon: const Icon(Icons.chevron_left),
                 ),
@@ -300,11 +281,11 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
                 IconButton(
                   onPressed: _currentPage < _totalPages
                       ? () {
-                    setState(() {
-                      _currentPage++;
-                    });
-                    _loadAnnouncements();
-                  }
+                          setState(() {
+                            _currentPage++;
+                          });
+                          _loadAnnouncements();
+                        }
                       : null,
                   icon: const Icon(Icons.chevron_right),
                 ),
@@ -312,86 +293,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
             ),
           ),
       ],
-    );
-  }
-
-  Widget _buildAnnouncementCard(AnnouncementFull announcement) {
-    final bool isActive = announcement.isActive;
-    final String type = announcement.type;
-    final Color typeColor = _getTypeColor(type);
-    final bool isExpired = announcement.endDate.isBefore(DateTime.now());
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(
-          color: isActive && !isExpired
-              ? typeColor.withOpacity(0.5)
-              : Colors.grey.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          ListTile(
-            leading: Icon(_getTypeIcon(type), color: typeColor),
-            title: Text(announcement.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text(
-              '优先级: ${announcement.priority} · ' '${announcement.startDate.day}/${announcement.startDate.month} - ${announcement.endDate.day}/${announcement.endDate.month}',
-            ),
-            trailing: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: isActive
-                    ? (isExpired ? Colors.grey : Colors.green)
-                    : Colors.grey,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Text(
-                isActive
-                    ? (isExpired ? '已过期' : '活跃')
-                    : '未激活',
-                style: const TextStyle(color: Colors.white, fontSize: 12),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: Text(
-              announcement.content,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.visibility),
-                  tooltip: '预览',
-                  onPressed: () => _previewAnnouncement(announcement),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.edit),
-                  tooltip: '编辑',
-                  onPressed: () => _showAnnouncementForm(existingAnnouncement: announcement),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.delete),
-                  tooltip: '删除',
-                  color: Colors.red,
-                  onPressed: () => _deleteAnnouncement(announcement.id),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
     );
   }
 
@@ -427,5 +328,86 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
       default: // 'info'
         return Colors.teal;
     }
+  }
+
+  Widget _buildAnnouncementCard(AnnouncementFull announcement) {
+    final bool isActive = announcement.isActive;
+    final String type = announcement.type;
+    final Color typeColor = _getTypeColor(type);
+    final bool isExpired = announcement.endDate.isBefore(DateTime.now());
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(
+          color: isActive && !isExpired
+              ? typeColor.withOpacity(0.5)
+              : Colors.grey.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ListTile(
+            leading: Icon(_getTypeIcon(type), color: typeColor),
+            title: Text(announcement.title,
+                style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text(
+              '优先级: ${announcement.priority} · '
+              '${announcement.startDate.day}/${announcement.startDate.month} - ${announcement.endDate.day}/${announcement.endDate.month}',
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: isActive
+                    ? (isExpired ? Colors.grey : Colors.green)
+                    : Colors.grey,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                isActive ? (isExpired ? '已过期' : '活跃') : '未激活',
+                style: const TextStyle(color: Colors.white, fontSize: 12),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: Text(
+              announcement.content,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(8, 0, 8, 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.visibility),
+                  tooltip: '预览',
+                  onPressed: () => _previewAnnouncement(announcement),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit),
+                  tooltip: '编辑',
+                  onPressed: () =>
+                      _showAnnouncementForm(existingAnnouncement: announcement),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete),
+                  tooltip: '删除',
+                  color: Colors.red,
+                  onPressed: () => _deleteAnnouncement(announcement.id),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

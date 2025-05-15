@@ -8,6 +8,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../providers/auth/auth_provider.dart';
 import '../../../services/main/user/user_service.dart';
 import '../../../services/main/user/user_ban_service.dart';
@@ -20,9 +21,11 @@ class UserManagement extends StatefulWidget {
   State<UserManagement> createState() => _UserManagementState();
 }
 
-class _UserManagementState extends State<UserManagement> {
+class _UserManagementState extends State<UserManagement>
+    with SnackBarNotifierMixin {
   bool _loading = false;
   int _refreshCounter = 0;
+  late final UserBanService _banService;
 
   // 刷新用户列表
   void _refreshUserList() {
@@ -31,10 +34,26 @@ class _UserManagementState extends State<UserManagement> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _banService = context.read<UserBanService>();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   // --- 对话框函数 (_showBanDialog, _showUnbanDialog) 保持不变 ---
   // (请确保它们内部也使用 user['id'] 作为用户ID)
   Future<void> _showBanDialog(
-      BuildContext context, Map<String, dynamic> user) async {
+      BuildContext invokerContext, Map<String, dynamic> user) async {
     final userBanService = context.read<UserBanService>();
     final TextEditingController reasonController = TextEditingController();
     DateTime? endTime;
@@ -98,12 +117,13 @@ class _UserManagementState extends State<UserManagement> {
                             firstDate: now,
                             lastDate: now.add(Duration(days: 365 * 10)), // 允许更长
                           );
+                          if (!mounted) return;
 
                           if (date != null) {
                             final initialPickTime = TimeOfDay.fromDateTime(
                                 endTime ?? now.add(Duration(days: 7)));
                             final time = await showTimePicker(
-                              context: context,
+                              context: this.context,
                               initialTime: initialPickTime,
                             );
 
@@ -171,7 +191,8 @@ class _UserManagementState extends State<UserManagement> {
                         endTime: isPermanent ? null : endTime,
                         bannedBy: authProvider.currentUser!.id,
                       );
-                      NavigationUtils.pop(dialogContext);
+                      if (!mounted) return;
+                      NavigationUtils.pop(context);
                       if (mounted) {
                         _refreshUserList();
                         AppSnackBar.showSuccess(
@@ -193,17 +214,15 @@ class _UserManagementState extends State<UserManagement> {
   }
 
   Future<void> _showUnbanDialog(
-      BuildContext context, Map<String, dynamic> user) async {
-    final rootContext = context;
-    final userBanService = context.read<UserBanService>();
+      BuildContext invokerContext, Map<String, dynamic> user) async {
     await showDialog(
-      context: context,
+      context: invokerContext,
       builder: (dialogContext) => AlertDialog(
         title: Text('解除封禁'),
         content: Text('确定要解除用户 ${user['username']} 的封禁吗？'),
         actions: [
           TextButton(
-            onPressed: () => NavigationUtils.pop(dialogContext),
+            onPressed: () => NavigationUtils.pop(context),
             child: Text('取消'),
           ),
           ElevatedButton(
@@ -212,17 +231,19 @@ class _UserManagementState extends State<UserManagement> {
                 : () async {
                     setState(() => _loading = true);
                     try {
-                      await userBanService.unbanUser(user['id'].toString()); // <--- 使用 'id'
-                      NavigationUtils.pop(dialogContext);
+                      await _banService
+                          .unbanUser(user['id'].toString()); // <--- 使用 'id'
+                      if (!mounted) return;
+                      NavigationUtils.pop(context);
                       if (mounted) {
                         _refreshUserList();
-                        AppSnackBar.showSuccess(
-                            context, '已解除用户 ${user['username']} 的封禁');
                       }
+                      showSnackbar(
+                          message: '已解除用户 ${user['username']} 的封禁',
+                          type: SnackbarType.success);
                     } catch (e) {
-                      if (mounted) {
-                        AppSnackBar.showError(context, '操作失败：$e');
-                      }
+                      showSnackbar(
+                          message: '操作失败：$e', type: SnackbarType.error);
                     } finally {
                       if (mounted) setState(() => _loading = false);
                     }
@@ -236,6 +257,7 @@ class _UserManagementState extends State<UserManagement> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     final userService = context.read<UserService>();
     final authProvider =
         Provider.of<AuthProvider>(context, listen: false); // 获取一次即可
@@ -370,18 +392,18 @@ class _UserManagementState extends State<UserManagement> {
                                         await userService.updateUserAdminStatus(
                                             userId, value); // 使用 userId
                                         _refreshUserList(); // 刷新整个列表
-                                        if (mounted) {
-                                          AppSnackBar.showSuccess(context,
-                                              ('用户 ${user['username']} 已${value ? '设置' : '取消'}管理员'));
-                                        }
+                                        showSnackbar(
+                                            message:
+                                                '用户 ${user['username']} 已${value ? '设置' : '取消'}管理员',
+                                            type: SnackbarType.success);
                                       } catch (e) {
-                                        if (mounted) {
-                                          AppSnackBar.showError(
-                                              context, '操作失败: $e');
-                                        }
+                                        showSnackbar(
+                                            message: '操作失败: $e',
+                                            type: SnackbarType.error);
                                       } finally {
-                                        if (mounted)
+                                        if (mounted) {
                                           setState(() => _loading = false);
+                                        }
                                       }
                                     },
                               materialTapTargetSize:

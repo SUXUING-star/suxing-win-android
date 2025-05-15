@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 class CustomAvatarCropper {
   // 保存原始图片的引用，用于重新裁剪
@@ -11,10 +12,10 @@ class CustomAvatarCropper {
 
   /// 从相册选择并裁剪头像
   static Future<void> pickAndCropImage(
-      BuildContext context, {
-        required String? currentAvatarUrl,
-        required Function(File) onCropComplete,
-      }) async {
+    BuildContext context, {
+    required String? currentAvatarUrl,
+    required Function(File) onCropComplete,
+  }) async {
     final ImagePicker picker = ImagePicker();
 
     try {
@@ -50,7 +51,8 @@ class CustomAvatarCropper {
   }
 
   /// 显示自定义裁剪对话框
-  static Future<File?> _showCustomCropper(BuildContext context, File imageFile) async {
+  static Future<File?> _showCustomCropper(
+      BuildContext context, File imageFile) async {
     return await showDialog<File>(
       context: context,
       barrierDismissible: false,
@@ -60,10 +62,10 @@ class CustomAvatarCropper {
 
   /// 显示预览确认对话框
   static Future<void> _showPreviewDialog(
-      BuildContext context,
-      File imageFile,
-      Function(File) onCropComplete,
-      ) async {
+    BuildContext context,
+    File imageFile,
+    Function(File) onCropComplete,
+  ) async {
     await showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -141,7 +143,8 @@ class _CustomCropperDialog extends StatefulWidget {
   _CustomCropperDialogState createState() => _CustomCropperDialogState();
 }
 
-class _CustomCropperDialogState extends State<_CustomCropperDialog> {
+class _CustomCropperDialogState extends State<_CustomCropperDialog>
+    with SnackBarNotifierMixin {
   ui.Image? _image;
   bool _imageLoaded = false;
   double _scale = 1.0;
@@ -170,7 +173,8 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
       if (mounted) {
         setState(() {
           _image = frame.image;
-          _imageSize = Size(_image!.width.toDouble(), _image!.height.toDouble());
+          _imageSize =
+              Size(_image!.width.toDouble(), _image!.height.toDouble());
           _imageLoaded = true;
         });
 
@@ -199,8 +203,10 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
     final Size viewportSize = box.size;
 
     // 计算裁剪区域大小和中心点
-    final double cropSize = math.min(viewportSize.width, viewportSize.height) * _cropRatio;
-    final Offset viewportCenter = Offset(viewportSize.width / 2, viewportSize.height / 2);
+    final double cropSize =
+        math.min(viewportSize.width, viewportSize.height) * _cropRatio;
+    final Offset viewportCenter =
+        Offset(viewportSize.width / 2, viewportSize.height / 2);
 
     // 图片宽高比
     final double imageAspectRatio = _imageSize.width / _imageSize.height;
@@ -235,7 +241,8 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
       _position = position;
     });
 
-    print('重置图片位置 - 中心点: $viewportCenter, 缩放: $_scale, 位置: $_position, 裁剪大小: $cropSize');
+    print(
+        '重置图片位置 - 中心点: $viewportCenter, 缩放: $_scale, 位置: $_position, 裁剪大小: $cropSize');
   }
 
   // 处理缩放开始事件
@@ -267,8 +274,10 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
       final Size viewportSize = box.size;
 
       // 裁剪区域
-      final double cropSize = math.min(viewportSize.width, viewportSize.height) * _cropRatio;
-      final Offset cropCenter = Offset(viewportSize.width / 2, viewportSize.height / 2);
+      final double cropSize =
+          math.min(viewportSize.width, viewportSize.height) * _cropRatio;
+      final Offset cropCenter =
+          Offset(viewportSize.width / 2, viewportSize.height / 2);
       final Rect cropRect = Rect.fromCenter(
         center: cropCenter,
         width: cropSize,
@@ -283,10 +292,14 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
       final double srcHeight = cropRect.height / _scale;
 
       // 确保不超出原图范围
-      final double clampedSrcX = math.max(0, math.min(srcX, _imageSize.width - 1));
-      final double clampedSrcY = math.max(0, math.min(srcY, _imageSize.height - 1));
-      final double clampedSrcWidth = math.min(_imageSize.width - clampedSrcX, srcWidth);
-      final double clampedSrcHeight = math.min(_imageSize.height - clampedSrcY, srcHeight);
+      final double clampedSrcX =
+          math.max(0, math.min(srcX, _imageSize.width - 1));
+      final double clampedSrcY =
+          math.max(0, math.min(srcY, _imageSize.height - 1));
+      final double clampedSrcWidth =
+          math.min(_imageSize.width - clampedSrcX, srcWidth);
+      final double clampedSrcHeight =
+          math.min(_imageSize.height - clampedSrcY, srcHeight);
 
       final Rect srcRect = Rect.fromLTWH(
         clampedSrcX,
@@ -295,7 +308,8 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
         clampedSrcHeight,
       );
 
-      print('裁剪参数 - 裁剪框: $cropRect, 源区域: $srcRect, 图片位置: $_position, 缩放: $_scale');
+      print(
+          '裁剪参数 - 裁剪框: $cropRect, 源区域: $srcRect, 图片位置: $_position, 缩放: $_scale');
 
       // 创建一个PictureRecorder绘制裁剪后的图像
       final recorder = ui.PictureRecorder();
@@ -308,8 +322,7 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
       final Path clipPath = Path()
         ..addOval(Rect.fromCircle(
             center: Offset(outputSize / 2, outputSize / 2),
-            radius: outputSize / 2
-        ));
+            radius: outputSize / 2));
 
       canvas.clipPath(clipPath);
 
@@ -335,7 +348,8 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
 
       // 保存到临时文件
       final tempDir = Directory.systemTemp;
-      final tempFile = File('${tempDir.path}/cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png');
+      final tempFile = File(
+          '${tempDir.path}/cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png');
       await tempFile.writeAsBytes(buffer);
 
       return tempFile;
@@ -347,6 +361,7 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     return Dialog(
       backgroundColor: Colors.black,
       insetPadding: EdgeInsets.symmetric(horizontal: 40, vertical: 24),
@@ -393,12 +408,12 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
                     label: Text('确定'),
                     onPressed: () async {
                       final croppedFile = await _cropImage();
+                      if (!mounted) return;
                       if (croppedFile != null) {
-                        Navigator.of(context).pop(croppedFile);
+                        Navigator.of(this.context).pop(croppedFile);
                       } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('裁剪失败，请重试')),
-                        );
+                        showSnackbar(
+                            message: '裁剪失败，请重试', type: SnackbarType.error);
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -418,7 +433,8 @@ class _CustomCropperDialogState extends State<_CustomCropperDialog> {
   Widget _buildCropperUI() {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final cropSize = math.min(constraints.maxWidth, constraints.maxHeight) * _cropRatio;
+        final cropSize =
+            math.min(constraints.maxWidth, constraints.maxHeight) * _cropRatio;
 
         return Stack(
           fit: StackFit.expand,
@@ -502,12 +518,8 @@ class _CropPainter extends CustomPainter {
       ..isAntiAlias = true
       ..filterQuality = FilterQuality.high;
 
-    final Rect srcRect = Rect.fromLTWH(
-        0,
-        0,
-        image.width.toDouble(),
-        image.height.toDouble()
-    );
+    final Rect srcRect =
+        Rect.fromLTWH(0, 0, image.width.toDouble(), image.height.toDouble());
 
     final Rect destRect = Rect.fromLTWH(
       position.dx,
@@ -558,10 +570,7 @@ class _CropPainter extends CustomPainter {
       ..isAntiAlias = true;
 
     canvas.drawCircle(
-        Offset(size.width / 2, size.height / 2),
-        cropSize / 2,
-        borderPaint
-    );
+        Offset(size.width / 2, size.height / 2), cropSize / 2, borderPaint);
   }
 
   @override

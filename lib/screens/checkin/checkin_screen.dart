@@ -146,11 +146,15 @@ class _CheckInScreenState extends State<CheckInScreen>
           if (dayData['checkedIn'] == true && dayData['day'] != null) {
             // 安全解析日期数字
             int? dayNum;
-            if (dayData['day'] is int)
+            if (dayData['day'] is int) {
               dayNum = dayData['day'];
-            else if (dayData['day'] is String)
+            } else if (dayData['day'] is String){
               dayNum = int.tryParse(dayData['day']);
-            if (dayNum != null) checkedDays.add(dayNum);
+            }
+
+            if (dayNum != null) {
+              checkedDays.add(dayNum);
+            }
           }
         }
       }
@@ -172,6 +176,7 @@ class _CheckInScreenState extends State<CheckInScreen>
 
   /// 处理签到按钮点击事件
   Future<void> _handleCheckIn() async {
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     // 防止重复点击或在未加载/已签到时点击
     if ((_checkInStats?.hasCheckedToday ?? true) ||
         _checkInLoading ||
@@ -187,7 +192,7 @@ class _CheckInScreenState extends State<CheckInScreen>
 
       // **关键步骤：通知 AuthProvider 刷新用户状态**
       // 这会触发获取最新的 User 对象（包含更新后的经验、等级等）
-      Provider.of<AuthProvider>(context, listen: false).refreshUserState();
+      await authProvider.refreshUserState();
 
       // 播放签到成功粒子效果
       if (mounted) {

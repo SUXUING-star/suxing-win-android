@@ -42,7 +42,7 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
       final activityService = context.read<UserActivityService>();
       // 并行加载数据
       final results = await Future.wait([
-        activityService.getHotActivities(limit: 5),
+        activityService.getHotActivities(),
         activityService.getActivityTypeStats(),
       ]);
 

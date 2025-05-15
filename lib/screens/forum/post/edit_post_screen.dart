@@ -7,6 +7,7 @@ import 'package:suxingchahui/widgets/components/form/postform/field/post_guideli
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
@@ -20,7 +21,8 @@ class EditPostScreen extends StatefulWidget {
   _EditPostScreenState createState() => _EditPostScreenState();
 }
 
-class _EditPostScreenState extends State<EditPostScreen> {
+class _EditPostScreenState extends State<EditPostScreen>
+    with SnackBarNotifierMixin {
   final List<PostTag> _availablePostTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _isLoading = true;
@@ -44,12 +46,31 @@ class _EditPostScreenState extends State<EditPostScreen> {
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      AppSnackBar.showError(context, '加载帖子数据失败: ${e.toString()}');
+      showSnackbar(
+          message: '加载帖子数据失败: ${e.toString()}', type: SnackbarType.error);
+    }
+  }
+
+  Future<void> _submitEdit(PostFormData data) async {
+    try {
+      setState(() => _isSubmitting = true);
+      final forumService = context.read<ForumService>();
+      final postTags = PostTagsUtils.tagsToStringList(data.tags);
+      await forumService.updatePost(
+          _post!.id, data.title, data.content, postTags);
+      showSnackbar(message: "编辑成功", type: SnackbarType.success);
+      if (!mounted) return;
+      NavigationUtils.pop(context, true);
+    } catch (e) {
+      showSnackbar(message: '编辑失败: ${e.toString()}', type: SnackbarType.error);
+    } finally {
+      setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     if (_isLoading) {
       return LoadingWidget.fullScreen(message: "正在加载数据");
     }
@@ -95,21 +116,5 @@ class _EditPostScreenState extends State<EditPostScreen> {
         guidelines: PostConstants.postGuideRules,
       ),
     );
-  }
-
-  Future<void> _submitEdit(PostFormData data) async {
-    try {
-      setState(() => _isSubmitting = true);
-      final forumService = context.read<ForumService>();
-      final postTags = PostTagsUtils.tagsToStringList(data.tags);
-      await forumService.updatePost(
-          _post!.id, data.title, data.content, postTags);
-      AppSnackBar.showSuccess(context, "编辑成功");
-      NavigationUtils.pop(context, true);
-    } catch (e) {
-      AppSnackBar.showError(context, '编辑失败: ${e.toString()}');
-    } finally {
-      setState(() => _isSubmitting = false);
-    }
   }
 }

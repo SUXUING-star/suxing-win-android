@@ -494,7 +494,8 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                 // 延迟执行 pop 操作确保状态更新完成
                                 Future.delayed(Duration.zero, () {
                                   if (mounted) {
-                                    Navigator.of(context).pop(); // 取消直接返回 null
+                                    Navigator.of(this.context)
+                                        .pop(); // 取消直接返回 null
                                   }
                                 });
                               },

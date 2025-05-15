@@ -70,7 +70,7 @@ class UserBanDialog {
       // --- 按钮和关闭行为固定 ---
       confirmButtonText: fixedConfirmButtonText, // 使用内部固定的按钮文字
       confirmButtonColor: errorColor, // 按钮颜色固定
-      onConfirm: () async => null, // 固定：点击确认按钮不关闭
+      onConfirm: () async => (), // 固定：点击确认按钮不关闭
       showCancelButton: false, // 固定：不显示取消按钮
       barrierDismissible: false, // 固定：不可点击外部关闭
       allowDismissWhenNotProcessing: false, // 固定：不可使用返回键关闭

@@ -5,7 +5,6 @@ import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保 Acti
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
-// import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart'; // 如果需要缩放动画再取消注释
 
 // --- Section 组件 Imports ---
 import 'sections/activity_info_section.dart';
@@ -59,9 +58,6 @@ class ActivityDetailContent extends StatelessWidget {
         onEditActivity: onEditActivity,
         onDeleteActivity: onDeleteActivity,
         isDesktop: isDesktop,
-        // 注意：ActivityInfoSection 内部需要自行处理边距和背景，
-        // 或者在这里外面再包一层 Container (如果需要背景/边框)
-        // 为了模仿 GameDetailContent，这里不加 Wrapper
       ),
     );
   }

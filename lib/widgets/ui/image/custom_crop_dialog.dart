@@ -1,18 +1,18 @@
-// modern_crop_dialog.dart (完整代码，直接复用 FunctionalButton)
+// custom_crop_dialog.dart (完整代码，直接复用 FunctionalButton)
 
 import 'dart:async';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img; // Image 库
-import 'package:vector_math/vector_math_64.dart' show Vector3; // 用于矩阵变换
-import '../../../../widgets/ui/buttons/functional_button.dart'; // *** 确保这个路径是正确的！ ***
-import '../../../../utils/font/font_config.dart'; // *** 确保这个路径是正确的！ ***
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:vector_math/vector_math_64.dart' show Vector3;
+import '../../../../widgets/ui/buttons/functional_button.dart';
+import '../../../../utils/font/font_config.dart';
 
-// --- 裁剪框绘制 Painter (这个保持不变) ---
+// --- 裁剪框绘制 Painter ---
 class _CropOverlayPainter extends CustomPainter {
   final double cropCircleRadius;
   final Offset centerOffset;
@@ -43,12 +43,11 @@ class _CropOverlayPainter extends CustomPainter {
         oldDelegate.centerOffset != centerOffset;
   }
 }
-// --- 结束 Painter ---
 
 // --- Dialog 的入口 (保持不变) ---
-class ModernCropDialog extends StatelessWidget {
+class CustomCropDialog extends StatelessWidget {
   // 改回 StatelessWidget，因为状态在 Content 里
-  const ModernCropDialog({super.key});
+  const CustomCropDialog({super.key});
 
   static Future<Uint8List?> show(BuildContext context) {
     return showDialog<Uint8List?>(
@@ -62,7 +61,7 @@ class ModernCropDialog extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16.0),
                 side: BorderSide(color: Colors.grey.shade300, width: 1)),
             insetPadding: const EdgeInsets.all(20),
-            child: const ModernCropDialogContent(), // Dialog 内容由这个 Widget 负责
+            child: const CustomCropDialogContent(), // Dialog 内容由这个 Widget 负责
           ),
         );
       },
@@ -76,18 +75,16 @@ class ModernCropDialog extends StatelessWidget {
     return const SizedBox.shrink(); // 或者 throw UnimplementedError();
   }
 }
-// --- 结束 Dialog 入口 ---
 
-// --- Dialog 内容和状态管理 ---
-class ModernCropDialogContent extends StatefulWidget {
-  const ModernCropDialogContent({super.key});
+class CustomCropDialogContent extends StatefulWidget {
+  const CustomCropDialogContent({super.key});
 
   @override
-  _ModernCropDialogContentState createState() =>
-      _ModernCropDialogContentState();
+  _CustomCropDialogContentState createState() =>
+      _CustomCropDialogContentState();
 }
 
-class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
+class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
   // --- 状态变量 (和之前一样) ---
   final ImagePicker _picker = ImagePicker();
   final TransformationController _transformationController =
@@ -120,7 +117,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
   // --- 图片选择逻辑 (包含初始缩放) ---
   Future<void> _pickImage() async {
     setState(() {
-      /* ... 重置状态 ... */
       _isLoadingImage = true;
       _originalImageBytes = null;
       _croppedPreviewBytes = null;
@@ -213,20 +209,22 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
     if (_originalImageBytes == null || !mounted) return;
     if (mounted) setState(() => _isPreviewLoading = true);
     final previewBytes = await Future(() => _performCrop(isPreview: true));
-    if (mounted)
+    if (mounted) {
       setState(() {
         _croppedPreviewBytes = previewBytes;
         _isPreviewLoading = false;
       });
+    }
   }
   // --- 结束 预览更新和防抖 ---
 
   // --- 计算裁剪矩形 (保持不变) ---
   Rect _calculateCropRect() {
-    /* ... 逻辑不变 ... */
     if (_decodedImage == null ||
         _cropAreaSize == null ||
-        _cropCircleRadius <= 0) return Rect.zero;
+        _cropCircleRadius <= 0) {
+      return Rect.zero;
+    }
     final Matrix4 matrix = _transformationController.value;
     final Offset cropAreaCenter =
         Offset(_cropAreaSize!.width / 2, _cropAreaSize!.height / 2);
@@ -266,7 +264,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
 
   // --- 执行裁剪 (保持不变) ---
   Uint8List? _performCrop({bool isPreview = false}) {
-    /* ... 逻辑不变 ... */
     if (_decodedImage == null || _originalImageBytes == null) return null;
     final Rect cropRect = _calculateCropRect();
     if (cropRect == Rect.zero || cropRect.width <= 0 || cropRect.height <= 0)
@@ -317,11 +314,9 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
 
   // --- 确认裁剪 (保持不变) ---
   void _confirmCrop() {
-    /* ... 逻辑不变 ... */
     if (_isProcessing || _croppedPreviewBytes == null) return;
     setState(() => _isProcessing = true);
     final finalBytes = _croppedPreviewBytes;
-    // 增加一个短暂延迟，让加载状态可见（可选）
     Future.delayed(const Duration(milliseconds: 100), () {
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -329,7 +324,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
       }
     });
   }
-  // --- 结束 确认裁剪 ---
 
   // --- **完整且使用 FunctionalButton** 的构建 UI 方法 ---
   @override
@@ -344,13 +338,10 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
     final double buttonIconSize = 18.0;
     final double buttonFontSize = 15.0;
     final EdgeInsets buttonPadding =
-        const EdgeInsets.symmetric(horizontal: 20, vertical: 10);
+        const EdgeInsets.symmetric(horizontal: 10, vertical: 10);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 12.0), // 内容区域的内边距
-      // 移除宽高限制，让 Dialog 的 SizedBox 控制
-      // width: dialogWidth,
-      // height: dialogHeight,
       child: Column(
         mainAxisSize: MainAxisSize.min, // 高度自适应
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -376,7 +367,7 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
                   flex: 6,
                   child: Container(
                     decoration: BoxDecoration(
-                        color: Colors.black87,
+                        color: Colors.black38,
                         borderRadius: BorderRadius.circular(8),
                         border: Border.all(color: Colors.grey.shade700)),
                     margin: const EdgeInsets.only(right: 8.0),
@@ -422,30 +413,25 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
 
                         Widget content;
                         if (_isLoadingImage) {
-                          /* ... 加载中 ... */
-                          content =
-                              const Center(child: CircularProgressIndicator());
+                          content = LoadingWidget.inline(
+                            size: 24,
+                          );
                         } else if (_originalImageBytes == null) {
-                          /* ... 选择按钮 ... */
                           content = Center(
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.upload_file),
-                              label: const Text('选择图片'),
+                            child: FunctionalButton(
+                              icon: Icons.upload_file,
+                              label: '选择图片',
                               onPressed: _pickImage,
-                              style: ElevatedButton.styleFrom(
-                                  padding: const EdgeInsets.symmetric(
-                                      horizontal: 24, vertical: 12),
-                                  textStyle: const TextStyle(fontSize: 16)),
+                              foregroundColor: Colors.black,
+                              backgroundColor: Colors.white,
                             ),
                           );
                         } else {
-                          /* ... 裁剪视图 ... */
                           content = ClipRect(
                             child: Stack(
                               alignment: Alignment.center,
                               children: [
                                 InteractiveViewer(
-                                  /* ... */
                                   transformationController:
                                       _transformationController,
                                   boundaryMargin:
@@ -498,7 +484,6 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
                                 fontSize: 16, fontWeight: FontWeight.w500)),
                         const SizedBox(height: 20),
                         CircleAvatar(
-                          /* ... 预览头像 ... */
                           radius: 60,
                           backgroundColor: Colors.grey.shade200,
                           backgroundImage: (_croppedPreviewBytes != null &&
@@ -599,5 +584,4 @@ class _ModernCropDialogContentState extends State<ModernCropDialogContent> {
       ),
     );
   }
-// --- 结束 构建 UI 方法 ---
-} // --- 结束 _ModernCropDialogContentState ---
+}

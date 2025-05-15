@@ -16,7 +16,7 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
   final VoidCallback onProfileTap;
 
-  TopNavigationBar(
+  const TopNavigationBar(
       {super.key, required this.onLogoTap, required this.onProfileTap});
 
   @override
@@ -93,7 +93,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       ),
     );
   }
-
 
   Widget _buildSearchBar(BuildContext context, double height, double iconSize) {
     return MouseRegion(

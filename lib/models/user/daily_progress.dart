@@ -1,6 +1,5 @@
 // lib/models/user/daily_progress.dart
 
-import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/models/task_style.dart';
 
 // 任务详情模型

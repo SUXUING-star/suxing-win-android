@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
-// Import the SafeCachedImage widget
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class ActivityTarget extends StatelessWidget {
@@ -26,29 +25,20 @@ class ActivityTarget extends StatelessWidget {
     // --- 直接用 activity.targetType ---
     switch (activity.targetType) {
       case 'game':
-        targetWidget =
-            _buildGameTarget(context);
+        targetWidget = _buildGameTarget(context);
         break;
       case 'post':
         targetWidget = _buildPostTarget(context);
         break;
       case 'user':
-        targetWidget =
-            _buildUserTarget(context); // 目标是用户
-        break;
-    // --- 新增: 处理 download 类型 (如果 metadata 里有信息) ---
-      case 'download':
-        targetWidget = _buildDownloadTarget(context); // 你可以创建一个新的方法
+        targetWidget = _buildUserTarget(context); // 目标是用户
         break;
       default:
-      // 可以考虑显示一个通用目标或者基于 targetId 的链接（如果需要）
-        targetWidget = Text('未知或不支持的目标类型: ${activity.targetType}');
-    // targetWidget = const SizedBox.shrink();
+        targetWidget = _buildDefaultUser(context);
     }
 
     return targetWidget;
   }
-
 
   Widget _buildGameTarget(BuildContext context) {
     // --- 使用 helper getter ---
@@ -69,14 +59,14 @@ class ActivityTarget extends StatelessWidget {
         children: [
           coverImage != null && coverImage.isNotEmpty // 增加非空判断
               ? SafeCachedImage(
-            imageUrl: coverImage,
-            width: imageSize,
-            height: imageSize,
-            fit: BoxFit.cover,
-            borderRadius: BorderRadius.circular(borderRadiusValue),
-          )
+                  imageUrl: coverImage,
+                  width: imageSize,
+                  height: imageSize,
+                  fit: BoxFit.cover,
+                  borderRadius: BorderRadius.circular(borderRadiusValue),
+                )
               : _buildPlaceholderImage(
-              'game'), // Fallback if no cover image URL
+                  'game'), // Fallback if no cover image URL
           SizedBox(width: 12 * cardHeight),
           Expanded(
             child: Text(
@@ -131,9 +121,7 @@ class ActivityTarget extends StatelessWidget {
   }
 
   Widget _buildUserTarget(BuildContext context) {
-    // --- *** 使用 activity.targetId *** ---
     final targetUserId = activity.targetId;
-    // 如果 targetUserId 为空，则不显示任何内容
     if (targetUserId.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -163,12 +151,8 @@ class ActivityTarget extends StatelessWidget {
     );
   }
 
-  // --- 新增: 构建 Download Target ---
-  Widget _buildDownloadTarget(BuildContext context) {
-    // --- 从 metadata 获取下载信息 ---
-    final title = activity.metadata?['download_title'] as String? ?? '未知下载';
-    final url = activity.metadata?['download_url'] as String?; // 下载链接（如果需要直接点击）
-
+  Widget _buildDefaultUser(BuildContext context) {
+    final userId = activity.userId;
     return Container(
       padding: EdgeInsets.all(12 * cardHeight),
       decoration: BoxDecoration(
@@ -176,41 +160,18 @@ class ActivityTarget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8 * math.sqrt(cardHeight)),
         border: Border.all(color: Colors.green.shade100),
       ),
-      child: Row(
-        textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
-        children: [
-          Icon(Icons.download_for_offline_outlined, color: Colors.green.shade700, size: 24 * math.sqrt(cardHeight)),
-          SizedBox(width: 12 * cardHeight),
-          Expanded(
-            child: Column( // 使用 Column 显示标题和可能的链接
-              crossAxisAlignment: isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16 * math.sqrt(cardHeight),
-                    color: Colors.green.shade900,
-                  ),
-                  textAlign: isAlternate ? TextAlign.right : TextAlign.left,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                // 如果有 URL，可以显示一个可点击的链接或按钮
-                if (url != null && url.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  // Text('链接: $url', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  // 或者一个按钮
-                  // TextButton(onPressed: () { /* 打开链接 */ }, child: Text('打开链接'))
-                ]
-              ],
-            ),
-          ),
-        ],
+      child: Align(
+        alignment: isAlternate ? Alignment.centerRight : Alignment.centerLeft,
+        child: UserInfoBadge(
+          key: ValueKey('default_${userId}'), // 给 Badge 一个 Key
+          userId: userId, // 传递目标用户 ID
+          showFollowButton: true, // 在 Target 显示时通常需要关注按钮
+          showLevel: true,
+          mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini
+        ),
       ),
     );
   }
-
 
   // Placeholder image (保持不变)
   Widget _buildPlaceholderImage(String type) {

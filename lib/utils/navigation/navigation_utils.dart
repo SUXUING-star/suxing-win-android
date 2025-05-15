@@ -12,7 +12,6 @@ class NavigationUtils {
   NavigationUtils._();
 
   // 定义主 Tab 路由及其对应的索引
-  // *** 确保这里的路由和索引与你的 MainLayout / BottomNavigationBar 完全对应 ***
   static const Map<String, int> _mainTabRoutes = {
     AppRoutes.home: 0, // 首页
     AppRoutes.gamesList: 1, // 游戏列表
@@ -234,7 +233,7 @@ class NavigationUtils {
   /// 显示提示登录的对话框 (使用 BaseInputDialog 样式)
   ///
   /// 返回 `Future<bool>`: 用户选择 "去登录" 返回 true, 否则返回 false.
-  static Future<bool> showLoginDialog(BuildContext context,
+  static Future<bool> showLoginDialog(BuildContext invokerContext,
       {String message = '请登录后继续操作', int? redirectIndex}) async {
     // 返回值是 Future<bool>
     final rootContext = mainNavigatorKey.currentContext;
@@ -263,9 +262,6 @@ class NavigationUtils {
       // --- 确认按钮 ("去登录") 的行为 ---
       confirmButtonText: '去登录', // 按钮文字
       onConfirm: () async {
-        // 点了“去登录”，我们希望这个函数最终返回 true
-        // BaseInputDialog 的 onConfirm 需要一个 Future<T?>，这里 T 是 bool?
-        // 我们返回 true 来表示“确认”操作完成了，并且结果是 true
         return Future.value(true);
       },
       // --- 取消按钮的行为 ---
@@ -290,7 +286,8 @@ class NavigationUtils {
       // 执行跳转到登录页的操作
       // 使用原始 context 或 rootContext 调用导航均可，navigateToLogin 内部会找到根 navigator
       navigateToLogin(
-        context, // 使用调用处的 context 更好，保留调用栈信息
+        mainNavigatorKey.currentContext ??
+            invokerContext, // 使用调用处的 context 更好，保留调用栈信息
         redirectAfterLogin: true, // 登录后需要重定向
         redirectIndex: redirectIndex, // 传递重定向目标索引
       );

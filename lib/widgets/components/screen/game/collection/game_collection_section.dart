@@ -11,7 +11,7 @@ class GameCollectionSection extends StatefulWidget {
   final Game game;
   final GameCollectionItem? initialCollectionStatus;
   final Function(CollectionChangeResult)? onCollectionChanged;
-  final isPreviewMode;
+  final bool isPreviewMode;
 
   const GameCollectionSection({
     super.key,

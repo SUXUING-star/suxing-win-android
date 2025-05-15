@@ -740,15 +740,12 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     // 4. 如果有帖子数据（无论是否正在后台加载刷新）
     if (_posts != null && _posts!.isNotEmpty) {
-      print("  -> Building Layout with posts");
       // 构建主布局，列表构建函数内部会处理 _posts!
       return isDesktop
           ? _buildDesktopLayout(actuallyShowLeftPanel, actuallyShowRightPanel)
           : _buildMobileLayout();
     }
 
-    // 5. 其他情况（理论上不应到达，例如 _posts 为 null 但不在加载也没错误）
-    print("  -> Fallback: Showing initial loading prompt or empty SizedBox");
     // 可能是在初始化但还不可见，或者状态异常
     return LoadingWidget.fullScreen(message: "等待加载..."); // 或者 SizedBox.shrink()
   }

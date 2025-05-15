@@ -6,7 +6,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 import '../../../models/post/post.dart';
 import '../../../models/post/user_post_actions.dart'; // 引入 UserPostActions
@@ -32,7 +32,8 @@ class PostDetailScreen extends StatefulWidget {
   _PostDetailScreenState createState() => _PostDetailScreenState();
 }
 
-class _PostDetailScreenState extends State<PostDetailScreen> {
+class _PostDetailScreenState extends State<PostDetailScreen>
+    with SnackBarNotifierMixin {
   Post? _post;
   UserPostActions? _userActions;
   String? _error;
@@ -200,22 +201,25 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           _isLoading = true;
         });
         try {
-          if (_post != null){
+          if (_post != null) {
             final forumService = context.read<ForumService>();
             await forumService.deletePost(_post!);
           }
           if (!mounted) return;
           _hasInteraction = true;
-          AppSnackBar.showSuccess(context, '帖子已删除');
-          if (Navigator.canPop(context)) {
-            Navigator.pop(context, _hasInteraction);
+          showSnackbar(message: '帖子已删除', type: SnackbarType.success);
+          if (Navigator.canPop(this.context)) { // 使用 this.context
+            Navigator.pop(this.context, _hasInteraction); // 使用 this.context
           } else {
-            NavigationUtils.navigateToHome(context);
+            // NavigationUtils.navigateToHome 内部也应该使用一个安全的 context
+            // 如果 NavigationUtils.navigateToHome 接受 context 参数，也传递 this.context
+            NavigationUtils.navigateToHome(this.context); // 使用 this.context
           }
         } catch (e) {
           if (!mounted) return;
-          AppSnackBar.showError(
-              context, '删除失败：${e.toString().replaceFirst("Exception: ", "")}');
+          showSnackbar(
+              message: '删除失败：${e.toString().replaceFirst("Exception: ", "")}',
+              type: SnackbarType.error);
           setState(() {
             _isLoading = false;
           });
@@ -249,13 +253,14 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       final forumService = context.read<ForumService>();
       await forumService.togglePostLock(widget.postId);
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '帖子状态已切换');
+      showSnackbar(message: '帖子状态已切换', type: SnackbarType.success);
       _hasInteraction = true;
       await _refreshPost(); // 刷新获取最新状态
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(
-          context, '操作失败: ${e.toString().replaceFirst("Exception: ", "")}');
+      showSnackbar(
+          message: '操作失败: ${e.toString().replaceFirst("Exception: ", "")}',
+          type: SnackbarType.error);
     } finally {
       if (mounted) {
         setState(() {
@@ -268,6 +273,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   // *** 构建界面 ***
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     final bool isDesktop = DeviceUtils.isDesktop;
 
     // --- 加载状态 ---

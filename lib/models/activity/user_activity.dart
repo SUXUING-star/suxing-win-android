@@ -1,5 +1,42 @@
 // lib/models/activity/user_activity.dart
 
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
+
+class CheckInActivityDetails {
+  final int consecutiveDays;
+  final int expGained;
+  final List<DateTime> recentCheckIns;
+
+  CheckInActivityDetails({
+    required this.consecutiveDays,
+    required this.expGained,
+    required this.recentCheckIns,
+  });
+
+  factory CheckInActivityDetails.fromMetadata(
+      Map<String, dynamic> metadataMap) {
+    List<DateTime> parsedRecentCheckIns = [];
+    if (metadataMap['recentCheckIns'] != null &&
+        metadataMap['recentCheckIns'] is List) {
+      for (var item in (metadataMap['recentCheckIns'] as List)) {
+        if (item is String) {
+          try {
+            parsedRecentCheckIns.add(DateTime.parse(item).toLocal());
+          } catch (e) {
+            print(
+                "Error parsing recentCheckIn date string from metadata: '$item'. Error: $e");
+          }
+        }
+      }
+    }
+    return CheckInActivityDetails(
+      consecutiveDays: metadataMap['consecutiveDays'] as int? ?? 0,
+      expGained: metadataMap['expGained'] as int? ?? 0,
+      recentCheckIns: parsedRecentCheckIns,
+    );
+  }
+}
+
 class UserActivity {
   final String id;
   final String userId;
@@ -123,6 +160,19 @@ class UserActivity {
   String? get postTitle => metadata?['postTitle'] as String?;
   String? get targetUsername =>
       metadata?['targetUsername'] as String?; // 如果关注用户时存了
+
+  CheckInActivityDetails? get checkInDetails {
+    if (type == ActivityTypeConstants.checkIn && metadata != null) {
+      try {
+        return CheckInActivityDetails.fromMetadata(metadata!);
+      } catch (e) {
+        print(
+            "Error creating CheckInActivityDetails from UserActivity.metadata: $e. Metadata: $metadata");
+        return null;
+      }
+    }
+    return null;
+  }
 }
 
 class ActivityComment {

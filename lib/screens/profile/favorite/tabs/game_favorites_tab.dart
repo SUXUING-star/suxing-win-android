@@ -13,7 +13,8 @@ class GameFavoritesTab extends StatefulWidget {
     _gameTabKey.currentState?.refreshGames();
   }
 
-  static final GlobalKey<_GameFavoritesTabState> _gameTabKey = GlobalKey<_GameFavoritesTabState>();
+  static final GlobalKey<_GameFavoritesTabState> _gameTabKey =
+      GlobalKey<_GameFavoritesTabState>();
 
   GameFavoritesTab() : super(key: _gameTabKey);
 
@@ -21,8 +22,8 @@ class GameFavoritesTab extends StatefulWidget {
   _GameFavoritesTabState createState() => _GameFavoritesTabState();
 }
 
-class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepAliveClientMixin {
-
+class _GameFavoritesTabState extends State<GameFavoritesTab>
+    with AutomaticKeepAliveClientMixin {
   List<Game>? _favoriteGames;
   String? _error;
   bool _isLoading = false;
@@ -43,7 +44,7 @@ class _GameFavoritesTabState extends State<GameFavoritesTab> with AutomaticKeepA
 
     try {
       final gameService = context.read<GameService>();
-      final games = await gameService.getUserFavoriteGames();
+      final games = await gameService.getUserLikeGames();
 
       if (mounted) {
         setState(() {

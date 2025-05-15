@@ -8,7 +8,7 @@ import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dar
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 引入安全图片加载
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'modern_crop_dialog.dart';
+import 'custom_crop_dialog.dart';
 
 class EditableUserAvatar extends StatelessWidget {
   final User user;
@@ -35,9 +35,10 @@ class EditableUserAvatar extends StatelessWidget {
   });
 
   // --- 核心逻辑：处理头像点击、裁剪和上传 ---
-  Future<void> _handleAvatarUpdate(BuildContext context) async {
+  Future<void> _handleAvatarUpdate(BuildContext context,
+      UserService userService, RateLimitedFileUpload fileUploadService) async {
     // 1. 显示裁剪对话框
-    final Uint8List? croppedBytes = await ModernCropDialog.show(context);
+    final Uint8List? croppedBytes = await CustomCropDialog.show(context);
 
     // 2. 处理裁剪结果
     if (croppedBytes != null && context.mounted) {
@@ -52,17 +53,17 @@ class EditableUserAvatar extends StatelessWidget {
         await tempFile.writeAsBytes(croppedBytes);
 
         // 调用上传服务
-        final fileUploadService = context.read<RateLimitedFileUpload>();
+
         final avatarUrl = await fileUploadService.uploadAvatar(
           tempFile,
-          maxWidth: 300, // 可根据需要调整最终尺寸
-          maxHeight: 300,
+          maxWidth: 200,
+          maxHeight: 200,
           quality: 90,
           oldAvatarUrl: user.avatar,
         );
 
         // 更新用户资料
-        final userService = context.read<UserService>();
+
         await userService.updateUserProfile(avatar: avatarUrl);
 
         // 上传和更新成功
@@ -101,9 +102,11 @@ class EditableUserAvatar extends StatelessWidget {
     final iconSize = radius * iconSizeRatio;
     final bool hasValidAvatar =
         user.avatar != null && user.avatar!.trim().isNotEmpty;
+    final userService = context.read<UserService>();
+    final fileUploadService = context.read<RateLimitedFileUpload>();
 
     return GestureDetector(
-      onTap: () => _handleAvatarUpdate(context),
+      onTap: () => _handleAvatarUpdate(context, userService, fileUploadService),
       child: Stack(
         alignment: Alignment.center, // 确保内容居中
         children: [

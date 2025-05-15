@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -33,7 +34,8 @@ class ProfileScreen extends StatefulWidget {
   _ProfileScreenState createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _ProfileScreenState extends State<ProfileScreen>
+    with SnackBarNotifierMixin {
   String? _error;
   bool _isInitialized = false;
   bool _isVisible = false;
@@ -41,16 +43,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
   static const Duration _minRefreshInterval = Duration(minutes: 1);
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
-    // 初始状态设置
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _authProvider = Provider.of<AuthProvider>(context, listen: false);
   }
 
   @override
   void dispose() {
-    // 清理资源（如果需要）
     super.dispose();
   }
 
@@ -68,7 +75,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _refreshProfile(BuildContext context) async {
+  Future<void> _refreshProfile() async {
     if (_isRefreshing) return;
 
     final now = DateTime.now();
@@ -77,14 +84,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
       final remaining = _minRefreshInterval - now.difference(_lastRefreshTime!);
       final remainingSeconds = remaining.inSeconds + 1;
       if (mounted) {
-        AppSnackBar.showInfo(context, '刷新太频繁，请 ${remainingSeconds} 秒后再试');
+        AppSnackBar.showInfo(context, '刷新太频繁，请 $remainingSeconds 秒后再试');
       }
       return;
     }
 
     if (!mounted) return;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) {
+    if (!_authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           _error = null;
@@ -100,12 +106,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     });
 
     try {
-      await authProvider.refreshUserState();
-      // 刷新成功提示可选
-      // if (mounted) { AppSnackBar.showSuccess(context, '个人信息已刷新'); }
-    } catch (e, stackTrace) {
-      // 日志记录错误（可选，替代 print）
-      // logger.error('Error refreshing user profile', error: e, stackTrace: stackTrace);
+      await _authProvider.refreshUserState();
+    } catch (e) {
       if (mounted) {
         setState(() {
           _error = '刷新失败: $e';
@@ -122,7 +124,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _showEditProfileDialog(User currentUser, BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     EditDialog.show(
       context: context,
       title: '修改用户名',
@@ -140,12 +141,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         try {
           final userService = context.read<UserService>();
           await userService.updateUserProfile(username: newUsername.trim());
-          if (mounted) {
-            AppSnackBar.showSuccess(context, '用户名更新成功');
-            await authProvider.refreshUserState();
-          }
+          await _authProvider.refreshUserState();
+          showSnackbar(message: '用户名更新成功', type: SnackbarType.success);
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '更新失败：$e');
+          showSnackbar(message: '更新失败：$e', type: SnackbarType.error);
         }
       },
     );
@@ -172,10 +171,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _isRefreshing = false;
               _lastRefreshTime = null;
             });
-            NavigationUtils.navigateToHome(context, tabIndex: 0);
+            NavigationUtils.navigateToHome(this.context, tabIndex: 0);
           }
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '退出登录失败: $e');
+          showSnackbar(message: '退出登录失败: $e', type: SnackbarType.error);
         }
       },
     );
@@ -201,8 +200,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   'username': currentUser.username,
                   'initialShowFollowing': true
                 });
-          } else {
-            if (mounted) AppSnackBar.showError(context, '无法加载用户数据');
           }
         },
       ),
@@ -224,9 +221,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         route: '',
         onTap: () {
           if (currentUser != null) {
-            NavigationUtils.pushNamed(context, AppRoutes.userActivities,
-                arguments:  currentUser.id,
-                );
+            NavigationUtils.pushNamed(
+              context,
+              AppRoutes.userActivities,
+              arguments: currentUser.id,
+            );
           } else {
             if (mounted) AppSnackBar.showError(context, '无法加载用户数据');
           }
@@ -269,9 +268,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (!mounted) return;
     try {
       await authProvider.refreshUserState();
+      showSnackbar(message: '用户信息已刷新', type: SnackbarType.success);
     } catch (e) {
-      // logger.error('Error during refresh after upload', error: e);
-      if (mounted) AppSnackBar.showError(context, '刷新用户信息失败: $e');
+      showSnackbar(message: '刷新用户信息失败: $e', type: SnackbarType.error);
     }
   }
 
@@ -280,6 +279,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width > 900;
+
+    buildSnackBar(context);
 
     return VisibilityDetector(
       key: visibilityKey,
@@ -304,7 +305,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         backgroundColor: Colors.transparent,
         appBar: CustomAppBar(title: '个人中心', actions: const []),
         body: RefreshIndicator(
-          onRefresh: () => _refreshProfile(context),
+          onRefresh: () => _refreshProfile(),
           child: _buildProfileContent(context, useDesktopLayout),
         ),
         floatingActionButton: _buildFloatButtons(context),
@@ -362,13 +363,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         } else if (_error != null) {
           return Center(
               child: InlineErrorWidget(
-                  errorMessage: _error!,
-                  onRetry: () => _refreshProfile(context)));
+                  errorMessage: _error!, onRetry: () => _refreshProfile()));
         } else if (currentUser == null) {
           return Center(
               child: CustomErrorWidget(
                   errorMessage: "无法获取用户信息，请尝试刷新。",
-                  onRetry: () => _refreshProfile(context)));
+                  onRetry: () => _refreshProfile()));
         }
 
         // --- 显示用户信息 ---

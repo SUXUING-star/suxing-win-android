@@ -11,7 +11,6 @@ import 'package:suxingchahui/widgets/components/screen/activity/card/activity_ta
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;
-// 引入 SafeUserAvatar
 
 class ActivityCard extends StatefulWidget {
   final UserActivity activity;

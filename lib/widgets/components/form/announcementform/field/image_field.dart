@@ -31,27 +31,6 @@ class AnnouncementImageField extends StatelessWidget {
     }
   }
 
-  Future<void> _showUrlDialog(BuildContext context) async {
-    final currentUrl = imageSource is String ? imageSource as String : '';
-    final result = await showDialog<String>(
-      context: context,
-      // 复用 ImageUrlDialog
-      builder: (context) => ImageUrlDialog(initialUrl: currentUrl),
-    );
-
-    // 如果用户输入了内容（包括空字符串，表示清空）
-    if (result != null) {
-      if (result.trim().isNotEmpty && result.trim() != currentUrl) {
-        // 输入了有效且不同的 URL
-        onImageSourceChanged(result.trim()); // 回调 String URL
-      } else if (result.trim().isEmpty && currentUrl.isNotEmpty) {
-        // 输入了空字符串，且之前有 URL，表示清空
-        onImageSourceChanged(null); // 回调 null
-      }
-      // 如果输入相同或无效的空URL，则不回调
-    }
-    // 如果用户取消对话框 (result is null)，不执行任何操作
-  }
 
   void _clearImage(BuildContext context) {
     if (imageSource != null) {
@@ -90,15 +69,7 @@ class AnnouncementImageField extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 10),
-            Expanded(
-              child: ElevatedButton.icon(
-                // onPressed: isLoading ? null : () => _showUrlDialog(context), // 移除 isLoading 判断
-                onPressed: () => _showUrlDialog(context),
-                icon: const Icon(Icons.link),
-                label: const Text('图片链接'),
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
-              ),
-            ),
+
           ],
         ),
         SizedBox(height: verticalSpacing),

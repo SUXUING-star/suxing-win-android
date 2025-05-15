@@ -1,7 +1,6 @@
 // lib/widgets/components/screen/profile/experience/exp_task_card.dart
 
 import 'package:flutter/material.dart';
-// **** 导入模型和 AppText ****
 import 'package:suxingchahui/models/user/daily_progress.dart'; // 导入 Task 模型
 import 'package:suxingchahui/widgets/components/screen/profile/experience/models/task_style.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';     // 导入 AppText

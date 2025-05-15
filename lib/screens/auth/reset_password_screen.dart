@@ -6,7 +6,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../services/main/user/user_service.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
@@ -22,7 +22,8 @@ class ResetPasswordScreen extends StatefulWidget {
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
 }
 
-class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen>
+    with SnackBarNotifierMixin {
   final _formKey = GlobalKey<FormState>();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -54,14 +55,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         _passwordController.text,
       );
 
-      AppSnackBar.showSuccess(context, "重置密码成功，用新的密码进行登录吧！");
+      showSnackbar(message: "重置密码成功，用新的密码进行登录吧！", type: SnackbarType.success);
 
+      if (!mounted) return;
       NavigationUtils.navigateToLogin(context);
     } catch (e) {
       setState(() {
         _error = '重置密码失败：${e.toString()}';
       });
-      AppSnackBar.showError(context, "重置密码失败");
+      showSnackbar(message: "重置密码失败", type: SnackbarType.error);
     } finally {
       setState(() {
         _isLoading = false;
@@ -70,7 +72,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Widget _buildNewPassWordFormField() {
-    return FormTextInputField( // <--- 替换
+    return FormTextInputField(
+      // <--- 替换
       controller: _passwordController,
       enabled: !_isLoading,
       obscureText: _obscurePassword, // <--- 设置 obscureText
@@ -79,8 +82,13 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         // border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon: Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
-          onPressed: () { setState(() { _obscurePassword = !_obscurePassword; }); },
+          icon:
+              Icon(_obscurePassword ? Icons.visibility_off : Icons.visibility),
+          onPressed: () {
+            setState(() {
+              _obscurePassword = !_obscurePassword;
+            });
+          },
         ),
       ),
       keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
@@ -95,7 +103,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   }
 
   Widget _buildRepeatPassWordFormField() {
-    return FormTextInputField( // <--- 替换
+    return FormTextInputField(
+      // <--- 替换
       controller: _confirmPasswordController,
       enabled: !_isLoading,
       obscureText: _obscureConfirmPassword, // <--- 设置 obscureText
@@ -104,8 +113,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
         // border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
-          icon: Icon(_obscureConfirmPassword ? Icons.visibility_off : Icons.visibility),
-          onPressed: () { setState(() { _obscureConfirmPassword = !_obscureConfirmPassword; }); },
+          icon: Icon(_obscureConfirmPassword
+              ? Icons.visibility_off
+              : Icons.visibility),
+          onPressed: () {
+            setState(() {
+              _obscureConfirmPassword = !_obscureConfirmPassword;
+            });
+          },
         ),
       ),
       keyboardType: TextInputType.visiblePassword, // <--- 密码键盘类型
@@ -125,7 +140,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
             child: Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: InlineErrorWidget(
-                errorMessage: _error! ?? '重置密码错误',
+                errorMessage: _error!,
                 icon: Icons.error_outline,
                 // retryText: '重试', // 可以去掉重试按钮
                 iconColor: Colors.red,
@@ -139,6 +154,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     // --- 定义动画延迟和间隔 ---
     const Duration initialDelay = Duration(milliseconds: 200);
     const Duration stagger = Duration(milliseconds: 80);

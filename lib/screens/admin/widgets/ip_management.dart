@@ -23,11 +23,18 @@ class _IPManagementState extends State<IPManagement>
   bool _isLoading = false;
   final TextEditingController _ipController = TextEditingController();
   final TextEditingController _blacklistIpController = TextEditingController();
+  late final DefenceService _defenceService;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _defenceService = context.read<DefenceService>();
   }
 
   @override
@@ -41,8 +48,8 @@ class _IPManagementState extends State<IPManagement>
   Future<void> _removeFromBlacklist(String ip) async {
     setState(() => _isLoading = true);
     try {
-      final defenceService = context.read<DefenceService>();
-      await defenceService.removeFromBlacklist(ip);
+      await _defenceService.removeFromBlacklist(ip);
+      if (!mounted) return;
       AppSnackBar.showError(context, '已从黑名单移除: $ip');
       setState(() {});
     } catch (e) {
@@ -63,9 +70,11 @@ class _IPManagementState extends State<IPManagement>
       final defenceService = context.read<DefenceService>();
       await defenceService.addToBlacklist(ip);
       _blacklistIpController.clear();
+      if (!mounted) return;
       AppSnackBar.showSuccess(context, '已添加到黑名单: $ip');
       setState(() {});
     } catch (e) {
+      if (!mounted) return;
       AppSnackBar.showError(context, '操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
@@ -83,6 +92,7 @@ class _IPManagementState extends State<IPManagement>
       final defenceService = context.read<DefenceService>();
       await defenceService.addToWhitelist(ip);
       _ipController.clear();
+      if (!mounted) return;
       AppSnackBar.showSuccess(context, '已添加到白名单: $ip');
       setState(() {});
     } catch (e) {
@@ -97,9 +107,11 @@ class _IPManagementState extends State<IPManagement>
     try {
       final defenceService = context.read<DefenceService>();
       await defenceService.removeFromWhitelist(ip);
+      if (!mounted) return;
       AppSnackBar.showSuccess(context, '已从白名单移除: $ip');
       setState(() {});
     } catch (e) {
+      if (!mounted) return;
       AppSnackBar.showError(context, '操作失败: $e');
     } finally {
       setState(() => _isLoading = false);

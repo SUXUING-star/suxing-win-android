@@ -118,7 +118,7 @@ class MaintenanceDialog {
           rethrow;
         }
         // 注意：BaseInputDialog 的 finally 块会执行 Navigator.pop
-        return null; // 返回 null 匹配 Future<void?>
+
       },
 
       // --- 6. 定义取消操作 ---

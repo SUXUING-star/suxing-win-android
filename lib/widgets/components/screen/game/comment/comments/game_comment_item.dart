@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../../../../models/comment/comment.dart';
 import '../../../../../../providers/auth/auth_provider.dart';
 import '../../../../../../utils/datetime/date_time_formatter.dart';
@@ -35,7 +36,8 @@ class GameCommentItem extends StatefulWidget {
   State<GameCommentItem> createState() => _GameCommentItemState();
 }
 
-class _GameCommentItemState extends State<GameCommentItem> {
+class _GameCommentItemState extends State<GameCommentItem>
+    with SnackBarNotifierMixin {
   bool _showReplyInput = false;
   bool _isSubmittingReply = false; // 添加新回复的 loading
 
@@ -179,7 +181,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
           await widget.onUpdateComment(item.id, text); // 调用父级回调
           // 成功后父级会刷新，Dialog 会关闭
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '编辑失败: $e');
+          showSnackbar(message: '编辑失败: $e', type: SnackbarType.error);
           // --- 出错时，结束本地 Loading ---
           if (mounted) {
             setState(() {
@@ -241,7 +243,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
           // 成功后父级会刷新列表，此 Item (或其 Reply 部分) 会消失
           // 所以成功时不需要在 finally 里清除本地 loading 状态
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+          showSnackbar(message: '删除失败: $e', type: SnackbarType.error);
           // --- 出错时，结束本地 Loading ---
           // 如果删除失败，Item 还在，必须清除 loading 状态
           if (mounted) {
@@ -262,8 +264,9 @@ class _GameCommentItemState extends State<GameCommentItem> {
 
   // 提交新回复的方法不变
   Future<void> _submitReply(String replyContent) async {
-    if (replyContent.isEmpty || !mounted || _isSubmittingReply)
+    if (replyContent.isEmpty || !mounted || _isSubmittingReply) {
       return; // 防止重复提交
+    }
     setState(() => _isSubmittingReply = true);
     try {
       await widget.onAddReply(replyContent, widget.comment.id);
@@ -331,6 +334,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     final authProvider = Provider.of<AuthProvider>(context);
 
     return Card(

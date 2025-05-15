@@ -5,6 +5,7 @@ import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 引入 SnackBar
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 引入 Button
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 引入 Button
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/linkstools/link.dart';
 import '../../../widgets/components/form/linkform/link_form_dialog.dart';
 
@@ -15,25 +16,31 @@ class LinkManagement extends StatefulWidget {
   State<LinkManagement> createState() => _LinkManagementState();
 }
 
-class _LinkManagementState extends State<LinkManagement> {
+class _LinkManagementState extends State<LinkManagement>
+    with SnackBarNotifierMixin {
   // --- 修改: 使用 Future 状态 ---
   late Future<List<Link>> _linksFuture;
   bool _isProcessing = false; // 用于防止重复点击按钮
   // --- 结束修改 ---
 
+  late final LinkToolService _linkToolService;
+
   @override
   void initState() {
     super.initState();
-    // --- 修改: 初始化 Future ---
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _linkToolService = context.read<LinkToolService>();
     _loadLinks();
-    // --- 结束修改 ---
   }
 
   // --- 新增: 加载数据的方法 ---
   void _loadLinks({bool forceRefresh = false}) {
-    final linkToolService = context.read<LinkToolService>();
     setState(() {
-      _linksFuture = linkToolService.getLinks(forceRefresh: forceRefresh);
+      _linksFuture = _linkToolService.getLinks(forceRefresh: forceRefresh);
     });
   }
 
@@ -49,6 +56,7 @@ class _LinkManagementState extends State<LinkManagement> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     return Scaffold(
       // --- 修改: 使用 FutureBuilder ---
       body: FutureBuilder<List<Link>>(
@@ -175,7 +183,6 @@ class _LinkManagementState extends State<LinkManagement> {
 
   // --- 修改: 添加/编辑/删除操作后刷新数据 ---
   Future<void> _showAddLinkDialog() async {
-
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
@@ -187,12 +194,11 @@ class _LinkManagementState extends State<LinkManagement> {
 
       if (result != null && mounted) {
         try {
-          final linkToolService = context.read<LinkToolService>();
-          await linkToolService.addLink(Link.fromJson(result));
+          await _linkToolService.addLink(Link.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          AppSnackBar.showSuccess(context, '链接添加成功');
+          showSnackbar(message: '链接添加成功', type: SnackbarType.success);
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '添加失败：$e');
+          showSnackbar(message: '添加失败：$e', type: SnackbarType.error);
         }
       }
     } finally {
@@ -216,9 +222,9 @@ class _LinkManagementState extends State<LinkManagement> {
           // 使用 Link.fromJson 将 Map 转换为 Link 对象
           await linkToolService.updateLink(Link.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          AppSnackBar.showSuccess(context, '链接更新成功');
+          showSnackbar(message: '链接更新成功', type: SnackbarType.success);
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '更新失败：$e');
+          showSnackbar(message: '更新失败：$e', type: SnackbarType.error);
         }
       }
     } finally {
@@ -255,9 +261,9 @@ class _LinkManagementState extends State<LinkManagement> {
           final linkToolService = context.read<LinkToolService>();
           await linkToolService.deleteLink(link.id);
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          AppSnackBar.showSuccess(context, '链接删除成功');
+          showSnackbar(message: '链接删除成功', type: SnackbarType.success);
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '删除失败：$e');
+          showSnackbar(message: '删除失败：$e', type: SnackbarType.error);
         }
       }
     } finally {

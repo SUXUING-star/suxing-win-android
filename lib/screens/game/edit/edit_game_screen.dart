@@ -1,101 +1,142 @@
 // lib/screens/game/edit/edit_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/form/gameform/game_form.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // <--- 导入你的自定义对话框
+import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 
-class EditGameScreen extends StatelessWidget {
-  final Game game;
+class EditGameScreen extends StatefulWidget {
+  final Game? game;
+  const EditGameScreen({super.key, this.game});
 
-  EditGameScreen({super.key, required this.game});
+  @override
+  _EditGameScreenState createState() => _EditGameScreenState();
+}
+
+class _EditGameScreenState extends State<EditGameScreen>
+    with SnackBarNotifierMixin {
+  Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
+    // 这个方法由 GameForm 的 onSubmit 回调触发
+    // GameForm 内部的 _isProcessing 会处理按钮的加载状态
+    // _EditGameScreenState 可以在这里处理 API 调用后的导航和对话框
+
+    if (!mounted) return;
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    try {
+      final gameService = context.read<GameService>();
+      if (widget.game == null) {
+        // 添加模式
+        await gameService.addGame(gameDataFromForm);
+      } else {
+        // 编辑模式
+        await gameService.updateGame(gameDataFromForm);
+      }
+
+      // API 调用成功
+      if (!mounted) return;
+
+      if (!authProvider.isAdmin && widget.game != null) {
+        // 编辑模式且非管理员
+        _showReviewNoticeDialogAfterApiSuccess();
+      } else {
+        // 添加模式成功，或管理员编辑成功，直接返回上一页并传递成功标记
+        if (mounted) Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      // API 调用失败，GameForm 内部通常会显示一个即时的错误 SnackBar
+      // _EditGameScreenState 可以在这里显示一个更具体的错误提示或执行其他错误处理
+      showSnackbar(
+          message: '操作失败: ${e.toString().replaceFirst("Exception: ", "")}',
+          type: SnackbarType.error);
+    }
+  }
+
+  void _showReviewNoticeDialogAfterApiSuccess() {
+    if (!mounted) return;
+
+    String messageContent =
+        '''您的游戏已成功修改，修改需要重新审核，正在等待管理员审核。\n\n审核通过后，您修改的游戏内容将显示在游戏列表中。\n\n您可以在个人主页查看您的游戏审核状态。''';
+
+    CustomConfirmDialog.show(
+      context: context, // 使用 _EditGameScreenState 的 context
+      title: '游戏修改成功',
+      message: messageContent,
+      iconData: Icons.info_outline,
+      iconColor: Colors.blue,
+      confirmButtonText: '查看审核状态',
+      confirmButtonColor: Theme.of(context).primaryColor,
+      cancelButtonText: '返回列表',
+      barrierDismissible: false,
+      onConfirm: () async {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // 关闭 Dialog
+        if (!mounted) return;
+        Navigator.of(context).pop(true); // 关闭 EditGameScreen, 返回 true
+        if (!mounted) return;
+        Navigator.of(context).pushNamed(AppRoutes.myGames);
+      },
+      onCancel: () {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // 关闭 Dialog
+        if (!mounted) return;
+        Navigator.of(context).pop(true); // 关闭 EditGameScreen, 返回 true
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context); // SnackBarNotifierMixin 的方法
+
+    final String appBarTitle =
+        widget.game == null ? '添加新游戏' : '编辑游戏: ${widget.game!.title}';
+
     return Scaffold(
       appBar: CustomAppBar(
-        title: '编辑游戏',
+        title: appBarTitle,
+        // 如果 GameForm 内部有 _isProcessing 状态来禁用返回，这里可能不需要特殊处理
+        // 否则，如果需要阻止返回，可以考虑 EditGameScreen 的状态
       ),
       body: Column(
         children: [
-          // 添加审核通知信息框 (保持不变)
-          Container(
-            margin: EdgeInsets.all(16),
-            padding: EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '提示：编辑游戏后，该游戏将需要重新审核，在审核通过前将不会在游戏列表中显示。',
-                    style: TextStyle(fontSize: 14),
+          if (widget.game != null) // 编辑模式才显示这个提示
+            Container(
+              margin: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline, color: Colors.blue),
+                  SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      '提示：编辑游戏后，该游戏将需要重新审核，在审核通过前将不会在游戏列表中显示。',
+                      style: TextStyle(fontSize: 14),
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          // 游戏表单
           Expanded(
             child: GameForm(
-              game: game,
-              onSubmit: (Game updatedGame) async {
-                try {
-                  final gameService = context.read<GameService>();
-                  await gameService.updateGame(updatedGame);
-                  AppSnackBar.showSuccess(context, "修改成功");
-                  // 显示审核通知对话框 (使用新的方法)
-                  _showReviewNoticeDialog(context); // <--- 调用更新后的方法
-                } catch (e) {
-                  AppSnackBar.showError(context,'修改失败: ${e.toString()}');
-                }
-              },
+              game: widget.game,
+              onSubmit: _handleGameFormSubmit, // 传递 State 的方法作为回调
+              // isSubmitting 属性现在由 GameForm 内部的 _isProcessing 控制
             ),
           ),
         ],
       ),
-    );
-  }
-
-  // 显示审核通知对话框 (使用 CustomConfirmDialog)
-  void _showReviewNoticeDialog(BuildContext context) {
-    // 将多行文本组合成一个 message 字符串
-    String messageContent = '''您的游戏已成功修改，修改需要重新审核，正在等待管理员审核。\n\n审核通过后，您修改的游戏内容将显示在游戏列表中。\n\n您可以在个人主页查看您的游戏审核状态。''';
-
-    CustomConfirmDialog.show(
-      context: context,
-      title: '游戏修改成功',
-      message: messageContent,
-      iconData: Icons.info_outline, // 使用信息图标
-      iconColor: Colors.blue,       // 使用蓝色图标
-      confirmButtonText: '查看审核状态', // 确认按钮文本
-      confirmButtonColor: Theme.of(context).primaryColor, // 使用主题色
-      cancelButtonText: '返回列表',    // 取消按钮文本
-      barrierDismissible: false,     // 不允许点击外部关闭
-      onConfirm: () async {
-        // 对应 "查看审核状态" 按钮的操作
-        // CustomConfirmDialog 内部不再自动 pop，需要在这里处理
-        NavigationUtils.pop(context); // 关闭对话框
-        // 导航到列表页（并传递结果，表示编辑成功）
-        NavigationUtils.pop(context, true); // 返回列表页，true表示成功
-        // 再跳转到我的游戏页
-        NavigationUtils.pushNamed(context, AppRoutes.myGames);
-      },
-      onCancel: () {
-        // 对应 "返回列表" 按钮的操作
-        // CustomConfirmDialog 内部会 pop 对话框，所以这里只需要 pop EditGameScreen
-        NavigationUtils.pop(context, true); // 返回列表页，true表示成功
-      },
     );
   }
 }

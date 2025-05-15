@@ -46,10 +46,6 @@ class DownloadLinksField extends StatelessWidget {
         description: description ?? '',
       ));
       onChanged(newLinks);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('已添加下载链接')),
-      );
     }
   }
 
@@ -108,7 +104,8 @@ class DownloadLinksField extends StatelessWidget {
       builder: (context) {
         final titleController = TextEditingController(text: initialTitle);
         final urlController = TextEditingController(text: initialUrl);
-        final descriptionController = TextEditingController(text: initialDescription);
+        final descriptionController =
+            TextEditingController(text: initialDescription);
 
         return AlertDialog(
           title: Text(title),
@@ -146,7 +143,8 @@ class DownloadLinksField extends StatelessWidget {
             ),
             TextButton(
               onPressed: () {
-                if (titleController.text.isNotEmpty && urlController.text.isNotEmpty) {
+                if (titleController.text.isNotEmpty &&
+                    urlController.text.isNotEmpty) {
                   onConfirm(
                     titleController.text,
                     urlController.text,
@@ -223,7 +221,8 @@ class DownloadLinksField extends StatelessWidget {
                       IconButton(
                         icon: Icon(Icons.delete),
                         onPressed: () {
-                          final newLinks = List<DownloadLink>.from(downloadLinks);
+                          final newLinks =
+                              List<DownloadLink>.from(downloadLinks);
                           newLinks.removeAt(index);
                           onChanged(newLinks);
                         },

@@ -1,70 +1,99 @@
 // lib/screens/game/add/add_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 可以不用
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart'; // 引入 Mixin
 import '../../../models/game/game.dart';
 import '../../../services/main/game/game_service.dart';
 import '../../../widgets/components/form/gameform/game_form.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart'; // <--- 导入你的自定义对话框
+import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 
-class AddGameScreen extends StatelessWidget {
-
-
-  AddGameScreen({super.key});
+class AddGameScreen extends StatefulWidget {
+  // 改为 StatefulWidget
+  const AddGameScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '添加游戏',
-      ),
-      body: GameForm(
-        onSubmit: (Game game) async {
-          try {
-            final gameService = context.read<GameService>();
-            await gameService.addGame(game);
-            AppSnackBar.showSuccess(context, "添加成功");
-            // 显示审核通知对话框 (使用新的方法)
-            _showReviewNoticeDialog(context); // <--- 调用更新后的方法
-          } catch (e) {
-            AppSnackBar.showError(context,'添加失败: ${e.toString()}');
-          }
-        },
-      ),
+  _AddGameScreenState createState() => _AddGameScreenState();
+}
+
+class _AddGameScreenState extends State<AddGameScreen>
+    with SnackBarNotifierMixin {
+  // 使用 Mixin
+
+  Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
+    if (!mounted) return;
+
+    try {
+      final gameService = context.read<GameService>();
+      await gameService.addGame(gameDataFromForm);
+
+      if (!mounted) return;
+      // 添加成功后，直接显示审核通知对话框
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+      if (!authProvider.isAdmin) {
+        // 编辑模式且非管理员
+        _showReviewNoticeDialogAfterApiSuccess();
+      } else {
+        // 添加模式成功，或管理员编辑成功，直接返回上一页并传递成功标记
+        if (mounted) Navigator.of(context).pop(true);
+      }
+    } catch (e) {
+      if (!mounted) return;
+      showSnackbar(
+          message: '添加失败: ${e.toString().replaceFirst("Exception: ", "")}',
+          type: SnackbarType.error);
+    }
+  }
+
+  void _showReviewNoticeDialogAfterApiSuccess() {
+    if (!mounted) return;
+
+    String messageContent =
+        '''您的游戏已成功提交，正在等待管理员审核。\n\n审核通过后，您的游戏将显示在游戏列表中。\n\n每位普通用户每天最多可提交3个游戏。\n\n您可以在个人主页查看您的游戏审核状态。''';
+
+    CustomConfirmDialog.show(
+      context: context, // 使用 _AddGameScreenState 的 context
+      title: '游戏提交成功',
+      message: messageContent,
+      iconData: Icons.info_outline,
+      iconColor: Colors.blue,
+      confirmButtonText: '查看审核状态',
+      confirmButtonColor: Theme.of(context).primaryColor,
+      cancelButtonText: '返回列表',
+      barrierDismissible: false,
+      onConfirm: () async {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // 关闭 Dialog
+        if (!mounted) return;
+        Navigator.of(context)
+            .pop(true); // 关闭 AddGameScreen, 返回 true (如果列表页需要知道结果)
+        if (!mounted) return;
+        Navigator.of(context).pushNamed(AppRoutes.myGames);
+      },
+      onCancel: () {
+        if (!mounted) return;
+        Navigator.of(context).pop(); // 关闭 Dialog
+        if (!mounted) return;
+        Navigator.of(context).pop(true); // 关闭 AddGameScreen, 返回 true
+      },
     );
   }
 
-  // 显示审核通知对话框 (使用 CustomConfirmDialog)
-  void _showReviewNoticeDialog(BuildContext context) {
-    // 将多行文本组合成一个 message 字符串
-    String messageContent = '''您的游戏已成功提交，正在等待管理员审核。\n\n审核通过后，您的游戏将显示在游戏列表中。\n\n每位普通用户每天最多可提交3个游戏。\n\n您可以在个人主页查看您的游戏审核状态。''';
+  @override
+  Widget build(BuildContext context) {
+    buildSnackBar(context); // Mixin 的方法
 
-    CustomConfirmDialog.show(
-      context: context,
-      title: '游戏提交成功',
-      message: messageContent,
-      iconData: Icons.info_outline, // 使用信息图标
-      iconColor: Colors.blue,       // 使用蓝色图标
-      confirmButtonText: '查看审核状态', // 确认按钮文本
-      confirmButtonColor: Theme.of(context).primaryColor, // 使用主题色
-      cancelButtonText: '返回列表',    // 取消按钮文本
-      barrierDismissible: false,     // 不允许点击外部关闭
-      onConfirm: () async {
-        NavigationUtils.pop(context); // 关闭对话框
-        // *重要*: 添加游戏成功后，通常应该先返回列表页，再跳转到我的游戏
-        // 如果希望直接跳转，可以只 pop 对话框，然后 pushNamed
-        // 如果希望先回列表再跳转，则需要先 pop(context) 两次
-        // NavigationUtils.pop(context); // 返回列表页 （如果需要先回列表页）
-        NavigationUtils.pushNamed(context, AppRoutes.myGames); // 跳转到我的游戏
-      },
-      onCancel: () {
-        // 对应 "返回列表" 按钮的操作
-        // CustomConfirmDialog 内部会 pop 对话框，所以这里只需要 pop AddGameScreen
-        NavigationUtils.pop(context); // 返回上一页（通常是游戏列表）
-      },
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: '添加新游戏',
+      ),
+      body: GameForm(
+        onSubmit: _handleGameFormSubmit, // 传递 State 的方法
+      ),
     );
   }
 }

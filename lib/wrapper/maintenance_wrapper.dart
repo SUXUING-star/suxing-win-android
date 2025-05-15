@@ -37,18 +37,6 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
   @override
   void initState() {
     super.initState();
-    _maintenanceChecker = context.read<MaintenanceCheckerService>();
-
-    _lifecycleEventHandler = LifecycleEventHandler(
-      resumeCallBack: () async {
-        if (mounted && _hasInitializedMaintenance) {
-          final maintenanceService = context.read<MaintenanceService>();
-          await maintenanceService.checkMaintenanceStatus();
-          _maintenanceChecker.triggerMaintenanceCheck(uiContext: context);
-        }
-      },
-    );
-    WidgetsBinding.instance.addObserver(_lifecycleEventHandler!);
   }
 
   @override
@@ -56,15 +44,23 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
     super.didChangeDependencies();
 
     if (!_hasInitializedMaintenance) {
-      final maintenanceService = context.read<MaintenanceService>();
+      final maintenanceService = context.read<MaintenanceService>(); // 同步获取，安全
 
       maintenanceService.checkMaintenanceStatus(forceCheck: true).then((_) {
+        // ---- then 回调，在 Future 完成后执行 ----
         if (mounted) {
+          // 检查 _MaintenanceWrapperState 是否 mounted
           try {
             _maintenanceChecker.initialize();
-            setState(() { _hasInitializedMaintenance = true; });
+            setState(() {
+              _hasInitializedMaintenance = true;
+            });
             WidgetsBinding.instance.addPostFrameCallback((_) {
+              // ---- addPostFrameCallback 的回调 ----
               if (mounted) {
+                // 再次检查
+                // 'context' 在这里是 didChangeDependencies 的 context (即 this.context)
+                // Linter 可能会因为外层的 .then() 异步间隙而警告
                 _maintenanceChecker.triggerMaintenanceCheck(uiContext: context);
               }
             });
@@ -73,17 +69,25 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
           }
         }
       }).catchError((error) {
+        // ---- catchError 回调，也在 Future 完成后执行 ----
         debugPrint("Error during initial maintenance check: $error");
         if (mounted) {
-          setState(() { _hasInitializedMaintenance = true; });
+          // 检查 _MaintenanceWrapperState 是否 mounted
+          setState(() {
+            _hasInitializedMaintenance = true;
+          });
         }
       });
     }
 
     // 监听 MaintenanceService 变化，并触发带 Context 的检查
-    context.watch<MaintenanceService>();
+    context.watch<MaintenanceService>(); // 同步，安全
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      // ---- addPostFrameCallback 的回调 ----
       if (mounted && _hasInitializedMaintenance) {
+        // 检查
+        // 'context' 在这里是 didChangeDependencies 的 context (即 this.context)
+        // 这个是安全的，因为 addPostFrameCallback 的回调是在当前 build 帧之后同步执行
         _maintenanceChecker.triggerMaintenanceCheck(uiContext: context);
       }
     });
@@ -94,10 +98,11 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
     if (_lifecycleEventHandler != null) {
       WidgetsBinding.instance.removeObserver(_lifecycleEventHandler!);
     }
-    _maintenanceChecker.dispose();
+    if (_hasInitializedMaintenance && mounted) {
+      _maintenanceChecker.dispose();
+    }
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -112,9 +117,9 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
         if (maintenanceService.isInMaintenance &&
             !maintenanceService.allowLogin &&
             !isAdmin) {
-
           // --- *** 构建新的维护显示 Widget *** ---
-          final maintenanceContent = Material( // 保证有 Material 祖先
+          final maintenanceContent = Material(
+            // 保证有 Material 祖先
             color: Theme.of(context).scaffoldBackgroundColor, // 使用背景色
             child: MaintenanceDisplay(
               maintenanceInfo: info,
@@ -123,15 +128,14 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
           );
           // --- *** 结束构建 *** ---
 
-
           // 根据平台决定是否用 DesktopFrameLayout 包裹
           return isDesktop
               ? DesktopFrameLayout(
-            showSidebar: false,
-            showTitleBarActions: false,
-            // titleText: "系统维护中", // 可选自定义标题
-            child: maintenanceContent,
-          )
+                  showSidebar: false,
+                  showTitleBarActions: false,
+                  // titleText: "系统维护中", // 可选自定义标题
+                  child: maintenanceContent,
+                )
               : maintenanceContent;
         }
 

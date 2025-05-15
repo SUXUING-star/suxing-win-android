@@ -34,10 +34,6 @@ class TaskStyle {
         taskColor = Colors.amber.shade400;
         taskIcon = Icons.bookmark;
         break;
-      case 'checkin':
-        taskColor = Colors.deepOrange.shade300;
-        taskIcon = Icons.calendar_today;
-        break;
       case 'comment':
         taskColor = Colors.teal.shade300;
         taskIcon = Icons.comment;

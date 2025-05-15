@@ -28,7 +28,6 @@ class LinksToolsScreen extends StatefulWidget {
 }
 
 class _LinksToolsScreenState extends State<LinksToolsScreen> {
-
   // --- 数据状态 (保持不变) ---
   List<Link>? _links;
   List<Tool>? _tools;
@@ -44,13 +43,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   @override
   void initState() {
     super.initState();
-    print("LinksToolsScreen initState: Initialized, waiting for visibility.");
     // 注意：这里不加载数据，等待 VisibilityDetector 触发
   }
 
   @override
   void dispose() {
-    print("LinksToolsScreen dispose: Cleaned up.");
     super.dispose();
   }
 
@@ -58,8 +55,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   void _triggerInitialLoad() {
     // 逻辑完全不变
     if (_isVisible && !_isInitialized && mounted) {
-      print(
-          "LinksToolsScreen: Now visible and not initialized. Triggering initial load.");
       _isInitialized = true;
       _loadData(); // 调用时不带任何参数
     }
@@ -69,7 +64,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   Future<void> _loadData() async {
     // *** 函数签名恢复原样，没有 forceRefresh ***
     if (_isLoadingData || !mounted) return; // 逻辑不变
-    print("LinksToolsScreen: Loading links and tools..."); // 日志不变
     setState(() {
       // 状态更新逻辑不变
       _isLoadingData = true;
@@ -77,12 +71,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     });
     try {
       final linkToolService = context.read<LinkToolService>();
-      // *** 修改点：直接调用 Future 方法，不再有 .first 或 forceRefresh ***
       final results = await Future.wait([
         linkToolService.getLinks(), // 直接调用，不传 forceRefresh
         linkToolService.getTools(), // 直接调用，不传 forceRefresh
       ]);
-      // *** 结束修改点 ***
 
       if (!mounted) return; // 逻辑不变
       setState(() {
@@ -108,6 +100,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- _launchURL (保持不变) ---
   Future<void> _launchURL(BuildContext context, String url) async {
+    String? err;
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
@@ -116,46 +109,60 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         throw '无法打开链接 $url';
       }
     } catch (e) {
+      err = e.toString();
       print("Error launching URL $url: $e");
-      if (mounted) AppSnackBar.showError(context, '打开链接失败: $e');
     }
   }
 
   // --- _showAddLinkDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddLinkDialog(BuildContext context) {
+    final linkToolService = context.read<LinkToolService>();
+    String? err;
     showDialog<Map<String, dynamic>>(
         context: context,
         builder: (context) => LinkFormDialog()).then((linkData) async {
       if (linkData != null) {
         try {
-          final linkToolService = context.read<LinkToolService>();
           await linkToolService.addLink(Link.fromJson(linkData));
-          if (mounted) AppSnackBar.showSuccess(context, '添加链接成功');
-          await _loadData(); // *** 调用恢复原样 ***
+          await _loadData();
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '添加链接失败: $e');
+          err = e.toString();
         }
       }
     });
+    if (err != null) {
+      if (mounted) AppSnackBar.showError(context, '添加链接失败: $err');
+    } else {
+      if (mounted) AppSnackBar.showSuccess(context, '添加链接成功');
+    }
   }
 
   // --- _showAddToolDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddToolDialog(BuildContext context) {
+    final linkToolService = context.read<LinkToolService>();
+    String? err;
     showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
         builder: (context) => ToolFormDialog()).then((toolData) async {
       if (toolData != null) {
         try {
-          final linkToolService = context.read<LinkToolService>();
           await linkToolService.addTool(Tool.fromJson(toolData));
-          if (mounted) AppSnackBar.showSuccess(context, '添加工具成功');
-          await _loadData(); // *** 调用恢复原样 ***
+          if (mounted) await _loadData();
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '添加工具失败: $e');
+          err = e.toString();
         }
       }
     });
+    if (err != null) {
+      if (mounted) {
+        AppSnackBar.showError(context, "添加失败 $err");
+      }
+    } else {
+      if (mounted) {
+        AppSnackBar.showSuccess(context, '添加工具成功');
+      }
+    }
   }
 
   // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---

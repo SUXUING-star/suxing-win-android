@@ -51,6 +51,7 @@ class _AppBackgroundState extends State<AppBackground>
       // Check for Android
       DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
       AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+      if (!mounted) return;
 
       // Check if the device is an Android device
       if (androidInfo.version.sdkInt >= 16) {
@@ -72,8 +73,7 @@ class _AppBackgroundState extends State<AppBackground>
   void _setupImageRotation() {
     _imageTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
       setState(() {
-        _currentImageIndex =
-            (_currentImageIndex + 1) % backgroundImages.length;
+        _currentImageIndex = (_currentImageIndex + 1) % backgroundImages.length;
       });
     });
   }
@@ -89,16 +89,16 @@ class _AppBackgroundState extends State<AppBackground>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final List<Color> gradientColors = isDark
         ? [
-      Color.fromRGBO(0, 0, 0, 0.6),
-      Color.fromRGBO(0, 0, 0, 0.4),
-    ]
+            Color.fromRGBO(0, 0, 0, 0.6),
+            Color.fromRGBO(0, 0, 0, 0.4),
+          ]
         : [
-      Color.fromRGBO(255, 255, 255, 0.7),
-      Color.fromRGBO(255, 255, 255, 0.5),
-    ];
+            Color.fromRGBO(255, 255, 255, 0.7),
+            Color.fromRGBO(255, 255, 255, 0.5),
+          ];
 
     List<String> imagesToUse =
-    _isAndroidPortrait ? backgroundImagesRotated : backgroundImages;
+        _isAndroidPortrait ? backgroundImagesRotated : backgroundImages;
 
     return LayoutBuilder(
       builder: (context, constraints) {

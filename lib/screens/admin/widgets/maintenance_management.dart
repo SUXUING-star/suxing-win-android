@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../services/main/maintenance/maintenance_service.dart';
 
 class MaintenanceManagement extends StatefulWidget {
@@ -14,12 +14,14 @@ class MaintenanceManagement extends StatefulWidget {
   State<MaintenanceManagement> createState() => _MaintenanceManagementState();
 }
 
-class _MaintenanceManagementState extends State<MaintenanceManagement> {
+class _MaintenanceManagementState extends State<MaintenanceManagement>
+    with SnackBarNotifierMixin {
   final _formKey = GlobalKey<FormState>();
   bool _isActive = false;
   bool _allowLogin = false;
   bool _forceLogout = false;
   String _maintenanceType = 'scheduled';
+  late final MaintenanceService _maintenanceService;
   String _message = '系统正在维护中，请稍后再试。';
 
   DateTime _startTime = DateTime.now();
@@ -42,19 +44,23 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
     });
   }
 
-  Future<void> _loadCurrentMaintenanceStatus() async {
-    final maintenanceService =
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _maintenanceService =
         Provider.of<MaintenanceService>(context, listen: false);
+  }
 
+  Future<void> _loadCurrentMaintenanceStatus() async {
     try {
       // 强制刷新维护状态
-      await maintenanceService.checkMaintenanceStatus();
+      await _maintenanceService.checkMaintenanceStatus();
 
       // 如果当前有维护状态，则加载到表单中
       if (mounted &&
-          maintenanceService.isInMaintenance &&
-          maintenanceService.maintenanceInfo != null) {
-        final info = maintenanceService.maintenanceInfo!;
+          _maintenanceService.isInMaintenance &&
+          _maintenanceService.maintenanceInfo != null) {
+        final info = _maintenanceService.maintenanceInfo!;
         setState(() {
           _isActive = true;
           _message = info.message;
@@ -66,14 +72,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('加载维护状态失败: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
+      //
     }
   }
 
@@ -87,10 +86,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
     });
 
     try {
-      final maintenanceService =
-          Provider.of<MaintenanceService>(context, listen: false);
-
-      final success = await maintenanceService.setMaintenanceMode(
+      final success = await _maintenanceService.setMaintenanceMode(
         isActive: _isActive,
         startTime: _startTime,
         endTime: _endTime,
@@ -101,12 +97,14 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
       );
 
       if (success) {
-        AppSnackBar.showSuccess(context, _isActive ? '系统维护模式已开启' : '系统维护模式已关闭');
+        showSnackbar(
+            message: _isActive ? '系统维护模式已开启' : '系统维护模式已关闭',
+            type: SnackbarType.success);
       } else {
-        AppSnackBar.showError(context, '设置维护模式失败');
+        showSnackbar(message: '设置维护模式失败', type: SnackbarType.error);
       }
     } catch (e) {
-      AppSnackBar.showError(context, '发生错误: $e');
+      showSnackbar(message: '发生错误: $e', type: SnackbarType.error);
     } finally {
       setState(() {
         _isLoading = false;
@@ -114,20 +112,24 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
     }
   }
 
-  Future<void> _selectDateTime(BuildContext context, bool isStartTime) async {
+  Future<void> _selectDateTime(
+      BuildContext invokerContext, bool isStartTime) async {
     final DateTime? pickedDate = await showDatePicker(
-      context: context,
+      context: invokerContext, // 使用 invokerContext
       initialDate: isStartTime ? _startTime : _endTime,
       firstDate: DateTime.now().subtract(const Duration(days: 1)),
       lastDate: DateTime.now().add(const Duration(days: 30)),
     );
+    if (!mounted) return;
 
     if (pickedDate != null) {
+      // ---- 第二个 await: showTimePicker ----
       final TimeOfDay? pickedTime = await showTimePicker(
         context: context,
         initialTime:
             TimeOfDay.fromDateTime(isStartTime ? _startTime : _endTime),
       );
+      if (!mounted) return;
 
       if (pickedTime != null) {
         setState(() {
@@ -150,12 +152,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
             if (newDateTime.isAfter(_startTime)) {
               _endTime = newDateTime;
             } else {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('结束时间必须晚于开始时间'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              showSnackbar(message: '结束时间必须晚于开始时间', type: SnackbarType.warning);
             }
           }
         });
@@ -165,6 +162,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Form(

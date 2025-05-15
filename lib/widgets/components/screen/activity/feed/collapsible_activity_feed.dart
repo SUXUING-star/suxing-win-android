@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // HapticFeedback
+import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';

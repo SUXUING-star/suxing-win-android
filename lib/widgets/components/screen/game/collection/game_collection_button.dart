@@ -8,6 +8,7 @@ import 'package:suxingchahui/services/main/game/collection/game_collection_servi
 import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 class GameCollectionButton extends StatefulWidget {
   final Game game;
@@ -16,7 +17,6 @@ class GameCollectionButton extends StatefulWidget {
   final Function(CollectionChangeResult)? onCollectionChanged;
   final GameCollectionItem? initialCollectionStatus;
   final bool isPreview;
-
 
   const GameCollectionButton({
     super.key,
@@ -31,7 +31,8 @@ class GameCollectionButton extends StatefulWidget {
   _GameCollectionButtonState createState() => _GameCollectionButtonState();
 }
 
-class _GameCollectionButtonState extends State<GameCollectionButton> {
+class _GameCollectionButtonState extends State<GameCollectionButton>
+    with SnackBarNotifierMixin {
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
 
@@ -47,12 +48,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
   @override
   void didUpdateWidget(GameCollectionButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    print(
-        'GameCollectionButton (${widget.game.id}) didUpdateWidget. isLoading: $_isLoading. New initial from parent: ${widget.initialCollectionStatus?.status}');
     // 如果游戏 ID 变了，强制同步
     if (widget.game.id != oldWidget.game.id && !_isLoading) {
-      print(
-          'GameCollectionButton (${widget.game.id}) Game ID changed, syncing local status.');
       setState(() {
         _collectionStatus = widget.initialCollectionStatus;
       });
@@ -62,7 +59,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     if (widget.initialCollectionStatus != oldWidget.initialCollectionStatus &&
         !_isLoading) {
       bool contentChanged = _collectionStatus?.status !=
-          widget.initialCollectionStatus?.status ||
+              widget.initialCollectionStatus?.status ||
           _collectionStatus?.notes != widget.initialCollectionStatus?.notes ||
           _collectionStatus?.review != widget.initialCollectionStatus?.review ||
           _collectionStatus?.rating != widget.initialCollectionStatus?.rating;
@@ -92,7 +89,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
       barrierColor: Colors.black54, // 半透明遮罩层
       transitionDuration:
-      const Duration(milliseconds: 350), // 动画时长，和 CustomConfirmDialog 一致
+          const Duration(milliseconds: 350), // 动画时长，和 CustomConfirmDialog 一致
 
       pageBuilder: (BuildContext buildContext, Animation<double> animation,
           Animation<double> secondaryAnimation) {
@@ -151,9 +148,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
 
           // 调用 Service
           final (item, returnedStatus) =
-
-          await collectionService.setGameCollection(widget.game.id, status,
-              notes: notes, review: review, rating: rating);
+              await collectionService.setGameCollection(widget.game.id, status,
+                  notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
             finalNewStatus = item; // API 调用成功，记录新状态
@@ -161,26 +157,22 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
             countDeltas =
                 _calculateCountDeltas(oldStatus?.status, finalNewStatus.status);
 
-            if (mounted) {
-              AppSnackBar.showSuccess(context, '收藏状态已更新');
-            }
+            showSnackbar(message: '收藏状态已更新', type: SnackbarType.success);
           } else {
-            AppSnackBar.showError(context, "更新失败");
+            showSnackbar(message: "更新失败", type: SnackbarType.error);
             throw Exception("更新收藏失败");
           }
         } else if (action == 'remove') {
           // 调用 Service
           final success =
-          await collectionService.removeGameCollection(widget.game.id);
+              await collectionService.removeGameCollection(widget.game.id);
           if (success) {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***
             countDeltas = _calculateCountDeltas(oldStatus?.status, null);
-            if (mounted) {
-              AppSnackBar.showSuccess(context,'已从收藏中移除');
-            }
+            showSnackbar(message: '已从收藏中移除', type: SnackbarType.success);
           } else {
-            AppSnackBar.showError(context, "移除收藏失败");
+            showSnackbar(message: "移除收藏失败", type: SnackbarType.error);
             throw Exception("移除收藏失败");
           }
         }
@@ -190,36 +182,29 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           // 1. 更新按钮自身的显示状态
           setState(() {
             _collectionStatus = finalNewStatus;
-            print(
-                'GameCollectionButton (${widget.game.id}): setState internal _collectionStatus to ${finalNewStatus?.status}');
           });
 
           // 2. 调用回调，传递包含新状态和增量的结果对象给父组件
           final changeResult = CollectionChangeResult(
               newStatus: finalNewStatus, countDeltas: countDeltas);
-          print(
-              'GameCollectionButton (${widget.game.id}): Calling onCollectionChanged with result: $changeResult');
           widget.onCollectionChanged?.call(changeResult); // <--- 传递结果对象
         }
       } catch (e) {
         // 统一处理 Service 调用失败或解析失败的异常
         print(
             'GameCollectionButton (${widget.game.id}): Operation error in dialog handler: $e');
-        if (mounted) {
-          AppSnackBar.showError(context, '操作失败: ${e.toString().split(':').last.trim()}');
-        }
+        showSnackbar(
+            message: '操作失败: ${e.toString().split(':').last.trim()}',
+            type: SnackbarType.error);
       } finally {
         // *** 无论成功失败，结束加载状态 ***
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
-
         }
       }
-    } else {
-
-    }
+    } else {}
   }
 
   /// 计算收藏状态变化导致的计数增量
@@ -277,12 +262,13 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
   // 构建按钮 UI 的主方法 (build)
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     // 检查本地状态 _collectionStatus 是否为 null 来判断是否已收藏
     final bool hasStatus = _collectionStatus != null;
     final ThemeData theme = Theme.of(context);
 
     // 预览模式下不允许显示按钮
-    if (widget.isPreview){
+    if (widget.isPreview) {
       return SizedBox.shrink();
     }
     // 根据是否已收藏，返回不同的按钮 Widget
@@ -300,7 +286,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12)
+            ? LoadingWidget.inline(size: 12)
             : Icon(Icons.add_circle_outline, color: theme.primaryColor),
         tooltip: _isLoading ? '处理中...' : '添加收藏',
         onPressed: _isLoading ? null : _showCollectionDialog,
@@ -308,7 +294,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     } else {
       return ElevatedButton.icon(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12)
+            ? LoadingWidget.inline(size: 12)
             : Icon(Icons.add_circle_outline, color: Colors.white, size: 18),
         label: Text(_isLoading ? '处理中...' : '添加收藏'),
         style: ElevatedButton.styleFrom(
@@ -317,7 +303,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           elevation: 2,
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         onPressed: _isLoading ? null : _showCollectionDialog,
       );
@@ -360,7 +346,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12,message: "正在加载")
+            ? LoadingWidget.inline(size: 12, message: "正在加载")
             : Icon(iconData, color: textColor),
         tooltip: _isLoading ? '处理中...' : statusText,
         onPressed: _isLoading ? null : _showCollectionDialog,
@@ -368,7 +354,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     } else {
       return OutlinedButton.icon(
         icon: _isLoading
-            ? LoadingWidget.inline(size:12,message: "正在加载")
+            ? LoadingWidget.inline(size: 12, message: "正在加载")
             : Icon(iconData, size: 18),
         label: Text(_isLoading ? '处理中...' : statusText),
         style: OutlinedButton.styleFrom(
@@ -377,7 +363,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           side: BorderSide(color: textColor.withOpacity(0.5), width: 1),
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
         onPressed: _isLoading ? null : _showCollectionDialog,
       );
