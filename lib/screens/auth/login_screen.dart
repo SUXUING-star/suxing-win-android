@@ -6,6 +6,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -220,7 +221,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return FormTextInputField(
       key: _emailFieldKey, // GlobalKey 保持
       slotName: emailSlotName, // <-- 使用 slotName
-      enabled: !_isLoading,
+      isEnabled: !_isLoading,
       decoration: InputDecoration(
         labelText: '邮箱',
         prefixIcon: Icon(Icons.email),
@@ -248,7 +249,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return FormTextInputField(
       slotName: passwordSlotName, // <-- 使用 slotName
       // controller: _passwordController, // <-- 移除 controller
-      enabled: !_isLoading,
+      isEnabled: !_isLoading,
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: '密码',
@@ -291,7 +292,7 @@ class _LoginScreenState extends State<LoginScreen> {
               borderRadius: BorderRadius.circular(16),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.grey.withOpacity(0.2),
+                  color: Colors.grey.withSafeOpacity(0.2),
                   spreadRadius: 3,
                   blurRadius: 10,
                 )

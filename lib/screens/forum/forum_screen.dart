@@ -199,7 +199,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
       // --- !!! 数据加载成功后，确保监听器指向当前页 !!! ---
       _startOrUpdateWatchingCache();
-    } catch (e, s) {
+    } catch (e) {
       if (!mounted) return;
       // *** 出错也要 setState 更新错误信息 ***
       setState(() {

@@ -10,8 +10,7 @@ import '../../../../widgets/components/form/announcementform/announcement_form.d
 class EditAnnouncementScreen extends StatelessWidget {
   final AnnouncementFull announcement;
 
-
-  EditAnnouncementScreen({super.key, required this.announcement});
+  const EditAnnouncementScreen({super.key, required this.announcement});
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +23,7 @@ class EditAnnouncementScreen extends StatelessWidget {
           try {
             if (announcement.id.isEmpty) {
               // 创建新公告
-              await announcementService
-                  .createAnnouncement(updatedAnnouncement);
+              await announcementService.createAnnouncement(updatedAnnouncement);
               if (context.mounted) {
                 AppSnackBar.showSuccess(context, '新公告已创建');
               }

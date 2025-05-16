@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/wrapper/platform_wrapper.dart';
 import '../../providers/navigation/sidebar_provider.dart';
 import 'desktop_sidebar_nav_item.dart';
@@ -78,7 +79,7 @@ class DesktopSidebar extends StatelessWidget {
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withSafeOpacity(0.1),
                 blurRadius: 8,
                 offset: Offset(2, 0),
               ),
@@ -121,7 +122,7 @@ class DesktopSidebar extends StatelessWidget {
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16.0),
                         child: Divider(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withSafeOpacity(0.3),
                           height: 1,
                         ),
                       ),

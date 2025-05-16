@@ -6,6 +6,7 @@ import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart'
 import 'package:suxingchahui/widgets/components/badge/layout/message_badge.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/update_button.dart';
 import 'package:suxingchahui/widgets/components/indicators/announcement_indicator.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'desktop_sidebar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
@@ -162,9 +163,9 @@ class DesktopFrameLayout extends StatelessWidget {
 
                 // --- c) 标准窗口控制按钮 (始终显示) ---
                 WindowsControls(
-                  iconColor: Colors.black.withOpacity(0.9),
-                  hoverColor: Colors.blue.withOpacity(0.1),
-                  closeHoverColor: Colors.red.withOpacity(0.8),
+                  iconColor: Colors.black.withSafeOpacity(0.9),
+                  hoverColor: Colors.blue.withSafeOpacity(0.1),
+                  closeHoverColor: Colors.red.withSafeOpacity(0.8),
                 ),
               ],
             ),
@@ -182,7 +183,7 @@ class DesktopFrameLayout extends StatelessWidget {
       waitDuration: const Duration(milliseconds: 500),
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.8),
+        color: Colors.black.withSafeOpacity(0.8),
         borderRadius: BorderRadius.circular(4),
       ),
       textStyle: const TextStyle(color: Colors.white, fontSize: 12),

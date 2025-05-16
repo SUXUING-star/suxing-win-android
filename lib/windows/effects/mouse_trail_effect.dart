@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import 'dart:io' show Platform; // 保持导入
+import 'dart:io' show Platform;
+
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 保持导入
 
 class MouseTrailParticle {
   Offset position;
@@ -211,7 +213,7 @@ class _MouseTrailPainter extends CustomPainter {
     // 复制列表以避免在迭代时修改
     List<MouseTrailParticle> currentParticles = List.from(particles);
     for (var particle in currentParticles) {
-      paint.color = color.withOpacity(particle.opacity.clamp(0.0, 1.0)); // 确保透明度在0-1之间
+      paint.color = color.withSafeOpacity(particle.opacity.clamp(0.0, 1.0)); // 确保透明度在0-1之间
       canvas.drawCircle(
         particle.position,
         particle.size.clamp(0.0, 10.0), // 限制粒子大小

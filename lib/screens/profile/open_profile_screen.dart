@@ -20,6 +20,7 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/open/profile_game_card.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/open/profile_post_card.dart';
 import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -528,7 +529,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
         Container(
           padding: EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withSafeOpacity(0.1),
             borderRadius: BorderRadius.circular(8),
           ),
           child: Icon(

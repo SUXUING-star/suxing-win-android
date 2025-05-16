@@ -9,6 +9,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // <--- 引入 ElevatedButton 封装
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // <--- 引入 TextButton 封装
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -138,7 +139,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildEmailFormField(bool isOverallLoading) {
     return FormTextInputField( // <--- 替换
       controller: _emailController,
-      enabled: !_isSendingCode && !_isVerifying,
+      isEnabled: !_isSendingCode && !_isVerifying,
       decoration: const InputDecoration(
         labelText: '输入邮箱',
         prefixIcon: Icon(Icons.email_outlined),
@@ -156,7 +157,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Widget _buildVerificationCodeField(bool isOverallLoading) {
     return FormTextInputField( // <--- 替换
       controller: _codeController,
-      enabled: !isOverallLoading,
+      isEnabled: !isOverallLoading,
       decoration: const InputDecoration(
         labelText: '邮箱验证码',
         prefixIcon: Icon(Icons.pin_outlined),
@@ -228,7 +229,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                 padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withSafeOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: EdgeInsets.all(24),

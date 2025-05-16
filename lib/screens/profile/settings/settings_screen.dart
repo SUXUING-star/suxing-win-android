@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import '../../../routes/app_routes.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -123,7 +124,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           if (_isLoading)
             Container(
-              color: Colors.black.withOpacity(0.5),
+              color: Colors.black.withSafeOpacity(0.5),
               child: Center(
                 child: LoadingWidget.fullScreen(
                   message: _loadingMessage,

@@ -5,6 +5,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -73,13 +74,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
   Widget _buildNewPassWordFormField() {
     return FormTextInputField(
-      // <--- 替换
       controller: _passwordController,
-      enabled: !_isLoading,
-      obscureText: _obscurePassword, // <--- 设置 obscureText
+      isEnabled: !_isLoading,
+      obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: '新密码',
-        // border: OutlineInputBorder(),
         prefixIcon: Icon(Icons.lock),
         suffixIcon: IconButton(
           icon:
@@ -104,9 +103,8 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
   Widget _buildRepeatPassWordFormField() {
     return FormTextInputField(
-      // <--- 替换
       controller: _confirmPasswordController,
-      enabled: !_isLoading,
+      isEnabled: !_isLoading,
       obscureText: _obscureConfirmPassword, // <--- 设置 obscureText
       decoration: InputDecoration(
         labelText: '确认新密码',
@@ -136,15 +134,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     return _error != null
         // --- 修改这里：添加动画 ---
         ? FadeInItem(
-            // 使用 FadeInItem 包裹
             child: Padding(
               padding: const EdgeInsets.only(bottom: 16.0),
               child: InlineErrorWidget(
                 errorMessage: _error!,
                 icon: Icons.error_outline,
-                // retryText: '重试', // 可以去掉重试按钮
                 iconColor: Colors.red,
-                // onRetry: () { setState(() { _error = null; }); },
               ),
             ),
           )
@@ -165,16 +160,12 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ),
       body: Stack(
         children: [
-          // 背景 Opacity 可以保留或移除
-          // Opacity(opacity: 0.6, child: Container(width: double.infinity, height: double.infinity)),
 
-          // --- 修改这里：为 Loading 添加动画 ---
           if (_isLoading)
             FadeInItem(
               // 使用 FadeInItem
               child: LoadingWidget.fullScreen(message: '正在重置密码...'),
             ),
-          // --- 结束修改 ---
 
           Center(
             child: ConstrainedBox(
@@ -185,7 +176,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
                 padding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 24.0),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.9),
+                    color: Colors.white.withSafeOpacity(0.9),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   padding: EdgeInsets.all(24),

@@ -60,7 +60,7 @@ class Tool {
     var idValue = json['_id'] ?? json['id'];
 
     if (idValue is ObjectId) {
-      toolId = idValue.toHexString();
+      toolId = idValue.oid;
     } else if (idValue is String) {
       toolId = idValue;
     } else if (idValue is Map && idValue.containsKey('\$oid')) {

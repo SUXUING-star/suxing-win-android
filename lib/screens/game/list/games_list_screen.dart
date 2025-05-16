@@ -16,6 +16,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -598,7 +599,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       title: Text(title,
           style: TextStyle(fontWeight: isSelected ? FontWeight.bold : null)),
       selected: isSelected,
-      selectedTileColor: Colors.grey.withOpacity(0.1),
+      selectedTileColor: Colors.grey.withSafeOpacity(0.1),
       dense: true,
       contentPadding: const EdgeInsets.symmetric(horizontal: 0),
       onTap: () {
@@ -1215,7 +1216,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                           .textTheme
                           .bodySmall
                           ?.color
-                          ?.withOpacity(0.7)),
+                          ?.withSafeOpacity(0.7)),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),

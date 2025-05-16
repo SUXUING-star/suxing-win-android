@@ -1,7 +1,6 @@
 // lib/providers/user/user_info_provider.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
-import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'user_data_status.dart';
 

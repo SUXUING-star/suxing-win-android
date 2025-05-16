@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-// 注意：这里不直接依赖 AppRoutes，导航信息在 Message 模型中处理
-// import 'package:suxingchahui/routes/app_routes.dart';
+
 
 /// 消息类型枚举
 enum MessageType {

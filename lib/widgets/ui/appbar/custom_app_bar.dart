@@ -1,8 +1,10 @@
 // lib/widgets/ui/appbar/custom_app_bar.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'dart:io' show Platform;
+import 'dart:ui' as ui;
 import '../../../utils/device/device_utils.dart'; // 确认这个路径是正确的
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
@@ -55,35 +57,32 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize {
-    // *** 主要修改点 1: 判断平台并计算基础高度 ***
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final bool isDesktop =
+        DeviceUtils.isDesktop; // 假设 DeviceUtils.isDesktop 不依赖 context
 
-    // 避免在桌面端时也满足 Android 横屏条件
-    final bool isAndroidLandscape = !isDesktop &&
-        Platform.isAndroid &&
-        WidgetsBinding.instance.window.physicalSize.width >
-            WidgetsBinding.instance.window.physicalSize.height;
+    // 使用 PlatformDispatcher 获取主视图信息来判断 Android 横屏
+    bool isAndroidLandscape = false;
+    if (!isDesktop && Platform.isAndroid) {
+      // Platform.isAndroid 也是静态的
+      final ui.FlutterView? view = ui.PlatformDispatcher.instance.implicitView;
+      if (view != null) {
+        isAndroidLandscape = view.physicalSize.width > view.physicalSize.height;
+      }
+      // 如果 view 为 null (理论上不太可能在单视图应用中发生)，isAndroidLandscape 会保持 false
+    }
 
-    double baseHeight; // AppBar 主要区域的高度 (不含 bottom)
-
+    double baseHeight;
     if (isDesktop) {
-      // 如果是桌面端，使用缩小的比例
       baseHeight = kToolbarHeight * _desktopToolbarHeightFactor;
     } else if (isAndroidLandscape) {
-      // 保留原有的 Android 横屏逻辑
       baseHeight = kToolbarHeight * _androidLandscapeToolbarHeightFactor;
     } else {
-      // 其他情况（如手机竖屏）使用默认高度
       baseHeight = kToolbarHeight;
     }
 
-    // --- 计算底部高度 ---
-    // 如果外部传入了自定义 bottom，则使用其高度；
-    // 否则，根据平台计算我们默认的底部线条高度
     final double bottomHeight = bottom?.preferredSize.height ??
         _calculateDefaultBottomHeight(isDesktop, isAndroidLandscape);
 
-    // 最终 preferredSize 是基础高度 + 底部高度
     return Size.fromHeight(baseHeight + bottomHeight);
   }
 
@@ -103,19 +102,21 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool hasNoActions = actions == null || actions!.isEmpty;
-    final bool isAndroidLandscape = !isDesktop &&
+    final bool isActualAndroidLandscape = !isDesktop &&
         Platform.isAndroid &&
         MediaQuery.of(context).orientation == Orientation.landscape;
 
     // *** 修改点 2: 根据平台调整字体大小 ***
     final double fontSize = isDesktop
         ? _desktopFontSize
-        : (isAndroidLandscape ? _androidLandscapeFontSize : _defaultFontSize);
+        : (isActualAndroidLandscape
+            ? _androidLandscapeFontSize
+            : _defaultFontSize);
 
     // *** 修改点 3: 计算 AppBar 实际的 toolbarHeight (不包含 bottom 的高度) ***
     // 需要从 preferredSize 的总高度里减去 bottom 部分的高度
     final double actualBottomHeight = bottom?.preferredSize.height ??
-        _calculateDefaultBottomHeight(isDesktop, isAndroidLandscape);
+        _calculateDefaultBottomHeight(isDesktop, isActualAndroidLandscape);
     final double toolbarHeight =
         preferredSize.height - actualBottomHeight; // 这就是 AppBar 主要区域应有的高度
 
@@ -126,7 +127,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
 
     // 这个判断的意思是appbar不承担任何actions和leading时
     // 在桌面端不显示否则就是摆设
-    final needShowTile = !(showTitleInDesktop == false && isDesktop) ;
+    final needShowTile = !(showTitleInDesktop == false && isDesktop);
 
     if (leading == null && isDesktop && hasNoActions) return SizedBox.shrink();
 
@@ -180,7 +181,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
             child: Opacity(
               opacity: 0.7,
               child: Container(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withSafeOpacity(0.2),
                 // 让白色细线的高度也适应变化，比如总是底部总高度的 1/4
                 height: actualBottomHeight > 0 ? actualBottomHeight / 4 : 0,
               ),

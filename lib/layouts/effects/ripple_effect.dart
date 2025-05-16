@@ -1,5 +1,6 @@
 // lib/layouts/effects/ripple_effect.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class RipplePoint {
   final Offset position;
@@ -83,9 +84,9 @@ class _RippleEffectState extends State<RippleEffect> with SingleTickerProviderSt
         strength: 1.0,
         color: baseColor,
         gradientColors: [
-          baseColor.withOpacity(0.6),
-          baseColor.withOpacity(0.3),
-          baseColor.withOpacity(0.1),
+          baseColor.withSafeOpacity(0.6),
+          baseColor.withSafeOpacity(0.3),
+          baseColor.withSafeOpacity(0.1),
         ],
       ));
     });
@@ -144,7 +145,7 @@ class RipplePainter extends CustomPainter {
       final innerPaint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = ripple.thickness * 0.5
-        ..color = ripple.color.withOpacity(ripple.opacity * 0.3);
+        ..color = ripple.color.withSafeOpacity(ripple.opacity * 0.3);
 
       canvas.drawCircle(
         ripple.position,

@@ -1,6 +1,7 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_mobile_buttons.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../widgets/components/badge/layout/checkin_badge.dart';
 import '../../widgets/components/badge/layout/update_button.dart';
@@ -19,8 +20,8 @@ class DesktopSidebarMobileButtons extends StatelessWidget {
         child: InkWell(
           onTap: () {}, // 点击事件由子组件处理
           borderRadius: BorderRadius.circular(16),
-          hoverColor: Colors.white.withOpacity(0.2),
-          splashColor: Colors.white.withOpacity(0.3),
+          hoverColor: Colors.white.withSafeOpacity(0.2),
+          splashColor: Colors.white.withSafeOpacity(0.3),
           child: MouseRegion(
             cursor: SystemMouseCursors.click,
             child: Padding(

@@ -12,6 +12,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -47,12 +48,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   String _error = ''; // Error message
 
   // --- UI Mode State ---
-  FeedCollapseMode _collapseMode = FeedCollapseMode.none; // Default: Standard view
+  FeedCollapseMode _collapseMode =
+      FeedCollapseMode.none; // Default: Standard view
   bool _useAlternatingLayout = true; // Default: Alternating layout
 
   // --- Refresh Control ---
   DateTime? _lastRefreshTime;
-  final Duration _minUiRefreshInterval = const Duration(seconds: 3); // Shorter interval for UI feedback
+  final Duration _minUiRefreshInterval =
+      const Duration(seconds: 3); // Shorter interval for UI feedback
   Timer? _refreshDebounceTimer;
 
   // === Lifecycle Methods ===
@@ -62,7 +65,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     _refreshAnimationController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
     _fetchActivities(isInitialLoad: true); // Fetch data on init
-    _scrollController.addListener(_scrollListener); // Add scroll listener for pagination
+    _scrollController
+        .addListener(_scrollListener); // Add scroll listener for pagination
   }
 
   @override
@@ -191,11 +195,13 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Scroll listener to trigger loading more activities.
   void _scrollListener() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.9 && // Near bottom
-        !_isLoadingMore && // Not already loading more
-        !_isLoading && // Not during initial/refresh load
-        _pagination != null && _currentPage < _pagination!.pages // Has next page
-    ) {
+                _scrollController.position.maxScrollExtent *
+                    0.9 && // Near bottom
+            !_isLoadingMore && // Not already loading more
+            !_isLoading && // Not during initial/refresh load
+            _pagination != null &&
+            _currentPage < _pagination!.pages // Has next page
+        ) {
       _loadMoreActivities();
     }
   }
@@ -207,7 +213,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     // Simple throttling for pull-to-refresh
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      await Future.delayed(const Duration(milliseconds: 300)); // Visual feedback delay
+      await Future.delayed(
+          const Duration(milliseconds: 300)); // Visual feedback delay
       return;
     }
     setState(() {
@@ -258,18 +265,24 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Gets the display text for the current collapse mode.
   String _getCollapseModeText() {
     switch (_collapseMode) {
-      case FeedCollapseMode.none: return '标准视图';
-      case FeedCollapseMode.byType: return '按类型折叠';
-      default: return '标准视图'; // Fallback
+      case FeedCollapseMode.none:
+        return '标准视图';
+      case FeedCollapseMode.byType:
+        return '按类型折叠';
+      default:
+        return '标准视图'; // Fallback
     }
   }
 
   /// Gets the icon for the current collapse mode.
   IconData _getCollapseModeIcon() {
     switch (_collapseMode) {
-      case FeedCollapseMode.none: return Icons.view_agenda_outlined; // Use outlined icons for consistency
-      case FeedCollapseMode.byType: return Icons.category_outlined;
-      default: return Icons.view_agenda_outlined; // Fallback
+      case FeedCollapseMode.none:
+        return Icons.view_agenda_outlined; // Use outlined icons for consistency
+      case FeedCollapseMode.byType:
+        return Icons.category_outlined;
+      default:
+        return Icons.view_agenda_outlined; // Fallback
     }
   }
 
@@ -283,7 +296,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       arguments: {'activityId': activity.id, 'activity': activity},
     ).then((result) {
       // Optional: Refresh if something might have changed on the detail screen
-      if (mounted && result == true) { // Example: if detail screen returns true on change
+      if (mounted && result == true) {
+        // Example: if detail screen returns true on change
         _refreshData();
       }
     });
@@ -359,10 +373,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   }
 
   /// Handles adding a comment to an activity.
-  Future<ActivityComment?> _handleAddComment(String activityId, String content) async {
+  Future<ActivityComment?> _handleAddComment(
+      String activityId, String content) async {
     try {
       final activityService = context.read<UserActivityService>();
-      final comment = await activityService.commentOnActivity(activityId, content);
+      final comment =
+          await activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // The new comment object is returned. The ActivityCard should handle
@@ -391,7 +407,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       onConfirm: () async {
         try {
           final activityService = context.read<UserActivityService>();
-          final success = await activityService.deleteComment(activityId, commentId);
+          final success =
+              await activityService.deleteComment(activityId, commentId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
             // Notify ActivityCard to remove the comment from its state.
@@ -439,7 +456,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       appBar: CustomAppBar(
         title: widget.title, // Use the title passed to the widget
       ),
-      body: SafeArea( // Ensure content is within safe area
+      body: SafeArea(
+        // Ensure content is within safe area
         child: _buildBody(),
       ),
     );
@@ -473,7 +491,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             key: ValueKey('my_feed_${widget.userId}_${_collapseMode.index}'),
             activities: _activities,
             // Pass loading states accurately
-            isLoading: _isLoading && _activities.isEmpty, // Only show full feed loading if empty
+            isLoading: _isLoading &&
+                _activities.isEmpty, // Only show full feed loading if empty
             isLoadingMore: _isLoadingMore,
             // Pass error only if list is empty for feed's internal handling
             error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
@@ -483,7 +502,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             // --- Callbacks ---
             onActivityTap: _navigateToActivityDetail,
             onRefresh: _refreshData, // For pull-to-refresh
-            onLoadMore: _loadMoreActivities, // For triggering load more internally
+            onLoadMore:
+                _loadMoreActivities, // For triggering load more internally
             // --- Interaction Callbacks ---
             onDeleteActivity: _handleDeleteActivity,
             onLikeActivity: _handleLikeActivity,
@@ -511,30 +531,32 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
               onTap: _toggleCollapseMode,
               borderRadius: BorderRadius.circular(20),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.5),
+                    color: Theme.of(context)
+                        .colorScheme
+                        .primaryContainer
+                        .withSafeOpacity(0.5),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Theme.of(context).colorScheme.primaryContainer)
-                ),
+                    border: Border.all(
+                        color: Theme.of(context).colorScheme.primaryContainer)),
                 child: Row(
                   mainAxisSize: MainAxisSize.min, // Fit content size
                   mainAxisAlignment: MainAxisAlignment.center, // Center content
                   children: [
-                    Icon(
-                        _getCollapseModeIcon(),
+                    Icon(_getCollapseModeIcon(),
                         size: 18,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer
-                    ),
+                        color:
+                            Theme.of(context).colorScheme.onPrimaryContainer),
                     const SizedBox(width: 6),
-                    Text(
-                        _getCollapseModeText(),
+                    Text(_getCollapseModeText(),
                         style: TextStyle(
-                          color: Theme.of(context).colorScheme.onPrimaryContainer,
+                          color:
+                              Theme.of(context).colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.w500,
                           fontSize: 13,
-                        )
-                    ),
+                        )),
                   ],
                 ),
               ),
@@ -544,13 +566,17 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
           // Refresh Button
           IconButton(
-            icon: RotationTransition( // Add rotation animation wrapper
-              turns: Tween(begin: 0.0, end: 1.0).animate(_refreshAnimationController),
+            icon: RotationTransition(
+              // Add rotation animation wrapper
+              turns: Tween(begin: 0.0, end: 1.0)
+                  .animate(_refreshAnimationController),
               child: const Icon(Icons.refresh_outlined),
             ),
             tooltip: '刷新',
             // Disable button while loading
-            onPressed: (_isLoading || _isLoadingMore) ? null : _handleRefreshButtonPress,
+            onPressed: (_isLoading || _isLoadingMore)
+                ? null
+                : _handleRefreshButtonPress,
             splashRadius: 20,
           ),
 

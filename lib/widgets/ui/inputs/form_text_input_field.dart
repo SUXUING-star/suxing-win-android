@@ -10,7 +10,7 @@ class FormTextInputField extends FormField<String> {
   final FocusNode? focusNode;
   final String? hintText;
   final int? maxLines;
-  final bool enabled;
+  final bool isEnabled;
   final EdgeInsetsGeometry? contentPadding;
   final EdgeInsetsGeometry? padding;
   final InputDecoration? decoration;
@@ -36,7 +36,7 @@ class FormTextInputField extends FormField<String> {
     this.focusNode,
     this.hintText,
     this.maxLines = 1,
-    this.enabled = true,
+    this.isEnabled = true,
     this.contentPadding,
     this.padding = EdgeInsets.zero,
     this.textStyle,
@@ -54,7 +54,7 @@ class FormTextInputField extends FormField<String> {
   'Cannot provide both a controller and a slotName.'),
         super(
         validator: validator,
-        enabled: enabled,
+        enabled: isEnabled,
         // --- builder ---
         builder: (FormFieldState<String> field) {
           final _FormTextInputFieldState state = field as _FormTextInputFieldState;
@@ -74,11 +74,10 @@ class FormTextInputField extends FormField<String> {
           return TextInputField(
             slotName: useSlotName ? slotName : null,
             controller: useSlotName ? null : state._effectiveController, // **关键**
-            // 传递其他属性...
             focusNode: focusNode,
             hintText: hintText,
             maxLines: maxLines,
-            enabled: enabled,
+            enabled: isEnabled,
             contentPadding: contentPadding,
             padding: padding,
             decoration: effectiveDecoration,

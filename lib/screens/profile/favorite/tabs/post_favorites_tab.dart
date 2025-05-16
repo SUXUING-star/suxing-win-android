@@ -134,32 +134,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return _loadFavoritePosts();
   }
 
-  // --- 新增：处理 PostCard 的删除（取消收藏）请求 ---
-  Future<void> _handleUnfavoritePost(String postId) async {
-    // 不显示确认对话框，直接取消收藏
-    try {
-      // 调用 Service 取消收藏 (toggle 会自动处理状态)
-      final forumService = context.read<ForumService>();
-      final success = await forumService.togglePostFavorite(postId);
-
-      if (success && mounted) {
-        AppSnackBar.showSuccess(context, '已取消收藏');
-        // 优化：从列表中移除，而不是完全刷新
-        setState(() {
-          _favoritePosts.removeWhere((post) => post.id.toString() == postId);
-        });
-        // 可选：调用 refreshPosts() 保证数据完全同步，但会重新加载整页
-        // await refreshPosts();
-      } else if (!success && mounted) {
-        AppSnackBar.showWarning(context, '取消收藏状态未改变');
-      }
-    } catch (e) {
-      if (mounted) {
-        AppSnackBar.showError(context, '取消收藏失败: $e');
-      }
-    }
-  }
-
   // --- 新增：处理 PostCard 的编辑请求 ---
   void _handleEditPostRequest(Post post) {
     // 在收藏夹里编辑帖子通常是不允许的，应该引导用户去原帖编辑

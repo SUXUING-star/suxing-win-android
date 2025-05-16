@@ -1,6 +1,7 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 确保这个导入路径正确
 
 class LoadingWidget extends StatefulWidget {
@@ -165,7 +166,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
       type: MaterialType.transparency,
       child: Container(
         // Background dimming effect
-        color: Colors.black.withOpacity(widget.overlayOpacity),
+        color: Colors.black.withSafeOpacity(widget.overlayOpacity),
         child: Center(
           child: GestureDetector( // Wrap card with GestureDetector for dismissible
             onTap: widget.isDismissible ? () {
@@ -223,11 +224,11 @@ class _LoadingWidgetState extends State<LoadingWidget> {
       width: widget.overlayCardWidth, // Use parameter for width
       padding: widget.overlayCardPadding, // Use parameter for padding
       decoration: BoxDecoration(
-        color: cardBgColor.withOpacity(0.95), // Apply slight transparency to card background
+        color: cardBgColor.withSafeOpacity(0.95), // Apply slight transparency to card background
         borderRadius: BorderRadius.circular(widget.overlayCardBorderRadius), // Use parameter for radius
         boxShadow: [ // Subtle shadow
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withSafeOpacity(0.15),
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),

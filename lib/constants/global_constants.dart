@@ -13,7 +13,7 @@ class GlobalConstants {
   static const String appNameAndroid = '$appName（安卓版）';
   static const String appNameWindows = '$appName（Windows）';
 
-  static const List<Map<String, dynamic>> techStacks = const [
+  static const List<Map<String, dynamic>> techStacks = [
     {
       "title": "本项目全栈开发技术",
       "items": [

@@ -7,6 +7,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -127,7 +128,7 @@ class AboutScreen extends StatelessWidget {
           contentPadding:
               const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
           leading: CircleAvatar(
-            backgroundColor: iconColor.withOpacity(0.1),
+            backgroundColor: iconColor.withSafeOpacity(0.1),
             foregroundColor: iconColor,
             child: Icon(icon, size: 24),
           ),
@@ -169,7 +170,7 @@ class AboutScreen extends StatelessWidget {
           // --- ExpansionTile Header ---
           leading: CircleAvatar(
             // 使用 CircleAvatar 保持风格统一
-            backgroundColor: iconColor.withOpacity(0.1),
+            backgroundColor: iconColor.withSafeOpacity(0.1),
             foregroundColor: iconColor,
             child: Icon(icon, size: 24),
           ),
@@ -382,7 +383,7 @@ class AboutScreen extends StatelessWidget {
                   icon: techStackIcon, // 使用统一定义的图标
                   iconColor: techStackIconColor, // 使用统一定义的颜色
                 );
-              }).toList(),
+              }),
 
               // 如果 techStacks 为空，可以显示提示信息
               if (GlobalConstants.techStacks.isEmpty)

@@ -1,6 +1,7 @@
 // lib/widgets/ui/image/safe_cached_image.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../utils/network/url_utils.dart';
 
 /// 安全的缓存图片组件
@@ -129,7 +130,7 @@ class SafeCachedImage extends StatelessWidget {
         child: CircularProgressIndicator(
           strokeWidth: 2,
           valueColor: AlwaysStoppedAnimation<Color>(
-            Theme.of(context).primaryColor.withOpacity(0.5),
+            Theme.of(context).primaryColor.withSafeOpacity(0.5),
           ),
         ),
       ),

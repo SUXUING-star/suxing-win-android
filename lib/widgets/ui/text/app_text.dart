@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'app_text_type.dart';
 
 class AppText extends StatelessWidget {
@@ -185,7 +186,7 @@ class AppText extends StatelessWidget {
         baseStyle = (textTheme.bodyMedium ?? baseStyle).copyWith(color: colorScheme.error);
         break;
       case AppTextType.disabled:
-        baseStyle = (textTheme.bodyMedium ?? baseStyle).copyWith(color: colorScheme.onSurface.withOpacity(0.38));
+        baseStyle = (textTheme.bodyMedium ?? baseStyle).copyWith(color: colorScheme.onSurface.withSafeOpacity(0.38));
         break;
       case AppTextType.success:
         baseStyle = (textTheme.bodyMedium ?? baseStyle).copyWith(color: Colors.green); // 或者你自定义的成功色

@@ -1,23 +1,20 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // *** 新增 Provider 导入 ***
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-// --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-// *** 引入我们封装的按钮 ***
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'dart:async';
 import '../../services/main/email/email_service.dart';
 import '../../services/main/user/user_service.dart';
-// *** 新增 InputStateService 导入 ***
 import '../../providers/inputs/input_state_provider.dart';
 import '../../widgets/ui/appbar/custom_app_bar.dart';
 import '../../widgets/ui/common/error_widget.dart';
@@ -31,7 +28,8 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SnackBarNotifierMixin {
   final _formKey = GlobalKey<FormState>();
   // --- 定义 Slot 名称 ---
   static const String usernameSlotName = 'register_username';
@@ -84,15 +82,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     try {
       inputService = Provider.of<InputStateService>(context, listen: false);
     } catch (e) {
-      setState(() => _error = '内部错误：无法访问输入服务');
-      AppSnackBar.showError(context, _error!);
+      setState(() => _error = '内部错误，请稍后重试');
       return;
     }
     final email = inputService.getText(emailSlotName).trim();
 
     // 简单的邮箱格式前端校验（也可以依赖 FormField 的 validator）
     if (email.isEmpty || !email.contains('@')) {
-      AppSnackBar.showWarning(context, '请输入有效的邮箱地址');
+      showSnackbar(message: '请输入有效的邮箱地址', type: SnackbarType.warning);
       setState(() => _error = '请输入有效的邮箱地址'); // 可以同时设置内联错误
       return;
     }
@@ -104,35 +101,31 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
     try {
       final emailService = context.read<EmailService>();
-      await emailService.requestVerificationCode(
-          // <--- 改成调用实例方法
-          email,
-          'register');
+      await emailService.requestVerificationCode(email, 'register');
       if (!mounted) return;
       _startTimer();
       setState(() {
         _codeSent = true;
         _error = null;
       });
-      AppSnackBar.showSuccess(context, "验证码已发送至您的邮箱，请注意查收！");
+      showSnackbar(message: "验证码已发送至您的邮箱，请注意查收！", type: SnackbarType.success);
     } catch (e) {
       if (!mounted) return;
       final errorMessage = '发送验证码失败：${e.toString()}';
       setState(() => _error = errorMessage);
-      AppSnackBar.showError(context, errorMessage);
+      showSnackbar(message: errorMessage, type: SnackbarType.error);
     } finally {
       if (mounted) {
         setState(() => _isSendingCode = false);
       }
     }
   }
-  // --- 结束修改 ---
 
   // --- 修改：处理注册，从 Service 获取所有值，成功后清除状态 ---
   Future<void> _handleRegister() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_codeSent) {
-      AppSnackBar.showWarning(context, '请先获取验证码');
+      showSnackbar(message: '请先获取验证码', type: SnackbarType.warning);
       return;
     }
 
@@ -147,19 +140,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (e) {
       setState(() {
         _isRegistering = false;
-        _error = '内部错误：无法访问输入服务';
+        _error = '内部错误，请稍后重试';
       });
-      AppSnackBar.showError(context, _error!);
       return;
     }
 
     // 从 Service 获取所有需要的值
     final email = inputService.getText(emailSlotName).trim();
     final username = inputService.getText(usernameSlotName).trim();
-    final password =
-        inputService.getText(passwordSlotName).trim(); // 注意：密码通常不trim，但如果需要就这样
-    final confirmPassword =
-        inputService.getText(confirmPasswordSlotName).trim(); // 同上
+    final password = inputService.getText(passwordSlotName);
     final verificationCode =
         inputService.getText(verificationCodeSlotName).trim();
 
@@ -174,7 +163,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!isCodeValid) {
         registrationError = '验证码错误或已过期';
         setState(() => _error = registrationError);
-        AppSnackBar.showError(context, registrationError);
+        showSnackbar(message: registrationError, type: SnackbarType.error);
         setState(() => _isRegistering = false);
         return;
       }
@@ -206,7 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       inputService.clearText(confirmPasswordSlotName);
       inputService.clearText(verificationCodeSlotName);
 
-      AppSnackBar.showSuccess(context, "注册成功，即将跳转...");
+      showSnackbar(message: "注册成功，即将跳转...", type: SnackbarType.success);
       await Future.delayed(Duration(milliseconds: 1000));
       if (!mounted) return;
       NavigationUtils.pop(context);
@@ -214,21 +203,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       registrationError = (isCodeValid ? '注册失败：' : '验证码校验出错：') + e.toString();
       setState(() => _error = registrationError);
-      AppSnackBar.showError(context, registrationError);
+      showSnackbar(message: registrationError, type: SnackbarType.error);
     } finally {
       if (mounted) {
         setState(() => _isRegistering = false);
       }
     }
   }
-  // --- 结束修改 ---
 
-  // --- 修改：使用 slotName ---
   Widget _buildPassWordFormField(bool isLoading) {
     return FormTextInputField(
       slotName: passwordSlotName, // <-- 使用 slotName
-      // controller: _passwordController, // <-- 移除 controller
-      enabled: !isLoading,
+      isEnabled: !isLoading,
       obscureText: _obscurePassword,
       decoration: InputDecoration(
         labelText: '密码 (至少6位)',
@@ -250,14 +236,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
     );
   }
-  // --- 结束修改 ---
 
-  // --- 修改：使用 slotName ---
   Widget _buildVerificationCodeField(bool isLoading) {
     return FormTextInputField(
       slotName: verificationCodeSlotName, // <-- 使用 slotName
-      // controller: _verificationCodeController, // <-- 移除 controller
-      enabled: !isLoading && _codeSent,
+      isEnabled: !isLoading && _codeSent,
       decoration: const InputDecoration(
         labelText: '验证码',
         prefixIcon: Icon(Icons.pin_outlined),
@@ -279,8 +262,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   Widget _buildUserNameFormField(bool isLoading) {
     return FormTextInputField(
       slotName: usernameSlotName, // <-- 使用 slotName
-      // controller: _usernameController, // <-- 移除 controller
-      enabled: !isLoading,
+      isEnabled: !isLoading,
       decoration: const InputDecoration(
         labelText: '用户名',
         prefixIcon: Icon(Icons.person_outline),
@@ -289,19 +271,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       validator: (value) => (value == null || value.isEmpty) ? '请输入用户名' : null,
     );
   }
-  // --- 结束修改 ---
 
-  // --- 修改：使用 slotName ---
   Widget _buildEmailFormField(bool isLoading) {
     final String sendCodeButtonLabel =
         _countDown > 0 ? '${_countDown}s' : (_codeSent ? '重新发送' : '发送验证码');
     final bool isSendCodeButtonEnabled = !isLoading && _countDown <= 0;
 
     final emailField = FormTextInputField(
-      slotName: emailSlotName, // <-- 使用 slotName
-      // controller: _emailController, // <-- 移除 controller
-      // key: _emailFormKey, // <-- 这个 key 不需要了，因为 Form 在外面
-      enabled: !isLoading,
+      slotName: emailSlotName,
+      isEnabled: !isLoading,
       decoration: const InputDecoration(
         labelText: '邮箱',
         prefixIcon: Icon(Icons.alternate_email),
@@ -337,14 +315,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
       ],
     );
   }
-  // --- 结束修改 ---
 
-  // --- 修改：使用 slotName，并修改 validator ---
   Widget _buildRepeatPassWordFormField(bool isLoading) {
     return FormTextInputField(
-      slotName: confirmPasswordSlotName, // <-- 使用 slotName
-      // controller: _confirmPasswordController, // <-- 移除 controller
-      enabled: !isLoading,
+      slotName: confirmPasswordSlotName,
+      isEnabled: !isLoading,
       obscureText: _obscureConfirmPassword,
       decoration: InputDecoration(
         labelText: '确认密码',
@@ -370,7 +345,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       },
     );
   }
-  // --- 结束修改 ---
 
   Widget _buildErrorMessageField() {
     return _error != null
@@ -395,6 +369,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     final bool isLoading = _isSendingCode || _isRegistering;
     final String loadingMessage =
         _isSendingCode ? '正在发送验证码...' : (_isRegistering ? '正在注册...' : '');
@@ -421,7 +396,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                       borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withAlpha(200),
                             blurRadius: 10,
                             offset: Offset(0, 4))
                       ]),

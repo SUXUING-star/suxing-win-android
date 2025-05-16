@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../services/main/user/cache/account_cache_service.dart';
 import '../../../widgets/ui/badges/safe_user_avatar.dart';
 
@@ -56,11 +57,11 @@ class AccountBubbleMenu extends StatelessWidget {
                 maxHeight: MediaQuery.of(context).size.height * 0.6,
               ),
               decoration: BoxDecoration(
-                color: backgroundColor ?? Colors.white.withOpacity(0.95),
+                color: backgroundColor ?? Colors.white.withSafeOpacity(0.95),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withSafeOpacity(0.1),
                     blurRadius: 10,
                     spreadRadius: 1,
                     offset: const Offset(0, 2),
@@ -78,11 +79,11 @@ class AccountBubbleMenu extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.05),
+                        color: Theme.of(context).primaryColor.withSafeOpacity(0.05),
                         border: Border(
                           bottom: BorderSide(
                             color:
-                                Theme.of(context).dividerColor.withOpacity(0.3),
+                                Theme.of(context).dividerColor.withSafeOpacity(0.3),
                             width: 0.5,
                           ),
                         ),
@@ -148,7 +149,7 @@ class AccountBubbleMenu extends StatelessWidget {
                                           bottom: BorderSide(
                                             color: Theme.of(context)
                                                 .dividerColor
-                                                .withOpacity(0.3),
+                                                .withSafeOpacity(0.3),
                                             width: 0.5,
                                           ),
                                         )
@@ -232,7 +233,7 @@ class AccountBubbleMenu extends StatelessWidget {
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
                           backgroundColor:
-                              Theme.of(context).primaryColor.withOpacity(0.1),
+                              Theme.of(context).primaryColor.withSafeOpacity(0.1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

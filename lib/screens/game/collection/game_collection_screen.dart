@@ -211,7 +211,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
         // 4. 时间足够长 或 首次刷新 -> 执行强制刷新
         await _loadData(forceRefresh: true);
         _lastForcedRefreshTime = now; // 更新上次强制刷新的时间
-        didForceRefresh = true;
+        didForceRefresh = !didForceRefresh;
       } else {
         // 5. 时间间隔太短 -> 不执行强制刷新 (可以选择执行普通刷新或什么都不做)
         AppSnackBar.showWarning(context, '操作太快了，请稍后再试');

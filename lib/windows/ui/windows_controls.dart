@@ -1,5 +1,6 @@
 // lib/windows/ui/windows_controls.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/windows/ui/control_button.dart';
 import 'package:window_manager/window_manager.dart';
 
@@ -54,9 +55,9 @@ class _WindowsControlsState extends State<WindowsControls> with WindowListener {
     // --- 颜色处理 ---
     // 优先使用传入的颜色，否则使用基于主题的默认值
     final Color currentIconColor = widget.iconColor ??
-        theme.colorScheme.onSurface.withOpacity(0.8); // 默认用主题反色
+        theme.colorScheme.onSurface.withSafeOpacity(0.8); // 默认用主题反色
     final Color currentHoverColor = widget.hoverColor ??
-        theme.colorScheme.onSurface.withOpacity(0.1); // 默认用主题反色的低透明度
+        theme.colorScheme.onSurface.withSafeOpacity(0.1); // 默认用主题反色的低透明度
     final Color currentCloseHoverColor = widget.closeHoverColor ?? Colors.red;
 
     const double iconSize = 16.0;

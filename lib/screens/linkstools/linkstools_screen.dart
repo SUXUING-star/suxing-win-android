@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -100,7 +101,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- _launchURL (保持不变) ---
   Future<void> _launchURL(BuildContext context, String url) async {
-    String? err;
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
@@ -109,7 +109,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
         throw '无法打开链接 $url';
       }
     } catch (e) {
-      err = e.toString();
       print("Error launching URL $url: $e");
     }
   }
@@ -302,7 +301,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
           child: VerticalDivider(
               width: 32,
               thickness: 1,
-              color: Theme.of(context).dividerColor.withOpacity(0.15),
+              color: Theme.of(context).dividerColor.withSafeOpacity(0.15),
               indent: 8,
               endIndent: 8),
         ),

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/announcement/announcement.dart';
 import '../../../services/main/announcement/announcement_service.dart';
@@ -343,8 +344,8 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
         borderRadius: BorderRadius.circular(8),
         side: BorderSide(
           color: isActive && !isExpired
-              ? typeColor.withOpacity(0.5)
-              : Colors.grey.withOpacity(0.3),
+              ? typeColor.withSafeOpacity(0.5)
+              : Colors.grey.withSafeOpacity(0.3),
           width: 1,
         ),
       ),

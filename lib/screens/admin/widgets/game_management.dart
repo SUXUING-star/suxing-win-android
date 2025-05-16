@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../services/main/game/game_service.dart';
 import '../../../../models/game/game.dart';
@@ -493,7 +494,7 @@ class _GameManagementState extends State<GameManagement>
             mainAxisSize: MainAxisSize.min,
             children: [
               CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.8),
+                backgroundColor: Colors.white.withSafeOpacity(0.8),
                 radius: 16,
                 child: IconButton(
                   padding: EdgeInsets.zero,
@@ -505,7 +506,7 @@ class _GameManagementState extends State<GameManagement>
               ),
               SizedBox(width: 4),
               CircleAvatar(
-                backgroundColor: Colors.white.withOpacity(0.8),
+                backgroundColor: Colors.white.withSafeOpacity(0.8),
                 radius: 16,
                 child: IconButton(
                   padding: EdgeInsets.zero,
@@ -536,7 +537,7 @@ class _GameManagementState extends State<GameManagement>
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.orange.withOpacity(0.9),
+              color: Colors.orange.withSafeOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -556,7 +557,7 @@ class _GameManagementState extends State<GameManagement>
               children: [
                 CircleAvatar(
                   // 批准按钮
-                  backgroundColor: Colors.white.withOpacity(0.9),
+                  backgroundColor: Colors.white.withSafeOpacity(0.9),
                   radius: 18,
                   child: IconButton(
                       padding: EdgeInsets.zero,
@@ -568,7 +569,7 @@ class _GameManagementState extends State<GameManagement>
                 SizedBox(width: 6),
                 CircleAvatar(
                   // 拒绝按钮
-                  backgroundColor: Colors.white.withOpacity(0.9),
+                  backgroundColor: Colors.white.withSafeOpacity(0.9),
                   radius: 18,
                   child: IconButton(
                       padding: EdgeInsets.zero,
@@ -597,7 +598,7 @@ class _GameManagementState extends State<GameManagement>
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.9),
+              color: Colors.red.withSafeOpacity(0.9),
               borderRadius: BorderRadius.circular(16),
             ),
             child: Text(
@@ -617,7 +618,7 @@ class _GameManagementState extends State<GameManagement>
               child: Container(
                 padding: EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.7), // 半透明背景
+                  color: Colors.black.withSafeOpacity(0.7), // 半透明背景
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

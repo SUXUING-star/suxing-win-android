@@ -1,10 +1,9 @@
-import 'package:flutter/foundation.dart'; // for listEquals, SetEquality
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'dart:async';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'package:collection/collection.dart'; // 引入 collection 包进行深度比较
+import 'package:collection/collection.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 
@@ -13,12 +12,12 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
-import 'package:suxingchahui/services/utils/request_lock_service.dart'; // 全局锁服务
+import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 提示框
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 // --- UI 和辅助组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -84,7 +83,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   final GameFormCacheService _cacheService = GameFormCacheService();
   String? _draftKey; // 当前表单使用的草稿 Key (add_draft 或 edit_game_draft_ID)
   // 特殊字符串，用于在草稿中标记本地文件位置
-  //static const String _localFilePlaceholder = "__LOCAL_XFILE_PLACEHOLDER__";
 
   // --- 编辑模式下的初始状态，用于比较变更 ---
   // 保存 widget.game 的初始副本，用于判断是否有修改
@@ -154,9 +152,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   }
 
   Future<void> _saveDraftAndExit() async {
-    // 不需要检查 _isProcessing，因为这个按钮应该在非 processing 时才可点
-    // 也不需要检查是否有修改，因为用户明确点了“保存”
-
     // 直接调用执行保存的方法
     try {
       // 必须确保 draftKey 有效
@@ -618,7 +613,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     // 检查图片是否都为空 (null 且没有 XFile)
     bool coverEmpty = _coverImageSource == null;
     // 检查游戏截图列表是否为空（只包含 null）
-    bool gameImagesEmpty = _gameImagesSources.whereNotNull().isEmpty;
+    bool gameImagesEmpty = _gameImagesSources.nonNulls as bool;
 
     // 检查列表是否为空
     bool listsEmpty = _downloadLinks.isEmpty &&
@@ -650,7 +645,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 ? null
                 : _bvidController.text.trim()) !=
             initial.bvid) {
-      print("Change detected: Text field differs.");
       return true;
     }
 
@@ -863,7 +857,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // 3c. 构建 Game 对象
           final game = Game(
             // ID: 编辑时用 widget.game.id，添加时生成新 ID
-            id: widget.game?.id ?? mongo.ObjectId().toHexString(),
+            id: widget.game?.id ?? mongo.ObjectId().oid,
             // Author ID: 需要从当前登录用户获取，这里用占位符
             authorId: widget.game?.authorId ?? userId,
             title: _titleController.text.trim(),
@@ -1033,7 +1027,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         if (_isProcessing)
           Positioned.fill(
             child: Container(
-              color: Colors.black.withOpacity(0.1), // 半透明遮罩
+              color: Colors.black.withSafeOpacity(0.1), // 半透明遮罩
               child: LoadingWidget.inline(), // 居中显示
             ),
           ),
@@ -1279,7 +1273,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                     .textTheme
                     .titleLarge
                     ?.color
-                    ?.withOpacity(0.85) ??
+                    ?.withSafeOpacity(0.85) ??
                 Colors.black87, // 使用主题颜色
           ),
         ),
@@ -1326,7 +1320,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       ),
       maxLines: 1,
       maxLength: 50,
-      enabled: !_isProcessing,
+      isEnabled: !_isProcessing,
       textInputAction: TextInputAction.next,
       validator: (value) =>
           (value == null || value.trim().isEmpty) ? '请输入游戏标题' : null,
@@ -1347,7 +1341,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       maxLength: 100,
       minLines: 2,
       maxLines: 3,
-      enabled: !_isProcessing,
+      isEnabled: !_isProcessing,
       textInputAction: TextInputAction.newline,
       validator: (value) =>
           (value == null || value.trim().isEmpty) ? '请输入游戏简介' : null,
@@ -1372,7 +1366,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       minLines: DeviceUtils.isDesktop ? 5 : 4,
       maxLength: 500,
       maxLines: DeviceUtils.isDesktop ? 10 : 8,
-      enabled: !_isProcessing,
+      isEnabled: !_isProcessing,
       textInputAction: TextInputAction.newline,
       validator: (value) =>
           (value == null || value.trim().isEmpty) ? '请输入详细描述' : null,
@@ -1391,7 +1385,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         border: OutlineInputBorder(),
       ),
       maxLines: 1,
-      enabled: !_isProcessing,
+      isEnabled: !_isProcessing,
       keyboardType: TextInputType.url, // 指定键盘类型
       textInputAction: TextInputAction.next,
       validator: (value) {
@@ -1414,7 +1408,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         border: OutlineInputBorder(),
       ),
       maxLines: 1,
-      enabled: !_isProcessing,
+      isEnabled: !_isProcessing,
       textInputAction: TextInputAction.done,
       validator: (value) {
         if (value == null || value.trim().isEmpty) return null;
@@ -1445,12 +1439,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // --- 使用更新后的 CategoryField ---
         CategoryField(
-          // selectedCategories: _selectedCategories, // 旧的
-          selectedCategory: _selectedCategory, // <--- 传入 String?
+          selectedCategory: _selectedCategory,
           onChanged: (String? newValue) {
-            // <--- 接收 String?
             setState(() {
               _selectedCategory = newValue;
               // 如果选择了分类或取消选择，更新错误状态

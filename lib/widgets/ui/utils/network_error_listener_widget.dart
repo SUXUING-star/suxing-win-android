@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/network/network_manager.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/app.dart'; // 为了 mainNavigatorKey
@@ -117,7 +118,7 @@ class _NetworkErrorListenerWidgetState
                       .textTheme
                       .bodyMedium
                       ?.color
-                      ?.withOpacity(0.8)),
+                      ?.withSafeOpacity(0.8)),
             ),
           ),
           LoadingWidget.inline(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_page_popup_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 // --- 完整修改后的 PaginationControls 组件 (方案三：使用 PopupMenuButton) ---
 
@@ -63,7 +64,8 @@ class PaginationControls extends StatelessWidget {
   }
 
   // 构建单个导航按钮 (不变)
-  Widget _buildNavigationButton(BuildContext context, {
+  Widget _buildNavigationButton(
+    BuildContext context, {
     required String label,
     required IconData icon,
     required bool isEnabled,
@@ -74,7 +76,8 @@ class PaginationControls extends StatelessWidget {
     final TextTheme textTheme = Theme.of(context).textTheme;
     final Color disabledColor = Colors.grey.shade400;
     final Color enabledIconColor = colorScheme.primary;
-    final Color enabledTextColor = textTheme.bodyMedium?.color ?? Colors.black87;
+    final Color enabledTextColor =
+        textTheme.bodyMedium?.color ?? Colors.black87;
 
     Widget buttonContent = Row(
       mainAxisSize: MainAxisSize.min,
@@ -82,7 +85,8 @@ class PaginationControls extends StatelessWidget {
         if (isPrevious)
           Padding(
             padding: const EdgeInsets.only(right: 4.0),
-            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor),
+            child: Icon(icon,
+                size: 14, color: isEnabled ? enabledIconColor : disabledColor),
           ),
         Text(
           label,
@@ -97,7 +101,8 @@ class PaginationControls extends StatelessWidget {
         if (!isPrevious)
           Padding(
             padding: const EdgeInsets.only(left: 4.0),
-            child: Icon(icon, size: 14, color: isEnabled ? enabledIconColor : disabledColor),
+            child: Icon(icon,
+                size: 14, color: isEnabled ? enabledIconColor : disabledColor),
           ),
       ],
     );
@@ -108,18 +113,20 @@ class PaginationControls extends StatelessWidget {
         margin: const EdgeInsets.symmetric(horizontal: 6.0),
         clipBehavior: Clip.antiAlias,
         elevation: isEnabled ? 0.5 : 0,
-        color: Theme.of(context).cardColor.withOpacity(0.9),
+        color: Theme.of(context).cardColor.withSafeOpacity(0.9),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
           side: isEnabled
               ? BorderSide.none
-              : BorderSide(color: Colors.grey.shade300.withOpacity(0.5), width: 0.5),
+              : BorderSide(
+                  color: Colors.grey.shade300.withSafeOpacity(0.5), width: 0.5),
         ),
         child: InkWell(
           onTap: isEnabled ? onPressed : null,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 10.0, vertical: 6.0),
             child: buttonContent,
           ),
         ),
@@ -135,25 +142,30 @@ class PaginationControls extends StatelessWidget {
     const double indicatorSize = 16.0;
     final pageInfoStyle = textTheme.bodySmall?.copyWith(
       fontWeight: FontWeight.w600,
-      color: (textTheme.bodySmall?.color ?? Colors.grey.shade700).withOpacity(0.9),
+      color: (textTheme.bodySmall?.color ?? Colors.grey.shade700)
+          .withSafeOpacity(0.9),
     );
-    final disabledPageInfoColor = (textTheme.bodySmall?.color ?? Colors.grey.shade700).withOpacity(0.5);
+    final disabledPageInfoColor =
+        (textTheme.bodySmall?.color ?? Colors.grey.shade700)
+            .withSafeOpacity(0.5);
 
     // 1. 加载圈 (不变)
     if (isLoading) {
       // *** 为了保险，也给加载圈一个明确的大小，避免依赖 ConstrainedBox ***
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: SizedBox( // 直接用 SizedBox 指定大小
+        child: SizedBox(
+          // 直接用 SizedBox 指定大小
           width: indicatorSize,
           height: 30, // 给一个大概的高度，跟按钮差不多
-          child: Center( // Center 保证加载圈在 SizedBox 中间
+          child: Center(
+            // Center 保证加载圈在 SizedBox 中间
             child: SizedBox(
               width: indicatorSize,
               height: indicatorSize,
               child: CircularProgressIndicator(
                 strokeWidth: 1.5,
-                color: colorScheme.primary.withOpacity(0.8),
+                color: colorScheme.primary.withSafeOpacity(0.8),
               ),
             ),
           ),
@@ -165,7 +177,8 @@ class PaginationControls extends StatelessWidget {
     if (totalPages > 1 && onPageSelected != null) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: CustomPopupMenuButton<int>( // 继续使用支持 child 的版本
+        child: CustomPopupMenuButton<int>(
+          // 继续使用支持 child 的版本
           itemBuilder: (context) {
             return List<PopupMenuEntry<int>>.generate(totalPages, (index) {
               final page = index + 1;
@@ -192,7 +205,8 @@ class PaginationControls extends StatelessWidget {
           },
           tooltip: '跳转页面',
           isEnabled: !isLoading,
-          shape: RoundedRectangleBorder( // 保持菜单的圆角
+          shape: RoundedRectangleBorder(
+            // 保持菜单的圆角
             borderRadius: BorderRadius.circular(8.0),
           ),
           // *** 设置菜单背景为透明或白色，让 Item 的背景生效 ***
@@ -219,13 +233,19 @@ class PaginationControls extends StatelessWidget {
       // *** 也给纯文本一个明确的高度或容器，保持一致性 ***
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 8.0),
-        child: Container( // 用 Container 包裹
+        child: Container(
+          // 用 Container 包裹
           padding: const EdgeInsets.symmetric(vertical: 6.0), // 同上，给点垂直空间
           height: 30, // 保持和其他情况高度一致
           alignment: Alignment.center, // 确保文本在容器中居中
           child: Text(
             '$currentPage / $totalPages',
-            style: onPageSelected == null ? TextStyle(color: disabledPageInfoColor, fontSize: pageInfoStyle?.fontSize, fontWeight: pageInfoStyle?.fontWeight) : pageInfoStyle,
+            style: onPageSelected == null
+                ? TextStyle(
+                    color: disabledPageInfoColor,
+                    fontSize: pageInfoStyle?.fontSize,
+                    fontWeight: pageInfoStyle?.fontWeight)
+                : pageInfoStyle,
           ),
         ),
       );

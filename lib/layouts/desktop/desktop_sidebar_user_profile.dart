@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../providers/auth/auth_provider.dart';
 import '../../models/user/user.dart';
 
@@ -28,7 +29,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         child: InkWell(
           onTap: () => NavigationUtils.navigateToLogin(context),
-          hoverColor: Colors.white.withOpacity(0.1),
+          hoverColor: Colors.white.withSafeOpacity(0.1),
           borderRadius: BorderRadius.circular(20), // Keep consistent radius
           child: Tooltip(
             message: '登录',
@@ -47,7 +48,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                   ),
                   child: CircleAvatar(
                     radius: 20, // Inner radius matches image size
-                    backgroundColor: Colors.white.withOpacity(0.2),
+                    backgroundColor: Colors.white.withSafeOpacity(0.2),
                     child: Icon(
                       Icons.person_rounded,
                       size: 24,
@@ -85,7 +86,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
         cursor: SystemMouseCursors.click,
         child: InkWell(
           onTap: onProfileTap,
-          hoverColor: Colors.white.withOpacity(0.1),
+          hoverColor: Colors.white.withSafeOpacity(0.1),
           borderRadius: BorderRadius.circular(20),
           child: Tooltip(
             message: '我的资料',
@@ -150,7 +151,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                 Text(
                   '${user.experience} XP',
                   style: TextStyle(
-                      fontSize: 10, color: Colors.white.withOpacity(0.8)),
+                      fontSize: 10, color: Colors.white.withSafeOpacity(0.8)),
                 ),
               ],
             ),
@@ -168,7 +169,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(0.2), // Background color for the circle
+        color: Colors.white.withSafeOpacity(0.2), // Background color for the circle
       ),
       child: Center(
         // Center the text within the container

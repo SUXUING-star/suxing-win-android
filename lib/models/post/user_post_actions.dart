@@ -47,8 +47,8 @@ class UserPostActions {
     bool? favorited,
   }) {
     return UserPostActions(
-      postId: this.postId, // 保持 postId 和 userId
-      userId: this.userId,
+      postId: postId, // 保持 postId 和 userId
+      userId: userId,
       liked: liked ?? this.liked,
       agreed: agreed ?? this.agreed,
       favorited: favorited ?? this.favorited,

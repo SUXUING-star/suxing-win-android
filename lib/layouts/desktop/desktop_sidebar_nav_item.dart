@@ -1,5 +1,6 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_nav_item.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class DesktopSidebarNavItem extends StatelessWidget {
   final IconData icon;
@@ -41,8 +42,8 @@ class DesktopSidebarNavItem extends StatelessWidget {
           child: InkWell(
             onTap: onTap,
             borderRadius: BorderRadius.circular(12),
-            hoverColor: Colors.white.withOpacity(0.2),
-            splashColor: Colors.white.withOpacity(0.3),
+            hoverColor: Colors.white.withSafeOpacity(0.2),
+            splashColor: Colors.white.withSafeOpacity(0.3),
             child: MouseRegion(
               cursor: SystemMouseCursors.click,
               child: Container(
@@ -56,18 +57,18 @@ class DesktopSidebarNavItem extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         color: isSelected
-                            ? Colors.white.withOpacity(0.3)
-                            : _navItemColor.withOpacity(0.3),
+                            ? Colors.white.withSafeOpacity(0.3)
+                            : _navItemColor.withSafeOpacity(0.3),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
                           color: isSelected
                               ? Colors.white
-                              : _navItemColor.withOpacity(0.8),
+                              : _navItemColor.withSafeOpacity(0.8),
                           width: 1.5,
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: _navItemColor.withOpacity(0.4),
+                            color: _navItemColor.withSafeOpacity(0.4),
                             blurRadius: 4,
                             offset: Offset(0, 2),
                           ),
@@ -87,7 +88,8 @@ class DesktopSidebarNavItem extends StatelessWidget {
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                        fontWeight:
+                            isSelected ? FontWeight.bold : FontWeight.normal,
                       ),
                     ),
                   ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../utils/device/device_utils.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
@@ -24,7 +25,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 20,
             offset: Offset(0, -5),
           ),
@@ -79,7 +80,7 @@ class CustomBottomNavigationBar extends StatelessWidget {
       activeIcon: Container(
         padding: EdgeInsets.all(padding),
         decoration: BoxDecoration(
-          color: Color(0xFF2979FF).withOpacity(0.1),
+          color: Color(0xFF2979FF).withSafeOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
         ),
         child: MouseRegion(

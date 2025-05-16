@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
@@ -442,7 +443,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             if (_isRefreshing) // 只有在有内容显示时才覆盖指示器
               Positioned.fill(
                 child: Container(
-                  color: Colors.black.withOpacity(0.1), // 半透明遮罩
+                  color: Colors.black.withSafeOpacity(0.1), // 半透明遮罩
                   child:
                       Center(child: CircularProgressIndicator(strokeWidth: 2)),
                 ),

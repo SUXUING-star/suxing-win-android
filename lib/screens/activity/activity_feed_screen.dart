@@ -14,6 +14,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activi
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -390,7 +391,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
             DateTime.now(); // Consider load more a type of refresh
       });
       _startOrUpdateWatchingCache(); // Start watching the new (current) page
-    } catch (e, s) {
+    } catch (e) {
       // Handle errors during load more
       if (mounted) {
         AppSnackBar.showError(context, '加载更多失败: $e');
@@ -796,7 +797,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                     color: Theme.of(context)
                         .colorScheme
                         .primaryContainer
-                        .withOpacity(0.5),
+                        .withSafeOpacity(0.5),
                     borderRadius: BorderRadius.circular(20),
                     border: Border.all(
                         color: Theme.of(context).colorScheme.primaryContainer)),

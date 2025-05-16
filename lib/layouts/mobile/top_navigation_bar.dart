@@ -1,4 +1,5 @@
 // lib/layouts/mobile/top_navigation_bar.dart
+import 'dart:ui' as ui; // 导入 dart:ui
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
@@ -21,22 +22,33 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize {
-    return DeviceUtils.isAndroid &&
-            WidgetsBinding.instance.window.physicalSize.width >
-                WidgetsBinding.instance.window.physicalSize.height
-        ? Size.fromHeight(kToolbarHeight * 0.8)
-        : Size.fromHeight(kToolbarHeight);
+    // 尝试获取主视图
+    final ui.FlutterView? view = ui.PlatformDispatcher.instance.implicitView;
+
+    if (view != null) {
+      // 使用视图的物理尺寸和设备像素比来判断方向（如果需要逻辑像素的话）
+      // 但你这里是直接比较物理尺寸的宽高
+      final bool isLandscape =
+          view.physicalSize.width > view.physicalSize.height;
+      if (DeviceUtils.isAndroid && isLandscape) {
+        return Size.fromHeight(kToolbarHeight * 0.8);
+      }
+    }
+    // 默认或获取视图失败的情况
+    return Size.fromHeight(kToolbarHeight);
   }
 
   @override
   Widget build(BuildContext context) {
-    final bool isAndroidLandscape =
-        DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
+    // 你在 build 方法中已经有了 DeviceUtils.isLandscape(context)
+    // 这个 context 是有效的，可以用它来获取 MediaQuery
+    final bool isActualAndroidLandscape = DeviceUtils.isAndroid &&
+        (MediaQuery.of(context).orientation == Orientation.landscape);
 
-    final double verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
-    final double iconSize = isAndroidLandscape ? 18.0 : 20.0;
-    final double searchBarHeight = isAndroidLandscape ? 32.0 : 40.0;
-    final double avatarRadius = isAndroidLandscape ? 12.0 : 14.0;
+    final double verticalPadding = isActualAndroidLandscape ? 4.0 : 8.0;
+    final double iconSize = isActualAndroidLandscape ? 18.0 : 20.0;
+    final double searchBarHeight = isActualAndroidLandscape ? 32.0 : 40.0;
+    final double avatarRadius = isActualAndroidLandscape ? 12.0 : 14.0;
 
     return AppBar(
       elevation: 0,

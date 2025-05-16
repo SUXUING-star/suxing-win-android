@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class EmptyStateWidget extends StatelessWidget {
   /// 要显示的提示信息 (必需)。
@@ -30,7 +31,7 @@ class EmptyStateWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color defaultIconColor = theme.hintColor.withOpacity(0.7);
+    final Color defaultIconColor = theme.hintColor.withSafeOpacity(0.7);
     final TextStyle defaultTextStyle = theme.textTheme.titleMedium?.copyWith(
       color: Colors.grey[600], // 使用稍深的灰色以提高对比度
       height: 1.5, // 增加行高，改善可读性

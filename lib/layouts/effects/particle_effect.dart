@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class Particle {
   double x;
@@ -45,7 +46,7 @@ class ParticlesPainter extends CustomPainter {
     final paint = Paint()..style = PaintingStyle.fill;
 
     for (var particle in particles) {
-      paint.color = particle.color.withOpacity(particle.opacity);
+      paint.color = particle.color.withSafeOpacity(particle.opacity);
 
       final position = Offset(
         particle.x * size.width / 400,
@@ -75,7 +76,7 @@ class ParticlesPainter extends CustomPainter {
 
     // 添加高光效果
     final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.5)
+      ..color = Colors.white.withSafeOpacity(0.5)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(
       Offset(position.dx - size * 0.3, position.dy - size * 0.3),

@@ -1,5 +1,4 @@
 // lib/providers/inputs/input_state_provider.dart
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// 全局管理不同输入框（坑位）的文本状态

@@ -79,8 +79,9 @@ class UserActivity {
   factory UserActivity.fromJson(Map<String, dynamic> json) {
     // 日期解析逻辑保持不变
     DateTime parseDateTime(String? dateString) {
-      if (dateString == null || dateString.isEmpty)
+      if (dateString == null || dateString.isEmpty) {
         return DateTime(1970); // 返回一个明确的默认值，而不是 now()
+      }
       try {
         return DateTime.parse(dateString).toLocal(); // 确保转为本地时间
       } catch (e) {

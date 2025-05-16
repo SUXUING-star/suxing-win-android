@@ -80,7 +80,7 @@ class Game {
     // Helper functions (保持你原来的，确认它们能处理 null 和类型转换)
     String parseId(dynamic idValue) {
       if (idValue == null) return '';
-      return idValue is ObjectId ? idValue.toHexString() : idValue.toString();
+      return idValue is ObjectId ? idValue.oid: idValue.toString();
     }
 
     List<DownloadLink> parseDownloadLinks(dynamic links) {

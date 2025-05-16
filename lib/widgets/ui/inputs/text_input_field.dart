@@ -446,12 +446,14 @@ class _TextInputFieldState extends State<TextInputField> {
           Expanded(
             child: GestureDetector(
               onSecondaryTapDown: (details) {
-                if (textFieldEnabled)
+                if (textFieldEnabled) {
                   _showContextMenu(context, details.globalPosition);
+                }
               },
               onLongPressStart: (details) {
-                if (textFieldEnabled)
+                if (textFieldEnabled) {
                   _showContextMenu(context, details.globalPosition);
+                }
               },
               onTap: () {
                 _hideContextMenu();

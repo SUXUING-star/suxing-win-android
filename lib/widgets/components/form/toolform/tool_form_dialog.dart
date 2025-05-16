@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 // 假设 LoadingWidget 在这里，如果不用可以移除
 // import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
@@ -247,7 +248,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                   prefixIcon: Icon(Icons.title),
                                 ),
                                 onChanged: (value) => _name = value, // 保存输入值
-                                enabled: !_isSubmitting, // 提交中禁用
+                                isEnabled: !_isSubmitting, // 提交中禁用
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return '请输入工具名称';
@@ -270,7 +271,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                 minLines: 2,
                                 maxLength: 200, // 可以加个字数限制
                                 onChanged: (value) => _description = value,
-                                enabled: !_isSubmitting,
+                                isEnabled: !_isSubmitting,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return '请输入工具描述';
@@ -308,7 +309,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                   _color = value; // 保存输入值
                                   _updatePreviewColor(value); // 实时更新预览
                                 },
-                                enabled: !_isSubmitting,
+                                isEnabled: !_isSubmitting,
                                 validator: (value) {
                                   if (value == null || value.trim().isEmpty) {
                                     return '请输入颜色值';
@@ -362,7 +363,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                             _downloadsState[index]['name'] =
                                                 value;
                                           },
-                                          enabled: !_isSubmitting,
+                                          isEnabled: !_isSubmitting,
                                           validator: (value) {
                                             if (value == null ||
                                                 value.trim().isEmpty) {
@@ -385,7 +386,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                             _downloadsState[index]
                                                 ['description'] = value;
                                           },
-                                          enabled: !_isSubmitting,
+                                          isEnabled: !_isSubmitting,
                                           validator: (value) {
                                             if (value == null ||
                                                 value.trim().isEmpty) {
@@ -408,7 +409,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                             _downloadsState[index]['url'] =
                                                 value;
                                           },
-                                          enabled: !_isSubmitting,
+                                          isEnabled: !_isSubmitting,
                                           keyboardType:
                                               TextInputType.url, // URL 键盘
                                           validator: (value) {
@@ -469,7 +470,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                   side: BorderSide(
                                       color: Theme.of(context)
                                           .primaryColor
-                                          .withOpacity(0.5)),
+                                          .withSafeOpacity(0.5)),
                                 ),
                               ),
                             ),
