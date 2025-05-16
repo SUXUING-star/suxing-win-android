@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 假设你这个动画组件存在
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 假设你的 AppBar 存在
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 假设你的按钮存在
 
 /// 一个可定制的错误提示 Widget。
@@ -151,7 +152,7 @@ class InlineErrorWidget extends StatelessWidget {
                 errorMessage!,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withOpacity(0.7), // 柔和一点的文本色
+                  color: theme.colorScheme.onSurface.withSafeOpacity(0.7), // 柔和一点的文本色
                 ),
               ),
             if (onRetry != null) ...[

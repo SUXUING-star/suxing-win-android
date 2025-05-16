@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag 和扩展
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // <--- 引入 PostTagItem
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../utils/device/device_utils.dart';
 
 class ForumLeftPanel extends StatelessWidget {
@@ -27,11 +28,11 @@ class ForumLeftPanel extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         // 使用 Decoration 代替旧的组合
-        color: Colors.white.withOpacity(0.9), // 轻微调整透明度
+        color: Colors.white.withSafeOpacity(0.9), // 轻微调整透明度
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08), // 调整阴影
+            color: Colors.black.withSafeOpacity(0.08), // 调整阴影
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -53,11 +54,11 @@ class ForumLeftPanel extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                   colors: [
-                    Theme.of(context).primaryColor.withOpacity(0.9),
-                    Theme.of(context).primaryColor.withOpacity(0.7),
+                    Theme.of(context).primaryColor.withSafeOpacity(0.9),
+                    Theme.of(context).primaryColor.withSafeOpacity(0.7),
                   ],
                 ),
-                // color: Theme.of(context).primaryColor.withOpacity(0.85),
+                // color: Theme.of(context).primaryColor.withSafeOpacity(0.85),
                 // 不需要单独设置圆角，因为 ClipRRect 会处理
               ),
               child: Row(
@@ -87,7 +88,7 @@ class ForumLeftPanel extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 10, vertical: 4), // 调整 padding
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25), // 调整背景透明度
+                            color: Colors.white.withSafeOpacity(0.25), // 调整背景透明度
                             borderRadius: BorderRadius.circular(12),
                           ),
                           child: const Row(

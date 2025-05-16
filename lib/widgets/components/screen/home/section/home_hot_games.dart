@@ -6,6 +6,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'dart:async';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart'; // 引入 Service
@@ -269,7 +270,7 @@ class _HomeHotGamesState extends State<HomeHotGames> {
         if (_isLoading && _cachedGames != null && _cachedGames!.isNotEmpty)
           Positioned.fill(
               child: Container(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withSafeOpacity(0.1),
                   child: Center(child: LoadingWidget.inline(size: 30))
               )
           ),
@@ -318,8 +319,8 @@ class _HomeHotGamesState extends State<HomeHotGames> {
       width: buttonSize, height: buttonSize,
       decoration: BoxDecoration(
         color: onPressed == null
-            ? Colors.black.withOpacity(0.1)
-            : Colors.black.withOpacity(0.3),
+            ? Colors.black.withSafeOpacity(0.1)
+            : Colors.black.withSafeOpacity(0.3),
         shape: BoxShape.circle,
       ),
       child: IconButton(
@@ -327,7 +328,7 @@ class _HomeHotGamesState extends State<HomeHotGames> {
         alignment: Alignment.center,
         icon: Icon(
             icon,
-            color: onPressed == null ? Colors.white.withOpacity(0.5) : Colors.white,
+            color: onPressed == null ? Colors.white.withSafeOpacity(0.5) : Colors.white,
             size: iconSize
         ),
         onPressed: onPressed,

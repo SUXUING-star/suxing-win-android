@@ -81,10 +81,11 @@ class _PostReplyListState extends State<PostReplyList> {
       return;
     }
 
-    if (mounted)
+    if (mounted) {
       setState(() {
         _isSubmittingTopLevelReply = true;
       });
+    }
 
     try {
       final forumService = context.read<ForumService>();

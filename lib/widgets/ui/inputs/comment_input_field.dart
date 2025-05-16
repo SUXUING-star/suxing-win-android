@@ -191,13 +191,13 @@ class _CommentInputFieldState extends State<CommentInputField> {
               hintStyle: widget.hintStyle,
               showSubmitButton: false, // 禁用内部提交按钮
               padding: EdgeInsets.zero,
-              handleEnterKey: (widget.maxLines ?? 1) == 1, // 单行允许 Enter
+              handleEnterKey: (widget.maxLines) == 1, // 单行允许 Enter
               onSubmitted: _handleSubmit, // 内部 Enter 提交也走这个逻辑
               clearOnSubmit: false, // 清空由外部控制
-              keyboardType: (widget.maxLines ?? 1) == 1
+              keyboardType: (widget.maxLines) == 1
                   ? TextInputType.text
                   : TextInputType.multiline,
-              textInputAction: (widget.maxLines ?? 1) == 1
+              textInputAction: (widget.maxLines) == 1
                   ? TextInputAction.send
                   : TextInputAction.newline,
             ),

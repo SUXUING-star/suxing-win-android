@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart'; // 假设路径正确
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 假设路径正确
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../image/safe_cached_image.dart'; // 假设路径正确
 
 /// 安全的用户头像组件
@@ -145,11 +146,11 @@ class SafeUserAvatar extends StatelessWidget {
             horizontal: badgeContainerHorizontalPadding,
             vertical: badgeContainerVerticalPadding),
         decoration: BoxDecoration(
-          color: badgeBackgroundColor.withOpacity(0.95), // 背景更实一点
+          color: badgeBackgroundColor.withSafeOpacity(0.95), // 背景更实一点
           borderRadius: BorderRadius.circular(radius * 0.3), // 圆角标签
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.25),
+              color: Colors.black.withSafeOpacity(0.25),
               blurRadius: 2,
               offset: Offset(0, 1),
             )

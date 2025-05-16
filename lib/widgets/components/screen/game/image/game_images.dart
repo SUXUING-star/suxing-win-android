@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../screens/game/detail/image_preview_screen.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -28,7 +29,7 @@ class GameImages extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withSafeOpacity(0.05),
               blurRadius: 10,
               offset: Offset(0, 2),
             ),
@@ -81,7 +82,7 @@ class GameImages extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withSafeOpacity(0.1),
             blurRadius: 8,
             offset: Offset(0, 2),
           ),

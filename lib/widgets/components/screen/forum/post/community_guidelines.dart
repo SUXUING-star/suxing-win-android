@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/forum/community_guidelines.dart - 简化版本
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class CommunityGuidelines extends StatelessWidget {
   final bool useSeparateCard;
@@ -72,7 +73,7 @@ class CommunityGuidelines extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: Colors.blue.withOpacity(0.1),
+              color: Colors.blue.withSafeOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 16, color: Colors.blue),

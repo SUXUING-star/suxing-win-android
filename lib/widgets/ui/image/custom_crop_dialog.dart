@@ -29,10 +29,10 @@ class _CropOverlayPainter extends CustomPainter {
       ..addOval(Rect.fromCircle(center: center, radius: cropCircleRadius));
     final overlayPath = Path.combine(
         PathOperation.difference, Path()..addRect(overlayRect), circlePath);
-    final Paint paint = Paint()..color = Colors.black.withOpacity(0.6);
+    final Paint paint = Paint()..color = Colors.black.withSafeOpacity(0.6);
     canvas.drawPath(overlayPath, paint);
     final Paint borderPaint = Paint()
-      ..color = Colors.white.withOpacity(0.8)
+      ..color = Colors.white.withSafeOpacity(0.8)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.5;
     canvas.drawCircle(center, cropCircleRadius, borderPaint);
@@ -267,8 +267,9 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
   Uint8List? _performCrop({bool isPreview = false}) {
     if (_decodedImage == null || _originalImageBytes == null) return null;
     final Rect cropRect = _calculateCropRect();
-    if (cropRect == Rect.zero || cropRect.width <= 0 || cropRect.height <= 0)
+    if (cropRect == Rect.zero || cropRect.width <= 0 || cropRect.height <= 0) {
       return null;
+    }
     img.Image? originalImg = img.decodeImage(_originalImageBytes!);
     if (originalImg == null) return null;
     img.Image? croppedRectImage;

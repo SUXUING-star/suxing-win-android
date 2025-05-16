@@ -40,7 +40,7 @@
 //               : _buildMobileToast(message, isError, theme),
 //         ),
 //         duration: duration,
-//         backgroundColor: baseColor.withOpacity(0.95),
+//         backgroundColor: baseColor.withSafeOpacity(0.95),
 //         // 关键修改：在移动端使用固定行为，在桌面端保持浮动行为
 //         behavior: isDesktop ? SnackBarBehavior.floating : SnackBarBehavior.fixed,
 //         elevation: 6,
@@ -58,7 +58,7 @@
 //         dismissDirection: DismissDirection.horizontal,
 //         action: SnackBarAction(
 //           label: '关闭',
-//           textColor: Colors.white.withOpacity(0.8),
+//           textColor: Colors.white.withSafeOpacity(0.8),
 //           onPressed: () => scaffold.hideCurrentSnackBar(),
 //         ),
 //       ),

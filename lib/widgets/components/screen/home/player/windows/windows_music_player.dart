@@ -280,7 +280,7 @@
 //         color: Theme.of(context).colorScheme.surface,
 //         boxShadow: [
 //           BoxShadow(
-//             color: Colors.black.withOpacity(0.1),
+//             color: Colors.black.withSafeOpacity(0.1),
 //             blurRadius: 8,
 //             offset: Offset(0, -2),
 //           ),

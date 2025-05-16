@@ -10,6 +10,7 @@ import 'package:suxingchahui/models/comment/comment.dart';
 import 'package:suxingchahui/widgets/components/dialogs/limiter/rate_limit_dialog.dart'; // 速率限制对话框
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误提示 Widget
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载 Widget
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // SnackBar 提示
 import './comments/game_comment_input.dart'; // 评论输入框
 import './comments/game_comment_list.dart'; // 评论列表
@@ -216,7 +217,7 @@ class _CommentsSectionState extends State<CommentsSection> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withSafeOpacity(0.05),
               blurRadius: 10,
               offset: Offset(0, 2),
             ),

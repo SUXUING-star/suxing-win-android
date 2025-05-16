@@ -6,6 +6,7 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心�
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 
 /// 活动卡片/详情的头部组件
@@ -134,7 +135,7 @@ class ActivityHeader extends StatelessWidget {
         vertical: verticalPadding,
       ),
       decoration: BoxDecoration(
-        color: displayInfo.backgroundColor.withOpacity(0.85), // 稍微降低透明度
+        color: displayInfo.backgroundColor.withSafeOpacity(0.85), // 稍微降低透明度
         borderRadius: BorderRadius.circular(borderRadius),
       ),
       child: Text(

@@ -1,6 +1,7 @@
 // lib/widgets/ui/components/post/post_tag_item.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag 和工具类
+import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 需要 PostTag 和工具类
 
 /// 可复用的帖子标签项 Widget
 class PostTagItem extends StatelessWidget {
@@ -40,7 +41,7 @@ class PostTagItem extends StatelessWidget {
 
     // 确定选中和未选中时的背景色
     final Color selectedBgColor = tagColor;
-    final Color unselectedBgColor = tagColor.withOpacity(0.08);
+    final Color unselectedBgColor = tagColor.withSafeOpacity(0.08);
 
     // 确定选中和未选中时的文本颜色
     final Color selectedTextColor = PostTagsUtils.getTextColorForBackground(selectedBgColor);
@@ -66,8 +67,8 @@ class PostTagItem extends StatelessWidget {
       child: InkWell(
         onTap: onTap != null ? () => onTap!(tagToPassOnClick) : null, // 传递 PostTag?
         borderRadius: BorderRadius.circular(borderRadius),
-        splashColor: tagColor.withOpacity(0.3),
-        highlightColor: tagColor.withOpacity(0.2),
+        splashColor: tagColor.withSafeOpacity(0.3),
+        highlightColor: tagColor.withSafeOpacity(0.2),
         child: Padding(
           padding: EdgeInsets.symmetric(horizontal: horizontalPadding, vertical: verticalPadding),
           child: Row(
@@ -89,7 +90,7 @@ class PostTagItem extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric( horizontal: countHPadding, vertical: countVPadding,),
                   decoration: BoxDecoration(
-                    color: isSelected ? selectedTextColor.withOpacity(0.2) : tagColor.withOpacity(0.2),
+                    color: isSelected ? selectedTextColor.withSafeOpacity(0.2) : tagColor.withSafeOpacity(0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text( '$count',

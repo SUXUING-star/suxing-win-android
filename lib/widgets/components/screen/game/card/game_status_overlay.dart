@@ -1,5 +1,6 @@
 // 新建一个组件文件，例如：lib/widgets/components/screen/game/card/game_status_overlay.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart'; // 引入 Game 模型
 // 可能还需要引入你的 CustomConfirmDialog 和其他服务/工具
 
@@ -48,11 +49,11 @@ class GameStatusOverlay extends StatelessWidget {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-                color: (statusInfo['color'] as Color).withOpacity(0.85),
+                color: (statusInfo['color'] as Color).withSafeOpacity(0.85),
                 borderRadius: BorderRadius.circular(12),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withSafeOpacity(0.2),
                     blurRadius: 2,
                     offset: Offset(0, 1),
                   )
@@ -97,12 +98,12 @@ class GameStatusOverlay extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
                 decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.95),
+                    color: Colors.white.withSafeOpacity(0.95),
                     borderRadius: BorderRadius.circular(6),
                     border: Border.all(color: Colors.red.shade200, width: 0.5),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
+                        color: Colors.black.withSafeOpacity(0.1),
                         blurRadius: 3,
                         offset: Offset(0, 1),
                       )

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'robust_network_image.dart';
 
 /// 健壮的图片预览屏幕
@@ -23,10 +24,12 @@ class RobustImagePreviewScreen extends StatefulWidget {
   });
 
   @override
-  _RobustImagePreviewScreenState createState() => _RobustImagePreviewScreenState();
+  _RobustImagePreviewScreenState createState() =>
+      _RobustImagePreviewScreenState();
 }
 
-class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
+class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen>
+    with SnackBarNotifierMixin {
   late int currentIndex;
   late PageController pageController;
   bool _isLoading = false;
@@ -46,6 +49,7 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
 
   @override
   Widget build(BuildContext context) {
+    buildSnackBar(context);
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -79,13 +83,13 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
         IconButton(
           icon: _isLoading
               ? SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-            ),
-          )
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
               : Icon(Icons.download),
           onPressed: _isLoading ? null : _downloadCurrentImage,
         ),
@@ -160,7 +164,7 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
                   SizedBox(height: 8),
                   TextButton(
                     onPressed: () {
-                      setState(() {});  // 刷新重试
+                      setState(() {}); // 刷新重试
                     },
                     child: Text(
                       '点击重试',
@@ -182,13 +186,7 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
   /// 分享当前图片
   void _shareCurrentImage() {
     // 实现分享功能
-    // 可以使用分享插件，如share_plus
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('分享功能将在后续版本实现'),
-        duration: Duration(seconds: 2),
-      ),
-    );
+    showSnackbar(message: '分享功能将在后续版本实现', type: SnackbarType.info);
   }
 
   /// 下载当前图片
@@ -204,20 +202,9 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen> {
       // 模拟下载过程
       await Future.delayed(Duration(seconds: 2));
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('图片已保存到相册'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showSnackbar(message: '图片已保存到相册', type: SnackbarType.success);
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('下载失败: $e'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
+      showSnackbar(message: '下载失败: $e', type: SnackbarType.error);
     } finally {
       setState(() {
         _isLoading = false;

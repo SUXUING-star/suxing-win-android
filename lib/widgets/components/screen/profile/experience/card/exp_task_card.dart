@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart'; // 导入 Task 模型
 import 'package:suxingchahui/widgets/components/screen/profile/experience/models/task_style.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';     // 导入 AppText
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';// 导入 AppTextType
 
@@ -21,10 +22,10 @@ class ExpTaskCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6.0), // 调整底部间距
       decoration: BoxDecoration(
         // 使用 task.style 获取颜色
-        color: task.style.color.withOpacity(0.08), // 背景透明度调整
+        color: task.style.color.withSafeOpacity(0.08), // 背景透明度调整
         borderRadius: BorderRadius.circular(10), // 圆角调整
         border: Border.all(
-          color: task.style.color.withOpacity(0.25), // 边框透明度调整
+          color: task.style.color.withSafeOpacity(0.25), // 边框透明度调整
           width: 1,
         ),
       ),
@@ -44,7 +45,7 @@ class ExpTaskCard extends StatelessWidget {
                 task.countText, // 使用 Task getter
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: task.style.color.withOpacity(0.9), // 调整颜色透明度
+                color: task.style.color.withSafeOpacity(0.9), // 调整颜色透明度
               ),
             ],
           ),
@@ -131,8 +132,8 @@ class ExpTaskCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(5),
         child: LinearProgressIndicator(
           value: progress, // 使用传入的进度值 (0.0 - 1.0)
-          backgroundColor: taskColor.withOpacity(0.15), // 背景色用任务色的淡化
-          valueColor: AlwaysStoppedAnimation<Color>(taskColor.withOpacity(0.8)), // 进度条颜色也调整透明度
+          backgroundColor: taskColor.withSafeOpacity(0.15), // 背景色用任务色的淡化
+          valueColor: AlwaysStoppedAnimation<Color>(taskColor.withSafeOpacity(0.8)), // 进度条颜色也调整透明度
           minHeight: 7, // 进度条高度调整
         ),
       ),

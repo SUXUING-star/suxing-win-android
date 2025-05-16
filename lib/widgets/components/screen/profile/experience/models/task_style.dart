@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/experience/models/task_style.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class TaskStyle {
   final Color color;
@@ -49,7 +50,7 @@ class TaskStyle {
 
     // 调整已完成任务的不透明度
     if (completed) {
-      taskColor = taskColor.withOpacity(0.6);
+      taskColor = taskColor.withSafeOpacity(0.6);
     }
 
     return TaskStyle(color: taskColor, icon: taskIcon);

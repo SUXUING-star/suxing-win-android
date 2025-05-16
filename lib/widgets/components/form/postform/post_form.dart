@@ -5,6 +5,7 @@ import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 需要 InputStateService
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 不修改这个文件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../utils/device/device_utils.dart';
@@ -302,7 +303,7 @@ class _PostFormState extends State<PostForm> {
                 ),
               ),
               selected: isSelected,
-              selectedColor: Theme.of(context).primaryColor.withOpacity(0.2),
+              selectedColor: Theme.of(context).primaryColor.withSafeOpacity(0.2),
               checkmarkColor: Theme.of(context).primaryColor,
               backgroundColor: Colors.grey.shade200,
               shape: RoundedRectangleBorder(

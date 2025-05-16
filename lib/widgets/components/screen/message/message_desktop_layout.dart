@@ -64,7 +64,7 @@
 //                 color: Colors.white,
 //                 boxShadow: [
 //                   BoxShadow(
-//                     color: Colors.black.withOpacity(0.05),
+//                     color: Colors.black.withSafeOpacity(0.05),
 //                     blurRadius: 5,
 //                     offset: Offset(-2, 0),
 //                   ),

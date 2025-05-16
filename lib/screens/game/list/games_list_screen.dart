@@ -426,8 +426,9 @@ class _GamesListScreenState extends State<GamesListScreen>
 
     try {
       // --- 原有的刷新逻辑 ---
-      if (_isLoadingData)
+      if (_isLoadingData) {
         return; // 如果其他数据加载正在进行，也阻止（虽然 _isPerformingRefresh 应该已经挡住了）
+      }
       _stopWatchingCache();
       await _loadGames(
           pageToFetch: 1, isRefresh: true, forceRefresh: true); // 加载第一页并标记为刷新

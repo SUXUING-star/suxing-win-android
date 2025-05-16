@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:suxingchahui/constants/user/level_constants.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class LevelProgressBar extends StatelessWidget {
   final int level;
@@ -68,7 +69,7 @@ class LevelProgressBar extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      levelColor.withOpacity(0.7),
+                      levelColor.withSafeOpacity(0.7),
                       levelColor,
                     ],
                     begin: Alignment.centerLeft,
@@ -77,7 +78,7 @@ class LevelProgressBar extends StatelessWidget {
                   borderRadius: BorderRadius.circular(4),
                   boxShadow: [
                     BoxShadow(
-                      color: levelColor.withOpacity(0.3),
+                      color: levelColor.withSafeOpacity(0.3),
                       blurRadius: 6,
                       offset: Offset(0, 2),
                     ),

@@ -10,7 +10,9 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
-import 'dart:async'; // 需要 Timer (如果之前没有)
+import 'dart:async';
+
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 需要 Timer (如果之前没有)
 
 // *** 修改：改为 StatefulWidget ***
 class HomeHotPosts extends StatefulWidget {
@@ -90,7 +92,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withSafeOpacity(0.05),
                 blurRadius: 10,
                 offset: Offset(0, 2))
           ],
@@ -185,7 +187,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
               thickness: 1,
               indent: 16,
               endIndent: 16,
-              color: Colors.grey.withOpacity(0.15)),
+              color: Colors.grey.withSafeOpacity(0.15)),
           itemBuilder: (context, index) {
             final post = displayPosts[index];
             // 调用列表项构建方法
@@ -196,7 +198,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
         if (_isLoading && posts.isNotEmpty)
           Positioned.fill(
               child: Container(
-            color: Colors.white.withOpacity(0.5),
+            color: Colors.white.withSafeOpacity(0.5),
             child: Center(child: LoadingWidget.inline(size: 30)),
           )),
       ],

@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 class CustomAvatarCropper {
@@ -88,7 +89,7 @@ class CustomAvatarCropper {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withSafeOpacity(0.1),
                     blurRadius: 5,
                     spreadRadius: 1,
                   ),
@@ -533,7 +534,7 @@ class _CropPainter extends CustomPainter {
 
     // 然后绘制暗色蒙版
     final Paint maskPaint = Paint()
-      ..color = Colors.black.withOpacity(0.7) // 增加暗色蒙版的不透明度
+      ..color = Colors.black.withSafeOpacity(0.7) // 增加暗色蒙版的不透明度
       ..style = PaintingStyle.fill
       ..isAntiAlias = true;
 

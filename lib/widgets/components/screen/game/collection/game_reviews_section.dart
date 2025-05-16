@@ -13,6 +13,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class GameReviewSection extends StatefulWidget {
@@ -76,18 +77,19 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (forPageOne) {
       if (_isProcessingPageOne) return;
       _isProcessingPageOne = true;
-      if (!_isLoading && mounted)
+      if (!_isLoading && mounted) {
         setState(() => _isLoading = true);
-      else if (!mounted) {
+      } else if (!mounted) {
         _isProcessingPageOne = false;
         return;
       }
     } else {
       if (_isLoading || !_hasMoreEntries) return; // *** 修改变量名 ***
-      if (mounted)
+      if (mounted) {
         setState(() => _isLoading = true);
-      else
+      } else {
         return;
+      }
     }
 
     if (!mounted) {
@@ -104,10 +106,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
       if (!mounted) return;
 
       setState(() {
-        if (_page == 1)
+        if (_page == 1) {
           _entries = fetchedEntries; // *** 修改变量名 ***
-        else
+        } else {
           _entries.addAll(fetchedEntries); // *** 修改变量名 ***
+        }
         _hasMoreEntries = fetchedEntries.length >= _pageSize; // *** 修改变量名 ***
         _error = null;
       });
@@ -337,12 +340,12 @@ class GameReviewSectionState extends State<GameReviewSection> {
                 label: Text(statusLabel,
                     style: TextStyle(fontSize: 11, color: statusColor)),
                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                backgroundColor: statusColor.withOpacity(0.1),
+                backgroundColor: statusColor.withSafeOpacity(0.1),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20.0),
-                  side: BorderSide(color: statusColor.withOpacity(0.3)),
+                  side: BorderSide(color: statusColor.withSafeOpacity(0.3)),
                 ),
               ),
               const SizedBox(width: 8),
@@ -358,11 +361,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
                   double starValue = rating / 2.0;
                   IconData starIcon;
                   Color starColor = Colors.amber;
-                  if (index < starValue.floor())
+                  if (index < starValue.floor()) {
                     starIcon = Icons.star_rounded;
-                  else if (index < starValue && (starValue - index) >= 0.25)
+                  } else if (index < starValue && (starValue - index) >= 0.25) {
                     starIcon = Icons.star_half_rounded;
-                  else {
+                  } else {
                     starIcon = Icons.star_border_rounded;
                     starColor = Colors.grey[400]!;
                   }

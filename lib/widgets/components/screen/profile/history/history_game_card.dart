@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/history/history_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
@@ -85,7 +86,7 @@ class HistoryGameCard extends StatelessWidget {
             child: Container(
               padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: Theme.of(context).primaryColor.withOpacity(0.8),
+                color: Theme.of(context).primaryColor.withSafeOpacity(0.8),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(

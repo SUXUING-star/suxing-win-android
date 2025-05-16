@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/favorite/favorite_game_grid_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -57,7 +58,7 @@ class FavoriteGameGridCard extends StatelessWidget {
                     child: Container(
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withOpacity(0.8),
+                        color: Theme.of(context).primaryColor.withSafeOpacity(0.8),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
@@ -83,7 +84,7 @@ class FavoriteGameGridCard extends StatelessWidget {
                       ),
                       onPressed: onFavoritePressed,
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.7),
+                        backgroundColor: Colors.white.withSafeOpacity(0.7),
                         padding: EdgeInsets.all(8),
                       ),
                     ),

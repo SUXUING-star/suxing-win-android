@@ -20,7 +20,7 @@ class PostReplyItem extends StatelessWidget {
   final int floor;
   final VoidCallback onActionSuccess;
 
-  PostReplyItem({
+  const PostReplyItem({
     super.key,
     required this.postId,
     required this.reply,

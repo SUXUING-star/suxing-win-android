@@ -37,18 +37,26 @@ class LevelProgressCard extends StatelessWidget {
     final int currentExp = currentUser.experience; // 用户总经验
     final int requiredExp = currentUser.nextLevelExp; // 下一级所需总经验
     // 使用后端算好的进度百分比，并确保范围
-    final double progressPercentage = (currentUser.levelProgress / 100.0).clamp(0.0, 1.0);
+    final double progressPercentage =
+        (currentUser.levelProgress / 100.0).clamp(0.0, 1.0);
     final int expToNextLevel = currentUser.expToNextLevel;
     final bool isMaxLevel = currentUser.isMaxLevel; // 获取是否满级状态
 
     // --- 计算等级称号 (如果需要) ---
     String levelTitle = "茶会新人"; // 默认值
-    if (level <= 5) levelTitle = "茶会初学者";
-    else if (level <= 10) levelTitle = "茶会学徒";
-    else if (level <= 15) levelTitle = "茶会探索者";
-    else if (level <= 20) levelTitle = "茶会专家";
-    else if (level <= 25) levelTitle = "茶会大师";
-    else levelTitle = "茶会传奇"; // 25级以上
+    if (level <= 5) {
+      levelTitle = "茶会初学者";
+    } else if (level <= 10) {
+      levelTitle = "茶会学徒";
+    } else if (level <= 15) {
+      levelTitle = "茶会探索者";
+    } else if (level <= 20) {
+      levelTitle = "茶会专家";
+    } else if (level <= 25) {
+      levelTitle = "茶会大师";
+    } else {
+      levelTitle = "茶会传奇"; // 25级以上
+    }
     // --- 结束计算 ---
 
     return Card(
@@ -61,15 +69,18 @@ class LevelProgressCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            Row( // 顶部信息区域
+            Row(
+              // 顶部信息区域
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Column( // 左侧：等级信息
+                Column(
+                  // 左侧：等级信息
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       '等级 $level', // **使用 currentUser.level**
-                      style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold), // 加粗
+                      style: theme.textTheme.titleSmall
+                          ?.copyWith(fontWeight: FontWeight.bold), // 加粗
                     ),
                     Text(
                       levelTitle, // **使用计算出的 title**
@@ -80,7 +91,8 @@ class LevelProgressCard extends StatelessWidget {
                     ),
                   ],
                 ),
-                Column( // 右侧：签到天数 (从 CheckInStats 获取)
+                Column(
+                  // 右侧：签到天数 (从 CheckInStats 获取)
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
@@ -91,8 +103,12 @@ class LevelProgressCard extends StatelessWidget {
                       '连续签到 ${stats.continuousDays} 天',
                       style: TextStyle(
                         fontSize: 14,
-                        color: stats.continuousDays > 0 ? theme.primaryColor : Colors.grey[700],
-                        fontWeight: stats.continuousDays > 0 ? FontWeight.bold : FontWeight.normal,
+                        color: stats.continuousDays > 0
+                            ? theme.primaryColor
+                            : Colors.grey[700],
+                        fontWeight: stats.continuousDays > 0
+                            ? FontWeight.bold
+                            : FontWeight.normal,
                       ),
                     ),
                     if (consecutiveMissedDays > 1) // 使用传入的断签天数
@@ -108,7 +124,8 @@ class LevelProgressCard extends StatelessWidget {
             const SizedBox(height: 16),
 
             // --- 等级进度条 (使用 currentUser 的数据) ---
-            LevelProgressBar( // 这个 LevelProgressBar 应该是指向 checkin 目录下的那个
+            LevelProgressBar(
+              // 这个 LevelProgressBar 应该是指向 checkin 目录下的那个
               level: level,
               current: currentExp, // 传递当前总经验
               total: requiredExp, // 传递下一级所需总经验
@@ -120,7 +137,9 @@ class LevelProgressCard extends StatelessWidget {
 
             // --- 升级提示 (处理满级情况) ---
             Text(
-              isMaxLevel ? '已达到最高等级' : '还需 $expToNextLevel 经验升级', // **使用 currentUser.expToNextLevel**
+              isMaxLevel
+                  ? '已达到最高等级'
+                  : '还需 $expToNextLevel 经验升级', // **使用 currentUser.expToNextLevel**
               style: TextStyle(
                 fontSize: 14,
                 color: Colors.grey[600],

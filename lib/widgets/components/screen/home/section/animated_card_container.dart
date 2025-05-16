@@ -1,5 +1,6 @@
 // lib/widgets/common/animated_card_container.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class AnimatedCardContainer extends StatefulWidget {
   final Widget child;
@@ -99,11 +100,11 @@ class _AnimatedCardContainerState extends State<AnimatedCardContainer>
               child: Container(
                 margin: widget.margin,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.95 + _brightnessAnimation.value),
+                  color: Colors.white.withSafeOpacity(0.95 + _brightnessAnimation.value),
                   borderRadius: widget.borderRadius ?? BorderRadius.circular(12),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.1 + _elevationAnimation.value * 0.1),
+                      color: Colors.black.withSafeOpacity(0.1 + _elevationAnimation.value * 0.1),
                       blurRadius: 8 + _elevationAnimation.value * 8,
                       offset: Offset(0, 2 + _elevationAnimation.value * 2),
                       spreadRadius: _elevationAnimation.value * 2,

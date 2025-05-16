@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../models/post/post.dart';
 
 class DesktopProfilePostCard extends StatelessWidget {
@@ -34,7 +35,7 @@ class DesktopProfilePostCard extends StatelessWidget {
                       margin: const EdgeInsets.only(right: 10, top: 2),
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(
@@ -84,7 +85,7 @@ class DesktopProfilePostCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                 decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.05),
+                  color: Colors.grey.withSafeOpacity(0.05),
                   borderRadius: BorderRadius.circular(4),
                 ),
                 child: Text(

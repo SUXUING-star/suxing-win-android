@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/effects/particle_effect.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ParticleEffect extends StatefulWidget {
   final AnimationController controller;
@@ -95,7 +96,7 @@ class ParticlePainter extends CustomPainter {
       if (opacity <= 0) continue;
 
       final paint = Paint()
-        ..color = particle.color.withOpacity(opacity)
+        ..color = particle.color.withSafeOpacity(opacity)
         ..style = PaintingStyle.fill;
 
       canvas.drawCircle(position, particle.size * (1 - progress * 0.5), paint);

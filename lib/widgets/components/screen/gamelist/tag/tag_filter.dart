@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/gamelist/tag/tag_filter.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/font/font_config.dart';
 
@@ -121,7 +122,7 @@ class _TagFilterState extends State<TagFilter> {
                 onSelected: (_) => widget.onTagSelected(tag.name),
                 selectedColor: Theme.of(context).primaryColor,
                 checkmarkColor: Colors.white,
-                backgroundColor: Colors.white.withOpacity(0.9),
+                backgroundColor: Colors.white.withSafeOpacity(0.9),
                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                 visualDensity: VisualDensity.compact,
               ),

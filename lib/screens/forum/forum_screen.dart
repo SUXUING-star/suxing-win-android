@@ -245,7 +245,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         // --- 使用 AppSnackBar ---
         AppSnackBar.showInfo(
           context,
-          '手速太快了！请 ${remainingSeconds} 秒后再刷新',
+          '手速太快了！请 $remainingSeconds 秒后再刷新',
           duration: const Duration(seconds: 2),
         );
       }

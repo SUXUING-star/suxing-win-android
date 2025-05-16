@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../utils/font/font_config.dart';
 import '../models/profile_menu_item.dart';
 
@@ -19,11 +20,11 @@ class MobileProfileMenuList extends StatelessWidget {
       // 添加外边距，使其与头部和屏幕边缘分开
       margin: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 16.0),
       decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.7), // 半透明白色背景
+          color: Colors.white.withSafeOpacity(0.7), // 半透明白色背景
           borderRadius: BorderRadius.circular(12.0), // 添加圆角
           boxShadow: [ // 可选：添加一点阴影增加层次感
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withSafeOpacity(0.05),
               blurRadius: 8,
               offset: Offset(0, 2),
             )
@@ -43,13 +44,13 @@ class MobileProfileMenuList extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: Icon(item.icon, color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.8)), // 图标颜色稍微柔和点
+                    leading: Icon(item.icon, color: Theme.of(context).textTheme.bodyLarge?.color?.withSafeOpacity(0.8)), // 图标颜色稍微柔和点
                     title: Text(
                       item.title,
                       style: TextStyle(
                         fontFamily: FontConfig.defaultFontFamily,
                         fontFamilyFallback: FontConfig.fontFallback,
-                        // color: Theme.of(context).textTheme.bodyLarge?.color?.withOpacity(0.9), // 文字颜色稍微柔和点
+                        // color: Theme.of(context).textTheme.bodyLarge?.color?.withSafeOpacity(0.9), // 文字颜色稍微柔和点
                       ),
                     ),
                     trailing: Icon(Icons.chevron_right, color: Colors.grey.shade400), // 箭头颜色淡一点

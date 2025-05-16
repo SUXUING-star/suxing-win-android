@@ -5,6 +5,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../ui/image/safe_cached_image.dart';
@@ -86,7 +87,7 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withOpacity(0.05),
+                color: Colors.black.withSafeOpacity(0.05),
                 blurRadius: 10,
                 offset: Offset(0, 2)),
           ],
@@ -190,7 +191,7 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
         if (_isLoading && games.isNotEmpty)
           Positioned.fill(
               child: Container(
-            color: Colors.white.withOpacity(0.5), // 半透明覆盖
+            color: Colors.white.withSafeOpacity(0.5), // 半透明覆盖
             child: Center(child: LoadingWidget.inline(size: 30)),
           )),
       ],
@@ -213,7 +214,7 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
           height: 16,
           indent: 88,
           endIndent: 16,
-          color: Colors.grey.withOpacity(0.1)),
+          color: Colors.grey.withSafeOpacity(0.1)),
       itemBuilder: (context, index) {
         final game = displayGames[index];
         // *** 调用完整的列表项构建方法 ***

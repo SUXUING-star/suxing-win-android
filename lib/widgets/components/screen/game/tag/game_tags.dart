@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../utils/navigation/navigation_utils.dart';
@@ -94,7 +95,7 @@ class GameTags extends StatelessWidget {
           color: GameTagUtils.getTagColor(tag),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: Theme.of(context).primaryColor.withOpacity(0.3),
+            color: Theme.of(context).primaryColor.withSafeOpacity(0.3),
             width: 1,
           ),
         ),
@@ -114,10 +115,10 @@ class GameTags extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.grey.withSafeOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.3),
+          color: Colors.grey.withSafeOpacity(0.3),
           width: 1,
         ),
       ),

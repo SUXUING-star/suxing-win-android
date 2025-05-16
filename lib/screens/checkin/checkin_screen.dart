@@ -180,7 +180,9 @@ class _CheckInScreenState extends State<CheckInScreen>
     // 防止重复点击或在未加载/已签到时点击
     if ((_checkInStats?.hasCheckedToday ?? true) ||
         _checkInLoading ||
-        _isLoading) return;
+        _isLoading) {
+      return;
+    }
 
     setState(() {
       _checkInLoading = true;

@@ -85,8 +85,9 @@ class GameImagesField extends StatelessWidget {
               scrollDirection: Axis.horizontal,
               itemCount: gameImagesSources.length,
               itemBuilder: (context, index) {
-                if (index >= gameImagesSources.length)
+                if (index >= gameImagesSources.length) {
                   return const SizedBox.shrink();
+                }
                 final source = gameImagesSources[index];
                 Widget imageWidget;
 

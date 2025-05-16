@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../utils/device/device_utils.dart';
 
@@ -59,7 +60,7 @@ class GameLeftPanel extends StatelessWidget {
                             padding: EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
                             decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.3),
+                              color: Colors.white.withSafeOpacity(0.3),
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -135,7 +136,7 @@ class GameLeftPanel extends StatelessWidget {
             child: Container(
               // **核心改动：背景色处理**
               color: isSelected
-                  ? Theme.of(context).primaryColor.withOpacity(0.1) // 选中时淡主色背景
+                  ? Theme.of(context).primaryColor.withSafeOpacity(0.1) // 选中时淡主色背景
                   : Colors.transparent, // **未选中时完全透明！干掉那个傻逼边框和背景！**
 
               child: Padding(

@@ -5,6 +5,7 @@ import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保导�
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/sections/check_in_history_expansion.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 /// 活动详情页的头部信息区域
 ///
@@ -49,7 +50,7 @@ class ActivityInfoSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05), // 阴影更柔和
+            color: Colors.black.withSafeOpacity(0.05), // 阴影更柔和
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

@@ -22,7 +22,7 @@ class UserInfoBadge extends StatelessWidget {
   final Color? backgroundColor;
   final Color? textColor;
 
-  UserInfoBadge({
+  const UserInfoBadge({
     super.key,
     required this.userId,
     this.showFollowButton = true,

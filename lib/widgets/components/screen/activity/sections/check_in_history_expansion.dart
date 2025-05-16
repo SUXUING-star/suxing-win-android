@@ -9,9 +9,9 @@ class CheckInHistoryExpansion extends StatefulWidget {
   final UserActivity activity;
 
   const CheckInHistoryExpansion({
-    Key? key,
+    super.key,
     required this.activity,
-  }) : super(key: key);
+  });
 
   @override
   State<CheckInHistoryExpansion> createState() =>

@@ -1,42 +1,28 @@
 // lib/widgets/ui/image/safe_cached_image.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:visibility_detector/visibility_detector.dart';
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
+import 'package:provider/provider.dart'; // <--- 导入 Provider
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../utils/network/url_utils.dart';
 
-/// 安全的缓存图片组件
-///
-/// 结合URL安全处理和CachedNetworkImage的功能
-class SafeCachedImage extends StatelessWidget {
-  /// 图片URL
+class SafeCachedImage extends StatefulWidget {
   final String imageUrl;
-
-  /// 图片宽度
   final double? width;
-
-  /// 图片高度
   final double? height;
-
-  /// 图片填充模式
   final BoxFit fit;
-
-  /// 图片边框圆角
   final BorderRadius? borderRadius;
-
-  /// 点击回调
   final VoidCallback? onTap;
-
-  /// 图片加载错误回调
   final Function(String url, dynamic error)? onError;
-
-  /// 内存缓存宽度
   final int? memCacheWidth;
-
-  /// 内存缓存高度
   final int? memCacheHeight;
-
-  /// 背景颜色
   final Color? backgroundColor;
+  final Duration unloadDelay;
+  final double visibleFractionThreshold;
+  final Key? visibilityKey;
+  // 不再需要 cacheManager 参数，将从 Provider 获取
 
   const SafeCachedImage({
     super.key,
@@ -50,82 +36,103 @@ class SafeCachedImage extends StatelessWidget {
     this.memCacheWidth,
     this.memCacheHeight,
     this.backgroundColor,
+    this.unloadDelay = const Duration(seconds: 15),
+    this.visibleFractionThreshold = 0.01,
+    this.visibilityKey,
+    // cacheManager 参数移除
   });
 
   @override
-  Widget build(BuildContext context) {
-    // 获取安全URL
-    final safeUrl = UrlUtils.getSafeUrl(imageUrl);
+  _SafeCachedImageState createState() => _SafeCachedImageState();
+}
 
-    // --- 决定最终的缓存大小 ---
-    int? finalCacheWidth;
-    int? finalCacheHeight;
+class _SafeCachedImageState extends State<SafeCachedImage> {
+  bool _isVisible = false;
+  bool _hasTriedLoading = false;
+  Timer? _unloadTimer;
+  late final Key _visibilityDetectorKey;
+  BaseCacheManager? _cacheManager; // <--- 声明 CacheManager 实例变量
 
-    // 1. 最高优先级：使用外部直接传入的缓存大小
-    if (memCacheWidth != null || memCacheHeight != null) {
-      finalCacheWidth = memCacheWidth;
-      finalCacheHeight = memCacheHeight;
-    }
-    // 2. 次高优先级：如果没传缓存大小，但传了逻辑大小，则计算
-    else if (width != null || height != null) {
-      final dpr = MediaQuery.of(context).devicePixelRatio;
-      finalCacheWidth = (width != null) ? (width! * dpr).round() : null;
-      finalCacheHeight = (height != null) ? (height! * dpr).round() : null;
-    }
-
-    // 构建图片组件
-    Widget imageWidget = CachedNetworkImage(
-      imageUrl: safeUrl,
-      width: width,
-      height: height,
-      fit: fit,
-      memCacheWidth: finalCacheWidth,   // 使用最终决定的缓存宽度
-      memCacheHeight: finalCacheHeight,  // 使用最终决定的缓存高度
-      placeholder: (context, url) => _buildPlaceholder(context),
-      errorWidget: (context, url, error) {
-        // 触发错误回调
-        if (onError != null) {
-          onError!(url, error);
-        }
-        return _buildErrorWidget(context);
-      },
-    );
-
-    // 添加背景色
-    if (backgroundColor != null) {
-      imageWidget = Container(
-        color: backgroundColor,
-        width: width,
-        height: height,
-        child: imageWidget,
-      );
-    }
-
-    // 添加圆角
-    if (borderRadius != null) {
-      imageWidget = ClipRRect(
-        borderRadius: borderRadius!,
-        child: imageWidget,
-      );
-    }
-
-    // 添加点击事件
-    if (onTap != null) {
-      imageWidget = GestureDetector(
-        onTap: onTap,
-        child: imageWidget,
-      );
-    }
-
-    return imageWidget;
+  @override
+  void initState() {
+    super.initState();
+    _visibilityDetectorKey =
+        widget.visibilityKey ?? ValueKey('${widget.imageUrl}_${UniqueKey()}');
   }
 
-  /// 构建加载中占位符
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // 在这里通过 Provider 获取 CacheManager
+    // 使用 try-catch 确保即使上层没有提供 Provider (理论上不应该发生)，也能回退
+    try {
+      _cacheManager = Provider.of<BaseCacheManager>(context, listen: false);
+    } catch (e) {
+      // 如果没有从 Provider 获取到，回退到使用 DefaultCacheManager
+      // 这样即使外部没有配置 CacheManagerProviderWidget，组件也能工作（使用默认缓存）
+      _cacheManager = DefaultCacheManager();
+    }
+  }
+
+  void _onVisibilityChanged(VisibilityInfo info) {
+    final bool nowVisible =
+        info.visibleFraction >= widget.visibleFractionThreshold;
+
+    if (!mounted) return; // 在处理任何状态或计时器之前检查
+
+    if (nowVisible != _isVisible) {
+      setState(() {
+        _isVisible = nowVisible;
+        if (_isVisible && !_hasTriedLoading) {
+          _hasTriedLoading = true;
+        }
+      });
+
+      _unloadTimer?.cancel(); // 不论可见性如何变化，先取消旧计时器
+
+      if (!_isVisible) {
+        _unloadTimer = Timer(widget.unloadDelay, () {
+          if (mounted && !_isVisible) {
+            // 再次确认状态
+            _tryEvictImage();
+          }
+        });
+      }
+    }
+  }
+
+  void _tryEvictImage() {
+    if (_cacheManager == null) {
+      return;
+    }
+    // 使用获取到的 CacheManager 实例来清除缓存
+    _cacheManager!.removeFile(widget.imageUrl).then((_) {
+      if (mounted) {
+        // 可选：清除成功后，如果希望下次可见时重新加载而不是从磁盘（如果还在），可以重置状态
+        // setState(() {
+        //   _hasTriedLoading = false; // 允许下次因可见性变化重新触发加载
+        //   // _isVisible 此时应该是 false，所以会显示占位符
+        // });
+      }
+      //debugPrint("SafeCachedImage: Evicted ${widget.imageUrl} from cache.");
+    }).catchError((error) {
+      debugPrint(
+          "SafeCachedImage: Error evicting ${widget.imageUrl} from cache: $error");
+    });
+  }
+
+  @override
+  void dispose() {
+    _unloadTimer?.cancel();
+    super.dispose();
+  }
+
   Widget _buildPlaceholder(BuildContext context) {
     return Container(
-      color: backgroundColor ?? Colors.grey[200],
-      width: width,
-      height: height,
+      key: ValueKey('placeholder_${widget.imageUrl}'), // 给占位符也加个Key，辅助测试
+      color: widget.backgroundColor ?? Colors.grey[200],
+      width: widget.width,
+      height: widget.height,
       child: Center(
         child: CircularProgressIndicator(
           strokeWidth: 2,
@@ -137,30 +144,103 @@ class SafeCachedImage extends StatelessWidget {
     );
   }
 
-  /// 构建错误占位符
-  /// 构建错误占位符
   Widget _buildErrorWidget(BuildContext context) {
     return Container(
-      // 保留背景色、宽度、高度设置，让占位符和图片本身大小一致
-      color: backgroundColor ?? Colors.grey[200],
-      width: width,
-      height: height,
+      key: ValueKey('error_${widget.imageUrl}'),
+      color: widget.backgroundColor ?? Colors.grey[200],
+      width: widget.width,
+      height: widget.height,
       child: Center(
-        // 让图片居中显示
         child: Image.asset(
-          'assets/images/icons/main.png', // <-- 使用你的图片路径
-          // 你可以根据需要调整图片的显示方式：
-          fit: BoxFit.contain, // contain 会完整显示图片，可能会留白
-          // cover 会填充满容器，可能会裁剪图片
-          // scaleDown 如果图片比容器小，按原尺寸；如果大，则缩小以适应，类似 contain
-          // 如果想给占位图一个固定的大小（不一定等于外层width/height），可以在这里设置
-          // width: 32,
-          // height: 32,
-          // 可以给图片加点颜色蒙版，比如灰色，让它看起来更像占位符
-          // color: Colors.grey.withOpacity(0.8),
-          // colorBlendMode: BlendMode.srcATop, // 配合 color 使用
+          'assets/images/icons/main.png', // 确保这个路径正确
+          fit: BoxFit.contain,
+          // 可选：给错误图片也指定大小，如果需要的话
+          width: widget.width != null ? widget.width! * 0.5 : 32,
+          height: widget.height != null ? widget.height! * 0.5 : 32,
         ),
       ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final safeUrl = UrlUtils.getSafeUrl(widget.imageUrl);
+
+    int? finalCacheWidth;
+    int? finalCacheHeight;
+    final dpr = MediaQuery.of(context).devicePixelRatio; // 在 build 方法中获取 dpr
+
+    if (widget.memCacheWidth != null || widget.memCacheHeight != null) {
+      finalCacheWidth = widget.memCacheWidth;
+      finalCacheHeight = widget.memCacheHeight;
+    } else if (widget.width != null || widget.height != null) {
+      finalCacheWidth =
+          (widget.width != null) ? (widget.width! * dpr).round() : null;
+      finalCacheHeight =
+          (widget.height != null) ? (widget.height! * dpr).round() : null;
+    }
+
+    // 根据 _isVisible 和 _hasTriedLoading 的状态决定显示什么
+    Widget imageContent;
+    if (_isVisible || _hasTriedLoading) {
+      if (_cacheManager == null) {
+        // 如果 CacheManager 还没有在 didChangeDependencies 中被初始化
+        // (理论上不太可能，除非 build 在 didChangeDependencies 前被异常调用)
+        // 先显示占位符，等待下次 build
+        imageContent = _buildPlaceholder(context);
+      } else {
+        imageContent = CachedNetworkImage(
+          imageUrl: safeUrl,
+          cacheManager: _cacheManager, // <--- 使用从 Provider 获取的 CacheManager
+          width: widget.width,
+          height: widget.height,
+          fit: widget.fit,
+          memCacheWidth: finalCacheWidth,
+          memCacheHeight: finalCacheHeight,
+          placeholder: (context, url) => _buildPlaceholder(context),
+          errorWidget: (context, url, error) {
+            widget.onError?.call(url, error); // 使用空值感知调用
+            return _buildErrorWidget(context);
+          },
+          fadeInDuration: const Duration(milliseconds: 150), // 平滑淡入
+          fadeOutDuration: const Duration(milliseconds: 150), // 平滑淡出 (如果图片变化)
+        );
+      }
+    } else {
+      // 如果既不可见，也从未尝试加载过，显示占位符
+      imageContent = _buildPlaceholder(context);
+    }
+
+    // 添加背景色
+    if (widget.backgroundColor != null) {
+      imageContent = Container(
+        color: widget.backgroundColor,
+        width: widget.width,
+        height: widget.height,
+        child: imageContent,
+      );
+    }
+
+    // 添加圆角
+    if (widget.borderRadius != null) {
+      imageContent = ClipRRect(
+        borderRadius: widget.borderRadius!,
+        child: imageContent,
+      );
+    }
+
+    // 添加点击事件
+    if (widget.onTap != null) {
+      imageContent = GestureDetector(
+        onTap: widget.onTap,
+        child: imageContent,
+      );
+    }
+
+    return VisibilityDetector(
+      key: _visibilityDetectorKey,
+      onVisibilityChanged: _onVisibilityChanged,
+      child: imageContent, // VisibilityDetector 包裹的是最终构建的 imageContent
     );
   }
 }

@@ -5,6 +5,7 @@ import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 // *** 改成 StatefulWidget ***
 class GameCollectionSection extends StatefulWidget {
@@ -116,7 +117,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withSafeOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -212,7 +213,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(Icons.people_alt_outlined,
-                    size: 18, color: theme.primaryColor.withOpacity(0.7)),
+                    size: 18, color: theme.primaryColor.withSafeOpacity(0.7)),
                 const SizedBox(width: 8),
                 Text(
                   // 使用 State 变量
@@ -220,7 +221,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
-                    color: theme.primaryColor.withOpacity(0.9),
+                    color: theme.primaryColor.withSafeOpacity(0.9),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -258,7 +259,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: iconColor.withOpacity(0.2),
+                      color: iconColor.withSafeOpacity(0.2),
                       blurRadius: 4,
                       offset: const Offset(0, 2))
                 ]),

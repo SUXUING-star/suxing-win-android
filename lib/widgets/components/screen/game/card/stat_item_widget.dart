@@ -1,5 +1,6 @@
 // 4. stat_item_widget.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class StatItemWidget extends StatelessWidget {
   final IconData icon;
@@ -29,7 +30,7 @@ class StatItemWidget extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(3),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.2),
+              color: color.withSafeOpacity(0.2),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -58,7 +59,7 @@ class StatItemWidget extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(2),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withSafeOpacity(0.15),
               shape: BoxShape.circle,
             ),
             child: Icon(

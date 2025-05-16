@@ -1,6 +1,7 @@
 // widgets/form/gameform/field/tags_field.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class TagsField extends StatefulWidget {
   final List<String> tags;
@@ -110,10 +111,10 @@ class _TagsFieldState extends State<TagsField> {
       label: Text(tag),
       deleteIcon: Icon(Icons.close, size: 18),
       onDeleted: () => _removeTag(tag),
-      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+      backgroundColor: Theme.of(context).primaryColor.withSafeOpacity(0.1),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(20),
-        side: BorderSide(color: Theme.of(context).primaryColor.withOpacity(0.3)),
+        side: BorderSide(color: Theme.of(context).primaryColor.withSafeOpacity(0.3)),
       ),
     );
   }

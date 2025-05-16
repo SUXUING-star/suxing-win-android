@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/gamelist/panel/game_right_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 // --- 确保引入所有需要的工具类和常量 ---
 import '../../../../../constants/game/game_constants.dart';
 import '../../../../../models/game/game.dart';
@@ -147,7 +148,7 @@ class GameRightPanel extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
                     // 清除按钮样式保持和标签清除一致
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withSafeOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -205,7 +206,7 @@ class GameRightPanel extends StatelessWidget {
                       isSelected: selectedCategory == category,
                       onSelected: onCategorySelected,
                     );
-                  }).toList(),
+                  }),
                 ],
               ),
         Divider(height: 24), // 加个分隔线
@@ -251,11 +252,11 @@ class GameRightPanel extends StatelessWidget {
       finalBorder = null;
     } else {
       // --- 未选中状态：淡彩背景 + 彩色边框 + 彩色文字 ---
-      finalBgColor = baseColor.withOpacity(0.1); // 非常淡的彩色背景
+      finalBgColor = baseColor.withSafeOpacity(0.1); // 非常淡的彩色背景
       finalTextColor = baseColor; // 彩色文字
       finalFontWeight = FontWeight.normal;
       finalBorder = Border.all(
-        color: baseColor.withOpacity(0.5), // 半透明的基础色边框
+        color: baseColor.withSafeOpacity(0.5), // 半透明的基础色边框
         width: 1.0,
       );
     }
@@ -284,8 +285,8 @@ class GameRightPanel extends StatelessWidget {
       // 使用 InkWell 使其可点击
       onTap: onSelected != null ? () => onSelected(value) : null,
       borderRadius: BorderRadius.circular(borderRadius), // 点击效果也用圆角
-      splashColor: baseColor.withOpacity(0.2), // 水波纹用基础色
-      highlightColor: baseColor.withOpacity(0.1), // 高亮用基础色
+      splashColor: baseColor.withSafeOpacity(0.2), // 水波纹用基础色
+      highlightColor: baseColor.withSafeOpacity(0.1), // 高亮用基础色
       child: Container(
         padding: EdgeInsets.symmetric(
             horizontal: horizontalPadding, vertical: verticalPadding),
@@ -314,7 +315,7 @@ class GameRightPanel extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   // 计数的背景：用文字颜色的更淡透明度
-                  color: finalTextColor.withOpacity(isSelected ? 0.2 : 0.15),
+                  color: finalTextColor.withSafeOpacity(isSelected ? 0.2 : 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -364,7 +365,7 @@ class GameRightPanel extends StatelessWidget {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withSafeOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -436,8 +437,9 @@ class GameRightPanel extends StatelessWidget {
         ),
         SizedBox(height: 8),
         ...categoryStats.map((category) {
-          if (category.count == 0 && category.name.isEmpty)
+          if (category.count == 0 && category.name.isEmpty) {
             return SizedBox.shrink();
+          }
           final displayName = category.name.isEmpty ? '(未分类)' : category.name;
 
           return Padding(
@@ -479,7 +481,7 @@ class GameRightPanel extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         Divider(height: 16),
       ],
     );
@@ -512,7 +514,7 @@ class GameRightPanel extends StatelessWidget {
                   // 清除按钮样式
                   padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withSafeOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -553,8 +555,8 @@ class GameRightPanel extends StatelessWidget {
                         ? () => onTagSelected!(stat.name)
                         : null,
                     borderRadius: BorderRadius.circular(tagTapBorderRadius),
-                    splashColor: tagColor.withOpacity(0.2), // 使用标签颜色
-                    highlightColor: tagColor.withOpacity(0.1), // 使用标签颜色
+                    splashColor: tagColor.withSafeOpacity(0.2), // 使用标签颜色
+                    highlightColor: tagColor.withSafeOpacity(0.1), // 使用标签颜色
                     child: GameTag(
                       tag: stat.name,
                       count: stat.count,

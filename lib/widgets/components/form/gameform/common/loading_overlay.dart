@@ -1,6 +1,7 @@
 // lib/widgets/form/gameform/components/loading_overlay.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../utils/font/font_config.dart';
 
 class LoadingOverlay extends StatelessWidget {
@@ -9,7 +10,7 @@ class LoadingOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withSafeOpacity(0.5),
       child: Center(
         child: Card(
           margin: EdgeInsets.all(16),

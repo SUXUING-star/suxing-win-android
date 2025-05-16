@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/gamelist/tag/tag_style.dart
 // 统一的标签样式定义
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 /// 统一的标签样式类，所有标签相关组件都调用这个类
 class TagStyle {
@@ -47,7 +48,7 @@ class TagStyle {
                 Container(
                   padding: EdgeInsets.symmetric(horizontal: 6, vertical: 1),
                   decoration: BoxDecoration(
-                    color: isSelected ? Colors.white.withOpacity(0.3) : Colors.grey[200],
+                    color: isSelected ? Colors.white.withSafeOpacity(0.3) : Colors.grey[200],
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(

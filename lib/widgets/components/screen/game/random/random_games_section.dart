@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../services/main/game/game_service.dart';
 import 'random_game_card.dart';
@@ -91,7 +92,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),

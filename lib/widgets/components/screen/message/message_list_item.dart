@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // 用于时间格式化
 import 'package:suxingchahui/models/message/message_type.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../models/message/message.dart';
 
 /// 消息列表中的单个项目 Widget
@@ -49,11 +50,11 @@ class MessageListItem extends StatelessWidget {
 
     return InkWell( // 使用 InkWell 提供点击水波纹效果
       onTap: onTap,
-      splashColor: Theme.of(context).primaryColor.withOpacity(0.1), // 水波纹颜色
-      highlightColor: Theme.of(context).primaryColor.withOpacity(0.05), // 点击高亮颜色
+      splashColor: Theme.of(context).primaryColor.withSafeOpacity(0.1), // 水波纹颜色
+      highlightColor: Theme.of(context).primaryColor.withSafeOpacity(0.05), // 点击高亮颜色
       child: Container(
         // 根据是否选中设置背景色
-        color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.08) : Colors.transparent,
+        color: isSelected ? Theme.of(context).primaryColor.withSafeOpacity(0.08) : Colors.transparent,
         padding: EdgeInsets.symmetric(
             horizontal: 16.0, vertical: isCompact ? 8.0 : 12.0), // 根据模式调整垂直边距
         child: Row(
@@ -68,7 +69,7 @@ class MessageListItem extends StatelessWidget {
                   // 根据是否已读设置背景色
                   backgroundColor: message.isRead
                       ? Colors.grey[200] // 已读用灰色背景
-                      : Theme.of(context).primaryColor.withOpacity(0.15), // 未读用主题色浅背景
+                      : Theme.of(context).primaryColor.withSafeOpacity(0.15), // 未读用主题色浅背景
                   child: Icon(
                     iconData, // 使用从模型获取的图标
                     // 根据是否已读设置图标颜色

@@ -1,5 +1,6 @@
 // lib/widgets/ui/menus/context_menu_bubble.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../text/app_text.dart';     // 导入你的 AppText
 import '../text/app_text_type.dart'; // 导入你的 AppTextType
 
@@ -35,7 +36,7 @@ class ContextMenuBubble extends StatelessWidget {
           Container(
             height: 18, // 分隔符高度
             width: 1,
-            color: textColor.withOpacity(0.2), // 使用文字颜色的透明色
+            color: textColor.withSafeOpacity(0.2), // 使用文字颜色的透明色
             margin: const EdgeInsets.symmetric(horizontal: 4.0),
           ),
         );
@@ -47,8 +48,8 @@ class ContextMenuBubble extends StatelessWidget {
           onTap: onPressed, // 直接调用传入的回调 (外部处理关闭)
           borderRadius: BorderRadius.circular(4), // 点击效果圆角
           // 使用 Material 控制水波纹颜色（可选）
-          // splashColor: textColor.withOpacity(0.1),
-          // highlightColor: textColor.withOpacity(0.05),
+          // splashColor: textColor.withSafeOpacity(0.1),
+          // highlightColor: textColor.withSafeOpacity(0.05),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0), // 按钮内边距
             // 使用 AppText 显示标签

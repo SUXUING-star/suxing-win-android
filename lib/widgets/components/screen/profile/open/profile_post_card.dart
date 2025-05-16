@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/post/post.dart';
 
 class ProfilePostCard extends StatelessWidget {
@@ -32,7 +33,7 @@ class ProfilePostCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      color: Theme.of(context).primaryColor.withSafeOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -53,7 +54,7 @@ class ProfilePostCard extends StatelessWidget {
                       margin: EdgeInsets.only(right: 8),
                       padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: Colors.grey.withOpacity(0.1),
+                        color: Colors.grey.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Row(

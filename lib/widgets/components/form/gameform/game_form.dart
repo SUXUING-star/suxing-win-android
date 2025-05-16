@@ -251,8 +251,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // 检查并恢复草稿 (使用 CustomConfirmDialog)
   Future<void> _checkAndRestoreDraft() async {
-    if (_isDraftRestored || _draftKey == null || _isProcessing || !mounted)
+    if (_isDraftRestored || _draftKey == null || _isProcessing || !mounted) {
       return;
+    }
 
     bool hasDraft = await _cacheService.hasDraft(_draftKey!);
     if (hasDraft && mounted) {

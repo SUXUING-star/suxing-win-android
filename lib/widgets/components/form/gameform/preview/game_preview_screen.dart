@@ -1,6 +1,7 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../models/game/game.dart';
 import '../../../../../../widgets/components/screen/game/game_detail_content.dart';
 import '../../../../../../utils/font/font_config.dart';
@@ -39,7 +40,7 @@ class GamePreviewScreen extends StatelessWidget {
           // Preview banner
           Container(
             width: double.infinity,
-            color: Colors.amber.withOpacity(0.2),
+            color: Colors.amber.withSafeOpacity(0.2),
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Center(
               child: Text(
@@ -154,7 +155,7 @@ class GamePreviewScreen extends StatelessWidget {
           SliverToBoxAdapter(
             child: Container(
               width: double.infinity,
-              color: Colors.amber.withOpacity(0.2),
+              color: Colors.amber.withSafeOpacity(0.2),
               padding: EdgeInsets.symmetric(vertical: 12),
               child: Center(
                 child: Text(

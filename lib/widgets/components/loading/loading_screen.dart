@@ -28,7 +28,7 @@
 //     }
 //
 //     final theme = Theme.of(context);
-//     final effectiveBackgroundColor = backgroundColor ?? Colors.black.withOpacity(0.3);
+//     final effectiveBackgroundColor = backgroundColor ?? Colors.black.withSafeOpacity(0.3);
 //
 //     final Color effectiveLoadingColor = loadingColor ?? theme.primaryColor;        // 亮背景（虽然默认是暗的）配主题色
 //

@@ -1,5 +1,6 @@
 // import 'dart:io'; // 这个文件不再需要 dart:io 或 XFile
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 // import 'package:image_picker/image_picker.dart'; // 移除
 // import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 移除
 import '../../../../../models/announcement/announcement.dart';
@@ -64,7 +65,7 @@ class AnnouncementPreviewScreen extends StatelessWidget {
         backgroundColor: Colors.transparent, // 让背景透明或匹配主题
         elevation: 0,
       ),
-      backgroundColor: Colors.black.withOpacity(0.1), // 给屏幕一个轻微的遮罩感
+      backgroundColor: Colors.black.withSafeOpacity(0.1), // 给屏幕一个轻微的遮罩感
       body: const Center(
         // 可以放一个加载指示器或提示文字
         // child: CircularProgressIndicator(),

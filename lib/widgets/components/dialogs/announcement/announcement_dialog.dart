@@ -1,9 +1,9 @@
 import 'dart:io'; // 导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 导入 XFile
-import 'package:path/path.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 确认以下导入路径正确
@@ -31,7 +31,7 @@ void showAnnouncementDialog(
     context: context,
     barrierDismissible: barrierDismissible,
     barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-    barrierColor: Colors.black.withOpacity(0.4),
+    barrierColor: Colors.black.withSafeOpacity(0.4),
     transitionDuration: transitionDuration,
     pageBuilder: (BuildContext buildContext, Animation<double> animation,
         Animation<double> secondaryAnimation) {
@@ -88,8 +88,8 @@ Color _getAnnouncementBorderColor(ThemeData theme, String type) {
       return Colors.purple.shade400; // 稍亮紫色
     default: // info 或未知
       // 默认给一个比较柔和的主题色或灰色边框
-      return theme.colorScheme.primary.withOpacity(0.7);
-    // 或者 return theme.dividerColor.withOpacity(0.9);
+      return theme.colorScheme.primary.withSafeOpacity(0.7);
+    // 或者 return theme.dividerColor.withSafeOpacity(0.9);
   }
 }
 
@@ -158,7 +158,7 @@ class AnnouncementDialog extends StatelessWidget {
     // ... (代码不变) ...
     final Color titleColor = theme.colorScheme.onSurface;
     final Color closeButtonColor =
-        theme.colorScheme.onSurfaceVariant.withOpacity(0.8);
+        theme.colorScheme.onSurfaceVariant.withSafeOpacity(0.8);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20.0, 16.0, 12.0, 16.0),
@@ -197,12 +197,15 @@ class AnnouncementDialog extends StatelessWidget {
   // --- 判断是否应该显示图片 ---
   bool _shouldShowImage() {
     if (imageSource is XFile) return true;
-    if (imageSource is String && (imageSource as String).isNotEmpty)
+    if (imageSource is String && (imageSource as String).isNotEmpty) {
       return true;
+    }
     // 如果 imageSource 为空，则检查 announcement.imageUrl
     if (imageSource == null &&
         announcement.imageUrl != null &&
-        announcement.imageUrl!.isNotEmpty) return true;
+        announcement.imageUrl!.isNotEmpty) {
+      return true;
+    }
     return false;
   }
 
@@ -281,7 +284,7 @@ class AnnouncementDialog extends StatelessWidget {
   // --- 构建内容区域 (保持不变) ---
   Widget _buildContent(BuildContext context, ThemeData theme) {
     // ... (代码不变) ...
-    final Color contentColor = theme.colorScheme.onSurface.withOpacity(0.8);
+    final Color contentColor = theme.colorScheme.onSurface.withSafeOpacity(0.8);
     final Color placeholderColor = theme.colorScheme.onSurfaceVariant;
 
     if (announcement.content.isNotEmpty) {
@@ -321,7 +324,7 @@ class AnnouncementDialog extends StatelessWidget {
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
           padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
           elevation: 2,
-          shadowColor: buttonBackgroundColor.withOpacity(0.4),
+          shadowColor: buttonBackgroundColor.withSafeOpacity(0.4),
         ),
         onPressed: () async {
           // ... (省略 launch url 逻辑，保持不变) ...
@@ -356,7 +359,7 @@ class AnnouncementDialog extends StatelessWidget {
   // --- 构建底部 (保持不变) ---
   Widget _buildFooter(BuildContext context, ThemeData theme) {
     final Color footerTextColor = theme.colorScheme.onSurfaceVariant;
-    final Color dividerColor = theme.dividerColor.withOpacity(0.5);
+    final Color dividerColor = theme.dividerColor.withSafeOpacity(0.5);
     final Color buttonCustomColor = theme.colorScheme.secondary; // 直接用次要色
 
     return Container(

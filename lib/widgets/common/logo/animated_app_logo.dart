@@ -1,6 +1,7 @@
 // lib/widgets/logo/animated_app_logo.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class AnimatedAppLogo extends StatefulWidget {
   final double size;
@@ -257,7 +258,7 @@ class LogoPainter extends CustomPainter {
     highlightPath.close();
 
     final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.7);
+      ..color = Colors.white.withSafeOpacity(0.7);
 
     canvas.drawPath(highlightPath, highlightPaint);
 
@@ -290,7 +291,7 @@ class LogoPainter extends CustomPainter {
       final currentRadius = particle.radius * (0.5 + scaleEffect * 0.5);
 
       final particlePaint = Paint()
-        ..color = particle.color.withOpacity(particle.opacity * scaleEffect)
+        ..color = particle.color.withSafeOpacity(particle.opacity * scaleEffect)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, currentRadius * particle.glowFactor);
 
       canvas.drawCircle(Offset(x, y), currentRadius, particlePaint);

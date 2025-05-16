@@ -7,6 +7,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
@@ -360,7 +361,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         style: OutlinedButton.styleFrom(
           foregroundColor: textColor,
           backgroundColor: backgroundColor,
-          side: BorderSide(color: textColor.withOpacity(0.5), width: 1),
+          side: BorderSide(color: textColor.withSafeOpacity(0.5), width: 1),
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

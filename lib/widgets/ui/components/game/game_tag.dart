@@ -1,6 +1,7 @@
 // lib/widgets/ui/components/game/game_tag.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart'; // <--- 用回这个！
+import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // <--- 用回这个！
 
 class GameTag extends StatelessWidget {
   final String tag;
@@ -33,12 +34,12 @@ class GameTag extends StatelessWidget {
       finalBorder = null;
     } else {
       // --- 未选中状态：新尝试！淡彩背景 + 彩色边框 + 彩色文字 ---
-      finalBgColor = baseTagColor.withOpacity(0.1); // <--- 非常淡的彩色背景
+      finalBgColor = baseTagColor.withSafeOpacity(0.1); // <--- 非常淡的彩色背景
       finalTextColor = baseTagColor;                 // <--- 彩色文字
       finalFontWeight = FontWeight.normal;
       // **关键：添加一个比背景色深一点的彩色边框**
       finalBorder = Border.all(
-        color: baseTagColor.withOpacity(0.5), // <--- 用半透明的基础色做边框
+        color: baseTagColor.withSafeOpacity(0.5), // <--- 用半透明的基础色做边框
         width: 1.0,                          // <--- 边框细一点
       );
     }
@@ -80,7 +81,7 @@ class GameTag extends StatelessWidget {
               padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: BoxDecoration(
                 // 计数的背景：用文字颜色的更淡透明度
-                color: finalTextColor.withOpacity(isSelected ? 0.2 : 0.15), // 未选中时计数背景透明度也调一下
+                color: finalTextColor.withSafeOpacity(isSelected ? 0.2 : 0.15), // 未选中时计数背景透明度也调一下
                 borderRadius: BorderRadius.circular(6),
               ),
               child: Text(

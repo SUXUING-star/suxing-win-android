@@ -30,9 +30,8 @@ class CustomConfirmDialog {
     // 改为 async，因为 BaseInputDialog.show 返回 Future
     final theme = Theme.of(context);
     // 使用主题色作为默认确认按钮颜色和图标颜色可能更好
-    final effectiveConfirmButtonColor =
-        confirmButtonColor ?? theme.primaryColor;
-    final effectiveIconColor = iconColor ?? Colors.orange; // 默认橙色或传入值
+    final effectiveConfirmButtonColor = confirmButtonColor;
+    final effectiveIconColor = iconColor;
 
     // 不再需要手动管理 Completer，让 BaseInputDialog.show 返回的 Future 来处理
     try {

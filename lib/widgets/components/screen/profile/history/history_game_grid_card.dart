@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import '../../../../../routes/app_routes.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
@@ -63,7 +64,7 @@ class HistoryGameGridCard extends StatelessWidget {
                       child: Container(
                         padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withOpacity(0.8),
+                          color: Theme.of(context).primaryColor.withSafeOpacity(0.8),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -89,7 +90,7 @@ class HistoryGameGridCard extends StatelessWidget {
                       ),
                       onPressed: onDeletePressed,
                       style: IconButton.styleFrom(
-                        backgroundColor: Colors.white.withOpacity(0.7),
+                        backgroundColor: Colors.white.withSafeOpacity(0.7),
                         padding: EdgeInsets.all(8),
                       ),
                     ),

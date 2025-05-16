@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../utils/font/font_config.dart'; // 确认路径正确
 
@@ -50,14 +51,14 @@ class FunctionalButton extends StatelessWidget {
 
     // 背景色: 优先使用传入的，否则用主题 primary 加透明度
     final Color defaultBackgroundColor =
-        theme.colorScheme.primary.withOpacity(0.15); // 原来的逻辑
+        theme.colorScheme.primary.withSafeOpacity(0.15); // 原来的逻辑
     final Color effectiveBackgroundColor =
         backgroundColor ?? defaultBackgroundColor;
 
     // 禁用状态颜色
     final Color disabledForegroundColor = Colors.grey.shade400;
     final Color disabledBackgroundColor =
-        Colors.grey.shade200.withOpacity(0.5); // 比原来更透明一点
+        Colors.grey.shade200.withSafeOpacity(0.5); // 比原来更透明一点
 
     // 当前状态颜色
     final Color currentForegroundColor =

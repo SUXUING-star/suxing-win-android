@@ -176,8 +176,8 @@ class _FormTextInputFieldState extends FormFieldState<String> {
       // 如果只是 initialValue 变了，并且我们用的是内部 controller, super.didUpdateWidget 会更新 FormFieldState.value
       // 我们可能需要同步 _controller.text
       else if (widget.controller == null && oldWidget.controller == null && widget.initialValue != oldWidget.initialValue) {
-        if (_controller != null && _controller!.text != (this.value ?? '')) { // this.value 是 FormFieldState.value
-          _controller!.text = this.value ?? '';
+        if (_controller != null && _controller!.text != (value ?? '')) { // this.value 是 FormFieldState.value
+          _controller!.text = value ?? '';
         }
       }
     }
@@ -192,7 +192,7 @@ class _FormTextInputFieldState extends FormFieldState<String> {
         setValue(widget.initialValue ?? '');
       } else if (!isUsingSlotName && wasUsingSlotName) { // 从 slotName 模式切换到 Controller 模式
         // 保留从 slotName 模式带来的当前值
-        final String previousSlotValue = this.value ?? widget.initialValue ?? '';
+        final String previousSlotValue = value ?? widget.initialValue ?? '';
         if (widget.controller == null) { // 外部没提供 controller，内部创建
           _controller?.dispose(); // 确保清理
           _controller = TextEditingController(text: previousSlotValue);

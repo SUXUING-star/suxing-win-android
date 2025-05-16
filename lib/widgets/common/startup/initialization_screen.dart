@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 引入 DeviceUtils
@@ -139,7 +140,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
                         borderRadius: BorderRadius.circular(16), // 圆角
                         boxShadow: [ // 添加阴影
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1), // 阴影颜色
+                            color: Colors.black.withSafeOpacity(0.1), // 阴影颜色
                             blurRadius: 16, // 模糊半径
                             offset: const Offset(0, 4), // 阴影偏移
                           ),
@@ -264,8 +265,8 @@ class _InitializationScreenState extends State<InitializationScreen> {
                   // 右侧是窗口控制按钮 (最小化, 最大化/还原, 关闭)
                   WindowsControls(
                     iconColor: Colors.grey[700], // 图标颜色，确保可见
-                    hoverColor: Colors.black.withOpacity(0.1), // 鼠标悬停背景色
-                    closeHoverColor: Colors.red.withOpacity(0.8), // 关闭按钮悬停背景色
+                    hoverColor: Colors.black.withSafeOpacity(0.1), // 鼠标悬停背景色
+                    closeHoverColor: Colors.red.withSafeOpacity(0.8), // 关闭按钮悬停背景色
                   ),
                 ],
               ),

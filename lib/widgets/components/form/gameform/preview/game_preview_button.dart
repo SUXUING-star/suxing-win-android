@@ -81,7 +81,7 @@ class GamePreviewButton extends StatelessWidget {
       return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");
     }
     final previewGame = Game(
-      id: existingGame?.id ?? mongo.ObjectId().toHexString(),
+      id: existingGame?.id ?? mongo.ObjectId().oid,
       authorId: existingGame?.authorId ?? currentUserId ?? 'preview_mode',
       title: titleController.text.isEmpty ? "游戏标题预览" : titleController.text,
       summary: summaryController.text.isEmpty ? "游戏简介预览" : summaryController.text,

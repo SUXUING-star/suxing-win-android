@@ -1,5 +1,4 @@
 // lib/widgets/components/screen/game/collection/card/collection_game_card.dart
-import 'package:flutter/material.dart';
 import '../../../../ui/components/game/common_game_card.dart';
 
 /// 为游戏收藏屏幕专门设计的卡片组件

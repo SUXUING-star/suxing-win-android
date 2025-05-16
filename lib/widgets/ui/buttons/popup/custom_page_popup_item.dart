@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 /// 自定义分页弹出菜单项 UI
 class CustomPagePopupItem extends StatelessWidget {
@@ -19,7 +20,7 @@ class CustomPagePopupItem extends StatelessWidget {
     final colorScheme = theme.colorScheme;
     final textColor = isCurrentPage
         ? colorScheme.onPrimary // 当前页用主色调上的文字颜色 (通常是白色)
-        : colorScheme.onSurface.withOpacity(0.8); // 其他页用表面颜色上的文字 (深灰/黑色)
+        : colorScheme.onSurface.withSafeOpacity(0.8); // 其他页用表面颜色上的文字 (深灰/黑色)
     final backgroundColor = isCurrentPage
         ? colorScheme.primary // 当前页用主色调背景
         : Colors.white; // 其他页用白色背景
@@ -51,7 +52,7 @@ class CustomPagePopupItem extends StatelessWidget {
           // Text(
           //   '/ $totalPages',
           //   style: TextStyle(
-          //     color: textColor.withOpacity(0.7),
+          //     color: textColor.withSafeOpacity(0.7),
           //     fontSize: 11,
           //   ),
           // ),

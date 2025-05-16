@@ -5,7 +5,6 @@ import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dar
 import 'dart:io';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
-import '../../gameform/field/dialogs/image_url_dialog.dart'; // 复用 URL 对话框
 import '../../../../ui/snackbar/app_snackbar.dart'; // 使用 AppSnackBar
 
 class AnnouncementImageField extends StatelessWidget {

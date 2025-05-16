@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 // **** 导入模型 ****
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 导入 User 模型
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 // **** 导入 UI 组件 ****
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
@@ -86,7 +87,7 @@ class ExpDialogContent extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.deepPurple.withOpacity(0.03), // 加点淡背景色
+        color: Colors.deepPurple.withSafeOpacity(0.03), // 加点淡背景色
         borderRadius: BorderRadius.circular(10), // 圆角更大
         border: Border.all(color: Colors.deepPurple.shade100, width: 1),
       ),
@@ -143,7 +144,7 @@ class ExpDialogContent extends StatelessWidget {
               borderRadius: BorderRadius.circular(5), // 进度条圆角
               child: LinearProgressIndicator(
                 value: user.levelProgress / 100.0, // 使用 user.levelProgress
-                backgroundColor: Colors.deepPurple.shade100.withOpacity(0.5), // 背景更淡
+                backgroundColor: Colors.deepPurple.shade100.withSafeOpacity(0.5), // 背景更淡
                 valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple.shade400), // 进度条颜色
                 minHeight: 8, // 进度条加高一点
               ),
@@ -161,7 +162,7 @@ class ExpDialogContent extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // 调整内边距
       decoration: BoxDecoration(
-        color: Colors.lightBlue.withOpacity(0.05), // 更淡的背景
+        color: Colors.lightBlue.withSafeOpacity(0.05), // 更淡的背景
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.lightBlue.shade100, width: 1),
       ),

@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/coverImage/game_cover_image.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 
 class GameCoverImage extends StatelessWidget {
@@ -50,7 +51,7 @@ class GameCoverImage extends StatelessWidget {
         ),
         boxShadow: hasShadow ? [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withSafeOpacity(0.15),
             spreadRadius: 1,
             blurRadius: 8,
             offset: const Offset(0, 3),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class CollectionStatRow extends StatelessWidget {
   final String label;
@@ -20,10 +21,10 @@ class CollectionStatRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withSafeOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withSafeOpacity(0.3),
           width: 1,
         ),
       ),
@@ -68,7 +69,7 @@ class CollectionStatRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withSafeOpacity(0.05),
                   blurRadius: 1,
                   offset: Offset(0, 1),
                 ),

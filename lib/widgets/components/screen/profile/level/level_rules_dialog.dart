@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../utils/font/font_config.dart';
 
 class LevelRulesDialog extends StatefulWidget {
@@ -125,7 +126,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
 
                   // 等级特权
                   Card(
-                    color: theme.primaryColor.withOpacity(0.1),
+                    color: theme.primaryColor.withSafeOpacity(0.1),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                     child: Padding(
                       padding: EdgeInsets.all(12),
@@ -321,7 +322,7 @@ class _LevelRulesDialogState extends State<LevelRulesDialog> {
 
           return Container(
             decoration: BoxDecoration(
-              color: isCurrentLevel ? Theme.of(context).primaryColor.withOpacity(0.1) : null,
+              color: isCurrentLevel ? Theme.of(context).primaryColor.withSafeOpacity(0.1) : null,
               border: Border(bottom: BorderSide(color: Colors.grey[300]!)),
             ),
             padding: EdgeInsets.symmetric(vertical: 8, horizontal: 4),

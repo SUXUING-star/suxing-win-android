@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/gamelist/tag/tag_bar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/tag/tag.dart';
 
 class TagBar extends StatelessWidget implements PreferredSizeWidget {
@@ -46,7 +47,7 @@ class TagBar extends StatelessWidget implements PreferredSizeWidget {
                     return Container(
                       margin: EdgeInsets.only(right: 8),
                       decoration: BoxDecoration(
-                        color: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
+                        color: isSelected ? Colors.blue : Colors.blue.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: InkWell(
@@ -68,7 +69,7 @@ class TagBar extends StatelessWidget implements PreferredSizeWidget {
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 4, vertical: 1),
                                 decoration: BoxDecoration(
-                                  color: isSelected ? Colors.white.withOpacity(0.3) : Colors.blue.withOpacity(0.1),
+                                  color: isSelected ? Colors.white.withSafeOpacity(0.3) : Colors.blue.withSafeOpacity(0.1),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(

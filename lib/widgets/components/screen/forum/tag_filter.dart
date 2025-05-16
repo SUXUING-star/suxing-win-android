@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag
-import '../../../../utils/font/font_config.dart'; // 假设需要字体
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class TagFilter extends StatelessWidget {
   final List<String> tags; // 接收显示用的字符串列表 (如 ['全部', '讨论', ...])
@@ -52,7 +52,7 @@ class TagFilter extends StatelessWidget {
                 }
               },
               // 可以调整样式
-              selectedColor: Theme.of(context).primaryColor.withOpacity(0.8),
+              selectedColor: Theme.of(context).primaryColor.withSafeOpacity(0.8),
               labelStyle: TextStyle(
                 color: isSelected ? Colors.white : Colors.black87,
                 fontSize: 13,

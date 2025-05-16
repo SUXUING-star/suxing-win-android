@@ -1,6 +1,7 @@
 // lib/widgets/logo/custom_star_logo.dart
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class StarLogo extends StatelessWidget {
   final double size;
@@ -132,7 +133,7 @@ class StarClusterPainter extends CustomPainter {
     // 如果启用光晕效果，先绘制光晕
     if (withGlow) {
       final glowPaint = Paint()
-        ..color = color.withOpacity(0.3)
+        ..color = color.withSafeOpacity(0.3)
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, size * 0.2);
 
       _drawStarPath(canvas, center, size * 1.2, points, rotation, glowPaint);
@@ -147,7 +148,7 @@ class StarClusterPainter extends CustomPainter {
 
     // 添加高光效果
     final highlightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.7)
+      ..color = Colors.white.withSafeOpacity(0.7)
       ..style = PaintingStyle.fill;
 
     // 绘制小圆点作为星星的高光

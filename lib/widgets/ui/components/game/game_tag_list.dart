@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
 
 class GameTagList extends StatelessWidget {

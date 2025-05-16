@@ -141,7 +141,7 @@ class ActivityTarget extends StatelessWidget {
         alignment: isAlternate ? Alignment.centerRight : Alignment.centerLeft,
         // --- 直接使用未修改的 UserInfoBadge ---
         child: UserInfoBadge(
-          key: ValueKey('target_badge_${targetUserId}'), // 给 Badge 一个 Key
+          key: ValueKey('target_badge_$targetUserId'), // 给 Badge 一个 Key
           userId: targetUserId, // 传递目标用户 ID
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
@@ -163,7 +163,7 @@ class ActivityTarget extends StatelessWidget {
       child: Align(
         alignment: isAlternate ? Alignment.centerRight : Alignment.centerLeft,
         child: UserInfoBadge(
-          key: ValueKey('default_${userId}'), // 给 Badge 一个 Key
+          key: ValueKey('default_$userId'), // 给 Badge 一个 Key
           userId: userId, // 传递目标用户 ID
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,

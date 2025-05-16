@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityTargetNavigation extends StatelessWidget {
   final UserActivity activity;
@@ -90,14 +91,14 @@ class ActivityTargetNavigation extends StatelessWidget {
         ),
         style: OutlinedButton.styleFrom(
           side: BorderSide(
-            color: Theme.of(context).primaryColor.withOpacity(0.5),
+            color: Theme.of(context).primaryColor.withSafeOpacity(0.5),
             width: 1.0,
           ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(18.0),
           ),
           padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          backgroundColor: Theme.of(context).primaryColor.withOpacity(0.05),
+          backgroundColor: Theme.of(context).primaryColor.withSafeOpacity(0.05),
         ),
       ),
     );

@@ -5,7 +5,6 @@ import 'dart:io';
 import '../../../../ui/buttons/app_button.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/image/safe_cached_image.dart';
-import 'dialogs/image_url_dialog.dart';
 
 class CoverImageField extends StatelessWidget {
   final dynamic coverImageSource;

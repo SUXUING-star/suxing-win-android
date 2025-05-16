@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
+import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
@@ -26,8 +27,15 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InitializationWrapper(
-      onInitialized: (providers) => MainApp(
-        providers: providers,
+      onInitialized: (providersFromInitializer) => CacheManagerProviderWidget(
+        cacheKey: 'myAppGlobalCache',
+        maxNrOfCacheObjects: 250,
+        stalePeriod: const Duration(days: 10),
+        child: MainApp(
+          // MainApp 作为 CacheManagerProviderWidget 的 child
+          providers:
+              providersFromInitializer, // AppInitializer 返回的 providers 列表
+        ),
       ),
     );
   }

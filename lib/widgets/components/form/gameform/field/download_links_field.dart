@@ -40,7 +40,7 @@ class DownloadLinksField extends StatelessWidget {
     if (title != null && url != null) {
       final newLinks = List<DownloadLink>.from(downloadLinks);
       newLinks.add(DownloadLink(
-        id: mongo.ObjectId().toHexString(),
+        id: mongo.ObjectId().oid,
         title: title,
         url: url,
         description: description ?? '',
@@ -57,7 +57,7 @@ class DownloadLinksField extends StatelessWidget {
       onConfirm: (title, url, description) {
         final newLinks = List<DownloadLink>.from(downloadLinks);
         newLinks.add(DownloadLink(
-          id: mongo.ObjectId().toHexString(),
+          id: mongo.ObjectId().oid,
           title: title,
           url: url,
           description: description,

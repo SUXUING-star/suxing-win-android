@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../ui/image/safe_cached_image.dart';
 
@@ -55,7 +56,7 @@ class RandomGameCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withSafeOpacity(0.1),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -88,7 +89,7 @@ class RandomGameCard extends StatelessWidget {
                       begin: Alignment.bottomCenter,
                       end: Alignment.topCenter,
                       colors: [
-                        Colors.black.withOpacity(0.6),
+                        Colors.black.withSafeOpacity(0.6),
                         Colors.transparent,
                       ],
                     ),
@@ -120,7 +121,7 @@ class RandomGameCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withSafeOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(
@@ -149,7 +150,7 @@ class RandomGameCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: Colors.black.withOpacity(0.5),
+        color: Colors.black.withSafeOpacity(0.5),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Row(

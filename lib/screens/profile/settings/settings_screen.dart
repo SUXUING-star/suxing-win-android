@@ -61,7 +61,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       if (!mounted) return;
       AppSnackBar.showError(context, '清除失败: ${e.toString()}');
     } finally {
-      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _loadingMessage = null;

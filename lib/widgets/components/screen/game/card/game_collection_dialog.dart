@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../utils/device/device_utils.dart';
 import 'collection_stat_row.dart';
@@ -33,7 +34,7 @@ class GameCollectionDialog extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withSafeOpacity(0.1),
               blurRadius: 10,
               offset: Offset(0, 4),
             ),

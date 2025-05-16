@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 引入 User 模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 引入上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 引入安全图片加载
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'custom_crop_dialog.dart';
@@ -116,11 +117,11 @@ class EditableUserAvatar extends StatelessWidget {
             height: radius * 2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: placeholderColor.withOpacity(0.2), // 占位背景色
+              color: placeholderColor.withSafeOpacity(0.2), // 占位背景色
               boxShadow: [
                 // 可选：加点阴影提升质感
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withSafeOpacity(0.1),
                   blurRadius: 5,
                   offset: const Offset(0, 2),
                 ),

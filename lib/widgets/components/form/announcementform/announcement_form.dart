@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 需要导入 image_picker
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入 AppSnackBar
 import '../../../../models/announcement/announcement.dart';
 import '../../../../utils/device/device_utils.dart';
@@ -403,7 +404,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   // 加载遮罩
   Widget _buildLoadingOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.5),
+      color: Colors.black.withSafeOpacity(0.5),
       child: const Center(
         child: Card(
           child: Padding(

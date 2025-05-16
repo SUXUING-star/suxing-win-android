@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import '../../../../../utils/font/font_config.dart';
-import 'level_rules_dialog.dart';
 
 class LevelProgressBar extends StatelessWidget {
   final User user;
@@ -121,7 +121,7 @@ class LevelProgressBar extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            theme.primaryColor.withOpacity(0.7),
+                            theme.primaryColor.withSafeOpacity(0.7),
                             theme.primaryColor,
                           ],
                           begin: Alignment.centerLeft,
@@ -130,7 +130,7 @@ class LevelProgressBar extends StatelessWidget {
                         borderRadius: BorderRadius.circular(progressHeight / 2),
                         boxShadow: [
                           BoxShadow(
-                            color: theme.primaryColor.withOpacity(0.2),
+                            color: theme.primaryColor.withSafeOpacity(0.2),
                             blurRadius: 2,
                             offset: const Offset(0, 1),
                           ),

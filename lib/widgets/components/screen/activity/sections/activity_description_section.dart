@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityDescriptionSection extends StatelessWidget {
   final UserActivity activity;
@@ -52,7 +53,7 @@ class ActivityDescriptionSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12), // 圆角
         boxShadow: [ // 阴影
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),

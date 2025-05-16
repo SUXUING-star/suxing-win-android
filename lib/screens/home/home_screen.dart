@@ -169,7 +169,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       if (mounted) {
         AppSnackBar.showInfo(
           context,
-          '刷新太频繁啦，请 ${remainingSeconds} 秒后再试',
+          '刷新太频繁啦，请 $remainingSeconds 秒后再试',
           duration: const Duration(seconds: 2),
         );
       }

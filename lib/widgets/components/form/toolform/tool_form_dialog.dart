@@ -138,7 +138,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
         // 2. 创建 Tool 实例
         final toolObject = Tool(
           id: widget.tool?.id ??
-              mongo.ObjectId().toHexString(), // 保留原有 ID 或生成新 ID
+              mongo.ObjectId().oid, // 保留原有 ID 或生成新 ID
           name: _name.trim(),
           description: _description.trim(),
           color: _color.trim(),
@@ -336,8 +336,9 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                           SliverList(
                             delegate: SliverChildBuilderDelegate(
                               (context, index) {
-                                if (index >= _downloadsState.length)
+                                if (index >= _downloadsState.length) {
                                   return null;
+                                }
                                 // 使用 Card 包裹每个下载链接表单，增加视觉分隔
                                 return Card(
                                   elevation: 1.0, // 稍微一点阴影

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag 相关
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // 引入 PostTagItem
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../models/stats/tag_stat.dart';
 import '../../../../../services/main/forum/stats/forum_stats_service.dart';
@@ -46,11 +47,11 @@ class ForumRightPanel extends StatelessWidget {
       margin: const EdgeInsets.all(8),
       decoration: BoxDecoration(
         // 统一使用 Decoration
-        color: Colors.white.withOpacity(0.9),
+        color: Colors.white.withSafeOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withSafeOpacity(0.08),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -70,8 +71,8 @@ class ForumRightPanel extends StatelessWidget {
                   // 使用渐变
                   begin: Alignment.topLeft, end: Alignment.bottomRight,
                   colors: [
-                    primaryColor.withOpacity(0.9),
-                    primaryColor.withOpacity(0.7),
+                    primaryColor.withSafeOpacity(0.9),
+                    primaryColor.withSafeOpacity(0.7),
                   ],
                 ),
               ),
@@ -153,7 +154,7 @@ class ForumRightPanel extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3), // 调整 padding
                   decoration: BoxDecoration(
-                    color: themeColor.withOpacity(0.1), // 使用主题色透明背景
+                    color: themeColor.withSafeOpacity(0.1), // 使用主题色透明背景
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -168,7 +169,7 @@ class ForumRightPanel extends StatelessWidget {
               ],
             ),
           );
-        }).toList(),
+        }),
         Divider(height: 20, thickness: 0.5, color: Colors.grey[300]), // 分隔线样式
       ],
     );
@@ -205,7 +206,7 @@ class ForumRightPanel extends StatelessWidget {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                     decoration: BoxDecoration(
-                      color: themeColor.withOpacity(0.1),
+                      color: themeColor.withSafeOpacity(0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Row(
@@ -245,7 +246,7 @@ class ForumRightPanel extends StatelessWidget {
                 runSpacing: 8,
                 children: tagStats.map((stat) {
                   // 从 stat.name (String) 转换回 PostTag?
-                  final PostTag? currentTagEnum =
+                  final PostTag currentTagEnum =
                       PostTagsUtils.tagFromString(stat.name);
                   // 判断是否选中
                   final bool isSelected = selectedTag == currentTagEnum;
@@ -306,7 +307,7 @@ class ForumRightPanel extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8), // 列表项底部外边距
       child: Material(
         // 使用 Material 提供点击效果和圆角
-        color: themeColor.withOpacity(0.05), // 用主题色的淡背景
+        color: themeColor.withSafeOpacity(0.05), // 用主题色的淡背景
         borderRadius: BorderRadius.circular(8),
         child: InkWell(
           // 添加点击效果
@@ -316,8 +317,8 @@ class ForumRightPanel extends StatelessWidget {
                 arguments: post.id);
           },
           borderRadius: BorderRadius.circular(8), // InkWell 圆角要匹配 Material
-          splashColor: themeColor.withOpacity(0.1), // 水波纹颜色
-          highlightColor: themeColor.withOpacity(0.08), // 高亮颜色
+          splashColor: themeColor.withSafeOpacity(0.1), // 水波纹颜色
+          highlightColor: themeColor.withSafeOpacity(0.08), // 高亮颜色
           child: Container(
             // 使用 Container 控制内边距
             padding: const EdgeInsets.all(10), // 统一内边距

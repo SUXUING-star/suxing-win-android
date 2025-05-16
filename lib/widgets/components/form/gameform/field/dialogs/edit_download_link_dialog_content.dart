@@ -1,6 +1,7 @@
 // widgets/form/gameform/edit_download_link_dialog_content.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'dart:async'; // Future 需要
 // 导入 DownloadLink 模型 (根据你的项目结构调整路径)
@@ -204,7 +205,7 @@ class _EditDownloadLinkDialogContentState
                   onPressed: _isSaving ? null : _handleCancel,
                   style: TextButton.styleFrom(
                     foregroundColor:
-                        theme.textTheme.bodyLarge?.color?.withOpacity(0.7),
+                        theme.textTheme.bodyLarge?.color?.withSafeOpacity(0.7),
                     padding: const EdgeInsets.symmetric(
                         horizontal: 16, vertical: 10),
                     minimumSize: const Size(80, 40),

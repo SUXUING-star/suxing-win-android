@@ -278,38 +278,35 @@ class BaseGameCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    return Container(
-      // 可以保留 Container 做微调，或者直接返回 Button
-      child: StylishPopupMenuButton<String>(
-        // *** 使用新组件 ***
-        icon: Icons.more_vert,
-        iconSize: 20,
-        triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
-        tooltip: '选项',
-        elevation: 2.0, // 设置阴影
-        itemHeight: 40, // 设置项高
+    return StylishPopupMenuButton<String>(
+      // *** 使用新组件 ***
+      icon: Icons.more_vert,
+      iconSize: 20,
+      triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
+      tooltip: '选项',
+      elevation: 2.0, // 设置阴影
+      itemHeight: 40, // 设置项高
 
-        // *** 直接提供数据列表 ***
-        items: [
-          // 删除选项
-          if (hasDeleteAction) // 使用计算好的变量
-            StylishMenuItemData(
-              // **提供数据**
-              value: 'delete',
-              // **提供内容**
-              child: AppText('删除', type: AppTextType.error), // 使用主题颜色
-            ),
-          // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData
-        ],
+      // *** 直接提供数据列表 ***
+      items: [
+        // 删除选项
+        if (hasDeleteAction) // 使用计算好的变量
+          StylishMenuItemData(
+            // **提供数据**
+            value: 'delete',
+            // **提供内容**
+            child: AppText('删除', type: AppTextType.error), // 使用主题颜色
+          ),
+        // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData
+      ],
 
-        // onSelected 逻辑不变
-        onSelected: (value) {
-          if (value == 'delete') {
-            onDeleteAction?.call(); // 直接调用
-          }
-          // else if (value == 'edit') { ... }
-        },
-      ),
+      // onSelected 逻辑不变
+      onSelected: (value) {
+        if (value == 'delete') {
+          onDeleteAction?.call(); // 直接调用
+        }
+        // else if (value == 'edit') { ... }
+      },
     );
   }
 }

@@ -88,9 +88,10 @@ class ForceUpdateDialog {
       onConfirm: () async {
         // onConfirm 是 Future<void> Function()
         if (updateUrl.isEmpty) {
-          if (kDebugMode)
+          if (kDebugMode) {
             print(
                 'ForceUpdateDialog: Release Page URL (from updateUrl prop) is empty.');
+          }
           if (context.mounted) {
             // 使用 AppSnackBar 显示错误
             AppSnackBar.showError(context, '未配置有效的更新页面链接。');
@@ -114,8 +115,9 @@ class ForceUpdateDialog {
             }
           }
         } catch (e) {
-          if (kDebugMode)
+          if (kDebugMode) {
             print("ForceUpdateDialog: Error launching URL $uri: $e");
+          }
           if (context.mounted) {
             AppSnackBar.showError(context,
                 '打开链接时发生错误: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../utils/font/font_config.dart';
 
 class TagSelection extends StatelessWidget {
@@ -40,9 +41,9 @@ class TagSelection extends StatelessWidget {
                 ),
               ),
               selected: isSelected,
-              selectedColor: Colors.blue.withOpacity(0.25),
+              selectedColor: Colors.blue.withSafeOpacity(0.25),
               checkmarkColor: Colors.blue,
-              backgroundColor: Colors.grey.withOpacity(0.1),
+              backgroundColor: Colors.grey.withSafeOpacity(0.1),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
                 side: BorderSide(

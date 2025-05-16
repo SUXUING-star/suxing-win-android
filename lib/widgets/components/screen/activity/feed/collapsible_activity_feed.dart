@@ -10,6 +10,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/common/activity_
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 enum FeedCollapseMode { none, byUser, byType }
 
@@ -299,7 +300,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                 boxShadow: [
                   // 阴影效果
                   BoxShadow(
-                      color: groupColor.withOpacity(0.2), // 阴影颜色使用分组颜色
+                      color: groupColor.withSafeOpacity(0.2), // 阴影颜色使用分组颜色
                       blurRadius: 8,
                       offset: const Offset(0, 2))
                 ]),
@@ -324,8 +325,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                       // 标题栏背景渐变
                       decoration: BoxDecoration(
                           gradient: LinearGradient(colors: [
-                        groupColor.withOpacity(0.7),
-                        groupColor.withOpacity(0.9)
+                        groupColor.withSafeOpacity(0.7),
+                        groupColor.withSafeOpacity(0.9)
                       ], begin: Alignment.topLeft, end: Alignment.bottomRight)),
                       // --- 7. 标题栏内部 Row 布局 ---
                       child: Row(
@@ -335,7 +336,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
                                   color:
-                                      Colors.white.withOpacity(0.3), // 半透明白色背景
+                                      Colors.white.withSafeOpacity(0.3), // 半透明白色背景
                                   borderRadius: BorderRadius.circular(8)),
                               child: Icon(groupIcon,
                                   color: Colors.white, size: 20) // 分组图标
@@ -387,7 +388,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                                         // 数量文字样式
                                         fontSize: 12,
                                         color: Colors.white
-                                            .withOpacity(0.8) // 半透明白色
+                                            .withSafeOpacity(0.8) // 半透明白色
                                         ))
                               ])),
                           // --- 结束中间标题区域 ---
@@ -398,7 +399,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                               child: Container(
                                   decoration: BoxDecoration(
                                       color: Colors.white
-                                          .withOpacity(0.3), // 半透明背景
+                                          .withSafeOpacity(0.3), // 半透明背景
                                       shape: BoxShape.circle // 圆形
                                       ),
                                   padding: const EdgeInsets.all(4), // 内边距
@@ -498,7 +499,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                   padding:
                       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                      color: groupColor.withOpacity(0.1),
+                      color: groupColor.withSafeOpacity(0.1),
                       borderRadius: BorderRadius.circular(12)),
                   child: Text(_formatTimeAgo(latestActivity.createTime),
                       style: TextStyle(
@@ -532,9 +533,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                     padding:
                         const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                     decoration: BoxDecoration(
-                        color: groupColor.withOpacity(0.1),
+                        color: groupColor.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: groupColor.withOpacity(0.3))),
+                        border: Border.all(color: groupColor.withSafeOpacity(0.3))),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text('查看全部${activities.length}条动态',
                           style: TextStyle(

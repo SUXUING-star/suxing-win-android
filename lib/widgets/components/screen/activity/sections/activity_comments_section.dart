@@ -6,6 +6,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/comment/activity
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityCommentsSection extends StatelessWidget {
   final String activityId;
@@ -132,7 +133,7 @@ class ActivityCommentsSection extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 10,
             offset: Offset(0, 2),
           ),

@@ -51,7 +51,7 @@ class Task {
 
   double get progress => (limit <= 0) ? (completed ? 1.0 : 0.0) : (used / limit).clamp(0.0, 1.0);
   String get countText => '$used/$limit';
-  String get expPerTaskText => '+${expPerTask}经验/次';
+  String get expPerTaskText => '+$expPerTask经验/次';
 }
 
 // 今日进度汇总模型

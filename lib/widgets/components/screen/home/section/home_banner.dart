@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class HomeBanner extends StatelessWidget {
   const HomeBanner({super.key});
@@ -24,7 +25,7 @@ class HomeBanner extends StatelessWidget {
               borderRadius: BorderRadius.circular(12.0),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withSafeOpacity(0.1),
                   spreadRadius: 1,
                   blurRadius: 10,
                   offset: const Offset(0, 4),
@@ -39,7 +40,7 @@ class HomeBanner extends StatelessWidget {
                   child: Container(
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withSafeOpacity(0.2),
                         width: 1.0,
                       ),
                     ),
@@ -60,7 +61,7 @@ class HomeBanner extends StatelessWidget {
                         end: Alignment.bottomCenter,
                         colors: [
                           Colors.transparent,
-                          Colors.black.withOpacity(0.3),
+                          Colors.black.withSafeOpacity(0.3),
                         ],
                       ),
                     ),

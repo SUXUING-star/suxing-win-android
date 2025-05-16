@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/gamelist/tag/tag_cloud.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/tag/tag.dart';
 import '../../../../../models/stats/tag_stat.dart';
 
@@ -43,7 +44,7 @@ class TagCloud extends StatelessWidget {
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
             ),
           ),
-          backgroundColor: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
+          backgroundColor: isSelected ? Colors.blue : Colors.blue.withSafeOpacity(0.1),
           labelStyle: TextStyle(
             color: isSelected ? Colors.white : Colors.blue,
             fontSize: compact ? 12.0 : 13.0,
@@ -89,7 +90,7 @@ class StatTagCloud extends StatelessWidget {
               style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold),
             ),
           ),
-          backgroundColor: isSelected ? Colors.blue : Colors.blue.withOpacity(0.1),
+          backgroundColor: isSelected ? Colors.blue : Colors.blue.withSafeOpacity(0.1),
           labelStyle: TextStyle(
             color: isSelected ? Colors.white : Colors.blue,
             fontSize: compact ? 12.0 : 13.0,

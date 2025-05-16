@@ -391,7 +391,7 @@
 //               IconButton(
 //                 icon: Icon(
 //                   _autoPlayEnabled ? Icons.repeat : Icons.repeat_one,
-//                   color: Colors.white.withOpacity(_autoPlayEnabled ? 1.0 : 0.5),
+//                   color: Colors.white.withSafeOpacity(_autoPlayEnabled ? 1.0 : 0.5),
 //                   size: 20,
 //                 ),
 //                 onPressed: () {

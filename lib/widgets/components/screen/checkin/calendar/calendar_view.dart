@@ -1,7 +1,8 @@
 // lib/widgets/components/screen/checkin/calendar_view.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 确保已添加到 pubspec.yaml
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 确保已添加到 pubspec.yaml
 
 class CalendarView extends StatelessWidget {
   final int selectedYear;
@@ -74,9 +75,9 @@ class CalendarView extends StatelessWidget {
                           margin: const EdgeInsets.only(right: 8), // 与切换按钮的间距
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: Colors.red.withOpacity(0.1),
+                            color: Colors.red.withSafeOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withOpacity(0.3)),
+                            border: Border.all(color: Colors.red.withSafeOpacity(0.3)),
                           ),
                           child: Text(
                             '漏签 $calculatedMissedDays 天',
@@ -334,8 +335,8 @@ class CalendarView extends StatelessWidget {
     // 漏签样式 (覆盖周末文字颜色)
     if (isMissedCheckIn) {
       textColor = Colors.grey.shade500; // 漏签文字颜色变灰
-      bgColor = Colors.red.withOpacity(0.05); // 淡红色背景
-      borderColor = Colors.red.withOpacity(0.1); // 淡红色边框
+      bgColor = Colors.red.withSafeOpacity(0.05); // 淡红色背景
+      borderColor = Colors.red.withSafeOpacity(0.1); // 淡红色边框
       borderWidth = 0.5;
     }
     // 今天样式 (覆盖其他样式)
@@ -347,7 +348,7 @@ class CalendarView extends StatelessWidget {
     }
     // 已签到但不是今天的，可以考虑加个淡背景色，但目前保持透明
     // if (isCheckedIn && !isToday) {
-    //   bgColor = theme.primaryColor.withOpacity(0.05);
+    //   bgColor = theme.primaryColor.withSafeOpacity(0.05);
     // }
     // --- 样式确定结束 ---
 
@@ -389,7 +390,7 @@ class CalendarView extends StatelessWidget {
                 height: iconSize + 4,
                 child: isCheckedIn
                 // 已签到图标
-                    ? Icon(Icons.check_circle_outline, color: theme.primaryColor.withOpacity(0.85), size: iconSize)
+                    ? Icon(Icons.check_circle_outline, color: theme.primaryColor.withSafeOpacity(0.85), size: iconSize)
                     : isMissedCheckIn
                 // 漏签图标
                     ? Icon(Icons.close, color: Colors.red.shade200, size: iconSize)

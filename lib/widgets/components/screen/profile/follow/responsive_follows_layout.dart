@@ -5,6 +5,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../ui/badges/safe_user_avatar.dart';
 import '../../../../../routes/app_routes.dart';
@@ -225,7 +226,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withSafeOpacity(0.05),
                   blurRadius: 10,
                   offset: Offset(0, 2),
                 ),

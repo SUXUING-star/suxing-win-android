@@ -1,5 +1,6 @@
 // 3. game_stats_widget.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import 'stat_item_widget.dart';
 
@@ -82,7 +83,7 @@ class GameStatsWidget extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.85),
+        color: Colors.white.withSafeOpacity(0.85),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.grey.shade300, width: 0.5),
         boxShadow: [

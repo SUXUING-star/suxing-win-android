@@ -365,7 +365,7 @@
 //               activeTrackColor: primaryColor,
 //               inactiveTrackColor: Colors.grey[300],
 //               thumbColor: primaryColor,
-//               overlayColor: primaryColor.withOpacity(0.3),
+//               overlayColor: primaryColor.withSafeOpacity(0.3),
 //             ),
 //             child: Slider(
 //               value: _position.inSeconds.toDouble(),
@@ -475,7 +475,7 @@
 //                         activeTrackColor: primaryColor,
 //                         inactiveTrackColor: Colors.grey[300],
 //                         thumbColor: primaryColor,
-//                         overlayColor: primaryColor.withOpacity(0.3),
+//                         overlayColor: primaryColor.withSafeOpacity(0.3),
 //                       ),
 //                       child: Slider(
 //                         value: _volume,

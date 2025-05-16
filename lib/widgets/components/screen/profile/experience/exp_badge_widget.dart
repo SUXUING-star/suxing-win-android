@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/experience/exp_badge_widget.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../../utils/font/font_config.dart';
 
 class ExpBadgeWidget extends StatelessWidget {
@@ -33,7 +34,7 @@ class ExpBadgeWidget extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.2),
+              color: Colors.black.withSafeOpacity(0.2),
               blurRadius: 4,
               offset: Offset(0, 2),
             ),
@@ -49,7 +50,7 @@ class ExpBadgeWidget extends StatelessWidget {
                 height: size * 0.8,
                 child: CircularProgressIndicator(
                   value: completionPercentage / 100,
-                  backgroundColor: Colors.white.withOpacity(0.3),
+                  backgroundColor: Colors.white.withSafeOpacity(0.3),
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   strokeWidth: size * 0.08,
                 ),

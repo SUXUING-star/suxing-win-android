@@ -217,8 +217,8 @@ class _LoadingWidgetState extends State<LoadingWidget> {
     // 卡片内文字颜色：优先 widget 参数，否则根据背景亮度计算
     final Color textColor = widget.overlayTextColor ??
         (ThemeData.estimateBrightnessForColor(cardBgColor) == Brightness.dark
-            ? Colors.white.withOpacity(0.85)
-            : Colors.black.withOpacity(0.75));
+            ? Colors.white.withSafeOpacity(0.85)
+            : Colors.black.withSafeOpacity(0.75));
 
     return Container(
       width: widget.overlayCardWidth, // Use parameter for width

@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/experience/exp_today_progress_card.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../../../utils/font/font_config.dart';
 
 class ExpTodayProgressCard extends StatelessWidget {
@@ -21,10 +22,10 @@ class ExpTodayProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        color: Theme.of(context).primaryColor.withSafeOpacity(0.1),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: Theme.of(context).primaryColor.withOpacity(0.3),
+          color: Theme.of(context).primaryColor.withSafeOpacity(0.3),
           width: 1,
         ),
       ),
@@ -75,7 +76,7 @@ class ExpTodayProgressCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withSafeOpacity(0.05),
                   blurRadius: 1,
                   offset: Offset(0, 1),
                 ),

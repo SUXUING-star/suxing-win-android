@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+
 class CustomSliverAppBar extends StatelessWidget {
   final String titleText;
   final List<Widget>? actions;
@@ -52,7 +54,7 @@ class CustomSliverAppBar extends StatelessWidget {
       child: Opacity(
         opacity: 0.7,
         child: Container(
-          color: Colors.white.withOpacity(0.2),
+          color: Colors.white.withSafeOpacity(0.2),
           height: visualHeight,
         ),
       ),

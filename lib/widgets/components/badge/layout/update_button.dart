@@ -1,6 +1,7 @@
 // lib/widgets/components/badge/layout/update_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
@@ -49,7 +50,7 @@ class UpdateButton extends StatelessWidget {
                 // 可以添加一点阴影让它更突出
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
+                    color: Colors.black.withSafeOpacity(0.2),
                     spreadRadius: 1,
                     blurRadius: 2,
                     offset: const Offset(0, 1),

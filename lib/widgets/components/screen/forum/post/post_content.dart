@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/post/post.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/datetime/date_time_formatter.dart';
@@ -58,7 +59,7 @@ class _PostContentState extends State<PostContent> {
               ? [] // No shadow for desktop
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: Colors.black.withSafeOpacity(0.05),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
@@ -196,7 +197,7 @@ class _PostContentState extends State<PostContent> {
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
           decoration: BoxDecoration(
-            color: Theme.of(context).primaryColor.withOpacity(0.1),
+            color: Theme.of(context).primaryColor.withSafeOpacity(0.1),
             borderRadius: BorderRadius.circular(4),
           ),
           child: Text(
