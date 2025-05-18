@@ -1,6 +1,7 @@
 // 文件路径: lib/widgets/components/screen/gamelist/common_game_list_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -16,6 +17,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 
 class CommonGameListScreen extends StatelessWidget {
   final String title;
+  final User? currentUser;
   final List<Game> games;
   final bool isLoading;
   final String? error;
@@ -38,6 +40,7 @@ class CommonGameListScreen extends StatelessWidget {
 
   const CommonGameListScreen({
     super.key,
+    required this.currentUser,
     required this.title,
     required this.games,
     this.isLoading = false,
@@ -141,6 +144,7 @@ class CommonGameListScreen extends StatelessWidget {
                 ? customCardBuilder!(game)
                 : BaseGameCard(
               key: ValueKey(game.id),
+              currentUser: currentUser,
               game: game,
               isGridItem: true,
               adaptForPanels: false,

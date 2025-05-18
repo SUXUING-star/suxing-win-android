@@ -1,13 +1,14 @@
 // lib/widgets/ui/buttons/follow_user_button.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../services/main/user/user_follow_service.dart';
-import '../../../providers/auth/auth_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:provider/provider.dart';
 import 'dart:async';
 
 class FollowUserButton extends StatefulWidget {
   final String userId;
+  final User? currentUser;
   final Color? color;
   final bool showIcon;
   final bool mini;
@@ -20,6 +21,7 @@ class FollowUserButton extends StatefulWidget {
   const FollowUserButton({
     super.key,
     required this.userId,
+    required this.currentUser,
     this.color,
     this.showIcon = true,
     this.mini = false,
@@ -39,6 +41,8 @@ class _FollowUserButtonState extends State<FollowUserButton>
 
   StreamSubscription? _followStatusSubscription; // 保留流监听，用于外部触发刷新
   bool _mounted = true;
+  late bool _hasInitializedDependencies = false;
+  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -50,19 +54,21 @@ class _FollowUserButtonState extends State<FollowUserButton>
         widget.initialIsFollowing ?? false; // 如果父组件没传（理论上不该发生），默认 false
     _isLoading = false; // 初始时不加载
     _internalStateInitialized = true; // 标记内部状态已根据父组件初始化
-    final followService = context.read<UserFollowService>();
-    // --- 仍然监听全局流，但触发时不自己调用API，而是通知父组件刷新（如果需要） ---
-    // 或者更简单：依赖父组件的 AuthProvider 刷新机制
-    _followStatusSubscription =
-        followService.followStatusStream.listen((changedUserId) {
-      if (changedUserId == widget.userId && _mounted) {
-        // 当接收到流事件时，可以认为状态可能已过期，但这里我们信任父组件的刷新
-        // 可以选择性地强制父组件刷新，但 AuthProvider.refreshUserState 应该已经处理了
-        print(
-            'FollowUserButton (${widget.userId}): Received stream update. Relying on parent refresh.');
-        // 如果需要强制刷新，可以调用 widget.onFollowChanged?.call() 并让父组件处理
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _followService = context.read<UserFollowService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // --- 仍然监听全局流，但触发时不自己调用API，而是通知父组件刷新（如果需要） ---
+      // 或者更简单：依赖父组件的 AuthProvider 刷新机制
+      _followStatusSubscription =
+          _followService.followStatusStream.listen((changedUserId) {});
+    }
   }
 
   @override
@@ -92,15 +98,11 @@ class _FollowUserButtonState extends State<FollowUserButton>
     super.dispose();
   }
 
-  // --- _checkFollowStatus 方法可以删除了 ---
-  // Future<void> _checkFollowStatus(...) async { ... } // 删除这个方法
-
   /// 处理关注/取消关注按钮的点击事件 (基本不变，但调用 authProvider.refreshUserState)
   Future<void> _handleFollowTap() async {
     if (!_mounted) return;
-    final followService = context.read<UserFollowService>();
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) {
+
+    if (widget.currentUser == null) {
       showSnackbar(message: '请先登录', type: SnackbarType.info);
       return;
     }
@@ -119,10 +121,10 @@ class _FollowUserButtonState extends State<FollowUserButton>
     try {
       if (!oldState) {
         // 如果之前是 false (未关注)，现在是 true (已关注)
-        success = await followService.followUser(widget.userId);
+        success = await _followService.followUser(widget.userId);
       } else {
         // 如果之前是 true (已关注)，现在是 false (未关注)
-        success = await followService.unfollowUser(widget.userId);
+        success = await _followService.unfollowUser(widget.userId);
       }
 
       if (!_mounted) return;
@@ -131,8 +133,6 @@ class _FollowUserButtonState extends State<FollowUserButton>
         setState(() {
           _isLoading = false; // API 成功，结束加载
         });
-        // **通知 AuthProvider 刷新当前用户状态**
-        authProvider.refreshUserState();
         widget.onFollowChanged?.call(); // 调用回调
       } else {
         // API 失败，回滚状态

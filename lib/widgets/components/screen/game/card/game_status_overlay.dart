@@ -1,8 +1,7 @@
 // 新建一个组件文件，例如：lib/widgets/components/screen/game/card/game_status_overlay.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart'; // 引入 Game 模型
-// 可能还需要引入你的 CustomConfirmDialog 和其他服务/工具
+import '../../../../../models/game/game.dart';
 
 class GameStatusOverlay extends StatelessWidget {
   final Game game;
@@ -19,11 +18,11 @@ class GameStatusOverlay extends StatelessWidget {
   // Helper function from MyGamesScreen, now moved here or accessed differently
   Map<String, dynamic> _getStatusDisplay(String? status) {
     switch (status?.toLowerCase()) {
-      case 'pending':
+      case GameStatus.pending:
         return {'text': '审核中', 'color': Colors.orange};
-      case 'approved':
+      case GameStatus.approved:
         return {'text': '已通过', 'color': Colors.green};
-      case 'rejected':
+      case GameStatus.rejected:
         return {'text': '已拒绝', 'color': Colors.red};
       default:
         return {'text': '未知', 'color': Colors.grey};
@@ -33,7 +32,8 @@ class GameStatusOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final statusInfo = _getStatusDisplay(game.approvalStatus);
-    final bool isRejected = game.approvalStatus?.toLowerCase() == 'rejected';
+    final bool isRejected =
+        game.approvalStatus?.toLowerCase() == GameStatus.rejected;
     final bool showComment = isRejected &&
         game.reviewComment != null &&
         game.reviewComment!.isNotEmpty;

@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_post_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../models/post/post.dart';
@@ -19,7 +20,8 @@ class DesktopProfilePostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(6),
       ),
       child: InkWell(
-        onTap: () => NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id),
+        onTap: () => NavigationUtils.pushNamed(context, AppRoutes.postDetail,
+            arguments: post.id),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -33,7 +35,8 @@ class DesktopProfilePostCard extends StatelessWidget {
                   if (post.status == PostStatus.locked)
                     Container(
                       margin: const EdgeInsets.only(right: 10, top: 2),
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 2),
                       decoration: BoxDecoration(
                         color: Colors.grey.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(4),
@@ -83,7 +86,8 @@ class DesktopProfilePostCard extends StatelessWidget {
 
               // 内容预览
               Container(
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                padding:
+                    const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
                 decoration: BoxDecoration(
                   color: Colors.grey.withSafeOpacity(0.05),
                   borderRadius: BorderRadius.circular(4),
@@ -106,7 +110,8 @@ class DesktopProfilePostCard extends StatelessWidget {
               Row(
                 children: [
                   // 查看数
-                  Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.grey[600]),
+                  Icon(Icons.remove_red_eye_outlined,
+                      size: 14, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     post.viewCount.toString(),
@@ -119,7 +124,8 @@ class DesktopProfilePostCard extends StatelessWidget {
                   const SizedBox(width: 16),
 
                   // 回复数
-                  Icon(Icons.chat_bubble_outline, size: 14, color: Colors.grey[600]),
+                  Icon(Icons.chat_bubble_outline,
+                      size: 14, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     post.replyCount.toString(),
@@ -139,6 +145,6 @@ class DesktopProfilePostCard extends StatelessWidget {
 
   // 日期格式化
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return DateTimeFormatter.formatStandard(date);
   }
 }

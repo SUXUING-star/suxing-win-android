@@ -1,6 +1,7 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/post/post.dart';
 import '../../../../services/main/forum/forum_service.dart';
@@ -37,18 +38,27 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
   final int _limit = 15; // 假设每页加载10条，应与 Service 和后端一致
   bool _hasMoreData = true; // 这个可以根据 totalPages 计算
 
+  bool _hasInitializedDependencies = false;
+  late final ForumService _forumService;
+  late final AuthProvider _authProvider;
+
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
-    _loadFavoritePosts();
   }
 
   @override
-  void dispose() {
-    _scrollController.removeListener(_scrollListener);
-    _scrollController.dispose();
-    super.dispose();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadFavoritePosts();
+    }
   }
 
   void _scrollListener() {
@@ -74,8 +84,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final forumService = context.read<ForumService>();
-      final result = await forumService.getUserFavoritePostsPage(
+      final result = await _forumService.getUserFavoritePostsPage(
           page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---
@@ -235,6 +244,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return RefreshIndicator(
       onRefresh: refreshPosts, // 下拉刷新回调
       child: PostGridView(
+        currentUser: _authProvider.currentUser,
         posts: _favoritePosts,
         scrollController: _scrollController,
         isLoading: _isLoading && _hasMoreData, // 只有加载更多时才传递 isLoading

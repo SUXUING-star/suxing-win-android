@@ -41,10 +41,15 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   };
   bool _isDesktopLayout = false;
 
-  // *** 新增：用于跟踪上一次的登录状态 ***
+  // 用于跟踪上一次的登录状态
   bool? _previousIsLoggedIn;
 
-  // --- 新增：节流相关状态 ---
+  bool _hasInitializedDependencies = false;
+
+  late final AuthProvider _authProvider;
+  late final GameCollectionService _gameCollectionService;
+
+  // 节流相关状态
   bool _isRefreshing = false; // 标记是否正在执行下拉刷新操作
   DateTime? _lastForcedRefreshTime; // 上次强制刷新的时间戳
   // 定义最小强制刷新间隔 (例如：3秒)
@@ -60,10 +65,25 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    // *** 这是监听 Provider 变化和进行初始加载的正确地方 ***
-    final authProvider = Provider.of<AuthProvider>(context); // 获取实例，但不监听 build
-    final currentIsLoggedIn = authProvider.isLoggedIn;
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context);
+      _gameCollectionService = context.read<GameCollectionService>();
+      _hasInitializedDependencies = true;
+    }
+    // 确认初始化后才进行获取数据
+    if (_hasInitializedDependencies) {
+      _checkUserHasChanged();
+    }
+  }
 
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  void _checkUserHasChanged() {
+    final currentIsLoggedIn = _authProvider.isLoggedIn;
     // --- 处理登录状态变化 ---
     // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
     // 且当前登录状态与上次不同时，才处理变化
@@ -85,8 +105,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
       }
     }
     // --- 首次加载逻辑 ---
-    // 如果 _previousIsLoggedIn 是 null，表示这是第一次运行 didChangeDependencies
-    // 或者是因为其他依赖变化（理论上这里只有 AuthProvider）
     else if (_previousIsLoggedIn == null) {
       if (currentIsLoggedIn) {
         _loadData(); // 首次加载数据
@@ -103,19 +121,11 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     _previousIsLoggedIn = currentIsLoggedIn;
   }
 
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
-
   // --- 数据加载方法 (保持不变，但调用时机改变) ---
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (!mounted) return;
-    final authProvider = Provider.of<AuthProvider>(context,
-        listen: false); // listen: false 因为不希望 build 因此重绘
     // ** 再次检查登录状态，因为可能是异步调用 **
-    if (!authProvider.isLoggedIn) {
+    if (!_authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -133,8 +143,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     }
 
     try {
-      final collectionService = context.read<GameCollectionService>();
-      final groupedData = await collectionService
+      final groupedData = await _gameCollectionService
           .getAllUserGameCollectionsGrouped(forceRefresh: forceRefresh);
       if (mounted) {
         if (groupedData != null) {
@@ -231,10 +240,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   @override
   Widget build(BuildContext context) {
     // 直接使用当前状态变量来决定显示什么
-    final authProvider =
-        Provider.of<AuthProvider>(context, listen: false); // 获取实例用于判断
     final isLoggedIn =
-        authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
+        _authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
 
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;

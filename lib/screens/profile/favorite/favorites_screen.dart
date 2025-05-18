@@ -20,10 +20,16 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   late TabController _tabController;
   final List<String> _tabTitles = ['游戏', '帖子'];
 
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override

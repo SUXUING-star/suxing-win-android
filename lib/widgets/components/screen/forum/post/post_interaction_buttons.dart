@@ -34,11 +34,12 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   bool _isAgreeing = false;
   bool _isFavoriting = false;
 
-  // *** 不再维护 _isLiked, _isAgreed, _isFavorited 状态！ ***
-  // *** 计数状态用于乐观更新显示，但最终依赖 widget.post ***
   late int _likeCount;
   late int _agreeCount;
   late int _favoriteCount;
+
+  bool _hasInit = false;
+  late final ForumService _forumService;
 
   @override
   void initState() {
@@ -52,21 +53,26 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   @override
   void didUpdateWidget(PostInteractionButtons oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 如果外部传入的 post 计数变化了，同步本地的乐观计数
-    // 交互状态直接使用新的 widget.userActions
-    bool countsChanged = oldWidget.post.likeCount != widget.post.likeCount ||
-        oldWidget.post.agreeCount != widget.post.agreeCount ||
-        oldWidget.post.favoriteCount != widget.post.favoriteCount;
-    if (countsChanged) {
-      print(
-          "PostInteractionButtons (${widget.post.id}): External post counts changed. Syncing local counts.");
-      if (mounted) {
-        // 确保组件挂载
-        setState(() {
-          _likeCount = widget.post.likeCount;
-          _agreeCount = widget.post.agreeCount;
-          _favoriteCount = widget.post.favoriteCount;
-        });
+
+    if (!_hasInit) {
+      _forumService = context.read<ForumService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      // 如果外部传入的 post 计数变化了，同步本地的乐观计数
+      // 交互状态直接使用新的 widget.userActions
+      bool countsChanged = oldWidget.post.likeCount != widget.post.likeCount ||
+          oldWidget.post.agreeCount != widget.post.agreeCount ||
+          oldWidget.post.favoriteCount != widget.post.favoriteCount;
+      if (countsChanged) {
+        if (mounted) {
+          // 确保组件挂载
+          setState(() {
+            _likeCount = widget.post.likeCount;
+            _agreeCount = widget.post.agreeCount;
+            _favoriteCount = widget.post.favoriteCount;
+          });
+        }
       }
     }
     // 不需要检查 userActions 的变化来更新内部状态，因为没有内部状态了
@@ -86,7 +92,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     }
     final userId = auth.currentUserId;
     if (userId == null) {
-      print("Error: User ID is null.");
       return;
     }
     if (getLoadingState()) return;
@@ -213,27 +218,27 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   }
 
   // 各个按钮的 onTap 调用 _handleInteraction 的方式不变
-  Future<void> _toggleLike(ForumService forumService) async {
+  Future<void> _toggleLike() async {
     await _handleInteraction(
-      apiCall: () => forumService.togglePostLike(widget.post.id),
+      apiCall: () => _forumService.togglePostLike(widget.post.id),
       getLoadingState: () => _isLiking,
       setLoadingState: (isLoading) => _isLiking = isLoading,
       actionName: 'like',
     );
   }
 
-  Future<void> _toggleAgree(ForumService forumService) async {
+  Future<void> _toggleAgree() async {
     await _handleInteraction(
-      apiCall: () => forumService.togglePostAgree(widget.post.id),
+      apiCall: () => _forumService.togglePostAgree(widget.post.id),
       getLoadingState: () => _isAgreeing,
       setLoadingState: (isLoading) => _isAgreeing = isLoading,
       actionName: 'agree',
     );
   }
 
-  Future<void> _toggleFavorite(ForumService forumService) async {
+  Future<void> _toggleFavorite() async {
     await _handleInteraction(
-      apiCall: () => forumService.togglePostFavorite(widget.post.id),
+      apiCall: () => _forumService.togglePostFavorite(widget.post.id),
       getLoadingState: () => _isFavoriting,
       setLoadingState: (isLoading) => _isFavoriting = isLoading,
       actionName: 'favorite',
@@ -247,7 +252,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
 
   @override
   Widget build(BuildContext context) {
-    final forumService = context.read<ForumService>();
     final bool isDesktop = DeviceUtils.isDesktop;
     final double iconSize = isDesktop ? 20.0 : 18.0;
     final double fontSize = isDesktop ? 14.0 : 12.0;
@@ -269,7 +273,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
           icon: liked ? Icons.thumb_up : Icons.thumb_up_outlined,
           label: '$_likeCount', // 显示本地乐观计数
           color: liked ? Theme.of(context).primaryColor : Colors.grey,
-          onTap: () => _toggleLike(forumService),
+          onTap: () => _toggleLike(),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isLiking, // 使用加载状态
         ),
@@ -278,7 +282,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
           icon: liked ? Icons.check_circle : Icons.check_circle_outline,
           label: '$_agreeCount', // 显示本地乐观计数
           color: agreed ? Colors.green : Colors.grey,
-          onTap: () => _toggleAgree(forumService),
+          onTap: () => _toggleAgree(),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isAgreeing, // 使用加载状态
         ),
@@ -287,7 +291,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
           icon: favorited ? Icons.star : Icons.star_border,
           label: '$_favoriteCount', // 显示本地乐观计数
           color: favorited ? Colors.amber : Colors.grey,
-          onTap: () => _toggleFavorite(forumService),
+          onTap: () => _toggleFavorite(),
           iconSize: iconSize, fontSize: fontSize, padding: padding,
           isLoading: _isFavoriting, // 使用加载状态
         ),

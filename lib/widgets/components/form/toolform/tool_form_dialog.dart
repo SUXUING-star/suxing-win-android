@@ -3,13 +3,9 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-// 假设 LoadingWidget 在这里，如果不用可以移除
-// import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-// 导入你的 Tool 和 ToolDownload 模型
 import '../../../../models/linkstools/tool.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-// 导入 SnackBar 工具类 (如果需要在 onPopInvoked 中提示)
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ToolFormDialog extends StatefulWidget {
@@ -38,12 +34,9 @@ class ToolFormDialog extends StatefulWidget {
 class _ToolFormDialogState extends State<ToolFormDialog> {
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
-  // 使用 TextEditingController 通常更好，可以避免在 onChanged 中频繁 setState
-  // 但如果你习惯用变量存储，也可以保持，这里暂时保持原样
   late String _name;
   late String _description;
   late String _color;
-  // 下载链接的内部状态仍然使用 Map<String, String> 来驱动 UI 输入字段
   late List<Map<String, String>> _downloadsState;
 
   bool _isSubmitting = false; // 跟踪提交状态
@@ -137,8 +130,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
 
         // 2. 创建 Tool 实例
         final toolObject = Tool(
-          id: widget.tool?.id ??
-              mongo.ObjectId().oid, // 保留原有 ID 或生成新 ID
+          id: widget.tool?.id ?? mongo.ObjectId().oid, // 保留原有 ID 或生成新 ID
           name: _name.trim(),
           description: _description.trim(),
           color: _color.trim(),

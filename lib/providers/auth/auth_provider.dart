@@ -95,10 +95,10 @@ class AuthProvider with ChangeNotifier {
   }
   // 公共初始化方法
 
-  Future<void> signIn(String email, String password,SavedAccount? account) async {
+  Future<void> signIn(String email, String password, bool rememberMe) async {
     // 不需要 _isLoading 状态，让调用者处理 UI
     try {
-      _currentUser = await _userService.signIn(email, password,account);
+      _currentUser = await _userService.signIn(email, password, rememberMe);
       await Future.delayed(_signInNotifyDelay);
       if (_currentUser != null) {
         // 再次确认用户非空（虽然理论上是的）
@@ -126,6 +126,11 @@ class AuthProvider with ChangeNotifier {
       // 最终确保通知 UI 更新
       notifyListeners();
     }
+  }
+
+  Future<void> updateUserProfile({String? username, String? avatarUrl}) async {
+    return _userService.updateUserProfile(
+        username: username, avatar: avatarUrl);
   }
 
   // 刷新用户状态

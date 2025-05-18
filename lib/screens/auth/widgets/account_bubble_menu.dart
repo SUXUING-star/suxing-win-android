@@ -1,12 +1,12 @@
-// lib/widgets/auth/account_bubble_menu.dart
+// lib/widgets/screens/auth/account_bubble_menu.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../services/main/user/cache/account_cache_service.dart';
-import '../../../widgets/ui/badges/safe_user_avatar.dart';
+import 'package:suxingchahui/services/main/user/cache/account_cache_service.dart';
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 
 class AccountBubbleMenu extends StatelessWidget {
   final Function(SavedAccount) onAccountSelected;
@@ -32,6 +32,12 @@ class AccountBubbleMenu extends StatelessWidget {
 
     // 气泡菜单宽度，如果屏幕较窄则适当缩小
     final menuWidth = screenWidth < 400 ? screenWidth * 0.8 : 320.0;
+
+    const double avatarRadiusInMenu = 16.0; // 这是你在 AccountBubbleMenu 里给头像设置的半径
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    // AccountBubbleMenu 自己决定给 SafeUserAvatar 的 memCache 尺寸
+    final int calculatedMemCacheSize =
+        (avatarRadiusInMenu * 2 * devicePixelRatio).round();
 
     return Material(
       color: Colors.transparent,
@@ -79,11 +85,14 @@ class AccountBubbleMenu extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(
                           vertical: 12, horizontal: 16),
                       decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor.withSafeOpacity(0.05),
+                        color: Theme.of(context)
+                            .primaryColor
+                            .withSafeOpacity(0.05),
                         border: Border(
                           bottom: BorderSide(
-                            color:
-                                Theme.of(context).dividerColor.withSafeOpacity(0.3),
+                            color: Theme.of(context)
+                                .dividerColor
+                                .withSafeOpacity(0.3),
                             width: 0.5,
                           ),
                         ),
@@ -165,7 +174,9 @@ class AccountBubbleMenu extends StatelessWidget {
                                       avatarUrl: account.avatarUrl,
                                       username:
                                           account.username ?? account.email,
-                                      radius: 16,
+                                      radius: avatarRadiusInMenu,
+                                      memCacheWidth: calculatedMemCacheSize,
+                                      memCacheHeight: calculatedMemCacheSize,
                                     ),
                                     const SizedBox(width: 12),
 
@@ -232,8 +243,9 @@ class AccountBubbleMenu extends StatelessWidget {
                       child: TextButton(
                         onPressed: () => Navigator.of(context).pop(),
                         style: TextButton.styleFrom(
-                          backgroundColor:
-                              Theme.of(context).primaryColor.withSafeOpacity(0.1),
+                          backgroundColor: Theme.of(context)
+                              .primaryColor
+                              .withSafeOpacity(0.1),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(8),
                           ),

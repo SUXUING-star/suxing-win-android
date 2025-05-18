@@ -1,7 +1,9 @@
 // lib/widgets/components/screen/forum/post/reply/post_reply_item.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 使用已修改的 CommentInputField
@@ -15,13 +17,19 @@ import '../../../../../ui/dialogs/edit_dialog.dart';
 import '../../../../../ui/dialogs/confirm_dialog.dart';
 
 class PostReplyItem extends StatelessWidget {
+  final User? currentUser;
   final Reply reply;
+  final UserDataStatus userDataStatus;
   final String postId;
   final int floor;
   final VoidCallback onActionSuccess;
+  final ForumService forumService;
 
   const PostReplyItem({
     super.key,
+    required this.currentUser,
+    required this.userDataStatus,
+    required this.forumService,
     required this.postId,
     required this.reply,
     required this.floor,
@@ -30,14 +38,11 @@ class PostReplyItem extends StatelessWidget {
 
   // --- 提交、编辑、删除逻辑不变 ---
   Future<void> _performReplySubmission(
-    ForumService forumService, // <-- 接收 ForumService
-    InputStateService inputService, // <-- 接收 InputStateService
     BuildContext context,
     String text,
     String parentReplyId,
     String slotName,
   ) async {
-    // +++ 添加 slotName 参数 +++
     if (text.trim().isEmpty) {
       AppSnackBar.showWarning(context, "回复内容不能为空");
       throw Exception("回复内容不能为空");
@@ -45,8 +50,14 @@ class PostReplyItem extends StatelessWidget {
 
     try {
       await forumService.addReply(postId, text, parentId: parentReplyId);
-      // +++ 提交成功后清除状态 +++
-      inputService.clearText(slotName);
+
+      if (context.mounted) {
+        // 保持用途明确
+        InputStateService? inputStateService =
+            Provider.of<InputStateService>(context, listen: false);
+        inputStateService.clearText(slotName);
+        inputStateService = null;
+      }
 
       if (context.mounted) {
         NavigationUtils.pop(context); // 关闭底部输入框
@@ -62,8 +73,7 @@ class PostReplyItem extends StatelessWidget {
   Future<void> _handleEditReply(
     BuildContext context,
     Reply reply,
-    ForumService forumService, // <-- 接收 ForumService
-    InputStateService inputService, // <-- 接收 InputStateService
+    ForumService forumService,
   ) async {
     EditDialog.show(
       context: context,
@@ -90,8 +100,7 @@ class PostReplyItem extends StatelessWidget {
   Future<void> _handleDeleteReply(
     BuildContext context,
     Reply reply,
-    ForumService forumService, // <-- 接收 ForumService
-    InputStateService inputService, // <-- 接收 InputStateService
+    ForumService forumService,
   ) async {
     CustomConfirmDialog.show(
       context: context,
@@ -118,13 +127,10 @@ class PostReplyItem extends StatelessWidget {
   // --- 修改: 显示回复输入框，并传递 slotName ---
   void _showReplyBottomSheet(
     BuildContext context,
-    ForumService forumService, // <-- 接收 ForumService
-    InputStateService inputService, // <-- 接收 InputStateService
+    ForumService forumService,
   ) {
     // +++ 生成唯一的 slotName +++
     final slotName = 'post_reply_${postId}_${reply.id}';
-    // --- 移除 textController 的创建，由 CommentInputField 内部管理 ---
-    // final textController = TextEditingController();
     bool isSubmitting = false; // 状态用于控制 CommentInputField 的 loading
 
     showModalBottomSheet(
@@ -171,10 +177,7 @@ class PostReplyItem extends StatelessWidget {
                         isSubmitting = true;
                       });
                       try {
-                        // +++ 将 slotName 传递给提交函数 +++
                         await _performReplySubmission(
-                          forumService,
-                          inputService,
                           builderContext,
                           text,
                           reply.id,
@@ -206,9 +209,8 @@ class PostReplyItem extends StatelessWidget {
   // --- build 方法和 _buildReplyActions 不变 ---
   @override
   Widget build(BuildContext context) {
-    final forumService = context.read<ForumService>(); // 获取普通服务
-    final inputService = Provider.of<InputStateService>(context, listen: false);
     final bool isTopLevel = floor > 0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,6 +218,8 @@ class PostReplyItem extends StatelessWidget {
           children: [
             Expanded(
               child: UserInfoBadge(
+                currentUser: currentUser,
+                userDataStatus: userDataStatus,
                 userId: reply.authorId,
                 showFollowButton: false,
                 mini: true,
@@ -234,7 +238,7 @@ class PostReplyItem extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 8),
-            _buildReplyActions(context, reply, forumService, inputService),
+            _buildReplyActions(context, reply, forumService),
           ],
         ),
         const SizedBox(height: 12),
@@ -266,7 +270,7 @@ class PostReplyItem extends StatelessWidget {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                         ),
                         onPressed: () => _showReplyBottomSheet(
-                            context, forumService, inputService),
+                            context, forumService),
                       );
                     },
                   ),
@@ -299,8 +303,7 @@ class PostReplyItem extends StatelessWidget {
   Widget _buildReplyActions(
     BuildContext context,
     Reply reply,
-    ForumService forumService, // <-- 接收 ForumService
-    InputStateService inputService, // <-- 接收 InputStateService
+    ForumService forumService,
   ) {
     return Consumer<AuthProvider>(builder: (context, auth, _) {
       if (!auth.isLoggedIn) return const SizedBox.shrink();
@@ -351,7 +354,6 @@ class PostReplyItem extends StatelessWidget {
                 context,
                 reply,
                 forumService,
-                inputService,
               );
               break;
             case 'delete':
@@ -359,7 +361,6 @@ class PostReplyItem extends StatelessWidget {
                 context,
                 reply,
                 forumService,
-                inputService,
               );
               break;
           }

@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:collection/collection.dart'; // 用于 groupBy
 import 'package:provider/provider.dart'; // 获取 AuthProvider 和 InputStateService
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 发评论按钮
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态
@@ -17,6 +19,8 @@ import 'post_reply_item.dart'; // 评论项组件
 
 /// PostReplyList - 显示帖子评论列表，并管理自身的加载、刷新和顶层评论提交。
 class PostReplyList extends StatefulWidget {
+  final User? currentUser;
+
   /// 帖子 ID
   final String postId;
 
@@ -25,6 +29,7 @@ class PostReplyList extends StatefulWidget {
 
   const PostReplyList({
     super.key,
+    required this.currentUser,
     required this.postId,
     this.isScrollableInternally = false, // 默认为 false，依赖外部滚动
   });
@@ -39,6 +44,8 @@ class _PostReplyListState extends State<PostReplyList> {
   bool _isSubmittingTopLevelReply = false; // 标记顶层评论是否正在提交
   late final String _topLevelReplySlotName; // 顶层评论输入框的唯一标识符
   ScrollController? _scrollController; // 滚动控制器（仅在需要内部滚动时创建）
+  bool _hasInitializedDependencies = false;
+  late final ForumService _forumService;
 
   @override
   void initState() {
@@ -49,8 +56,19 @@ class _PostReplyListState extends State<PostReplyList> {
     if (widget.isScrollableInternally) {
       _scrollController = ScrollController();
     }
-    // 首次加载评论列表
-    _loadReplies();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // 首次加载评论列表
+      _loadReplies();
+    }
   }
 
   @override
@@ -62,10 +80,8 @@ class _PostReplyListState extends State<PostReplyList> {
 
   /// 核心加载/刷新逻辑
   void _loadReplies() {
-    final forumService = context.read<ForumService>();
-    if (!mounted) return; // 确保组件仍然挂载
     setState(() {
-      _repliesFuture = forumService.fetchReplies(widget.postId);
+      _repliesFuture = _forumService.fetchReplies(widget.postId);
     });
   }
 
@@ -74,9 +90,7 @@ class _PostReplyListState extends State<PostReplyList> {
       BuildContext modalContext, String text) async {
     final content = text.trim();
     if (content.isEmpty || _isSubmittingTopLevelReply) return;
-
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (!auth.isLoggedIn) {
+    if (widget.currentUser == null) {
       AppSnackBar.showError(modalContext, "请先登录");
       return;
     }
@@ -88,14 +102,15 @@ class _PostReplyListState extends State<PostReplyList> {
     }
 
     try {
-      final forumService = context.read<ForumService>();
-      await forumService.addReply(widget.postId, content, parentId: null);
-
+      await _forumService.addReply(widget.postId, content, parentId: null);
       if (mounted) {
-        Provider.of<InputStateService>(context, listen: false)
-            .clearText(_topLevelReplySlotName);
-        // 使用 PostReplyList 的 context 显示成功提示，而不是 modalContext
-        // 因为 modalContext 可能在提交成功后立即关闭
+        // 保持用途明确
+        InputStateService? inputStateService =
+            Provider.of<InputStateService>(context, listen: false);
+        inputStateService.clearText(_topLevelReplySlotName);
+        inputStateService = null;
+        //
+
         AppSnackBar.showSuccess(context, '评论发表成功');
         _loadReplies(); // 重新加载列表
 
@@ -121,8 +136,7 @@ class _PostReplyListState extends State<PostReplyList> {
 
   /// 显示用于发表顶层评论的模态底部输入框
   void _showTopLevelReplyModal(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (!auth.isLoggedIn) {
+    if (widget.currentUser == null) {
       NavigationUtils.showLoginDialog(context);
       return; // 或者显示登录提示
     }
@@ -174,12 +188,11 @@ class _PostReplyListState extends State<PostReplyList> {
 
   @override
   Widget build(BuildContext context) {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
+    final userInfoProvider = context.watch<UserInfoProvider>();
 
     return FutureBuilder<List<Reply>>(
       future: _repliesFuture,
       builder: (context, snapshot) {
-        // --- 构建包含标题、按钮和列表内容的外部容器 ---
         Widget buildLayout(Widget contentChild) {
           return Container(
             decoration: BoxDecoration(
@@ -205,7 +218,7 @@ class _PostReplyListState extends State<PostReplyList> {
                         style: TextStyle(
                             fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      if (auth.isLoggedIn)
+                      if (widget.currentUser != null)
                         FunctionalButton(
                           label: "发表评论",
                           icon: Icons.add_comment_outlined,
@@ -301,6 +314,12 @@ class _PostReplyListState extends State<PostReplyList> {
               // 确保子评论也按时间排序 (如果需要的话，这里假设你的 PostReplyItem 内部不关心顺序)
               // children.sort((a, b) => a.createTime.compareTo(b.createTime)); // 或者 b.compareTo(a)
 
+              final userId = topReply.authorId;
+              userInfoProvider.ensureUserInfoLoaded(userId);
+
+              final UserDataStatus userDataStatus =
+                  userInfoProvider.getUserStatus(userId);
+
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: Column(
@@ -308,6 +327,9 @@ class _PostReplyListState extends State<PostReplyList> {
                   children: [
                     // 渲染顶层回复项
                     PostReplyItem(
+                      currentUser: widget.currentUser,
+                      userDataStatus: userDataStatus,
+                      forumService: _forumService,
                       reply: topReply,
                       floor: topLevelReplies.length - index,
                       postId: widget.postId,
@@ -321,10 +343,18 @@ class _PostReplyListState extends State<PostReplyList> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: children.map((nestedReply) {
+                            final userId = nestedReply.authorId;
+                            userInfoProvider.ensureUserInfoLoaded(userId);
+
+                            final UserDataStatus userDataStatus =
+                                userInfoProvider.getUserStatus(userId);
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: PostReplyItem(
+                                currentUser: widget.currentUser,
+                                forumService: _forumService,
                                 reply: nestedReply,
+                                userDataStatus: userDataStatus,
                                 floor: 0, // 嵌套不显示楼层
                                 postId: widget.postId,
                                 onActionSuccess: _loadReplies, // 回调刷新

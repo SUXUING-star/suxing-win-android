@@ -1,29 +1,32 @@
 // lib/widgets/components/screen/game/comment/comments/game_comment_item.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../../../../models/comment/comment.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
-import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../replies/game_reply_input.dart'; // ReplyInput 仍然需要
-import '../../../../../ui/badges/user_info_badge.dart';
-import '../../../../../ui/dialogs/edit_dialog.dart';
-import '../../../../../ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/models/comment/comment.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import '../replies/game_reply_input.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class GameCommentItem extends StatefulWidget {
+  final User? currentUser;
+  final UserDataStatus userDataStatus;
   final Comment comment;
   final Future<void> Function(String commentId, String newContent)
       onUpdateComment;
   final Future<void> Function(String commentId) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
-  // 父组件传入的全局状态，用于判断 *是否已有* 针对此 ID 的操作在进行中
   final bool isDeleting;
   final bool isUpdating;
 
   const GameCommentItem({
     super.key,
+    required this.currentUser,
+    required this.userDataStatus,
     required this.comment,
     required this.onUpdateComment,
     required this.onDeleteComment,
@@ -52,16 +55,14 @@ class _GameCommentItemState extends State<GameCommentItem>
 
   // --- 通用的 Action Button 构建方法 ---
   Widget _buildActionsMenu(BuildContext context, Comment item) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final theme = Theme.of(context);
     final bool isReply = item.parentId != null;
 
-    final bool canEdit = item.userId == authProvider.currentUser?.id;
-    final bool canDelete = canEdit || authProvider.currentUser?.isAdmin == true;
+    final bool canEdit = item.userId == widget.currentUser?.id;
+    final bool canDelete = canEdit || widget.currentUser?.isAdmin == true;
 
     if (!canEdit && !canDelete) return const SizedBox.shrink();
 
-    // --- 获取对应的 *本地* Loading 状态，用于 UI 显示 ---
     bool isLocallyDeleting = false;
     bool isLocallyUpdating = false; // 主要用于未来编辑弹窗即时反馈
     if (isReply) {
@@ -209,7 +210,6 @@ class _GameCommentItemState extends State<GameCommentItem>
               }
             });
           }
-          // ------------------------------
         }
       },
     );
@@ -305,7 +305,9 @@ class _GameCommentItemState extends State<GameCommentItem>
             children: [
               Expanded(
                 child: UserInfoBadge(
+                  userDataStatus: widget.userDataStatus,
                   userId: reply.userId,
+                  currentUser: widget.currentUser,
                   showFollowButton: false,
                   mini: true,
                 ),
@@ -335,7 +337,6 @@ class _GameCommentItemState extends State<GameCommentItem>
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
-    final authProvider = Provider.of<AuthProvider>(context);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
@@ -353,6 +354,8 @@ class _GameCommentItemState extends State<GameCommentItem>
               children: [
                 Expanded(
                   child: UserInfoBadge(
+                    userDataStatus: widget.userDataStatus,
+                    currentUser: widget.currentUser,
                     userId: widget.comment.userId,
                     showFollowButton: false,
                   ),
@@ -395,7 +398,7 @@ class _GameCommentItemState extends State<GameCommentItem>
               children: [
                 TextButton(
                   onPressed: () {
-                    if (!authProvider.isLoggedIn) {
+                    if (widget.currentUser == null) {
                       AppSnackBar.showError(context, '请先登录后才能回复');
                       return;
                     }

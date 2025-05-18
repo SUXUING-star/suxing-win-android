@@ -22,20 +22,35 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _darkModeEnabled = false; // 示例初始值
   bool _isLoading = false;
   String? _loadingMessage;
+  bool _hasInitializedDependencies = false;
+  //late final ThemeProvider _themeProvider;
+  late final ForumService _forumService;
+  late final GameService _gameService;
 
   @override
   void initState() {
     super.initState();
-    // 可以在这里加载初始设置，例如从 ThemeProvider 获取当前模式
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   if (mounted) {
-    //     setState(() {
-    //       _darkModeEnabled = context.read<ThemeProvider>().isDarkMode;
-    //     });
-    //   }
-    // });
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      //_themeProvider = Provider.of<ThemeProvider>(context, listen: false);
+      _gameService = context.read<GameService>();
+      _forumService = context.read<ForumService>();
+      _hasInitializedDependencies = true;
+    }
+    // if (_hasInitializedDependencies) {
+    //   WidgetsBinding.instance.addPostFrameCallback((_) {
+    //     if (mounted) {
+    //       setState(() {
+    //         _darkModeEnabled = _themeProvider.isDarkMode;
+    //       });
+    //     }
+    //   });
+    // }
+  }
 
   Future<void> _clearHistory() async {
     if (!mounted) return;
@@ -45,19 +60,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
     });
 
     try {
-      // 使用 context.read 安全地获取服务实例
-      final gameService = context.read<GameService>();
-      final forumService = context.read<ForumService>();
-
       // 调用清除历史的方法 (确保它们返回 Future 或可以 await)
-      await gameService.clearGameHistory();
-      await forumService.clearPostHistory(); // 确认方法名正确
+      await _gameService.clearGameHistory();
+      await _forumService.clearPostHistory(); // 确认方法名正确
 
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '浏览历史已清除');
-
     } catch (e, s) {
-      print("清除历史记录时出错: $e\n$s");
+      //print("清除历史记录时出错: $e\n$s");
       if (!mounted) return;
       AppSnackBar.showError(context, '清除失败: ${e.toString()}');
     } finally {
@@ -77,7 +87,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListView(
             children: [
               ListTile(
-                leading: const Icon(Icons.brightness_4_outlined), // 使用 outlined 图标
+                leading:
+                    const Icon(Icons.brightness_4_outlined), // 使用 outlined 图标
                 title: const Text('深色模式'),
                 trailing: Switch(
                   value: _darkModeEnabled,

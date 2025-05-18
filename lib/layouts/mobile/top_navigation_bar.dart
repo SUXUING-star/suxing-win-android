@@ -1,24 +1,28 @@
 // lib/layouts/mobile/top_navigation_bar.dart
 import 'dart:ui' as ui; // 导入 dart:ui
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import '../../utils/device/device_utils.dart';
-import '../../screens/search/search_game_screen.dart';
-import '../../models/user/user.dart';
-import '../../providers/auth/auth_provider.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:provider/provider.dart';
-import '../../widgets/components/badge/layout/update_button.dart';
-import '../../widgets/components/badge/layout/message_badge.dart';
-import '../../widgets/components/indicators/announcement_indicator.dart';
+import 'package:suxingchahui/widgets/components/badge/layout/update_button.dart';
+import 'package:suxingchahui/widgets/components/badge/layout/message_badge.dart';
+import 'package:suxingchahui/widgets/components/indicators/announcement_indicator.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart';
 
 class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   final VoidCallback onLogoTap;
   final VoidCallback onProfileTap;
+  final bool isLoggedIn;
 
   const TopNavigationBar(
-      {super.key, required this.onLogoTap, required this.onProfileTap});
+      {super.key,
+      required this.isLoggedIn,
+      required this.onLogoTap,
+      required this.onProfileTap});
 
   @override
   Size get preferredSize {
@@ -40,8 +44,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 你在 build 方法中已经有了 DeviceUtils.isLandscape(context)
-    // 这个 context 是有效的，可以用它来获取 MediaQuery
     final bool isActualAndroidLandscape = DeviceUtils.isAndroid &&
         (MediaQuery.of(context).orientation == Orientation.landscape);
 
@@ -65,12 +67,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
           ),
         ),
         const SizedBox(width: 8),
-        // 添加公告指示器
         _buildAnnouncementIndicator(context, verticalPadding),
         const SizedBox(width: 8),
         _buildMessageBadge(context, verticalPadding),
         const SizedBox(width: 8),
-        // 新增签到Badge
         _buildCheckInBadge(context, verticalPadding),
         const SizedBox(width: 8),
         _buildProfileAvatar(context, avatarRadius, verticalPadding),
@@ -79,11 +79,10 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  // 新增签到Badge构建方法
+  // 签到Badge构建方法
   Widget _buildCheckInBadge(BuildContext context, double padding) {
-    final authProvider = Provider.of<AuthProvider>(context);
     // 仅在登录时显示签到Badge
-    if (authProvider.isLoggedIn) {
+    if (isLoggedIn) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Padding(
@@ -112,9 +111,9 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => NavigationUtils.push(
+          onTap: () => NavigationUtils.pushNamed(
             context,
-            MaterialPageRoute(builder: (context) => SearchGameScreen()),
+            AppRoutes.searchGame,
           ),
           borderRadius: BorderRadius.circular(20),
           child: Container(
@@ -151,9 +150,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
   }
 
   Widget _buildMessageBadge(BuildContext context, double padding) {
-    final authProvider = Provider.of<AuthProvider>(context);
     // 添加空值检查
-    if (authProvider.isLoggedIn) {
+    if (isLoggedIn) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: Padding(
@@ -171,7 +169,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
-        final bool isLoggedIn = authProvider.isLoggedIn;
         final User? currentUser = authProvider.currentUser;
 
         // 构建基础的头像容器 (带边框和点击)
@@ -217,7 +214,6 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
 
         if (hasAvatar) {
           // ---- 有头像：使用 SafeCachedImage ----
-          print("TopNav: User has avatar. Using SafeCachedImage.");
           return buildAvatarContainer(
             // 用 ClipOval 保证 SafeCachedImage 是圆的
             ClipOval(

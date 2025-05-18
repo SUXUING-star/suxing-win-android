@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 假设你的导航工具在这里
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -25,7 +25,10 @@ class _UserManagementState extends State<UserManagement>
     with SnackBarNotifierMixin {
   bool _loading = false;
   int _refreshCounter = 0;
+  bool _hasInitializedDependencies = false;
   late final UserBanService _banService;
+  late final AuthProvider _authProvider;
+  late final UserService _userService;
 
   // 刷新用户列表
   void _refreshUserList() {
@@ -42,7 +45,12 @@ class _UserManagementState extends State<UserManagement>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _banService = context.read<UserBanService>();
+    if (!_hasInitializedDependencies) {
+      _banService = context.read<UserBanService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _userService = context.read<UserService>();
+      _hasInitializedDependencies = true;
+    }
   }
 
   @override
@@ -54,7 +62,6 @@ class _UserManagementState extends State<UserManagement>
   // (请确保它们内部也使用 user['id'] 作为用户ID)
   Future<void> _showBanDialog(
       BuildContext invokerContext, Map<String, dynamic> user) async {
-    final userBanService = context.read<UserBanService>();
     final TextEditingController reasonController = TextEditingController();
     DateTime? endTime;
     bool isPermanent = true;
@@ -183,13 +190,11 @@ class _UserManagementState extends State<UserManagement>
 
                     setState(() => _loading = true);
                     try {
-                      final authProvider =
-                          Provider.of<AuthProvider>(rootContext, listen: false);
-                      await userBanService.banUser(
+                      await _banService.banUser(
                         userId: user['id'].toString(), // <--- 使用 'id'
                         reason: reasonController.text.trim(),
                         endTime: isPermanent ? null : endTime,
-                        bannedBy: authProvider.currentUser!.id,
+                        bannedBy: _authProvider.currentUser!.id,
                       );
                       if (!mounted) return;
                       NavigationUtils.pop(context);
@@ -258,12 +263,9 @@ class _UserManagementState extends State<UserManagement>
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
-    final userService = context.read<UserService>();
-    final authProvider =
-        Provider.of<AuthProvider>(context, listen: false); // 获取一次即可
 
     // 权限检查
-    if (!authProvider.isSuperAdmin) {
+    if (!_authProvider.isSuperAdmin) {
       return const Center(
         child: Text('只有超级管理员可以访问用户管理'),
       );
@@ -271,7 +273,7 @@ class _UserManagementState extends State<UserManagement>
 
     return FutureBuilder<List<Map<String, dynamic>>>(
       key: ValueKey(_refreshCounter),
-      future: userService.getAllUsers(),
+      future: _userService.getAllUsers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return LoadingWidget.inline();
@@ -285,7 +287,7 @@ class _UserManagementState extends State<UserManagement>
         }
 
         final users = snapshot.data!;
-        final currentUserId = authProvider.currentUser?.id; // 获取当前用户ID
+        final currentUserId = _authProvider.currentUser?.id; // 获取当前用户ID
 
         return RefreshIndicator(
           onRefresh: () async => _refreshUserList(),
@@ -389,8 +391,9 @@ class _UserManagementState extends State<UserManagement>
                                   : (bool value) async {
                                       setState(() => _loading = true);
                                       try {
-                                        await userService.updateUserAdminStatus(
-                                            userId, value); // 使用 userId
+                                        await _userService
+                                            .updateUserAdminStatus(
+                                                userId, value); // 使用 userId
                                         _refreshUserList(); // 刷新整个列表
                                         showSnackbar(
                                             message:

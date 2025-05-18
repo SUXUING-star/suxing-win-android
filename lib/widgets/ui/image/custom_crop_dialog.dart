@@ -10,8 +10,8 @@ import 'package:image/image.dart' as img; // Image 库
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
-import '../../../../widgets/ui/buttons/functional_button.dart';
-import '../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/utils/font/font_config.dart';
 
 // --- 裁剪框绘制 Painter ---
 class _CropOverlayPainter extends CustomPainter {
@@ -545,7 +545,8 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
                 TextButton(
                   style: TextButton.styleFrom(
                       foregroundColor: secondaryColor, // 使用次要颜色
-                      disabledForegroundColor: disabledColor.withSafeOpacity(0.7),
+                      disabledForegroundColor:
+                          disabledColor.withSafeOpacity(0.7),
                       padding: buttonPadding, // 统一 padding
                       textStyle: TextStyle(
                         // 统一字体

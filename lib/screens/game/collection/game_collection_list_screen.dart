@@ -34,11 +34,26 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
   List<GameWithCollection> _games = [];
   bool _isLoading = true;
   String? _errorMessage;
+  bool _hasInitializedDependencies = false;
+  late final AuthProvider _authProvider;
+  late final GameCollectionService _gameCollectionService;
 
   @override
   void initState() {
     super.initState();
-    _loadCollectionGames(); // Load games directly in initState
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _hasInitializedDependencies = true;
+      _authProvider = Provider.of<AuthProvider>(context);
+      _gameCollectionService = context.read<GameCollectionService>();
+    }
+    if (_hasInitializedDependencies) {
+      _loadCollectionGames(); // Load games directly in initState
+    }
   }
 
   Future<void> _loadCollectionGames() async {
@@ -48,9 +63,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      if (!authProvider.isLoggedIn) {
+      if (!_authProvider.isLoggedIn) {
         setState(() {
           _errorMessage = '请先登录后再查看收藏';
           _isLoading = false;
@@ -75,9 +88,8 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
         default:
           status = widget.collectionType; // Should not normally happen
       }
-      final collectionService = context.read<GameCollectionService>();
 
-      final games = await collectionService.getUserGamesByStatus(status);
+      final games = await _gameCollectionService.getUserGamesByStatus(status);
       setState(() {
         _games = games;
         _isLoading = false;
@@ -117,7 +129,8 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     }
 
     if (_isLoading) {
-      return LoadingWidget.fullScreen(message: "正在加载收藏数据"); // Use consistent loading widget
+      return LoadingWidget.fullScreen(
+          message: "正在加载收藏数据"); // Use consistent loading widget
     }
 
     if (_games.isEmpty) {
@@ -136,6 +149,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       itemBuilder: (context, index) {
         final item = _games[index];
         return BaseGameCard(
+          currentUser: _authProvider.currentUser,
           game: item.game,
         );
       },

@@ -19,14 +19,26 @@ class RandomGamesSection extends StatefulWidget {
 }
 
 class _RandomGamesSectionState extends State<RandomGamesSection> {
-
   List<Game> _randomGames = [];
   bool _isLoading = true;
+  bool _hasInit = false;
+  late final GameService _gameService;
 
   @override
   void initState() {
     super.initState();
-    _loadRandomGames();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _gameService = context.read<GameService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _loadRandomGames();
+    }
   }
 
   @override
@@ -43,8 +55,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     });
 
     try {
-      final gameService = context.read<GameService>();
-      final games = await gameService.getRandomGames(
+      final games = await _gameService.getRandomGames(
         excludeId: widget.currentGameId,
       );
 
@@ -65,10 +76,13 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
       print('Error loading random games: $e');
     }
   }
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return LoadingWidget.inline(size: 10,);
+      return LoadingWidget.inline(
+        size: 10,
+      );
     }
 
     if (_randomGames.isEmpty) {
@@ -137,7 +151,8 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
               itemBuilder: (context, index) {
                 return Container(
                   width: cardWidth,
-                  margin: EdgeInsets.only(right: index < _randomGames.length - 1 ? cardMargin : 0),
+                  margin: EdgeInsets.only(
+                      right: index < _randomGames.length - 1 ? cardMargin : 0),
                   child: RandomGameCard(
                     game: _randomGames[index],
                   ),

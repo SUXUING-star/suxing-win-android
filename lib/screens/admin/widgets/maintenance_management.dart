@@ -22,6 +22,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
   bool _forceLogout = false;
   String _maintenanceType = 'scheduled';
   late final MaintenanceService _maintenanceService;
+  bool _hasInitializedDependencies = false;
   String _message = '系统正在维护中，请稍后再试。';
 
   DateTime _startTime = DateTime.now();
@@ -38,17 +39,27 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
   @override
   void initState() {
     super.initState();
-    // 延迟执行，避免在构建过程中调用 notifyListeners
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadCurrentMaintenanceStatus();
-    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _maintenanceService =
-        Provider.of<MaintenanceService>(context, listen: false);
+    if (!_hasInitializedDependencies) {
+      _maintenanceService =
+          Provider.of<MaintenanceService>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // 延迟执行，避免在构建过程中调用 notifyListeners
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _loadCurrentMaintenanceStatus();
+      });
+    }
+
+  }
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _loadCurrentMaintenanceStatus() async {

@@ -2,19 +2,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-// 导入修改后的 CheckInUserList (其内部 users 是 List<String>)
 import '../../../../../models/user/user_checkin.dart';
 import '../../../../../services/main/user/user_checkin_service.dart';
 import '../../../../ui/badges/user_info_badge.dart'; // 导入 UserInfoBadge
 
 class TodayCheckInList extends StatefulWidget {
+  final User? currentUser;
   final double maxHeight;
   final bool showTitle;
 
   const TodayCheckInList({
     super.key,
+    required this.currentUser,
     this.maxHeight = 250, // 默认最大高度
     this.showTitle = true, // 默认显示标题
   });
@@ -53,7 +57,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
         });
       }
     } catch (e) {
-      print('加载今日签到列表失败: $e');
+      //print('加载今日签到列表失败: $e');
       if (mounted) {
         setState(() {
           _isLoading = false; // 加载失败也要结束 Loading 状态
@@ -65,12 +69,11 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
 
   @override
   Widget build(BuildContext context) {
-    // 调试日志，会打印 ['id1', 'id2', ...]
-    // print('CheckInList users: ${_checkInList?.users}');
     return Card(
       elevation: 2, // 卡片阴影
       margin: EdgeInsets.zero, // 可以根据需要调整外边距
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // 圆角
+      shape:
+          RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)), // 圆角
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // 内容左对齐
         mainAxisSize: MainAxisSize.min, // 高度自适应内容
@@ -85,9 +88,11 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                   // 标题文字
                   Text(
                     '今日签到名单',
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold // 加粗一点
-                    ),
+                    style: Theme.of(context)
+                        .textTheme
+                        .titleSmall
+                        ?.copyWith(fontWeight: FontWeight.bold // 加粗一点
+                            ),
                   ),
                   // 人数和刷新按钮组合
                   Row(
@@ -95,13 +100,9 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                     children: [
                       // 显示总人数 (如果数据已加载)
                       if (_checkInList != null && !_isLoading)
-                        Text(
-                            '共 ${_checkInList!.count} 人', // 使用后端返回的 count
+                        Text('共 ${_checkInList!.count} 人', // 使用后端返回的 count
                             style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.grey[600]
-                            )
-                        ),
+                                fontSize: 12, color: Colors.grey[600])),
                       const SizedBox(width: 8), // 间隔
                       // 刷新按钮 (使用 InkWell 增加点击效果和更小的尺寸)
                       InkWell(
@@ -109,11 +110,12 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                         borderRadius: BorderRadius.circular(20), // 点击波纹范围
                         child: Padding(
                           padding: const EdgeInsets.all(4.0), // 给图标一点触摸区域
-                          child: Icon(
-                              Icons.refresh,
+                          child: Icon(Icons.refresh,
                               size: 20,
-                              color: _isLoading ? Colors.grey[400] : Colors.grey[600] // 加载中置灰
-                          ),
+                              color: _isLoading
+                                  ? Colors.grey[400]
+                                  : Colors.grey[600] // 加载中置灰
+                              ),
                         ),
                       ),
                     ],
@@ -130,6 +132,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
 
   // 构建列表内容或状态显示的 Widget
   Widget _buildContent() {
+    final userInfoProvider = context.watch<UserInfoProvider>();
     // --- 加载中状态 ---
     if (_isLoading) {
       return SizedBox(
@@ -143,7 +146,8 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
     // (_checkInList 为 null 也可能是加载失败，这里统一处理为空列表的情况)
     if (_checkInList == null || _checkInList!.users.isEmpty) {
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 30.0, horizontal: 16.0), // 给空状态一些垂直空间
+        padding: const EdgeInsets.symmetric(
+            vertical: 30.0, horizontal: 16.0), // 给空状态一些垂直空间
         child: const EmptyStateWidget(
           message: '今天还没有小伙伴签到呢~', // 提示语可以更活泼点
           iconData: Icons.emoji_people_outlined, // 换个图标
@@ -157,16 +161,19 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
       constraints: BoxConstraints(maxHeight: widget.maxHeight),
       child: ListView.builder(
         itemCount: _checkInList!.users.length, // 列表项数量
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 列表内边距
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 列表内边距
         shrinkWrap: true, // 让 ListView 高度包裹内容 (如果内容少于 maxHeight)
         // 根据列表项数量和估算高度决定是否需要滚动
-        physics: _checkInList!.users.length > (widget.maxHeight / 50).floor() // 假设每项高约50
+        physics: _checkInList!.users.length >
+                (widget.maxHeight / 50).floor() // 假设每项高约50
             ? const AlwaysScrollableScrollPhysics() // 内容多，允许滚动
             : const NeverScrollableScrollPhysics(), // 内容少，禁用滚动
         itemBuilder: (context, index) {
-          // --- 核心修改：直接获取 userId 字符串 ---
           final String userId = _checkInList!.users[index];
-          // --- 结束核心修改 ---
+          userInfoProvider.ensureUserInfoLoaded(userId);
+          final UserDataStatus userDataStatus =
+              userInfoProvider.getUserStatus(userId);
 
           // 构建每一行列表项
           return Padding(
@@ -196,6 +203,8 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                 // 使用 Expanded 填充剩余空间
                 Expanded(
                   child: UserInfoBadge(
+                    currentUser: widget.currentUser,
+                    userDataStatus: userDataStatus,
                     userId: userId, // **传递 userId 给 Badge**
                     showFollowButton: true, // 显示关注按钮 (如果需要)
                     mini: true, // 使用紧凑样式
@@ -205,14 +214,6 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                     showCheckInStats: true,
                   ),
                 ),
-                // --- 用户信息 Badge 结束 ---
-
-                // --- 移除签到时间和经验值 ---
-                // 这部分信息后端不再提供，所以注释掉或删除
-                // const SizedBox(width: 8),
-                // Text(checkInUser.formattedTime),
-                // Container(...)
-                // --- 移除结束 ---
               ],
             ),
           );

@@ -3,8 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -16,6 +20,7 @@ enum FeedCollapseMode { none, byUser, byType }
 
 class CollapsibleActivityFeed extends StatefulWidget {
   final List<UserActivity> activities;
+  final User? currentUser;
   final bool isLoading;
   final bool isLoadingMore;
   final String error;
@@ -43,6 +48,7 @@ class CollapsibleActivityFeed extends StatefulWidget {
   const CollapsibleActivityFeed({
     super.key,
     required this.activities,
+    required this.currentUser,
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error = '',
@@ -209,6 +215,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
             child: FadeInAnimation(
               child: ActivityCard(
                 key: ValueKey(activity.id),
+                currentUser: widget.currentUser,
                 activity: activity,
                 isAlternate: isAlternate,
                 onActivityTap: widget.onActivityTap,
@@ -238,6 +245,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
 
   Widget _buildCollapsibleFeed(
       Map<String, List<UserActivity>> groupedActivities) {
+    final userInfoProvider = context.watch<UserInfoProvider>();
     return ListView.builder(
       controller: widget.scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -249,21 +257,31 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                   padding: EdgeInsets.all(16.0),
                   child: CircularProgressIndicator(strokeWidth: 2)));
         }
+
         final groupKey = groupedActivities.keys.elementAt(index);
+        UserDataStatus? userDataStatus;
+        if (widget.collapseMode == FeedCollapseMode.byUser) {
+          final String userId = groupKey;
+          userInfoProvider.ensureUserInfoLoaded(userId);
+          userDataStatus = userInfoProvider.getUserStatus(userId);
+        }
+
         final activities = groupedActivities[groupKey]!;
         final isExpanded = _expandedGroups[groupKey] ?? false;
-        return _buildCollapsibleGroup(groupKey, activities, isExpanded, index);
+        return _buildCollapsibleGroup(
+            groupKey, activities, isExpanded, index, userDataStatus);
       },
     );
   }
 
   // 构建单个可折叠的分组 UI
   Widget _buildCollapsibleGroup(
-      String groupKey, // 分组的键 (可能是 userId 或 activityType)
-      List<UserActivity> activities, // 这个分组下的所有活动
-      bool isExpanded, // 当前分组是否展开
-      int groupIndex // 分组在列表中的索引 (用于动画)
-      ) {
+    String groupKey, // 分组的键 (可能是 userId 或 activityType)
+    List<UserActivity> activities, // 这个分组下的所有活动
+    bool isExpanded, // 当前分组是否展开
+    int groupIndex, // 分组在列表中的索引 (用于动画)
+    UserDataStatus? userDataStatus,
+  ) {
     // --- 1. 获取分组的视觉属性 ---
     final Color groupColor = _getGroupColor(groupKey); // 根据 groupKey 获取颜色
     final IconData groupIcon = _getGroupIcon(groupKey); // 根据 groupKey 获取图标
@@ -335,8 +353,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                           Container(
                               padding: const EdgeInsets.all(8),
                               decoration: BoxDecoration(
-                                  color:
-                                      Colors.white.withSafeOpacity(0.3), // 半透明白色背景
+                                  color: Colors.white
+                                      .withSafeOpacity(0.3), // 半透明白色背景
                                   borderRadius: BorderRadius.circular(8)),
                               child: Icon(groupIcon,
                                   color: Colors.white, size: 20) // 分组图标
@@ -354,12 +372,14 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                                 // **** 条件渲染：根据分组模式显示不同内容 ****
                                 if (widget.collapseMode ==
                                     FeedCollapseMode.byUser)
-                                  // **** 按用户分组: 显示 UserInfoBadge ****
                                   UserInfoBadge(
                                     key: ValueKey(
                                         "badge_$groupKey"), // 提供 Key 确保重建
                                     userId:
                                         groupKey, // 将 groupKey (即 userId) 传递给 Badge
+                                    userDataStatus: userDataStatus!,
+                                    // 这个地方当这个if条件成立上层传递这个userDataStatus不可能为空值
+                                    currentUser: widget.currentUser,
                                     mini: true, // 使用紧凑模式
                                     showFollowButton: false, // 不显示关注按钮
                                     showLevel: false, // 不显示等级
@@ -448,8 +468,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
           padding: const EdgeInsets.symmetric(
               horizontal: 8.0, vertical: 4.0), // 增加了垂直方向的微小间距
           child: ActivityCard(
-            // <--- **传递所有回调给 ActivityCard**
             key: ValueKey(activity.id), activity: activity,
+            currentUser: widget.currentUser,
             isAlternate: isAlternate,
             onActivityTap: widget.onActivityTap, hasOwnBackground: false,
             // --- 操作回调传递 ---
@@ -535,7 +555,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                     decoration: BoxDecoration(
                         color: groupColor.withSafeOpacity(0.1),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(color: groupColor.withSafeOpacity(0.3))),
+                        border:
+                            Border.all(color: groupColor.withSafeOpacity(0.3))),
                     child: Row(mainAxisSize: MainAxisSize.min, children: [
                       Text('查看全部${activities.length}条动态',
                           style: TextStyle(

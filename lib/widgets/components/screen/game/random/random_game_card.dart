@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -26,7 +27,7 @@ class RandomGameCard extends StatelessWidget {
             () {
               NavigationUtils.pushReplacementNamed(
                 context,
-                '/game/detail',
+                AppRoutes.gameDetail,
                 arguments: game.id,
               );
             },

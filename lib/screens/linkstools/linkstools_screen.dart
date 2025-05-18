@@ -36,8 +36,11 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 懒加载核心状态 (保持不变) ---
   bool _isInitialized = false;
+  bool _hasInit = false;
   bool _isVisible = false;
   bool _isLoadingData = false; // 这个状态仍然控制加载指示器
+
+  late final LinkToolService _linkToolService;
 
   final double _desktopBreakpoint = 900.0;
 
@@ -45,6 +48,15 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
   void initState() {
     super.initState();
     // 注意：这里不加载数据，等待 VisibilityDetector 触发
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _linkToolService = context.read<LinkToolService>();
+      _hasInit = true;
+    }
   }
 
   @override
@@ -71,10 +83,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       _errorMessage = null;
     });
     try {
-      final linkToolService = context.read<LinkToolService>();
       final results = await Future.wait([
-        linkToolService.getLinks(), // 直接调用，不传 forceRefresh
-        linkToolService.getTools(), // 直接调用，不传 forceRefresh
+        _linkToolService.getLinks(), // 直接调用，不传 forceRefresh
+        _linkToolService.getTools(), // 直接调用，不传 forceRefresh
       ]);
 
       if (!mounted) return; // 逻辑不变
@@ -115,53 +126,45 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- _showAddLinkDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddLinkDialog(BuildContext context) {
-    final linkToolService = context.read<LinkToolService>();
-    String? err;
     showDialog<Map<String, dynamic>>(
         context: context,
         builder: (context) => LinkFormDialog()).then((linkData) async {
       if (linkData != null) {
         try {
-          await linkToolService.addLink(Link.fromJson(linkData));
+          await _linkToolService.addLink(Link.fromJson(linkData));
           await _loadData();
+          if (!mounted) return;
+          AppSnackBar.showSuccess(this.context, '添加链接成功');
         } catch (e) {
-          err = e.toString();
+          if (mounted) {
+            AppSnackBar.showError(this.context, '添加链接失败: ${e.toString()}');
+          }
         }
       }
     });
-    if (err != null) {
-      if (mounted) AppSnackBar.showError(context, '添加链接失败: $err');
-    } else {
-      if (mounted) AppSnackBar.showSuccess(context, '添加链接成功');
-    }
   }
 
   // --- _showAddToolDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddToolDialog(BuildContext context) {
-    final linkToolService = context.read<LinkToolService>();
-    String? err;
     showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
         builder: (context) => ToolFormDialog()).then((toolData) async {
       if (toolData != null) {
         try {
-          await linkToolService.addTool(Tool.fromJson(toolData));
+          await _linkToolService.addTool(Tool.fromJson(toolData));
           if (mounted) await _loadData();
+
+          if (mounted) {
+            AppSnackBar.showSuccess(this.context, '添加工具成功');
+          }
         } catch (e) {
-          err = e.toString();
+          if (mounted) {
+            AppSnackBar.showError(this.context, "添加失败 ${e.toString()}");
+          }
         }
       }
     });
-    if (err != null) {
-      if (mounted) {
-        AppSnackBar.showError(context, "添加失败 $err");
-      }
-    } else {
-      if (mounted) {
-        AppSnackBar.showSuccess(context, '添加工具成功');
-      }
-    }
   }
 
   // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---
@@ -193,7 +196,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       child: Scaffold(
         appBar: CustomAppBar(title: '实用工具'), // actions 移除不变
         body: RefreshIndicator(
-          onRefresh: _loadData, // *** 调用恢复原样 ***
+          onRefresh: _loadData,
           child: _buildLinksToolsContent(isAdmin, isDesktop), // 内部逻辑不变
         ),
         floatingActionButton: _buildFloatButtons(isAdmin, context), // 逻辑不变

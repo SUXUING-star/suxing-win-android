@@ -5,13 +5,13 @@ import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 
 // 相关的 Provider 和服务
-import '../initialization/app_initializer.dart';
-import '../providers/initialize/initialization_provider.dart'; // 初始化状态 Provider
-import '../services/main/network/network_manager.dart'; // 网络管理器
-import '../providers/auth/auth_provider.dart'; // 用户认证 Provider
+import 'package:suxingchahui/initialization/app_initializer.dart';
+import 'package:suxingchahui/providers/initialize/initialization_provider.dart'; // 初始化状态 Provider
+import 'package:suxingchahui/services/main/network/network_manager.dart'; // 网络管理器
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 用户认证 Provider
 
 // 初始化界面 Widget
-import '../widgets/common/startup/initialization_screen.dart';
+import 'package:suxingchahui/widgets/common/startup/initialization_screen.dart';
 
 class InitializationWrapper extends StatefulWidget {
   /// 初始化成功后调用的回调函数，传入创建好的 Provider 列表

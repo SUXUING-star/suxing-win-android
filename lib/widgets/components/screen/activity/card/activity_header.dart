@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心依赖
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-
 
 /// 活动卡片/详情的头部组件
 ///
@@ -15,26 +16,40 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 class ActivityHeader extends StatelessWidget {
   /// 活动创建者/所有者的用户 ID。 **必须提供**。
   final String userId;
+
+  final User? currentUser;
+
+  final UserDataStatus userDataStatus;
+
   /// 活动创建时间。
   final DateTime createTime;
+
   /// 活动最后更新时间 (如果 isEdited 为 true)。
   final DateTime? updateTime;
+
   /// 活动是否被编辑过。
   final bool isEdited;
+
   /// 活动类型字符串 (例如 "game_comment", "post_create")。
   final String activityType;
+
   /// 是否使用交替布局 (影响头像、时间和菜单的左右顺序)。
   final bool isAlternate;
+
   /// 卡片高度因子，用于微调内部元素大小 (可选, 默认为 1.0)。
   final double cardHeight;
+
   /// 编辑按钮的回调 (如果当前用户有权编辑)。
   final VoidCallback? onEdit;
+
   /// 删除按钮的回调 (如果当前用户有权删除)。
   final VoidCallback? onDelete;
 
   const ActivityHeader({
     super.key,
     required this.userId, // *** 改为接收 userId ***
+    required this.currentUser,
+    required this.userDataStatus,
     required this.createTime,
     this.updateTime,
     this.isEdited = false,
@@ -48,22 +63,21 @@ class ActivityHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final String timeAgo = DateTimeFormatter.formatRelative(createTime);
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUserId;
-    final isAdmin = authProvider.isAdmin;
+    final currentUserId = currentUser?.id;
+    final isAdmin = currentUser?.isAdmin ?? false;
     final theme = Theme.of(context);
 
     // --- 使用 widget.userId 进行权限判断 ---
     final bool canEdit = onEdit != null &&
-        authProvider.isLoggedIn &&
+        currentUserId != null &&
         currentUserId == userId; // 使用传入的 userId
     final bool canDelete = onDelete != null &&
-        authProvider.isLoggedIn &&
+        currentUserId != null &&
         (currentUserId == userId || isAdmin); // 使用传入的 userId
 
     return Column(
       crossAxisAlignment:
-      isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+          isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
       children: [
         Row(
           textDirection: isAlternate ? TextDirection.rtl : TextDirection.ltr,
@@ -71,7 +85,9 @@ class ActivityHeader extends StatelessWidget {
             // --- 永远使用 UserInfoBadge ---
             Expanded(
               child: UserInfoBadge(
-                userId: userId, // *** 直接传递 userId ***
+                userId: userId,
+                currentUser: currentUser,
+                userDataStatus: userDataStatus,
                 showFollowButton: false,
                 mini: true, // 使用紧凑模式
                 showLevel: true, // 可配置是否显示等级
@@ -91,7 +107,8 @@ class ActivityHeader extends StatelessWidget {
             if (isAlternate) _buildTimeAgoText(timeAgo),
 
             // --- 操作菜单按钮 ---
-            if (canEdit || canDelete) _buildActionMenu(context, theme, canEdit, canDelete),
+            if (canEdit || canDelete)
+              _buildActionMenu(context, theme, canEdit, canDelete),
             // 如果没有操作，留一点空间防止 Chip 紧贴边缘
             if (!canEdit && !canDelete) const SizedBox(width: 4),
           ],
@@ -122,12 +139,17 @@ class ActivityHeader extends StatelessWidget {
 
   // --- Helper Widget: 构建活动类型 Chip ---
   Widget _buildActivityTypeChip() {
-    final displayInfo = ActivityTypeUtils.getActivityTypeDisplayInfo(activityType);
+    final displayInfo =
+        ActivityTypeUtils.getActivityTypeDisplayInfo(activityType);
     // 使用 cardHeight 微调大小
-    double fontSize = math.min(math.max(10, 10 * math.sqrt(cardHeight * 0.7)), 11.5); // 略微减小基础值
-    double horizontalPadding = math.min(math.max(5, 5 * cardHeight * 0.8), 7); // 略微减小
-    double verticalPadding = math.min(math.max(2, 2 * cardHeight * 0.8), 3.5); // 略微减小
-    double borderRadius = math.min(math.max(8, 8 * cardHeight * 0.8), 10); // 略微减小
+    double fontSize = math.min(
+        math.max(10, 10 * math.sqrt(cardHeight * 0.7)), 11.5); // 略微减小基础值
+    double horizontalPadding =
+        math.min(math.max(5, 5 * cardHeight * 0.8), 7); // 略微减小
+    double verticalPadding =
+        math.min(math.max(2, 2 * cardHeight * 0.8), 3.5); // 略微减小
+    double borderRadius =
+        math.min(math.max(8, 8 * cardHeight * 0.8), 10); // 略微减小
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -150,7 +172,8 @@ class ActivityHeader extends StatelessWidget {
   }
 
   // --- Helper Widget: 构建操作菜单 ---
-  Widget _buildActionMenu(BuildContext context, ThemeData theme, bool canEdit, bool canDelete) {
+  Widget _buildActionMenu(
+      BuildContext context, ThemeData theme, bool canEdit, bool canDelete) {
     return StylishPopupMenuButton<String>(
       icon: Icons.more_vert,
 
@@ -167,17 +190,20 @@ class ActivityHeader extends StatelessWidget {
           StylishMenuItemData(
             value: 'edit',
             child: Row(children: [
-              Icon(Icons.edit_outlined, size: 16, color: theme.colorScheme.primary),
+              Icon(Icons.edit_outlined,
+                  size: 16, color: theme.colorScheme.primary),
               const SizedBox(width: 8),
               const Text('编辑'),
             ]),
           ),
-        if (canEdit && canDelete) const StylishMenuDividerData(), // 仅在两者都存在时显示分割线
+        if (canEdit && canDelete)
+          const StylishMenuDividerData(), // 仅在两者都存在时显示分割线
         if (canDelete)
           StylishMenuItemData(
             value: 'delete',
             child: Row(children: [
-              Icon(Icons.delete_outline, size: 16, color: theme.colorScheme.error),
+              Icon(Icons.delete_outline,
+                  size: 16, color: theme.colorScheme.error),
               const SizedBox(width: 8),
               Text('删除', style: TextStyle(color: theme.colorScheme.error)),
             ]),

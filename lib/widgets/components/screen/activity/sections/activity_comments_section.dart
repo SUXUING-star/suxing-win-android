@@ -1,7 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -10,6 +14,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityCommentsSection extends StatelessWidget {
   final String activityId;
+  final User? currentUser;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
   final Function(String) onAddComment;
@@ -20,6 +25,7 @@ class ActivityCommentsSection extends StatelessWidget {
   const ActivityCommentsSection({
     super.key,
     required this.activityId,
+    required this.currentUser,
     required this.comments,
     required this.isLoadingComments,
     required this.onAddComment,
@@ -32,6 +38,7 @@ class ActivityCommentsSection extends StatelessWidget {
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+    final UserInfoProvider userInfoProvider = context.watch<UserInfoProvider>();
 
     // --- 评论输入框 Widget ---
     final commentInput = Padding(
@@ -39,13 +46,21 @@ class ActivityCommentsSection extends StatelessWidget {
       child: Column(
         // crossAxisAlignment: CrossAxisAlignment.start, // 移除以使分割线居中
         children: [
-          if (!isDesktop) ...[const SizedBox(height: 10), const Divider(), const SizedBox(height: 10)],
+          if (!isDesktop) ...[
+            const SizedBox(height: 10),
+            const Divider(),
+            const SizedBox(height: 10)
+          ],
           ActivityCommentInput(
             onSubmit: onAddComment,
             isAlternate: false,
             hintText: '添加你的看法...',
           ),
-          if (isDesktop) ...[const SizedBox(height: 20), const Divider(), const SizedBox(height: 16)], // 输入框和列表间的分割线
+          if (isDesktop) ...[
+            const SizedBox(height: 20),
+            const Divider(),
+            const SizedBox(height: 16)
+          ], // 输入框和列表间的分割线
         ],
       ),
     );
@@ -54,13 +69,14 @@ class ActivityCommentsSection extends StatelessWidget {
     Widget commentListContent;
     if (isLoadingComments && comments.isEmpty) {
       commentListContent = Padding(
-        padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Loading时的垂直间距
-        child: LoadingWidget.inline(message: "正在加载评论...") // 居中显示
-      );
+          padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Loading时的垂直间距
+          child: LoadingWidget.inline(message: "正在加载评论...") // 居中显示
+          );
     } else if (comments.isEmpty && !isLoadingComments) {
       commentListContent = const Padding(
         padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Empty时的垂直间距
-        child: Center( // 居中显示
+        child: Center(
+          // 居中显示
           child: EmptyStateWidget(
             message: '暂无评论，发表第一条评论吧',
             iconData: Icons.chat_bubble_outline, // 换个图标试试
@@ -71,16 +87,21 @@ class ActivityCommentsSection extends StatelessWidget {
       // 这里的 ListView 不再需要外部滚动控制，因为它会在 ConstrainedBox + SingleChildScrollView 内部
       commentListContent = ListView.builder(
         shrinkWrap: true, // 在 SingleChildScrollView 内部通常需要
-        physics: const NeverScrollableScrollPhysics(), // 在 SingleChildScrollView 内部不需要自己的滚动
+        physics:
+            const NeverScrollableScrollPhysics(), // 在 SingleChildScrollView 内部不需要自己的滚动
         itemCount: comments.length,
         itemBuilder: (context, index) {
-
           final comment = comments[index];
-          print(comment.toJson());
+          final userId = comment.userId;
+          userInfoProvider.ensureUserInfoLoaded(userId);
+          final userDataStatus = userInfoProvider.getUserStatus(userId);
+
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(
               comment: comment,
+              currentUser: currentUser,
+              userDataStatus: userDataStatus,
               activityId: activityId,
               isAlternate: false,
               onLike: () => onCommentLikeToggled(comment),
@@ -100,7 +121,8 @@ class ActivityCommentsSection extends StatelessWidget {
           constraints: const BoxConstraints(
             maxHeight: 500, // *** 关键：限制最大高度 ***
           ),
-          child: SingleChildScrollView( // *** 关键：让内容在此区域内滚动 ***
+          child: SingleChildScrollView(
+            // *** 关键：让内容在此区域内滚动 ***
             child: commentListContent,
           ),
         );
@@ -110,20 +132,19 @@ class ActivityCommentsSection extends StatelessWidget {
       }
     }
 
-
     // --- 根据 isDesktop 决定输入框和列表的顺序 ---
     List<Widget> childrenInOrder = isDesktop
         ? [
-      commentInput, // 输入框 (包含其下的分割线)
-      // --- 桌面评论列表区域 ---
-      buildDesktopCommentListArea(),
-    ]
+            commentInput, // 输入框 (包含其下的分割线)
+            // --- 桌面评论列表区域 ---
+            buildDesktopCommentListArea(),
+          ]
         : [
-      // --- 移动端列表内容直接放这里 ---
-      commentListContent,
-      // --- 移动端输入框 (包含其上的分割线) ---
-      commentInput,
-    ];
+            // --- 移动端列表内容直接放这里 ---
+            commentListContent,
+            // --- 移动端输入框 (包含其上的分割线) ---
+            commentInput,
+          ];
 
     // --- 使用 Container 实现卡片样式 ---
     return Container(

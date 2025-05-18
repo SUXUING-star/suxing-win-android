@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/profile/responsive_follows_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -12,6 +13,7 @@ import '../../../../../routes/app_routes.dart';
 import '../../../../ui/buttons/follow_user_button.dart';
 
 class ResponsiveFollowsLayout extends StatelessWidget {
+  final User? currentUser;
   final TabController tabController;
   final List<Map<String, dynamic>> followings;
   final List<Map<String, dynamic>> followers;
@@ -27,6 +29,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
 
   const ResponsiveFollowsLayout({
     super.key,
+    required this.currentUser,
     required this.tabController,
     required this.followings,
     required this.followers,
@@ -341,6 +344,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                     // 不显示对自己的关注按钮
                     if (userId != currentUserId)
                       FollowUserButton(
+                        currentUser: currentUser,
                         userId: userId,
                         mini: true,
                       ),

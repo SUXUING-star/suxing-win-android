@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/announcement/announcement.dart';
@@ -19,15 +20,29 @@ class AnnouncementManagement extends StatefulWidget {
 class _AnnouncementManagementState extends State<AnnouncementManagement>
     with SnackBarNotifierMixin {
   bool _isLoading = false;
+  bool _hasInitializedDependencies = false;
   List<AnnouncementFull> _announcements = [];
   int _currentPage = 1;
   int _totalPages = 1;
   String _errorMessage = '';
 
+  late final AnnouncementService _announcementService;
+
   @override
   void initState() {
     super.initState();
-    _loadAnnouncements();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _announcementService = context.read<AnnouncementService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadAnnouncements();
+    }
   }
 
   // 加载公告列表
@@ -38,10 +53,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
     });
 
     try {
-      final announcementService = context.read<AnnouncementService>();
       // 获取公告列表
       final result =
-          await announcementService.getAllAnnouncements(_currentPage, 10);
+          await _announcementService.getAllAnnouncements(_currentPage, 10);
 
       setState(() {
         if (result['announcements'] != null) {
@@ -70,7 +84,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
   Future<void> _showAnnouncementForm(
       {AnnouncementFull? existingAnnouncement}) async {
     final announcement = existingAnnouncement ?? AnnouncementFull.createNew();
-    final announcementService = context.read<AnnouncementService>();
 
     final result = await showDialog<AnnouncementFull>(
       context: context,
@@ -96,12 +109,12 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
       try {
         if (existingAnnouncement == null) {
           // 创建新公告
-          await announcementService.createAnnouncement(result);
+          await _announcementService.createAnnouncement(result);
 
           showSnackbar(message: '新公告已创建', type: SnackbarType.success);
         } else {
           // 更新现有公告
-          await announcementService.updateAnnouncement(
+          await _announcementService.updateAnnouncement(
               existingAnnouncement.id, result);
 
           showSnackbar(message: '公告已更新', type: SnackbarType.success);
@@ -121,7 +134,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
 
   // 删除公告
   Future<void> _deleteAnnouncement(String id) async {
-    final announcementService = context.read<AnnouncementService>();
     // 显示确认对话框
     final bool confirm = await showDialog<bool>(
           context: context,
@@ -153,7 +165,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
     });
 
     try {
-      await announcementService.deleteAnnouncement(id);
+      await _announcementService.deleteAnnouncement(id);
 
       showSnackbar(message: '公告已删除', type: SnackbarType.success);
 
@@ -194,7 +206,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
   Widget build(BuildContext context) {
     buildSnackBar(context);
     if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
+      return LoadingWidget.fullScreen();
     }
 
     if (_errorMessage.isNotEmpty) {

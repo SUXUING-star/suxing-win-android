@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 引入 User 模型
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 引入上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -36,8 +37,10 @@ class EditableUserAvatar extends StatelessWidget {
   });
 
   // --- 核心逻辑：处理头像点击、裁剪和上传 ---
-  Future<void> _handleAvatarUpdate(BuildContext context,
-      UserService userService, RateLimitedFileUpload fileUploadService) async {
+  Future<void> _handleAvatarUpdate(
+      BuildContext context,
+      AuthProvider authProvider,
+      RateLimitedFileUpload fileUploadService) async {
     // 1. 显示裁剪对话框
     final Uint8List? croppedBytes = await CustomCropDialog.show(context);
 
@@ -65,7 +68,7 @@ class EditableUserAvatar extends StatelessWidget {
 
         // 更新用户资料
 
-        await userService.updateUserProfile(avatar: avatarUrl);
+        await authProvider.updateUserProfile(avatarUrl: avatarUrl);
 
         // 上传和更新成功
         if (context.mounted) {
@@ -103,11 +106,13 @@ class EditableUserAvatar extends StatelessWidget {
     final iconSize = radius * iconSizeRatio;
     final bool hasValidAvatar =
         user.avatar != null && user.avatar!.trim().isNotEmpty;
-    final userService = context.read<UserService>();
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     final fileUploadService = context.read<RateLimitedFileUpload>();
 
     return GestureDetector(
-      onTap: () => _handleAvatarUpdate(context, userService, fileUploadService),
+      onTap: () =>
+          _handleAvatarUpdate(context, authProvider, fileUploadService),
       child: Stack(
         alignment: Alignment.center, // 确保内容居中
         children: [

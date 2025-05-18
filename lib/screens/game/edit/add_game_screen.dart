@@ -21,20 +21,35 @@ class AddGameScreen extends StatefulWidget {
 
 class _AddGameScreenState extends State<AddGameScreen>
     with SnackBarNotifierMixin {
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+  late final AuthProvider _authProvider;
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _gameService = context.read<GameService>();
+      _hasInitializedDependencies = true;
+    }
+  }
   // 使用 Mixin
 
   Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
     if (!mounted) return;
 
     try {
-      final gameService = context.read<GameService>();
-      await gameService.addGame(gameDataFromForm);
+      await _gameService.addGame(gameDataFromForm);
 
       if (!mounted) return;
       // 添加成功后，直接显示审核通知对话框
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
-      if (!authProvider.isAdmin) {
+      if (!_authProvider.isAdmin) {
         // 编辑模式且非管理员
         _showReviewNoticeDialogAfterApiSuccess();
       } else {
@@ -92,6 +107,7 @@ class _AddGameScreenState extends State<AddGameScreen>
         title: '添加新游戏',
       ),
       body: GameForm(
+        currentUser: _authProvider.currentUser,
         onSubmit: _handleGameFormSubmit, // 传递 State 的方法
       ),
     );

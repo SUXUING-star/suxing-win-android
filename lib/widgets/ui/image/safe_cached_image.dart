@@ -51,7 +51,8 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
   bool _hasTriedLoading = false;
   Timer? _unloadTimer;
   late final Key _visibilityDetectorKey;
-  BaseCacheManager? _cacheManager; // <--- 声明 CacheManager 实例变量
+  late final BaseCacheManager _cacheManager;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
@@ -65,12 +66,15 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
     super.didChangeDependencies();
     // 在这里通过 Provider 获取 CacheManager
     // 使用 try-catch 确保即使上层没有提供 Provider (理论上不应该发生)，也能回退
-    try {
-      _cacheManager = Provider.of<BaseCacheManager>(context, listen: false);
-    } catch (e) {
-      // 如果没有从 Provider 获取到，回退到使用 DefaultCacheManager
-      // 这样即使外部没有配置 CacheManagerProviderWidget，组件也能工作（使用默认缓存）
-      _cacheManager = DefaultCacheManager();
+    if (!_hasInitializedDependencies) {
+      try {
+        _cacheManager = Provider.of<BaseCacheManager>(context, listen: false);
+      } catch (e) {
+        // 如果没有从 Provider 获取到，回退到使用 DefaultCacheManager
+        // 这样即使外部没有配置 CacheManagerProviderWidget，组件也能工作（使用默认缓存）
+        _cacheManager = DefaultCacheManager();
+      }
+      _hasInitializedDependencies = true;
     }
   }
 
@@ -102,11 +106,8 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
   }
 
   void _tryEvictImage() {
-    if (_cacheManager == null) {
-      return;
-    }
     // 使用获取到的 CacheManager 实例来清除缓存
-    _cacheManager!.removeFile(widget.imageUrl).then((_) {
+    _cacheManager.removeFile(widget.imageUrl).then((_) {
       if (mounted) {
         // 可选：清除成功后，如果希望下次可见时重新加载而不是从磁盘（如果还在），可以重置状态
         // setState(() {
@@ -183,29 +184,22 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
     // 根据 _isVisible 和 _hasTriedLoading 的状态决定显示什么
     Widget imageContent;
     if (_isVisible || _hasTriedLoading) {
-      if (_cacheManager == null) {
-        // 如果 CacheManager 还没有在 didChangeDependencies 中被初始化
-        // (理论上不太可能，除非 build 在 didChangeDependencies 前被异常调用)
-        // 先显示占位符，等待下次 build
-        imageContent = _buildPlaceholder(context);
-      } else {
-        imageContent = CachedNetworkImage(
-          imageUrl: safeUrl,
-          cacheManager: _cacheManager, // <--- 使用从 Provider 获取的 CacheManager
-          width: widget.width,
-          height: widget.height,
-          fit: widget.fit,
-          memCacheWidth: finalCacheWidth,
-          memCacheHeight: finalCacheHeight,
-          placeholder: (context, url) => _buildPlaceholder(context),
-          errorWidget: (context, url, error) {
-            widget.onError?.call(url, error); // 使用空值感知调用
-            return _buildErrorWidget(context);
-          },
-          fadeInDuration: const Duration(milliseconds: 150), // 平滑淡入
-          fadeOutDuration: const Duration(milliseconds: 150), // 平滑淡出 (如果图片变化)
-        );
-      }
+      imageContent = CachedNetworkImage(
+        imageUrl: safeUrl,
+        cacheManager: _cacheManager, // <--- 使用从 Provider 获取的 CacheManager
+        width: widget.width,
+        height: widget.height,
+        fit: widget.fit,
+        memCacheWidth: finalCacheWidth,
+        memCacheHeight: finalCacheHeight,
+        placeholder: (context, url) => _buildPlaceholder(context),
+        errorWidget: (context, url, error) {
+          widget.onError?.call(url, error); // 使用空值感知调用
+          return _buildErrorWidget(context);
+        },
+        fadeInDuration: const Duration(milliseconds: 150), // 平滑淡入
+        fadeOutDuration: const Duration(milliseconds: 150), // 平滑淡出 (如果图片变化)
+      );
     } else {
       // 如果既不可见，也从未尝试加载过，显示占位符
       imageContent = _buildPlaceholder(context);

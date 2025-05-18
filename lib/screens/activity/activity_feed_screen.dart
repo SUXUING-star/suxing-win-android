@@ -7,6 +7,7 @@ import 'package:hive/hive.dart'; // For cache watching (optional but kept)
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -55,6 +56,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   // Loading & Visibility State
   bool _isInitialized = false;
+
   bool _isVisible = false;
   bool _isLoadingData = false; // For initial load or full refresh
   bool _isLoadingMore = false; // For pagination loading
@@ -68,6 +70,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   // UI Refresh Control
   DateTime? _lastRefreshTime;
   final Duration _minUiRefreshInterval = const Duration(seconds: 15);
+
+  bool _hasInitializedDependencies = false;
+  late final UserActivityService _activityService;
+  late final AuthProvider _authProvider;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -85,6 +92,17 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _activityService = context.read<UserActivityService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _currentUserId = _authProvider.currentUserId;
+      _hasInitializedDependencies = true;
+    }
+  }
+
+  @override
   void dispose() {
     // Clean up listeners and controllers
     WidgetsBinding.instance.removeObserver(this);
@@ -99,7 +117,16 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     // Handle app lifecycle changes (e.g., refresh on resume)
+
     if (state == AppLifecycleState.resumed) {
+      if (_currentUserId != _authProvider.currentUserId) {
+        _needsRefresh = true;
+        _currentUserId = _authProvider.currentUserId;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+
       if (_isVisible && _needsRefresh) {
         _refreshCurrentPageData(reason: "App Resumed with NeedsRefresh");
         _needsRefresh = false;
@@ -108,8 +135,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         _refreshCurrentPageData(reason: "App Resumed and Visible Check");
       }
     }
-    // Optionally set _needsRefresh = true on pause
-    // else if (state == AppLifecycleState.paused) { _needsRefresh = true; }
   }
 
   // --- Cache Watching Logic ---
@@ -130,8 +155,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _currentWatchIdentifier = newWatchIdentifier; // Update identifier
 
     try {
-      final activityService = context.read<UserActivityService>();
-      _cacheSubscription = activityService
+      _cacheSubscription = _activityService
           .watchActivityFeedChanges(
         feedType: feedTypeStr, // Always 'public'
         page: _currentPage,
@@ -250,10 +274,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     try {
       const int limit = 20; // Define page size
-      final activityService = context.read<UserActivityService>();
 
       // Always fetch the public activity feed
-      final result = await activityService.getPublicActivities(
+      final result = await _activityService.getPublicActivities(
           page: pageToLoad, limit: limit, forceRefresh: forceRefresh);
 
       if (!mounted) return; // Check mount status after async operation
@@ -369,11 +392,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     setState(() => _isLoadingMore = true); // Set loading more state
 
     try {
-      final activityService = context.read<UserActivityService>();
       const int limit = 20;
 
       // Always fetch the public activity feed for the next page
-      final result = await activityService.getPublicActivities(
+      final result = await _activityService.getPublicActivities(
           page: nextPage, limit: limit);
 
       if (!mounted) return;
@@ -495,8 +517,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final activityService = context.read<UserActivityService>();
-          final success = await activityService.deleteActivity(activityId);
+          final success = await _activityService.deleteActivity(activityId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove the item from the UI
@@ -529,8 +550,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // Note: Actual UI change (icon state, count) should ideally be handled
     // optimistically within the ActivityCard component itself.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.likeActivity(activityId);
+      await _activityService.likeActivity(activityId);
       // Success: If optimistic update wasn't perfect, could force refresh item here.
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞失败: $e');
@@ -542,8 +562,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Future<void> _handleUnlikeActivity(String activityId) async {
     // Optimistic UI update in ActivityCard.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.unlikeActivity(activityId);
+      await _activityService.unlikeActivity(activityId);
       // Success: Potentially update state if needed.
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
@@ -555,13 +574,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
     try {
-      final activityService = context.read<UserActivityService>();
       final comment =
-          await activityService.commentOnActivity(activityId, content);
+          await _activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
-        // Return the new comment object. The ActivityCard component should
-        // use this to update its internal list of comments.
         return comment;
       } else if (mounted) {
         // Handle cases where comment object is unexpectedly null
@@ -585,16 +601,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final activityService = context.read<UserActivityService>();
           final success =
-              await activityService.deleteComment(activityId, commentId);
+              await _activityService.deleteComment(activityId, commentId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
-            // Crucial: Need a mechanism to tell the specific ActivityCard
-            // to remove this comment from its display. This might involve
-            // passing down more specific callbacks or using a different state pattern.
           } else if (mounted) {
-            throw Exception("服务未能成功删除评论");
+            throw Exception("未能成功删除评论");
           }
         } catch (e) {
           if (mounted) AppSnackBar.showError(context, '删除评论失败: $e');
@@ -608,8 +620,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Future<void> _handleLikeComment(String activityId, String commentId) async {
     // Optimistic UI update should happen within the Comment widget itself.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.likeComment(activityId, commentId);
+      await _activityService.likeComment(activityId, commentId);
       // Success
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
@@ -621,12 +632,38 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
     // Optimistic UI update in Comment widget.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.unlikeComment(activityId, commentId);
+      await _activityService.unlikeComment(activityId, commentId);
       // Success
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
       // Failure: Trigger rollback in Comment widget.
+    }
+  }
+
+  void _handleVisibilityChange(VisibilityInfo info) {
+    final bool currentlyVisible =
+        info.visibleFraction > 0.8; // Consider visible if mostly on screen
+    if (currentlyVisible != _isVisible) {
+      if (_currentUserId != _authProvider.currentUserId) {
+        _currentUserId = _authProvider.currentUserId;
+        _needsRefresh = true;
+        if (mounted) {
+          setState(() {});
+        }
+      }
+
+      // Check if visibility state changed
+      final bool wasVisible = _isVisible; // Store previous state
+      _isVisible = currentlyVisible; // Update current state
+      // Trigger actions based on visibility change
+      if (_isVisible) {
+        _triggerInitialLoad(); // Attempt initial load if becoming visible
+        _startOrUpdateWatchingCache(); // Start watching when visible
+        // If it just became visible, check if a refresh is needed
+        if (!wasVisible) _refreshCurrentPageData(reason: "Became Visible");
+      } else {
+        _stopWatchingCache(); // Stop watching when not visible to save resources
+      }
     }
   }
 
@@ -637,24 +674,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     return VisibilityDetector(
       key: Key(
           'activity_feed_visibility_${widget.key?.toString() ?? widget.title}'),
-      onVisibilityChanged: (VisibilityInfo info) {
-        final bool currentlyVisible =
-            info.visibleFraction > 0.8; // Consider visible if mostly on screen
-        if (currentlyVisible != _isVisible) {
-          // Check if visibility state changed
-          final bool wasVisible = _isVisible; // Store previous state
-          _isVisible = currentlyVisible; // Update current state
-          // Trigger actions based on visibility change
-          if (_isVisible) {
-            _triggerInitialLoad(); // Attempt initial load if becoming visible
-            _startOrUpdateWatchingCache(); // Start watching when visible
-            // If it just became visible, check if a refresh is needed
-            if (!wasVisible) _refreshCurrentPageData(reason: "Became Visible");
-          } else {
-            _stopWatchingCache(); // Stop watching when not visible to save resources
-          }
-        }
-      },
+      onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
         // AppBar might be handled globally, or add one here if needed for this specific screen
         // appBar: AppBar(title: Text(widget.title)),
@@ -726,8 +746,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                           // Add padding for visual spacing
                           padding: const EdgeInsets.only(
                               top: 8.0, right: 8.0, bottom: 8.0),
-                          child:
-                              const HotActivitiesPanel(), // The hot activities widget
+                          child: HotActivitiesPanel(
+                            currentUser: _authProvider.currentUser,
+                          ), // The hot activities widget
                         ),
                       ),
                   ],
@@ -757,6 +778,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     return CollapsibleActivityFeed(
       // Use a key that changes only when necessary (e.g., collapse mode)
       key: ValueKey('public_feed_${_collapseMode.index}'),
+      currentUser: _authProvider.currentUser,
       activities: _activities,
       isLoading: _isLoadingData && _activities.isEmpty,
       isLoadingMore: _isLoadingMore,

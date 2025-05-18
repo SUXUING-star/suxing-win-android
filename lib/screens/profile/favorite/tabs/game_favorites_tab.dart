@@ -27,11 +27,25 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
   List<Game>? _favoriteGames;
   String? _error;
   bool _isLoading = false;
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+
 
   @override
-  void initState() {
-    super.initState();
-    _loadFavoriteGames();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadFavoriteGames();
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _loadFavoriteGames() async {
@@ -43,8 +57,7 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
     });
 
     try {
-      final gameService = context.read<GameService>();
-      final games = await gameService.getUserLikeGames();
+      final games = await _gameService.getUserLikeGames();
 
       if (mounted) {
         setState(() {
@@ -69,8 +82,7 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
 
   Future<void> _toggleGameFavorite(String gameId) async {
     try {
-      final gameService = context.read<GameService>();
-      await gameService.toggleLike(gameId);
+      await _gameService.toggleLike(gameId);
       await _loadFavoriteGames();
     } catch (e) {
       if (mounted) {

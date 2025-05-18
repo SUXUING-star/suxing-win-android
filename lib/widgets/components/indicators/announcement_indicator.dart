@@ -19,6 +19,9 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
   bool _wasLoggedIn = false;
   bool _isCheckingAnnouncements = false;
   DateTime? _lastCheckTime;
+  bool _hasInitializedDependencies = false;
+  late final AuthProvider _authProvider;
+  late final AnnouncementService _announcementService;
 
   // 最小检查间隔
   static const Duration _minCheckInterval = Duration(minutes: 5);
@@ -38,20 +41,25 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _announcementService =
+          Provider.of<AnnouncementService>(context, listen: false);
+      // 检查用户登录状态变化
+      _authProvider = Provider.of<AuthProvider>(context, listen: true);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // 如果用户登录状态发生变化，在下一帧再重新初始化公告服务
+      if (!_isInitialized || _authProvider.isLoggedIn != _wasLoggedIn) {
+        _wasLoggedIn = _authProvider.isLoggedIn;
 
-    // 检查用户登录状态变化
-    final authProvider = Provider.of<AuthProvider>(context, listen: true);
-
-    // 如果用户登录状态发生变化，在下一帧再重新初始化公告服务
-    if (!_isInitialized || authProvider.isLoggedIn != _wasLoggedIn) {
-      _wasLoggedIn = authProvider.isLoggedIn;
-
-      // 使用 addPostFrameCallback 确保在构建完成后执行
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _checkAnnouncements();
-        }
-      });
+        // 使用 addPostFrameCallback 确保在构建完成后执行
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            _checkAnnouncements();
+          }
+        });
+      }
     }
   }
 
@@ -61,7 +69,6 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
 
     // 防止并发请求
     if (_isCheckingAnnouncements) {
-      print('公告指示器: 检查已在进行中，跳过');
       return;
     }
 
@@ -69,7 +76,6 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (_lastCheckTime != null) {
       final timeSinceLastCheck = DateTime.now().difference(_lastCheckTime!);
       if (timeSinceLastCheck < _minCheckInterval) {
-        print('公告指示器: 距离上次检查只过了 ${timeSinceLastCheck.inSeconds} 秒，跳过本次检查');
         return;
       }
     }
@@ -77,12 +83,9 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     _isCheckingAnnouncements = true;
 
     try {
-      final announcementService =
-          Provider.of<AnnouncementService>(context, listen: false);
-
       // 确保服务已初始化
-      if (!announcementService.isInitialized) {
-        await announcementService.init();
+      if (!_announcementService.isInitialized) {
+        await _announcementService.init();
         if (mounted) {
           setState(() {
             _isInitialized = true;
@@ -92,24 +95,23 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
 
       // 获取公告，确保组件仍然挂载
       if (mounted) {
-        await announcementService.getActiveAnnouncements(forceRefresh: false);
+        await _announcementService.getActiveAnnouncements(forceRefresh: false);
         _lastCheckTime = DateTime.now();
       }
     } catch (e) {
-      print('检查公告失败: $e');
+      // print('检查公告失败: $e');
 
       // 如果遇到已销毁的服务错误，尝试重置并重新初始化
       if (e.toString().contains('disposed') && mounted) {
         try {
-          final announcementService = context.read<AnnouncementService>();
-          await announcementService.reset(); // 使用我们添加的reset方法
-          await announcementService.init();
+          await _announcementService.reset(); // 使用我们添加的reset方法
+          await _announcementService.init();
 
           if (mounted) {
             setState(() {
               _isInitialized = true;
             });
-            await announcementService.getActiveAnnouncements(
+            await _announcementService.getActiveAnnouncements(
                 forceRefresh: false);
             _lastCheckTime = DateTime.now();
           }
@@ -129,9 +131,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     if (!mounted) return;
 
     try {
-      final announcementService =
-          Provider.of<AnnouncementService>(context, listen: false);
-      final unreadAnnouncements = announcementService.getUnreadAnnouncements();
+      final unreadAnnouncements = _announcementService.getUnreadAnnouncements();
 
       if (unreadAnnouncements.isEmpty) {
         if (mounted) {
@@ -163,7 +163,6 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
         );
       }
     } catch (e) {
-      print('显示公告失败: $e');
       _isShowingAnnouncement = false;
 
       // 如果遇到错误，显示提示
@@ -268,105 +267,3 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
   }
 }
 
-// 公告检查工具类，添加错误处理和节流
-class AnnouncementChecker {
-  // 最近一次检查时间
-  static DateTime? _lastCheckTime;
-  // 最小检查间隔
-  static const Duration _minCheckInterval = Duration(minutes: 5);
-  // 是否正在检查
-  static bool _isChecking = false;
-
-  // 检查并显示最重要的一条公告
-  static Future<void> checkAnnouncement(BuildContext context) async {
-    // 避免在构建过程中调用，使用 addPostFrameCallback
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
-      if (!context.mounted) return;
-
-      // 防止并发请求
-      if (_isChecking) {
-        print('公告检查器: 检查已在进行中，跳过');
-        return;
-      }
-
-      // 检查间隔限制
-      if (_lastCheckTime != null) {
-        final timeSinceLastCheck = DateTime.now().difference(_lastCheckTime!);
-        if (timeSinceLastCheck < _minCheckInterval) {
-          print('公告检查器: 距离上次检查只过了 ${timeSinceLastCheck.inSeconds} 秒，跳过本次检查');
-          return;
-        }
-      }
-
-      _isChecking = true;
-
-      try {
-        final service =
-            Provider.of<AnnouncementService>(context, listen: false);
-
-        // 确保初始化完成
-        if (!service.isInitialized) {
-          await service.init();
-        }
-
-        // 检查组件是否还挂载
-        if (!context.mounted) {
-          _isChecking = false;
-          return;
-        }
-
-        // 获取公告
-        await service.getActiveAnnouncements(forceRefresh: false);
-        _lastCheckTime = DateTime.now();
-
-        // 获取未读公告
-        final unreadAnnouncements = service.getUnreadAnnouncements();
-
-        // 如果有未读公告，显示第一条
-        if (unreadAnnouncements.isNotEmpty && context.mounted) {
-          // 避免重复显示
-          if (!_AnnouncementIndicatorState._isShowingAnnouncement) {
-            _AnnouncementIndicatorState._isShowingAnnouncement = true;
-            showAnnouncementDialog(
-              context,
-              unreadAnnouncements.first,
-              onClose: () {
-                _AnnouncementIndicatorState._isShowingAnnouncement = false;
-              },
-            );
-          }
-        }
-      } catch (e) {
-        print('检查公告失败: $e');
-
-        // 如果出现服务已销毁的错误，尝试重置
-        if (e.toString().contains('disposed') && context.mounted) {
-          try {
-            final announcementService = context.read<AnnouncementService>();
-            await announcementService.reset();
-            await announcementService.init();
-
-            if (context.mounted) {
-              final unreadAnnouncements = announcementService.getUnreadAnnouncements();
-              if (unreadAnnouncements.isNotEmpty &&
-                  !_AnnouncementIndicatorState._isShowingAnnouncement) {
-                _AnnouncementIndicatorState._isShowingAnnouncement = true;
-                showAnnouncementDialog(
-                  context,
-                  unreadAnnouncements.first,
-                  onClose: () {
-                    _AnnouncementIndicatorState._isShowingAnnouncement = false;
-                  },
-                );
-              }
-            }
-          } catch (e2) {
-            print('重置公告服务失败: $e2');
-          }
-        }
-      } finally {
-        _isChecking = false;
-      }
-    });
-  }
-}

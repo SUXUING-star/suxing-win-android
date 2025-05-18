@@ -1,10 +1,10 @@
 // 文件路径: lib/widgets/components/screen/forum/card/post_card.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 用于获取 AuthProvider
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 
 import '../../../../../models/post/post.dart';
-import '../../../../../providers/auth/auth_provider.dart'; // 用于获取当前用户信息和权限
 import '../../../../../routes/app_routes.dart';
 import '../../../../../utils/device/device_utils.dart';
 import '../../../../../utils/navigation/navigation_utils.dart'; // 用于导航
@@ -19,6 +19,10 @@ import 'post_tag_row.dart'; // 帖子标签行
 class PostCard extends StatelessWidget {
   /// 要展示的帖子数据模型。
   final Post post;
+
+  final User? currentUser;
+
+  final UserDataStatus userDataStatus;
 
   /// 是否采用桌面布局样式。
   final bool isDesktopLayout;
@@ -40,7 +44,9 @@ class PostCard extends StatelessWidget {
 
   const PostCard({
     super.key,
+    required this.currentUser,
     required this.post,
+    required this.userDataStatus,
     this.isDesktopLayout = false,
     this.onDeleteAction, // 已设为可选
     this.onEditAction, // 已设为可选
@@ -54,9 +60,8 @@ class PostCard extends StatelessWidget {
         DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
 
     // 获取认证信息以判断用户权限
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUser?.id;
-    final isAdmin = authProvider.currentUser?.isAdmin ?? false;
+    final currentUserId = currentUser?.id;
+    final isAdmin = currentUser?.isAdmin ?? false;
     // 判断当前用户是否有权修改此帖子（作者本人或管理员） - 用于显示菜单按钮
     // 注意：确保比较的是字符串 ID
     final canPotentiallyModify =
@@ -78,8 +83,6 @@ class PostCard extends StatelessWidget {
             AppRoutes.postDetail,
             arguments: post.id, // 传递帖子 ID
           );
-          //print(
-          //    "PostCard onTap: Returned from post detail with result: $result");
 
           // --- 处理从详情页返回的结果 ---
           if (!context.mounted) return; // 检查 context 是否仍然有效
@@ -166,7 +169,9 @@ class PostCard extends StatelessWidget {
                         Expanded(
                           child: UserInfoBadge(
                             userId: post.authorId.toString(), // 确保传递字符串 ID
+                            userDataStatus: userDataStatus,
                             showFollowButton: false,
+                            currentUser: currentUser,
                             mini: true,
                             showLevel: false,
                           ),
@@ -190,7 +195,9 @@ class PostCard extends StatelessWidget {
                         // 用户信息徽章
                         UserInfoBadge(
                           userId: post.authorId.toString(),
+                          userDataStatus: userDataStatus,
                           showFollowButton: false,
+                          currentUser: currentUser,
                           mini: true,
                           showLevel: false,
                         ),

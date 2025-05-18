@@ -231,7 +231,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
       borderRadius: BorderRadius.circular(8),
       child: Container(
         height: DeviceUtils.isDesktop ? 100 : 86.0,
-        padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+        padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 16.0),
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Theme.of(context).colorScheme.surfaceContainerLowest,

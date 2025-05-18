@@ -20,16 +20,29 @@ class HomeLatestGames extends StatefulWidget {
 }
 
 class _HomeLatestGamesState extends State<HomeLatestGames> {
-
   // 恢复内部状态
   List<Game>? _cachedGames;
   bool _isLoading = false;
   String? _errorMessage;
 
+  bool _hasInit = false;
+  late final GameService _gameService;
+
   @override
   void initState() {
     super.initState();
-    _fetchData(); // initState 获取数据
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _gameService = context.read<GameService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _fetchData(); // initState 获取数据
+    }
   }
 
   // 获取数据的 Future 方法
@@ -44,8 +57,7 @@ class _HomeLatestGamesState extends State<HomeLatestGames> {
     });
 
     try {
-      final gameService = context.read<GameService>();
-      final games = await gameService.getLatestGames();
+      final games = await _gameService.getLatestGames();
 
       if (mounted && games.isNotEmpty) {
         setState(() {

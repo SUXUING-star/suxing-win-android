@@ -40,19 +40,26 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   final ScrollController _scrollController = ScrollController();
 
   late final ForumService _forumService;
+  late final AuthProvider _authProvider;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
     super.initState();
-
     _isMounted = true;
-    _fetchPosts(); // 初始化时加载数据
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _forumService = context.read<ForumService>();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _fetchPosts(); // 初始化时加载数据
+    }
   }
 
   @override
@@ -80,8 +87,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     });
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final currentUserId = authProvider.currentUserId;
+      final currentUserId = _authProvider.currentUserId;
 
       if (currentUserId == null || currentUserId.isEmpty) {
         if (_isMounted) {
@@ -146,8 +152,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
             if (!_isMounted) return;
             try {
               // 调用 Service 执行实际删除
-              final forumService = context.read<ForumService>();
-              await forumService.deletePost(post);
+              await _forumService.deletePost(post);
               showSnackbar(message: '帖子已删除', type: SnackbarType.success);
             } catch (e) {
               if (_isMounted) {
@@ -216,8 +221,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
     try {
       // 调用 Service 执行实际操作
-      final forumService = context.read<ForumService>();
-      await forumService.togglePostLock(postId);
+      await _forumService.togglePostLock(postId);
       showSnackbar(message: '状态切换成功', type: SnackbarType.success);
     } catch (e) {
       if (_isMounted) {
@@ -341,6 +345,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
     // --- 显示帖子列表 ---
     return PostGridView(
+      currentUser: _authProvider.currentUser,
       posts: _posts,
       scrollController: _scrollController,
       isLoading: false, // 不再需要内部 loading

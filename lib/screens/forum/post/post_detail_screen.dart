@@ -40,11 +40,26 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   bool _isLoading = true;
   bool _hasInteraction = false; // 标记页面是否有过交互
   bool _isTogglingLock = false; // 标记是否正在切换锁定状态
+  late final ForumService _forumService;
+  late final AuthProvider _authProvider;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
     super.initState();
-    _loadPostDetails();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadPostDetails();
+    }
   }
 
   // 加载帖子详情和用户状态
@@ -78,9 +93,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
     try {
       // 调用 Service 获取聚合数据
-      final forumService = context.read<ForumService>();
       final details =
-          await forumService.getPostDetailsWithActions(widget.postId);
+          await _forumService.getPostDetailsWithActions(widget.postId);
 
       // *** 异步操作后，必须检查 mounted 状态！ ***
       if (!mounted) return;
@@ -89,7 +103,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         // 成功获取数据
         if (widget.needHistory && _post?.status != PostStatus.locked) {
           try {
-            forumService.incrementPostView(widget.postId);
+            _forumService.incrementPostView(widget.postId);
           } catch (viewError) {}
         }
 
@@ -202,13 +216,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         });
         try {
           if (_post != null) {
-            final forumService = context.read<ForumService>();
-            await forumService.deletePost(_post!);
+            await _forumService.deletePost(_post!);
           }
           if (!mounted) return;
           _hasInteraction = true;
           showSnackbar(message: '帖子已删除', type: SnackbarType.success);
-          if (Navigator.canPop(this.context)) { // 使用 this.context
+          if (Navigator.canPop(this.context)) {
+            // 使用 this.context
             Navigator.pop(this.context, _hasInteraction); // 使用 this.context
           } else {
             // NavigationUtils.navigateToHome 内部也应该使用一个安全的 context
@@ -250,8 +264,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       _isTogglingLock = true;
     });
     try {
-      final forumService = context.read<ForumService>();
-      await forumService.togglePostLock(widget.postId);
+      await _forumService.togglePostLock(widget.postId);
       if (!mounted) return;
       showSnackbar(message: '帖子状态已切换', type: SnackbarType.success);
       _hasInteraction = true;
@@ -322,12 +335,14 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         onRefresh: _refreshPost,
         child: isDesktop
             ? PostDetailDesktopLayout(
+                currentUser: _authProvider.currentUser,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
               )
             : PostDetailMobileLayout(
+                currentUser: _authProvider.currentUser,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,

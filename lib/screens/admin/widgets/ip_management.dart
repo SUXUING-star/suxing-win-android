@@ -24,6 +24,7 @@ class _IPManagementState extends State<IPManagement>
   final TextEditingController _ipController = TextEditingController();
   final TextEditingController _blacklistIpController = TextEditingController();
   late final DefenceService _defenceService;
+  bool _hasInit = false;
 
   @override
   void initState() {
@@ -34,7 +35,10 @@ class _IPManagementState extends State<IPManagement>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _defenceService = context.read<DefenceService>();
+    if (!_hasInit) {
+      _defenceService = context.read<DefenceService>();
+      _hasInit = true;
+    }
   }
 
   @override

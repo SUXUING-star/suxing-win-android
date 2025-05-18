@@ -36,28 +36,40 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     with SnackBarNotifierMixin {
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
+  late final GameCollectionService _collectionService;
+  late final AuthProvider _authProvider;
+  bool _hasInit = false;
 
   @override
   void initState() {
     super.initState();
     _collectionStatus = widget.initialCollectionStatus;
     _isLoading = false;
-    print(
-        'GameCollectionButton (${widget.game.id}): Initialized with status: ${_collectionStatus?.status}');
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _collectionService = context.read<GameCollectionService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInit = true;
+    }
   }
 
   @override
   void didUpdateWidget(GameCollectionButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 如果游戏 ID 变了，强制同步
-    if (widget.game.id != oldWidget.game.id && !_isLoading) {
+    if (_hasInit && widget.game.id != oldWidget.game.id && !_isLoading) {
       setState(() {
         _collectionStatus = widget.initialCollectionStatus;
       });
       return;
     }
     // 如果父组件传来的状态变了，并且按钮不在加载中，且内容确实不同，才同步
-    if (widget.initialCollectionStatus != oldWidget.initialCollectionStatus &&
+    if (_hasInit &&
+        widget.initialCollectionStatus != oldWidget.initialCollectionStatus &&
         !_isLoading) {
       bool contentChanged = _collectionStatus?.status !=
               widget.initialCollectionStatus?.status ||
@@ -74,8 +86,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
   }
 
   Future<void> _showCollectionDialog() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) {
+    if (!_authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -138,7 +149,6 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         'played': 0,
         'total': 0
       }; // 默认增量为0
-      final collectionService = context.read<GameCollectionService>();
 
       try {
         if (action == 'set') {
@@ -149,7 +159,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
 
           // 调用 Service
           final (item, returnedStatus) =
-              await collectionService.setGameCollection(widget.game.id, status,
+              await _collectionService.setGameCollection(widget.game.id, status,
                   notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
@@ -166,7 +176,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         } else if (action == 'remove') {
           // 调用 Service
           final success =
-              await collectionService.removeGameCollection(widget.game.id);
+              await _collectionService.removeGameCollection(widget.game.id);
           if (success) {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***

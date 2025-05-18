@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 引入 Service
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -23,17 +26,33 @@ class HomeHotPosts extends StatefulWidget {
 }
 
 class _HomeHotPostsState extends State<HomeHotPosts> {
-
   // 内部状态
   List<Post>? _cachedPosts;
   bool _isLoading = false;
   String? _errorMessage;
 
+  bool _hasInit = false;
+  late final ForumService _forumService;
+  late final AuthProvider _authProvider;
+
   @override
   void initState() {
     super.initState();
-    print("HomeHotPosts initState triggered (Key: ${widget.key})");
-    _fetchData(); // initState 获取数据
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      // 使用 watch 监听变化，确保 Provider 更新时 Widget 重建
+
+      _forumService = context.read<ForumService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _fetchData(); // initState 获取数据
+    }
   }
 
   // 获取数据的 Future 方法
@@ -48,8 +67,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
     });
 
     try {
-      final forumService = context.read<ForumService>(); // 安全获取
-      final posts = await forumService.getHotPosts();
+      final posts = await _forumService.getHotPosts();
 
       if (mounted && posts.isNotEmpty) {
         setState(() {
@@ -61,8 +79,7 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
           _isLoading = true;
         });
       }
-    } catch (error, stackTrace) {
-      print("HomeHotPosts _fetchData error: $error\n$stackTrace");
+    } catch (error) {
       if (mounted) {
         setState(() {
           _errorMessage = '加载热门帖子失败'; // 简化错误信息
@@ -175,6 +192,8 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
     final posts = _cachedPosts ?? []; // 使用缓存或空列表
     final displayPosts = posts.take(5).toList(); // 最多显示 5 条
 
+    final userInfoProvider = context.watch<UserInfoProvider>();
+
     return Stack(
       // 使用 Stack 添加加载覆盖层
       children: [
@@ -190,8 +209,11 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
               color: Colors.grey.withSafeOpacity(0.15)),
           itemBuilder: (context, index) {
             final post = displayPosts[index];
-            // 调用列表项构建方法
-            return _buildPostListItem(context, post);
+            final userId = post.authorId;
+            userInfoProvider.ensureUserInfoLoaded(userId);
+            final UserDataStatus userDataStatus =
+                userInfoProvider.getUserStatus(userId);
+            return _buildPostListItem(context, post, userDataStatus);
           },
         ),
         // 加载覆盖层
@@ -206,7 +228,8 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
   }
 
   // --- _buildPostListItem, _buildPostStats, _buildStatItem 保持不变 ---
-  Widget _buildPostListItem(BuildContext context, Post post) {
+  Widget _buildPostListItem(
+      BuildContext context, Post post, UserDataStatus userDataStatus) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
       onTap: () {
@@ -240,6 +263,8 @@ class _HomeHotPostsState extends State<HomeHotPosts> {
                   Row(
                     children: [
                       UserInfoBadge(
+                          userDataStatus: userDataStatus,
+                          currentUser: _authProvider.currentUser,
                           userId: post.authorId,
                           mini: true,
                           showLevel: false,

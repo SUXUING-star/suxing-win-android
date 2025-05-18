@@ -1,7 +1,9 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 // --- 确保这些是你项目中的实际路径 ---
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -35,6 +37,22 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   Timer? _timer;
   bool _isSendingCode = false;
   bool _isVerifying = false;
+  late final AuthProvider _authProvider;
+  late final EmailService _emailService;
+  late final UserService _userService;
+
+  bool _hasInitializedDependencies = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _userService = context.read<UserService>();
+      _emailService = context.read<EmailService>();
+      _hasInitializedDependencies = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -76,8 +94,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final emailService = context.read<EmailService>();
-      await emailService.requestVerificationCode(
+      await _emailService.requestVerificationCode(
           _emailController.text, 'reset');
       if (!mounted) return;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -114,7 +131,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final bool isCodeValid = await EmailService.verifyCode(
+      final bool isCodeValid = await _emailService.verifyCode(
           _emailController.text, _codeController.text, 'reset');
       if (!mounted) return;
 
@@ -137,7 +154,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   }
 
   Widget _buildEmailFormField(bool isOverallLoading) {
-    return FormTextInputField( // <--- 替换
+    return FormTextInputField(
       controller: _emailController,
       isEnabled: !_isSendingCode && !_isVerifying,
       decoration: const InputDecoration(
@@ -147,15 +164,17 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       keyboardType: TextInputType.emailAddress, // <--- 设置 keyboardType
       textInputAction: TextInputAction.next, // 下一步是验证码（如果出现）
       validator: (value) {
-        if (value == null || value.isEmpty || !value.contains('@')) return '请输入有效的邮箱地址';
+        if (value == null || value.isEmpty || !value.contains('@')) {
+          return '请输入有效的邮箱地址';
+        }
         return null;
       },
     );
   }
 
-
   Widget _buildVerificationCodeField(bool isOverallLoading) {
-    return FormTextInputField( // <--- 替换
+    return FormTextInputField(
+      // <--- 替换
       controller: _codeController,
       isEnabled: !isOverallLoading,
       decoration: const InputDecoration(
@@ -299,7 +318,8 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                           delay: initialDelay + stagger * (_codeSent ? 4 : 3),
                           child: Row(
                             children: [
-                              Expanded( // “发送验证码”按钮会填充大部分空间
+                              Expanded(
+                                // “发送验证码”按钮会填充大部分空间
                                 child: FunctionalButton(
                                   onPressed: _sendVerificationCode,
                                   label: sendButtonLabel,
@@ -315,19 +335,21 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                                 // 关键在于 _codeSent 为 true 时，内部 Row 不能有 Expanded
                                 // 或者 AnimatedOpacity 的父级（即外层 Row）需要给它一个确定的宽度。
                                 child: _codeSent
-                                    ? Row( // 这个 Row 不应该有 Expanded，除非外层给它宽度
-                                  mainAxisSize: MainAxisSize.min, // 让内部 Row 包裹内容
-                                  children: [
-                                    SizedBox(width: 16),
-                                    // 不再使用 Expanded，让 FunctionalButton 自适应内容宽度
-                                    FunctionalButton(
-                                      onPressed: _verifyCode,
-                                      label: '验证',
-                                      isLoading: _isVerifying,
-                                      isEnabled: isVerifyButtonEnabled,
-                                    ),
-                                  ],
-                                )
+                                    ? Row(
+                                        // 这个 Row 不应该有 Expanded，除非外层给它宽度
+                                        mainAxisSize:
+                                            MainAxisSize.min, // 让内部 Row 包裹内容
+                                        children: [
+                                          SizedBox(width: 16),
+                                          // 不再使用 Expanded，让 FunctionalButton 自适应内容宽度
+                                          FunctionalButton(
+                                            onPressed: _verifyCode,
+                                            label: '验证',
+                                            isLoading: _isVerifying,
+                                            isEnabled: isVerifyButtonEnabled,
+                                          ),
+                                        ],
+                                      )
                                     : SizedBox.shrink(),
                               ),
                             ],

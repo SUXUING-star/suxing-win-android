@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
@@ -8,6 +9,7 @@ import '../reply/post_reply_list.dart';
 
 class PostDetailMobileLayout extends StatelessWidget {
   final Post post;
+  final User? currentUser;
   final UserPostActions userActions;
   final String postId;
   // 添加交互成功回调
@@ -16,6 +18,7 @@ class PostDetailMobileLayout extends StatelessWidget {
   const PostDetailMobileLayout({
     super.key,
     required this.post,
+    required this.currentUser,
     required this.userActions,
     required this.postId,
     required this.onPostUpdated,
@@ -37,6 +40,7 @@ class PostDetailMobileLayout extends StatelessWidget {
           duration: contentDuration,
           delay: baseDelay, // 先出现
           child: PostContent(
+            currentUser: currentUser,
             userActions: userActions,
             post: post,
             onPostUpdated: onPostUpdated,
@@ -51,7 +55,10 @@ class PostDetailMobileLayout extends StatelessWidget {
           duration: replyListDuration,
           delay: baseDelay + replyDelay, // 稍后出现
 
-          child: PostReplyList(postId: postId),
+          child: PostReplyList(
+            currentUser: currentUser,
+            postId: postId,
+          ),
         ),
       ],
     );

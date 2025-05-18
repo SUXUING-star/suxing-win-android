@@ -3,6 +3,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 引入 Provider
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/activity_detail_content.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -30,23 +32,44 @@ class ActivityDetailScreen extends StatefulWidget {
 }
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
-
   UserActivity? _activity;
   bool _isLoading = true;
   final bool _isLoadingComments = false;
   String _error = '';
   final ScrollController _scrollController = ScrollController();
-  // int _currentPage = 1; // 评论分页暂时不用
-  // int _totalCommentPages = 1;
   int _refreshCounter = 0;
+
+  bool _hasInitializedDependencies = false;
+  late final UserActivityService _activityService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _initializeActivity();
-    });
+
     _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _activityService = context.read<UserActivityService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _initializeActivity();
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
   }
 
   // 封装初始化逻辑
@@ -68,13 +91,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
   }
 
-  @override
-  void dispose() {
-    _scrollController.removeListener(_scrollListener);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
   void _scrollListener() {
     // 评论分页暂时不用
     // if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9) {
@@ -88,9 +104,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       _error = '';
     });
     try {
-      final activityService = context.read<UserActivityService>();
       final activity =
-          await activityService.getActivityDetail(widget.activityId);
+          await _activityService.getActivityDetail(widget.activityId);
       setStateIfMounted(() {
         _activity = activity;
         _isLoading = false;
@@ -121,10 +136,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           currentlyLiked ? currentLikesCount - 1 : currentLikesCount + 1;
     });
     try {
-      final activityService = context.read<UserActivityService>();
       bool success = currentlyLiked
-          ? await activityService.unlikeActivity(_activity!.id)
-          : await activityService.likeActivity(_activity!.id);
+          ? await _activityService.unlikeActivity(_activity!.id)
+          : await _activityService.likeActivity(_activity!.id);
       if (!success) {
         throw Exception('API call failed'); // 抛出异常以便 catch 处理回滚
       }
@@ -143,9 +157,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Future<void> _addComment(String content) async {
     if (content.trim().isEmpty || _activity == null) return;
     try {
-      final activityService = context.read<UserActivityService>();
       final comment =
-          await activityService.commentOnActivity(_activity!.id, content);
+          await _activityService.commentOnActivity(_activity!.id, content);
       if (comment != null) {
         setStateIfMounted(() {
           _activity!.comments.insert(0, comment);
@@ -178,11 +191,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         iconData: Icons.delete_outline,
         iconColor: Colors.red,
         onConfirm: () async {
-          print("Delete comment confirmed for $commentId");
           try {
-            final activityService = context.read<UserActivityService>();
             final success =
-                await activityService.deleteComment(_activity!.id, commentId);
+                await _activityService.deleteComment(_activity!.id, commentId);
             if (success && mounted) {
               // --- 从本地列表移除评论并更新计数 ---
               setStateIfMounted(() {
@@ -218,12 +229,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {
     if (_activity == null) return;
-    final authProvider =
-        context.read<AuthProvider>(); // 使用 context.read 获取 Provider
-
     // 权限检查：必须是作者本人
-    if (!authProvider.isLoggedIn ||
-        authProvider.currentUserId != _activity!.userId) {
+    if (!_authProvider.isLoggedIn ||
+        _authProvider.currentUserId != _activity!.userId) {
       if (mounted) {
         AppSnackBar.showError(context, '您没有权限编辑此动态');
       }
@@ -243,9 +251,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           if (newText == _activity!.content) return; // 内容未改变则不提交
 
           try {
-            final activityService = context.read<UserActivityService>();
             // 调用服务更新活动
-            final success = await activityService.updateActivity(
+            final success = await _activityService.updateActivity(
                 _activity!.id, newText, _activity!.metadata);
 
             if (success) {
@@ -296,12 +303,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   // --- 删除活动处理 ---
   Future<void> _handleDeleteActivity() async {
     if (_activity == null) return;
-    final authProvider = context.read<AuthProvider>();
 
     // 权限检查：作者本人 或 管理员
-    final bool canDelete = authProvider.isLoggedIn &&
-        (authProvider.currentUserId == _activity!.userId ||
-            authProvider.isAdmin);
+    final bool canDelete = _authProvider.isLoggedIn &&
+        (_authProvider.currentUserId == _activity!.userId ||
+            _authProvider.isAdmin);
 
     if (!canDelete) {
       if (mounted) {
@@ -323,9 +329,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           // onConfirm 是异步的
           try {
-            final activityService = context.read<UserActivityService>();
             final success =
-                await activityService.deleteActivity(_activity!.id);
+                await _activityService.deleteActivity(_activity!.id);
             if (success) {
               if (mounted) {
                 // 删除成功后，关闭当前页面
@@ -360,6 +365,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
+    final userInfoProvider = context.watch<UserInfoProvider>();
+
+
     Widget body;
 
     if (_isLoading) {
@@ -369,11 +377,17 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     } else if (_activity == null) {
       body = InlineErrorWidget(errorMessage: '无法加载动态内容');
     } else {
+      final userId = _activity!.userId;
+      userInfoProvider.ensureUserInfoLoaded(userId);
+      final UserDataStatus userDataStatus =
+      userInfoProvider.getUserStatus(userId);
       // 传递编辑和删除的回调给 ActivityDetailContent
       body = RefreshIndicator(
         onRefresh: _refreshActivity,
         child: ActivityDetailContent(
           key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
+          currentUser: _authProvider.currentUser,
+          userDataStatus: userDataStatus,
           activity: _activity!,
           comments: _activity!.comments,
           isLoadingComments: _isLoadingComments,

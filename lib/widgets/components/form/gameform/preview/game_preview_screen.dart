@@ -1,5 +1,6 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../../models/game/game.dart';
@@ -8,9 +9,11 @@ import '../../../../../../utils/font/font_config.dart';
 
 class GamePreviewScreen extends StatelessWidget {
   final Game game;
+  final User? currentUser;
 
   const GamePreviewScreen({
     super.key,
+    required this.currentUser,
     required this.game,
   });
 
@@ -60,6 +63,7 @@ class GamePreviewScreen extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.all(24.0),
                 child: GameDetailContent(
+                  currentUser: currentUser,
                   game: game,
                   isPreviewMode: true,
                 ),
@@ -173,6 +177,7 @@ class GamePreviewScreen extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 80),
             sliver: SliverToBoxAdapter(
               child: GameDetailContent(
+                currentUser: currentUser,
                 game: game,
                 isPreviewMode: true,
               ),

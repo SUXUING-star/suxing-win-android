@@ -1,6 +1,7 @@
 // lib/widgets/layouts/desktop/desktop_frame_layout.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/message_badge.dart';
@@ -53,15 +54,12 @@ class DesktopFrameLayout extends StatelessWidget {
   static final Gradient _defaultTitleBarGradient = LinearGradient(
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
-    colors: [
-      ...desktopBarColor
-    ],
+    colors: [...desktopBarColor],
   );
 
   // 默认标题和图标
-  static const String _defaultTitleText = '宿星茶会(windows)';
-  static const String _defaultTitleIconPath =
-      'assets/images/icons/app_icon.jpg';
+  static const String _defaultTitleText = GlobalConstants.appNameWindows;
+  static const String _defaultTitleIconPath = GlobalConstants.appIcon;
 
   @override
   Widget build(BuildContext context) {

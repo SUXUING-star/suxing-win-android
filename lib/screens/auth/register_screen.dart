@@ -49,6 +49,22 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Timer? _timer;
   int _countDown = 0;
+  late final AuthProvider _authProvider;
+  late final EmailService _emailService;
+  late final UserService _userService;
+
+  bool _hasInitializedDependencies = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _userService = context.read<UserService>();
+      _emailService = context.read<EmailService>();
+      _hasInitializedDependencies = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -78,13 +94,9 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _sendVerificationCode() async {
     // 验证逻辑现在只依赖 FormTextInputField 内部的 validator
     // 但我们仍然需要邮箱值来发送请求
-    final InputStateService inputService;
-    try {
-      inputService = Provider.of<InputStateService>(context, listen: false);
-    } catch (e) {
-      setState(() => _error = '内部错误，请稍后重试');
-      return;
-    }
+    final InputStateService inputService =
+        Provider.of<InputStateService>(context, listen: false);
+
     final email = inputService.getText(emailSlotName).trim();
 
     // 简单的邮箱格式前端校验（也可以依赖 FormField 的 validator）
@@ -100,8 +112,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
-      final emailService = context.read<EmailService>();
-      await emailService.requestVerificationCode(email, 'register');
+      await _emailService.requestVerificationCode(email, 'register');
       if (!mounted) return;
       _startTimer();
       setState(() {
@@ -134,16 +145,8 @@ class _RegisterScreenState extends State<RegisterScreen>
       _error = null;
     });
 
-    final InputStateService inputService;
-    try {
-      inputService = Provider.of<InputStateService>(context, listen: false);
-    } catch (e) {
-      setState(() {
-        _isRegistering = false;
-        _error = '内部错误，请稍后重试';
-      });
-      return;
-    }
+    final InputStateService inputService =
+        Provider.of<InputStateService>(context, listen: false);
 
     // 从 Service 获取所有需要的值
     final email = inputService.getText(emailSlotName).trim();
@@ -157,7 +160,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     try {
       isCodeValid =
-          await EmailService.verifyCode(email, verificationCode, 'register');
+          await _emailService.verifyCode(email, verificationCode, 'register');
       if (!mounted) return;
 
       if (!isCodeValid) {
@@ -167,12 +170,10 @@ class _RegisterScreenState extends State<RegisterScreen>
         setState(() => _isRegistering = false);
         return;
       }
-      final userService = context.read<UserService>();
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
 
       SavedAccount? savedAccount;
       if (_rememberMe) {
-        final user = authProvider.currentUser;
+        final user = _authProvider.currentUser;
         savedAccount = SavedAccount(
           email: email,
           password: password, // 注意：这里保存的是用户输入的密码
@@ -185,7 +186,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         );
       }
 
-      await userService.signUp(email, password, username, savedAccount);
+      await _userService.signUp(email, password, username, savedAccount);
       if (!mounted) return;
 
       // 注册成功后，清除所有相关的输入状态

@@ -1,6 +1,7 @@
 // lib/screens/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -37,12 +38,28 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   bool _isFetchingMore = false; // For pagination loading indicator
   bool _hasError = false;
   String _errorMessage = '';
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
-    _loadInitialGames();
+
     _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _authProvider = Provider.of<AuthProvider>(context);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadInitialGames();
+    }
   }
 
   @override
@@ -64,8 +81,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     });
 
     try {
-      final gameService = context.read<GameService>();
-      final result = await gameService.getMyGamesWithInfo(
+      final result = await _gameService.getMyGamesWithInfo(
         page: 1, // Always load page 1 initially
         pageSize: 10, // Or your preferred page size
         // sortBy: 'updateTime', // Example sorting, adjust as needed
@@ -106,8 +122,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     try {
       final nextPage = _currentPage + 1;
-      final gameService = context.read<GameService>();
-      final result = await gameService.getMyGamesWithInfo(
+      final result = await _gameService.getMyGamesWithInfo(
         page: nextPage,
         pageSize: 10,
         // sortBy: 'updateTime', // Consistent sorting
@@ -168,8 +183,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     // 这里可以加一个 Loading 状态，但确认对话框自带了，所以可能不需要
     try {
-      final gameService = context.read<GameService>();
-      await gameService.resubmitGame(game.id);
+      await _gameService.resubmitGame(game.id);
       if (!mounted) return; // 检查 context 是否有效
 
       // 使用 AppSnackBar 显示成功信息
@@ -315,6 +329,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       children: [
         // 基础卡片内容
         BaseGameCard(
+          currentUser: _authProvider.currentUser,
           game: game,
           showTags: true,
           maxTags: 1,

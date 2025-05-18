@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // 用于时间格式化
 import 'package:suxingchahui/models/message/message_type.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import '../../../../models/message/message.dart';
 
 /// 消息详情展示 Widget (通常用于桌面端的右侧面板)
@@ -20,7 +21,7 @@ class MessageDetail extends StatelessWidget {
 
   /// 格式化详情页显示的时间 (可以移到全局工具类)
   String _formatDetailTime(DateTime time) {
-    return DateFormat('yyyy年MM月dd日 HH:mm:ss').format(time); // 显示更详细的时间，包含秒
+    return DateTimeFormatter.formatStandard(time); // 显示更详细的时间，包含秒
   }
 
   @override
@@ -28,13 +29,17 @@ class MessageDetail extends StatelessWidget {
     // --- 修改开始: 使用 Scaffold 替代 Container + Column ---
     return Scaffold(
       backgroundColor: Colors.white, // 设置背景色
-      appBar: AppBar( // 使用标准的 AppBar
+      appBar: AppBar(
+        // 使用标准的 AppBar
         backgroundColor: Colors.white, // AppBar 背景色
         elevation: 0.5, // 可以加一点阴影或边框效果
         shadowColor: Colors.grey[300],
         title: Text(
           '消息详情',
-          style: TextStyle(fontSize: 17, color: Colors.black87, fontWeight: FontWeight.w600), // 调整标题样式
+          style: TextStyle(
+              fontSize: 17,
+              color: Colors.black87,
+              fontWeight: FontWeight.w600), // 调整标题样式
         ),
         automaticallyImplyLeading: false, // 不显示默认的返回按钮
         actions: [
@@ -73,13 +78,8 @@ class MessageDetail extends StatelessWidget {
     // --- 修改结束 ---
   }
 
-  // _buildHeader 方法不再需要，已合并到 AppBar
-
-  // _buildTypeLabel, _buildContentSection, _buildTimeSection, _buildReferencesSection 保持不变
-
   /// 构建消息类型标签
   Widget _buildTypeLabel() {
-    // ... (代码不变) ...
     final typeText = message.messageType.displayName;
     final labelColor = message.messageType.labelBackgroundColor;
     final textColor = message.messageType.labelTextColor;
@@ -104,7 +104,6 @@ class MessageDetail extends StatelessWidget {
 
   /// 构建内容详情区域
   Widget _buildContentSection() {
-    // ... (代码不变) ...
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -139,7 +138,7 @@ class MessageDetail extends StatelessWidget {
   }
 
   /// 构建时间信息区域
-  Widget _buildTimeSection(BuildContext context) { // <-- 接收 context
+  Widget _buildTimeSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -153,11 +152,13 @@ class MessageDetail extends StatelessWidget {
         ),
         SizedBox(height: 10),
         // --- 修改开始: Row 内部 Text 用 Expanded 包裹 ---
-        Row( // 对应 L147
+        Row(
+          // 对应 L147
           children: [
             Icon(Icons.call_received, size: 16, color: Colors.grey[600]),
             SizedBox(width: 8),
-            Expanded( // <-- 包裹 Text
+            Expanded(
+              // <-- 包裹 Text
               child: Text(
                 '接收: ${_formatDetailTime(message.displayTime)}',
                 style: TextStyle(fontSize: 14, color: Colors.grey[700]),
@@ -168,11 +169,13 @@ class MessageDetail extends StatelessWidget {
         ),
         SizedBox(height: 6),
         if (message.isRead && message.readTime != null)
-          Row( // 对应 L161
+          Row(
+            // 对应 L161
             children: [
               Icon(Icons.visibility, size: 16, color: Colors.green[600]),
               SizedBox(width: 8),
-              Expanded( // <-- 包裹 Text
+              Expanded(
+                // <-- 包裹 Text
                 child: Text(
                   '阅读: ${_formatDetailTime(message.readTime!)}',
                   style: TextStyle(fontSize: 14, color: Colors.grey[700]),
@@ -188,7 +191,6 @@ class MessageDetail extends StatelessWidget {
 
   /// 构建引用内容区域 (仅当消息是分组消息且有引用时显示)
   Widget _buildReferencesSection() {
-    // ... (代码不变) ...
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,14 +241,16 @@ class MessageDetail extends StatelessWidget {
         border: Border(top: BorderSide(color: Colors.grey[300]!, width: 0.5)),
         color: Colors.white,
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0).copyWith(
+      padding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0).copyWith(
         bottom: MediaQuery.of(context).padding.bottom + 12.0,
       ),
       // --- 修改开始: 使用 Wrap 替代 Row ---
-      child: Wrap( // 对应 L237 的 Row
-        alignment: WrapAlignment.end,   // 子项整体靠右
-        spacing: 12.0,                // 水平间距
-        runSpacing: 8.0,              // 垂直间距 (如果换行)
+      child: Wrap(
+        // 对应 L237 的 Row
+        alignment: WrapAlignment.end, // 子项整体靠右
+        spacing: 12.0, // 水平间距
+        runSpacing: 8.0, // 垂直间距 (如果换行)
         children: [
           // 删除按钮 (保持不变)
           OutlinedButton.icon(

@@ -23,6 +23,7 @@ class _CheckInScreenState extends State<CheckInScreen>
     with TickerProviderStateMixin {
   // 状态变量
   bool _isLoading = true; // 页面整体加载状态
+  bool _hasInitializedDependencies = false;
   bool _checkInLoading = false; // 签到按钮的加载状态
   CheckInStats? _checkInStats; // 签到统计信息 (使用修改后的模型)
   User? _currentUser; // 当前登录用户信息 (包含等级经验)
@@ -38,21 +39,30 @@ class _CheckInScreenState extends State<CheckInScreen>
 
   // 服务实例
   late UserCheckInService _checkInService;
+  late AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
-    // 获取服务实例
-    _checkInService = Provider.of<UserCheckInService>(context, listen: false);
-
     // 初始化动画控制器
     _particleController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2000), // 粒子效果持续时间
     );
+  }
 
-    // 加载初始数据
-    _loadData();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _checkInService = context.read<UserCheckInService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // 加载初始数据
+      _loadData();
+    }
   }
 
   @override
@@ -73,12 +83,9 @@ class _CheckInScreenState extends State<CheckInScreen>
     });
 
     try {
-      // 1. 获取 AuthProvider 和当前用户状态
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final currentUser = authProvider.currentUser;
-
+      final currentUser = _authProvider.currentUser;
       // 必须确保用户已登录且用户信息已加载
-      if (!authProvider.isLoggedIn || currentUser == null) {
+      if (!_authProvider.isLoggedIn || currentUser == null) {
         // 可以抛出异常或设置错误消息
         throw Exception("用户未登录或信息获取失败");
       }
@@ -148,7 +155,7 @@ class _CheckInScreenState extends State<CheckInScreen>
             int? dayNum;
             if (dayData['day'] is int) {
               dayNum = dayData['day'];
-            } else if (dayData['day'] is String){
+            } else if (dayData['day'] is String) {
               dayNum = int.tryParse(dayData['day']);
             }
 
@@ -176,7 +183,6 @@ class _CheckInScreenState extends State<CheckInScreen>
 
   /// 处理签到按钮点击事件
   Future<void> _handleCheckIn() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     // 防止重复点击或在未加载/已签到时点击
     if ((_checkInStats?.hasCheckedToday ?? true) ||
         _checkInLoading ||
@@ -191,10 +197,6 @@ class _CheckInScreenState extends State<CheckInScreen>
     try {
       // 调用签到服务接口
       final result = await _checkInService.performCheckIn(); // 返回精简后的结果
-
-      // **关键步骤：通知 AuthProvider 刷新用户状态**
-      // 这会触发获取最新的 User 对象（包含更新后的经验、等级等）
-      await authProvider.refreshUserState();
 
       // 播放签到成功粒子效果
       if (mounted) {
@@ -215,7 +217,6 @@ class _CheckInScreenState extends State<CheckInScreen>
         _showCheckInSuccess(result);
       }
     } catch (e) {
-      print('签到失败: $e');
       if (mounted) {
         // 显示更具体的错误信息
         final String errorMessage =
@@ -297,7 +298,7 @@ class _CheckInScreenState extends State<CheckInScreen>
         });
       }
     }).catchError((e) {
-      print('获取月度签到数据失败 ($year-$month): $e');
+      //print('获取月度签到数据失败 ($year-$month): $e');
       // 可以选择在这里设置错误状态
       // if (mounted) setState(() => _errorMessage = '获取日历数据失败');
     });
@@ -305,10 +306,6 @@ class _CheckInScreenState extends State<CheckInScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 使用 Consumer 监听 AuthProvider 状态变化，当用户登出时可以处理
-    // 但主要的数据获取还是在 _loadData 中完成
-    // final authProvider = Provider.of<AuthProvider>(context); // 可选的监听
-
     return Scaffold(
       appBar: CustomAppBar(
         title: '每日签到',
@@ -352,7 +349,6 @@ class _CheckInScreenState extends State<CheckInScreen>
                           consecutiveMissedDays:
                               _consecutiveMissedDays, // 传递断签天数
                         ),
-          // --- 结束内容区域 ---
 
           // --- 粒子效果层 ---
           // 仅在今天未签到时显示粒子效果容器

@@ -1,15 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityTargetSection extends StatelessWidget {
   final UserActivity activity;
+  final UserDataStatus userDataStatus;
+  final User? currentUser;
   final bool isDesktop;
 
   const ActivityTargetSection({
     super.key,
+    required this.currentUser,
+    required this.userDataStatus,
     required this.activity,
     required this.isDesktop,
   });
@@ -23,8 +29,8 @@ class ActivityTargetSection extends StatelessWidget {
       case 'game':
         title = '相关游戏'; // 或者 "游戏信息"
         break;
-      case 'download':
-        title = '相关下载'; // 或者 "下载链接"
+      case 'post':
+        title = '相关帖子'; // 或者 "下载链接"
         break;
       default:
         title = '相关内容';
@@ -81,6 +87,8 @@ class ActivityTargetSection extends StatelessWidget {
 
           // --- 原有的内容 ---
           ActivityTarget(
+            currentUser: currentUser,
+            userDataStatus: userDataStatus,
             activity: activity,
             isAlternate: false, // 注意：isAlternate
           ),

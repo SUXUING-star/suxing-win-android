@@ -3,19 +3,23 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'layout/desktop/hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
-  const HotActivitiesPanel({super.key});
+  final User? currentUser;
+  const HotActivitiesPanel({
+    required this.currentUser,
+    super.key,
+  });
 
   @override
   _HotActivitiesPanelState createState() => _HotActivitiesPanelState();
 }
 
-class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticKeepAliveClientMixin {
-
-
+class _HotActivitiesPanelState extends State<HotActivitiesPanel>
+    with AutomaticKeepAliveClientMixin {
   List<UserActivity> _hotActivities = [];
   Map<String, int> _activityStats = {};
   bool _isLoading = true;
@@ -25,10 +29,24 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
   @override
   bool get wantKeepAlive => true;
 
+  bool _hasInitializedDependencies = false;
+  late final UserActivityService _activityService;
+
   @override
   void initState() {
     super.initState();
-    _loadData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _activityService = context.read<UserActivityService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadData();
+    }
   }
 
   // 加载热门动态和统计数据
@@ -39,11 +57,10 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
     });
 
     try {
-      final activityService = context.read<UserActivityService>();
       // 并行加载数据
       final results = await Future.wait([
-        activityService.getHotActivities(),
-        activityService.getActivityTypeStats(),
+        _activityService.getHotActivities(),
+        _activityService.getActivityTypeStats(),
       ]);
 
       if (mounted) {
@@ -74,10 +91,9 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
 
     return LayoutBuilder(
       builder: (context, constraints) {
-
-
         // 默认完整面板
         return HotActivitiesFullPanel(
+          currentUser: widget.currentUser,
           hotActivities: _hotActivities,
           activityStats: _activityStats,
           isLoading: _isLoading,
@@ -85,7 +101,8 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel> with AutomaticK
           errorMessage: _errorMessage,
           onRefresh: _loadData,
           getActivityTypeName: ActivityTypeUtils.getActivityTypeText,
-          getActivityTypeColor: ActivityTypeUtils.getActivityTypeBackgroundColor,
+          getActivityTypeColor:
+              ActivityTypeUtils.getActivityTypeBackgroundColor,
           panelWidth: panelWidth,
         );
       },

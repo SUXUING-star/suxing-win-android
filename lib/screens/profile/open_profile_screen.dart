@@ -42,12 +42,31 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   bool _isGridView = true;
 
   late TabController _tabController;
+  bool _hasInitializedDependencies = false;
+  late final ForumService _forumService;
+  late final UserService _userService;
+  late final GameService _gameService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _loadUserProfile();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _hasInitializedDependencies = true;
+      _userService = context.read<UserService>();
+      _forumService = context.read<ForumService>();
+      _gameService = context.read<GameService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    }
+    if (_hasInitializedDependencies) {
+      _loadUserProfile();
+    }
   }
 
   @override
@@ -63,23 +82,23 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     });
 
     try {
-      final userService = context.read<UserService>();
-      final forumService = context.read<ForumService>();
-      final gameService = context.read<GameService>();
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
       // 获取当前登录用户ID
-      final currentUserId = authProvider.currentUserId;
+      final String? currentUserId = _authProvider.currentUserId;
+      final User? currentUser = _authProvider.currentUser;
       _isCurrentUser = currentUserId == widget.userId;
 
-      // 获取用户信息
-      _user = await userService.getUserInfoById(widget.userId);
+      if (widget.userId == currentUserId && currentUser != null) {
+        _user = currentUser;
+      } else {
+        _user = await _userService.getUserInfoById(widget.userId);
+      }
 
       // 加载用户帖子
       final userPosts =
-          await forumService.getRecentUserPosts(widget.userId, limit: 10);
+          await _forumService.getRecentUserPosts(widget.userId, limit: 10);
 
       // 加载用户发布的游戏
-      final userGames = await gameService.getGamesPaginated(
+      final userGames = await _gameService.getGamesPaginated(
         page: 1,
         pageSize: 10,
         sortBy: 'createTime',
@@ -220,6 +239,16 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   Widget _buildUserHeader() {
     if (_user == null) return SizedBox.shrink();
 
+    // 1. 确定头像在这个屏幕的显示半径
+    const double avatarRadiusInProfile =
+        50.0; // 这是你在 _buildUserHeader 里给头像设置的半径
+
+    // 2. 计算传递给 SafeUserAvatar 的 memCache 尺寸
+    // 这是 OpenProfileScreen 主动为它内部的 SafeUserAvatar 设置的
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final int calculatedMemCacheSize =
+        (avatarRadiusInProfile * 2 * devicePixelRatio).round();
+
     return Card(
       margin: EdgeInsets.all(12),
       elevation: 4,
@@ -239,6 +268,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
               username: _user?.username ?? '',
               radius: 50,
               enableNavigation: false,
+              memCacheWidth: calculatedMemCacheSize,
+              memCacheHeight: calculatedMemCacheSize,
             ),
             SizedBox(height: 12),
 
@@ -302,6 +333,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
             SizedBox(height: 12),
             if (!_isCurrentUser)
               FollowUserButton(
+                currentUser: _authProvider.currentUser,
                 userId: widget.userId,
                 showIcon: true,
               ),

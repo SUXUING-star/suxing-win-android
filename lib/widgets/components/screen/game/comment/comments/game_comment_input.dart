@@ -37,8 +37,11 @@ class _GameCommentInputState extends State<GameCommentInput> {
       await widget.onCommentAdded(comment); // 调用外部提交逻辑
       // 成功后清除状态
       if (mounted) {
-        final service = Provider.of<InputStateService>(context, listen: false);
-        service.clearText(_slotName);
+        // 保持用途明确
+        InputStateService? inputStateService =
+            Provider.of<InputStateService>(context, listen: false);
+        inputStateService.clearText(_slotName);
+        inputStateService = null;
       }
     } catch (e) {
       // 提交失败，保留输入内容
@@ -61,4 +64,3 @@ class _GameCommentInputState extends State<GameCommentInput> {
     );
   }
 }
-

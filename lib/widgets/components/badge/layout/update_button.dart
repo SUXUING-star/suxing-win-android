@@ -22,13 +22,15 @@ class UpdateButton extends StatelessWidget {
           return const SizedBox(
             width: 24, // 与图标大小一致，避免布局跳动
             height: 24,
-            child: Center( // 让菊花居中
+            child: Center(
+              // 让菊花居中
               child: SizedBox(
                 width: 18, // 菊花可以比容器小一点
                 height: 18,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Colors.white, // 或者 Theme.of(context).colorScheme.onPrimary
+                  color: Colors
+                      .white, // 或者 Theme.of(context).colorScheme.onPrimary
                 ),
               ),
             ),
@@ -58,9 +60,11 @@ class UpdateButton extends StatelessWidget {
                 ],
               ),
               child: const Icon(
-                Icons.system_update_alt, // 或者 Icons.arrow_downward, Icons.download
+                Icons
+                    .system_update_alt, // 或者 Icons.arrow_downward, Icons.download
                 size: 16, // 更新可用时图标小一点，因为有背景色
-                color: Colors.white, // 或者 Theme.of(context).colorScheme.onPrimary / onError
+                color: Colors
+                    .white, // 或者 Theme.of(context).colorScheme.onPrimary / onError
               ),
             ),
           );
@@ -68,11 +72,13 @@ class UpdateButton extends StatelessWidget {
         // ！！！无更新时的 UI - 完整实现！！！
         else {
           return GestureDetector(
-            onTap: () => _handleUpdateTap(context, updateService), // 点击时依然会触发检查更新
+            onTap: () =>
+                _handleUpdateTap(context, updateService), // 点击时依然会触发检查更新
             child: Icon(
               Icons.system_update_outlined, // 使用 outlined 版本表示当前无更新
               size: 24, // 无更新时图标大一点
-              color: Theme.of(context).iconTheme.color ?? Colors.white, // 使用主题图标颜色
+              color:
+                  Theme.of(context).iconTheme.color ?? Colors.white, // 使用主题图标颜色
             ),
           );
         }
@@ -92,9 +98,9 @@ class UpdateButton extends StatelessWidget {
       BuildContext context, UpdateService updateService) async {
     if (!updateService.updateAvailable) {
       // 即使当前显示无更新，点击也应该触发一次检查
-      if (kDebugMode) print("UpdateButton: No update currently available, checking again...");
       await updateService.checkForUpdates(); // 确保调用不带 context 的版本
-      if (context.mounted) { // 检查 context 是否仍然有效
+      if (context.mounted) {
+        // 检查 context 是否仍然有效
         if (!updateService.updateAvailable) {
           AppSnackBar.showInfo(context, '当前已是最新版本');
         } else {
@@ -110,10 +116,6 @@ class UpdateButton extends StatelessWidget {
 
     // 如果已经有可用更新 (updateService.updateAvailable is true)
     final String releasePageUrl = AppConfig.releasePage;
-
-    if (kDebugMode) {
-      print("UpdateButton: Update available. Redirecting to release page: $releasePageUrl");
-    }
 
     if (releasePageUrl.isEmpty) {
       if (kDebugMode) print('UpdateButton: AppConfig.releasePage is empty!');
@@ -152,16 +154,18 @@ class UpdateButton extends StatelessWidget {
           onConfirm: () async {
             // BaseInputDialog 会在 onConfirm 后自动 pop
             try {
-              if (kDebugMode) print("UpdateButton (Optional Update): Launching release page URL: $uri");
               if (await canLaunchUrl(uri)) {
                 await launchUrl(uri, mode: LaunchMode.externalApplication);
               } else {
-                if (kDebugMode) print('UpdateButton (Optional Update): Cannot launch URL: $uri');
-                if (context.mounted) AppSnackBar.showError(context, '无法打开发布页面链接');
+                if (context.mounted) {
+                  AppSnackBar.showError(context, '无法打开发布页面链接');
+                }
               }
             } catch (e) {
-              if (kDebugMode) print('UpdateButton (Optional Update): Error launching URL $uri: $e');
-              if (context.mounted) AppSnackBar.showError(context, '打开链接时出错: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');
+              if (context.mounted) {
+                AppSnackBar.showError(context,
+                    '打开链接时出错: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');
+              }
             }
           },
         );

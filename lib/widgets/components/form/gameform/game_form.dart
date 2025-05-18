@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
@@ -34,11 +35,13 @@ import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
   final Game? game; // 编辑时传入的游戏对象
+  final User? currentUser;
   final Function(Game) onSubmit; // 提交成功后的回调
 
   const GameForm({
     super.key,
     this.game,
+    required this.currentUser,
     required this.onSubmit,
   });
 
@@ -80,7 +83,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   String? _categoryError;
 
   // --- 草稿相关 ---
-  final GameFormCacheService _cacheService = GameFormCacheService();
   String? _draftKey; // 当前表单使用的草稿 Key (add_draft 或 edit_game_draft_ID)
   // 特殊字符串，用于在草稿中标记本地文件位置
 
@@ -91,20 +93,35 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   String? _initialCoverImageUrl;
   List<String> _initialGameImageUrls = [];
   String? _initialCategory;
+  bool _hasInitializedDependencies = false;
+  late final GameFormCacheService _cacheService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
     super.initState();
-    _draftKey = _getDraftKey(); // 获取当前模式的草稿 Key
-    WidgetsBinding.instance.addObserver(this);
-    _initializeFormData(); // 初始化（会设置 _initialGameData 如果是编辑）
-    // initState 完成后检查草稿，避免在 build 前 setState
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        // 再次检查 mounted
-        _checkAndRestoreDraft(); // 检查并恢复草稿
-      }
-    });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _cacheService = context.read<GameFormCacheService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _draftKey = _getDraftKey(); // 获取当前模式的草稿 Key
+      WidgetsBinding.instance.addObserver(this);
+      _initializeFormData(); // 初始化（会设置 _initialGameData 如果是编辑）
+      // initState 完成后检查草稿，避免在 build 前 setState
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          // 再次检查 mounted
+          _checkAndRestoreDraft(); // 检查并恢复草稿
+        }
+      });
+    }
   }
 
   // 获取当前表单对应的草稿 Key
@@ -296,13 +313,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             try {
               // 关键步骤 1: 加载要丢弃的草稿数据
               draftToDiscard = await _cacheService.loadDraft(_draftKey!);
-
-              if (draftToDiscard != null) {
-                // print("Loaded draft data before discarding for file cleanup.");
-              } else {
-                // print(
-                //     "Warning: Could not load draft data before discarding. File cleanup might be incomplete. Key: $_draftKey");
-              }
 
               // 关键步骤 2: 从 Hive 中清除
               await _cacheService.clearDraft(_draftKey!);
@@ -986,7 +996,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width > 950;
@@ -999,9 +1008,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     final bool allowImmediatePop =
         !(_isProcessing || hasUnsavedChanges || isAddModeWithContent);
 
-    final String? currentUserId = authProvider.currentUserId;
+    final String? currentUserId = _authProvider.currentUserId;
 
-    if (currentUserId == null) return LoginPromptWidget();
+    if (currentUserId == null || !_authProvider.isLoggedIn) {
+      return LoginPromptWidget();
+    }
 
     // 使用 Stack 包裹，方便显示全局加载指示器
     return Stack(
@@ -1536,6 +1547,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     return GamePreviewButton(
       // 传递控制器和当前状态给预览按钮
+      currentUser: widget.currentUser,
       titleController: _titleController,
       summaryController: _summaryController,
       descriptionController: _descriptionController,

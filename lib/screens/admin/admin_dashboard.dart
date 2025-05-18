@@ -21,6 +21,22 @@ class AdminDashboard extends StatefulWidget {
 
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
+  bool _hasInitializedDependencies = false;
+  late final AuthProvider _authProvider;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant AdminDashboard oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context);
+      _hasInitializedDependencies = true;
+    }
+  }
 
   // 添加公告管理页面到页面列表
   List<Widget> _getPages(bool isSuperAdmin) {
@@ -28,7 +44,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
       const GameManagement(),
       const ToolManagement(),
       const LinkManagement(),
-
     ];
 
     // 只有超级管理员可以看到用户管理和IP管理
@@ -47,13 +62,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    if (!authProvider.isAdmin) {
-      return CustomErrorWidget(title: "权限错误",errorMessage: "你不是管理员无法查看此页面");
+    if (!_authProvider.isAdmin) {
+      return CustomErrorWidget(title: "权限错误", errorMessage: "你不是管理员无法查看此页面");
     }
 
-    final isSuperAdmin = authProvider.isSuperAdmin;
+    final isSuperAdmin = _authProvider.isSuperAdmin;
     final pages = _getPages(isSuperAdmin);
 
     return Scaffold(
@@ -112,7 +125,6 @@ class _AdminDashboardState extends State<AdminDashboard> {
         icon: Icon(Icons.link),
         label: '链接管理',
       ),
-
     ];
 
     // 只有超级管理员可以看到用户管理和IP管理

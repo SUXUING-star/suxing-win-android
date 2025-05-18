@@ -1,6 +1,7 @@
 // lib/screens/profile/follow/user_follows_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'dart:async';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -45,6 +46,10 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
   StreamSubscription? _followStatusSubscription;
   bool _mounted = true; // 防止setState调用在组件销毁后
 
+  bool _hasInitializedDependencies = false;
+  late final UserFollowService _followService;
+  late final AuthProvider _authProvider;
+
   @override
   void initState() {
     super.initState();
@@ -56,19 +61,38 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
 
     // 监听标签切换
     _tabController.addListener(_onTabChanged);
+  }
 
-    // 只加载当前选中标签页的数据
-    _loadInitialData();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
 
-    final followService = context.read<UserFollowService>();
-    // 监听关注状态变化
-    _followStatusSubscription =
-        followService.followStatusStream.listen((userId) {
-      if (_mounted) {
-        // 关注状态变化时重新加载数据
-        _refreshCurrentTab(forceRefresh: true);
-      }
-    });
+    if (!_hasInitializedDependencies) {
+      _followService = context.read<UserFollowService>();
+      _authProvider = Provider.of<AuthProvider>(context);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      // 监听关注状态变化
+      _followStatusSubscription =
+          _followService.followStatusStream.listen((userId) {
+        if (_mounted) {
+          // 关注状态变化时重新加载数据
+          _refreshCurrentTab(forceRefresh: true);
+        }
+      });
+      // 只加载当前选中标签页的数据
+      _loadInitialData();
+    }
+  }
+
+  @override
+  void dispose() {
+    _mounted = false;
+    _followStatusSubscription?.cancel();
+    _tabController.removeListener(_onTabChanged);
+    _tabController.dispose();
+    super.dispose();
   }
 
   // 标签切换监听器
@@ -81,15 +105,6 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
     } else if (currentTab == 1 && !_followersLoaded && !_isLoadingFollowers) {
       _loadFollowers();
     }
-  }
-
-  @override
-  void dispose() {
-    _mounted = false;
-    _followStatusSubscription?.cancel();
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    super.dispose();
   }
 
   // 初始化加载当前选中标签的数据
@@ -122,9 +137,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
     });
 
     try {
-      final followService = context.read<UserFollowService>();
       // 使用普通加载方法，优先使用缓存
-      final data = await followService.getFollowing(widget.userId);
+      final data = await _followService.getFollowing(widget.userId);
 
       if (_mounted) {
         setState(() {
@@ -154,9 +168,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
     });
 
     try {
-      final followService = context.read<UserFollowService>();
       // 使用普通加载方法，优先使用缓存
-      final data = await followService.getFollowers(widget.userId);
+      final data = await _followService.getFollowers(widget.userId);
 
       if (_mounted) {
         setState(() {
@@ -217,8 +230,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
     });
 
     try {
-      final followService = context.read<UserFollowService>();
-      final data = await followService.refreshFollowing(widget.userId);
+      final data = await _followService.refreshFollowing(widget.userId);
       _lastFollowingsRefresh = now;
 
       if (_mounted) {
@@ -309,6 +321,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
               ),
       ),
       body: ResponsiveFollowsLayout(
+        currentUser: _authProvider.currentUser,
         tabController: _tabController,
         followings: _followings,
         followers: _followers,

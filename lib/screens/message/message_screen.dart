@@ -27,7 +27,7 @@ class MessageScreen extends StatefulWidget {
 
 class _MessageScreenState extends State<MessageScreen>
     with SnackBarNotifierMixin {
-  bool _isLoading = true; // 是否正在加载数据
+  bool _isLoading = false; // 是否正在加载数据
   bool _allMessagesRead = false; // 是否所有消息都已读
 
   // 存储按类型分组的消息列表
@@ -40,6 +40,7 @@ class _MessageScreenState extends State<MessageScreen>
   // 当前在详情面板中显示的消息
   Message? _selectedMessage;
   late final MessageService _messageService;
+  bool _hasInitializedDependencies = false;
 
   // 存储 ExpansionTile 的展开状态 (key: typeKey, value: isExpanded)
   final Map<String, bool> _expansionState = {};
@@ -47,19 +48,22 @@ class _MessageScreenState extends State<MessageScreen>
   @override
   void initState() {
     super.initState();
-
-    _loadGroupedMessages(); // 初始化时加载消息
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _messageService = context.read<MessageService>();
+    if (!_hasInitializedDependencies) {
+      _messageService = context.read<MessageService>();
+      _hasInitializedDependencies = false;
+    }
+    if (_hasInitializedDependencies) {
+      _loadGroupedMessages(); // 初始化时加载消息
+    }
   }
 
   @override
   void dispose() {
-    _messageService.dispose(); // 清理消息流监听器
     super.dispose();
   }
 

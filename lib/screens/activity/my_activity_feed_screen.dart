@@ -6,12 +6,14 @@ import 'package:flutter/services.dart'; // For HapticFeedback
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -57,6 +59,11 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   final Duration _minUiRefreshInterval =
       const Duration(seconds: 3); // Shorter interval for UI feedback
   Timer? _refreshDebounceTimer;
+  bool _hasInitializedDependencies = false;
+  bool _isInitialized = false;
+  late String _currentUserId;
+  late final UserActivityService _activityService;
+  late final AuthProvider _authProvider;
 
   // === Lifecycle Methods ===
   @override
@@ -64,9 +71,29 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     super.initState();
     _refreshAnimationController = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
-    _fetchActivities(isInitialLoad: true); // Fetch data on init
     _scrollController
         .addListener(_scrollListener); // Add scroll listener for pagination
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _activityService = context.read<UserActivityService>();
+      _authProvider = Provider.of<AuthProvider>(context);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies && !_isInitialized) {
+      _fetchActivities(isInitialLoad: !_isInitialized); // Fetch data on init
+      _currentUserId = widget.userId;
+      _isInitialized = true;
+    }
+    if (_hasInitializedDependencies && _isInitialized) {
+      if (_currentUserId != widget.userId) {
+        _fetchActivities(isRefresh: true);
+        _currentUserId = widget.userId;
+      }
+    }
   }
 
   @override
@@ -102,9 +129,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     }
 
     try {
-      final activityService = context.read<UserActivityService>();
       // Fetch activities for the specific user, without type filtering
-      final result = await activityService.getUserActivities(
+      final result = await _activityService.getUserActivities(
         widget.userId,
         page: _currentPage,
         limit: 20, // Standard page size
@@ -158,9 +184,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     });
 
     try {
-      final activityService = context.read<UserActivityService>();
       // Fetch next page of activities for the specific user
-      final result = await activityService.getUserActivities(
+      final result = await _activityService.getUserActivities(
         widget.userId,
         page: nextPage,
         limit: 20,
@@ -317,8 +342,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final activityService = context.read<UserActivityService>();
-          final success = await activityService.deleteActivity(activityId);
+          final success = await _activityService.deleteActivity(activityId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove from list and update pagination
@@ -350,8 +374,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     // Note: Optimistic UI update (incrementing like count, changing icon state)
     // should ideally happen within the ActivityCard itself for immediate feedback.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.likeActivity(activityId);
+      await _activityService.likeActivity(activityId);
       // Optional: If service doesn't return updated activity, you might need
       // to manually update the state here or trigger a refresh for the specific item.
     } catch (e) {
@@ -364,8 +387,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   Future<void> _handleUnlikeActivity(String activityId) async {
     // Similar to like, optimistic update ideally in Card.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.unlikeActivity(activityId);
+      await _activityService.unlikeActivity(activityId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
       // Trigger UI rollback.
@@ -376,9 +398,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
     try {
-      final activityService = context.read<UserActivityService>();
       final comment =
-          await activityService.commentOnActivity(activityId, content);
+          await _activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // The new comment object is returned. The ActivityCard should handle
@@ -406,9 +427,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final activityService = context.read<UserActivityService>();
           final success =
-              await activityService.deleteComment(activityId, commentId);
+              await _activityService.deleteComment(activityId, commentId);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
             // Notify ActivityCard to remove the comment from its state.
@@ -429,8 +449,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   Future<void> _handleLikeComment(String activityId, String commentId) async {
     // Optimistic update ideally within the Comment widget.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.likeComment(activityId, commentId);
+      await _activityService.likeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
       // Trigger rollback in Comment widget.
@@ -441,8 +460,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
     // Optimistic update ideally within the Comment widget.
     try {
-      final activityService = context.read<UserActivityService>();
-      await activityService.unlikeComment(activityId, commentId);
+      await _activityService.unlikeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
       // Trigger rollback in Comment widget.
@@ -465,6 +483,16 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Builds the main content of the screen.
   Widget _buildBody() {
+    if (!_authProvider.isLoggedIn) {
+      return LoginPromptWidget();
+    }
+    if (widget.userId != _authProvider.currentUserId) {
+      return CustomErrorWidget(
+        errorMessage: "不要偷窥其他人的动态啊？？",
+        retryText: "返回上一页",
+        onRetry: () => NavigationUtils.pop(context),
+      );
+    }
     // --- 1. Initial Loading State ---
     if (_isLoading && _activities.isEmpty) {
       return LoadingWidget.fullScreen(message: "正在加载动态...");
@@ -490,21 +518,18 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             // Key ensures widget rebuilds when crucial state like collapse mode changes
             key: ValueKey('my_feed_${widget.userId}_${_collapseMode.index}'),
             activities: _activities,
-            // Pass loading states accurately
+            currentUser: _authProvider.currentUser,
             isLoading: _isLoading &&
                 _activities.isEmpty, // Only show full feed loading if empty
             isLoadingMore: _isLoadingMore,
-            // Pass error only if list is empty for feed's internal handling
             error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
             collapseMode: _collapseMode, // Current collapse mode
             useAlternatingLayout: _useAlternatingLayout, // Current layout mode
-            scrollController: _scrollController, // Pass the scroll controller
-            // --- Callbacks ---
+            scrollController: _scrollController, // Pass the scroll controller-
             onActivityTap: _navigateToActivityDetail,
             onRefresh: _refreshData, // For pull-to-refresh
             onLoadMore:
                 _loadMoreActivities, // For triggering load more internally
-            // --- Interaction Callbacks ---
             onDeleteActivity: _handleDeleteActivity,
             onLikeActivity: _handleLikeActivity,
             onUnlikeActivity: _handleUnlikeActivity,

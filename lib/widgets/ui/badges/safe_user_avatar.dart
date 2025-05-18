@@ -1,39 +1,27 @@
 // lib/widgets/ui/badge/safe_user_avatar.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/routes/app_routes.dart'; // 假设路径正确
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 假设路径正确
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../image/safe_cached_image.dart'; // 假设路径正确
+import '../image/safe_cached_image.dart';
 
-/// 安全的用户头像组件
-///
-/// 显示用户头像，并可在左上角叠加管理员标识。
 class SafeUserAvatar extends StatelessWidget {
-  /// 用于导航到用户个人资料页的ID。
   final String? userId;
-  /// 头像图片的URL。
   final String? avatarUrl;
-  /// 用户名，用于在没有头像URL时生成占位符。
   final String? username;
-  /// 头像的半径。
   final double radius;
-  /// 是否启用点击头像导航到用户资料页的功能。
   final bool enableNavigation;
-  /// 自定义的点击头像回调。
   final VoidCallback? onTap;
-  /// 当没有 `avatarUrl` 时，显示的自定义占位Widget。
-  final Widget? placeholder;
-  /// 头像的边框颜色。
+  final Widget? placeholder; // 自定义占位符 Widget (当 avatarUrl 为空时)
   final Color? borderColor;
-  /// 头像的边框宽度。
   final double? borderWidth;
-  /// 头像组件整体的背景色（例如，在没有图片或图片透明时显示）。
-  final Color? backgroundColor;
+  final Color? backgroundColor; // 头像组件整体背景色，也用于 SafeCachedImage 的占位符背景
 
-  /// 是否为普通管理员。
   final bool isAdmin;
-  /// 是否为超级管理员（优先于isAdmin显示）。
   final bool isSuperAdmin;
+
+  final int? memCacheWidth; // 内存缓存宽度 (物理像素)
+  final int? memCacheHeight; // 内存缓存高度 (物理像素)
 
   const SafeUserAvatar({
     super.key,
@@ -46,9 +34,11 @@ class SafeUserAvatar extends StatelessWidget {
     this.placeholder,
     this.borderColor,
     this.borderWidth,
-    this.backgroundColor,
+    this.backgroundColor, // 接收 backgroundColor
     this.isAdmin = false,
     this.isSuperAdmin = false,
+    this.memCacheWidth,
+    this.memCacheHeight,
   });
 
   void _navigateToProfile(BuildContext context) {
@@ -63,62 +53,82 @@ class SafeUserAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double size = radius * 2;
-    // 调整挂件相关尺寸
+    final double size = radius * 2; // 头像的直径
+
+    // --- 徽章相关尺寸计算 ---
     final double badgeContainerHorizontalPadding = radius * 0.15;
     final double badgeContainerVerticalPadding = radius * 0.08;
     final double badgeIconSize = radius * 0.45;
     final double badgeFontSize = radius * 0.35;
     final double badgeIconTextSpacing = radius * 0.08;
-    // 挂件的偏移量
-    final double badgeOffsetHorizontal = radius * -0.2;
-    final double badgeOffsetVertical = radius * -0.25;
+    final double badgeOffsetHorizontal = radius * -0.2; // 徽章相对于左上角的水平偏移
+    final double badgeOffsetVertical = radius * -0.25; // 徽章相对于左上角的垂直偏移
 
+    // --- 构建头像核心内容 (SafeCachedImage 或占位符) ---
     Widget avatarCore;
     if (avatarUrl != null && avatarUrl!.isNotEmpty) {
+      // 计算传递给 SafeCachedImage 的 memCacheWidth 和 memCacheHeight
+      int? finalMemCacheWidth = memCacheWidth;
+      int? finalMemCacheHeight = memCacheHeight;
+
+      if (finalMemCacheWidth == null && finalMemCacheHeight == null) {
+        // 如果外部未指定缓存尺寸，则根据头像的实际显示尺寸 (size) 和设备像素比计算
+        final dpr = MediaQuery.of(context).devicePixelRatio;
+        final physicalSize = (size * dpr).round();
+        finalMemCacheWidth = physicalSize;
+        finalMemCacheHeight = physicalSize; // 头像通常是方形的
+      }
+
       avatarCore = SafeCachedImage(
         imageUrl: avatarUrl!,
-        width: size,
+        width: size, // SafeCachedImage 的显示尺寸
         height: size,
         fit: BoxFit.cover,
-        borderRadius: BorderRadius.circular(radius),
+        memCacheWidth: finalMemCacheWidth, // 传递计算好的缓存宽度
+        memCacheHeight: finalMemCacheHeight, // 传递计算好的缓存高度
+        backgroundColor: backgroundColor,
       );
     } else {
+      // 没有头像 URL，显示占位符
       final String displayChar =
-      (username?.isNotEmpty == true) ? username![0].toUpperCase() : '?';
+          (username?.isNotEmpty == true) ? username![0].toUpperCase() : '?';
       avatarCore = SizedBox(
         width: size,
         height: size,
         child: Center(
-          child: placeholder ??
+          child: placeholder ?? // 优先使用外部传入的 placeholder
               Text(
                 displayChar,
                 style: TextStyle(
-                  fontSize: radius * 0.9,
+                  fontSize: radius * 0.9, // 根据半径调整字体大小
                   fontWeight: FontWeight.bold,
-                  color: Colors.grey.shade700,
+                  color: Colors.grey.shade700, // 默认占位符文本颜色
                 ),
               ),
         ),
       );
     }
 
+    // --- 使用 Container 添加背景色、边框，并用 ClipOval 裁剪成圆形 ---
     Widget avatarWithBackgroundAndClip = Container(
       width: size,
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: backgroundColor ?? Colors.grey.shade200,
+        // 如果有头像URL且加载成功，这个背景色会被图片覆盖；
+        // 如果没有头像URL，或者图片加载失败/透明，这个背景色会显示出来。
+        color: backgroundColor ?? Colors.grey.shade200, // 默认背景色
         border: borderColor != null && borderWidth != null
             ? Border.all(color: borderColor!, width: borderWidth!)
             : null,
       ),
       child: ClipOval(
+        // 确保内容（图片或占位符）被裁剪成圆形
         child: avatarCore,
       ),
     );
 
-    // --- 构建更明确的管理员标识 ---
+    // --- 构建管理员/超级管理员徽章 ---
     Widget? adminBadgeWidget;
     if (isSuperAdmin || isAdmin) {
       String badgeText;
@@ -128,10 +138,11 @@ class SafeUserAvatar extends StatelessWidget {
 
       if (isSuperAdmin) {
         badgeText = "超管";
-        badgeIcon = Icons.workspace_premium_rounded; // 例如：皇冠
-        badgeBackgroundColor = Colors.amber[700]!;
+        badgeIcon = Icons.workspace_premium_rounded; // 例如：皇冠或认证图标
+        badgeBackgroundColor = Colors.amber[700]!; // 超管用更醒目的颜色
         badgeForegroundColor = Colors.white;
-      } else { // isAdmin
+      } else {
+        // isAdmin
         badgeText = "管理";
         badgeIcon = Icons.shield_outlined; // 例如：盾牌
         badgeBackgroundColor = Colors.blue[600]!;
@@ -139,25 +150,23 @@ class SafeUserAvatar extends StatelessWidget {
       }
 
       adminBadgeWidget = Container(
-        // 容器大小会由内部 Row 和 Padding 决定，这里可以不显式设置宽高
-        // width: badgeContainerWidth,
-        // height: badgeContainerHeight,
         padding: EdgeInsets.symmetric(
             horizontal: badgeContainerHorizontalPadding,
             vertical: badgeContainerVerticalPadding),
         decoration: BoxDecoration(
-          color: badgeBackgroundColor.withSafeOpacity(0.95), // 背景更实一点
-          borderRadius: BorderRadius.circular(radius * 0.3), // 圆角标签
+          color: badgeBackgroundColor.withSafeOpacity(0.95), // 背景色，可以带一点透明
+          borderRadius: BorderRadius.circular(radius * 0.3), // 徽章的圆角
           boxShadow: [
+            // 给徽章一点阴影，增加立体感
             BoxShadow(
               color: Colors.black.withSafeOpacity(0.25),
               blurRadius: 2,
-              offset: Offset(0, 1),
+              offset: const Offset(0, 1),
             )
           ],
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min, // 重要：让Row包裹内容
+          mainAxisSize: MainAxisSize.min, // 让 Row 包裹其内容物
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
@@ -166,54 +175,53 @@ class SafeUserAvatar extends StatelessWidget {
               color: badgeForegroundColor,
               size: badgeIconSize,
             ),
-            SizedBox(width: badgeIconTextSpacing),
+            SizedBox(width: badgeIconTextSpacing), // 图标和文字之间的间距
             Text(
               badgeText,
               style: TextStyle(
                 color: badgeForegroundColor,
                 fontWeight: FontWeight.bold,
                 fontSize: badgeFontSize,
-                letterSpacing: 0.5, // 可选：增加一点字母间距
+                letterSpacing: 0.5,
               ),
             ),
           ],
         ),
       );
     }
-    // --- 结束构建 ---
 
+    // --- 使用 Stack 组合头像和徽章 ---
     Widget avatarStack = Stack(
-      clipBehavior: Clip.none,
-      alignment: Alignment.center,
+      clipBehavior: Clip.none, // 允许徽章超出头像边界显示
+      alignment: Alignment.center, // 头像居中
       children: [
-        avatarWithBackgroundAndClip,
+        avatarWithBackgroundAndClip, // 基础头像 (已包含背景和裁剪)
         if (adminBadgeWidget != null)
           Positioned(
+            // 根据计算的偏移量定位徽章
+            // top 和 left 是相对于 Stack 中心点的头像左上角而言的
+            // 如果希望徽章在右下角，可以调整为 bottom 和 right
             top: badgeOffsetVertical,
             left: badgeOffsetHorizontal,
-            // 如果希望挂件宽度不影响其基于左侧的定位，可以考虑用 Transform.translate
-            // child: Transform.translate(
-            //   offset: Offset(badgeOffsetHorizontal, badgeOffsetVertical),
-            //   child: adminBadgeWidget,
-            // ),
             child: adminBadgeWidget,
           ),
       ],
     );
 
+    // --- 添加点击交互 ---
     if (onTap != null || (enableNavigation && userId != null)) {
       return MouseRegion(
         cursor: SystemMouseCursors.click,
         child: GestureDetector(
-          onTap: onTap ??
-              (enableNavigation
-                  ? () => _navigateToProfile(context)
-                  : null),
+          onTap: onTap ?? // 优先使用外部传入的 onTap
+              (enableNavigation // 其次判断是否启用导航
+                  ? () => _navigateToProfile(context) // 执行导航
+                  : null), // 如果不启用导航且没有 onTap，则不可点击
           child: avatarStack,
         ),
       );
     }
 
-    return avatarStack;
+    return avatarStack; // 如果不可点击，直接返回 Stack
   }
 }

@@ -28,26 +28,22 @@ class GameCollectionSection extends StatefulWidget {
 }
 
 class _GameCollectionSectionState extends State<GameCollectionSection> {
-  // *** 在 State 中保存计数 ***
   late int _wantToPlayCount;
   late int _playingCount;
   late int _playedCount;
   late int _totalCollections;
-  // 保存评分，虽然不在这个组件显示，但 game 对象可能变化
   late double _rating;
   late int _ratingCount;
 
   @override
   void initState() {
     super.initState();
-    // *** 初始化 State 中的计数值 ***
     _updateCountsFromWidget();
   }
 
   @override
   void didUpdateWidget(GameCollectionSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // *** 如果父级传入的 game 对象变了 (ID 变了或者统计数据变了)，更新 State ***
     if (widget.game != oldWidget.game) {
       // 只有在外部 game 对象确实变化时才用 setState 更新内部状态
       // 避免按钮回调触发的 setState 和这里的 setState 冲突

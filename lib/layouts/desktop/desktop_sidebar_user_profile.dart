@@ -110,6 +110,8 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                               username: user.username,
                               radius: 50,
                               enableNavigation: false,
+                              memCacheWidth: cacheSize,
+                              memCacheHeight: cacheSize,
                             )
                           : _fallbackAvatar(user.username),
                     ),
@@ -169,7 +171,8 @@ class DesktopSidebarUserProfile extends StatelessWidget {
       height: 40,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withSafeOpacity(0.2), // Background color for the circle
+        color: Colors.white
+            .withSafeOpacity(0.2), // Background color for the circle
       ),
       child: Center(
         // Center the text within the container

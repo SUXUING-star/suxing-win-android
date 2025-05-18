@@ -5,7 +5,7 @@ import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart
 import 'package:suxingchahui/screens/message/message_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/screens/search/search_post_screen.dart';
-import 'package:suxingchahui/screens/web/webview_screen.dart';
+import 'package:suxingchahui/screens/webview/webview_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/screens/home/home_screen.dart';
 import 'package:suxingchahui/screens/common/notfound_screen.dart';
@@ -100,12 +100,10 @@ class AppRoutes {
             // 获取标签索引
             final int tabIndex = (settings.arguments
                 as Map<String, dynamic>)['tab_index'] as int;
-            print("AppRoutes: 将设置主页面标签索引为: $tabIndex");
 
             // 返回主页面并在下一帧设置标签索引
             return MaterialPageRoute(builder: (context) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                print("AppRoutes: 主页面构建完成，现在设置标签索引: $tabIndex");
                 NavigationUtils.navigateToHome(context, tabIndex: tabIndex);
               });
               return HomeScreen();
@@ -114,7 +112,6 @@ class AppRoutes {
         }
 
         // 默认行为，无参数时直接返回主页面
-        print("AppRoutes: 返回默认主页面");
         return MaterialPageRoute(builder: (_) => HomeScreen());
       case about:
         return MaterialPageRoute(builder: (_) => AboutScreen());
@@ -168,15 +165,14 @@ class AppRoutes {
           ),
         );
       case gamesList:
-      // *** 修改这里以接收参数 ***
+        // *** 修改这里以接收参数 ***
         final arguments = settings.arguments;
         String? selectedTag;
         if (arguments is String) {
           selectedTag = arguments;
-        } else {
-
-        }
-        return MaterialPageRoute(builder: (_) => GamesListScreen(selectedTag: selectedTag));
+        } else {}
+        return MaterialPageRoute(
+            builder: (_) => GamesListScreen(selectedTag: selectedTag));
       case hotGames:
         return MaterialPageRoute(builder: (_) => HotGamesScreen());
       case latestGames:
@@ -204,7 +200,7 @@ class AppRoutes {
         return MaterialPageRoute(builder: (_) => AddGameScreen());
       case editGame:
         final arguments = settings.arguments;
-        if (arguments is! Game) {
+        if (arguments is! String) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
               paramName: '游戏数据',
@@ -212,9 +208,9 @@ class AppRoutes {
             ),
           );
         }
-        final Game game = arguments;
+        final String gameId = arguments;
         return MaterialPageRoute(
-          builder: (_) => EditGameScreen(game: game),
+          builder: (_) => EditGameScreen(gameId: gameId),
         );
       case checkin:
         return MaterialPageRoute(builder: (_) => CheckInScreen());

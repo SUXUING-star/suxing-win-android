@@ -31,6 +31,8 @@ class _HomeHotGamesState extends State<HomeHotGames> {
   bool _isLoading = false;
   String? _errorMessage;
   bool _isInitialLoading = true; // 控制动画
+  bool _hasInit = false;
+  late final GameService _gameService;
 
   // 用于自动滚动的最新游戏列表缓存
   List<Game>? _latestGamesForAutoScroll; // 这个也需要更新
@@ -42,9 +44,19 @@ class _HomeHotGamesState extends State<HomeHotGames> {
   @override
   void initState() {
     super.initState();
-    print("HomeHotGames initState triggered (Key: ${widget.key})"); // Debug log
-    _fetchData(); // initState 获取数据
-    _startAutoScroll();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _gameService = context.read<GameService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _fetchData(); // initState 获取数据
+      _startAutoScroll();
+    }
   }
 
   @override
@@ -58,10 +70,8 @@ class _HomeHotGamesState extends State<HomeHotGames> {
   Future<void> _fetchData() async {
     if (!mounted) return;
     if (_isLoading) {
-      print("HomeHotGames _fetchData called while loading, ignoring.");
       return;
     }
-    print("HomeHotGames _fetchData called");
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -70,11 +80,10 @@ class _HomeHotGamesState extends State<HomeHotGames> {
 
     try {
       // *** 核心：调用 Service 的 Stream 方法，并用 .first 获取 Future<List<Game>> ***
-      final gameService = context.read<GameService>();
-      final games = await gameService.getHotGames();
+      final games = await _gameService.getHotGames();
 
       if (mounted) {
-        if (games.isNotEmpty){
+        if (games.isNotEmpty) {
           setState(() {
             _cachedGames = games;
             _latestGamesForAutoScroll = games; // 更新给自动滚动
@@ -83,22 +92,22 @@ class _HomeHotGamesState extends State<HomeHotGames> {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 if (mounted && _pageController.hasClients) {
                   _pageController.jumpToPage(0);
-                  setState(() { _currentPage = 0; });
+                  setState(() {
+                    _currentPage = 0;
+                  });
                 }
               });
             }
           });
-        }else{
+        } else {
           _errorMessage = "加载发生错误";
           setState(() {
-            _isLoading= true;
+            _isLoading = true;
             _isInitialLoading = true;
           });
         }
-
       }
-    } catch (error, stackTrace) {
-      print("HomeHotGames _fetchData error: $error\n$stackTrace");
+    } catch (error) {
       if (mounted) {
         setState(() {
           _errorMessage = '加载热门游戏失败'; // 简化错误信息
@@ -120,25 +129,34 @@ class _HomeHotGamesState extends State<HomeHotGames> {
   void _startAutoScroll() {
     _timer?.cancel();
     _timer = Timer.periodic(Duration(seconds: 5), (timer) async {
-      if (!mounted) { timer.cancel(); return; }
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
       if (!_pageController.hasClients ||
           _latestGamesForAutoScroll == null || // 使用这个变量
-          _latestGamesForAutoScroll!.isEmpty) { return; }
+          _latestGamesForAutoScroll!.isEmpty) {
+        return;
+      }
 
       final currentPage = (_pageController.page ?? 0).round();
       if (!context.mounted) return;
 
       final cardsPerPage = _getCardsPerPage(context);
-      final totalPages = _getTotalPages(cardsPerPage, _latestGamesForAutoScroll!); // 使用这个变量
+      final totalPages =
+          _getTotalPages(cardsPerPage, _latestGamesForAutoScroll!); // 使用这个变量
       if (totalPages <= 1) return;
 
       if (currentPage >= totalPages - 1) {
-        _pageController.animateToPage(0, duration: Duration(milliseconds: 800), curve: Curves.easeInOut);
+        _pageController.animateToPage(0,
+            duration: Duration(milliseconds: 800), curve: Curves.easeInOut);
       } else {
-        _pageController.nextPage(duration: Duration(milliseconds: 800), curve: Curves.easeInOut);
+        _pageController.nextPage(
+            duration: Duration(milliseconds: 800), curve: Curves.easeInOut);
       }
     });
   }
+
   int _getCardsPerPage(BuildContext context) {
     if (!context.mounted) return 2;
     double screenWidth = MediaQuery.of(context).size.width;
@@ -146,6 +164,7 @@ class _HomeHotGamesState extends State<HomeHotGames> {
     int cardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
     return cardsPerPage < 1 ? 1 : cardsPerPage;
   }
+
   int _getTotalPages(int cardsPerPage, List<Game> games) {
     if (games.isEmpty || cardsPerPage <= 0) return 0;
     return (games.length / cardsPerPage).ceil();
@@ -156,7 +175,8 @@ class _HomeHotGamesState extends State<HomeHotGames> {
     // 移除 StreamBuilder，使用内部状态构建 UI
 
     // 1. 加载状态
-    if (_isLoading && _cachedGames == null) { // 首次加载时显示
+    if (_isLoading && _cachedGames == null) {
+      // 首次加载时显示
       return SizedBox(
         height: containerHeight + 80,
         child: LoadingWidget.inline(message: "正在加载热门游戏..."),
@@ -164,15 +184,15 @@ class _HomeHotGamesState extends State<HomeHotGames> {
     }
 
     // 2. 错误状态
-    if (_errorMessage != null && _cachedGames == null) { // 错误且无数据显示错误
+    if (_errorMessage != null && _cachedGames == null) {
+      // 错误且无数据显示错误
       return SizedBox(
         height: containerHeight + 80,
         child: FadeInSlideUpItem(
             child: InlineErrorWidget(
-              errorMessage: _errorMessage!,
-              onRetry: _fetchData,
-            )
-        ),
+          errorMessage: _errorMessage!,
+          onRetry: _fetchData,
+        )),
       );
     }
 
@@ -197,7 +217,8 @@ class _HomeHotGamesState extends State<HomeHotGames> {
     final totalPages = _getTotalPages(cardsPerPage, games);
 
     // --- UI 构建逻辑基本不变，使用 games 和 _isInitialLoading ---
-    return Stack( // 用 Stack 可以在列表上层显示 Loading 指示器
+    return Stack(
+      // 用 Stack 可以在列表上层显示 Loading 指示器
       children: [
         _buildSection(
           title: '热门游戏',
@@ -226,12 +247,15 @@ class _HomeHotGamesState extends State<HomeHotGames> {
                           if (!context.mounted) return SizedBox.shrink();
                           double availableWidth = constraints.maxWidth;
                           int actualCardsPerPage =
-                          (availableWidth / (cardWidth + cardMargin)).floor();
+                              (availableWidth / (cardWidth + cardMargin))
+                                  .floor();
                           actualCardsPerPage =
-                          actualCardsPerPage < 1 ? 1 : actualCardsPerPage;
+                              actualCardsPerPage < 1 ? 1 : actualCardsPerPage;
 
                           List<Widget> cardWidgets = [];
-                          for (int index = 0; index < actualCardsPerPage; index++) {
+                          for (int index = 0;
+                              index < actualCardsPerPage;
+                              index++) {
                             final gameIndex = startIndex + index;
                             if (gameIndex >= games.length) {
                               break;
@@ -255,7 +279,12 @@ class _HomeHotGamesState extends State<HomeHotGames> {
                             }
                           }
                           // 如果卡片数量不足一页，可以添加占位符或调整对齐
-                          return Center( child: Wrap(spacing: cardMargin, runSpacing: cardMargin, alignment: WrapAlignment.center, children: cardWidgets));
+                          return Center(
+                              child: Wrap(
+                                  spacing: cardMargin,
+                                  runSpacing: cardMargin,
+                                  alignment: WrapAlignment.center,
+                                  children: cardWidgets));
                         },
                       ),
                     );
@@ -271,9 +300,7 @@ class _HomeHotGamesState extends State<HomeHotGames> {
           Positioned.fill(
               child: Container(
                   color: Colors.black.withSafeOpacity(0.1),
-                  child: Center(child: LoadingWidget.inline(size: 30))
-              )
-          ),
+                  child: Center(child: LoadingWidget.inline(size: 30)))),
       ],
     );
   }
@@ -292,15 +319,20 @@ class _HomeHotGamesState extends State<HomeHotGames> {
               icon: Icons.arrow_back_ios_new,
               onPressed: (_isLoading || _currentPage <= 0) // 加载中或在第一页禁用
                   ? null
-                  : () => _pageController.previousPage(duration: Duration(milliseconds: 800), curve: Curves.easeInOut),
+                  : () => _pageController.previousPage(
+                      duration: Duration(milliseconds: 800),
+                      curve: Curves.easeInOut),
               buttonSize: buttonSize,
               iconSize: iconSize,
             ),
             _buildNavigationButton(
               icon: Icons.arrow_forward_ios,
-              onPressed: (_isLoading || _currentPage >= totalPages - 1) // 加载中或在最后一页禁用
-                  ? null
-                  : () => _pageController.nextPage(duration: Duration(milliseconds: 800), curve: Curves.easeInOut),
+              onPressed:
+                  (_isLoading || _currentPage >= totalPages - 1) // 加载中或在最后一页禁用
+                      ? null
+                      : () => _pageController.nextPage(
+                          duration: Duration(milliseconds: 800),
+                          curve: Curves.easeInOut),
               buttonSize: buttonSize,
               iconSize: iconSize,
             ),
@@ -309,14 +341,16 @@ class _HomeHotGamesState extends State<HomeHotGames> {
       ),
     );
   }
+
   Widget _buildNavigationButton(
       {required IconData icon,
-        VoidCallback? onPressed,
-        required double buttonSize,
-        required double iconSize}) {
+      VoidCallback? onPressed,
+      required double buttonSize,
+      required double iconSize}) {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 4),
-      width: buttonSize, height: buttonSize,
+      width: buttonSize,
+      height: buttonSize,
       decoration: BoxDecoration(
         color: onPressed == null
             ? Colors.black.withSafeOpacity(0.1)
@@ -326,21 +360,22 @@ class _HomeHotGamesState extends State<HomeHotGames> {
       child: IconButton(
         padding: EdgeInsets.zero,
         alignment: Alignment.center,
-        icon: Icon(
-            icon,
-            color: onPressed == null ? Colors.white.withSafeOpacity(0.5) : Colors.white,
-            size: iconSize
-        ),
+        icon: Icon(icon,
+            color: onPressed == null
+                ? Colors.white.withSafeOpacity(0.5)
+                : Colors.white,
+            size: iconSize),
         onPressed: onPressed,
         splashRadius: buttonSize / 2,
         tooltip: icon == Icons.arrow_back_ios_new ? '上一页' : '下一页',
       ),
     );
   }
+
   Widget _buildSection(
       {required String title,
-        required Widget child,
-        required VoidCallback onMorePressed}) {
+      required Widget child,
+      required VoidCallback onMorePressed}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -348,11 +383,29 @@ class _HomeHotGamesState extends State<HomeHotGames> {
           padding: EdgeInsets.symmetric(vertical: 8),
           child: Row(
             children: [
-              Container( width: 6, height: 22, decoration: BoxDecoration( color: Theme.of(context).primaryColor, borderRadius: BorderRadius.circular(3))),
+              Container(
+                  width: 6,
+                  height: 22,
+                  decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor,
+                      borderRadius: BorderRadius.circular(3))),
               SizedBox(width: 12),
-              Text(title, style: TextStyle( fontSize: 20, fontWeight: FontWeight.w700, color: Colors.grey[900])),
+              Text(title,
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.grey[900])),
               Spacer(),
-              InkWell( borderRadius: BorderRadius.circular(8), onTap: onMorePressed, child: Padding( padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4), child: Row(children: [ Text('更多'), SizedBox(width: 4), Icon(Icons.arrow_forward_ios, size: 14) ]))),
+              InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: onMorePressed,
+                  child: Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      child: Row(children: [
+                        Text('更多'),
+                        SizedBox(width: 4),
+                        Icon(Icons.arrow_forward_ios, size: 14)
+                      ]))),
             ],
           ),
         ),

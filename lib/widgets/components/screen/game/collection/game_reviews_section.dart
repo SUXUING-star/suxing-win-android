@@ -5,7 +5,9 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/game/game_review.dart'; // 使用这个模型
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -18,13 +20,18 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class GameReviewSection extends StatefulWidget {
   final Game game;
-  const GameReviewSection({super.key, required this.game});
+  final User? currentUser;
+  const GameReviewSection({
+    super.key,
+    required this.game,
+    required this.currentUser,
+  });
   @override
   GameReviewSectionState createState() => GameReviewSectionState();
 }
 
 class GameReviewSectionState extends State<GameReviewSection> {
-  List<GameReview> _entries = []; // *** 修改变量名 ***
+  List<GameReview> _entries = [];
   bool _isLoading = true;
   String? _error;
   int _page = 1;
@@ -32,11 +39,24 @@ class GameReviewSectionState extends State<GameReviewSection> {
   bool _hasMoreEntries = true; // *** 修改变量名 ***
   bool _isProcessingPageOne = false;
   int _loadReviewsCallCount = 0;
+  bool _hasInit = false;
+  late final GameCollectionService _collectionService;
 
   @override
   void initState() {
     super.initState();
-    _loadReviews(isInitialLoad: true);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _collectionService = context.read<GameCollectionService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _loadReviews(isInitialLoad: true);
+    }
   }
 
   @override
@@ -84,7 +104,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
         return;
       }
     } else {
-      if (_isLoading || !_hasMoreEntries) return; // *** 修改变量名 ***
+      if (_isLoading || !_hasMoreEntries) return;
       if (mounted) {
         setState(() => _isLoading = true);
       } else {
@@ -98,10 +118,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
 
     try {
-      final collectionService = context.read<GameCollectionService>();
-      final List<GameReview> fetchedEntries =
-          await collectionService // *** 修改变量名 ***
-              .getGameReviews(widget.game.id, page: _page, limit: _pageSize);
+      final List<GameReview> fetchedEntries = await _collectionService
+          .getGameReviews(widget.game.id, page: _page, limit: _pageSize);
 
       if (!mounted) return;
 
@@ -291,15 +309,15 @@ class GameReviewSectionState extends State<GameReviewSection> {
     final String? reviewText = entry.review;
     final String status = entry.status;
     final String? notesText = entry.notes;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
+    final userInfoProvider = context.watch<UserInfoProvider>();
+    userInfoProvider.ensureUserInfoLoaded(userId);
+    final UserDataStatus userDataStatus =
+        userInfoProvider.getUserStatus(userId);
 
     String statusLabel;
     IconData statusIcon;
     Color statusColor;
-    // print(status);
-    // print(userId);
-    // print(updateTime);
-    // print("↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑");
     switch (status) {
       case GameCollectionStatus.wantToPlay:
         statusLabel = '想玩';
@@ -333,7 +351,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
             children: [
               Expanded(
                   child: UserInfoBadge(
-                      userId: userId, showFollowButton: false, mini: true)),
+                      userDataStatus: userDataStatus,
+                      currentUser: widget.currentUser,
+                      userId: userId,
+                      showFollowButton: false,
+                      mini: true)),
               const SizedBox(width: 8),
               Chip(
                 avatar: Icon(statusIcon, size: 16, color: statusColor),
@@ -384,7 +406,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                userId == authProvider.currentUserId
+                userId == widget.currentUser
                     ? "我做的笔记: $notesText"
                     : "笔记: $notesText", // 区分本人笔记
                 style: TextStyle(
@@ -393,19 +415,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
                     fontStyle: FontStyle.italic),
               ),
             ),
-          // if (status != 'played' &&
-          //     (reviewText == null || reviewText.isEmpty) &&
-          //     (notesText == null || notesText.isEmpty))
-          //   // Padding(
-          //   //   padding: const EdgeInsets.only(top: 8.0),
-          //   //   child: Text(
-          //   //     status == 'want_to_play' ? '(标记为想玩)' : '(标记为在玩)',
-          //   //     style: TextStyle(
-          //   //         fontSize: 12,
-          //   //         color: Colors.grey[500],
-          //   //         fontStyle: FontStyle.italic),
-          //   //   ),
-          //   // ),
         ],
       ),
     );

@@ -23,6 +23,7 @@ class _ToolManagementState extends State<ToolManagement>
   late Future<List<Tool>> _toolsFuture;
   bool _isProcessing = false; // 防止重复点击
   late final LinkToolService _linkToolService;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
@@ -32,8 +33,14 @@ class _ToolManagementState extends State<ToolManagement>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _linkToolService = context.read<LinkToolService>();
-    _loadTools();
+    if (!_hasInitializedDependencies) {
+      _linkToolService = context.read<LinkToolService>();
+      _hasInitializedDependencies = true;
+    }
+
+    if (_hasInitializedDependencies) {
+      _loadTools();
+    }
   }
 
   // --- 新增: 加载数据的方法 ---
@@ -187,9 +194,8 @@ class _ToolManagementState extends State<ToolManagement>
 
       if (result != null && mounted) {
         try {
-          final linkToolService = context.read<LinkToolService>();
           final updatedTool = Tool.fromJson(result); // 转换
-          await linkToolService.updateTool(updatedTool);
+          await _linkToolService.updateTool(updatedTool);
           _loadTools(forceRefresh: true); // 强制刷新
           showSnackbar(message: '工具更新成功', type: SnackbarType.success);
         } catch (e) {
@@ -223,8 +229,7 @@ class _ToolManagementState extends State<ToolManagement>
 
       if (confirmed == true && mounted) {
         try {
-          final linkToolService = context.read<LinkToolService>();
-          await linkToolService.deleteTool(tool.id);
+          await _linkToolService.deleteTool(tool.id);
           _loadTools(forceRefresh: true); // 强制刷新
           showSnackbar(message: '工具删除成功', type: SnackbarType.success);
         } catch (e) {

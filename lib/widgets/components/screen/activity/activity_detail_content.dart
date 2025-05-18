@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保 ActivityComment 也在此或单独导入
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -15,6 +17,8 @@ import 'sections/activity_comments_section.dart';
 class ActivityDetailContent extends StatelessWidget {
   // 保持 StatelessWidget，因为动画依赖 Key 触发
   final UserActivity activity;
+  final UserDataStatus userDataStatus;
+  final User? currentUser;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
   final ScrollController scrollController;
@@ -28,6 +32,8 @@ class ActivityDetailContent extends StatelessWidget {
   const ActivityDetailContent({
     super.key,
     required this.activity,
+    required this.userDataStatus,
+    required this.currentUser,
     required this.comments,
     required this.isLoadingComments,
     required this.scrollController,
@@ -54,6 +60,8 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay,
       slideOffset: slideOffset,
       child: ActivityInfoSection(
+        currentUser: currentUser,
+        userDataStatus: userDataStatus,
         activity: activity,
         onEditActivity: onEditActivity,
         onDeleteActivity: onDeleteActivity,
@@ -93,6 +101,8 @@ class ActivityDetailContent extends StatelessWidget {
       duration: duration,
       delay: delay,
       child: ActivityTargetSection(
+        userDataStatus: userDataStatus,
+        currentUser: currentUser,
         activity: activity,
         isDesktop: isDesktop,
         // 内部处理样式或在这里加 Wrapper
@@ -113,6 +123,7 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay,
       slideOffset: slideOffset,
       child: ActivityCommentsSection(
+        currentUser: currentUser,
         activityId: activity.id,
         comments: comments,
         isLoadingComments: isLoadingComments,

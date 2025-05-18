@@ -1,12 +1,14 @@
 // lib/widgets/components/screen/activity/hot_activities_full_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../stats/activity_stats_card.dart';
 import '../../stats/hot_activities_list.dart';
 
 class HotActivitiesFullPanel extends StatelessWidget {
   final List<UserActivity> hotActivities;
+  final User? currentUser;
   final Map<String, int> activityStats;
   final bool isLoading;
   final bool hasError;
@@ -19,6 +21,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
   const HotActivitiesFullPanel({
     super.key,
     required this.hotActivities,
+    required this.currentUser,
     required this.activityStats,
     required this.isLoading,
     required this.hasError,
@@ -84,6 +87,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
                     : hasError
                     ? Center(child: Text(errorMessage))
                     : HotActivitiesList(
+                  currentUser: currentUser,
                   hotActivities: hotActivities,
                   getActivityTypeName: getActivityTypeName,
                   getActivityTypeColor: getActivityTypeColor,

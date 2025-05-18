@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保导入模型
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/sections/check_in_history_expansion.dart';
@@ -14,6 +16,10 @@ class ActivityInfoSection extends StatelessWidget {
   /// 要显示的活动对象。
   final UserActivity activity;
 
+  final UserDataStatus userDataStatus;
+
+  final User? currentUser;
+
   /// 编辑活动的回调，会传递给 ActivityHeader。
   final VoidCallback? onEditActivity;
 
@@ -25,6 +31,8 @@ class ActivityInfoSection extends StatelessWidget {
 
   const ActivityInfoSection({
     super.key,
+    required this.currentUser,
+    required this.userDataStatus,
     required this.activity,
     this.onEditActivity,
     this.onDeleteActivity,
@@ -64,6 +72,8 @@ class ActivityInfoSection extends StatelessWidget {
           // --- 使用更新后的 ActivityHeader ---
           ActivityHeader(
             userId: activity.userId,
+            userDataStatus: userDataStatus,
+            currentUser: currentUser,
             createTime: activity.createTime,
             updateTime: activity.updateTime,
             isEdited: activity.isEdited,

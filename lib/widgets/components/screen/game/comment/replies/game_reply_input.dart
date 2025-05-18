@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../../ui/inputs/comment_input_field.dart'; // 使用修改后的输入框
 
 class GameReplyInput extends StatefulWidget {
@@ -38,17 +39,18 @@ class _GameReplyInputState extends State<GameReplyInput> {
       await widget.onSubmitReply(reply); // 调用外部提交逻辑
       // 成功后清除状态
       if (mounted) {
-        final service = Provider.of<InputStateService>(context, listen: false);
-        service.clearText(_slotName);
+        // 保持用途明确
+        InputStateService? inputStateService =
+            Provider.of<InputStateService>(context, listen: false);
+        inputStateService.clearText(_slotName);
+        inputStateService = null;
       }
       // 成功后也可以选择调用 onCancel 关闭输入框
       // widget.onCancel?.call();
     } catch (e) {
       // 提交失败，保留输入内容
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('回复失败: $e'), backgroundColor: Colors.red),
-        );
+        AppSnackBar.showError(context, '回复失败: $e');
       }
     }
   }

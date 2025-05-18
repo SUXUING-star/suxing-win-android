@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/post/post.dart';
 import 'post_card.dart'; // 确保导入 PostCard
 
 class PostGridView extends StatelessWidget {
   final List<Post> posts;
+  final User? currentUser;
   final ScrollController? scrollController;
   final bool isLoading; // 用于显示加载更多指示器
   final bool hasMoreData; // 是否还有更多数据可加载
@@ -20,13 +25,14 @@ class PostGridView extends StatelessWidget {
   const PostGridView({
     super.key,
     required this.posts,
+    required this.currentUser,
     this.scrollController,
     this.isLoading = false,
     this.hasMoreData = false,
     // this.onLoadMore,
     this.isDesktopLayout = true, // 桌面布局默认为 true? 检查默认值是否合适
     this.onDeleteAction, // 设为 required
-    required this.onEditAction,   // 设为 required
+    required this.onEditAction, // 设为 required
     required this.onToggleLockAction,
   });
 
@@ -48,6 +54,7 @@ class PostGridView extends StatelessWidget {
       // 桌面端的复杂逻辑可能需要父组件传入列数
     }
 
+    final userInfoProvider = context.watch<UserInfoProvider>();
 
     // 使用 MasonryGridView.count (瀑布流)
     return MasonryGridView.count(
@@ -63,7 +70,13 @@ class PostGridView extends StatelessWidget {
         if (index < posts.length) {
           // 显示帖子卡片
           final post = posts[index];
+          final userId = post.authorId.toString();
+          userInfoProvider.ensureUserInfoLoaded(userId);
+          final UserDataStatus userDataStatus =
+              userInfoProvider.getUserStatus(userId);
           return PostCard(
+            currentUser: currentUser,
+            userDataStatus: userDataStatus,
             post: post,
             isDesktopLayout: isDesktopLayout,
             // --- 将接收到的回调传递给 PostCard ---

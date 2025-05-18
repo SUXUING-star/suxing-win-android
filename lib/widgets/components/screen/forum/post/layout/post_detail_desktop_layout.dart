@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
@@ -10,12 +11,14 @@ import '../recent_global_replies.dart';
 
 class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;
+  final User? currentUser;
   final UserPostActions userActions;
   final String postId;
   final Function(Post, UserPostActions) onPostUpdated;
 
   const PostDetailDesktopLayout({
     super.key,
+    required this.currentUser,
     required this.post,
     required this.userActions,
     required this.postId,
@@ -51,6 +54,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     duration: primaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
                     child: PostContent(
+                      currentUser: currentUser,
                       userActions: userActions,
                       post: post,
                       onPostUpdated: onPostUpdated,
@@ -70,7 +74,11 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     key: ValueKey('recent_replies_desk_${post.id}'),
                     duration: secondaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
-                    child: RecentGlobalReplies(limit: 5, post: post),
+                    child: RecentGlobalReplies(
+                      limit: 5,
+                      post: post,
+                      currentUser: currentUser,
+                    ),
                   ),
                 ],
               ),
@@ -96,6 +104,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
                         (incrementDelay * rightDelayIndex++) +
                         incrementDelay,
                     child: PostReplyList(
+                      currentUser: currentUser,
                       postId: postId,
                       isScrollableInternally: true,
                     ),

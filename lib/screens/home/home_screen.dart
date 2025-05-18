@@ -1,5 +1,4 @@
 // lib/screens/home/home_screen.dart
-// *** 严格基于缓存变化刷新版本 ***
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
@@ -54,13 +53,25 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription? _latestGamesWatchSub;
   StreamSubscription? _hotPostsWatchSub;
   static const Duration _cacheDebounceDuration = Duration(milliseconds: 500);
+  bool _hasInit = false;
+  late final GameService _gameService;
+  late final ForumService _forumService;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
-    _subscribeToCacheChanges();
     // 初始加载由 VisibilityDetector 触发
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _gameService = context.read<GameService>();
+      _forumService = context.read<ForumService>(); // 安全获取
+      _hasInit = true;
+    }
   }
 
   @override
@@ -70,8 +81,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  // --- 修改：didChangeAppLifecycleState ---
-  // --- 完全移除自动刷新逻辑，只管理 _isVisible 状态 ---
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -79,45 +88,59 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     if (state == AppLifecycleState.resumed) {
       // App 恢复到前台
-    } else if (state == AppLifecycleState.paused) {}
+      _subscribeToCacheChanges();
+      if (!_isInitialized) {
+        _triggerInitialLoad();
+      } else {
+        final now = DateTime.now();
+        // 非首次可见，可能需要刷新数据以获取最新状态
+        if (_lastHomeScreenRefreshAttemptTime != null &&
+            now.difference(_lastHomeScreenRefreshAttemptTime!) <
+                _minHomeScreenRefreshInterval) {
+          _refreshData(needCheck: false);
+        }
+      }
+    } else if (state == AppLifecycleState.paused) {
+      _unsubscribeFromCacheChanges();
+    }
   }
 
-  // *** 订阅缓存变化 (保持不变) ***
+  // *** 订阅缓存变化  ***
   void _subscribeToCacheChanges() {
-    final gameService = context.read<GameService>();
-    final forumService = context.read<ForumService>(); // 安全获取
+    _unsubscribeFromCacheChanges();
     try {
-      _hotGamesWatchSub = gameService.hotGamesCacheChangeNotifier
+      _hotGamesWatchSub = _gameService.hotGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
-          .listen((event) => _handleCacheChange(HomeDataType.hotGames, event),
-              onError: (e) => print("Error watching hot games: $e"));
+          .listen((event) => _handleCacheChange(HomeDataType.hotGames, event));
 
-      _latestGamesWatchSub = gameService.latestGamesCacheChangeNotifier
+      _latestGamesWatchSub = _gameService.latestGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen(
-              (event) => _handleCacheChange(HomeDataType.latestGames, event),
-              onError: (e) => print("Error watching latest games: $e"));
+              (event) => _handleCacheChange(HomeDataType.latestGames, event));
 
-      _hotPostsWatchSub = forumService.hotPostsCacheChangeNotifier
+      _hotPostsWatchSub = _forumService.hotPostsCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
-          .listen((event) => _handleCacheChange(HomeDataType.hotPosts, event),
-              onError: (e) => print("Error watching hot posts: $e"));
-    } catch (e) {}
+          .listen((event) => _handleCacheChange(HomeDataType.hotPosts, event));
+    } catch (e) {
+      //
+    }
   }
 
-  // *** 取消订阅缓存变化 (保持不变) ***
+  // *** 取消订阅缓存变化  ***
   void _unsubscribeFromCacheChanges() {
     _hotGamesWatchSub?.cancel();
+    _hotGamesWatchSub = null; // 置空，好习惯
     _latestGamesWatchSub?.cancel();
+    _latestGamesWatchSub = null;
     _hotPostsWatchSub?.cancel();
+    _hotPostsWatchSub = null;
   }
 
-  // *** 修改：_handleCacheChange - 这是触发对应组件刷新的核心！ ***
+  // *** 这是触发对应组件刷新的核心！ ***
   void _handleCacheChange(HomeDataType type, BoxEvent event) {
     if (!mounted) {
       return;
     }
-    if (kDebugMode) {}
 
     // 只增加对应类型的计数器并 setState
     // 只有当对应缓存真的变了，才会走到这里，触发对应组件的刷新
@@ -136,7 +159,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  // *** 修改：_loadInitialData - 用于首次加载 ***
   void _loadInitialData() {
     if (!mounted) return;
     setState(() {
@@ -150,31 +172,32 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     });
   }
 
-  // *** 修改：_refreshData - 用于下拉刷新 ***
-  Future<void> _refreshData() async {
+  // *** 用于下拉刷新 ***
+  Future<void> _refreshData({bool needCheck = true}) async {
     // 1. 防止重复触发
     if (_isPerformingHomeScreenRefresh) {
-      // debugPrint("节流 (HomeScreen): 已经在下拉刷新中，忽略本次触发");
       return; // 直接返回 Future<void>
     }
 
     // 2. 检查时间间隔
     final now = DateTime.now();
-    if (_lastHomeScreenRefreshAttemptTime != null &&
-        now.difference(_lastHomeScreenRefreshAttemptTime!) <
-            _minHomeScreenRefreshInterval) {
-      final remainingSeconds = (_minHomeScreenRefreshInterval.inSeconds -
-          now.difference(_lastHomeScreenRefreshAttemptTime!).inSeconds);
-      // debugPrint("节流 (HomeScreen): 下拉刷新间隔太短，还需等待 $remainingSeconds 秒");
-      if (mounted) {
-        AppSnackBar.showInfo(
-          context,
-          '刷新太频繁啦，请 $remainingSeconds 秒后再试',
-          duration: const Duration(seconds: 2),
-        );
+    if (needCheck) {
+      if (_lastHomeScreenRefreshAttemptTime != null &&
+          now.difference(_lastHomeScreenRefreshAttemptTime!) <
+              _minHomeScreenRefreshInterval) {
+        final remainingSeconds = (_minHomeScreenRefreshInterval.inSeconds -
+            now.difference(_lastHomeScreenRefreshAttemptTime!).inSeconds);
+        // debugPrint("节流 (HomeScreen): 下拉刷新间隔太短，还需等待 $remainingSeconds 秒");
+        if (mounted) {
+          AppSnackBar.showInfo(
+            context,
+            '刷新太频繁啦，请 $remainingSeconds 秒后再试',
+            duration: const Duration(seconds: 2),
+          );
+        }
+        // 不需要手动控制 RefreshIndicator，直接 return 就会让它停止
+        return; // 时间不够，直接返回 Future<void>
       }
-      // 不需要手动控制 RefreshIndicator，直接 return 就会让它停止
-      return; // 时间不够，直接返回 Future<void>
     }
 
     // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
@@ -225,10 +248,50 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _hotPostsKeyCounter++;
   }
 
-  // *** 修改：_triggerInitialLoad - 触发首次加载 ***
+  // *** 触发首次加载 ***
   void _triggerInitialLoad() {
-    if (_isVisible && !_isInitialized && mounted) {
+    if (!_isInitialized && mounted) {
       _loadInitialData();
+    }
+  }
+
+  void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
+    if (!mounted) return; // 先检查 mounted
+    final wasVisible = _isVisible;
+    final currentlyVisible = visibilityInfo.visibleFraction > 0.1;
+    if (currentlyVisible != wasVisible) {
+      if (mounted) {
+        // 再次检查
+        setState(() {
+          _isVisible = currentlyVisible;
+        }); // 更新状态
+      } else {
+        return;
+      }
+
+      // 只有在首次变为可见时触发初始加载
+      if (_isVisible) {
+        // ---- 页面变为可见 ----
+        // 1. 重新订阅缓存变化
+        _subscribeToCacheChanges();
+
+        // 2. 处理加载逻辑
+        if (!_isInitialized) {
+          _triggerInitialLoad();
+        } else {
+          final now = DateTime.now();
+          // 非首次可见，可能需要刷新数据以获取最新状态
+          if (_lastHomeScreenRefreshAttemptTime != null &&
+              now.difference(_lastHomeScreenRefreshAttemptTime!) <
+                  _minHomeScreenRefreshInterval) {
+            _refreshData(needCheck: false);
+          }
+        }
+      } else {
+        // ---- 页面变为不可见 ----
+        // 1. 取消缓存监听
+        _unsubscribeFromCacheChanges();
+      }
     }
   }
 
@@ -237,27 +300,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     return VisibilityDetector(
       key: Key('home_screen_visibility'),
-      onVisibilityChanged: (visibilityInfo) {
-        if (!mounted) return; // 先检查 mounted
-        final wasVisible = _isVisible;
-        final currentlyVisible = visibilityInfo.visibleFraction > 0.1;
-
-        if (currentlyVisible != wasVisible) {
-          if (mounted) {
-            // 再次检查
-            setState(() {
-              _isVisible = currentlyVisible;
-            }); // 更新状态
-          } else {
-            return;
-          }
-
-          // 只有在首次变为可见时触发初始加载
-          if (_isVisible && !_isInitialized) {
-            _triggerInitialLoad();
-          }
-        }
-      },
+      onVisibilityChanged: _handleVisibilityChange,
       child: _buildContent(),
     );
   }

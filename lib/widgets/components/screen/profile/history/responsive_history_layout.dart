@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/history/responsive_history_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../utils/device/device_utils.dart';
 import 'history_game_card.dart';
 import 'history_game_grid_card.dart';
@@ -51,16 +52,7 @@ class ResponsiveHistoryLayout extends StatelessWidget {
   }
 
   Widget _buildLoadingView() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('正在加载浏览历史...', style: TextStyle(color: Colors.grey[600])),
-        ],
-      ),
-    );
+    return LoadingWidget.inline(message: '正在加载浏览历史...');
   }
 
   Widget _buildErrorView(String error) {
@@ -146,7 +138,8 @@ class ResponsiveHistoryLayout extends StatelessWidget {
         },
         child: ListView.builder(
           padding: EdgeInsets.all(16),
-          itemCount: historyItems.length + (isLoading && historyItems.isNotEmpty ? 1 : 0),
+          itemCount: historyItems.length +
+              (isLoading && historyItems.isNotEmpty ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == historyItems.length) {
               return Center(
@@ -162,7 +155,8 @@ class ResponsiveHistoryLayout extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 12.0),
               child: HistoryGameCard(
                 historyItem: historyItem,
-                onDeletePressed: () => onDeleteItem(historyItem['gameId']?.toString() ?? ''),
+                onDeletePressed: () =>
+                    onDeleteItem(historyItem['gameId']?.toString() ?? ''),
               ),
             );
           },
@@ -200,7 +194,8 @@ class ResponsiveHistoryLayout extends StatelessWidget {
             crossAxisSpacing: 16,
             mainAxisSpacing: 16,
           ),
-          itemCount: historyItems.length + (isLoading && historyItems.isNotEmpty ? 1 : 0),
+          itemCount: historyItems.length +
+              (isLoading && historyItems.isNotEmpty ? 1 : 0),
           itemBuilder: (context, index) {
             if (index == historyItems.length) {
               return Center(
@@ -214,7 +209,8 @@ class ResponsiveHistoryLayout extends StatelessWidget {
             final historyItem = historyItems[index];
             return HistoryGameGridCard(
               historyItem: historyItem,
-              onDeletePressed: () => onDeleteItem(historyItem['gameId']?.toString() ?? ''),
+              onDeletePressed: () =>
+                  onDeleteItem(historyItem['gameId']?.toString() ?? ''),
             );
           },
         ),

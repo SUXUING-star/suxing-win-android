@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/global_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -16,11 +19,13 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
   final Post post;
+  final User? currentUser;
 
   const RecentGlobalReplies({
     super.key,
     this.limit = 5,
     required this.post,
+    required this.currentUser,
   });
 
   @override
@@ -37,19 +42,32 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // 定义最小刷新间隔 (例如：3秒)
   static const Duration _minRefreshInterval = Duration(seconds: 15);
 
+  bool _hasInit = false;
+  late final ForumService _forumService;
+
   @override
   void initState() {
     super.initState();
     // 初始化时调用 Future 方法
-    _loadReplies();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInit) {
+      _forumService = context.read<ForumService>();
+      _hasInit = true;
+    }
+    if (_hasInit) {
+      _loadReplies();
+    }
   }
 
   // 封装加载逻辑，方便复用
   void _loadReplies() {
-    final forumService = context.read<ForumService>();
     // 注意这里直接赋值给 Future 变量，不需要 setState
     _repliesFuture =
-        forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
+        _forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
   }
 
   @override
@@ -83,9 +101,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
         _lastRefreshTime = now; // 更新上次刷新的时间
 
         // 调用实际的刷新方法
-        final forumService = context.read<ForumService>();
         _repliesFuture =
-            forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+            _forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
       });
     }
 
@@ -102,6 +119,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
   @override
   Widget build(BuildContext context) {
+    final userInfoProvider = context.watch<UserInfoProvider>();
+
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
@@ -162,7 +181,6 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
               // 2. 处理错误状态 (加载完成后)
               if (snapshot.hasError) {
-                print("Error loading replies: ${snapshot.error}"); // 打印错误方便调试
                 // 确保你的 InlineErrorWidget 存在并且签名匹配
                 return InlineErrorWidget(
                   // 或者叫 ErrorWidget，看你实际命名
@@ -188,8 +206,11 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                   padding: const EdgeInsets.all(16),
                   itemCount: replies.length,
                   separatorBuilder: (_, __) => const Divider(height: 16),
-                  itemBuilder: (context, index) =>
-                      _buildReplyItem(context, replies[index]),
+                  itemBuilder: (context, index) => _buildReplyItem(
+                    context,
+                    replies[index],
+                    userInfoProvider,
+                  ),
                 );
               }
 
@@ -205,7 +226,12 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   }
 
   // _buildReplyItem 方法保持不变
-  Widget _buildReplyItem(BuildContext context, GlobalReplyItem reply) {
+  Widget _buildReplyItem(BuildContext context, GlobalReplyItem reply,
+      UserInfoProvider userInfoProvider) {
+    final userId = reply.authorId;
+    userInfoProvider.ensureUserInfoLoaded(userId);
+    final UserDataStatus userDataStatus =
+        userInfoProvider.getUserStatus(userId);
     return Card(
       elevation: 0,
       color: Colors.grey[50],
@@ -229,8 +255,10 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   UserInfoBadge(
-                    userId: reply.authorId,
+                    userId: userId,
+                    userDataStatus: userDataStatus,
                     showFollowButton: false,
+                    currentUser: widget.currentUser,
                     mini: true,
                   ),
                   const SizedBox(width: 8),

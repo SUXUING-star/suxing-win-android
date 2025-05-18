@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/open/mobile/profile_post_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/post/post.dart';
@@ -148,6 +149,6 @@ class ProfilePostCard extends StatelessWidget {
   }
 
   String _formatDate(DateTime date) {
-    return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
+    return DateTimeFormatter.formatStandard(date);
   }
 }

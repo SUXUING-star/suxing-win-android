@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/comment/game_comments_section.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'dart:async';
 
 // *** 确保引入正确的 Service 和 Model ***
@@ -18,14 +19,19 @@ import '../../../../../../providers/auth/auth_provider.dart'; // 用户认证 Pr
 import '../../../../../../widgets/ui/buttons/login_prompt.dart'; // 登录提示按钮
 import '../../../../../../utils/navigation/navigation_utils.dart'; // 假设用于登录跳转
 
-class CommentsSection extends StatefulWidget {
+class GameCommentsSection extends StatefulWidget {
   final String gameId;
-  const CommentsSection({super.key, required this.gameId});
+  final User? currentUser;
+  const GameCommentsSection({
+    super.key,
+    required this.gameId,
+    required this.currentUser,
+  });
   @override
-  State<CommentsSection> createState() => _CommentsSectionState();
+  State<GameCommentsSection> createState() => _GameCommentsSectionState();
 }
 
-class _CommentsSectionState extends State<CommentsSection> {
+class _GameCommentsSectionState extends State<GameCommentsSection> {
   late Future<List<Comment>> _commentsFuture; // <<<--- 使用 Future
 
   // Loading 状态 (用于 UI 反馈，例如按钮禁用、显示菊花等)
@@ -34,24 +40,39 @@ class _CommentsSectionState extends State<CommentsSection> {
   final Set<String> _updatingCommentIds = {}; // 正在更新的评论 ID 集合
   // FutureBuilder 会处理主要的加载状态，不再需要 _isFetchingLatest
 
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+
   @override
   void initState() {
     super.initState();
-    _loadComments(); // 组件初始化时加载评论
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _commentsFuture = _gameService.fetchGameComments(widget.gameId);
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   // 加载/重新加载评论数据的方法
   void _loadComments() {
-    print("CommentsSection: Loading comments for game ${widget.gameId}");
-    // *** 调用修改后的 fetchGameComments ***
-    final gameService = context.read<GameService>();
-    _commentsFuture = gameService.fetchGameComments(widget.gameId);
+    _commentsFuture = _gameService.fetchGameComments(widget.gameId);
   }
 
   // --- 刷新回调函数 ---
   /// 触发重新加载评论列表的 Future
   void _refreshComments() {
-    print("CommentsSection: Refresh triggered for game ${widget.gameId}!");
     if (!mounted) return; // 确保组件还挂载着
     setState(() {
       // 创建一个新的 Future 实例，这会通知 FutureBuilder 重新执行 future
@@ -60,12 +81,10 @@ class _CommentsSectionState extends State<CommentsSection> {
   }
 
   @override
-  void didUpdateWidget(covariant CommentsSection oldWidget) {
+  void didUpdateWidget(covariant GameCommentsSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 如果 gameId 变了，需要重新加载评论
     if (widget.gameId != oldWidget.gameId) {
-      print(
-          "CommentsSection: gameId changed from ${oldWidget.gameId} to ${widget.gameId}. Reloading comments.");
       setState(() {
         // 重置所有与旧 gameId 相关的状态
         _isAddingComment = false;
@@ -84,11 +103,9 @@ class _CommentsSectionState extends State<CommentsSection> {
     if (content.isEmpty || !mounted) return;
     setState(() => _isAddingComment = true); // 开始 loading
     try {
-      final gameService = context.read<GameService>();
-      // 调用 Service (内部已处理 API 和缓存)
-      await gameService.addComment(widget.gameId, content);
+      await _gameService.addComment(widget.gameId, content);
       if (mounted) AppSnackBar.showSuccess(context, '成功发表评论'); // 成功提示
-      _refreshComments(); // <<<--- 成功后刷新列表
+      _refreshComments();
     } catch (e) {
       _handleError(e, '发表评论失败'); // 统一错误处理
     } finally {
@@ -102,8 +119,7 @@ class _CommentsSectionState extends State<CommentsSection> {
     if (content.isEmpty || !mounted) return;
     // 回复的 loading 状态可以在 CommentItem 内部处理，这里暂不设置全局 loading
     try {
-      final gameService = context.read<GameService>();
-      await gameService.addComment(widget.gameId, content, parentId: parentId);
+      await _gameService.addComment(widget.gameId, content, parentId: parentId);
       if (mounted) AppSnackBar.showSuccess(context, '回复已提交');
       _refreshComments(); // <<<--- 成功后刷新列表
     } catch (e) {
@@ -117,8 +133,7 @@ class _CommentsSectionState extends State<CommentsSection> {
     if (!mounted) return;
     setState(() => _updatingCommentIds.add(commentId)); // 添加到更新中的 ID 集合
     try {
-      final gameService = context.read<GameService>();
-      await gameService.updateComment(widget.gameId, commentId, newContent);
+      await _gameService.updateComment(widget.gameId, commentId, newContent);
       if (mounted) AppSnackBar.showSuccess(context, '评论已更新');
       _refreshComments(); // <<<--- 成功后刷新列表
     } catch (e) {
@@ -134,8 +149,7 @@ class _CommentsSectionState extends State<CommentsSection> {
     if (!mounted) return;
     setState(() => _deletingCommentIds.add(commentId)); // 添加到删除中的 ID 集合
     try {
-      final gameService = context.read<GameService>();
-      await gameService.deleteComment(widget.gameId, commentId);
+      await _gameService.deleteComment(widget.gameId, commentId);
       if (mounted) AppSnackBar.showSuccess(context, '评论已删除');
       _refreshComments(); // <<<--- 成功后刷新列表
     } catch (e) {
@@ -205,8 +219,6 @@ class _CommentsSectionState extends State<CommentsSection> {
   // --- Build Method ---
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
     return Opacity(
       // 最外层容器和样式
       opacity: 0.9,
@@ -251,7 +263,7 @@ class _CommentsSectionState extends State<CommentsSection> {
             SizedBox(height: 16),
 
             // --- 根据登录状态显示输入框或登录提示 ---
-            authProvider.isLoggedIn
+            widget.currentUser != null
                 ? Column(
                     // 已登录：显示输入框和评论列表
                     children: [
@@ -271,9 +283,6 @@ class _CommentsSectionState extends State<CommentsSection> {
                     // 未登录：显示登录提示
                     message: '登录后查看和发表评论',
                     buttonText: '去登录', // 修改按钮文字
-                    // 假设有登录页路由
-                    onLoginPressed: () =>
-                        NavigationUtils.pushNamed(context, '/login'),
                   ),
           ],
         ),
@@ -295,8 +304,6 @@ class _CommentsSectionState extends State<CommentsSection> {
 
         // 2. 处理错误状态
         if (snapshot.hasError) {
-          print(
-              "FutureBuilder Error for ${widget.gameId}: ${snapshot.error}\n${snapshot.stackTrace}");
           return Padding(
             // 加个 Padding 让错误提示不至于贴边
             padding: const EdgeInsets.symmetric(vertical: 32.0),
@@ -326,6 +333,7 @@ class _CommentsSectionState extends State<CommentsSection> {
         // 将 Action Handlers 和 Loading 状态传递给 CommentList
         return GameCommentList(
           key: ValueKey('comment_list_${widget.gameId}'), // 保证列表状态
+          currentUser: widget.currentUser,
           comments: commentsToDisplay,
           onUpdateComment: _handleUpdateComment, // 传递更新处理
           onDeleteComment: _handleDeleteComment, // 传递删除处理

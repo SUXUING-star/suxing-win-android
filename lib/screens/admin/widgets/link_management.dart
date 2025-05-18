@@ -23,6 +23,7 @@ class _LinkManagementState extends State<LinkManagement>
   // --- 结束修改 ---
 
   late final LinkToolService _linkToolService;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
@@ -32,8 +33,14 @@ class _LinkManagementState extends State<LinkManagement>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _linkToolService = context.read<LinkToolService>();
-    _loadLinks();
+    if (!_hasInitializedDependencies) {
+      _linkToolService = context.read<LinkToolService>();
+      _hasInitializedDependencies = true;
+    }
+
+    if (_hasInitializedDependencies) {
+      _loadLinks();
+    }
   }
 
   // --- 新增: 加载数据的方法 ---
@@ -217,9 +224,8 @@ class _LinkManagementState extends State<LinkManagement>
 
       if (result != null && mounted) {
         try {
-          final linkToolService = context.read<LinkToolService>();
           // 使用 Link.fromJson 将 Map 转换为 Link 对象
-          await linkToolService.updateLink(Link.fromJson(result));
+          await _linkToolService.updateLink(Link.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接更新成功', type: SnackbarType.success);
         } catch (e) {
@@ -257,8 +263,7 @@ class _LinkManagementState extends State<LinkManagement>
 
       if (confirmed == true && mounted) {
         try {
-          final linkToolService = context.read<LinkToolService>();
-          await linkToolService.deleteLink(link.id);
+          await _linkToolService.deleteLink(link.id);
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接删除成功', type: SnackbarType.success);
         } catch (e) {

@@ -1,6 +1,7 @@
 // lib/widgets/form/gameform/preview/game_preview_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -10,7 +11,7 @@ import 'game_preview_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class GamePreviewButton extends StatelessWidget {
-  // --- 参数保持不变 ---
+  final User? currentUser;
   final TextEditingController titleController;
   final TextEditingController summaryController;
   final TextEditingController descriptionController;
@@ -26,6 +27,7 @@ class GamePreviewButton extends StatelessWidget {
 
   const GamePreviewButton({
     super.key,
+    required this.currentUser,
     required this.titleController,
     required this.summaryController,
     required this.descriptionController,
@@ -56,16 +58,13 @@ class GamePreviewButton extends StatelessWidget {
         text.startsWith('https://music.163.com');
   }
 
-
-  void _handlePreview(BuildContext context){
-
-
+  void _handlePreview(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final currentUserId = authProvider.currentUserId;
 
     final bvid = bvidController!.text.isEmpty ? null : bvidController?.text;
-    final musicUrl = musicUrlController!.text.isEmpty ? null : musicUrlController?.text;
-
+    final musicUrl =
+        musicUrlController!.text.isEmpty ? null : musicUrlController?.text;
 
     final isValidMusic = bvid == null ? true : _validateBV(bvid);
     final isValidBV = musicUrl == null ? true : _validateMusic(musicUrl);
@@ -74,19 +73,22 @@ class GamePreviewButton extends StatelessWidget {
     print(isValidBV);
     print(isValidMusic);
 
-    if (!isValidMusic){
+    if (!isValidMusic) {
       return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");
     }
-    if (!isValidBV){
+    if (!isValidBV) {
       return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");
     }
     final previewGame = Game(
       id: existingGame?.id ?? mongo.ObjectId().oid,
       authorId: existingGame?.authorId ?? currentUserId ?? 'preview_mode',
       title: titleController.text.isEmpty ? "游戏标题预览" : titleController.text,
-      summary: summaryController.text.isEmpty ? "游戏简介预览" : summaryController.text,
-      description: descriptionController.text.isEmpty ? "游戏详细描述预览" : descriptionController.text,
-      category:  selectedCategory == null ? "生肉" : selectedCategory!,
+      summary:
+          summaryController.text.isEmpty ? "游戏简介预览" : summaryController.text,
+      description: descriptionController.text.isEmpty
+          ? "游戏详细描述预览"
+          : descriptionController.text,
+      category: selectedCategory == null ? "生肉" : selectedCategory!,
       coverImage: coverImageUrl ?? '',
       images: gameImages,
       tags: selectedTags,
@@ -103,10 +105,13 @@ class GamePreviewButton extends StatelessWidget {
       lastViewedAt: existingGame?.lastViewedAt,
     );
 
-    if (passValid){
+    if (passValid) {
       NavigationUtils.of(context).push(
         MaterialPageRoute(
-          builder: (context) => GamePreviewScreen(game: previewGame),
+          builder: (context) => GamePreviewScreen(
+            game: previewGame,
+            currentUser: currentUser,
+          ),
           fullscreenDialog: true,
         ),
       );
@@ -124,8 +129,6 @@ class GamePreviewButton extends StatelessWidget {
       onPressed: () {
         _handlePreview(context);
       },
-
-
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径
@@ -15,6 +16,10 @@ class MobileProfileHeader extends StatelessWidget {
   // 这两个回调由 EditableUserAvatar 内部处理后触发，父级 (ProfileScreen) 监听
   final Function(bool) onUploadStateChanged;
   final Function() onUploadSuccess;
+  final DailyProgressData? dailyProgressData;
+  final bool isLoadingExpData;
+  final String? expDataError;
+  final VoidCallback onRefreshExpData;
 
   const MobileProfileHeader({
     super.key,
@@ -23,6 +28,10 @@ class MobileProfileHeader extends StatelessWidget {
     required this.onLogout,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
+    required this.dailyProgressData,
+    required this.isLoadingExpData,
+    this.expDataError,
+    required this.onRefreshExpData,
   });
 
   @override
@@ -65,6 +74,10 @@ class MobileProfileHeader extends StatelessWidget {
                   currentUser: user,
                   size: badgeSize,
                   backgroundColor: Theme.of(context).primaryColor,
+                  dailyProgressData: dailyProgressData,
+                  isLoadingExpData: isLoadingExpData,
+                  expDataError: expDataError,
+                  onRefreshExpData: onRefreshExpData,
                   // isDesktop: false, // 移动端不需要 isDesktop 标志（除非 Badge 有差异化逻辑）
                 ),
               ),

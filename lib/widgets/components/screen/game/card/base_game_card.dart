@@ -1,8 +1,8 @@
 // 这是定制ui游戏卡片
 // lib/widgets/components/screen/game/card/base_game_card.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 需要 Provider 获取 AuthProvider
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider 判断权限
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 // 引入自定义菜单按钮
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
@@ -19,6 +19,7 @@ import 'game_collection_dialog.dart'; // 保留，用于显示收藏统计
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 class BaseGameCard extends StatelessWidget {
+  final User? currentUser;
   final Game game;
   final bool isGridItem;
   final bool adaptForPanels;
@@ -30,6 +31,7 @@ class BaseGameCard extends StatelessWidget {
 
   const BaseGameCard({
     super.key,
+    required this.currentUser,
     required this.game,
     this.isGridItem = true,
     this.adaptForPanels = false,
@@ -38,7 +40,6 @@ class BaseGameCard extends StatelessWidget {
     this.forceCompact = false,
     this.showCollectionStats = true,
     this.onDeleteAction,
-    //this.onEditAction,
   });
 
   @override
@@ -260,16 +261,15 @@ class BaseGameCard extends StatelessWidget {
   void _onCardTap(BuildContext context) {
     NavigationUtils.pushNamed(
       context,
-      '/game/detail',
+      AppRoutes.gameDetail,
       arguments: game,
     );
   }
 
   // --- !!! 构建右上角弹出菜单 !!! ---
   Widget _buildPopupMenu(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUser?.id;
-    final isAdmin = authProvider.currentUser?.isAdmin ?? false;
+    final currentUserId = currentUser?.id;
+    final isAdmin = currentUser?.isAdmin ?? false;
     final canModify = (game.authorId.toString() == currentUserId) || isAdmin;
     final hasDeleteAction = onDeleteAction != null;
 
@@ -279,7 +279,6 @@ class BaseGameCard extends StatelessWidget {
     }
 
     return StylishPopupMenuButton<String>(
-      // *** 使用新组件 ***
       icon: Icons.more_vert,
       iconSize: 20,
       triggerPadding: const EdgeInsets.all(4.0), // 使用 triggerPadding
@@ -292,9 +291,7 @@ class BaseGameCard extends StatelessWidget {
         // 删除选项
         if (hasDeleteAction) // 使用计算好的变量
           StylishMenuItemData(
-            // **提供数据**
             value: 'delete',
-            // **提供内容**
             child: AppText('删除', type: AppTextType.error), // 使用主题颜色
           ),
         // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData

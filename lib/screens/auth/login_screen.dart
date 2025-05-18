@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/account.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -34,14 +35,14 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false;
   String? _errorMessage;
 
-  // 账号缓存服务
-  late AccountCacheService _accountCache;
-  bool _isAccountCacheInitialized = false;
-
-  // --- 定义 slot 名称 ---
   static const String emailSlotName = 'login_email';
   static const String passwordSlotName = 'login_password';
-  // --------------------
+
+  // 账号缓存服务
+  late final AccountCacheService _accountCache;
+  late final AuthProvider _authProvider;
+
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
@@ -52,10 +53,13 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_isAccountCacheInitialized) {
+    if (!_hasInitializedDependencies) {
       // 避免重复获取和调用
       _accountCache = Provider.of<AccountCacheService>(context, listen: false);
-      _isAccountCacheInitialized = true;
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
       _checkSavedAccounts(); // _checkSavedAccounts 会用 _accountCache
     }
   }
@@ -98,19 +102,18 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- 修改：使用选择的账号自动登录，更新 InputStateService ---
+  // 使用选择的账号自动登录
   void _autoLoginWithAccount(SavedAccount account) {
     // 获取 InputStateService 并更新状态
     try {
-      final inputService =
+      InputStateService? inputService =
           Provider.of<InputStateService>(context, listen: false);
-      // 使用 getController().text = ... 来触发更新，这样 TextInputField 会自动刷新
       inputService.getController(emailSlotName).text = account.email;
       inputService.getController(passwordSlotName).text = account.password;
+      inputService = null;
       // 更新记住我状态（如果需要的话，或者保持当前选择）
       // setState(() { _rememberMe = true; });
     } catch (e) {
-      print("Error accessing InputStateService in _autoLoginWithAccount: $e");
       // 可以考虑显示一个错误提示
       AppSnackBar.showError(context, "无法自动填充账号信息");
       return; // 无法更新，直接返回
@@ -119,9 +122,8 @@ class _LoginScreenState extends State<LoginScreen> {
     // 触发登录
     _login();
   }
-  // --- 结束修改 ---
 
-  // --- 修改：登录操作，从 InputStateService 获取值，并在成功后清除状态 ---
+  // 登录操作
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -130,48 +132,21 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    // 获取 InputStateService
-    final InputStateService inputService;
-    try {
-      inputService = Provider.of<InputStateService>(context, listen: false);
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = '内部错误：无法访问输入状态服务。';
-      });
-      AppSnackBar.showError(context, _errorMessage!);
-      return;
-    }
-
+    InputStateService? inputService =
+        Provider.of<InputStateService>(context, listen: false);
     // 从 Service 获取值
     final email = inputService.getText(emailSlotName).trim();
 
     final password = inputService.getText(passwordSlotName).trim();
 
     try {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-      SavedAccount? savedAccount;
-      // 如果勾选了记住账号，保存登录信息
-      if (_rememberMe) {
-        final user = authProvider.currentUser;
-        savedAccount = SavedAccount(
-          email: email,
-          password: password, // 注意：这里保存的是用户输入的密码
-          username: user?.username,
-          avatarUrl: user?.avatar,
-          userId: user?.id,
-          level: user?.level,
-          experience: user?.experience,
-          lastLogin: DateTime.now(),
-        );
-      }
       // 委托authProvider传递
       // ui组件不需要管理添加和删除缓存
-      await authProvider.signIn(email, password, savedAccount);
+      await _authProvider.signIn(email, password, _rememberMe);
       // 登录成功后，清除输入状态
       inputService.clearText(emailSlotName);
       inputService.clearText(passwordSlotName);
+      inputService = null;
 
       await Future.delayed(Duration(milliseconds: 500)); // 稍微减少延迟
 
@@ -181,6 +156,7 @@ class _LoginScreenState extends State<LoginScreen> {
         AppSnackBar.showSuccess(context, successMessage);
       }
     } catch (e) {
+      inputService = null;
       if (mounted) {
         setState(() {
           _errorMessage = '登录失败：${e.toString()}';
@@ -191,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } finally {
+      inputService = null;
       // 确保无论成功失败，如果组件还在挂载，都结束 loading 状态
       if (mounted && _isLoading) {
         setState(() {
@@ -248,7 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildPassWordFormField() {
     return FormTextInputField(
       slotName: passwordSlotName, // <-- 使用 slotName
-      // controller: _passwordController, // <-- 移除 controller
       isEnabled: !_isLoading,
       obscureText: _obscurePassword,
       decoration: InputDecoration(
@@ -339,7 +315,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         const Spacer(),
                         FunctionalTextButton(
                             onPressed: () => NavigationUtils.pushNamed(
-                                context, '/forgot-password'),
+                                context, AppRoutes.forgotPassword),
                             label: '忘记密码?'),
                       ],
                     ),
@@ -349,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     delay: initialDelay + stagger * 4,
                     child: FunctionalButton(
                       onPressed:
-                          _isLoading ? () {} : _login, // 保持 loading 状态禁用逻辑
+                          _isLoading ? null : _login, // 保持 loading 状态禁用逻辑
                       label: '登录',
                       isLoading: _isLoading, // <-- 传递 isLoading 状态
                       isEnabled: !_isLoading, // 明确传递 isEnabled
@@ -359,8 +335,8 @@ class _LoginScreenState extends State<LoginScreen> {
                   FadeInSlideUpItem(
                     delay: initialDelay + stagger * 5,
                     child: FunctionalTextButton(
-                      onPressed: () =>
-                          NavigationUtils.pushNamed(context, '/register'),
+                      onPressed: () => NavigationUtils.pushNamed(
+                          context, AppRoutes.register),
                       label: '还没有账号？立即注册',
                     ),
                   ),

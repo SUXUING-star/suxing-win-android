@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
 import 'package:provider/provider.dart'; // 需要 Provider (虽然代码里没直接用，但 userService 可能内部依赖)
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 需要评论模型
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider (用于判断删除权限)
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心 UI 组件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 需要 Snackbar
 
 class ActivityCommentItem extends StatefulWidget {
   final ActivityComment comment;
+  final UserDataStatus userDataStatus;
+  final User? currentUser;
   final String activityId;
   final bool isAlternate;
   final VoidCallback? onLike;
@@ -18,6 +22,8 @@ class ActivityCommentItem extends StatefulWidget {
   const ActivityCommentItem({
     super.key,
     required this.comment,
+    required this.userDataStatus,
+    required this.currentUser,
     required this.activityId,
     this.isAlternate = false,
     this.onLike,
@@ -53,7 +59,8 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
   }
 
   // --- 点赞/取消点赞 (前端补偿 + 调用回调) ---
-  void _handleLike() { // 改为同步方法，异步由父级处理
+  void _handleLike() {
+    // 改为同步方法，异步由父级处理
     HapticFeedback.lightImpact();
     final originalLikedState = _comment.isLiked;
     final originalLikesCount = _comment.likesCount;
@@ -87,7 +94,8 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
   }
 
   // --- 处理删除 (调用回调) ---
-  void _handleDelete() { // 改为同步方法
+  void _handleDelete() {
+    // 改为同步方法
     // 直接调用父级回调，父级处理确认和 Service 调用
     widget.onCommentDeleted?.call();
     // if (widget.onCommentDeleted == null && mounted) {
@@ -117,12 +125,15 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
       return Row(
         // Row 包含 UserInfoBadge 和 Actions
         crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐
-        textDirection: widget.isAlternate ? TextDirection.rtl : TextDirection.ltr,
+        textDirection:
+            widget.isAlternate ? TextDirection.rtl : TextDirection.ltr,
         children: [
           // --- UserInfoBadge ---
           // 将 UserInfoBadge 放在 Expanded 里，允许名字过长时换行或省略
           Expanded(
             child: UserInfoBadge(
+              currentUser: widget.currentUser,
+              userDataStatus: widget.userDataStatus,
               userId: _comment.userId,
               showFollowButton: false,
               showLevel: true, // 评论区简化，不显示等级
@@ -137,7 +148,8 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
           // --- 时间文本 ---
           Text(
             timeAgo,
-            style: theme.textTheme.bodySmall?.copyWith(color: Colors.grey[600], fontSize: 11), // 调整样式
+            style: theme.textTheme.bodySmall
+                ?.copyWith(color: Colors.grey[600], fontSize: 11), // 调整样式
           ),
           const SizedBox(width: 4), // 时间和删除按钮间距
 
@@ -173,7 +185,9 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
     // --- 构建评论内容和点赞区域 ---
     Widget buildContentAndLikes() {
       return Column(
-        crossAxisAlignment: widget.isAlternate ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        crossAxisAlignment: widget.isAlternate
+            ? CrossAxisAlignment.end
+            : CrossAxisAlignment.start,
         children: [
           // 评论内容
           Text(
@@ -188,22 +202,29 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
             onTap: _handleLike,
             borderRadius: BorderRadius.circular(12), // 增大点击区域和圆角
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 增加 Padding
+              padding: const EdgeInsets.symmetric(
+                  horizontal: 8, vertical: 4), // 增加 Padding
               child: Row(
                 mainAxisSize: MainAxisSize.min, // 让 Row 包裹内容
                 children: [
                   Icon(
                     _comment.isLiked ? Icons.favorite : Icons.favorite_border,
                     size: 16,
-                    color: _comment.isLiked ? theme.colorScheme.error : Colors.grey.shade600,
+                    color: _comment.isLiked
+                        ? theme.colorScheme.error
+                        : Colors.grey.shade600,
                   ),
                   const SizedBox(width: 6), // 图标和数字间距增大
                   Text(
                     '${_comment.likesCount}',
                     style: theme.textTheme.bodySmall?.copyWith(
                       fontSize: 12, // 稍微增大字体
-                      fontWeight: _comment.isLiked ? FontWeight.bold : FontWeight.normal, // 点赞时加粗
-                      color: _comment.isLiked ? theme.colorScheme.error : Colors.grey.shade700, // 调整未点赞颜色
+                      fontWeight: _comment.isLiked
+                          ? FontWeight.bold
+                          : FontWeight.normal, // 点赞时加粗
+                      color: _comment.isLiked
+                          ? theme.colorScheme.error
+                          : Colors.grey.shade700, // 调整未点赞颜色
                     ),
                   ),
                 ],
@@ -218,11 +239,11 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16), // 增大评论间距
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10), // 调整内边距
-      // 可以加个背景色或边框，让评论更清晰
-      // decoration: BoxDecoration(
-      //   color: Colors.grey.shade50,
-      //   borderRadius: BorderRadius.circular(8),
-      // ),
+      //可以加个背景色或边框，让评论更清晰
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // 默认左对齐
         children: [

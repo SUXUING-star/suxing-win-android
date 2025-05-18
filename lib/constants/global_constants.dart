@@ -12,6 +12,7 @@ class GlobalConstants {
   static const String appName = '宿星茶会';
   static const String appNameAndroid = '$appName（安卓版）';
   static const String appNameWindows = '$appName（Windows）';
+  static const String appIcon = 'assets/images/icons/app_icon.jpg';
 
   static const List<Map<String, dynamic>> techStacks = [
     {

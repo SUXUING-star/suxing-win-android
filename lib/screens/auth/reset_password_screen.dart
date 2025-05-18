@@ -1,6 +1,7 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -32,6 +33,18 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
   bool _isLoading = false;
+  late final UserService _userService;
+
+  bool _hasInitializedDependencies = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _userService = context.read<UserService>();
+      _hasInitializedDependencies = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -50,8 +63,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     });
 
     try {
-      final userService = context.read<UserService>();
-      await userService.resetPassword(
+      await _userService.resetPassword(
         widget.email,
         _passwordController.text,
       );
@@ -160,13 +172,11 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       ),
       body: Stack(
         children: [
-
           if (_isLoading)
             FadeInItem(
               // 使用 FadeInItem
               child: LoadingWidget.fullScreen(message: '正在重置密码...'),
             ),
-
           Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(

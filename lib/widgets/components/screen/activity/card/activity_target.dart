@@ -2,18 +2,24 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class ActivityTarget extends StatelessWidget {
   final UserActivity activity;
+  final User? currentUser;
+  final UserDataStatus userDataStatus;
   final bool isAlternate;
   final double cardHeight;
 
   const ActivityTarget({
     super.key,
     required this.activity,
+    required this.currentUser,
+    required this.userDataStatus,
     this.isAlternate = false,
     this.cardHeight = 1.0,
   });
@@ -142,7 +148,9 @@ class ActivityTarget extends StatelessWidget {
         // --- 直接使用未修改的 UserInfoBadge ---
         child: UserInfoBadge(
           key: ValueKey('target_badge_$targetUserId'), // 给 Badge 一个 Key
+          currentUser: currentUser,
           userId: targetUserId, // 传递目标用户 ID
+          userDataStatus: userDataStatus,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
           mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini
@@ -164,7 +172,9 @@ class ActivityTarget extends StatelessWidget {
         alignment: isAlternate ? Alignment.centerRight : Alignment.centerLeft,
         child: UserInfoBadge(
           key: ValueKey('default_$userId'), // 给 Badge 一个 Key
+          currentUser: currentUser,
           userId: userId, // 传递目标用户 ID
+          userDataStatus: userDataStatus,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
           mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini

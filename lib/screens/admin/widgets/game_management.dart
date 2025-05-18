@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -37,6 +38,10 @@ class _GameManagementState extends State<GameManagement>
   final ScrollController _pendingScrollController = ScrollController();
   final ScrollController _rejectedScrollController = ScrollController();
 
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+  late final AuthProvider _authProvider;
+
   // "All Games" Tab 的 Future (暂时保持不变)
   late Future<List<Game>> _allGamesFuture;
 
@@ -46,9 +51,20 @@ class _GameManagementState extends State<GameManagement>
     _tabController = TabController(length: 3, vsync: this);
     _pendingScrollController.addListener(_onPendingScroll);
     _rejectedScrollController.addListener(_onRejectedScroll);
+  }
 
-    _allGamesFuture = _loadAllGames();
-    _loadInitialReviewQueueData();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadInitialReviewQueueData();
+      _allGamesFuture = _loadAllGames();
+    }
   }
 
   @override
@@ -107,8 +123,7 @@ class _GameManagementState extends State<GameManagement>
 
   Future<void> _fetchReviewQueuePage(int page) async {
     try {
-      final gameService = context.read<GameService>();
-      final result = await gameService.getAdminReviewQueueGamesWithInfo(
+      final result = await _gameService.getAdminReviewQueueGamesWithInfo(
         page: page,
         pageSize: 15,
       );
@@ -163,8 +178,7 @@ class _GameManagementState extends State<GameManagement>
 
   Future<List<Game>> _loadAllGames() async {
     try {
-      final gameService = context.read<GameService>();
-      final result = await gameService.getGamesPaginatedWithInfo(
+      final result = await _gameService.getGamesPaginatedWithInfo(
         page: 1,
         pageSize: 20,
         sortBy: 'createTime',
@@ -193,7 +207,6 @@ class _GameManagementState extends State<GameManagement>
   // === Actions (完整代码) ===
 
   Future<void> _handleDeleteGame(Game game, String gameTitle) async {
-    final gameService = context.read<GameService>();
     await CustomConfirmDialog.show(
         context: context,
         title: '确认删除',
@@ -204,7 +217,7 @@ class _GameManagementState extends State<GameManagement>
         iconColor: Colors.red,
         onConfirm: () async {
           try {
-            await gameService.deleteGame(game);
+            await _gameService.deleteGame(game);
             if (mounted) {
               AppSnackBar.showSuccess(context, '游戏已删除');
               _refreshAllGames(); // 刷新 All Games
@@ -220,7 +233,7 @@ class _GameManagementState extends State<GameManagement>
   Future<void> _handleEditGame(Game game) async {
     // 跳转到编辑页
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
-        arguments: game);
+        arguments: game.id);
     // 如果编辑成功返回 true
     if (result == true && mounted) {
       AppSnackBar.showSuccess(context, '游戏信息已更新');
@@ -292,8 +305,7 @@ class _GameManagementState extends State<GameManagement>
   Future<void> _reviewGameApiCall(
       Game game, String status, String comment) async {
     try {
-      final gameService = context.read<GameService>();
-      await gameService.reviewGame(game, status, comment);
+      await _gameService.reviewGame(game, status, comment);
       if (mounted) {
         AppSnackBar.showSuccess(
             context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');
@@ -349,6 +361,7 @@ class _GameManagementState extends State<GameManagement>
                       title: '游戏管理',
                       useScaffold: false,
                       games: snapshot.hasData ? snapshot.data! : [],
+                      currentUser: _authProvider.currentUser,
                       isLoading:
                           snapshot.connectionState == ConnectionState.waiting,
                       error:
@@ -455,6 +468,7 @@ class _GameManagementState extends State<GameManagement>
               CommonGameListScreen(
                 title: "", // title 不重要
                 useScaffold: false,
+                currentUser: _authProvider.currentUser,
                 games: games,
                 isLoading: false, // 外部处理
                 error: null, // 外部处理
@@ -477,16 +491,21 @@ class _GameManagementState extends State<GameManagement>
         ));
   }
 
+  Widget _buildGameCard(Game game) {
+    return BaseGameCard(
+      game: game,
+      currentUser: _authProvider.currentUser,
+      showTags: true, // 卡片上显示标签
+      maxTags: 1, // 示例，根据卡片大小调整
+    );
+  }
+
   // --- 卡片构建方法 (完整代码) ---
 
   Widget _buildGameCardWithAdminActions(Game game) {
     return Stack(
       children: [
-        BaseGameCard(
-          game: game,
-          showTags: true, // 卡片上显示标签
-          maxTags: 1, // 示例，根据卡片大小调整
-        ),
+        _buildGameCard(game),
         Positioned(
           top: 8,
           right: 8,
@@ -526,11 +545,7 @@ class _GameManagementState extends State<GameManagement>
   Widget _buildPendingGameCard(Game game) {
     return Stack(
       children: [
-        BaseGameCard(
-          game: game,
-          showTags: true, // 显示标签
-          maxTags: 1,
-        ),
+        _buildGameCard(game),
         Positioned(
           top: 8,
           left: 8,
@@ -587,11 +602,7 @@ class _GameManagementState extends State<GameManagement>
   Widget _buildRejectedGameCard(Game game) {
     return Stack(
       children: [
-        BaseGameCard(
-          game: game,
-          showTags: true, // 显示标签
-          maxTags: 1,
-        ),
+        _buildGameCard(game),
         Positioned(
           top: 8,
           left: 8,

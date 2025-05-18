@@ -11,18 +11,18 @@ import '../widget/today_checkin_list.dart'; // 指向 widget 目录
 
 class ResponsiveCheckInLayout extends StatelessWidget {
   // --- 接收的数据 ---
-  final CheckInStats checkInStats;    // 签到统计 (精简后)
-  final User currentUser;           // 当前用户信息 (包含等级经验)
+  final CheckInStats checkInStats; // 签到统计 (精简后)
+  final User currentUser; // 当前用户信息 (包含等级经验)
   final Map<String, dynamic>? monthlyData; // 月度日历数据
   final int selectedYear;
   final int selectedMonth;
-  final bool isCheckInLoading;      // 签到按钮加载状态
-  final bool hasCheckedToday;       // 今天是否已签到
+  final bool isCheckInLoading; // 签到按钮加载状态
+  final bool hasCheckedToday; // 今天是否已签到
   final AnimationController animationController; // 粒子效果控制器
   final Function(int, int) onChangeMonth; // 月份切换回调
-  final VoidCallback onCheckIn;           // 签到按钮回调
-  final int missedDays;              // 本月漏签天数
-  final int consecutiveMissedDays;   // 断签天数
+  final VoidCallback onCheckIn; // 签到按钮回调
+  final int missedDays; // 本月漏签天数
+  final int consecutiveMissedDays; // 断签天数
 
   const ResponsiveCheckInLayout({
     super.key,
@@ -71,10 +71,13 @@ class ResponsiveCheckInLayout extends StatelessWidget {
           // --- 左侧区域：日历 ---
           Expanded(
             flex: 3, // 日历区域占比较大
-            child: SingleChildScrollView( // 允许日历内容滚动（如果需要）
-              child: FadeInSlideUpItem( // 应用进入动画
+            child: SingleChildScrollView(
+              // 允许日历内容滚动（如果需要）
+              child: FadeInSlideUpItem(
+                // 应用进入动画
                 delay: initialDelay, // 左侧先入场
-                child: CalendarView( // 日历组件
+                child: CalendarView(
+                  // 日历组件
                   selectedYear: selectedYear,
                   selectedMonth: selectedMonth,
                   monthlyData: monthlyData,
@@ -91,7 +94,8 @@ class ResponsiveCheckInLayout extends StatelessWidget {
           // --- 右侧区域：信息面板 ---
           Expanded(
             flex: 2, // 信息面板区域占比较小
-            child: _buildRightPanel(context, initialDelay + stagger), // 构建右侧面板并传递动画延迟
+            child: _buildRightPanel(
+                context, initialDelay + stagger), // 构建右侧面板并传递动画延迟
           ),
           // --- 结束右侧区域 ---
         ],
@@ -107,17 +111,21 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     return Container(
       // 限制最大高度，防止在小屏幕上无限延伸
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height - kToolbarHeight - 16, // 减去 AppBar 和一些边距
+        maxHeight: MediaQuery.of(context).size.height -
+            kToolbarHeight -
+            16, // 减去 AppBar 和一些边距
       ),
-      child: SingleChildScrollView( // 允许右侧面板内容滚动
+      child: SingleChildScrollView(
+        // 允许右侧面板内容滚动
         child: Column(
           children: [
             // 1. 等级进度卡片
             FadeInSlideUpItem(
               delay: startDelay, // 使用传入的起始延迟
-              child: LevelProgressCard( // 等级进度组件
-                stats: checkInStats,       // 传递签到统计
-                currentUser: currentUser,  // **传递当前用户信息**
+              child: LevelProgressCard(
+                // 等级进度组件
+                stats: checkInStats, // 传递签到统计
+                currentUser: currentUser, // **传递当前用户信息**
                 isLoading: isCheckInLoading, // 传递签到按钮状态
                 hasCheckedToday: hasCheckedToday,
                 animationController: animationController,
@@ -138,7 +146,10 @@ class ResponsiveCheckInLayout extends StatelessWidget {
             // 3. 今日签到列表
             FadeInSlideUpItem(
               delay: startDelay + internalStagger * 2, // 再次错开
-              child: TodayCheckInList(maxHeight: 200), // 今日签到列表，限制最大高度
+              child: TodayCheckInList(
+                maxHeight: 200,
+                currentUser: currentUser,
+              ), // 今日签到列表，限制最大高度
             ),
             const SizedBox(height: 16),
 
@@ -159,7 +170,8 @@ class ResponsiveCheckInLayout extends StatelessWidget {
     const Duration initialDelay = Duration(milliseconds: 100);
     const Duration stagger = Duration(milliseconds: 100);
 
-    return SingleChildScrollView( // 整体可滚动
+    return SingleChildScrollView(
+      // 整体可滚动
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch, // 组件宽度撑满
@@ -190,7 +202,9 @@ class ResponsiveCheckInLayout extends StatelessWidget {
           // 3. 今日签到列表
           FadeInSlideUpItem(
             delay: initialDelay + stagger * 2,
-            child: TodayCheckInList(), // 不限制高度，让它自适应
+            child: TodayCheckInList(
+              currentUser: currentUser,
+            ), // 不限制高度，让它自适应
           ),
           const SizedBox(height: 16),
 
@@ -229,18 +243,21 @@ class ResponsiveCheckInLayout extends StatelessWidget {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 16.0), // 调整内边距
+        padding: const EdgeInsets.symmetric(
+            horizontal: 8.0, vertical: 16.0), // 调整内边距
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             // 累计签到
-            Expanded( // 使用 Expanded 确保均匀分布且文本可换行
+            Expanded(
+              // 使用 Expanded 确保均匀分布且文本可换行
               child: _buildStatItem(
                 context: context,
                 icon: Icons.calendar_today_outlined, // 换个图标
                 title: '累计签到',
                 value: '$totalCheckIns 天',
-                color: theme.textTheme.bodySmall?.color ?? Colors.grey.shade700, // 跟随文本颜色
+                color: theme.textTheme.bodySmall?.color ??
+                    Colors.grey.shade700, // 跟随文本颜色
               ),
             ),
             // 垂直分割线
@@ -252,7 +269,10 @@ class ResponsiveCheckInLayout extends StatelessWidget {
                 icon: Icons.local_fire_department_outlined, // 换个图标
                 title: '连续签到',
                 value: '$continuousDays 天',
-                color: continuousDays > 0 ? Colors.orange.shade700 : (theme.textTheme.bodySmall?.color ?? Colors.grey.shade700), // 连续签到用橙色
+                color: continuousDays > 0
+                    ? Colors.orange.shade700
+                    : (theme.textTheme.bodySmall?.color ??
+                        Colors.grey.shade700), // 连续签到用橙色
                 isBold: continuousDays > 0, // 连续签到时加粗
               ),
             ),

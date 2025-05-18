@@ -25,20 +25,32 @@ class _EditPostScreenState extends State<EditPostScreen>
   final List<PostTag> _availablePostTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _isLoading = true;
+  bool _hasInitializedDependencies = false;
   Post? _post;
+  late final ForumService _forumService;
 
   @override
   void initState() {
     super.initState();
-    _loadPostData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadPostData();
+    }
   }
 
   Future<void> _loadPostData() async {
     try {
       setState(() => _isLoading = true);
 
-      final forumService = context.read<ForumService>();
-      final post = await forumService.getPost(widget.postId);
+      final post = await _forumService.getPost(widget.postId);
       setState(() {
         _post = post;
         _isLoading = false;
@@ -53,9 +65,8 @@ class _EditPostScreenState extends State<EditPostScreen>
   Future<void> _submitEdit(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      final forumService = context.read<ForumService>();
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
-      await forumService.updatePost(
+      await _forumService.updatePost(
           _post!.id, data.title, data.content, postTags);
       showSnackbar(message: "编辑成功", type: SnackbarType.success);
       if (!mounted) return;

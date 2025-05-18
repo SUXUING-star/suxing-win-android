@@ -12,17 +12,11 @@ import '../../models/game/game.dart';
 import '../../services/main/game/game_service.dart';
 import '../../services/main/user/user_service.dart';
 
-// Providers
-import '../../providers/auth/auth_provider.dart';
-
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-// *** 导入 LoadingWidget ***
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
-// import '../../widgets/components/loading/loading_route_observer.dart'; // 已删除
 
 class SearchGameScreen extends StatefulWidget {
   const SearchGameScreen({super.key});
@@ -38,9 +32,13 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   String? _error;
   Timer? _debounceTimer;
 
-  // *** 新增：用于控制搜索的加载状态 ***
+  // 用于控制搜索的加载状态
   bool _isSearching = false;
   // 这个页面没有分页，所以不需要 _isLoadingMore
+
+  bool _hasInitializedDependencies = false;
+  late final UserService _userService;
+  late final GameService _gameService;
 
   // --- 生命周期方法 ---
   @override
@@ -51,11 +49,18 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_searchHistory.isEmpty && mounted) {
-        _loadSearchHistory(); // 历史加载不需要 LoadingWidget
-      }
-    });
+    if (!_hasInitializedDependencies) {
+      _userService = context.read<UserService>();
+      _gameService = context.read<GameService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_searchHistory.isEmpty && mounted) {
+          _loadSearchHistory(); // 历史加载不需要 LoadingWidget
+        }
+      });
+    }
   }
 
   @override
@@ -68,20 +73,18 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   // --- 搜索历史管理 (无加载状态控制) ---
   Future<void> _loadSearchHistory() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn || !mounted) {
+    if (!mounted) {
       return;
     }
     try {
-      final userService = context.read<UserService>();
-      final history = await userService.loadLocalSearchHistory();
+      final history = await _userService.loadLocalSearchHistory();
       if (!mounted) return;
       setState(() {
         _searchHistory = history;
         _error = null;
       });
     } catch (e) {
-      print("SearchGameScreen: Error loading search history: $e");
+      //print("SearchGameScreen: Error loading search history: $e");
       if (!mounted) return;
       // 仅在搜索框为空时显示历史错误
       if (_searchController.text.isEmpty) {
@@ -93,13 +96,13 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   }
 
   Future<void> _saveSearchHistory() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn || !mounted) return;
+    if (!mounted) return;
+    // 这个搜索记录不需要登录！！！！！！！！
+    // 完全本地共享
     try {
-      final userService = context.read<UserService>();
-      await userService.saveLocalSearchHistory(_searchHistory);
+      await _userService.saveLocalSearchHistory(_searchHistory);
     } catch (e) {
-      print("SearchGameScreen: Error saving search history: $e");
+      //print("SearchGameScreen: Error saving search history: $e");
     }
   }
 
@@ -158,8 +161,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        final gameService = context.read<GameService>();
-        final results = await gameService.searchGames(trimmedQuery);
+        final results = await _gameService.searchGames(trimmedQuery);
         if (!mounted) return;
 
         setState(() {
@@ -172,8 +174,8 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         if (results.isNotEmpty) {
           _addToHistory(trimmedQuery);
         }
-      } catch (e, s) {
-        print("SearchGameScreen: Search failed: $e\n$s");
+      } catch (e) {
+        // print("SearchGameScreen: Search failed: $e\n$s");
         if (!mounted) return;
         setState(() {
           _error = '搜索失败：$e'; // 设置错误信息
@@ -188,7 +190,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
       }
     });
   }
-  // --- 搜索逻辑结束 ---
 
   // --- 构建 UI ---
   @override
@@ -244,7 +245,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   Widget _buildBody() {
     // *** 1. 检查是否正在搜索 ***
     if (_isSearching) {
-      // print("SearchGameScreen: Displaying search LoadingWidget.");
       // 直接显示加载，因为游戏搜索结果通常是替换式的
       return LoadingWidget.fullScreen(
           message: '正在搜索游戏...'); // 或者 LoadingWidget.inline()
@@ -254,7 +254,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     if (_error != null) {
       // 根据搜索框是否为空判断是哪个错误
       if (_searchController.text.isNotEmpty) {
-        // print("SearchGameScreen: Displaying search error widget.");
         return InlineErrorWidget(
           errorMessage: _error!,
           onRetry: () {
@@ -288,10 +287,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   // --- _buildSearchHistory (保持不变) ---
   Widget _buildSearchHistory() {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) {
-      return LoginPromptWidget();
-    }
     if (_searchHistory.isEmpty) {
       return const EmptyStateWidget(
         message: '暂无搜索历史',

@@ -30,7 +30,9 @@ class GameDetailScreen extends StatefulWidget {
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
+  late final GameService _gameService;
   late AuthProvider _authProvider;
+  late String? _currentUser;
 
   Game? _game;
   GameCollectionItem? _collectionStatus;
@@ -40,13 +42,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   bool _isLoading = false;
   bool _isTogglingLike = false; // 新增：用于跟踪点赞操作的处理状态
   int _refreshCounter = 0;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
     super.initState();
-    _authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (widget.gameId != null) {
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (widget.gameId != null && _hasInitializedDependencies) {
       _isLoading = true;
+      // 第一次初始化赋值，之后走下面的流程
       _loadGameDetailsWithStatus(); // 原有的调用
     } else {
       // 处理 null gameId (保持不变，但确保 _isLoading 最后是 false)
@@ -64,7 +77,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void didUpdateWidget(GameDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.gameId != widget.gameId) {
+    if (_hasInitializedDependencies && oldWidget.gameId != widget.gameId) {
+      // 这是回调更新，第二次构建的情况
       setState(() {
         _game = null;
         _collectionStatus = null;
@@ -91,16 +105,20 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  // --- 新增: 尝试增加游戏浏览次数 ---
-  void _tryIncrementViewCount() {
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  // --- 尝试增加游戏浏览次数 ---
+  Future<void> _tryIncrementViewCount() async {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
             widget.gameId != null &&
             _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
             widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
         ) {
-      final gameService = context.read<GameService>();
-      gameService.incrementGameView(widget.gameId!).catchError((error) {});
+      await _gameService.incrementGameView(widget.gameId!);
     } else {
       // 打印跳过原因，方便调试
       //print(
@@ -124,8 +142,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     bool gameWasRemoved = false; // 新增标志位
 
     try {
-      final gameService = context.read<GameService>();
-      result = await gameService.getGameDetailsWithStatus(widget.gameId!);
+      result = await _gameService.getGameDetailsWithStatus(widget.gameId!);
     } catch (e) {
       if (!mounted) return;
       // 检查是否是 "not_found" 异常
@@ -190,7 +207,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             _navigationInfo = result.navigationInfo;
             _isLiked = result.isLiked;
             _error = null;
-            _tryIncrementViewCount();
           } else {
             // 加载/刷新失败，但游戏 *并未* 被移除
             if (_game == null) {
@@ -211,6 +227,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           _isTogglingLike = false;
           _refreshCounter++;
         });
+        await _tryIncrementViewCount();
       } else if (mounted && gameWasRemoved) {
         // 如果游戏被移除，我们不应该更新 _game 等状态
         // 只需确保 loading 状态结束
@@ -299,7 +316,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       totalCollections:
           (currentGame.totalCollections + (countDeltas['total'] ?? 0))
               .clamp(0, 1000000),
-      // *** 补偿评分相关字段 ***
       ratingCount: newRatingCount,
       totalRatingSum: newTotalRatingSum,
       rating: newAverageRating, // *** 使用前端计算的新平均分 ***
@@ -311,10 +327,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 确保使用 dialog 返回的最新 status (result.newStatus) 来缓存
-      final gameService = context.read<GameService>();
-      await gameService.cacheNewData(updatedGame, result.newStatus);
-      //print("GameDetailScreen (${widget.gameId}): Cache updated successfully before setState.");
-
+      await _gameService.cacheNewData(updatedGame, result.newStatus);
       // 6. 使用 setState 更新状态 (在缓存成功后)
       // 不再需要加延迟，await 已经保证了顺序
       if (mounted) {
@@ -325,13 +338,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           _refreshCounter++; // 强制子组件重建
         });
       }
-    } catch (cacheError) {}
+    } catch (cacheError) {
+      //
+    }
   }
 
   // *** 核心改动：处理点赞切换的回调函数 ***
   Future<void> _handleToggleLike() async {
     // 保持前置检查
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
+
     if (!_authProvider.isLoggedIn) {
       AppSnackBar.showWarning(context, '请先登录');
       NavigationUtils.pushNamed(context, AppRoutes.login);
@@ -344,8 +360,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 调用返回 Future<bool> 的 service 方法
-      final gameService = context.read<GameService>();
-      final newIsLikedStatus = await gameService.toggleLike(widget.gameId!);
+      final newIsLikedStatus = await _gameService.toggleLike(widget.gameId!);
 
       // *** 直接用返回结果更新状态 ***
       if (mounted) {
@@ -384,10 +399,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // 处理编辑按钮点击事件
-  void _handleEditPressed(BuildContext context, Game game) async {
+  void _handleEditPressed(BuildContext context, String gameId) async {
     //print("GameDetailScreen (${widget.gameId}): Edit button pressed.");
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
-        arguments: game);
+        arguments: gameId);
     if (result == true && mounted) {
       _refreshGameDetails(); // 强制刷新
     } else {}
@@ -468,7 +483,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               mini: true, // 统一使用 mini 尺寸，或根据需要调整
               tooltip: '编辑',
               icon: Icons.edit,
-              onPressed: () => _handleEditPressed(context, game),
+              onPressed: () => _handleEditPressed(context, game.id),
               backgroundColor: Colors.white, // 白色背景
               foregroundColor: Theme.of(context).primaryColor, // 主题色图标
             ),
@@ -528,10 +543,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           child: CustomScrollView(
             controller: mobileScrollController,
             reverse: false,
-
             key: ValueKey(
                 'game_detail_mobile_${widget.gameId}_$_refreshCounter'),
-
             slivers: [
               CustomSliverAppBar(
                 titleText: game.title,
@@ -586,6 +599,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final bool isPreview = isPending ? true : false;
     return GameDetailContent(
       game: game,
+      currentUser: _authProvider.currentUser,
       initialCollectionStatus: _collectionStatus,
       onCollectionChanged: _handleCollectionStateChangedInButton, // <--- 传递这个函数
       onNavigate: _handleNavigate,

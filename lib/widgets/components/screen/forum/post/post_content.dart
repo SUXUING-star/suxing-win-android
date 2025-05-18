@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/post/post.dart';
@@ -10,11 +14,13 @@ import 'post_interaction_buttons.dart';
 
 class PostContent extends StatefulWidget {
   final Post post;
+  final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
 
   const PostContent({
     super.key,
+    required this.currentUser,
     required this.userActions,
     required this.post,
     required this.onPostUpdated,
@@ -46,6 +52,8 @@ class _PostContentState extends State<PostContent> {
     final bool isDesktop = DeviceUtils.isDesktop ||
         DeviceUtils.isWeb ||
         DeviceUtils.isTablet(context);
+
+
 
     return Opacity(
       opacity: 0.9,
@@ -181,12 +189,19 @@ class _PostContentState extends State<PostContent> {
   }
 
   Widget _buildAuthorRow(BuildContext context, bool isDesktop) {
+    final userId = _post.authorId;
+    final userInfoProvider = context.watch<UserInfoProvider>();
+    userInfoProvider.ensureUserInfoLoaded(userId);
+    final UserDataStatus userDataStatus  =
+    userInfoProvider.getUserStatus(userId);
     return Row(
       children: [
         // 使用UserInfoBadge替换原有的用户信息显示
         Expanded(
           child: UserInfoBadge(
-            userId: _post.authorId,
+            currentUser: widget.currentUser,
+            userDataStatus: userDataStatus,
+            userId: userId,
             showFollowButton: false, // 不显示关注按钮
             mini: !isDesktop, // 根据是否是桌面版决定尺寸
             padding: EdgeInsets.zero,

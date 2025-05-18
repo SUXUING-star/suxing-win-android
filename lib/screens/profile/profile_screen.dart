@@ -2,8 +2,9 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/daily_progress.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -15,7 +16,6 @@ import 'package:suxingchahui/widgets/components/screen/profile/layout/models/pro
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/layout/mobile/mobile_profile_header.dart';
@@ -36,30 +36,113 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen>
-    with SnackBarNotifierMixin {
+    with WidgetsBindingObserver {
   String? _error;
   bool _isInitialized = false;
+  bool _hasInitializedDependencies = false;
   bool _isVisible = false;
   bool _isRefreshing = false;
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
   static const Duration _minRefreshInterval = Duration(minutes: 1);
   late final AuthProvider _authProvider;
+  late final UserService _userService;
+  String? _currentUserId;
+
+  DailyProgressData? _dailyProgressData;
+  bool _isLoadingExpData = false; // 初始为 false，可见时再改为 true 并加载
+  String? _expDataError;
+  bool _expDataLoadedOnce = false; // 标记经验数据是否至少成功加载过一次或尝试加载过
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _authProvider = Provider.of<AuthProvider>(context, listen: false);
+    if (!_hasInitializedDependencies) {
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _userService = Provider.of<UserService>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _currentUserId = _authProvider.currentUserId;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!mounted) return;
+
+    if (state == AppLifecycleState.resumed) {
+      if (_currentUserId != _authProvider.currentUserId) {
+        _currentUserId = _authProvider.currentUserId;
+      }
+    } else if (state == AppLifecycleState.paused) {
+      //
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  // **** 新增：加载每日经验进度数据的方法 ****
+  Future<void> _loadDailyExperienceProgress({bool forceRefresh = false}) async {
+    if (!mounted || !_authProvider.isLoggedIn) {
+      if (mounted) {
+        setState(() {
+          // 如果未登录，清空数据
+          _dailyProgressData = null;
+          _isLoadingExpData = false;
+          _expDataError = null;
+          _expDataLoadedOnce = false;
+        });
+      }
+      return;
+    }
+    // 如果正在加载且不是强制刷新，则返回
+    if (_isLoadingExpData && !forceRefresh) return;
+    // 如果已经加载过且没有错误，并且不是强制刷新，则不重复加载
+    if (_expDataLoadedOnce &&
+        _dailyProgressData != null &&
+        _expDataError == null &&
+        !forceRefresh) {
+      return;
+    }
+
+    if (mounted) {
+      setState(() {
+        _isLoadingExpData = true;
+        _expDataError = null;
+        if (forceRefresh) _dailyProgressData = null; // 强制刷新时清除旧数据，以便显示loading
+      });
+    }
+
+    try {
+      final data = await _userService.getDailyExperienceProgress();
+      if (mounted) {
+        setState(() {
+          _dailyProgressData = data;
+          _isLoadingExpData = false;
+          _expDataLoadedOnce = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _expDataError = "经验数据加载失败";
+          _isLoadingExpData = false;
+          _expDataLoadedOnce = true; // 标记尝试加载过
+        });
+      }
+    }
   }
 
   void _triggerInitialLoad() {
@@ -69,25 +152,30 @@ class _ProfileScreenState extends State<ProfileScreen>
           setState(() {
             _isInitialized = true;
           });
-          // 可选：调用 Provider 确保数据加载
-          // Provider.of<AuthProvider>(context, listen: false).ensureUserLoaded();
+          if (_authProvider.isLoggedIn && !_expDataLoadedOnce) {
+            // 如果已登录且经验数据从未加载过
+            _loadDailyExperienceProgress();
+          }
         }
       });
     }
   }
 
-  Future<void> _refreshProfile() async {
+  Future<void> _refreshProfile({bool needCheck = true}) async {
     if (_isRefreshing) return;
 
     final now = DateTime.now();
-    if (_lastRefreshTime != null &&
-        now.difference(_lastRefreshTime!) < _minRefreshInterval) {
-      final remaining = _minRefreshInterval - now.difference(_lastRefreshTime!);
-      final remainingSeconds = remaining.inSeconds + 1;
-      if (mounted) {
-        AppSnackBar.showInfo(context, '刷新太频繁，请 $remainingSeconds 秒后再试');
+    if (needCheck) {
+      if (_lastRefreshTime != null &&
+          now.difference(_lastRefreshTime!) < _minRefreshInterval) {
+        final remaining =
+            _minRefreshInterval - now.difference(_lastRefreshTime!);
+        final remainingSeconds = remaining.inSeconds + 1;
+        if (mounted) {
+          AppSnackBar.showInfo(context, '刷新太频繁，请 $remainingSeconds 秒后再试');
+        }
+        return;
       }
-      return;
     }
 
     if (!mounted) return;
@@ -96,6 +184,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _error = null;
           _isInitialized = true;
+          // 清理经验数据
+          _dailyProgressData = null;
+          _isLoadingExpData = false;
+          _expDataError = null;
+          _expDataLoadedOnce = false;
         });
       }
       return;
@@ -108,6 +201,9 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     try {
       await _authProvider.refreshUserState();
+      if (mounted && _authProvider.isLoggedIn) {
+        await _loadDailyExperienceProgress(forceRefresh: true);
+      }
     } catch (e) {
       if (mounted) {
         setState(() {
@@ -140,19 +236,20 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (newUsername.trim() == currentUser.username) return;
 
         try {
-          final userService = context.read<UserService>();
-          await userService.updateUserProfile(username: newUsername.trim());
+          await _authProvider.updateUserProfile(username: newUsername.trim());
           await _authProvider.refreshUserState();
-          showSnackbar(message: '用户名更新成功', type: SnackbarType.success);
+
+          if (!mounted) return;
+          AppSnackBar.showSuccess(this.context, '用户名更新成功');
         } catch (e) {
-          showSnackbar(message: '更新失败：$e', type: SnackbarType.error);
+          if (!mounted) return;
+          AppSnackBar.showError(this.context, '更新失败：$e');
         }
       },
     );
   }
 
   void _showLogoutDialog(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     CustomConfirmDialog.show(
       context: context,
       title: '退出登录',
@@ -164,18 +261,23 @@ class _ProfileScreenState extends State<ProfileScreen>
       iconColor: Colors.orange,
       onConfirm: () async {
         try {
-          await authProvider.signOut();
+          await _authProvider.signOut();
           if (mounted) {
             setState(() {
               _error = null;
               _isInitialized = false;
               _isRefreshing = false;
               _lastRefreshTime = null;
+              _dailyProgressData = null;
+              _isLoadingExpData = false;
+              _expDataError = null;
+              _expDataLoadedOnce = false;
             });
             NavigationUtils.navigateToHome(this.context, tabIndex: 0);
           }
         } catch (e) {
-          showSnackbar(message: '退出登录失败: $e', type: SnackbarType.error);
+          if (!mounted) return;
+          AppSnackBar.showError(this.context, '登录失败：$e');
         }
       },
     );
@@ -265,13 +367,44 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleUploadSuccess(BuildContext context) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!mounted) return;
     try {
-      await authProvider.refreshUserState();
-      showSnackbar(message: '用户信息已刷新', type: SnackbarType.success);
+      await _authProvider.refreshUserState();
+      if (mounted && _authProvider.isLoggedIn) {
+        await _loadDailyExperienceProgress(forceRefresh: true);
+      }
+      if (!mounted) return;
+      AppSnackBar.showSuccess(this.context, '用户信息已刷新');
     } catch (e) {
-      showSnackbar(message: '刷新用户信息失败: $e', type: SnackbarType.error);
+      if (!mounted) return;
+      AppSnackBar.showError(this.context, '刷新用户信息失败：$e');
+    }
+  }
+
+  void _handleVisibilityChange(VisibilityInfo info) {
+    final bool currentlyVisible = info.visibleFraction > 0;
+
+    if (_currentUserId != _authProvider.currentUserId) {
+      _currentUserId = _authProvider.currentUserId;
+    }
+    if (currentlyVisible != _isVisible) {
+      Future.microtask(() {
+        if (mounted) {
+          setState(() {
+            _isVisible = currentlyVisible;
+          });
+          if (_isVisible) {
+            _triggerInitialLoad(); // 这个会检查是否需要加载主用户信息
+            // 如果可见，已登录，且经验数据从未加载过 (或上次加载失败)
+            if (_authProvider.isLoggedIn &&
+                (!_expDataLoadedOnce || _expDataError != null)) {
+              _loadDailyExperienceProgress();
+            }
+          }
+        } else {
+          _isVisible = currentlyVisible;
+        }
+      });
     }
   }
 
@@ -281,27 +414,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     final bool isDesktop = DeviceUtils.isDesktop;
     final bool useDesktopLayout = isDesktop && screenSize.width > 900;
 
-    buildSnackBar(context);
-
     return VisibilityDetector(
       key: visibilityKey,
-      onVisibilityChanged: (VisibilityInfo info) {
-        final bool currentlyVisible = info.visibleFraction > 0;
-        if (currentlyVisible != _isVisible) {
-          Future.microtask(() {
-            if (mounted) {
-              setState(() {
-                _isVisible = currentlyVisible;
-              });
-              if (_isVisible) {
-                _triggerInitialLoad();
-              }
-            } else {
-              _isVisible = currentlyVisible;
-            }
-          });
-        }
-      },
+      onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: CustomAppBar(title: '个人中心', actions: const []),
@@ -345,6 +460,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                   _isInitialized = false;
                   _isRefreshing = false;
                   _lastRefreshTime = null;
+                  _dailyProgressData = null;
+                  _isLoadingExpData = false;
+                  _expDataError = null;
+                  _expDataLoadedOnce = false;
                 });
               }
             });
@@ -397,6 +516,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                           onLogout: () => _showLogoutDialog(context),
                           onUploadStateChanged: _handleUploadStateChanged,
                           onUploadSuccess: () => _handleUploadSuccess(context),
+                          dailyProgressData: _dailyProgressData,
+                          isLoadingExpData: _isLoadingExpData,
+                          expDataError: _expDataError,
+                          onRefreshExpData: () =>
+                              _loadDailyExperienceProgress(forceRefresh: true),
                         ),
                       ),
                     ),
@@ -428,6 +552,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                       onLogout: () => _showLogoutDialog(context),
                       onUploadStateChanged: _handleUploadStateChanged,
                       onUploadSuccess: () => _handleUploadSuccess(context),
+                      dailyProgressData: _dailyProgressData,
+                      isLoadingExpData: _isLoadingExpData,
+                      expDataError: _expDataError,
+                      onRefreshExpData: () =>
+                          _loadDailyExperienceProgress(forceRefresh: true),
                     ),
                   ),
                   FadeInSlideUpItem(

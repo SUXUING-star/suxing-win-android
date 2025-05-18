@@ -30,7 +30,9 @@ class MaintenanceWrapper extends StatefulWidget {
 }
 
 class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
-  late MaintenanceCheckerService _maintenanceChecker;
+  late final MaintenanceCheckerService _maintenanceChecker;
+  late final MaintenanceService _maintenanceService;
+  bool _hasInitializedDependencies = false;
   bool _hasInitializedMaintenance = false;
   LifecycleEventHandler? _lifecycleEventHandler;
 
@@ -43,15 +45,18 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
   void didChangeDependencies() {
     super.didChangeDependencies();
 
-    if (!_hasInitializedMaintenance) {
-      final maintenanceService = context.read<MaintenanceService>(); // 同步获取，安全
+    if (!_hasInitializedDependencies) {
+      _maintenanceChecker = context.read<MaintenanceCheckerService>();
+      _maintenanceService = context.watch<MaintenanceService>();
+      _hasInitializedDependencies = true;
+    }
 
-      maintenanceService.checkMaintenanceStatus(forceCheck: true).then((_) {
+    if (_hasInitializedDependencies) {
+      _maintenanceService.checkMaintenanceStatus(forceCheck: true).then((_) {
         // ---- then 回调，在 Future 完成后执行 ----
         if (mounted) {
           // 检查 _MaintenanceWrapperState 是否 mounted
           try {
-            _maintenanceChecker.initialize();
             setState(() {
               _hasInitializedMaintenance = true;
             });
@@ -65,12 +70,12 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
               }
             });
           } catch (e) {
-            debugPrint("Error initializing MaintenanceCheckerService: $e");
+            // debugPrint("Error initializing MaintenanceCheckerService: $e");
           }
         }
       }).catchError((error) {
         // ---- catchError 回调，也在 Future 完成后执行 ----
-        debugPrint("Error during initial maintenance check: $error");
+        // debugPrint("Error during initial maintenance check: $error");
         if (mounted) {
           // 检查 _MaintenanceWrapperState 是否 mounted
           setState(() {
@@ -78,19 +83,16 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
           });
         }
       });
-    }
 
-    // 监听 MaintenanceService 变化，并触发带 Context 的检查
-    context.watch<MaintenanceService>(); // 同步，安全
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // ---- addPostFrameCallback 的回调 ----
-      if (mounted && _hasInitializedMaintenance) {
-        // 检查
-        // 'context' 在这里是 didChangeDependencies 的 context (即 this.context)
-        // 这个是安全的，因为 addPostFrameCallback 的回调是在当前 build 帧之后同步执行
-        _maintenanceChecker.triggerMaintenanceCheck(uiContext: context);
-      }
-    });
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        // ---- addPostFrameCallback 的回调 ----
+        if (mounted &&
+            _hasInitializedDependencies &&
+            _hasInitializedMaintenance) {
+          _maintenanceChecker.triggerMaintenanceCheck(uiContext: context);
+        }
+      });
+    }
   }
 
   @override
@@ -98,7 +100,7 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
     if (_lifecycleEventHandler != null) {
       WidgetsBinding.instance.removeObserver(_lifecycleEventHandler!);
     }
-    if (_hasInitializedMaintenance && mounted) {
+    if (_hasInitializedDependencies && mounted) {
       _maintenanceChecker.dispose();
     }
     super.dispose();

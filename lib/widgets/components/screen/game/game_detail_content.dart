@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 引入 GameCollectionStatus
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart'; // 确认路径
 import 'package:suxingchahui/widgets/components/screen/game/comment/game_comments_section.dart';
@@ -21,6 +22,7 @@ import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart';
 
 class GameDetailContent extends StatefulWidget {
   final Game game;
+  final User? currentUser;
   final Function(String)? onNavigate;
   final GameCollectionItem? initialCollectionStatus;
   final Function(CollectionChangeResult)? onCollectionChanged;
@@ -30,6 +32,7 @@ class GameDetailContent extends StatefulWidget {
   const GameDetailContent({
     super.key,
     required this.game,
+    required this.currentUser,
     this.onNavigate,
     this.initialCollectionStatus,
     this.onCollectionChanged,
@@ -42,41 +45,17 @@ class GameDetailContent extends StatefulWidget {
 }
 
 class _GameDetailContentState extends State<GameDetailContent> {
-  final GlobalKey<GameReviewSectionState> _reviewSectionKey =
-      GlobalKey<GameReviewSectionState>();
-  GameCollectionItem? _previousCollectionStatus;
-
   @override
   void initState() {
     super.initState();
-    _previousCollectionStatus = widget.initialCollectionStatus;
   }
 
   @override
   void didUpdateWidget(covariant GameDetailContent oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.initialCollectionStatus != oldWidget.initialCollectionStatus) {
-      _previousCollectionStatus = widget.initialCollectionStatus;
-    }
-    if (widget.game.id != oldWidget.game.id) {
-      _previousCollectionStatus = widget.initialCollectionStatus;
-    }
   }
 
   void _handleCollectionChangedInternal(CollectionChangeResult result) {
-    final newStatusString = result.newStatus?.status;
-    final oldStatusString = _previousCollectionStatus?.status;
-    bool shouldRefreshReviews =
-        (newStatusString == GameCollectionStatus.played) ||
-            (oldStatusString == GameCollectionStatus.played &&
-                newStatusString != GameCollectionStatus.played);
-
-    if (shouldRefreshReviews) {
-      if (!widget.isPreviewMode && _reviewSectionKey.currentState != null) {
-        _reviewSectionKey.currentState!.refresh();
-      } else if (!widget.isPreviewMode) {}
-    } else {}
-    _previousCollectionStatus = result.newStatus;
     widget.onCollectionChanged?.call(result);
   }
 
@@ -110,7 +89,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
       duration: duration,
       delay: delay,
       slideOffset: slideOffset,
-      child: GameHeader(game: widget.game),
+      child: GameHeader(game: widget.game, currentUser: widget.currentUser),
     );
   }
 
@@ -151,7 +130,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
             delay: delay,
             slideOffset: slideOffset,
             child: GameReviewSection(
-              // key: _reviewSectionKey, // 将 GlobalKey 传递给实际的 Section
+              currentUser: widget.currentUser,
               game: widget.game,
             ),
           )
@@ -203,7 +182,10 @@ class _GameDetailContentState extends State<GameDetailContent> {
             duration: duration,
             delay: delay,
             slideOffset: slideOffset,
-            child: CommentsSection(gameId: widget.game.id),
+            child: GameCommentsSection(
+              gameId: widget.game.id,
+              currentUser: widget.currentUser,
+            ),
           )
         : SizedBox.shrink();
   }

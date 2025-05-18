@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 确保 User 模型路径正确
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 引入 UserInfoProvider
 import 'package:suxingchahui/providers/user/user_data_status.dart'; // 引入 UserDataStatus
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -11,9 +10,10 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 import 'safe_user_avatar.dart';
 
-
 class UserInfoBadge extends StatelessWidget {
   final String userId;
+  final UserDataStatus userDataStatus;
+  final User? currentUser;
   final bool showFollowButton;
   final bool mini;
   final bool showLevel;
@@ -25,6 +25,8 @@ class UserInfoBadge extends StatelessWidget {
   const UserInfoBadge({
     super.key,
     required this.userId,
+    required this.userDataStatus,
+    required this.currentUser,
     this.showFollowButton = true,
     this.mini = false,
     this.showLevel = true,
@@ -36,19 +38,6 @@ class UserInfoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1. 获取 Provider 实例
-    // 使用 watch 监听变化，确保 Provider 更新时 Widget 重建
-    final userInfoProvider = context.watch<UserInfoProvider>();
-    // AuthProvider 可能也需要 watch，因为它影响关注按钮的显示和状态
-    final authProvider = context.watch<AuthProvider>();
-
-    // 2. 触发用户信息加载（如果需要）
-    // Provider 内部会处理重复调用和状态管理
-    // 这个调用是必要的，以确保数据开始被获取
-    userInfoProvider.ensureUserInfoLoaded(userId);
-
-    // 3. 获取当前 userId 的数据状态
-    final userDataStatus = userInfoProvider.getUserStatus(userId);
 
     // 定义颜色变量
     final Color defaultTextColor = textColor ??
@@ -56,12 +45,18 @@ class UserInfoBadge extends StatelessWidget {
         Colors.black87;
     final Color secondaryTextColor = Colors.grey[600]!;
 
+    final double avatarRadius = mini ? 14 : 18; // UserInfoBadge 内部定义头像半径
+    final double avatarDiameter = avatarRadius * 2;
+    final dpr = MediaQuery.of(context).devicePixelRatio;
+    final int calculatedMemCacheWidth = (avatarDiameter * dpr).round();
+    final int calculatedMemCacheHeight = (avatarDiameter * dpr).round();
+
     // 4. 根据数据状态构建 UI
     switch (userDataStatus.status) {
       case LoadStatus.initial:
       case LoadStatus.loading:
         // 显示加载占位符
-        return _buildPlaceholder(context);
+        return _buildPlaceholder(context, mini);
 
       case LoadStatus.error:
         // 显示错误占位符
@@ -91,14 +86,11 @@ class UserInfoBadge extends StatelessWidget {
 
         // --- 计算关注状态 ---
         bool iFollowTarget = false;
-        String? currentUserId = authProvider.currentUser?.id; // 安全获取当前用户ID
+        String? currentUserId = currentUser?.id; // 安全获取当前用户ID
 
-        if (authProvider.isLoggedIn &&
-            currentUserId != null &&
-            authProvider.currentUser != null) {
+        if (currentUserId != null && currentUser != null) {
           // 检查当前用户的关注列表是否包含目标用户的 ID
-          iFollowTarget =
-              authProvider.currentUser!.following.contains(targetUser.id);
+          iFollowTarget = currentUser!.following.contains(targetUser.id);
         }
 
         final bool isCurrentUser = currentUserId == userId;
@@ -135,6 +127,8 @@ class UserInfoBadge extends StatelessWidget {
                   AppRoutes.openProfile,
                   arguments: userId, // 导航参数是 userId
                 ),
+                memCacheWidth: calculatedMemCacheWidth,
+                memCacheHeight: calculatedMemCacheHeight,
               ),
               const SizedBox(width: 8), // 头像和信息的间距
 
@@ -268,6 +262,7 @@ class UserInfoBadge extends StatelessWidget {
                 FollowUserButton(
                   // 使用 ValueKey 包含 userId 和关注状态，确保状态变化时按钮能正确重建
                   key: ValueKey('${userId}_$iFollowTarget'),
+                  currentUser: currentUser,
                   userId: userId,
                   mini: mini,
                   showIcon: !mini, // mini 模式下隐藏图标以节省空间
@@ -291,7 +286,7 @@ class UserInfoBadge extends StatelessWidget {
   }
 
   // 构建加载状态的占位符 UI
-  Widget _buildPlaceholder(BuildContext context) {
+  Widget _buildPlaceholder(BuildContext context, bool isMini) {
     return Opacity(
       opacity: 0.6, // 半透明效果模拟加载
       child: Container(
