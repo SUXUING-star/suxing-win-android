@@ -1,21 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../services/main/message/message_service.dart';
-import '../../models/message/message.dart';
-import '../../models/message/message_type.dart'; // 需要 MessageTypeInfo
-import '../../utils/device/device_utils.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/message/message_detail.dart';
-import '../../widgets/components/screen/message/message_list.dart';
+import 'package:suxingchahui/services/main/message/message_service.dart';
+import 'package:suxingchahui/models/message/message.dart';
+import 'package:suxingchahui/models/message/message_type.dart'; // 需要 MessageTypeInfo
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/components/screen/message/message_detail.dart';
+import 'package:suxingchahui/widgets/components/screen/message/message_list.dart';
 
 /// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
@@ -40,6 +42,8 @@ class _MessageScreenState extends State<MessageScreen>
   // 当前在详情面板中显示的消息
   Message? _selectedMessage;
   late final MessageService _messageService;
+  late final AuthProvider _authProvider;
+  String? _currentUserId;
   bool _hasInitializedDependencies = false;
 
   // 存储 ExpansionTile 的展开状态 (key: typeKey, value: isExpanded)
@@ -55,9 +59,11 @@ class _MessageScreenState extends State<MessageScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _messageService = context.read<MessageService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = false;
     }
     if (_hasInitializedDependencies) {
+      _currentUserId = _authProvider.currentUserId;
       _loadGroupedMessages(); // 初始化时加载消息
     }
   }
@@ -65,6 +71,19 @@ class _MessageScreenState extends State<MessageScreen>
   @override
   void dispose() {
     super.dispose();
+    _currentUserId = null;
+  }
+
+  @override
+  void didUpdateWidget(covariant MessageScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUserId != _authProvider.currentUserId) {
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
+    }
   }
 
   /// 加载并处理分组消息
@@ -111,8 +130,7 @@ class _MessageScreenState extends State<MessageScreen>
         _checkAllMessagesReadStatus(); // 检查全局已读状态
         _isLoading = false; // 加载完成
       });
-    } catch (e, stackTrace) {
-      print('加载分组消息失败: $e\n$stackTrace');
+    } catch (e) {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
@@ -156,20 +174,18 @@ class _MessageScreenState extends State<MessageScreen>
   Future<void> _markAllAsRead() async {
     if (_allMessagesRead || !mounted) return; // 如果已全部已读或页面已销毁，则不操作
     try {
-      final messageService = context.read<MessageService>();
-      await messageService.markAllAsRead(); // 调用 API
+      await _messageService.markAllAsRead();
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
 
       showSnackbar(message: '已将所有消息标记为已读', type: SnackbarType.success);
-    } catch (e, stackTrace) {
-      print('标记所有消息为已读失败: $e\n$stackTrace');
+    } catch (e) {
       if (mounted) {
         // 标记失败时，也建议重新加载以获取真实状态
         await _loadGroupedMessages();
         showSnackbar(message: '标记已读操作失败，请重试: $e', type: SnackbarType.error);
       }
-    } finally {}
+    }
   }
 
   /// 处理消息列表项被点击的事件
@@ -222,8 +238,8 @@ class _MessageScreenState extends State<MessageScreen>
           await _messageService.markAsRead(message.id); // 尝试直接调用
           _loadGroupedMessages(); // 作为后备，重新加载列表
         }
-      } catch (e, stackTrace) {
-        print("处理标记已读时本地发生错误: $e\n$stackTrace");
+      } catch (e) {
+        //print("处理标记已读时本地发生错误: $e\n$stackTrace");
         // 本地处理错误（例如 copyWith 失败？）
       }
     }
@@ -314,8 +330,7 @@ class _MessageScreenState extends State<MessageScreen>
 
         try {
           // 调用服务执行删除操作
-          final messageService = context.read<MessageService>();
-          await messageService.deleteMessage(message.id);
+          await _messageService.deleteMessage(message.id);
           if (!mounted) return; // 异步操作后再次检查
 
           // --- 删除成功 ---
@@ -336,8 +351,8 @@ class _MessageScreenState extends State<MessageScreen>
 
           // 4. 显示成功提示 (检查 mounted)
           showSnackbar(message: '消息已删除', type: SnackbarType.success);
-        } catch (e, stackTrace) {
-          print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
+        } catch (e) {
+          //print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
           if (!mounted) return; // 异步操作后再次检查
 
           // 2. 显示错误提示
@@ -372,7 +387,6 @@ class _MessageScreenState extends State<MessageScreen>
           child: Container(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             alignment: Alignment.center,
-            // *** 修改这里：为空状态添加动画 ***
             child: FadeInSlideUpItem(
               // 使用 FadeInSlideUpItem 包裹
               child: const EmptyStateWidget(
@@ -380,7 +394,6 @@ class _MessageScreenState extends State<MessageScreen>
                 iconData: Icons.mark_as_unread_outlined,
               ),
             ),
-            // *** 结束修改 ***
           ),
         );
       },
@@ -612,8 +625,12 @@ class _MessageScreenState extends State<MessageScreen>
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
+    final isDesktop = DeviceUtils.isDesktop;
+    if (!_authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
+    }
     // 根据设备类型选择不同的布局
-    if (DeviceUtils.isDesktop) {
+    if (isDesktop) {
       return _buildDesktopLayout();
     } else {
       return _buildMobileLayout();

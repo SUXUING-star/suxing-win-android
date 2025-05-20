@@ -119,7 +119,6 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
         if (maintenanceService.isInMaintenance &&
             !maintenanceService.allowLogin &&
             !isAdmin) {
-          // --- *** 构建新的维护显示 Widget *** ---
           final maintenanceContent = Material(
             // 保证有 Material 祖先
             color: Theme.of(context).scaffoldBackgroundColor, // 使用背景色
@@ -128,14 +127,12 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
               remainingMinutes: maintenanceService.remainingMinutes,
             ),
           );
-          // --- *** 结束构建 *** ---
 
           // 根据平台决定是否用 DesktopFrameLayout 包裹
           return isDesktop
               ? DesktopFrameLayout(
                   showSidebar: false,
                   showTitleBarActions: false,
-                  // titleText: "系统维护中", // 可选自定义标题
                   child: maintenanceContent,
                 )
               : maintenanceContent;

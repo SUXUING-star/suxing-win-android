@@ -25,7 +25,10 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
 
-  const OpenProfileScreen({super.key, required this.userId});
+  const OpenProfileScreen({
+    super.key,
+    required this.userId,
+  });
 
   @override
   _OpenProfileScreenState createState() => _OpenProfileScreenState();
@@ -43,9 +46,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   late TabController _tabController;
   bool _hasInitializedDependencies = false;
-  late final ForumService _forumService;
-  late final UserService _userService;
-  late final GameService _gameService;
+  User? _currentUser;
   late final AuthProvider _authProvider;
 
   @override
@@ -59,13 +60,21 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _userService = context.read<UserService>();
-      _forumService = context.read<ForumService>();
-      _gameService = context.read<GameService>();
       _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _currentUser = _authProvider.currentUser;
     }
     if (_hasInitializedDependencies) {
       _loadUserProfile();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant OpenProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != _authProvider.currentUser) {
+      setState(() {
+        _currentUser = _authProvider.currentUser;
+      });
     }
   }
 
@@ -87,24 +96,38 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       final User? currentUser = _authProvider.currentUser;
       _isCurrentUser = currentUserId == widget.userId;
 
-      if (widget.userId == currentUserId && currentUser != null) {
+      if (_isCurrentUser && currentUser != null) {
         _user = currentUser;
       } else {
-        _user = await _userService.getUserInfoById(widget.userId);
+        // *** userService开始了它的使命 *** //
+        // 这个用户不是你
+        UserService? userService = context.read<UserService>();
+        _user = await userService.getUserInfoById(widget.userId);
+        userService = null;
+        // *** userService结束了它的使命 *** //
       }
 
+      // *** forumService开始了它的使命 *** //
       // 加载用户帖子
-      final userPosts =
-          await _forumService.getRecentUserPosts(widget.userId, limit: 10);
+      if (!mounted) return;
+      ForumService? forumService = context.read<ForumService>();
+      final userPosts = await forumService.getRecentUserPosts(widget.userId);
+      forumService = null;
+      // *** forumService结束了它的使命 *** //
 
+      // *** gameService开始了它的使命 *** //
       // 加载用户发布的游戏
-      final userGames = await _gameService.getGamesPaginated(
+      if (!mounted) return;
+      GameService? gameService = context.read<GameService>();
+      final userGames = await gameService.getGamesPaginated(
         page: 1,
         pageSize: 10,
         sortBy: 'createTime',
         descending: true,
         authorId: widget.userId,
       );
+      gameService = null;
+      // *** gameService结束了它的使命 *** //
 
       setState(() {
         _recentPosts = userPosts;
@@ -334,7 +357,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
             if (!_isCurrentUser)
               FollowUserButton(
                 currentUser: _authProvider.currentUser,
-                userId: widget.userId,
+                targetUserId: widget.userId,
                 showIcon: true,
               ),
           ],

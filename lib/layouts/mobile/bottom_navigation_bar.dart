@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class CustomBottomNavigationBar extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
 
-  const CustomBottomNavigationBar({
-    super.key,
-    required this.currentIndex,
-    required this.onTap
-  });
+  const CustomBottomNavigationBar(
+      {super.key, required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     // 检查是否是安卓横屏模式
-    final bool isAndroidLandscape = DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
+    final bool isAndroidLandscape =
+        DeviceUtils.isAndroid && DeviceUtils.isLandscape(context);
 
     // 根据模式调整内边距
     final verticalPadding = isAndroidLandscape ? 4.0 : 8.0;
@@ -33,7 +31,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
       ),
       child: SafeArea(
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 8, vertical: verticalPadding),
+          padding:
+              EdgeInsets.symmetric(horizontal: 8, vertical: verticalPadding),
           child: ClipRRect(
             borderRadius: BorderRadius.circular(20),
             child: BottomNavigationBar(
@@ -68,7 +67,8 @@ class CustomBottomNavigationBar extends StatelessWidget {
     );
   }
 
-  BottomNavigationBarItem _buildNavItem(IconData icon, String label, bool isAndroidLandscape) {
+  BottomNavigationBarItem _buildNavItem(
+      IconData icon, String label, bool isAndroidLandscape) {
     final padding = isAndroidLandscape ? 6.0 : 8.0;
     final iconSize = isAndroidLandscape ? 20.0 : 24.0;
 

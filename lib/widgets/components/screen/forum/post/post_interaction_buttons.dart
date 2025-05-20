@@ -1,26 +1,26 @@
 // === 文件: lib/widgets/components/screen/forum/post/post_interaction_buttons.dart ===
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-// ... (其他 imports) ...
-import '../../../../../models/post/post.dart';
-import '../../../../../models/post/user_post_actions.dart';
-import '../../../../../services/main/forum/forum_service.dart';
-import '../../../../../providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保导入
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确保导入
 
 class PostInteractionButtons extends StatefulWidget {
-  // 改回 StatefulWidget 以便管理按钮加载状态
   final Post post;
-  final UserPostActions userActions; // *** 接收父组件传递的用户状态 ***
-  final Function(Post, UserPostActions)
-      onPostUpdated; // 回调函数，通知父组件 Post 核心数据（计数）已更新
+  final User? currentUser;
+  final UserPostActions userActions;
+  final Function(Post, UserPostActions) onPostUpdated;
 
   const PostInteractionButtons({
     super.key,
     required this.post,
-    required this.userActions, // *** 接收父组件传递的用户状态 ***
+    required this.currentUser,
+    required this.userActions,
     required this.onPostUpdated,
   });
 
@@ -38,8 +38,9 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   late int _agreeCount;
   late int _favoriteCount;
 
-  bool _hasInit = false;
+  bool _hasInitializedDependencies = false;
   late final ForumService _forumService;
+  late User? _currentUser;
 
   @override
   void initState() {
@@ -48,34 +49,43 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     _likeCount = widget.post.likeCount;
     _agreeCount = widget.post.agreeCount;
     _favoriteCount = widget.post.favoriteCount;
+    _currentUser = widget.currentUser;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _forumService = context.read<ForumService>();
+      _hasInitializedDependencies = true;
+    }
   }
 
   @override
   void didUpdateWidget(PostInteractionButtons oldWidget) {
     super.didUpdateWidget(oldWidget);
 
-    if (!_hasInit) {
-      _forumService = context.read<ForumService>();
-      _hasInit = true;
-    }
-    if (_hasInit) {
-      // 如果外部传入的 post 计数变化了，同步本地的乐观计数
-      // 交互状态直接使用新的 widget.userActions
-      bool countsChanged = oldWidget.post.likeCount != widget.post.likeCount ||
-          oldWidget.post.agreeCount != widget.post.agreeCount ||
-          oldWidget.post.favoriteCount != widget.post.favoriteCount;
-      if (countsChanged) {
-        if (mounted) {
-          // 确保组件挂载
-          setState(() {
-            _likeCount = widget.post.likeCount;
-            _agreeCount = widget.post.agreeCount;
-            _favoriteCount = widget.post.favoriteCount;
-          });
-        }
+    // 如果外部传入的 post 计数变化了，同步本地的乐观计数
+    // 交互状态直接使用新的 widget.userActions
+    bool countsChanged = oldWidget.post.likeCount != widget.post.likeCount ||
+        oldWidget.post.agreeCount != widget.post.agreeCount ||
+        oldWidget.post.favoriteCount != widget.post.favoriteCount;
+    if (countsChanged) {
+      if (mounted) {
+        // 确保组件挂载
+        setState(() {
+          _likeCount = widget.post.likeCount;
+          _agreeCount = widget.post.agreeCount;
+          _favoriteCount = widget.post.favoriteCount;
+        });
       }
     }
-    // 不需要检查 userActions 的变化来更新内部状态，因为没有内部状态了
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   // --- 通用的交互处理函数 ---

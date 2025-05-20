@@ -33,8 +33,13 @@ import 'refresh_controller.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
+  final AuthProvider? authProvider;
 
-  const ForumScreen({super.key, this.tag});
+  const ForumScreen({
+    super.key,
+    this.tag,
+    this.authProvider,
+  });
 
   @override
   _ForumScreenState createState() => _ForumScreenState();
@@ -48,7 +53,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   int _currentPage = 1;
   int _totalPages = 1;
-  final int _limit = 20;
+  final int _postListLimit = ForumService.postListLimit;
 
   String? _currentUserId;
 
@@ -98,7 +103,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     if (!_hasInitializedDependencies) {
       // 这里才开始初始化服务变量
       _forumService = context.read<ForumService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: true);
+      _authProvider = widget.authProvider ??
+          Provider.of<AuthProvider>(context, listen: false);
       _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
@@ -128,12 +134,26 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   @override
+  void didUpdateWidget(covariant ForumScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+        _currentUserId != _authProvider.currentUserId) {
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
+    }
+  }
+
+  @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       if (_authProvider.currentUserId != _currentUserId) {
-        _currentUserId = _authProvider.currentUserId;
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _currentUserId = _authProvider.currentUserId;
+          });
         }
       }
       if (_needsRefresh && _isVisible) {
@@ -150,6 +170,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
   Future<void> _handleToggleLockFromCard(String postId) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanLockPost()) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     try {
       // 调用 ForumService
       await _forumService.togglePostLock(postId);
@@ -198,7 +226,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       final result = await _forumService.getPostsPage(
         tag: tagParam,
         page: page,
-        limit: _limit,
+        limit: _postListLimit,
         forceRefresh: forceRefresh,
       );
 
@@ -353,7 +381,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           .watchForumPageChanges(
         tag: tagParam,
         page: _currentPage,
-        limit: _limit,
+        limit: _postListLimit,
       )
           .listen(
         (dynamic event) {
@@ -501,7 +529,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _handleDeletePostFromCard(Post post) async {
-    // 使用确认对话框，确保用户意图
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(post)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     await CustomConfirmDialog.show(
       context: context,
       title: '确认删除',
@@ -525,6 +560,14 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   void _handleEditPostFromCard(Post post) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(post)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     // 直接导航到编辑页面
     final result = await NavigationUtils.pushNamed(
       context,
@@ -539,12 +582,23 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
   }
 
+  bool _checkCanLockPost() {
+    return _authProvider.isAdmin;
+  }
+
+  bool _checkCanEditOrDeletePost(Post post) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == post.authorId;
+  }
+
   void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
     final bool currentlyVisible = visibilityInfo.visibleFraction > 0;
     if (_authProvider.currentUserId != _currentUserId) {
-      _currentUserId = _authProvider.currentUserId;
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
       }
     }
     if (currentlyVisible != _isVisible) {
@@ -774,7 +828,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
         // --- 左侧分类面板带动画 ---
         if (actuallyShowLeftPanel)
           FadeInSlideLRItem(
-            // <--- 包裹左面板
             key: const ValueKey('forum_left_panel'),
             slideDirection: SlideDirection.left,
             duration: panelAnimationDuration,

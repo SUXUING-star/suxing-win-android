@@ -6,22 +6,23 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
-import '../../../models/post/post.dart';
-import '../../../models/post/user_post_actions.dart'; // 引入 UserPostActions
-import '../../../services/main/forum/forum_service.dart'; // 引入 ForumService 和 PostDetailsWithActions
-import '../../../providers/auth/auth_provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../utils/device/device_utils.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/post/user_post_actions.dart'; // 引入 UserPostActions
+import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 引入 ForumService 和 PostDetailsWithActions
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 // 导入布局文件
-import '../../../widgets/components/screen/forum/post/layout/post_detail_desktop_layout.dart';
-import '../../../widgets/components/screen/forum/post/layout/post_detail_mobile_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_desktop_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_mobile_layout.dart';
 // 导入 UI 组件
-import '../../../widgets/ui/common/error_widget.dart';
-import '../../../widgets/ui/common/loading_widget.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class PostDetailScreen extends StatefulWidget {
   final String postId;
@@ -35,6 +36,7 @@ class PostDetailScreen extends StatefulWidget {
 class _PostDetailScreenState extends State<PostDetailScreen>
     with SnackBarNotifierMixin {
   Post? _post;
+  String? _currentUserId;
   UserPostActions? _userActions;
   String? _error;
   bool _isLoading = true;
@@ -55,6 +57,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     if (!_hasInitializedDependencies) {
       _forumService = context.read<ForumService>();
       _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -62,10 +65,27 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     }
   }
 
+  @override
+  void didUpdateWidget(covariant PostDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_hasInitializedDependencies &&
+        _currentUserId != _authProvider.currentUserId) {
+      setState(() {
+        _isLoading = true;
+        _post = null;
+      });
+      _loadPostDetails();
+      _currentUserId = _authProvider.currentUserId;
+    }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
   // 加载帖子详情和用户状态
   Future<void> _loadPostDetails() async {
-    // *** 移除在 initState 中非法的 ModalRoute.of(context) 检查 ***
-    // *** 可以在这里检查 _isLoading 状态，但 mounted 检查必须在 setState 前 ***
     if (_isLoading && _post != null) {
       // 如果已经在加载中，并且已经有旧数据了（说明是刷新），可以先不强制 setState((){_isLoading=true})
       // 避免 UI 闪烁成加载状态，等 API 返回后再更新
@@ -96,7 +116,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       final details =
           await _forumService.getPostDetailsWithActions(widget.postId);
 
-      // *** 异步操作后，必须检查 mounted 状态！ ***
       if (!mounted) return;
 
       if (details != null) {
@@ -104,7 +123,9 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         if (widget.needHistory && _post?.status != PostStatus.locked) {
           try {
             _forumService.incrementPostView(widget.postId);
-          } catch (viewError) {}
+          } catch (viewError) {
+            //
+          }
         }
 
         // 更新状态
@@ -184,7 +205,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     await _loadPostDetails();
   }
 
-  // *** 回调函数：处理来自子组件的 Post 更新请求 ***
   // 这个回调现在由 PostInteractionButtons 触发，传递的是只更新了计数的 Post 对象
   // 父组件只负责更新自己的 _post 状态
   void _handlePostUpdateFromInteraction(
@@ -201,6 +221,14 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理删除帖子
   Future<void> _handleDeletePost(BuildContext context) async {
     if (_post == null) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(_post!)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     CustomConfirmDialog.show(
       context: context,
       title: '删除帖子',
@@ -245,6 +273,14 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理编辑帖子
   Future<void> _handleEditPost(BuildContext context) async {
     if (_post == null) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(_post!)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     final result = await NavigationUtils.pushNamed(
       context,
       AppRoutes.editPost,
@@ -260,6 +296,14 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理切换帖子锁定状态
   Future<void> _handleToggleLock(BuildContext context) async {
     if (_post == null || _isTogglingLock) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanLockPost()) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     setState(() {
       _isTogglingLock = true;
     });
@@ -281,6 +325,16 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         });
       }
     }
+  }
+
+  bool _checkCanLockPost() {
+    return _authProvider.isAdmin;
+  }
+
+  bool _checkCanEditOrDeletePost(Post post) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == post.authorId;
   }
 
   // *** 构建界面 ***
@@ -323,9 +377,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // **此时 _post 保证非 null, _userActions 也应该由 _loadPostDetails 保证非 null (即使是默认值)**
     final currentUserActions = _userActions ??
         UserPostActions.defaultActions(
-            widget.postId,
-            Provider.of<AuthProvider>(context, listen: false).currentUserId ??
-                "guest");
+            widget.postId, _authProvider.currentUserId ?? "guest");
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -417,11 +469,5 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         );
       },
     );
-  }
-
-  // dispose 方法 (完整)
-  @override
-  void dispose() {
-    super.dispose();
   }
 } // End of _PostDetailScreenState

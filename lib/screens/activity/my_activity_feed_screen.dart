@@ -328,10 +328,32 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     });
   }
 
+  bool _checkCanEditOrCanDelete(UserActivity activity) {
+    final bool isAuthor = activity.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    final canEditOrDelete = isAdmin ? true : isAuthor;
+    return canEditOrDelete;
+  }
+
   // === Interaction Callbacks (Passed to CollapsibleActivityFeed) ===
 
   /// Handles deleting an activity after confirmation.
-  Future<void> _handleDeleteActivity(String activityId) async {
+  Future<void> _handleDeleteActivity(UserActivity activity) async {
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+
+    if (!_checkCanEditOrCanDelete(activity)) {
+      if (mounted) {
+        AppSnackBar.showError(context, '您没有权限删除此动态');
+      }
+      return;
+    }
+    final activityId = activity.id;
+
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -342,7 +364,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final success = await _activityService.deleteActivity(activityId);
+          final success = await _activityService.deleteActivity(activity);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove from list and update pagination
@@ -371,8 +393,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles liking an activity.
   Future<void> _handleLikeActivity(String activityId) async {
-    // Note: Optimistic UI update (incrementing like count, changing icon state)
-    // should ideally happen within the ActivityCard itself for immediate feedback.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     try {
       await _activityService.likeActivity(activityId);
       // Optional: If service doesn't return updated activity, you might need
@@ -385,7 +411,13 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles unliking an activity.
   Future<void> _handleUnlikeActivity(String activityId) async {
-    // Similar to like, optimistic update ideally in Card.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+
     try {
       await _activityService.unlikeActivity(activityId);
     } catch (e) {
@@ -397,6 +429,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Handles adding a comment to an activity.
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      throw Exception("你没登录");
+    }
     try {
       final comment =
           await _activityService.commentOnActivity(activityId, content);
@@ -414,9 +452,28 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     return null; // Return null on failure
   }
 
+  bool _checkCanDeleteComment(ActivityComment comment) {
+    final bool isAuthor = comment.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    return isAdmin ? true : isAuthor;
+  }
+
   /// Handles deleting a comment after confirmation.
-  Future<void> _handleDeleteComment(String activityId, String commentId) async {
-    // Confirmation dialog for deleting comment
+  Future<void> _handleDeleteComment(
+      String activityId, ActivityComment comment) async {
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+    if (!_checkCanDeleteComment(comment)) {
+      if (mounted) {
+        AppSnackBar.showError(context, "你没有权限删除这条评论");
+      }
+      return;
+    }
+
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -428,12 +485,9 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       onConfirm: () async {
         try {
           final success =
-              await _activityService.deleteComment(activityId, commentId);
+              await _activityService.deleteComment(activityId, comment);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
-            // Notify ActivityCard to remove the comment from its state.
-            // This might require passing a callback down or using a more
-            // sophisticated state management approach for the card itself.
           } else if (mounted) {
             throw Exception("删除评论失败");
           }
@@ -447,7 +501,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    // Optimistic update ideally within the Comment widget.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     try {
       await _activityService.likeComment(activityId, commentId);
     } catch (e) {
@@ -458,7 +517,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles unliking a comment.
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    // Optimistic update ideally within the Comment widget.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     try {
       await _activityService.unlikeComment(activityId, commentId);
     } catch (e) {
@@ -484,7 +548,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Builds the main content of the screen.
   Widget _buildBody() {
     if (!_authProvider.isLoggedIn) {
-      return LoginPromptWidget();
+      return const LoginPromptWidget();
     }
     if (widget.userId != _authProvider.currentUserId) {
       return CustomErrorWidget(

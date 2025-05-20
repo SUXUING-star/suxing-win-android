@@ -31,19 +31,19 @@ class CollapsibleActivityFeed extends StatefulWidget {
   final VoidCallback? onLoadMore;
   final ScrollController scrollController;
 
-  final FutureOr<void> Function(String activityId)?
+  final FutureOr<void> Function(UserActivity activity)?
       onDeleteActivity; // 返回 FutureOr<void> 或 Future<void>
   final FutureOr<void> Function(String activityId)? onLikeActivity;
   final FutureOr<void> Function(String activityId)? onUnlikeActivity;
   final FutureOr<ActivityComment?> Function(String activityId, String content)?
       onAddComment;
+  final FutureOr<void> Function(String activityId, ActivityComment comment)?
+      onDeleteComment;
   final FutureOr<void> Function(String activityId, String commentId)?
-      onDeleteComment; // 修改这里！
+      onLikeComment;
   final FutureOr<void> Function(String activityId, String commentId)?
-      onLikeComment; // 修改这里！
-  final FutureOr<void> Function(String activityId, String commentId)?
-      onUnlikeComment; // 修改这里！
-  final VoidCallback? Function(String activityId)?
+      onUnlikeComment;
+  final VoidCallback? Function(UserActivity activity)?
       onEditActivity; // 这个返回 VoidCallback? 可能也需要调整，取决于具体逻辑，暂时保持
   const CollapsibleActivityFeed({
     super.key,
@@ -220,10 +220,10 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                 isAlternate: isAlternate,
                 onActivityTap: widget.onActivityTap,
                 onDelete: widget.onDeleteActivity != null
-                    ? () => widget.onDeleteActivity!(activity.id)
+                    ? () => widget.onDeleteActivity!(activity)
                     : null,
                 onEdit: widget.onEditActivity != null
-                    ? () => widget.onEditActivity!(activity.id)
+                    ? () => widget.onEditActivity!(activity)
                     : null,
                 onLike: widget.onLikeActivity != null
                     ? () => widget.onLikeActivity!(activity.id)
@@ -375,7 +375,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                                   UserInfoBadge(
                                     key: ValueKey(
                                         "badge_$groupKey"), // 提供 Key 确保重建
-                                    userId:
+                                    targetUserId:
                                         groupKey, // 将 groupKey (即 userId) 传递给 Badge
                                     userDataStatus: userDataStatus!,
                                     // 这个地方当这个if条件成立上层传递这个userDataStatus不可能为空值
@@ -474,10 +474,10 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
             onActivityTap: widget.onActivityTap, hasOwnBackground: false,
             // --- 操作回调传递 ---
             onDelete: widget.onDeleteActivity != null
-                ? () => widget.onDeleteActivity!(activity.id)
+                ? () => widget.onDeleteActivity!(activity)
                 : null,
             onEdit: widget.onEditActivity != null
-                ? () => widget.onEditActivity!(activity.id)
+                ? () => widget.onEditActivity!(activity)
                 : null,
             onLike: widget.onLikeActivity != null
                 ? () => widget.onLikeActivity!(activity.id)

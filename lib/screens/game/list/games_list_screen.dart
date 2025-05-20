@@ -33,11 +33,16 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
 
-/// Displays a paginated list of games with in-grid navigation and floating controls.
 class GamesListScreen extends StatefulWidget {
   final String? selectedTag;
+  final AuthProvider? authProvider;
+  // mainLayout会watch authProvider下发这个引用对象
 
-  const GamesListScreen({super.key, this.selectedTag});
+  const GamesListScreen({
+    super.key,
+    this.selectedTag,
+    this.authProvider,
+  });
 
   @override
   _GamesListScreenState createState() => _GamesListScreenState();
@@ -45,7 +50,6 @@ class GamesListScreen extends StatefulWidget {
 
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
-  // --- State Variables ---
   bool _isLoadingData = false;
   bool _isInitialized = false;
   bool _isVisible = false;
@@ -74,7 +78,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   String _currentWatchIdentifier = '';
   Timer? _refreshDebounceTimer;
 
-  static const int _pageSize = 20;
+  static const int _pageSize = GameService.gamesLimit;
   static const Duration _cacheDebounceDuration = Duration(milliseconds: 300);
   final Map<String, String> _sortOptions = GameConstants.defaultFilter;
   static const double _hideRightPanelThreshold = 1000.0;
@@ -102,9 +106,11 @@ class _GamesListScreenState extends State<GamesListScreen>
       _filterProvider =
           Provider.of<GameListFilterProvider>(context, listen: false);
 
-      /// 这个authProvider尤其注意，因为gamelist是一级页面，它初始化非常早，之后会页面处于假死状态
+      /// 这个authProvider尤其注意，因为gameList是一级页面，它初始化非常早，之后会页面处于假死状态
       /// 需要让它下发的子组件的状态都是正确的
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      /// mainLayout会下发一个authProvider
+      _authProvider = widget.authProvider ??
+          Provider.of<AuthProvider>(context, listen: false);
       _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
@@ -113,6 +119,19 @@ class _GamesListScreenState extends State<GamesListScreen>
       _currentUserId = _authProvider.currentUserId;
       _initializeCurrentTag();
       _loadTags(); // 异步加载可用标签列表
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant GamesListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+        _currentUserId != _authProvider.currentUserId) {
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
     }
   }
 
@@ -130,9 +149,10 @@ class _GamesListScreenState extends State<GamesListScreen>
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
       if (_currentUserId != _authProvider.currentUserId) {
-        _currentUserId = _authProvider.currentUserId;
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _currentUserId = _authProvider.currentUserId;
+          });
         }
       }
       if (_isVisible) {
@@ -155,15 +175,16 @@ class _GamesListScreenState extends State<GamesListScreen>
     _currentTag = tagWasSet ? initialProviderTag : widget.selectedTag;
   }
 
-  // === Visibility Handling ===
+  // === 可视处理 ===
   void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
     // 使用一个稍微宽松的阈值，避免快速切换时误判
     final bool nowVisible = visibilityInfo.visibleFraction > 0;
 
     if (_authProvider.currentUserId != _currentUserId) {
-      _currentUserId = _authProvider.currentUserId;
       if (mounted) {
-        setState(() {});
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
       }
     }
     if (!mounted) return; // 组件已卸载，不处理
@@ -191,7 +212,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  // === Provider Check Logic ===
+  // === 检查provider是否需要更新内部状态 ===
   void _checkProviderAndApplyFilterIfNeeded({required String reason}) {
     final providerTag = _filterProvider.selectedTag;
     final providerCategory = _filterProvider.selectedCategory;
@@ -226,7 +247,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  // === Data Loading & Cache ===
+  // === 加载标签 ===
   Future<void> _loadTags() async {
     try {
       final tags = await _gameService.getAllTags();
@@ -238,7 +259,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  /// Core data loading function. Handles STRICT pagination logic.
+  /// === 加载游戏数据 ===
   Future<void> _loadGames({
     int? pageToFetch, // 目标页码
     bool isInitialLoad = false,
@@ -336,7 +357,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  /// Starts/Updates cache listener. (监听当前页)
+  /// 开始监听缓存
   void _startOrUpdateWatchingCache() {
     // 确定当前的筛选类型和值
     final String filterType;
@@ -387,7 +408,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  /// Stops cache listener.
+  /// 停止监听
   void _stopWatchingCache() {
     if (_cacheSubscription != null) {
       _cacheSubscription?.cancel();
@@ -396,7 +417,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  /// Debounced refresh trigger. (调用 _loadGames 刷新第一页)
+  /// 防抖刷新
   void _refreshDataIfNeeded({required String reason}) {
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
@@ -410,7 +431,7 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   // === User Interactions ===
 
-  /// Handles pull-to-refresh. (调用 _loadGames 刷新第一页) - 加入节流
+  /// 刷新主逻辑
   Future<void> _refreshData({bool needCheck = true}) async {
     // 1. 防止重复触发：如果已经在执行下拉刷新，直接返回
     if (_isPerformingRefresh) {
@@ -462,24 +483,30 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  /// Go to Previous Page (Internal - Called by Grid Tile)
+  /// 前一页
   Future<void> _goToPreviousPageInternal() async {
     if (_currentPage > 1 && !_isLoadingData) {
       // print("导航到上一页 (目标: ${_currentPage - 1})");
       _stopWatchingCache();
       await _loadGames(pageToFetch: _currentPage - 1); // 加载上一页
-    } else {}
+    } else {
+      //
+      AppSnackBar.showWarning(context, "已经是第一页了");
+    }
   }
 
-  /// Go to Next Page (Internal - Called by Grid Tile)
+  /// 下一页
   Future<void> _goToNextPageInternal() async {
     if (_currentPage < _totalPages && !_isLoadingData) {
       _stopWatchingCache();
       await _loadGames(pageToFetch: _currentPage + 1); // 加载下一页
-    } else {}
+    } else {
+      //
+      AppSnackBar.showWarning(context, "已经是最后一页了了");
+    }
   }
 
-  /// Go to Specific Page (Internal - Called by Dialog/Controls)
+  /// 指定页数
   Future<void> _goToPage(int pageNumber) async {
     if (pageNumber >= 1 &&
         pageNumber <= _totalPages &&
@@ -492,7 +519,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     } else if (_isLoadingData) {}
   }
 
-  /// Shows filter/sort dialog.
+  /// 显示筛选
   void _showFilterDialog(BuildContext context) async {
     // 改为 async
     // 1. 在调用 show 之前定义临时状态变量
@@ -600,8 +627,9 @@ class _GamesListScreenState extends State<GamesListScreen>
           tempSelectedCategory, tempSelectedTag, tempSortBy, tempDescending);
     }
   }
+  // UI 构建
 
-  /// Builds sort option tile for the dialog.
+  /// 筛选
   Widget _buildSortOptionTile({
     required String title,
     required String sortField,
@@ -768,8 +796,16 @@ class _GamesListScreenState extends State<GamesListScreen>
     _filterProvider.resetTagFlag();
   }
 
-  /// Handles delete action (using your original onConfirm logic).
+  /// 删除游戏回调
   Future<void> _handleDeleteGame(Game game) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeleteGame(game)) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
     await CustomConfirmDialog.show(
       context: context,
       title: '确认删除',
@@ -793,8 +829,37 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
-  /// Handles add action. (调用 _refreshDataIfNeeded)
+  // 权限检查
+  bool _checkCanEditOrDeleteGame(Game game) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == game.authorId;
+  }
+
+  // 处理编辑按钮点击事件
+  Future<void> _handleEditGame(Game game) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeleteGame(game)) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
+
+    final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
+        arguments: game.id);
+    if (result == true && mounted) {
+      _refreshDataIfNeeded(reason: "Edited Game"); // 触发刷新
+    }
+  }
+
+  /// 添加游戏
   void _handleAddGame() {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
     NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
       if (result == true && mounted) {
         _refreshDataIfNeeded(reason: "Add Game Completed"); // 触发刷新
@@ -802,14 +867,11 @@ class _GamesListScreenState extends State<GamesListScreen>
     });
   }
 
-  /// Toggles Desktop Left Panel.
   void _toggleLeftPanel() => setState(() => _showLeftPanel = !_showLeftPanel);
 
-  /// Toggles Desktop Right Panel.
   void _toggleRightPanel() =>
       setState(() => _showRightPanel = !_showRightPanel);
 
-  // === Build Methods ===
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -1059,18 +1121,6 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
-  // 这是判断对于目前用户哪一个游戏能够有删除权限的
-  // 虽然内部gamecard是做了判断但是这个gamelistscreen也做，双重保护
-  bool _checkPermissionDeleteGame(Game game, BuildContext context) {
-    if (game.authorId == _authProvider.currentUserId) {
-      return true;
-    }
-    if (_authProvider.isAdmin) {
-      return true;
-    }
-    return false;
-  }
-
   /// Builds the GridView with In-Grid Navigation Tiles.
   Widget _buildGameGridWithNavigation(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
@@ -1091,7 +1141,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         : DeviceUtils.calculateSimpleCardRatio(context, showTags: true);
     if (cardRatio <= 0) {
       //print("错误：计算出的卡片宽高比为 $cardRatio");
-      return CustomErrorWidget(errorMessage: "无法计算布局 (cardRatio <= 0)");
+      return const CustomErrorWidget(errorMessage: "发生异常错误");
     }
 
     int totalItemCount = _gamesList.length;
@@ -1157,11 +1207,14 @@ class _GamesListScreenState extends State<GamesListScreen>
                 maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
                 // 当加载中传递空回调，即使加载成功(加载成功后是false)如果没有权限也传递空回调
                 onDeleteAction:
-                    _isLoadingData && !_checkPermissionDeleteGame(game, context)
+                    _isLoadingData && !_checkCanEditOrDeleteGame(game)
                         ? null
                         : () {
                             _handleDeleteGame(game);
                           }, // onDeleteAction 是 VoidCallback?
+                onEditAction: _isLoadingData && !_checkCanEditOrDeleteGame(game)
+                    ? null
+                    : () => _handleEditGame(game),
               ),
             );
           }
@@ -1277,11 +1330,25 @@ class _GamesListScreenState extends State<GamesListScreen>
   Widget? _buildFab() {
     if (_isLoadingData) return null; // 加载时不显示
 
+    return _authProvider.isLoggedIn ? _addGameFab() : _toLoginFab();
+  }
+
+  Widget _addGameFab() {
     return GenericFloatingActionButton(
       onPressed: _handleAddGame, // onPressed 是 VoidCallback?
       icon: Icons.add,
       tooltip: '添加游戏',
       heroTag: 'games_list_fab',
+    );
+  }
+
+  Widget _toLoginFab() {
+    return GenericFloatingActionButton(
+      onPressed: () =>
+          NavigationUtils.navigateToLogin(context), // onPressed 是 VoidCallback?
+      icon: Icons.login,
+      tooltip: '登录后可以添加游戏',
+      heroTag: 'login_frm_games_list_fab',
     );
   }
 
@@ -1303,4 +1370,4 @@ class _GamesListScreenState extends State<GamesListScreen>
       onPageSelected: _goToPage, // 当用户在下拉框选择页码时，调用 _goToPage
     );
   }
-} // End of _GamesListScreenState
+}

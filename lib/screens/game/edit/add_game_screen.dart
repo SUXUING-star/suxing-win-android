@@ -12,7 +12,6 @@ import '../../../widgets/components/form/gameform/game_form.dart';
 import '../../../widgets/ui/dialogs/confirm_dialog.dart';
 
 class AddGameScreen extends StatefulWidget {
-  // 改为 StatefulWidget
   const AddGameScreen({super.key});
 
   @override
@@ -38,7 +37,10 @@ class _AddGameScreenState extends State<AddGameScreen>
       _hasInitializedDependencies = true;
     }
   }
-  // 使用 Mixin
+  @override
+  void dispose() {
+    super.dispose();
+  }
 
   Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
     if (!mounted) return;

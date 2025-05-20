@@ -67,9 +67,6 @@ class ActivityInfoSection extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- 构建并添加标题栏 ---
-
-          // --- 使用更新后的 ActivityHeader ---
           ActivityHeader(
             userId: activity.userId,
             userDataStatus: userDataStatus,

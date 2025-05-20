@@ -18,7 +18,6 @@ class SidebarProvider extends ChangeNotifier {
   void setSubRouteActive(bool isActive) {
     if (_isSubRouteActive != isActive) {
       _isSubRouteActive = isActive;
-      //print("SidebarProvider: SubRouteActive status set to $isActive"); // Debug log
       notifyListeners();
     }
   }

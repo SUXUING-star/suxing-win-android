@@ -28,17 +28,3 @@ class UserDataStatus {
   bool get hasError => status == LoadStatus.error;
 }
 
-// 或者使用 Sealed Class (如果你的 Dart 版本支持)
-/*
-sealed class UserDataStatus {}
-class UserInitial extends UserDataStatus {}
-class UserLoading extends UserDataStatus {}
-class UserLoaded extends UserDataStatus {
-  final User user;
-  UserLoaded(this.user);
-}
-class UserError extends UserDataStatus {
-  final dynamic error;
-  UserError(this.error);
-}
-*/

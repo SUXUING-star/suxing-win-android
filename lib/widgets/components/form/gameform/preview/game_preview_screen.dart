@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../widgets/components/screen/game/game_detail_content.dart';
-import '../../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart';
+import 'package:suxingchahui/utils/font/font_config.dart';
 
 class GamePreviewScreen extends StatelessWidget {
   final Game game;
@@ -21,22 +21,32 @@ class GamePreviewScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
     return isDesktop
-        ? _buildDesktopLayout(context)
-        : _buildMobileLayout(context);
+        ? _buildDesktopLayout(context, isDesktop)
+        : _buildMobileLayout(context, isDesktop);
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildFab(BuildContext context) {
+    return FloatingActionButton.extended(
+      onPressed: () => Navigator.of(context).pop(),
+      label: Text('返回继续编辑'),
+      icon: Icon(Icons.edit),
+    );
+  }
+
+  Widget _buildGameContent(BuildContext context, bool isDesktop) {
+    return GameDetailContent(
+      isDesktop: isDesktop,
+      currentUser: currentUser,
+      game: game,
+      isPreviewMode: true,
+    );
+  }
+
+  Widget _buildDesktopLayout(BuildContext context, bool isDesktop) {
     return Scaffold(
       appBar: CustomAppBar(
         title: '预览: ${game.title}',
-        actions: [
-          // TextButton.icon(
-          //   icon: Icon(Icons.arrow_back),
-          //   label: Text('返回编辑'),
-          //   onPressed: () => NavigationUtils.of(context).pop(),
-          //   style: TextButton.styleFrom(foregroundColor: Colors.white),
-          // ),
-        ],
+        actions: [],
       ),
       body: Column(
         children: [
@@ -62,134 +72,117 @@ class GamePreviewScreen extends StatelessWidget {
             child: SingleChildScrollView(
               child: Padding(
                 padding: EdgeInsets.all(24.0),
-                child: GameDetailContent(
-                  currentUser: currentUser,
-                  game: game,
-                  isPreviewMode: true,
-                ),
+                child: _buildGameContent(context, isDesktop),
               ),
             ),
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pop(),
-        label: Text('返回继续编辑'),
-        icon: Icon(Icons.edit),
-      ),
+      floatingActionButton: _buildFab(context),
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(BuildContext context, bool isDesktop) {
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                game.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  shadows: [
-                    Shadow(
-                      offset: Offset(0, 1),
-                      blurRadius: 3.0,
-                      color: Color.fromARGB(255, 0, 0, 0),
+        body: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              expandedHeight: 300,
+              pinned: true,
+              flexibleSpace: FlexibleSpaceBar(
+                title: Text(
+                  game.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    shadows: [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3.0,
+                        color: Color.fromARGB(255, 0, 0, 0),
+                      ),
+                    ],
+                  ),
+                ),
+                background: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (game.coverImage.isNotEmpty)
+                      Image.network(
+                        game.coverImage,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.grey[300],
+                            child: Center(
+                              child: Icon(
+                                Icons.image_not_supported,
+                                size: 48,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          );
+                        },
+                      )
+                    else
+                      Container(
+                        color: Colors.grey[300],
+                        child: Center(
+                          child: Icon(
+                            Icons.image,
+                            size: 48,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ),
+                    const DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.transparent,
+                            Colors.black54,
+                          ],
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (game.coverImage.isNotEmpty)
-                    Image.network(
-                      game.coverImage,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: Center(
-                            child: Icon(
-                              Icons.image_not_supported,
-                              size: 48,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        );
-                      },
-                    )
-                  else
-                    Container(
-                      color: Colors.grey[300],
-                      child: Center(
-                        child: Icon(
-                          Icons.image,
-                          size: 48,
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black54,
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ],
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () {
-                  Navigator.of(context).pop();
-                },
-              ),
-            ],
-          ),
-          SliverToBoxAdapter(
-            child: Container(
-              width: double.infinity,
-              color: Colors.amber.withSafeOpacity(0.2),
-              padding: EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: Text(
-                  '预览模式 - 实时预览效果',
-                  style: TextStyle(
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
+            SliverToBoxAdapter(
+              child: Container(
+                width: double.infinity,
+                color: Colors.amber.withSafeOpacity(0.2),
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: Text(
+                    '预览模式 - 实时预览效果',
+                    style: TextStyle(
+                      fontFamily: FontConfig.defaultFontFamily,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          SliverPadding(
-            padding: const EdgeInsets.only(bottom: 80),
-            sliver: SliverToBoxAdapter(
-              child: GameDetailContent(
-                currentUser: currentUser,
-                game: game,
-                isPreviewMode: true,
+            SliverPadding(
+              padding: const EdgeInsets.only(bottom: 80),
+              sliver: SliverToBoxAdapter(
+                child: _buildGameContent(context, isDesktop),
               ),
             ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.of(context).pop(),
-        label: Text('返回编辑'),
-        icon: Icon(Icons.edit),
-      ),
-    );
+          ],
+        ),
+        floatingActionButton: _buildFab(context));
   }
 }

@@ -1,13 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // HapticFeedback
-import 'package:provider/provider.dart'; // 需要 Provider (虽然代码里没直接用，但 userService 可能内部依赖)
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 需要评论模型
+import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 需要 AuthProvider (用于判断删除权限)
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心 UI 组件
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 需要 Snackbar
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ActivityCommentItem extends StatefulWidget {
   final ActivityComment comment;
@@ -37,23 +35,29 @@ class ActivityCommentItem extends StatefulWidget {
 
 class _ActivityCommentItemState extends State<ActivityCommentItem> {
   late ActivityComment _comment;
-  // 不再需要 _isDeleting 状态，因为删除逻辑移交父级
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
     _comment = widget.comment;
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didUpdateWidget(ActivityCommentItem oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 使用 comment ID 和 likesCount/isLiked 作为更新依据更可靠
     if (oldWidget.comment.id != widget.comment.id ||
         oldWidget.comment.likesCount != widget.comment.likesCount ||
         oldWidget.comment.isLiked != widget.comment.isLiked) {
       setState(() {
         _comment = widget.comment;
+      });
+    }
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
       });
     }
   }
@@ -105,10 +109,9 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
 
   // --- 判断是否是评论所有者或管理员 (更完整) ---
   Future<bool> _canDeleteComment() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    if (!authProvider.isLoggedIn) return false; // 未登录不能删
-    final currentUserId = authProvider.currentUserId;
-    final isAdmin = authProvider.isAdmin;
+    if (widget.currentUser == null) return false; // 未登录不能删
+    final String? currentUserId = widget.currentUser?.id;
+    final bool isAdmin = widget.currentUser?.isAdmin ?? false;
     final String commentUserId = _comment.userId; // 直接用 comment 的 userId
 
     // 管理员或评论所有者可以删除
@@ -134,7 +137,7 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
             child: UserInfoBadge(
               currentUser: widget.currentUser,
               userDataStatus: widget.userDataStatus,
-              userId: _comment.userId,
+              targetUserId: _comment.userId,
               showFollowButton: false,
               showLevel: true, // 评论区简化，不显示等级
               mini: true, // 使用紧凑模式
@@ -247,16 +250,10 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start, // 默认左对齐
         children: [
-          // --- 第一行：用户信息 + 操作按钮 ---
           buildUserInfoAndActions(),
           const SizedBox(height: 6), // 用户信息和评论内容间距
-
-          // --- 第二行：评论内容 + 点赞按钮 ---
-          // 这里根据 isAlternate 调整内容的对齐和 Padding
           Padding(
             padding: EdgeInsets.only(
-              // *** 左侧缩进，与 UserInfoBadge 的文本大致对齐 ***
-              // 这个值需要根据 UserInfoBadge 的实际头像大小和内边距调整
               left: widget.isAlternate ? 0 : 40.0,
               right: widget.isAlternate ? 40.0 : 0,
             ),

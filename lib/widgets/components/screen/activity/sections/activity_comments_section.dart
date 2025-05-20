@@ -18,7 +18,7 @@ class ActivityCommentsSection extends StatelessWidget {
   final List<ActivityComment> comments;
   final bool isLoadingComments;
   final Function(String) onAddComment;
-  final FutureOr<void> Function(String commentId) onCommentDeleted;
+  final FutureOr<void> Function(ActivityComment comment) onCommentDeleted;
   final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled;
   final bool isDesktop;
 
@@ -34,13 +34,13 @@ class ActivityCommentsSection extends StatelessWidget {
     required this.isDesktop,
   });
 
+
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
     final UserInfoProvider userInfoProvider = context.watch<UserInfoProvider>();
 
-    // --- 评论输入框 Widget ---
     final commentInput = Padding(
       padding: EdgeInsets.only(bottom: isDesktop ? 16 : 0), // 调整padding
       child: Column(
@@ -106,7 +106,7 @@ class ActivityCommentsSection extends StatelessWidget {
               isAlternate: false,
               onLike: () => onCommentLikeToggled(comment),
               onUnlike: () => onCommentLikeToggled(comment),
-              onCommentDeleted: () => onCommentDeleted(comment.id),
+              onCommentDeleted: () => onCommentDeleted(comment),
             ),
           );
         },
@@ -122,7 +122,6 @@ class ActivityCommentsSection extends StatelessWidget {
             maxHeight: 500, // *** 关键：限制最大高度 ***
           ),
           child: SingleChildScrollView(
-            // *** 关键：让内容在此区域内滚动 ***
             child: commentListContent,
           ),
         );

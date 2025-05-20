@@ -13,7 +13,6 @@ class LatestGamesScreen extends StatefulWidget {
 }
 
 class _LatestGamesScreenState extends State<LatestGamesScreen> {
-  // *** 修改: 管理实际数据和状态 ***
   List<Game> _latestGames = [];
   bool _isLoading = true; // 初始为 true
   String? _error;
@@ -32,7 +31,9 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
       _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
-    _fetchLatestGames(); // 初始化时开始加载数据
+    if (_hasInitializedDependencies) {
+      _fetchLatestGames(); // 初始化时开始加载数据
+    }
   }
 
   @override
@@ -40,7 +41,6 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
     super.dispose();
   }
 
-  // *** 修改: 加载数据并更新状态 ***
   Future<void> _fetchLatestGames() async {
     if (!mounted) return;
 

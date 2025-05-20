@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心依赖
 import 'dart:math' as math;
@@ -85,7 +83,7 @@ class ActivityHeader extends StatelessWidget {
             // --- 永远使用 UserInfoBadge ---
             Expanded(
               child: UserInfoBadge(
-                userId: userId,
+                targetUserId: userId,
                 currentUser: currentUser,
                 userDataStatus: userDataStatus,
                 showFollowButton: false,
@@ -248,7 +246,4 @@ class ActivityHeader extends StatelessWidget {
       ),
     );
   }
-
-// --- 删除不再需要的辅助函数 ---
-// _buildLegacyUserInfo, _buildLegacyFallbackAvatar, _calculateCacheSize
 }

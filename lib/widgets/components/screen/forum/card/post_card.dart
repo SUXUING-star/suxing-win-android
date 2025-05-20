@@ -168,7 +168,7 @@ class PostCard extends StatelessWidget {
                         // 用户信息徽章（允许扩展）
                         Expanded(
                           child: UserInfoBadge(
-                            userId: post.authorId.toString(), // 确保传递字符串 ID
+                            targetUserId: post.authorId.toString(), // 确保传递字符串 ID
                             userDataStatus: userDataStatus,
                             showFollowButton: false,
                             currentUser: currentUser,
@@ -194,7 +194,7 @@ class PostCard extends StatelessWidget {
                       children: [
                         // 用户信息徽章
                         UserInfoBadge(
-                          userId: post.authorId.toString(),
+                          targetUserId: post.authorId.toString(),
                           userDataStatus: userDataStatus,
                           showFollowButton: false,
                           currentUser: currentUser,

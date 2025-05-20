@@ -19,8 +19,8 @@ class PostGridView extends StatelessWidget {
 
   // --- 新增：接收来自父组件的回调函数 ---
   final Future<void> Function(Post post)? onDeleteAction;
-  final void Function(Post post) onEditAction;
-  final Future<void> Function(String postId) onToggleLockAction;
+  final void Function(Post post)? onEditAction;
+  final Future<void> Function(String postId)? onToggleLockAction;
 
   const PostGridView({
     super.key,
@@ -32,8 +32,8 @@ class PostGridView extends StatelessWidget {
     // this.onLoadMore,
     this.isDesktopLayout = true, // 桌面布局默认为 true? 检查默认值是否合适
     this.onDeleteAction, // 设为 required
-    required this.onEditAction, // 设为 required
-    required this.onToggleLockAction,
+    this.onEditAction, // 设为 required
+    this.onToggleLockAction,
   });
 
   @override
@@ -66,9 +66,7 @@ class PostGridView extends StatelessWidget {
       // itemCount 需要考虑加载指示器
       itemCount: posts.length + (isLoading && hasMoreData ? 1 : 0),
       itemBuilder: (context, index) {
-        // --- 判断是显示帖子还是加载指示器 ---
         if (index < posts.length) {
-          // 显示帖子卡片
           final post = posts[index];
           final userId = post.authorId.toString();
           userInfoProvider.ensureUserInfoLoaded(userId);
@@ -79,16 +77,11 @@ class PostGridView extends StatelessWidget {
             userDataStatus: userDataStatus,
             post: post,
             isDesktopLayout: isDesktopLayout,
-            // --- 将接收到的回调传递给 PostCard ---
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,
             onToggleLockAction: onToggleLockAction,
           );
         } else {
-          // 显示加载更多指示器
-          // 为了让加载指示器占据一整行（或合理位置），可能需要特殊处理
-          // 在 Masonry Grid 中，它会尝试找到合适的位置插入
-          // 可以简单地返回一个居中的 LoadingWidget
           return Container(
             // 可以设置一个最小高度，避免太小
             constraints: BoxConstraints(minHeight: 50),

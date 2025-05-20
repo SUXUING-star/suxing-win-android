@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 
 class ReviewRefreshNotifier extends ChangeNotifier {
   String? _lastNotifiedGameId; // 可选：记录上次通知的游戏ID
-  DateTime? _lastNotifyTime;   // 可选：记录上次通知时间
+  DateTime? _lastNotifyTime; // 可选：记录上次通知时间
 
   // 通知需要刷新评价列表
   void notifyRefreshNeeded(String gameId) {
@@ -12,13 +12,11 @@ class ReviewRefreshNotifier extends ChangeNotifier {
     if (_lastNotifiedGameId == gameId &&
         _lastNotifyTime != null &&
         now.difference(_lastNotifyTime!) < const Duration(milliseconds: 500)) {
-      print("ReviewRefreshNotifier: Debounced duplicate refresh notification for game $gameId");
       return; // 短时间内重复通知，忽略
     }
 
     _lastNotifiedGameId = gameId;
     _lastNotifyTime = now;
-    print("ReviewRefreshNotifier: Notifying refresh needed for game $gameId");
     notifyListeners(); // 通知所有监听者
   }
 }

@@ -31,12 +31,12 @@ class ActivityCard extends StatefulWidget {
   final VoidCallback? onUnlike;
   final FutureOr<ActivityComment?> Function(String activityId, String content)?
       onAddComment;
-  final FutureOr<void> Function(String activityId, String commentId)?
-      onDeleteComment; // 修改这里！
+  final FutureOr<void> Function(String activityId, ActivityComment comment)?
+      onDeleteComment;
   final FutureOr<void> Function(String activityId, String commentId)?
       onLikeComment; // 修改这里！
   final FutureOr<void> Function(String activityId, String commentId)?
-      onUnlikeComment; // 修改这里！
+      onUnlikeComment;
 
   const ActivityCard({
     super.key,
@@ -352,10 +352,8 @@ class _ActivityCardState extends State<ActivityCard> {
                   onUnlike: widget.onUnlikeComment != null
                       ? () => widget.onUnlikeComment!(_activity.id, comment.id)
                       : null,
-                  // --- 注意：这里是 ActivityCommentItem 自己的删除回调，它会调用父级 (ActivityCard) 的 onDeleteComment ---
-                  // --- 而 ActivityCard 的 onDeleteComment 回调最终会调用 ActivityFeedScreen 的 _handleDeleteComment ---
                   onCommentDeleted: widget.onDeleteComment != null
-                      ? () => widget.onDeleteComment!(_activity.id, comment.id)
+                      ? () => widget.onDeleteComment!(_activity.id, comment)
                       : null,
                 );
               },

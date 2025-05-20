@@ -76,7 +76,6 @@ class EditableUserAvatar extends StatelessWidget {
         }
         onUploadSuccess(); // 通知父组件成功，父组件负责刷新
       } catch (e) {
-        print("EditableUserAvatar: Error uploading avatar: $e");
         if (context.mounted) {
           // 简化错误处理：显示通用消息或速率限制消息
           final errorMsg = e.toString();

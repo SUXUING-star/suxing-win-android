@@ -86,9 +86,6 @@ class UpdateButton extends StatelessWidget {
     );
   }
 
-  // --- _formatChangelogMessage 和 _handleUpdateTap 方法保持上一个回复中的修改 ---
-  // --- （即，都统一跳转到 AppConfig.releasePage） ---
-
   String _formatChangelogMessage(List<String>? changelog) {
     if (changelog == null || changelog.isEmpty) return '';
     return '\n\n更新内容:\n${changelog.map((change) => '• $change').join('\n')}';

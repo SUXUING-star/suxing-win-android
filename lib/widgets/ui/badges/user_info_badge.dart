@@ -11,7 +11,7 @@ import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 import 'safe_user_avatar.dart';
 
 class UserInfoBadge extends StatelessWidget {
-  final String userId;
+  final String targetUserId;
   final UserDataStatus userDataStatus;
   final User? currentUser;
   final bool showFollowButton;
@@ -24,7 +24,7 @@ class UserInfoBadge extends StatelessWidget {
 
   const UserInfoBadge({
     super.key,
-    required this.userId,
+    required this.targetUserId,
     required this.userDataStatus,
     required this.currentUser,
     this.showFollowButton = true,
@@ -38,7 +38,6 @@ class UserInfoBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     // 定义颜色变量
     final Color defaultTextColor = textColor ??
         Theme.of(context).textTheme.bodyMedium?.color ??
@@ -93,7 +92,7 @@ class UserInfoBadge extends StatelessWidget {
           iFollowTarget = currentUser!.following.contains(targetUser.id);
         }
 
-        final bool isCurrentUser = currentUserId == userId;
+        final bool isCurrentUser = currentUserId == targetUserId;
         // 只有当 showFollowButton 为 true 且不是当前用户时，才显示关注按钮
         final bool shouldShowFollowButton = showFollowButton && !isCurrentUser;
 
@@ -118,14 +117,14 @@ class UserInfoBadge extends StatelessWidget {
                 avatarUrl: avatarUrl,
                 isAdmin: isAdmin,
                 isSuperAdmin: isSuperAdmin,
-                userId: userId, // userId 仍然需要，例如用于导航或 key
+                userId: targetUserId, // userId 仍然需要，例如用于导航或 key
                 radius: mini ? 14 : 18,
                 backgroundColor: Colors.grey[100], // 占位背景色
                 enableNavigation: true,
                 onTap: () => NavigationUtils.pushNamed(
                   context,
                   AppRoutes.openProfile,
-                  arguments: userId, // 导航参数是 userId
+                  arguments: targetUserId, // 导航参数是 userId
                 ),
                 memCacheWidth: calculatedMemCacheWidth,
                 memCacheHeight: calculatedMemCacheHeight,
@@ -261,14 +260,16 @@ class UserInfoBadge extends StatelessWidget {
                 const SizedBox(width: 8), // 信息区域和按钮的间距
                 FollowUserButton(
                   // 使用 ValueKey 包含 userId 和关注状态，确保状态变化时按钮能正确重建
-                  key: ValueKey('${userId}_$iFollowTarget'),
+                  key: ValueKey('${targetUserId}_$iFollowTarget'),
                   currentUser: currentUser,
-                  userId: userId,
+                  targetUserId: targetUserId,
                   mini: mini,
                   showIcon: !mini, // mini 模式下隐藏图标以节省空间
                   initialIsFollowing: iFollowTarget, // 传递计算好的初始关注状态
                   onFollowChanged: () {
-                    context.read<UserInfoProvider>().refreshUserInfo(userId);
+                    context
+                        .read<UserInfoProvider>()
+                        .refreshUserInfo(targetUserId);
                   },
                 ),
               ],

@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/checkin/progress/level_progress_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/user.dart'; // **导入 User 模型**
 import '../../../../../models/user/user_checkin.dart'; // 导入修改后的 CheckInStats
 // import '../../../../../models/user/user_level.dart'; // <--- 删除 UserLevel 导入
@@ -7,19 +8,19 @@ import '../checkin_button.dart'; // 导入签到按钮
 import 'level_progress_bar.dart'; // 导入进度条
 
 class LevelProgressCard extends StatelessWidget {
-  final CheckInStats stats; // **保留 CheckInStats 用于签到天数等**
-  final User currentUser; // **接收当前用户 User 对象**
+  final CheckInStats stats;
+  final User currentUser;
   final bool isLoading; // 签到按钮的加载状态
   final bool hasCheckedToday;
   final AnimationController animationController;
   final VoidCallback onCheckIn;
-  final int missedDays; // 这个卡片可能不需要，除非 UI 设计需要
+  final int missedDays;
   final int consecutiveMissedDays; // 这个卡片会用到
 
   const LevelProgressCard({
     super.key,
     required this.stats,
-    required this.currentUser, // **添加 currentUser**
+    required this.currentUser,
     required this.isLoading,
     required this.hasCheckedToday,
     required this.animationController,
@@ -41,23 +42,6 @@ class LevelProgressCard extends StatelessWidget {
         (currentUser.levelProgress / 100.0).clamp(0.0, 1.0);
     final int expToNextLevel = currentUser.expToNextLevel;
     final bool isMaxLevel = currentUser.isMaxLevel; // 获取是否满级状态
-
-    // --- 计算等级称号 (如果需要) ---
-    String levelTitle = "茶会新人"; // 默认值
-    if (level <= 5) {
-      levelTitle = "茶会初学者";
-    } else if (level <= 10) {
-      levelTitle = "茶会学徒";
-    } else if (level <= 15) {
-      levelTitle = "茶会探索者";
-    } else if (level <= 20) {
-      levelTitle = "茶会专家";
-    } else if (level <= 25) {
-      levelTitle = "茶会大师";
-    } else {
-      levelTitle = "茶会传奇"; // 25级以上
-    }
-    // --- 结束计算 ---
 
     return Card(
       elevation: 4,
@@ -83,7 +67,7 @@ class LevelProgressCard extends StatelessWidget {
                           ?.copyWith(fontWeight: FontWeight.bold), // 加粗
                     ),
                     Text(
-                      levelTitle, // **使用计算出的 title**
+                      LevelUtils.getLevelDescription(level), // **使用计算出的 title**
                       style: TextStyle(
                         color: theme.primaryColor,
                         fontSize: 14,
@@ -125,13 +109,11 @@ class LevelProgressCard extends StatelessWidget {
 
             // --- 等级进度条 (使用 currentUser 的数据) ---
             LevelProgressBar(
-              // 这个 LevelProgressBar 应该是指向 checkin 目录下的那个
               level: level,
               current: currentExp, // 传递当前总经验
               total: requiredExp, // 传递下一级所需总经验
               percentage: progressPercentage, // 传递计算好的百分比
             ),
-            // --- 结束进度条 ---
 
             const SizedBox(height: 8),
 

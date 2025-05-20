@@ -4,12 +4,13 @@ import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-// *** 改成 StatefulWidget ***
 class GameCollectionSection extends StatefulWidget {
   final Game game;
+  final User? currentUser;
   final GameCollectionItem? initialCollectionStatus;
   final Function(CollectionChangeResult)? onCollectionChanged;
   final bool isPreviewMode;
@@ -17,6 +18,7 @@ class GameCollectionSection extends StatefulWidget {
   const GameCollectionSection({
     super.key,
     required this.game,
+    required this.currentUser,
     this.initialCollectionStatus,
     this.onCollectionChanged,
     this.isPreviewMode = false,
@@ -34,11 +36,13 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
   late int _totalCollections;
   late double _rating;
   late int _ratingCount;
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
     _updateCountsFromWidget();
+    _currentUser = widget.currentUser;
   }
 
   @override
@@ -57,6 +61,12 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
           _updateCountsFromWidget();
         });
       }
+    }
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
@@ -84,8 +94,6 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
       if (_playingCount < 0) _playingCount = 0;
       if (_playedCount < 0) _playedCount = 0;
       if (_totalCollections < 0) _totalCollections = 0;
-      print(
-          'GameCollectionSection (${widget.game.id}): State counts updated (frontend compensation) - Want: $_wantToPlayCount, Playing: $_playingCount, Played: $_playedCount, Total: $_totalCollections');
     });
 
     // *** 2. 调用 widget 的回调，通知父级（或其他监听者）状态已改变 ***
@@ -148,6 +156,7 @@ class _GameCollectionSectionState extends State<GameCollectionSection> {
                 if (!widget.isPreviewMode)
                   GameCollectionButton(
                     game: widget.game, // 按钮仍然需要原始 game 对象来获取 ID 等信息
+                    currentUser: widget.currentUser,
                     initialCollectionStatus: widget.initialCollectionStatus,
                     onCollectionChanged:
                         _handleButtonCollectionChanged, // 传递内部处理函数

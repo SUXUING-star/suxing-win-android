@@ -1,5 +1,6 @@
 // lib/screens/profile/tab/game_history_tab.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -14,13 +15,11 @@ import './card/game_history_list_card.dart'; // 导入列表布局卡片
 class GameHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
-  final GameService gameService;
 
   const GameHistoryTab({
     super.key,
     required this.isLoaded,
     required this.onLoad,
-    required this.gameService,
   });
 
   @override
@@ -33,7 +32,9 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   Map<String, dynamic>? _gameHistoryPagination;
   bool _isLoading = false;
   bool _isInitialLoading = true;
-  int _page = 1;
+  bool _hasInitializedDependencies = false;
+  late final GameService _gameService;
+  late int _page;
   final int _pageSize = 15;
 
   @override
@@ -42,12 +43,24 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   @override
   void initState() {
     super.initState();
-    if (widget.isLoaded) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _loadHistory();
-      });
-    } else {
-      _isInitialLoading = false;
+    _page = 1;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _gameService = context.read<GameService>();
+      _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      if (widget.isLoaded) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _loadHistory();
+        });
+      } else {
+        _isInitialLoading = false;
+      }
     }
   }
 
@@ -76,7 +89,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
     try {
       final results =
-      await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
+          await _gameService.getGameHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
       List<Map<String, dynamic>> currentItems = _gameHistoryWithDetails ?? [];
@@ -87,14 +100,20 @@ class _GameHistoryTabState extends State<GameHistoryTab>
       if (results.containsKey('history') && results['history'] is List) {
         final historyData = results['history'] as List;
         newItems = historyData
-            .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
+            .map((item) => item is Map
+                ? Map<String, dynamic>.from(item)
+                : <String, dynamic>{})
             .toList();
       }
       if (results.containsKey('pagination') && results['pagination'] is Map) {
-        paginationData = Map<String, dynamic>.from(results['pagination'] as Map);
+        paginationData =
+            Map<String, dynamic>.from(results['pagination'] as Map);
       } else {
         paginationData = {
-          'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0
+          'page': _page,
+          'limit': _pageSize,
+          'total': 0,
+          'totalPages': 0
         };
       }
 
@@ -128,7 +147,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
     try {
       final results =
-      await widget.gameService.getGameHistoryWithDetails(_page, _pageSize);
+          await _gameService.getGameHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
       List<Map<String, dynamic>> currentItems = _gameHistoryWithDetails ?? [];
@@ -139,14 +158,20 @@ class _GameHistoryTabState extends State<GameHistoryTab>
       if (results.containsKey('history') && results['history'] is List) {
         final historyData = results['history'] as List;
         newItems = historyData
-            .map((item) => item is Map ? Map<String, dynamic>.from(item) : <String, dynamic>{})
+            .map((item) => item is Map
+                ? Map<String, dynamic>.from(item)
+                : <String, dynamic>{})
             .toList();
       }
       if (results.containsKey('pagination') && results['pagination'] is Map) {
-        paginationData = Map<String, dynamic>.from(results['pagination'] as Map);
+        paginationData =
+            Map<String, dynamic>.from(results['pagination'] as Map);
       } else {
         paginationData = {
-          'page': _page, 'limit': _pageSize, 'total': 0, 'totalPages': 0
+          'page': _page,
+          'limit': _pageSize,
+          'total': 0,
+          'totalPages': 0
         };
       }
 
@@ -176,7 +201,8 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   }
 
   Widget _buildEmptyState() {
-    return FadeInSlideUpItem( // 添加动画
+    return FadeInSlideUpItem(
+      // 添加动画
       child: EmptyStateWidget(
         message: '暂无游戏浏览记录',
         iconData: Icons.history,
@@ -191,19 +217,18 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   }
 
   Widget _buildLoadMoreButton() {
-    return Padding( // 给加载更多加点边距
+    return Padding(
+      // 给加载更多加点边距
       padding: const EdgeInsets.symmetric(vertical: 16.0),
       child: Center(
-        child: FadeInItem( // 添加动画
-          child: FunctionalTextButton(
-              onPressed: _loadMoreHistory,
-              label: '加载更多'
-          ),
+        child: FadeInItem(
+          // 添加动画
+          child:
+              FunctionalTextButton(onPressed: _loadMoreHistory, label: '加载更多'),
         ),
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -241,7 +266,8 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent * 0.9 &&
+        if (scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent * 0.9 &&
             !_isLoading) {
           _loadMoreHistory();
         }
@@ -263,7 +289,8 @@ class _GameHistoryTabState extends State<GameHistoryTab>
                 return _buildLoadMoreIndicator();
               } else if (!_isLoading &&
                   _gameHistoryPagination != null &&
-                  _page < (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
+                  _page <
+                      (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
                 return _buildLoadMoreButton();
               } else {
                 return const SizedBox.shrink();
@@ -272,9 +299,12 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
             final historyItem = _gameHistoryWithDetails![index];
             return FadeInSlideUpItem(
-              delay: _isInitialLoading ? Duration(milliseconds: 50 * index) : Duration.zero,
+              delay: _isInitialLoading
+                  ? Duration(milliseconds: 50 * index)
+                  : Duration.zero,
               duration: Duration(milliseconds: 350),
-              child: Padding( // 加间距
+              child: Padding(
+                // 加间距
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: GameHistoryListCard(historyItem: historyItem),
               ),
@@ -294,7 +324,8 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
-        if (scrollInfo.metrics.pixels >= scrollInfo.metrics.maxScrollExtent * 0.9 &&
+        if (scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent * 0.9 &&
             !_isLoading) {
           _loadMoreHistory();
         }
@@ -322,7 +353,8 @@ class _GameHistoryTabState extends State<GameHistoryTab>
                 return _buildLoadMoreIndicator();
               } else if (!_isLoading &&
                   _gameHistoryPagination != null &&
-                  _page < (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
+                  _page <
+                      (_gameHistoryPagination!['totalPages'] as int? ?? 1)) {
                 // 网格布局的加载更多按钮可能需要特殊处理，或者只显示指示器
                 // 这里暂时和列表保持一致
                 return _buildLoadMoreButton();
@@ -333,7 +365,9 @@ class _GameHistoryTabState extends State<GameHistoryTab>
 
             final historyItem = _gameHistoryWithDetails![index];
             return FadeInSlideUpItem(
-              delay: _isInitialLoading ? Duration(milliseconds: 50 * index) : Duration.zero,
+              delay: _isInitialLoading
+                  ? Duration(milliseconds: 50 * index)
+                  : Duration.zero,
               duration: Duration(milliseconds: 350),
               child: GameHistoryGridCard(historyItem: historyItem),
             );

@@ -1,9 +1,11 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
@@ -15,9 +17,8 @@ class HistoryScreen extends StatefulWidget {
   _HistoryScreenState createState() => _HistoryScreenState();
 }
 
-class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProviderStateMixin {
-
-
+class _HistoryScreenState extends State<HistoryScreen>
+    with SingleTickerProviderStateMixin {
   TabController? _tabController;
   String? _error;
 
@@ -91,7 +92,6 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     // 错误处理应该在 GameHistoryTab 的 _loadHistory 方法中进行
   }
 
-
   // 只加载帖子历史
   Future<void> _loadPostHistory() async {
     if (_postHistoryLoaded) return;
@@ -99,7 +99,6 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
     setState(() {
       _error = null; // 清除之前的错误
     });
-
 
     try {
       if (!mounted) return;
@@ -112,9 +111,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
         _postHistoryLoaded = false; // 加载失败，允许重试
       });
-    } finally {
-
-    }
+    } finally {}
   }
 
   // 刷新当前选中的历史
@@ -135,7 +132,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
       WidgetsBinding.instance.addPostFrameCallback((_) {
         // 确保是在下一帧触发状态更新，让 GameHistoryTab 有机会接收到 isLoaded=false
         // 然后再触发一次加载，使其接收 isLoaded=true
-        if(mounted) {
+        if (mounted) {
           _loadGameHistory(); // 再次调用，将 isLoaded 设置为 true，触发 GameHistoryTab 的加载逻辑
         }
       });
@@ -145,7 +142,7 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
         _error = null;
       });
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if(mounted) {
+        if (mounted) {
           _loadPostHistory();
         }
       });
@@ -154,6 +151,10 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    if (!authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
+    }
     return Scaffold(
       appBar: CustomAppBar(title: '浏览历史'),
       body: RefreshIndicator(
@@ -184,7 +185,6 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
 
   Widget _buildTabBar() {
     return TabBar(
-
       controller: _tabController,
       tabs: [
         Tab(text: '游戏浏览历史'),
@@ -194,8 +194,6 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
   }
 
   Widget _buildTabContent() {
-    final gameService = context.read<GameService>();
-    final forumService = context.read<ForumService>();
     return Expanded(
       child: TabBarView(
         controller: _tabController,
@@ -204,13 +202,11 @@ class _HistoryScreenState extends State<HistoryScreen> with SingleTickerProvider
           GameHistoryTab(
             isLoaded: _gameHistoryLoaded,
             onLoad: _loadGameHistory,
-            gameService: gameService,
           ),
           // 帖子历史标签页 - 使用组件拆分提高性能
           PostHistoryTab(
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
-            forumService: forumService,
           ),
         ],
       ),

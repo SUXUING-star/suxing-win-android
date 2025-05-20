@@ -21,13 +21,14 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class ActivityFeedScreen extends StatefulWidget {
-  // Constructor for the top-level public feed screen
+  final AuthProvider? authProvider;
   final String title;
   final bool useAlternatingLayout;
   final bool showHotActivities;
 
   const ActivityFeedScreen({
     super.key,
+    this.authProvider,
     this.title = '动态广场', // Default title for this screen
     this.useAlternatingLayout = true,
     this.showHotActivities = true, // Usually show hot panel on public feed
@@ -96,9 +97,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _activityService = context.read<UserActivityService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _currentUserId = _authProvider.currentUserId;
+      _authProvider = widget.authProvider ??
+          Provider.of<AuthProvider>(context, listen: false);
+
       _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _currentUserId = _authProvider.currentUserId;
     }
   }
 
@@ -112,6 +117,19 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _scrollController.dispose();
     _refreshAnimationController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ActivityFeedScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+        _currentUserId != _authProvider.currentUserId) {
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
+    }
   }
 
   @override
@@ -502,10 +520,25 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     });
   }
 
-  // --- Interaction Callbacks (Passed to CollapsibleActivityFeed) ---
+  bool _checkCanEditOrCanDelete(UserActivity activity) {
+    final bool isAuthor = activity.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    final canEditOrDelete = isAdmin ? true : isAuthor;
+    return canEditOrDelete;
+  }
 
   /// Handles deleting an activity after user confirmation.
-  Future<void> _handleDeleteActivity(String activityId) async {
+  Future<void> _handleDeleteActivity(UserActivity activity) async {
+    final activityId = activity.id;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
+    if (!_checkCanEditOrCanDelete(activity)) {
+      AppSnackBar.showError(context, "你没有权限删除活动");
+      return;
+    }
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -517,7 +550,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final success = await _activityService.deleteActivity(activityId);
+          final success = await _activityService.deleteActivity(activity);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove the item from the UI
@@ -547,8 +580,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles liking an activity.
   Future<void> _handleLikeActivity(String activityId) async {
-    // Note: Actual UI change (icon state, count) should ideally be handled
-    // optimistically within the ActivityCard component itself.
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
     try {
       await _activityService.likeActivity(activityId);
       // Success: If optimistic update wasn't perfect, could force refresh item here.
@@ -560,7 +596,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles unliking an activity.
   Future<void> _handleUnlikeActivity(String activityId) async {
-    // Optimistic UI update in ActivityCard.
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
     try {
       await _activityService.unlikeActivity(activityId);
       // Success: Potentially update state if needed.
@@ -573,6 +613,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Handles adding a comment to an activity.
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      throw Exception("你没有登录");
+    }
     try {
       final comment =
           await _activityService.commentOnActivity(activityId, content);
@@ -589,8 +635,28 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     return null; // Return null indicates failure
   }
 
+  bool _checkCanDeleteComment(ActivityComment comment) {
+    final bool isAuthor = comment.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    return isAdmin ? true : isAuthor;
+  }
+
   /// Handles deleting a comment after user confirmation.
-  Future<void> _handleDeleteComment(String activityId, String commentId) async {
+  Future<void> _handleDeleteComment(
+      String activityId, ActivityComment comment) async {
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+    if (!_checkCanDeleteComment(comment)) {
+      if (mounted) {
+        AppSnackBar.showError(context, "你没有权限删除这条评论");
+      }
+      return;
+    }
+
     await CustomConfirmDialog.show(
       context: context,
       title: "确认删除",
@@ -602,7 +668,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         try {
           final success =
-              await _activityService.deleteComment(activityId, commentId);
+              await _activityService.deleteComment(activityId, comment);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
           } else if (mounted) {
@@ -618,7 +684,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    // Optimistic UI update should happen within the Comment widget itself.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     try {
       await _activityService.likeComment(activityId, commentId);
       // Success
@@ -630,7 +701,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles unliking a comment.
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    // Optimistic UI update in Comment widget.
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     try {
       await _activityService.unlikeComment(activityId, commentId);
       // Success

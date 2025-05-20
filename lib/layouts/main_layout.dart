@@ -23,78 +23,84 @@ class MainLayout extends StatefulWidget {
 }
 
 class _MainLayoutState extends State<MainLayout> with RouteAware {
-  late List<Widget> _screens;
-  bool _hasInitializedDependencies = false;
-  late final AuthProvider _authProvider;
+  bool _hasInitializedProviders = false;
   late final SidebarProvider _sidebarProvider;
+
+  List<Widget> _buildScreens(AuthProvider authProvider) {
+    return [
+      HomeScreen(
+        authProvider: authProvider,
+      ),
+      GamesListScreen(
+        authProvider: authProvider,
+      ),
+      ForumScreen(
+        authProvider: authProvider,
+      ),
+      ActivityFeedScreen(
+        authProvider: authProvider,
+      ),
+      LinksToolsScreen(
+        authProvider: authProvider,
+      ),
+      ProfileScreen(
+        authProvider: authProvider,
+      ),
+    ];
+  }
 
   @override
   void initState() {
     super.initState();
-    _screens = [
-      HomeScreen(),
-      GamesListScreen(),
-      ForumScreen(),
-      ActivityFeedScreen(),
-      LinksToolsScreen(),
-      ProfileScreen(), // 索引 5
-    ];
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)!);
-    if (!_hasInitializedDependencies) {
+    if (!_hasInitializedProviders) {
       _sidebarProvider = Provider.of<SidebarProvider>(context, listen: false);
-      _hasInitializedDependencies = true;
+      // AuthProvider 不再在这里获取，会在 build 方法中 watch
+      _hasInitializedProviders = true;
     }
   }
 
   @override
   void dispose() {
-    // Unsubscribe from RouteObserver in dispose
     routeObserver.unsubscribe(this);
-    //print("MainLayout: Unsubscribed from RouteObserver");
     super.dispose();
   }
 
-  /// Called when the current route has been pushed.
   @override
   void didPush() {
-    _updateSubRouteStatus(
-        false); // Assume becoming visible means no sub-route initially
+    _updateSubRouteStatus(false);
   }
 
-  /// Called when the current route has been popped off.
   @override
   void didPop() {}
 
-  /// Called when a new route has been pushed, and the current route is no longer visible.
   @override
   void didPushNext() {
     _updateSubRouteStatus(true);
   }
 
-  /// Called when the top route has been popped off, and the current route is visible again.
   @override
   void didPopNext() {
     _updateSubRouteStatus(false);
   }
 
-  // Helper method to update the provider
   void _updateSubRouteStatus(bool isActive) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        // Check if still mounted before accessing provider
         _sidebarProvider.setSubRouteActive(isActive);
       }
     });
   }
 
-  void _handleProfileTap() {
-    if (_authProvider.isLoggedIn) {
-      _sidebarProvider.setCurrentIndex(5);
+  // _handleProfileTap 现在需要 isLoggedIn 参数
+  void _handleProfileTap(bool isLoggedIn) {
+    if (isLoggedIn) {
+      _sidebarProvider.setCurrentIndex(5); // 假设 5 是 ProfileScreen 的索引
     } else {
       NavigationUtils.navigateToLogin(context);
     }
@@ -104,42 +110,35 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop;
 
-    // *** 监听 SidebarProvider 获取当前选中的索引 ***
+    final authProvider = context.watch<AuthProvider>();
+    final bool isLoggedIn = authProvider.isLoggedIn;
+
     final selectedIndex = context.watch<SidebarProvider>().currentIndex;
 
-    // 确保索引在 _screens 列表的有效范围内
-    final validIndex = selectedIndex >= 0 && selectedIndex < _screens.length
+    final screens = _buildScreens(authProvider);
+
+    final validIndex = selectedIndex >= 0 && selectedIndex < screens.length
         ? selectedIndex
-        : 0; // 如果索引无效，默认显示第一个页面 (Home)
+        : 0;
 
     return Scaffold(
-      // 移动平台显示顶部导航栏 (逻辑不变，但 onTap 回调需要修改)
       appBar: !isDesktop
           ? TopNavigationBar(
-              isLoggedIn: _authProvider.isLoggedIn,
+              authProvider: authProvider,
               onLogoTap: () {
-                // *** 点击 Logo，更新 SidebarProvider 回到首页 (索引 0) ***
                 _sidebarProvider.setCurrentIndex(0);
               },
-              onProfileTap: _handleProfileTap, // 使用更新后的 _handleProfileTap
+              onProfileTap: () =>
+                  _handleProfileTap(isLoggedIn), // 把 isLoggedIn 传给处理函数
             )
           : null,
-      body: Stack(
-        children: [
-          // *** 使用从 Provider 获取的 validIndex 来决定显示哪个 Screen ***
-          // 使用 IndexedStack 保持页面状态
-          IndexedStack(
-            index: validIndex,
-            children: _screens,
-          ),
-        ],
+      body: IndexedStack(
+        index: validIndex,
+        children: screens,
       ),
-      // 移动平台显示底部导航栏 (逻辑不变，但 onTap 回调需要修改)
       bottomNavigationBar: !isDesktop
           ? CustomBottomNavigationBar(
-              // *** 使用从 Provider 获取的 validIndex 作为当前索引 ***
               currentIndex: validIndex,
-              // *** 点击底部导航项时，更新 SidebarProvider ***
               onTap: (index) => _sidebarProvider.setCurrentIndex(index),
             )
           : null,

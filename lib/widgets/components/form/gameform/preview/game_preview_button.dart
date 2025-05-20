@@ -69,9 +69,6 @@ class GamePreviewButton extends StatelessWidget {
     final isValidMusic = bvid == null ? true : _validateBV(bvid);
     final isValidBV = musicUrl == null ? true : _validateMusic(musicUrl);
     final passValid = isValidMusic && isValidBV;
-    print(musicUrl);
-    print(isValidBV);
-    print(isValidMusic);
 
     if (!isValidMusic) {
       return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");

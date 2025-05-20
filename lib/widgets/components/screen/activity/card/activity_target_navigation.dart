@@ -1,7 +1,9 @@
 // lib/widgets/components/screen/activity/card/activity_target_navigation.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
@@ -29,29 +31,23 @@ class ActivityTargetNavigation extends StatelessWidget {
     dynamic arguments;
 
     switch (activity.targetType) {
-      case 'game':
+      case ActivityTargetTypeConstants.game:
         buttonText = '查看游戏';
         icon = Icons.sports_esports;
-        route = '/game/detail';
+        route = AppRoutes.gameDetail;
         arguments = activity.targetId;
         break;
-      case 'post':
+      case ActivityTargetTypeConstants.post:
         buttonText = '查看帖子';
         icon = Icons.forum;
-        route = '/forum/post';
+        route = AppRoutes.postDetail;
         arguments = activity.targetId;
         break;
-      case "user":
+      case ActivityTargetTypeConstants.user:
         buttonText = '查看用户';
         icon = Icons.person;
-        route = '/open-profile';
+        route = AppRoutes.openProfile;
         arguments = activity.targetId;
-        break;
-      case 'collection':
-        buttonText = '查看收藏集';
-        icon = Icons.collections_bookmark;
-        route = '/collections/all'; // 默认导航到全部收藏
-        arguments = null; // 收藏集可能需要更多参数处理
         break;
       default:
       // 如果是未知类型，显示通用的消息

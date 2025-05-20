@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -57,12 +58,18 @@ class _EditGameScreenState extends State<EditGameScreen>
 
       final Game? game = await _gameService.getGameById(widget.gameId);
       if (game != null) {
-        setState(() {
-          _game = game;
-          _isLoading = false;
-        });
+        if (mounted) {
+          setState(() {
+            _game = game;
+            _isLoading = false;
+          });
+        }
       } else {
-        _isLoading = false;
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       setState(() => _isLoading = false);
@@ -134,6 +141,12 @@ class _EditGameScreenState extends State<EditGameScreen>
     );
   }
 
+  bool _checkCanEditGame(Game game) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == game.authorId;
+  }
+
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context); // SnackBarNotifierMixin 的方法
@@ -146,9 +159,15 @@ class _EditGameScreenState extends State<EditGameScreen>
 
     if (_game == null) {
       // 保持这个检查
-      return CustomErrorWidget(title: '无法加载帖子数据');
+      return const CustomErrorWidget(title: '无法加载游戏数据');
     }
-
+    if (!_checkCanEditGame(_game!)) {
+      return CustomErrorWidget(
+        title: "你没有权限编辑该游戏",
+        onRetry: () => NavigationUtils.pop(context),
+        retryText: "点击返回",
+      );
+    }
 
     return Scaffold(
       appBar: CustomAppBar(

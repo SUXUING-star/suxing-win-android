@@ -139,10 +139,7 @@ class DesktopCollectionLayout extends StatelessWidget {
       message: message,
       action: FunctionalButton(
         label: '发现游戏',
-        onPressed: () {
-          // 跳转逻辑不变
-          NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
-        },
+        onPressed: () => NavigationUtils.navigateToHome(context, tabIndex: 1),
         icon: Icons.search_rounded,
       ),
     );

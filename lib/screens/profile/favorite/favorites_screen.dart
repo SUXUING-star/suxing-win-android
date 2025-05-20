@@ -1,6 +1,10 @@
 // lib/screens/profile/favorites_screen.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/tabs/custom_segmented_control_tab_bar.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -19,7 +23,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   // Tab控制
   late TabController _tabController;
   final List<String> _tabTitles = ['游戏', '帖子'];
-
 
   @override
   void initState() {
@@ -57,6 +60,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final authProvider = context.watch<AuthProvider>();
+    if (!authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
+    }
     return Scaffold(
       appBar: CustomAppBar(
         title: '我的喜欢',
@@ -91,8 +98,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
             child: TabBarView(
               controller: _tabController,
               children: [
-                GameFavoritesTab(),
-                PostFavoritesTab(),
+                GameFavoritesTab(authProvider.currentUser),
+                PostFavoritesTab(authProvider.currentUser),
               ],
             ),
           ),

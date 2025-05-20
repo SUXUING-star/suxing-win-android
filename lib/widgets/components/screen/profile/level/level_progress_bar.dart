@@ -18,10 +18,6 @@ class LevelProgressBar extends StatelessWidget {
     this.isDesktop = false,
   });
 
-  void _showTodayExpDialog(BuildContext context) {
-
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -40,8 +36,7 @@ class LevelProgressBar extends StatelessWidget {
     //直接使用后端算好的 levelProgress 百分比
     final double expPercentage = (user.levelProgress / 100.0).clamp(0.0, 1.0);
 
-   return GestureDetector(
-      onTap: () => _showTodayExpDialog(context),
+    return GestureDetector(
       child: Container(
         width: width,
         padding: const EdgeInsets.symmetric(vertical: 6.0),

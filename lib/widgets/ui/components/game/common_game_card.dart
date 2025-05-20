@@ -30,11 +30,8 @@ class CommonGameCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- 新增加的保险判断 ---
-    // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
     if (game.approvalStatus == GameStatus.rejected ||
         game.approvalStatus == GameStatus.pending) {
-      // 返回一个空的、不占空间的Widget
       return const SizedBox.shrink();
     }
 
@@ -252,8 +249,8 @@ class CommonGameCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(top: 4.0, bottom: 4.0), // 可以微调垂直间距
             child: GameTagList(
-              tags: game.tags,       // 传递游戏标签列表
-              maxTags: maxTags,      // 传递最大显示数量
+              tags: game.tags, // 传递游戏标签列表
+              maxTags: maxTags, // 传递最大显示数量
               isScrollable: false, // 列表视图用 Wrap，不需要水平滚动
             ),
           ),

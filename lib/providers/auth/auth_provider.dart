@@ -1,9 +1,8 @@
 // lib/providers/auth/auth_provider.dart
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // 保留，可能其他地方用到
+import 'package:flutter/material.dart';
 import 'package:suxingchahui/events/app_events.dart';
-import 'package:suxingchahui/models/user/account.dart';
 import '../../models/user/user.dart';
 import '../../services/main/user/user_service.dart';
 import 'dart:async';
@@ -20,7 +19,6 @@ class AuthProvider with ChangeNotifier {
   final Duration _refreshNotifyDelay = const Duration(milliseconds: 500);
   final Duration _signInNotifyDelay = const Duration(milliseconds: 1000);
   final Duration _signOutNotifyDelay = const Duration(milliseconds: 1000);
-
   User? get currentUser => _currentUser;
   bool get isInitializing => _isInitializing;
   bool get isRefreshing => _isRefreshing;

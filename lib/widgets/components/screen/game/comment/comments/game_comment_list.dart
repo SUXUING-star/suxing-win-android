@@ -11,8 +11,8 @@ import 'game_comment_item.dart'; // 导入 CommentItem
 class GameCommentList extends StatelessWidget {
   final User? currentUser;
   final List<Comment> comments;
-  final Future<void> Function(String commentId, String content) onUpdateComment;
-  final Future<void> Function(String commentId) onDeleteComment;
+  final Future<void> Function(Comment comment, String content) onUpdateComment;
+  final Future<void> Function(Comment comment) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
   final Set<String> deletingCommentIds;
   final Set<String> updatingCommentIds;

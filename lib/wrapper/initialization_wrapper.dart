@@ -187,7 +187,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
     if (!_isMounted) {
       return;
     }
-    print("InitializationWrapper: 'Retry' button pressed.");
     // 直接重新开始完整的初始化流程
     // _startInitialization 会重置所有相关状态
     _startInitialization();
@@ -203,8 +202,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
       exit(0); // 桌面平台直接退出进程
     } else {
       // 移动平台 (Android/iOS) 尝试弹出当前 Activity/View Controller
-      print(
-          "InitializationWrapper: Attempting to pop system navigator (mobile).");
       SystemNavigator.pop();
       // 注意：SystemNavigator.pop() 可能并不总是符合预期，取决于应用结构
     }

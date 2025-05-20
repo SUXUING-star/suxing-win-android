@@ -5,15 +5,15 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
-import '../../../models/game/game_collection.dart';
-import '../../../providers/auth/auth_provider.dart';
-import '../../../services/main/game/collection/game_collection_service.dart';
-import '../../../utils/device/device_utils.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/ui/common/error_widget.dart';
-import '../../../widgets/ui/common/login_prompt_widget.dart';
-import '../../../widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart';
-import '../../../widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
+import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
 
 class GameCollectionScreen extends StatefulWidget {
   const GameCollectionScreen({super.key});
@@ -124,7 +124,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   // --- 数据加载方法 (保持不变，但调用时机改变) ---
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (!mounted) return;
-    // ** 再次检查登录状态，因为可能是异步调用 **
     if (!_authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
@@ -262,7 +261,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     if (!isLoggedIn && _error == '请先登录后再查看收藏') {
       // 明确检查错误信息
 
-      return LoginPromptWidget(isDesktop: _isDesktopLayout);
+      return const LoginPromptWidget();
     }
 
     // 2. 初始加载

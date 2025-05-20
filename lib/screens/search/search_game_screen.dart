@@ -6,11 +6,11 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'dart:async';
 
 // Models
-import '../../models/game/game.dart';
+import 'package:suxingchahui/models/game/game.dart';
 
 // Services
-import '../../services/main/game/game_service.dart';
-import '../../services/main/user/user_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';

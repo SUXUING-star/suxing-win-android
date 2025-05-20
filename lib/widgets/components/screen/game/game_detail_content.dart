@@ -20,18 +20,20 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart';
 
-class GameDetailContent extends StatefulWidget {
+class GameDetailContent extends StatelessWidget {
   final Game game;
+  final bool isDesktop;
   final User? currentUser;
   final Function(String)? onNavigate;
   final GameCollectionItem? initialCollectionStatus;
-  final Function(CollectionChangeResult)? onCollectionChanged;
+  final Function(CollectionChangeResult)? onCollectionChanged; // 直接是回调函数
   final Map<String, dynamic>? navigationInfo;
   final bool isPreviewMode;
 
   const GameDetailContent({
-    super.key,
+    super.key, // 可以保留 super.key
     required this.game,
+    required this.isDesktop,
     required this.currentUser,
     this.onNavigate,
     this.initialCollectionStatus,
@@ -41,28 +43,7 @@ class GameDetailContent extends StatefulWidget {
   });
 
   @override
-  _GameDetailContentState createState() => _GameDetailContentState();
-}
-
-class _GameDetailContentState extends State<GameDetailContent> {
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void didUpdateWidget(covariant GameDetailContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-  }
-
-  void _handleCollectionChangedInternal(CollectionChangeResult result) {
-    widget.onCollectionChanged?.call(result);
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    // 定义动画参数
     const Duration slideDuration = Duration(milliseconds: 400);
     const Duration fadeDuration = Duration(milliseconds: 350);
     const Duration scaleDuration = Duration(milliseconds: 450);
@@ -72,7 +53,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
 
     return Padding(
       // 使用 unique key 保证 Game ID 变化时重建，触发动画
-      key: ValueKey('game_detail_content_${widget.game.id}'),
+      key: ValueKey('game_detail_content_${game.id}'), // 直接访问 game
       padding: EdgeInsets.all(isDesktop ? 0 : 16.0),
       child: isDesktop
           ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
@@ -82,6 +63,9 @@ class _GameDetailContentState extends State<GameDetailContent> {
     );
   }
 
+  // --- Section 构建方法移到 StatelessWidget 内部 ---
+  // 注意：方法签名中的 widget.game 变为 game，widget.currentUser 变为 currentUser 等
+
   Widget _buildHeaderSection(
       Duration duration, Duration delay, double slideOffset, Key key) {
     return FadeInSlideUpItem(
@@ -89,7 +73,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
       duration: duration,
       delay: delay,
       slideOffset: slideOffset,
-      child: GameHeader(game: widget.game, currentUser: widget.currentUser),
+      child: GameHeader(game: game, currentUser: currentUser), //直接使用成员变量
     );
   }
 
@@ -98,7 +82,7 @@ class _GameDetailContentState extends State<GameDetailContent> {
       key: key,
       duration: duration,
       delay: delay,
-      child: GameDescription(game: widget.game),
+      child: GameDescription(game: game), //直接使用成员变量
     );
   }
 
@@ -110,53 +94,53 @@ class _GameDetailContentState extends State<GameDetailContent> {
       delay: delay,
       slideOffset: slideOffset,
       child: GameCollectionSection(
-        game: widget.game,
-        initialCollectionStatus: widget.initialCollectionStatus,
-        onCollectionChanged: _handleCollectionChangedInternal,
-        isPreviewMode: widget.isPreviewMode,
+        game: game, //直接使用成员变量
+        currentUser: currentUser,
+        initialCollectionStatus: initialCollectionStatus, //直接使用成员变量
+        onCollectionChanged: onCollectionChanged, // 直接传递回调
+        isPreviewMode: isPreviewMode, //直接使用成员变量
       ),
     );
   }
 
-  Widget _buildReviewSection(bool isPreviewMode, Duration duration,
-      Duration delay, double slideOffset, Key key) {
-    // 注意：这里没有传递 _reviewSectionKey，因为 GameReviewSection 内部需要它
-    // 如果你的 _buildReviewSection 需要接收 Key，你需要修改签名并传递它
-    // 但目前看，GlobalKey 在 State 级别使用是常见的模式。
-    return !isPreviewMode
+  Widget _buildReviewSection(
+      bool currentIsPreviewMode,
+      Duration duration, // 参数名区分
+      Duration delay,
+      double slideOffset,
+      Key key) {
+    return !currentIsPreviewMode
         ? FadeInSlideUpItem(
-            key: key, // 动画组件的 Key
+            key: key,
             duration: duration,
             delay: delay,
             slideOffset: slideOffset,
             child: GameReviewSection(
-              currentUser: widget.currentUser,
-              game: widget.game,
+              currentUser: currentUser, //直接使用成员变量
+              game: game, //直接使用成员变量
             ),
           )
         : SizedBox.shrink();
   }
 
   Widget _buildImagesSection(Duration duration, Duration delay, Key key) {
-    // GameImages 本身似乎不需要 ScaleInItem 的 slideOffset 参数
     return ScaleInItem(
       key: key,
       duration: duration,
       delay: delay,
-      child: GameImages(game: widget.game),
+      child: GameImages(game: game), //直接使用成员变量
     );
   }
 
   Widget _buildMusicSection(
       Duration duration, Duration delay, double slideOffset, Key key) {
-    // 假设音乐区也用滑入效果
     return FadeInSlideUpItem(
       key: key,
       duration: duration,
       delay: delay,
       slideOffset: slideOffset,
       child: GameMusicSection(
-        musicUrl: widget.game.musicUrl, // 传递 musicUrl
+        musicUrl: game.musicUrl, //直接使用成员变量
       ),
     );
   }
@@ -169,50 +153,55 @@ class _GameDetailContentState extends State<GameDetailContent> {
       delay: delay,
       slideOffset: slideOffset,
       child: GameVideoSection(
-        bvid: widget.game.bvid,
+        bvid: game.bvid, //直接使用成员变量
       ),
     );
   }
 
-  Widget _buildCommentSection(bool isPreviewMode, Duration duration,
-      Duration delay, double slideOffset, Key key) {
-    return !isPreviewMode
+  Widget _buildCommentSection(
+      bool currentIsPreviewMode,
+      Duration duration, // 参数名区分
+      Duration delay,
+      double slideOffset,
+      Key key) {
+    return !currentIsPreviewMode
         ? FadeInSlideUpItem(
             key: key,
             duration: duration,
             delay: delay,
             slideOffset: slideOffset,
             child: GameCommentsSection(
-              gameId: widget.game.id,
-              currentUser: widget.currentUser,
+              gameId: game.id, //直接使用成员变量
             ),
           )
         : SizedBox.shrink();
   }
 
   Widget _buildRandomSection(
-      bool isPreviewMode, Duration duration, Duration delay, Key key) {
-    return !isPreviewMode
+      bool currentIsPreviewMode, Duration duration, Duration delay, Key key) {
+    // 参数名区分
+    return !currentIsPreviewMode
         ? FadeInItem(
             key: key,
             duration: duration,
             delay: delay,
-            child: RandomGamesSection(currentGameId: widget.game.id),
+            child: RandomGamesSection(currentGameId: game.id), //直接使用成员变量
           )
         : SizedBox.shrink();
   }
 
   Widget _buildNavigationSection(
-      bool isPreviewMode, Duration duration, Duration delay, Key key) {
-    return !isPreviewMode
+      bool currentIsPreviewMode, Duration duration, Duration delay, Key key) {
+    // 参数名区分
+    return !currentIsPreviewMode
         ? FadeInItem(
             key: key,
             duration: duration,
             delay: delay,
             child: GameNavigationSection(
-              currentGameId: widget.game.id,
-              navigationInfo: widget.navigationInfo,
-              onNavigate: widget.onNavigate,
+              currentGameId: game.id, //直接使用成员变量
+              navigationInfo: navigationInfo, //直接使用成员变量
+              onNavigate: onNavigate, //直接使用成员变量
             ),
           )
         : SizedBox.shrink();
@@ -228,98 +217,82 @@ class _GameDetailContentState extends State<GameDetailContent> {
       Duration scaleDuration) {
     int delayIndex = 0;
     // --- 为每个 Section 定义唯一的 Key ---
-    final headerKey = ValueKey('header_mob_${widget.game.id}');
-    final descriptionKey = ValueKey('desc_mob_${widget.game.id}');
-    final collectionKey = ValueKey('collection_mob_${widget.game.id}');
-    final reviewKey = ValueKey('reviews_mob_${widget.game.id}');
-    final imageKey = ValueKey('images_mob_${widget.game.id}');
-    final videoKey = ValueKey('video_section_mob_${widget.game.id}');
-    final musicKey = ValueKey('music_section_mob_${widget.game.id}');
-    final commentKey = ValueKey('comments_mob_${widget.game.id}');
-    final randomKey = ValueKey('random_mob_${widget.game.id}');
-    final navigationKey = ValueKey('nav_mob_${widget.game.id}');
+    final headerKey = ValueKey('header_mob_${game.id}'); // 直接使用 game
+    final descriptionKey = ValueKey('desc_mob_${game.id}');
+    final collectionKey = ValueKey('collection_mob_${game.id}');
+    final reviewKey = ValueKey('reviews_mob_${game.id}');
+    final imageKey = ValueKey('images_mob_${game.id}');
+    final videoKey = ValueKey('video_section_mob_${game.id}');
+    final musicKey = ValueKey('music_section_mob_${game.id}');
+    final commentKey = ValueKey('comments_mob_${game.id}');
+    final randomKey = ValueKey('random_mob_${game.id}');
+    final navigationKey = ValueKey('nav_mob_${game.id}');
 
-    // --- 按顺序构建 Widgets ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Header: 滑动进入
         _buildHeaderSection(
             slideDuration,
             baseDelay + (delayIncrement * delayIndex++),
             slideOffset,
             headerKey),
-        const SizedBox(height: 16), // 添加间距
-
-        // Description: 纯淡入
+        const SizedBox(height: 16),
         _buildDescriptionSection(fadeDuration,
             baseDelay + (delayIncrement * delayIndex++), descriptionKey),
-        const SizedBox(height: 16), // 添加间距
-
-        // Collection: 滑动进入 (交互区域)
+        const SizedBox(height: 16),
         _buildCollectionStatsSection(
             slideDuration,
             baseDelay + (delayIncrement * delayIndex++),
             slideOffset,
             collectionKey),
-        // 仅在非预览模式下显示相关内容间距
-        if (!widget.isPreviewMode) const SizedBox(height: 16),
-
-        // Reviews: 滑动进入 (交互区域)
+        if (!isPreviewMode) const SizedBox(height: 16), // 使用 isPreviewMode
         _buildReviewSection(
-            widget.isPreviewMode,
+            isPreviewMode, // 使用 isPreviewMode
             slideDuration,
             baseDelay + (delayIncrement * delayIndex++),
             slideOffset,
             reviewKey),
-        const SizedBox(height: 16), // 添加间距
-
-        // Images: 缩放进入 (视觉元素)
+        const SizedBox(height: 16),
         _buildImagesSection(scaleDuration,
             baseDelay + (delayIncrement * delayIndex++), imageKey),
-        const SizedBox(height: 24), // 图片后多点间距
-
-        // Video: 滑动进入
+        const SizedBox(height: 24),
         _buildVideoSection(slideDuration,
             baseDelay + (delayIncrement * delayIndex++), slideOffset, videoKey),
-        const SizedBox(height: 16), // 添加间距
-
-        // Music: 滑动进入
+        const SizedBox(height: 16),
         _buildMusicSection(slideDuration,
             baseDelay + (delayIncrement * delayIndex++), slideOffset, musicKey),
-        // 仅在非预览模式下显示分割线和下方内容
-        if (!widget.isPreviewMode) ...[
-          const SizedBox(height: 16), // 添加间距
-          const Divider(height: 1), // 使用细分割线
-          const SizedBox(height: 16), // 添加间距
-
-          // Comments: 滑动进入 (交互区域)
+        if (!isPreviewMode) ...[
+          // 使用 isPreviewMode
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
           _buildCommentSection(
-              widget.isPreviewMode,
+              isPreviewMode, // 使用 isPreviewMode
               slideDuration,
               baseDelay + (delayIncrement * delayIndex++),
               slideOffset,
               commentKey),
-          const SizedBox(height: 24), // 评论后多点间距
-
-          // Random: 淡入
-          _buildRandomSection(widget.isPreviewMode, fadeDuration,
-              baseDelay + (delayIncrement * delayIndex++), randomKey),
-          const SizedBox(height: 24), // 随机推荐后多点间距
-          const Divider(height: 1), // 使用细分割线
-          const SizedBox(height: 16), // 添加间距
-
-          // Navigation: 淡入
-          _buildNavigationSection(widget.isPreviewMode, fadeDuration,
-              baseDelay + (delayIncrement * delayIndex++), navigationKey),
-          const SizedBox(height: 16), // 底部留白
+          const SizedBox(height: 24),
+          _buildRandomSection(
+              isPreviewMode,
+              fadeDuration, // 使用 isPreviewMode
+              baseDelay + (delayIncrement * delayIndex++),
+              randomKey),
+          const SizedBox(height: 24),
+          const Divider(height: 1),
+          const SizedBox(height: 16),
+          _buildNavigationSection(
+              isPreviewMode,
+              fadeDuration, // 使用 isPreviewMode
+              baseDelay + (delayIncrement * delayIndex++),
+              navigationKey),
+          const SizedBox(height: 16),
         ] else
-          const SizedBox(height: 16), // 预览模式下底部也留点白
+          const SizedBox(height: 16),
       ],
     );
   }
 
-  // --- Desktop Layout (修复错误 + 应用不同动画 + 包含完整参数) ---
   Widget _buildDesktopLayout(
       BuildContext context,
       Duration baseDelay,
@@ -331,67 +304,58 @@ class _GameDetailContentState extends State<GameDetailContent> {
     int leftDelayIndex = 0;
     int rightDelayIndex = 0;
 
-    // --- 定义 Keys ---
-    final coverKey = ValueKey('cover_desk_${widget.game.id}');
-    final imagesKey = ValueKey('images_desk_${widget.game.id}');
-    final collectionKey = ValueKey('collection_desk_${widget.game.id}');
-    final reviewsKey = ValueKey('reviews_desk_${widget.game.id}');
-    final videoKey = ValueKey('video_section_desk_${widget.game.id}');
-    final musicKey = ValueKey('music_section_desk_${widget.game.id}');
-    final headerKey = ValueKey('header_desk_${widget.game.id}');
-    final descriptionKey = ValueKey('desc_desk_${widget.game.id}');
-    final commentsKey = ValueKey('comments_desk_${widget.game.id}');
-    final randomKey = ValueKey('random_desk_${widget.game.id}');
-    final navigationKey = ValueKey('nav_desk_${widget.game.id}');
+    final coverKey = ValueKey('cover_desk_${game.id}'); // 直接使用 game
+    final imagesKey = ValueKey('images_desk_${game.id}');
+    final collectionKey = ValueKey('collection_desk_${game.id}');
+    final reviewsKey = ValueKey('reviews_desk_${game.id}');
+    final videoKey = ValueKey('video_section_desk_${game.id}');
+    final musicKey = ValueKey('music_section_desk_${game.id}');
+    final headerKey = ValueKey('header_desk_${game.id}');
+    final descriptionKey = ValueKey('desc_desk_${game.id}');
+    final commentsKey = ValueKey('comments_desk_${game.id}');
+    final randomKey = ValueKey('random_desk_${game.id}');
+    final navigationKey = ValueKey('nav_desk_${game.id}');
 
-    // --- 构建左右列 ---
     Widget leftColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Cover Image: 缩放进入
         ScaleInItem(
           key: coverKey,
           duration: scaleDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
           child: AspectRatio(
-              aspectRatio: 16 / 9, // 桌面端封面比例可能更宽
+              aspectRatio: 16 / 9,
               child: ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: GameCoverImage(
-                      imageUrl: widget.game.coverImage) // 传递 imageUrl
+                  child: GameCoverImage(imageUrl: game.coverImage) //直接使用成员变量
                   )),
         ),
         const SizedBox(height: 24),
-        // Game Images: 缩放进入
         _buildImagesSection(scaleDuration,
             baseDelay + (delayIncrement * leftDelayIndex++), imagesKey),
         const SizedBox(height: 24),
-        // Collection: 滑动进入
         _buildCollectionStatsSection(
             slideDuration,
             baseDelay + (delayIncrement * leftDelayIndex++),
             slideOffset,
             collectionKey),
-        // 仅在非预览模式下显示 Review 和相关间距
-        if (!widget.isPreviewMode) ...[
+        if (!isPreviewMode) ...[
+          // 使用 isPreviewMode
           const SizedBox(height: 24),
-          // Reviews: 滑动进入
           _buildReviewSection(
-              widget.isPreviewMode,
+              isPreviewMode, // 使用 isPreviewMode
               slideDuration,
               baseDelay + (delayIncrement * leftDelayIndex++),
               slideOffset,
               reviewsKey),
         ],
         const SizedBox(height: 24),
-        // Video: 滑动进入
         _buildVideoSection(
             slideDuration,
             baseDelay + (delayIncrement * leftDelayIndex++),
             slideOffset,
             videoKey),
         const SizedBox(height: 24),
-        // Music: 滑动进入
         _buildMusicSection(
             slideDuration,
             baseDelay + (delayIncrement * leftDelayIndex++),
@@ -403,24 +367,21 @@ class _GameDetailContentState extends State<GameDetailContent> {
     Widget rightColumn = Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Header: 滑动进入 (比左列稍微延迟一点点，增加层次感)
         _buildHeaderSection(
             slideDuration,
             baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
             slideOffset,
             headerKey),
         const SizedBox(height: 24),
-        // Description: 淡入
         _buildDescriptionSection(
             fadeDuration,
             baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
             descriptionKey),
-        // 仅在非预览模式下显示评论和相关间距
-        if (!widget.isPreviewMode) ...[
+        if (!isPreviewMode) ...[
+          // 使用 isPreviewMode
           const SizedBox(height: 24),
-          // Comments: 滑动进入
           _buildCommentSection(
-              widget.isPreviewMode,
+              isPreviewMode, // 使用 isPreviewMode
               slideDuration,
               baseDelay + (delayIncrement * rightDelayIndex++) + delayIncrement,
               slideOffset,
@@ -429,48 +390,45 @@ class _GameDetailContentState extends State<GameDetailContent> {
       ],
     );
 
-    // --- 计算下方内容的起始延迟索引 (取左右列中较大的那个) ---
-    // 确保下方内容在两列动画基本开始后再出现
     final bottomStartIndex =
         (leftDelayIndex > rightDelayIndex ? leftDelayIndex : rightDelayIndex) +
-            1; // 加1给点缓冲
+            1;
 
-    // --- 构建下方公共部分 (仅非预览模式) ---
     List<Widget> bottomSections = [];
-    if (!widget.isPreviewMode) {
+    if (!isPreviewMode) {
+      // 使用 isPreviewMode
       bottomSections.addAll([
-        const SizedBox(height: 32), // 上下分割区域
-        const Divider(height: 1),
-        const SizedBox(height: 24),
-        // Random Games: 淡入
-        _buildRandomSection(widget.isPreviewMode, fadeDuration,
-            baseDelay + (delayIncrement * bottomStartIndex), randomKey),
         const SizedBox(height: 32),
         const Divider(height: 1),
         const SizedBox(height: 24),
-        // Navigation: 淡入
+        _buildRandomSection(
+            isPreviewMode,
+            fadeDuration, // 使用 isPreviewMode
+            baseDelay + (delayIncrement * bottomStartIndex),
+            randomKey),
+        const SizedBox(height: 32),
+        const Divider(height: 1),
+        const SizedBox(height: 24),
         _buildNavigationSection(
-            widget.isPreviewMode,
+            isPreviewMode, // 使用 isPreviewMode
             fadeDuration,
             baseDelay + (delayIncrement * (bottomStartIndex + 1)),
-            navigationKey), // 索引+1
-        const SizedBox(height: 24), // 底部留白
+            navigationKey),
+        const SizedBox(height: 24),
       ]);
     }
 
-    // --- 组合布局 ---
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(flex: 3, child: leftColumn), // 左列给稍小空间 flex 3
+            Expanded(flex: 3, child: leftColumn),
             const SizedBox(width: 32),
-            Expanded(flex: 5, child: rightColumn), // 右列给稍大空间 flex 5
+            Expanded(flex: 5, child: rightColumn),
           ],
         ),
-        // 将下方公共部分添加到 Column 中
         ...bottomSections,
       ],
     );

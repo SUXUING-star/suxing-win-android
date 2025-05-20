@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart'; // 需要 Provider
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 需要 InputStateService
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -8,8 +9,8 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 不修改这个文件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../utils/device/device_utils.dart';
-import '../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/font/font_config.dart';
 
 // --- PostFormData 保持不变 ---
 class PostFormData {
@@ -24,7 +25,17 @@ class PostFormData {
   });
 }
 
+/// -------------------------------------------------------------------
+/// 后端payload参照
+/// var req struct {
+///		Title   string   `json:"title" binding:"required,min=2,max=100"`
+///		Content string   `json:"content" binding:"required,min=2"`
+///		Tags    []string `json:"tags"`
+///	}
+///-------------------------------------------------------------------
+
 class PostForm extends StatefulWidget {
+  final User? currentUser;
   final String title;
   final String? initialTitle; // 从外部传入的原始值
   final String? initialContent; // 从外部传入的原始值
@@ -39,6 +50,7 @@ class PostForm extends StatefulWidget {
 
   const PostForm({
     super.key,
+    required this.currentUser,
     required this.title,
     this.initialTitle,
     this.initialContent,
@@ -56,18 +68,11 @@ class PostForm extends StatefulWidget {
   _PostFormState createState() => _PostFormState();
 }
 
-/// -------------------------------------------------------------------
-/// 后端payload参照
-/// var req struct {
-///		Title   string   `json:"title" binding:"required,min=2,max=100"`
-///		Content string   `json:"content" binding:"required,min=2"`
-///		Tags    []string `json:"tags"`
-///	}
-///-------------------------------------------------------------------
-
 class _PostFormState extends State<PostForm> {
   late List<PostTag> _selectedTags;
   final _formKey = GlobalKey<FormState>();
+  bool _hasInitializedDependencies = false;
+  User? _currentUser;
 
   // State 变量存储最终传递给 FormTextInputField 的初始值
   late String _effectiveInitialTitle;
@@ -87,11 +92,21 @@ class _PostFormState extends State<PostForm> {
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.currentUser;
     _selectedTags = List.from(widget.initialTags);
+  }
 
-    // *** 在 PostForm 的 initState 中决定最终的初始值 ***
-    final inputStateService = context.read<InputStateService>();
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      initText();
+      _hasInitializedDependencies = true;
+    }
+  }
 
+  void initText() {
+    InputStateService? inputStateService = context.read<InputStateService>();
     // 决定标题初始值：优先使用 Service 中的草稿
     final titleFromService = inputStateService.getText(_titleSlotName);
     _effectiveInitialTitle = (titleFromService.isNotEmpty)
@@ -103,9 +118,19 @@ class _PostFormState extends State<PostForm> {
     _effectiveInitialContent = (contentFromService.isNotEmpty)
         ? contentFromService // 使用草稿
         : (widget.initialContent ?? ''); // 否则使用外部传入值（或空）
+    inputStateService = null;
+    // 用完立即归空
+  }
 
-    // *** 不需要在这里写回 Service ***
-    // *** FormTextInputField 会根据 slotName 和这个 effectiveInitialValue 自行处理 ***
+  @override
+  void didUpdateWidget(covariant PostForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   @override
@@ -303,7 +328,8 @@ class _PostFormState extends State<PostForm> {
                 ),
               ),
               selected: isSelected,
-              selectedColor: Theme.of(context).primaryColor.withSafeOpacity(0.2),
+              selectedColor:
+                  Theme.of(context).primaryColor.withSafeOpacity(0.2),
               checkmarkColor: Theme.of(context).primaryColor,
               backgroundColor: Colors.grey.shade200,
               shape: RoundedRectangleBorder(

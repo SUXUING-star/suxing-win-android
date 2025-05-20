@@ -3,17 +3,17 @@ import 'package:flutter/foundation.dart';
 
 class GameListFilterProvider with ChangeNotifier {
   String? _selectedTag;
-  bool _tagHasBeenSet = false; // 标记 Tag 是否是主动设置的
+  bool _tagHasBeenSet = false;
 
-  String? _selectedCategory; // *** 新增: 选中的分类 ***
-  bool _categoryHasBeenSet = false; // *** 新增: 分类是否主动设置 ***
+  String? _selectedCategory;
+  bool _categoryHasBeenSet = false;
 
   // --- Getters ---
   String? get selectedTag => _selectedTag;
   bool get tagHasBeenSet => _tagHasBeenSet;
 
-  String? get selectedCategory => _selectedCategory; // *** 新增 ***
-  bool get categoryHasBeenSet => _categoryHasBeenSet; // *** 新增 ***
+  String? get selectedCategory => _selectedCategory;
+  bool get categoryHasBeenSet => _categoryHasBeenSet;
 
   // --- Setters (包含互斥逻辑) ---
 
@@ -44,13 +44,11 @@ class GameListFilterProvider with ChangeNotifier {
   void setCategory(String? newCategory) {
     // 只有当新分类与当前分类不同时才更新
     if (_selectedCategory != newCategory) {
-      print('GameListFilterProvider: Setting category to -> $newCategory');
       _selectedCategory = newCategory;
       _categoryHasBeenSet = true; // 标记 Category 已设置
 
       // *** 互斥逻辑: 设置 Category 时清除 Tag ***
       if (newCategory != null && _selectedTag != null) {
-        print('GameListFilterProvider: Clearing tag because category was set.');
         _selectedTag = null;
         _tagHasBeenSet = false; // 标签被清除了，重置标记
       }
@@ -94,10 +92,6 @@ class GameListFilterProvider with ChangeNotifier {
   void resetFlags() {
     //bool changed = _tagHasBeenSet || _categoryHasBeenSet;
     _tagHasBeenSet = false;
-    _categoryHasBeenSet = false;
-    // if (changed) {
-    //   // 理论上不需要通知，因为 UI 应该已经响应了 setTag/setCategory
-    // }
-    //print("GameListFilterProvider: Resetting all flags.");
+    _categoryHasBeenSet = false;;
   }
 }

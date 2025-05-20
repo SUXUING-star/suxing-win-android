@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/activity/card/activity_target.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
@@ -30,13 +31,13 @@ class ActivityTarget extends StatelessWidget {
 
     // --- 直接用 activity.targetType ---
     switch (activity.targetType) {
-      case 'game':
+      case ActivityTargetTypeConstants.game:
         targetWidget = _buildGameTarget(context);
         break;
-      case 'post':
+      case ActivityTargetTypeConstants.post:
         targetWidget = _buildPostTarget(context);
         break;
-      case 'user':
+      case ActivityTargetTypeConstants.user:
         targetWidget = _buildUserTarget(context); // 目标是用户
         break;
       default:
@@ -72,7 +73,7 @@ class ActivityTarget extends StatelessWidget {
                   borderRadius: BorderRadius.circular(borderRadiusValue),
                 )
               : _buildPlaceholderImage(
-                  'game'), // Fallback if no cover image URL
+                  ActivityTargetTypeConstants.game), // Fallback if no cover image URL
           SizedBox(width: 12 * cardHeight),
           Expanded(
             child: Text(
@@ -149,7 +150,7 @@ class ActivityTarget extends StatelessWidget {
         child: UserInfoBadge(
           key: ValueKey('target_badge_$targetUserId'), // 给 Badge 一个 Key
           currentUser: currentUser,
-          userId: targetUserId, // 传递目标用户 ID
+          targetUserId: targetUserId, // 传递目标用户 ID
           userDataStatus: userDataStatus,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
@@ -173,7 +174,7 @@ class ActivityTarget extends StatelessWidget {
         child: UserInfoBadge(
           key: ValueKey('default_$userId'), // 给 Badge 一个 Key
           currentUser: currentUser,
-          userId: userId, // 传递目标用户 ID
+          targetUserId: userId, // 传递目标用户 ID
           userDataStatus: userDataStatus,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
@@ -194,7 +195,7 @@ class ActivityTarget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4 * math.sqrt(cardHeight)),
       ),
       child: Icon(
-        type == 'game'
+        type == ActivityTargetTypeConstants.game
             ? Icons.videogame_asset_outlined
             : Icons.image_not_supported_outlined,
         size: 24 * math.sqrt(cardHeight),

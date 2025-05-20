@@ -2,13 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
-// 1. 导入 CachedNetworkImageProvider
 import 'package:cached_network_image/cached_network_image.dart';
-// 2. 导入你的 URL 工具类 (如果 SafeCachedImage 里的 UrlUtils 在别处)
 import 'package:suxingchahui/utils/network/url_utils.dart'; // 确认路径正确
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-// 3. 不再需要导入 SafeCachedImage 了
-// import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class ImagePreviewScreen extends StatefulWidget {
   final List<String> images;

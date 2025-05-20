@@ -111,8 +111,6 @@ class AnnouncementDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final Color iconColor = _getTypeIconColor(theme, announcement.type);
 
-    final fileUploadService = context.read<RateLimitedFileUpload>();
-
     return Material(
       color: Colors.transparent,
       elevation: 0,
@@ -130,7 +128,7 @@ class AnnouncementDialog extends StatelessWidget {
                 children: [
                   const SizedBox(height: 16),
                   // --- 修改：调用新的图片构建方法 ---
-                  _buildImage(context, fileUploadService), // 不再传递 imageUrl
+                  _buildImage(context), // 不再传递 imageUrl
                   // 根据是否有图片决定是否添加间距
                   if (_shouldShowImage()) const SizedBox(height: 20),
                   _buildContent(context, theme),
@@ -155,7 +153,6 @@ class AnnouncementDialog extends StatelessWidget {
 
   // --- 构建头部 (保持不变) ---
   Widget _buildHeader(BuildContext context, ThemeData theme, Color iconColor) {
-    // ... (代码不变) ...
     final Color titleColor = theme.colorScheme.onSurface;
     final Color closeButtonColor =
         theme.colorScheme.onSurfaceVariant.withSafeOpacity(0.8);
@@ -210,11 +207,10 @@ class AnnouncementDialog extends StatelessWidget {
   }
 
   // --- 构建图片 (修改：优先使用 imageSource) ---
-  Widget _buildImage(
-      BuildContext context, RateLimitedFileUpload fileUploadService) {
+  Widget _buildImage(BuildContext context) {
     Widget imageWidget;
     final source = imageSource; // 获取传入的 source
-
+    final fileUploadService = context.read<RateLimitedFileUpload>();
     if (source is XFile) {
       // 显示本地 XFile
       imageWidget = Image.file(

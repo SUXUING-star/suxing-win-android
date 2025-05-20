@@ -80,7 +80,6 @@ class DesktopFrameLayout extends StatelessWidget {
       children: [
         // --- 底层：基础布局 (可能含侧边栏) ---
         Positioned.fill(child: baseLayout),
-
         // --- 顶层：自定义标题栏 ---
         Positioned(
           top: 0,
@@ -91,7 +90,6 @@ class DesktopFrameLayout extends StatelessWidget {
             elevation: 1.0, // 可选阴影
             child: Row(
               children: [
-                // --- a) 可拖拽区域 (含图标和标题) ---
                 Expanded(
                   child: DragToMoveArea(
                     child: Container(
@@ -138,19 +136,23 @@ class DesktopFrameLayout extends StatelessWidget {
                 ),
 
                 // --- b) 动作按钮区域 (条件显示) ---
-                if (showTitleBarActions) // *** 根据参数决定是否显示 ***
+                if (showTitleBarActions)
                   Consumer<AuthProvider>(
                     // 仍然需要 Consumer 来判断登录状态
                     builder: (context, authProvider, _) {
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          _buildTitleBarButtonWrapper(UpdateButton(), '检查更新'),
                           _buildTitleBarButtonWrapper(
-                              AnnouncementIndicator(), '查看公告'),
+                              const UpdateButton(), '检查更新'),
+                          _buildTitleBarButtonWrapper(
+                              AnnouncementIndicator(authProvider: authProvider),
+                              '查看公告'),
                           if (authProvider.isLoggedIn)
-                            _buildTitleBarButtonWrapper(MessageBadge(), '未读消息'),
-                          _buildTitleBarButtonWrapper(CheckInBadge(), '每日签到'),
+                            _buildTitleBarButtonWrapper(
+                                const MessageBadge(), '未读消息'),
+                          _buildTitleBarButtonWrapper(
+                              const CheckInBadge(), '每日签到'),
                           const SizedBox(width: 8), // 与窗口控件的间距
                         ],
                       );

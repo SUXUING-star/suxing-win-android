@@ -1,8 +1,8 @@
 // lib/screens/profile/tab/widgets/post_history_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../../../../../../utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 
 // 帖子历史卡片组件
 class PostHistoryCard extends StatelessWidget {
@@ -89,7 +89,8 @@ class PostHistoryCard extends StatelessWidget {
                   // 左侧统计信息
                   Row(
                     children: [
-                      Icon(Icons.remove_red_eye, size: 14, color: Colors.blueAccent),
+                      Icon(Icons.remove_red_eye,
+                          size: 14, color: Colors.blueAccent),
                       SizedBox(width: 4),
                       Text(
                         '${historyItem['viewCount'] ?? 0}',
@@ -112,7 +113,9 @@ class PostHistoryCard extends StatelessWidget {
                       SizedBox(width: 4),
                       Text(
                         DateTimeFormatter.formatRelative(
-                          DateTime.parse(historyItem['lastViewTime']?.toString() ?? DateTime.now().toIso8601String()),
+                          DateTime.parse(
+                              historyItem['lastViewTime']?.toString() ??
+                                  DateTime.now().toIso8601String()),
                         ),
                         style: TextStyle(
                           fontSize: 12,

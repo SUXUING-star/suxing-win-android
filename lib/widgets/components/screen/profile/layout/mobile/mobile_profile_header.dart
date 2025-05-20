@@ -13,7 +13,6 @@ class MobileProfileHeader extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
-  // 这两个回调由 EditableUserAvatar 内部处理后触发，父级 (ProfileScreen) 监听
   final Function(bool) onUploadStateChanged;
   final Function() onUploadSuccess;
   final DailyProgressData? dailyProgressData;

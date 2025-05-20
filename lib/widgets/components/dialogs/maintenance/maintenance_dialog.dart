@@ -144,7 +144,4 @@ class MaintenanceDialog {
       return "$hours 小时 $remainingMinutes 分钟";
     }
   }
-
-// 移除了 _formatDateTime，直接使用 DateTimeFormatter.formatStandard
-// 移除了 _twoDigits，因为 DateTimeFormatter 应该处理了格式化
 }

@@ -35,8 +35,7 @@ class RecentGlobalReplies extends StatefulWidget {
 class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // 把 Stream 换成 Future
   Future<List<GlobalReplyItem>>? _repliesFuture;
-  // 不需要 _isLoading 了，FutureBuilder 自己会管加载状态
-  // --- 新增：节流相关状态 ---
+  User? _currentUser;
   bool _isRefreshing = false; // 标记是否正在执行刷新操作
   DateTime? _lastRefreshTime; // 上次刷新的时间戳
   // 定义最小刷新间隔 (例如：3秒)
@@ -48,7 +47,18 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   @override
   void initState() {
     super.initState();
-    // 初始化时调用 Future 方法
+    _currentUser = widget.currentUser;
+  }
+
+  @override
+  void didUpdateWidget(covariant RecentGlobalReplies oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   @override
@@ -255,7 +265,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   UserInfoBadge(
-                    userId: userId,
+                    targetUserId: userId,
                     userDataStatus: userDataStatus,
                     showFollowButton: false,
                     currentUser: widget.currentUser,

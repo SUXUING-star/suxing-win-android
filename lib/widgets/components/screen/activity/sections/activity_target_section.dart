@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
@@ -26,11 +27,14 @@ class ActivityTargetSection extends StatelessWidget {
     // --- 根据 targetType 确定标题 ---
     final String title;
     switch (activity.targetType) {
-      case 'game':
+      case ActivityTargetTypeConstants.game:
         title = '相关游戏'; // 或者 "游戏信息"
         break;
-      case 'post':
+      case ActivityTargetTypeConstants.post:
         title = '相关帖子'; // 或者 "下载链接"
+        break;
+      case ActivityTargetTypeConstants.user:
+        title = '相关用户'; // 或者 "下载链接"
         break;
       default:
         title = '相关内容';

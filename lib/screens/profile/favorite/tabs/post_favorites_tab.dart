@@ -1,6 +1,7 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/post/post.dart';
@@ -19,8 +20,10 @@ class PostFavoritesTab extends StatefulWidget {
 
   static final GlobalKey<_PostFavoritesTabState> _postTabKey =
       GlobalKey<_PostFavoritesTabState>();
-
-  PostFavoritesTab() : super(key: _postTabKey);
+  final User? currentUser;
+  PostFavoritesTab(
+    this.currentUser,
+  ) : super(key: _postTabKey);
 
   @override
   _PostFavoritesTabState createState() => _PostFavoritesTabState();
@@ -40,7 +43,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
   bool _hasInitializedDependencies = false;
   late final ForumService _forumService;
-  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -53,7 +55,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _forumService = context.read<ForumService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -143,55 +144,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return _loadFavoritePosts();
   }
 
-  // --- 新增：处理 PostCard 的编辑请求 ---
-  void _handleEditPostRequest(Post post) {
-    // 在收藏夹里编辑帖子通常是不允许的，应该引导用户去原帖编辑
-    AppSnackBar.showInfo(context, '请在帖子详情或我的帖子中进行编辑');
-    // 或者可以考虑跳转到帖子详情页
-    // NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id);
-  }
-
-  // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
-  Future<void> _handleToggleLockAction(String postId) async {
-    if (!mounted) return;
-
-    // 可选：显示加载状态
-    // setState(() => _isLoading = true);
-
-    try {
-      final forumService = context.read<ForumService>();
-      await forumService.togglePostLock(postId);
-      if (!mounted) return;
-
-      AppSnackBar.showSuccess(context, '帖子状态已切换');
-
-      // --- 更新收藏列表中的帖子状态 ---
-      setState(() {
-        final index = _favoritePosts.indexWhere((p) => p.id == postId);
-        if (index != -1) {
-          final oldPost = _favoritePosts[index];
-          final newStatus = oldPost.status == PostStatus.locked
-              ? PostStatus.active
-              : PostStatus.locked;
-          _favoritePosts[index] = oldPost.copyWith(status: newStatus);
-          // 如果帖子被锁定，它理论上不应该出现在普通用户的收藏夹了
-          // 但管理员可能看到。如果非管理员，可以考虑直接移除
-          // if (newStatus == PostStatus.locked && !Provider.of<AuthProvider>(context, listen: false).isAdmin) {
-          //   _favoritePosts.removeAt(index);
-          //   print("PostFavoritesTab: Removed locked post $postId from non-admin favorites.");
-          // }
-        } else {
-          // 可以选择刷新: refreshPosts();
-        }
-      });
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError(context, '操作失败: $e');
-    } finally {
-      // 可选：结束加载状态
-      // if (mounted) setState(() => _isLoading = false);
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -244,16 +196,12 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return RefreshIndicator(
       onRefresh: refreshPosts, // 下拉刷新回调
       child: PostGridView(
-        currentUser: _authProvider.currentUser,
+        currentUser: widget.currentUser,
         posts: _favoritePosts,
         scrollController: _scrollController,
         isLoading: _isLoading && _hasMoreData, // 只有加载更多时才传递 isLoading
         hasMoreData: _hasMoreData,
-        // onLoadMore: _loadMorePosts, // PostGridView 不直接使用 onLoadMore 回调
         isDesktopLayout: isDesktop, // 根据设备类型判断布局
-        // --- 传递实现好的回调函数 ---
-        onEditAction: _handleEditPostRequest,
-        onToggleLockAction: _handleToggleLockAction,
       ),
     );
   }

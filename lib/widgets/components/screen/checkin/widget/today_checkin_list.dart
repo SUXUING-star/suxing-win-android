@@ -205,7 +205,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                   child: UserInfoBadge(
                     currentUser: widget.currentUser,
                     userDataStatus: userDataStatus,
-                    userId: userId, // **传递 userId 给 Badge**
+                    targetUserId: userId, // **传递 userId 给 Badge**
                     showFollowButton: true, // 显示关注按钮 (如果需要)
                     mini: true, // 使用紧凑样式
                     showLevel: true, // 显示等级信息

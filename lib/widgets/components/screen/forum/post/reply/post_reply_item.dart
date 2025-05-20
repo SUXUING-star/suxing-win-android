@@ -8,13 +8,13 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 使用已修改的 CommentInputField
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../../../models/post/post.dart';
-import '../../../../../../services/main/forum/forum_service.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
-import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../../ui/badges/user_info_badge.dart';
-import '../../../../../ui/dialogs/edit_dialog.dart';
-import '../../../../../ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class PostReplyItem extends StatelessWidget {
   final User? currentUser;
@@ -83,7 +83,7 @@ class PostReplyItem extends StatelessWidget {
       maxLines: 4,
       onSave: (newContent) async {
         try {
-          await forumService.updateReply(postId, reply.id, newContent);
+          await forumService.updateReply(postId, reply, newContent);
           if (context.mounted) {
             AppSnackBar.showSuccess(context, '回复编辑成功');
           }
@@ -96,6 +96,7 @@ class PostReplyItem extends StatelessWidget {
       },
     );
   }
+
 
   Future<void> _handleDeleteReply(
     BuildContext context,
@@ -110,7 +111,7 @@ class PostReplyItem extends StatelessWidget {
       confirmButtonColor: Colors.red,
       onConfirm: () async {
         try {
-          await forumService.deleteReply(postId, reply.id);
+          await forumService.deleteReply(postId, reply);
           if (context.mounted) {
             AppSnackBar.showSuccess(context, '回复删除成功');
           }
@@ -220,7 +221,7 @@ class PostReplyItem extends StatelessWidget {
               child: UserInfoBadge(
                 currentUser: currentUser,
                 userDataStatus: userDataStatus,
-                userId: reply.authorId,
+                targetUserId: reply.authorId,
                 showFollowButton: false,
                 mini: true,
               ),

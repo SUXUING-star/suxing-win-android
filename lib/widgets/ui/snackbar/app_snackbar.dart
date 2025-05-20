@@ -411,4 +411,11 @@ class AppSnackBar {
       duration: const Duration(seconds: 5),
     );
   }
+
+  static void showPermissionDenySnackBar(BuildContext context) {
+    showWarning(
+      context,
+      "你没有权限操作",
+    );
+  }
 }

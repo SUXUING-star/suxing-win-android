@@ -122,7 +122,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
   Widget _buildContent() {
     if (_errorMessage != null) {
       if (_errorMessage == '请先登录后再查看收藏') {
-        return LoginPromptWidget();
+        return const LoginPromptWidget();
       }
       return CustomErrorWidget(
           errorMessage: _errorMessage, onRetry: _refreshData);
@@ -189,8 +189,8 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           Text(message),
           SizedBox(height: 24),
           FunctionalButton(
-            onPressed: () => NavigationUtils.pushReplacementNamed(
-                context, AppRoutes.gamesList),
+            onPressed: () =>
+                NavigationUtils.navigateToHome(context, tabIndex: 1),
             label: '发现游戏',
             icon: Icons.find_in_page_outlined,
           ),

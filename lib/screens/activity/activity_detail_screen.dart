@@ -32,7 +32,7 @@ class ActivityDetailScreen extends StatefulWidget {
 }
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
-  UserActivity? _activity;
+  late UserActivity _activity;
   bool _isLoading = true;
   final bool _isLoadingComments = false;
   String _error = '';
@@ -46,7 +46,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   @override
   void initState() {
     super.initState();
-
     _scrollController.addListener(_scrollListener);
   }
 
@@ -76,7 +75,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   void _initializeActivity() {
     if (widget.activity != null) {
       setStateIfMounted(() {
-        _activity = widget.activity;
+        _activity = widget.activity!;
         _isLoading = false;
       });
     } else {
@@ -106,13 +105,14 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     try {
       final activity =
           await _activityService.getActivityDetail(widget.activityId);
-      setStateIfMounted(() {
-        _activity = activity;
-        _isLoading = false;
-        if (activity == null) {
-          _error = '未能加载活动详情';
-        }
-      });
+      if (activity == null) {
+        _error = '未能加载活动详情';
+      } else {
+        setStateIfMounted(() {
+          _activity = activity;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
       setStateIfMounted(() {
         _error = '加载活动详情失败: $e';
@@ -126,27 +126,30 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Future<void> _handleLike() async {
-    if (_activity == null) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
     HapticFeedback.lightImpact();
-    final bool currentlyLiked = _activity!.isLiked;
-    final int currentLikesCount = _activity!.likesCount;
+    final bool currentlyLiked = _activity.isLiked;
+    final int currentLikesCount = _activity.likesCount;
     setStateIfMounted(() {
-      _activity!.isLiked = !currentlyLiked;
-      _activity!.likesCount =
+      _activity.isLiked = !currentlyLiked;
+      _activity.likesCount =
           currentlyLiked ? currentLikesCount - 1 : currentLikesCount + 1;
     });
     try {
       bool success = currentlyLiked
-          ? await _activityService.unlikeActivity(_activity!.id)
-          : await _activityService.likeActivity(_activity!.id);
+          ? await _activityService.unlikeActivity(_activity.id)
+          : await _activityService.likeActivity(_activity.id);
       if (!success) {
         throw Exception('API call failed'); // 抛出异常以便 catch 处理回滚
       }
     } catch (e) {
       setStateIfMounted(() {
         // 回滚 UI
-        _activity!.isLiked = currentlyLiked;
-        _activity!.likesCount = currentLikesCount;
+        _activity.isLiked = currentlyLiked;
+        _activity.likesCount = currentLikesCount;
       });
       if (mounted) {
         AppSnackBar.showError(context, '操作失败，请稍后重试');
@@ -155,14 +158,18 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Future<void> _addComment(String content) async {
-    if (content.trim().isEmpty || _activity == null) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (content.trim().isEmpty) return;
     try {
       final comment =
-          await _activityService.commentOnActivity(_activity!.id, content);
+          await _activityService.commentOnActivity(_activity.id, content);
       if (comment != null) {
         setStateIfMounted(() {
-          _activity!.comments.insert(0, comment);
-          _activity!.commentsCount += 1;
+          _activity.comments.insert(0, comment);
+          _activity.commentsCount += 1;
           _refreshCounter++; // 强制刷新
         });
         // 滚动逻辑 (可选)
@@ -178,10 +185,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
   }
 
-  void _handleCommentDeleted(String commentId) {
-    // --- 这里应该调用 Service 删除，并处理 UI 更新 (移除) ---
-    // 这个方法现在由 ActivityCommentItem -> ActivityCommentsSection -> 这里 最终调用
-    // 之前在 ActivityFeedScreen 的实现是正确的，应该类似：
+  bool _checkCanDeleteComment(ActivityComment comment) {
+    final bool isAuthor = comment.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    return isAdmin ? true : isAuthor;
+  }
+
+  void _handleCommentDeleted(ActivityComment comment) {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanDeleteComment(comment)) {
+      AppSnackBar.showError(context, "你没有权限删除评论");
+      return;
+    }
+    final commentId = comment.id;
     CustomConfirmDialog.show(
         context: context,
         title: "确认删除",
@@ -193,12 +212,12 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           try {
             final success =
-                await _activityService.deleteComment(_activity!.id, commentId);
+                await _activityService.deleteComment(_activity.id, comment);
             if (success && mounted) {
               // --- 从本地列表移除评论并更新计数 ---
               setStateIfMounted(() {
-                _activity!.comments.removeWhere((c) => c.id == commentId);
-                _activity!.commentsCount = _activity!.comments.length;
+                _activity.comments.removeWhere((c) => c.id == commentId);
+                _activity.commentsCount = _activity.comments.length;
                 _refreshCounter++; // 强制 UI 刷新
               });
               AppSnackBar.showSuccess(context, '评论已删除');
@@ -213,13 +232,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   void _handleCommentLikeToggled(ActivityComment updatedComment) {
-    if (_activity == null) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
     setStateIfMounted(() {
       // 在 _activity!.comments 中找到对应的评论并替换
       final index =
-          _activity!.comments.indexWhere((c) => c.id == updatedComment.id);
+          _activity.comments.indexWhere((c) => c.id == updatedComment.id);
       if (index != -1) {
-        _activity!.comments[index] = updatedComment; // 使用更新后的对象替换旧的
+        _activity.comments[index] = updatedComment; // 使用更新后的对象替换旧的
         // 不需要强制刷新计数器了，因为 Service 调用 -> 缓存失效 -> 监听器刷新 会处理
         // _refreshCounter++;
       }
@@ -228,12 +250,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {
-    if (_activity == null) return;
-    // 权限检查：必须是作者本人
-    if (!_authProvider.isLoggedIn ||
-        _authProvider.currentUserId != _activity!.userId) {
+    if (!_authProvider.isLoggedIn) {
       if (mounted) {
-        AppSnackBar.showError(context, '您没有权限编辑此动态');
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+
+    if (!_checkCanEditOrCanDelete(_activity)) {
+      if (mounted) {
+        AppSnackBar.showError(context, '您没有权限删除此动态');
       }
       return;
     }
@@ -243,22 +269,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       await EditDialog.show(
         context: context,
         title: '编辑动态',
-        initialText: _activity!.content,
+        initialText: _activity.content,
         hintText: '输入新的动态内容...',
         maxLines: 5, // 可以调整最大行数
         onSave: (newText) async {
           // onSave 是异步的
-          if (newText == _activity!.content) return; // 内容未改变则不提交
+          if (newText == _activity.content) return; // 内容未改变则不提交
 
           try {
             // 调用服务更新活动
             final success = await _activityService.updateActivity(
-                _activity!.id, newText, _activity!.metadata);
+                _activity, newText, _activity.metadata);
 
             if (success) {
               // 更新本地状态
               setStateIfMounted(() {
-                final currentActivity = _activity!;
+                final currentActivity = _activity;
                 // 创建一个新的 UserActivity 实例，复制旧数据并更新字段
 
                 _activity = UserActivity(
@@ -297,19 +323,28 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           }
         },
       );
-    } catch (e) {}
+    } catch (e) {
+      //
+    }
+  }
+
+  bool _checkCanEditOrCanDelete(UserActivity activity) {
+    final bool isAuthor = activity.userId == _authProvider.currentUserId;
+    final bool isAdmin = _authProvider.isAdmin;
+    final canEditOrDelete = isAdmin ? true : isAuthor;
+    return canEditOrDelete;
   }
 
   // --- 删除活动处理 ---
   Future<void> _handleDeleteActivity() async {
-    if (_activity == null) return;
+    if (!_authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
 
-    // 权限检查：作者本人 或 管理员
-    final bool canDelete = _authProvider.isLoggedIn &&
-        (_authProvider.currentUserId == _activity!.userId ||
-            _authProvider.isAdmin);
-
-    if (!canDelete) {
+    if (!_checkCanEditOrCanDelete(_activity)) {
       if (mounted) {
         AppSnackBar.showError(context, '您没有权限删除此动态');
       }
@@ -329,8 +364,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           // onConfirm 是异步的
           try {
-            final success =
-                await _activityService.deleteActivity(_activity!.id);
+            final success = await _activityService.deleteActivity(_activity);
             if (success) {
               if (mounted) {
                 // 删除成功后，关闭当前页面
@@ -367,20 +401,17 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
     final userInfoProvider = context.watch<UserInfoProvider>();
 
-
     Widget body;
 
     if (_isLoading) {
       body = LoadingWidget();
-    } else if (_error.isNotEmpty && _activity == null) {
+    } else if (_error.isNotEmpty) {
       body = InlineErrorWidget(errorMessage: _error);
-    } else if (_activity == null) {
-      body = InlineErrorWidget(errorMessage: '无法加载动态内容');
     } else {
-      final userId = _activity!.userId;
+      final userId = _activity.userId;
       userInfoProvider.ensureUserInfoLoaded(userId);
       final UserDataStatus userDataStatus =
-      userInfoProvider.getUserStatus(userId);
+          userInfoProvider.getUserStatus(userId);
       // 传递编辑和删除的回调给 ActivityDetailContent
       body = RefreshIndicator(
         onRefresh: _refreshActivity,
@@ -388,8 +419,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
           currentUser: _authProvider.currentUser,
           userDataStatus: userDataStatus,
-          activity: _activity!,
-          comments: _activity!.comments,
+          activity: _activity,
+          comments: _activity.comments,
           isLoadingComments: _isLoadingComments,
           scrollController: _scrollController,
           onAddComment: _addComment,
@@ -406,33 +437,31 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       appBar: isDesktop
           ? CustomAppBar(
               title: '动态详情',
-              actions: _activity == null
-                  ? []
-                  : [
-                      IconButton(
-                        icon: Icon(_activity!.isLiked
-                            ? Icons.favorite
-                            : Icons.favorite_border),
-                        color: _activity!.isLiked ? Colors.red : null,
-                        onPressed: _handleLike,
-                        tooltip: _activity!.isLiked ? '取消点赞' : '点赞',
-                      ),
-                      const SizedBox(width: 16),
-                    ],
+              actions: [
+                IconButton(
+                  icon: Icon(_activity.isLiked
+                      ? Icons.favorite
+                      : Icons.favorite_border),
+                  color: _activity.isLiked ? Colors.red : null,
+                  onPressed: _handleLike,
+                  tooltip: _activity.isLiked ? '取消点赞' : '点赞',
+                ),
+                const SizedBox(width: 16),
+              ],
             )
           : CustomAppBar(
               title: '动态详情',
             ),
       body: body,
-      floatingActionButton: (!isDesktop && _activity != null) // 移动端且活动已加载
+      floatingActionButton: (!isDesktop) // 移动端且活动已加载
           ? GenericFloatingActionButton(
               onPressed: _handleLike,
-              backgroundColor: _activity!.isLiked
+              backgroundColor: _activity.isLiked
                   ? Colors.red
                   : Theme.of(context).colorScheme.primary,
               foregroundColor: Colors.white, // 确保图标颜色
-              icon: _activity!.isLiked ? Icons.favorite : Icons.favorite_border,
-              tooltip: _activity!.isLiked ? '取消点赞' : '点赞',
+              icon: _activity.isLiked ? Icons.favorite : Icons.favorite_border,
+              tooltip: _activity.isLiked ? '取消点赞' : '点赞',
             )
           : null,
     );

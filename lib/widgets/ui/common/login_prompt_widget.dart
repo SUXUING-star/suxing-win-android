@@ -6,15 +6,14 @@ import '../../../utils/font/font_config.dart';
 import '../../../routes/app_routes.dart';
 
 class LoginPromptWidget extends StatelessWidget {
-  final bool isDesktop;
-
   const LoginPromptWidget({
     super.key,
-    this.isDesktop = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    final bool isDesktop = MediaQuery.of(context).size.width >= 600;
+
     return isDesktop
         ? _buildDesktopLoginPrompt(context)
         : _buildMobileLoginPrompt(context);
@@ -22,6 +21,7 @@ class LoginPromptWidget extends StatelessWidget {
 
   Widget _buildMobileLoginPrompt(BuildContext context) {
     return SingleChildScrollView(
+      // 确保内容过多时可以滚动
       child: Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -77,10 +77,11 @@ class LoginPromptWidget extends StatelessWidget {
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           child: Container(
-            width: 500,
-            padding: EdgeInsets.all(40),
+            width: 500, // 桌面端可以给一个固定宽度或者最大宽度
+            constraints: const BoxConstraints(maxWidth: 500), // 确保不会过宽
+            padding: const EdgeInsets.all(40),
             child: Column(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisSize: MainAxisSize.min, // 高度自适应内容
               children: [
                 Icon(
                   Icons.account_circle_outlined,
@@ -111,7 +112,7 @@ class LoginPromptWidget extends StatelessWidget {
                 ),
                 const SizedBox(height: 40),
                 Row(
-                  mainAxisSize: MainAxisSize.min,
+                  mainAxisSize: MainAxisSize.min, // 按钮组宽度自适应
                   children: [
                     FunctionalButton(
                       onPressed: () {
@@ -119,10 +120,11 @@ class LoginPromptWidget extends StatelessWidget {
                       },
                       label: '立即登录',
                     ),
-                    SizedBox(width: 16),
+                    const SizedBox(width: 16),
                     OutlinedButton(
                       onPressed: () {
-                        Navigator.pushNamed(context, AppRoutes.register);
+                        // 确保 AppRoutes.register 路由已定义
+                        NavigationUtils.pushNamed(context, AppRoutes.register);
                       },
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(

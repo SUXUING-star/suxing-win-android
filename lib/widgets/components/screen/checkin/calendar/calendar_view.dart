@@ -30,9 +30,11 @@ class CalendarView extends StatelessWidget {
     if (selectedYear == now.year && selectedMonth == now.month) {
       if (monthlyData != null) {
         final List<dynamic> rawDays = monthlyData?['days'] as List? ?? [];
-        final int daysInCurrentMonth = DateTime(selectedYear, selectedMonth + 1, 0).day;
+        final int daysInCurrentMonth =
+            DateTime(selectedYear, selectedMonth + 1, 0).day;
         // 注意：这里调用的是 _calculateMissedDaysForCurrentMonth
-        final Set<int> missedCheckInDays = _calculateMissedDaysForCurrentMonth(rawDays, daysInCurrentMonth, selectedYear, selectedMonth);
+        final Set<int> missedCheckInDays = _calculateMissedDaysForCurrentMonth(
+            rawDays, daysInCurrentMonth, selectedYear, selectedMonth);
         calculatedMissedDays = missedCheckInDays.length;
       } else {
         calculatedMissedDays = missedDays; // 数据加载中或失败时，使用传入值
@@ -47,7 +49,8 @@ class CalendarView extends StatelessWidget {
       ),
       child: Padding(
         padding: const EdgeInsets.all(16.0), // 卡片内部整体边距
-        child: Column( // 卡片内的主要 Column
+        child: Column(
+          // 卡片内的主要 Column
           mainAxisSize: MainAxisSize.min, // 高度根据内容自适应
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -59,10 +62,13 @@ class CalendarView extends StatelessWidget {
                 // "签到日历" 标题
                 Text(
                   '签到日历',
-                  style: theme.textTheme.titleSmall ?? const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  style: theme.textTheme.titleSmall ??
+                      const TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 // 右侧控制区域 (漏签提示 + 月份切换)
-                Expanded( // 占据剩余空间，将右侧内容推到最右边
+                Expanded(
+                  // 占据剩余空间，将右侧内容推到最右边
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.end, // 右对齐
                     crossAxisAlignment: CrossAxisAlignment.center, // 确保垂直居中
@@ -73,11 +79,13 @@ class CalendarView extends StatelessWidget {
                           calculatedMissedDays > 0)
                         Container(
                           margin: const EdgeInsets.only(right: 8), // 与切换按钮的间距
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.red.withSafeOpacity(0.1),
                             borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.red.withSafeOpacity(0.3)),
+                            border: Border.all(
+                                color: Colors.red.withSafeOpacity(0.3)),
                           ),
                           child: Text(
                             '漏签 $calculatedMissedDays 天',
@@ -89,7 +97,8 @@ class CalendarView extends StatelessWidget {
                           ),
                         ),
                       // 月份切换按钮和年月显示 (用 Flexible 包裹防止宽度溢出)
-                      Flexible( // 允许这部分在空间不足时收缩
+                      Flexible(
+                        // 允许这部分在空间不足时收缩
                         child: Row(
                           mainAxisSize: MainAxisSize.min, // 只占据必要宽度
                           mainAxisAlignment: MainAxisAlignment.end, // 内部元素也靠右
@@ -107,7 +116,8 @@ class CalendarView extends StatelessWidget {
                                 onChangeMonth(newYear, newMonth);
                               },
                               padding: EdgeInsets.zero,
-                              constraints: const BoxConstraints(), // 移除默认的大 padding
+                              constraints:
+                                  const BoxConstraints(), // 移除默认的大 padding
                               iconSize: 22,
                               splashRadius: 18, // 控制点击波纹范围
                               tooltip: '上个月', // 增加可访问性
@@ -167,7 +177,6 @@ class CalendarView extends StatelessWidget {
     );
   }
 
-
   // --- 构建日历网格 (包括星期标题和日期格子) ---
   Widget _buildCalendarGrid(BuildContext context) {
     //final theme = Theme.of(context);
@@ -183,15 +192,18 @@ class CalendarView extends StatelessWidget {
 
     // --- 安全地解析签到数据 ---
     final List<dynamic> rawDays = monthlyData?['days'] as List? ?? [];
-    final Map<int, Map<String, dynamic>> checkedInDaysData = {}; // 存储完整签到数据 {day: data}
+    final Map<int, Map<String, dynamic>> checkedInDaysData =
+        {}; // 存储完整签到数据 {day: data}
     final Set<int> checkedInDayNumbers = {}; // 只存储签到的日期数字 {day1, day2, ...}
     for (final rawDay in rawDays) {
       if (rawDay is! Map) continue; // 跳过无效数据
       final Map<String, dynamic> dayData = Map<String, dynamic>.from(rawDay);
       // 必须是已签到 ('checkedIn' == true) 且包含 'day' 字段
       if (dayData['checkedIn'] == true && dayData.containsKey('day')) {
-        int? dayOfMonth = _parseDayOfMonth(dayData['day'], daysInMonth); // 使用辅助函数解析日期
-        if (dayOfMonth != null) { // 确保日期有效
+        int? dayOfMonth =
+            _parseDayOfMonth(dayData['day'], daysInMonth); // 使用辅助函数解析日期
+        if (dayOfMonth != null) {
+          // 确保日期有效
           checkedInDaysData[dayOfMonth] = dayData;
           checkedInDayNumbers.add(dayOfMonth);
         }
@@ -215,21 +227,25 @@ class CalendarView extends StatelessWidget {
     }
     // --- 漏签计算结束 ---
 
-    return Column( // 包含星期标题和 GridView
+    return Column(
+      // 包含星期标题和 GridView
       children: [
         // --- 星期标题行 ---
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround, // 均匀分布
           children: weekdayTitles.map((title) {
             final isWeekend = title == '六' || title == '日';
-            return Expanded( // 每个标题占据相等宽度
+            return Expanded(
+              // 每个标题占据相等宽度
               child: Center(
                 child: Text(
                   title,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 12, // 星期标题字体可以小一点
-                    color: isWeekend ? Colors.red.shade300 : Colors.grey.shade600, // 周末红色
+                    color: isWeekend
+                        ? Colors.red.shade300
+                        : Colors.grey.shade600, // 周末红色
                   ),
                 ),
               ),
@@ -243,7 +259,8 @@ class CalendarView extends StatelessWidget {
         // --- 日期网格 ---
         GridView.builder(
           shrinkWrap: true, // 高度根据内容自适应 (重要!)
-          physics: const NeverScrollableScrollPhysics(), // 日历本身不可滚动 (由外部 SingleChildScrollView 控制)
+          physics:
+              const NeverScrollableScrollPhysics(), // 日历本身不可滚动 (由外部 SingleChildScrollView 控制)
 
           // --- !!! 核心修改：解决单元格垂直溢出和可能的水平溢出 !!! ---
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -272,21 +289,28 @@ class CalendarView extends StatelessWidget {
 
             // --- 获取当前日期的状态 ---
             final date = DateTime(selectedYear, selectedMonth, day);
-            final isToday = now.year == selectedYear && now.month == selectedMonth && now.day == day;
+            final isToday = now.year == selectedYear &&
+                now.month == selectedMonth &&
+                now.day == day;
             // isPastDate 现在只用于视觉效果（比如漏签样式），漏签逻辑使用 missedCheckInDays 集合
             // final isPastDate = date.isBefore(DateTime(now.year, now.month, now.day));
             final isWeekend = date.weekday >= 6; // 周六或周日
             final isCheckedIn = checkedInDayNumbers.contains(day);
-            final isMissedCheckIn = missedCheckInDays.contains(day); // 是否是计算出的漏签日期
+            final isMissedCheckIn =
+                missedCheckInDays.contains(day); // 是否是计算出的漏签日期
 
             // 安全地获取经验值
             int experience = 0;
             if (isCheckedIn && checkedInDaysData.containsKey(day)) {
               final dayData = checkedInDaysData[day];
               final expValue = dayData?['experience'];
-              if (expValue is int) { experience = expValue; }
-              else if (expValue is num) { experience = expValue.toInt(); }
-              else if (expValue is String) { experience = int.tryParse(expValue) ?? 0; }
+              if (expValue is int) {
+                experience = expValue;
+              } else if (expValue is num) {
+                experience = expValue.toInt();
+              } else if (expValue is String) {
+                experience = int.tryParse(expValue) ?? 0;
+              }
             }
             // --- 状态获取结束 ---
 
@@ -307,7 +331,6 @@ class CalendarView extends StatelessWidget {
       ],
     );
   }
-
 
   // --- 构建单个日期单元格 ---
   Widget _buildDayCell({
@@ -357,20 +380,23 @@ class CalendarView extends StatelessWidget {
     const double experienceFontSize = 9.0; // 经验值字体大小
     // --- 尺寸定义结束 ---
 
-    return Container( // 单元格容器
+    return Container(
+      // 单元格容器
       decoration: BoxDecoration(
         color: bgColor,
         border: Border.all(color: borderColor, width: borderWidth),
         borderRadius: BorderRadius.circular(4), // 轻微圆角
       ),
-      child: Stack( // 使用 Stack 方便放置“今天”的小红点
+      child: Stack(
+        // 使用 Stack 方便放置“今天”的小红点
         alignment: Alignment.center, // Stack 内元素默认居中
         children: [
           // --- 主要内容：日期、图标、经验值 ---
           Column(
             mainAxisSize: MainAxisSize.min, // Column 高度自适应
             mainAxisAlignment: MainAxisAlignment.center, // 垂直居中对齐 Column 内容
-            crossAxisAlignment: CrossAxisAlignment.center, // <<< 水平居中对齐 Column 内容 (防止数字飞出)
+            crossAxisAlignment:
+                CrossAxisAlignment.center, // <<< 水平居中对齐 Column 内容 (防止数字飞出)
             children: [
               // --- 日期数字 ---
               Text(
@@ -389,31 +415,35 @@ class CalendarView extends StatelessWidget {
                 // 高度 = 图标大小 + 上下一点点间距
                 height: iconSize + 4,
                 child: isCheckedIn
-                // 已签到图标
-                    ? Icon(Icons.check_circle_outline, color: theme.primaryColor.withSafeOpacity(0.85), size: iconSize)
+                    // 已签到图标
+                    ? Icon(Icons.check_circle_outline,
+                        color: theme.primaryColor.withSafeOpacity(0.85),
+                        size: iconSize)
                     : isMissedCheckIn
-                // 漏签图标
-                    ? Icon(Icons.close, color: Colors.red.shade200, size: iconSize)
-                // 既未签到也未漏签（未来日期或今天未签），显示空 SizedBox 占位
-                    : null,
+                        // 漏签图标
+                        ? Icon(Icons.close,
+                            color: Colors.red.shade200, size: iconSize)
+                        // 既未签到也未漏签（未来日期或今天未签），显示空 SizedBox 占位
+                        : null,
               ),
               // --- 经验值区域 ---
               // 仅在已签到且经验值 > 0 时显示
               SizedBox(
                 // 高度 = 字体大小 + 一点点间距，如果经验值为0则高度为0
-                height: isCheckedIn && experience > 0 ? experienceFontSize + 2 : 0,
+                height:
+                    isCheckedIn && experience > 0 ? experienceFontSize + 2 : 0,
                 child: isCheckedIn && experience > 0
                     ? Text(
-                  '+$experience',
-                  style: TextStyle(
-                    fontSize: experienceFontSize,
-                    color: theme.primaryColor,
-                    fontWeight: FontWeight.bold,
-                  ),
-                  textAlign: TextAlign.center, // <<< 确保经验值也居中
-                  maxLines: 1,
-                )
-                // 不显示经验值时为 null
+                        '+$experience',
+                        style: TextStyle(
+                          fontSize: experienceFontSize,
+                          color: theme.primaryColor,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center, // <<< 确保经验值也居中
+                        maxLines: 1,
+                      )
+                    // 不显示经验值时为 null
                     : null,
               ),
             ],
@@ -421,7 +451,8 @@ class CalendarView extends StatelessWidget {
           // --- “今天”的小红点提示 ---
           // 仅在是今天且尚未签到时显示
           if (isToday && !isCheckedIn)
-            Positioned( // 放置在右上角
+            Positioned(
+              // 放置在右上角
               top: 4,
               right: 4,
               child: Container(
@@ -439,7 +470,6 @@ class CalendarView extends StatelessWidget {
     );
   }
 
-
   // --- 辅助函数：安全地从各种格式解析日期 ---
   int? _parseDayOfMonth(dynamic dayValue, int daysInMonth) {
     int? dayOfMonth;
@@ -452,13 +482,15 @@ class CalendarView extends StatelessWidget {
       if (dayOfMonth == null && dayValue.contains('-')) {
         try {
           // 尝试通用格式 'yyyy-MM-dd' (更健壮)
-          final date = DateFormat('yyyy-MM-dd').parse(dayValue, true); // 使用 intl 包
+          final date =
+              DateFormat('yyyy-MM-dd').parse(dayValue, true); // 使用 intl 包
           dayOfMonth = date.day;
           // 可选：验证解析出的年月是否与当前日历匹配
           // if (date.year != selectedYear || date.month != selectedMonth) return null;
         } catch (e) {
           // 如果 'yyyy-MM-dd' 失败，尝试提取最后的数字部分 (兼容 'MM-dd' 或 'dd')
-          print('Warning: Parsing date string "$dayValue" failed, attempting fallback: $e');
+          print(
+              'Warning: Parsing date string "$dayValue" failed, attempting fallback: $e');
           final parts = dayValue.split('-');
           if (parts.isNotEmpty) {
             dayOfMonth = int.tryParse(parts.last);
@@ -471,13 +503,15 @@ class CalendarView extends StatelessWidget {
     if (dayOfMonth != null && dayOfMonth > 0 && dayOfMonth <= daysInMonth) {
       return dayOfMonth;
     }
-    print('Warning: Invalid day value parsed or out of range: $dayValue -> $dayOfMonth');
+    print(
+        'Warning: Invalid day value parsed or out of range: $dayValue -> $dayOfMonth');
     return null; // 返回 null 表示无效
   }
 
   // --- 辅助函数：计算【当前月份】视图下的漏签日期集合 ---
   // （这个函数逻辑基本没问题，保持不变）
-  Set<int> _calculateMissedDaysForCurrentMonth(List<dynamic> rawDays, int daysInMonth, int year, int month) {
+  Set<int> _calculateMissedDaysForCurrentMonth(
+      List<dynamic> rawDays, int daysInMonth, int year, int month) {
     final Set<int> missedDays = {};
     final Set<int> checkedDays = {};
     final now = DateTime.now();
@@ -508,5 +542,4 @@ class CalendarView extends StatelessWidget {
     }
     return missedDays;
   }
-
 } // End of CalendarView class

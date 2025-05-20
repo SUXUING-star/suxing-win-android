@@ -87,7 +87,7 @@ class HotActivitiesList extends StatelessWidget {
                   UserInfoBadge(
                     userDataStatus: userDataStatus,
                     currentUser: currentUser,
-                    userId: activity.userId,
+                    targetUserId: activity.userId,
                     showFollowButton: false, // 可能不需要关注按钮
                     showLevel: false, // 可能不需要等级
                   ),

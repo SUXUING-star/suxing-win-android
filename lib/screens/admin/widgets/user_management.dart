@@ -266,8 +266,8 @@ class _UserManagementState extends State<UserManagement>
 
     // 权限检查
     if (!_authProvider.isSuperAdmin) {
-      return const Center(
-        child: Text('只有超级管理员可以访问用户管理'),
+      return const CustomErrorWidget(
+        errorMessage: '只有超级管理员可以访问用户管理',
       );
     }
 

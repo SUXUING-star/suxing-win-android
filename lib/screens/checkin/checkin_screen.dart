@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../services/main/user/user_checkin_service.dart';
-import '../../models/user/user_checkin.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/checkin/layout/responsive_checkin_layout.dart';
-import '../../widgets/components/screen/checkin/effects/particle_effect.dart';
-import '../../widgets/ui/common/error_widget.dart';
-import '../../widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
+import 'package:suxingchahui/models/user/user_checkin.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/layout/responsive_checkin_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/effects/particle_effect.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class CheckInScreen extends StatefulWidget {
   const CheckInScreen({super.key});
@@ -297,11 +299,75 @@ class _CheckInScreenState extends State<CheckInScreen>
           }
         });
       }
-    }).catchError((e) {
-      //print('获取月度签到数据失败 ($year-$month): $e');
-      // 可以选择在这里设置错误状态
-      // if (mounted) setState(() => _errorMessage = '获取日历数据失败');
     });
+  }
+
+  Widget _buildFab() {
+    return GenericFloatingActionButton(
+      icon: Icons.refresh,
+      heroTag: 'check_in_fresh_fab',
+      tooltip: '刷新数据',
+      onPressed: _isLoading ? null : _loadData,
+    );
+  }
+
+  Widget _buildContentLayout() {
+    return ResponsiveCheckInLayout(
+      checkInStats: _checkInStats!, // 传递签到统计
+      currentUser: _currentUser!, // 传递当前用户信息
+      monthlyData: _monthlyData, // 传递月度日历数据
+      selectedYear: _selectedYear,
+      selectedMonth: _selectedMonth,
+      isCheckInLoading: _checkInLoading, // 传递签到按钮状态
+      hasCheckedToday: _checkInStats!.hasCheckedToday, // 传递今天是否已签到
+      animationController: _particleController, // 传递动画控制器
+      onChangeMonth: _handleChangeMonth, // 传递月份切换回调
+      onCheckIn: _handleCheckIn, // 传递签到按钮回调
+      missedDays: _missedDays, // 传递漏签天数
+      consecutiveMissedDays: _consecutiveMissedDays, // 传递断签天数
+    );
+  }
+
+  Widget _buildMainSection() {
+    if (_isLoading) {
+      return LoadingWidget.fullScreen(message: '正在加载签到数据...');
+    }
+    if (_errorMessage != null) {
+      CustomErrorWidget(
+        errorMessage: _errorMessage,
+      );
+    }
+    if (_checkInStats == null || _currentUser == null) {
+      CustomErrorWidget(errorMessage: '数据异常，请稍后重试');
+    }
+    return _buildContentLayout();
+  }
+
+  Widget? _buildEffectSection() {
+    if (!(_checkInStats?.hasCheckedToday ?? true) &&
+        !_isLoading &&
+        _errorMessage == null) {
+      return Positioned.fill(
+        child: IgnorePointer(
+          // 让粒子效果不响应触摸事件
+          child: CheckinParticleEffect(
+            controller: _particleController, // 控制动画播放
+            color: Theme.of(context).primaryColor, // 粒子颜色
+          ),
+        ),
+      );
+    }
+    return null;
+  }
+
+  Widget _buildMainContent() {
+    return Stack(
+      // 使用 Stack 放置粒子效果
+      children: [
+        _buildMainSection(),
+        _buildEffectSection() ?? SizedBox.shrink(),
+      ],
+    );
   }
 
   @override
@@ -309,64 +375,11 @@ class _CheckInScreenState extends State<CheckInScreen>
     return Scaffold(
       appBar: CustomAppBar(
         title: '每日签到',
-        actions: [
-          // 刷新按钮，仅在非加载状态下可用
-          IconButton(
-            icon: Icon(Icons.refresh),
-            tooltip: '刷新数据',
-            onPressed: _isLoading ? null : _loadData,
-          ),
-        ],
       ),
-      body: Stack(
-        // 使用 Stack 放置粒子效果
-        children: [
-          // --- 内容区域 ---
-          // 根据加载和错误状态显示不同内容
-          _isLoading
-              ? LoadingWidget.fullScreen(message: '正在加载签到数据...') // 全屏加载动画
-              : _errorMessage != null
-                  ? CustomErrorWidget(
-                      errorMessage: _errorMessage!,
-                      onRetry: _loadData, // 提供重试按钮
-                    )
-                  : (_checkInStats == null || _currentUser == null) // 确保核心数据已加载
-                      ? Center(child: Text('数据异常，请稍后重试')) // 理论上不应发生
-                      : ResponsiveCheckInLayout(
-                          // **传递核心数据给布局组件**
-                          checkInStats: _checkInStats!, // 传递签到统计
-                          currentUser: _currentUser!, // 传递当前用户信息
-                          monthlyData: _monthlyData, // 传递月度日历数据
-                          selectedYear: _selectedYear,
-                          selectedMonth: _selectedMonth,
-                          isCheckInLoading: _checkInLoading, // 传递签到按钮状态
-                          hasCheckedToday:
-                              _checkInStats!.hasCheckedToday, // 传递今天是否已签到
-                          animationController: _particleController, // 传递动画控制器
-                          onChangeMonth: _handleChangeMonth, // 传递月份切换回调
-                          onCheckIn: _handleCheckIn, // 传递签到按钮回调
-                          missedDays: _missedDays, // 传递漏签天数
-                          consecutiveMissedDays:
-                              _consecutiveMissedDays, // 传递断签天数
-                        ),
-
-          // --- 粒子效果层 ---
-          // 仅在今天未签到时显示粒子效果容器
-          if (!(_checkInStats?.hasCheckedToday ?? true) &&
-              !_isLoading &&
-              _errorMessage == null)
-            Positioned.fill(
-              child: IgnorePointer(
-                // 让粒子效果不响应触摸事件
-                child: ParticleEffect(
-                  controller: _particleController, // 控制动画播放
-                  color: Theme.of(context).primaryColor, // 粒子颜色
-                ),
-              ),
-            ),
-          // --- 结束粒子效果层 ---
-        ],
-      ),
+      body: _authProvider.isLoggedIn
+          ? _buildMainContent()
+          : const LoginPromptWidget(),
+      floatingActionButton: _buildFab(),
     );
   }
 }

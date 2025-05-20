@@ -345,7 +345,7 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                     if (userId != currentUserId)
                       FollowUserButton(
                         currentUser: currentUser,
-                        userId: userId,
+                        targetUserId: userId,
                         mini: true,
                       ),
                   ],

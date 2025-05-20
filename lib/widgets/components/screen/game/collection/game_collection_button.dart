@@ -3,7 +3,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 class GameCollectionButton extends StatefulWidget {
   final Game game;
   final bool compact;
-  // *** 修改回调签名以使用新的结果类 ***
+  final User? currentUser;
   final Function(CollectionChangeResult)? onCollectionChanged;
   final GameCollectionItem? initialCollectionStatus;
   final bool isPreview;
@@ -22,9 +22,10 @@ class GameCollectionButton extends StatefulWidget {
   const GameCollectionButton({
     super.key,
     required this.game,
+    required this.currentUser,
     this.isPreview = false,
     this.compact = false,
-    this.onCollectionChanged, // *** 新签名 ***
+    this.onCollectionChanged,
     this.initialCollectionStatus,
   });
 
@@ -37,23 +38,24 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
   late final GameCollectionService _collectionService;
-  late final AuthProvider _authProvider;
-  bool _hasInit = false;
+
+  User? _currentUser;
+  bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
     super.initState();
     _collectionStatus = widget.initialCollectionStatus;
     _isLoading = false;
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasInit) {
+    if (!_hasInitializedDependencies) {
       _collectionService = context.read<GameCollectionService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _hasInit = true;
+      _hasInitializedDependencies = true;
     }
   }
 
@@ -61,14 +63,16 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
   void didUpdateWidget(GameCollectionButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     // 如果游戏 ID 变了，强制同步
-    if (_hasInit && widget.game.id != oldWidget.game.id && !_isLoading) {
+    if (_hasInitializedDependencies &&
+        widget.game.id != oldWidget.game.id &&
+        !_isLoading) {
       setState(() {
         _collectionStatus = widget.initialCollectionStatus;
       });
       return;
     }
     // 如果父组件传来的状态变了，并且按钮不在加载中，且内容确实不同，才同步
-    if (_hasInit &&
+    if (_hasInitializedDependencies &&
         widget.initialCollectionStatus != oldWidget.initialCollectionStatus &&
         !_isLoading) {
       bool contentChanged = _collectionStatus?.status !=
@@ -81,12 +85,19 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         setState(() {
           _collectionStatus = widget.initialCollectionStatus;
         });
-      } else {}
+      }
+    }
+
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
   Future<void> _showCollectionDialog() async {
-    if (!_authProvider.isLoggedIn) {
+    if (widget.currentUser == null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }

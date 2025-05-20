@@ -1,6 +1,8 @@
 // lib/screens/profile/tabs/game_favorites_tab.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import '../../../../models/game/game.dart';
 import '../../../../services/main/game/game_service.dart';
@@ -16,7 +18,10 @@ class GameFavoritesTab extends StatefulWidget {
   static final GlobalKey<_GameFavoritesTabState> _gameTabKey =
       GlobalKey<_GameFavoritesTabState>();
 
-  GameFavoritesTab() : super(key: _gameTabKey);
+  final User? currentUser;
+  GameFavoritesTab(
+    this.currentUser,
+  ) : super(key: _gameTabKey);
 
   @override
   _GameFavoritesTabState createState() => _GameFavoritesTabState();
@@ -29,7 +34,6 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
   bool _isLoading = false;
   bool _hasInitializedDependencies = false;
   late final GameService _gameService;
-
 
   @override
   void didChangeDependencies() {

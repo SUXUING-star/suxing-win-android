@@ -17,17 +17,14 @@ class PlatformWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (DeviceUtils.isDesktop) {
-      // *** 直接返回 DesktopFrameLayout ***
       return DesktopFrameLayout(
         showSidebar: true, // 正常模式下显示侧边栏
         showTitleBarActions: true,
         child: child, // 正常模式下显示动作按钮
-        // 可以按需传递 titleBarGradient, titleText, titleIconPath
       );
     } else {
       // 非桌面平台，直接返回原始的 child
       return child;
     }
   }
-// _buildTitleBarButtonWrapper 方法可以移到 DesktopFrameLayout 或删除
 }

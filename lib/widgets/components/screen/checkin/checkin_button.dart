@@ -28,7 +28,7 @@ class CheckInButton extends StatelessWidget {
       children: [
         // 粒子效果动画
         if (!hasCheckedToday)
-          ParticleEffect(
+          CheckinParticleEffect(
             controller: animationController,
           ),
 

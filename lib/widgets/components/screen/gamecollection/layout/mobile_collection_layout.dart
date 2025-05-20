@@ -9,7 +9,8 @@ import '../card/collection_game_card.dart'; // 确保路径正确
 
 /// 移动设备游戏收藏展示布局 - 只负责展示列表
 /// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
-class MobileCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
+class MobileCollectionLayout extends StatelessWidget {
+  // 改为 StatelessWidget
   final List<GameWithCollection> games;
   final String collectionType;
 
@@ -72,10 +73,7 @@ class MobileCollectionLayout extends StatelessWidget { // 改为 StatelessWidget
       message: message,
       action: FunctionalButton(
         label: '发现游戏',
-        onPressed: () {
-          // 跳转逻辑不变
-          NavigationUtils.pushReplacementNamed(context, AppRoutes.gamesList);
-        },
+        onPressed: () => NavigationUtils.navigateToHome(context, tabIndex: 1),
         icon: Icons.search_rounded,
       ),
     );

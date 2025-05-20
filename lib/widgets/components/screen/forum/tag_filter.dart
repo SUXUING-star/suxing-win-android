@@ -3,10 +3,9 @@ import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 Post
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class TagFilter extends StatelessWidget {
-  final List<String> tags; // 接收显示用的字符串列表 (如 ['全部', '讨论', ...])
-  // --- !!! 参数类型修改 !!! ---
-  final PostTag? selectedTag;          // 接收 PostTag?
-  final ValueChanged<PostTag?> onTagSelected; // 回调函数类型改变
+  final List<String> tags;
+  final PostTag? selectedTag;
+  final ValueChanged<PostTag?> onTagSelected;
 
   const TagFilter({
     super.key,

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'dart:async';
 import '../../../services/main/user/user_follow_service.dart';
 import '../../../widgets/ui/appbar/custom_app_bar.dart';
@@ -271,8 +272,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
 
     try {
       // 使用强制刷新方法，从API获取最新数据
-      final followService = context.read<UserFollowService>();
-      final data = await followService.refreshFollowers(widget.userId);
+      final data = await _followService.refreshFollowers(widget.userId);
       _lastFollowersRefresh = now;
 
       if (_mounted) {
@@ -305,6 +305,10 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
     final isTablet = DeviceUtils.isTablet(context);
     final isLandscape = DeviceUtils.isLandscape(context);
     final isDesktopLayout = isDesktop || (isTablet && isLandscape);
+
+    if (!_authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
+    }
 
     return Scaffold(
       appBar: CustomAppBar(

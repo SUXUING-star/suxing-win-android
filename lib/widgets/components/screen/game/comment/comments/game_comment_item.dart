@@ -16,9 +16,9 @@ class GameCommentItem extends StatefulWidget {
   final User? currentUser;
   final UserDataStatus userDataStatus;
   final Comment comment;
-  final Future<void> Function(String commentId, String newContent)
+  final Future<void> Function(Comment comment, String newContent)
       onUpdateComment;
-  final Future<void> Function(String commentId) onDeleteComment;
+  final Future<void> Function(Comment comment) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
   final bool isDeleting;
   final bool isUpdating;
@@ -44,6 +44,8 @@ class _GameCommentItemState extends State<GameCommentItem>
   bool _showReplyInput = false;
   bool _isSubmittingReply = false; // 添加新回复的 loading
 
+  User? _currentUser;
+
   // --- 本地 Loading 状态 ---
   // 用于主评论的即时 UI 反馈
   bool _isMainCommentDeleting = false;
@@ -52,6 +54,23 @@ class _GameCommentItemState extends State<GameCommentItem>
   final Map<String, bool> _replyDeletingStates = {};
   final Map<String, bool> _replyUpdatingStates = {};
   // --------------------------
+
+  @override
+  void initState() {
+    super.initState();
+    _currentUser = widget.currentUser;
+  }
+
+  @override
+  void didUpdateWidget(covariant GameCommentItem oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
+  }
 
   // --- 通用的 Action Button 构建方法 ---
   Widget _buildActionsMenu(BuildContext context, Comment item) {
@@ -179,7 +198,7 @@ class _GameCommentItemState extends State<GameCommentItem>
         // ------------------------
 
         try {
-          await widget.onUpdateComment(item.id, text); // 调用父级回调
+          await widget.onUpdateComment(item, text); // 调用父级回调
           // 成功后父级会刷新，Dialog 会关闭
         } catch (e) {
           showSnackbar(message: '编辑失败: $e', type: SnackbarType.error);
@@ -239,7 +258,7 @@ class _GameCommentItemState extends State<GameCommentItem>
         // ------------------------
 
         try {
-          await widget.onDeleteComment(item.id); // 调用父级回调
+          await widget.onDeleteComment(item); // 调用父级回调
           // 成功后父级会刷新列表，此 Item (或其 Reply 部分) 会消失
           // 所以成功时不需要在 finally 里清除本地 loading 状态
         } catch (e) {
@@ -306,7 +325,7 @@ class _GameCommentItemState extends State<GameCommentItem>
               Expanded(
                 child: UserInfoBadge(
                   userDataStatus: widget.userDataStatus,
-                  userId: reply.userId,
+                  targetUserId: reply.userId,
                   currentUser: widget.currentUser,
                   showFollowButton: false,
                   mini: true,
@@ -356,7 +375,7 @@ class _GameCommentItemState extends State<GameCommentItem>
                   child: UserInfoBadge(
                     userDataStatus: widget.userDataStatus,
                     currentUser: widget.currentUser,
-                    userId: widget.comment.userId,
+                    targetUserId: widget.comment.userId,
                     showFollowButton: false,
                   ),
                 ),

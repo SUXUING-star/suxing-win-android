@@ -20,11 +20,8 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-// *** 导入 LoadingWidget ***
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
-// import 'package:suxingchahui/widgets/components/loading/loading_route_observer.dart'; // 已删除
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
@@ -105,7 +102,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       _loadMoreResults();
     }
   }
-  // --- 滚动监听结束 ---
 
   // --- 搜索历史管理 (无加载状态控制) ---
   Future<void> _loadSearchHistory() async {
@@ -140,7 +136,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     try {
       await _userService.saveLocalSearchHistory(_searchHistory);
     } catch (e) {
-      print("SearchPostScreen: Error saving search history: $e");
+      // print("SearchPostScreen: Error saving search history: $e");
     }
   }
 
@@ -276,13 +272,25 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 调用 performSearch 时，isNewSearch 设为 false，它内部会设置 _isLoadingMore = true
     await _performSearch(_searchController.text.trim(), isNewSearch: false);
   }
-  // --- 加载更多结束 ---
+
+  bool _checkCanEditOrDeletePost(Post post) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == post.authorId;
+  }
 
   // --- PostCard 回调处理方法 (删除 Observer 相关代码) ---
   Future<void> _handleDeletePostAction(Post post) async {
     final postId = post.id;
     if (!mounted) return;
-    // LoadingRouteObserver 相关代码已删除
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(post)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     try {
       await CustomConfirmDialog.show(
         context: context,
@@ -308,13 +316,21 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         },
       );
     } catch (e) {
-      print(
-          "SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
+      //print(
+      //    "SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
     }
   }
 
   void _handleEditPostAction(Post postToEdit) {
     if (!mounted) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanEditOrDeletePost(postToEdit)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     NavigationUtils.pushNamed(
       context,
       AppRoutes.editPost,
@@ -332,8 +348,10 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   Future<void> _handleToggleLockAction(String postId) async {
     if (!mounted) return;
-    // LoadingRouteObserver 相关代码已删除
-    // *** 可以考虑加一个临时的按钮加载状态 ***
+    if (!_authProvider.isAdmin) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
     try {
       await _forumService.togglePostLock(postId);
       if (!mounted) return;
@@ -350,7 +368,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         }
       });
     } catch (e) {
-      print("SearchPostScreen: Error toggling lock for post $postId: $e");
+      // print("SearchPostScreen: Error toggling lock for post $postId: $e");
       if (mounted) AppSnackBar.showError(context, '操作失败: $e');
     }
   }

@@ -4,15 +4,15 @@ import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/post_interaction_buttons.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/post/post.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../ui/badges/user_info_badge.dart';
-import 'post_interaction_buttons.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
-class PostContent extends StatefulWidget {
+class PostContent extends StatelessWidget {
   final Post post;
   final User? currentUser;
   final UserPostActions userActions;
@@ -26,34 +26,13 @@ class PostContent extends StatefulWidget {
     required this.onPostUpdated,
   });
 
-  @override
-  _PostContentState createState() => _PostContentState();
-}
-
-class _PostContentState extends State<PostContent> {
-  late Post _post;
-
-  @override
-  void initState() {
-    super.initState();
-    _post = widget.post;
-  }
-
-  @override
-  void didUpdateWidget(PostContent oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.post.id != widget.post.id) {
-      _post = widget.post;
-    }
-  }
+  // 移除了 _PostContentState 和相关生命周期方法
 
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop ||
         DeviceUtils.isWeb ||
         DeviceUtils.isTablet(context);
-
-
 
     return Opacity(
       opacity: 0.9,
@@ -90,7 +69,7 @@ class _PostContentState extends State<PostContent> {
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _post.title,
+                    post.title, // 使用 post
                     style: TextStyle(
                       fontSize: isDesktop ? 22 : 18,
                       fontWeight: FontWeight.bold,
@@ -107,24 +86,24 @@ class _PostContentState extends State<PostContent> {
             const SizedBox(height: 20),
 
             // 标签栏
-            if (_post.tags.isNotEmpty)
+            if (post.tags.isNotEmpty) // 使用 post
               SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(vertical: 4.0),
                 child: Row(
-                  children: _post.tags.map((tagString) {
-                    // 遍历字符串列表
+                  children: post.tags.map((tagString) {
+                    // 使用 post
                     return Padding(
                       padding: const EdgeInsets.only(right: 8.0),
                       child: PostTagItem(
-                        tagString: tagString, // <--- 传递字符串
-                        isMini: !isDesktop, // 根据是否桌面调整大小
+                        tagString: tagString,
+                        isMini: !isDesktop,
                       ),
                     );
                   }).toList(),
                 ),
               ),
-            if (_post.tags.isNotEmpty) const SizedBox(height: 20),
+            if (post.tags.isNotEmpty) const SizedBox(height: 20), // 使用 post
             // 内容栏
             Container(
               width: double.infinity,
@@ -135,7 +114,7 @@ class _PostContentState extends State<PostContent> {
                 border: isDesktop ? Border.all(color: Colors.grey[200]!) : null,
               ),
               child: Text(
-                _post.content,
+                post.content, // 使用 post
                 style: TextStyle(
                   fontSize: isDesktop ? 16 : 15,
                   height: 1.8,
@@ -147,9 +126,10 @@ class _PostContentState extends State<PostContent> {
             // 添加交互按钮
             const SizedBox(height: 16),
             PostInteractionButtons(
-              userActions: widget.userActions,
-              post: _post,
-              onPostUpdated: widget.onPostUpdated,
+              userActions: userActions, // 使用 userActions
+              post: post, // 使用 post
+              currentUser: currentUser,
+              onPostUpdated: onPostUpdated, // 使用 onPostUpdated
             ),
 
             // Post statistics
@@ -163,7 +143,7 @@ class _PostContentState extends State<PostContent> {
                         size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${_post.viewCount}',
+                      '${post.viewCount}', // 使用 post
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -173,7 +153,7 @@ class _PostContentState extends State<PostContent> {
                     Icon(Icons.comment, size: 16, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
-                      '${_post.replyCount}',
+                      '${post.replyCount}', // 使用 post
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey[500],
@@ -189,21 +169,21 @@ class _PostContentState extends State<PostContent> {
   }
 
   Widget _buildAuthorRow(BuildContext context, bool isDesktop) {
-    final userId = _post.authorId;
+    final userId = post.authorId; // 使用 post
     final userInfoProvider = context.watch<UserInfoProvider>();
     userInfoProvider.ensureUserInfoLoaded(userId);
-    final UserDataStatus userDataStatus  =
-    userInfoProvider.getUserStatus(userId);
+    final UserDataStatus userDataStatus =
+        userInfoProvider.getUserStatus(userId);
     return Row(
       children: [
         // 使用UserInfoBadge替换原有的用户信息显示
         Expanded(
           child: UserInfoBadge(
-            currentUser: widget.currentUser,
+            currentUser: currentUser, // 使用 currentUser
             userDataStatus: userDataStatus,
-            userId: userId,
-            showFollowButton: false, // 不显示关注按钮
-            mini: !isDesktop, // 根据是否是桌面版决定尺寸
+            targetUserId: userId,
+            showFollowButton: false,
+            mini: !isDesktop,
             padding: EdgeInsets.zero,
           ),
         ),
@@ -226,7 +206,7 @@ class _PostContentState extends State<PostContent> {
         const SizedBox(width: 12),
         // 发布时间
         Text(
-          DateTimeFormatter.formatRelative(_post.createTime),
+          DateTimeFormatter.formatRelative(post.createTime), // 使用 post
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey[600],

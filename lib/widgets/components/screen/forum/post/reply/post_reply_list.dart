@@ -13,8 +13,8 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载�
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 评论输入框
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // Snackbar 提示
 import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart'; // 登录提示
-import '../../../../../../models/post/post.dart'; // Reply, ReplyStatus 模型
-import '../../../../../../services/main/forum/forum_service.dart'; // 核心服务
+import 'package:suxingchahui/models/post/post.dart'; // Reply, ReplyStatus 模型
+import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 核心服务
 import 'post_reply_item.dart'; // 评论项组件
 
 /// PostReplyList - 显示帖子评论列表，并管理自身的加载、刷新和顶层评论提交。
@@ -46,6 +46,8 @@ class _PostReplyListState extends State<PostReplyList> {
   ScrollController? _scrollController; // 滚动控制器（仅在需要内部滚动时创建）
   bool _hasInitializedDependencies = false;
   late final ForumService _forumService;
+  User? _currentUser;
+  late String _postId;
 
   @override
   void initState() {
@@ -66,8 +68,25 @@ class _PostReplyListState extends State<PostReplyList> {
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      // 首次加载评论列表
+      _currentUser = widget.currentUser;
+      _postId = widget.postId;
       _loadReplies();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PostReplyList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
+    if (widget.postId != oldWidget.postId || _postId != widget.postId) {
+      setState(() {
+        _postId = widget.postId;
+      });
     }
   }
 
@@ -311,9 +330,6 @@ class _PostReplyListState extends State<PostReplyList> {
             itemBuilder: (context, index) {
               final topReply = topLevelReplies[index];
               final children = nestedRepliesMap[topReply.id] ?? [];
-              // 确保子评论也按时间排序 (如果需要的话，这里假设你的 PostReplyItem 内部不关心顺序)
-              // children.sort((a, b) => a.createTime.compareTo(b.createTime)); // 或者 b.compareTo(a)
-
               final userId = topReply.authorId;
               userInfoProvider.ensureUserInfoLoaded(userId);
 
@@ -394,4 +410,4 @@ class _PostReplyListState extends State<PostReplyList> {
       },
     );
   }
-} // End of _PostReplyListState
+}

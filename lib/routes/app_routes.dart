@@ -165,7 +165,6 @@ class AppRoutes {
           ),
         );
       case gamesList:
-        // *** 修改这里以接收参数 ***
         final arguments = settings.arguments;
         String? selectedTag;
         if (arguments is String) {
@@ -323,9 +322,9 @@ class AppRoutes {
         );
       case searchPost:
         return MaterialPageRoute(builder: (_) => SearchPostScreen());
-      case forum:
-        final String? tag = settings.arguments as String?;
-        return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
+      // case forum:
+      //   final String? tag = settings.arguments as String?;
+      //   return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
       case postDetail:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {

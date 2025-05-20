@@ -1,6 +1,8 @@
 // lib/widgets/common/startup/initialization_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -38,17 +40,79 @@ class _InitializationScreenState extends State<InitializationScreen> {
       ? 'assets/images/cappo.gif'
       : 'assets/images/cappo1.gif';
 
-  @override
-  Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop;
+  Widget _buildWindowsControlsSection() {
+    return Positioned(
+      // 顶层放置一个 Positioned Widget 作为标题栏区域
+      top: 0, // 紧贴顶部
+      left: 0, // 紧贴左边
+      right: 0, // 紧贴右边
+      height: PlatformWrapper.kDesktopTitleBarHeight, // 使用常量定义的高度
+      child: Material(
+        // 使用 Material Widget 可以设置背景色（这里是透明）
+        color: Colors.white,
+        // 标题栏内部使用 Row 排列
+        child: Row(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12.0),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Image.asset(
+                    GlobalConstants.appIcon,
+                    height: 24.0,
+                    width: 24.0,
+                    filterQuality: FilterQuality.medium,
+                  ),
+                  const SizedBox(width: 8.0),
+                  AppText(
+                    GlobalConstants.appName, // 使用传入或默认标题
+                    color: Colors.black,
+                    fontSize: 13,
+                    maxLines: 1,
+                    type: AppTextType.title,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ),
+            ),
+            // 左侧大部分区域是可拖拽区域
+            Expanded(
+              child: DragToMoveArea(
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.centerLeft,
+                      end: Alignment.centerRight,
+                      colors: [
+                        ...DesktopFrameLayout.desktopBarColor
+                      ], // 使用传入或默认渐变
+                    ),
+                  ),
+                ), // 拖拽区域本身不需要显示内容
+              ),
+            ),
+            // 右侧是窗口控制按钮 (最小化, 最大化/还原, 关闭)
+            WindowsControls(
+              iconColor: Colors.grey[700], // 图标颜色，确保可见
+              hoverColor: Colors.black.withSafeOpacity(0.1), // 鼠标悬停背景色
+              closeHoverColor: Colors.red.withSafeOpacity(0.8), // 关闭按钮悬停背景色
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
-    // 根据平台调整大小
+  // --- 构建核心内容 Widget ---
+  Widget _buildCoreContent() {
+    final bool isDesktop = DeviceUtils.isDesktop;
     double logoSize = isDesktop ? 180 : 120;
     double welcomeTextSize = isDesktop ? 18 : 12;
     double messageTextSize = isDesktop ? 18 : 12;
 
-    // --- 构建核心内容 Widget ---
-    Widget coreContent = Scaffold(
+    return Scaffold(
+      // 根据平台调整大小
       // backgroundColor: Colors.transparent, // 如果背景渐变需要透明
       body: Container(
         // 背景渐变
@@ -73,7 +137,9 @@ class _InitializationScreenState extends State<InitializationScreen> {
                 children: [
                   // --- 桌面端顶部留白 ---
                   if (isDesktop)
-                    const SizedBox(height: PlatformWrapper.kDesktopTitleBarHeight + 10), // 标题栏高度 + 间距
+                    const SizedBox(
+                        height: PlatformWrapper.kDesktopTitleBarHeight +
+                            10), // 标题栏高度 + 间距
 
                   // --- Logo ---
                   SizedBox(
@@ -99,7 +165,8 @@ class _InitializationScreenState extends State<InitializationScreen> {
                       child: LinearProgressIndicator(
                         value: widget.progress, // 进度值
                         backgroundColor: Colors.blue[100], // 背景色
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[700]!), // 进度条颜色
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.blue[700]!), // 进度条颜色
                         borderRadius: BorderRadius.circular(2), // 圆角
                       ),
                     ),
@@ -109,10 +176,13 @@ class _InitializationScreenState extends State<InitializationScreen> {
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300), // 动画时长
                       // 定义过渡动画
-                      transitionBuilder: (Widget child, Animation<double> animation) {
-                        return FadeTransition( // 淡入淡出
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return FadeTransition(
+                          // 淡入淡出
                           opacity: animation,
-                          child: SlideTransition( // 从下方滑入
+                          child: SlideTransition(
+                            // 从下方滑入
                             position: Tween<Offset>(
                               begin: const Offset(0.0, 0.5), // 从下方 0.5 单位处开始
                               end: Offset.zero, // 结束位置在原位
@@ -130,15 +200,18 @@ class _InitializationScreenState extends State<InitializationScreen> {
                         fontSize: messageTextSize, // 文本大小
                       ),
                     ),
-                  ] else ...[ // 如果状态是错误
+                  ] else ...[
+                    // 如果状态是错误
                     // --- 错误信息显示容器 ---
                     Container(
-                      margin: const EdgeInsets.symmetric(horizontal: 24), // 水平外边距
+                      margin:
+                          const EdgeInsets.symmetric(horizontal: 24), // 水平外边距
                       padding: const EdgeInsets.all(24), // 内边距
                       decoration: BoxDecoration(
                         color: Colors.white, // 白色背景
                         borderRadius: BorderRadius.circular(16), // 圆角
-                        boxShadow: [ // 添加阴影
+                        boxShadow: [
+                          // 添加阴影
                           BoxShadow(
                             color: Colors.black.withSafeOpacity(0.1), // 阴影颜色
                             blurRadius: 16, // 模糊半径
@@ -160,8 +233,10 @@ class _InitializationScreenState extends State<InitializationScreen> {
                           // 错误消息文本
                           AppText(
                             widget.message,
-                            style: TextStyle( // 自定义样式
-                              fontFamily: FontConfig.defaultFontFamily, // 使用默认字体
+                            style: TextStyle(
+                              // 自定义样式
+                              fontFamily:
+                                  FontConfig.defaultFontFamily, // 使用默认字体
                               color: Colors.grey[800],
                               fontSize: 16,
                               height: 1.5, // 行高
@@ -182,7 +257,8 @@ class _InitializationScreenState extends State<InitializationScreen> {
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 24, vertical: 12, // 内边距
                                   ),
-                                  shape: RoundedRectangleBorder( // 圆角形状
+                                  shape: RoundedRectangleBorder(
+                                    // 圆角形状
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
@@ -199,16 +275,18 @@ class _InitializationScreenState extends State<InitializationScreen> {
                                 onPressed: widget.onExit, // 绑定退出回调
                                 style: OutlinedButton.styleFrom(
                                   foregroundColor: Colors.red[400], // 前景色
-                                  side: BorderSide(color: Colors.red[400]!), // 边框颜色
+                                  side: BorderSide(
+                                      color: Colors.red[400]!), // 边框颜色
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 24, vertical: 12, // 内边距
                                   ),
-                                  shape: RoundedRectangleBorder( // 圆角形状
+                                  shape: RoundedRectangleBorder(
+                                    // 圆角形状
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                 ),
                                 // 按钮文字
-                                child: const Text(
+                                child: const AppText(
                                   '退出',
                                   style: TextStyle(fontSize: 16),
                                 ),
@@ -235,46 +313,24 @@ class _InitializationScreenState extends State<InitializationScreen> {
         ),
       ),
     );
+  }
 
-    // --- *** 返回最终 Widget，包含 MaterialApp 和可能的桌面控件 *** ---
+  @override
+  Widget build(BuildContext context) {
+    final bool isDesktop = DeviceUtils.isDesktop;
+
     return MaterialApp(
       debugShowCheckedModeBanner: false, // 不显示右上角的 Debug 标签
       home: isDesktop // 判断是否是桌面平台
-          ? Stack( // 桌面端使用 Stack 来叠加窗口控件
-        children: [
-          // 底层是上面构建的核心内容
-          coreContent,
-
-          // 顶层放置一个 Positioned Widget 作为标题栏区域
-          Positioned(
-            top: 0, // 紧贴顶部
-            left: 0, // 紧贴左边
-            right: 0, // 紧贴右边
-            height: PlatformWrapper.kDesktopTitleBarHeight, // 使用常量定义的高度
-            child: Material( // 使用 Material Widget 可以设置背景色（这里是透明）
-              color: Colors.transparent,
-              // 标题栏内部使用 Row 排列
-              child: Row(
-                children: [
-                  // 左侧大部分区域是可拖拽区域
-                  Expanded(
-                    child: DragToMoveArea(
-                      child: Container(), // 拖拽区域本身不需要显示内容
-                    ),
-                  ),
-                  // 右侧是窗口控制按钮 (最小化, 最大化/还原, 关闭)
-                  WindowsControls(
-                    iconColor: Colors.grey[700], // 图标颜色，确保可见
-                    hoverColor: Colors.black.withSafeOpacity(0.1), // 鼠标悬停背景色
-                    closeHoverColor: Colors.red.withSafeOpacity(0.8), // 关闭按钮悬停背景色
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      )
-          : coreContent, // 非桌面平台直接返回核心内容，不需要 Stack 和控件
+          ? Stack(
+              // 桌面端使用 Stack 来叠加窗口控件
+              children: [
+                // 底层是上面构建的核心内容
+                _buildCoreContent(),
+                _buildWindowsControlsSection(),
+              ],
+            )
+          : _buildCoreContent(), // 非桌面平台直接返回核心内容，不需要 Stack 和控件
     );
   }
 }

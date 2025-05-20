@@ -5,6 +5,9 @@ import 'package:provider/single_child_widget.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
+import 'package:suxingchahui/providers/initialize/initialization_status.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/widgets/common/startup/initialization_screen.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
@@ -27,28 +30,23 @@ class App extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return InitializationWrapper(
-      onInitialized: (providersFromInitializer) => CacheManagerProviderWidget(
-        cacheKey: 'myAppGlobalCache',
-        maxNrOfCacheObjects: 250,
-        stalePeriod: const Duration(days: 10),
-        child: MainApp(
-          // MainApp 作为 CacheManagerProviderWidget 的 child
-          providers:
-              providersFromInitializer, // AppInitializer 返回的 providers 列表
-        ),
-      ),
+      onInitialized: (providersFromInitializer) {
+        return MultiProvider(
+          providers: providersFromInitializer,
+          child: CacheManagerProviderWidget(
+            cacheKey: 'myAppGlobalCache',
+            maxNrOfCacheObjects: 250,
+            stalePeriod: const Duration(days: 10),
+            child: const MainApp(),
+          ),
+        );
+      },
     );
   }
 }
 
 class MainApp extends StatefulWidget {
-  final List<SingleChildWidget> providers;
-
-  const MainApp({
-    super.key,
-    required this.providers,
-  });
-
+  const MainApp({super.key});
   @override
   State<MainApp> createState() => _MainAppState();
 }
@@ -70,13 +68,12 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       Future.delayed(const Duration(milliseconds: 500), () {
-        // 仍然可以通过 Provider 获取 NetworkManager 实例来更新状态
-        // NetworkErrorListenerWidget 也会监听到这个更新
         if (mounted) {
           // 再次检查 mounted
-          final networkManager =
-              Provider.of<NetworkManager?>(context, listen: false);
-          networkManager?.getNetworkStatus();
+          NetworkManager? networkManager =
+              Provider.of<NetworkManager>(context, listen: false);
+          networkManager.getNetworkStatus();
+          networkManager = null;
         }
       });
     }
@@ -85,57 +82,70 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // NetworkManager 相关的监听器清理已移至 NetworkErrorListenerWidget
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiProvider(
-      providers: widget.providers,
-      child: Consumer<ThemeProvider>(
-        builder: (context, themeProvider, _) {
-          final particleColor = themeProvider.themeMode == ThemeMode.dark
-              ? const Color(0xFFE0E0E0)
-              : const Color(0xFFB3E5FC);
+    return Consumer2<ThemeProvider, WindowStateProvider>(
+      builder: (context, themeProvider, windowState, _) {
+        final particleColor = themeProvider.themeMode == ThemeMode.dark
+            ? const Color(0xFFE0E0E0)
+            : const Color(0xFFB3E5FC);
 
-          return MaterialApp(
-            navigatorKey: mainNavigatorKey,
-            title: GlobalConstants.appName,
-            theme: themeProvider.lightTheme,
-            darkTheme: themeProvider.darkTheme,
-            themeMode: themeProvider.themeMode,
-            debugShowCheckedModeBanner: false,
-            navigatorObservers: [routeObserver],
-            builder: (context, child) {
-              return NetworkErrorListenerWidget(
-                child: GlobalApiErrorListener(
-                  child: MaintenanceWrapper(
-                    child: Stack(
-                      children: [
-                        AppBackground(
-                          child: MouseTrailEffect(
-                            particleColor: particleColor,
-                            child: Navigator(
-                              onGenerateRoute: (settings) => MaterialPageRoute(
-                                builder: (_) => PlatformWrapper(
-                                  child: child ?? Container(),
-                                ),
-                              ),
+        return MaterialApp(
+          navigatorKey: mainNavigatorKey, // 全局 Navigator Key
+          title: GlobalConstants.appName,
+          theme: themeProvider.lightTheme,
+          darkTheme: themeProvider.darkTheme,
+          themeMode: themeProvider.themeMode,
+          debugShowCheckedModeBanner: false,
+          navigatorObservers: [routeObserver],
+          onGenerateRoute: AppRoutes.onGenerateRoute,
+          home: MainLayout(),
+          builder: (builderContext, materialAppGeneratedChild) {
+            Widget appContentWithCustomChrome = NetworkErrorListenerWidget(
+              child: GlobalApiErrorListener(
+                child: MaintenanceWrapper(
+                  child: AppBackground(
+                    child: MouseTrailEffect(
+                      particleColor: particleColor,
+                      child: Navigator(
+                        onGenerateRoute: (settings) {
+                          return MaterialPageRoute(
+                            settings: settings, // 把 settings 传下去
+                            builder: (_) => PlatformWrapper(
+                              child: materialAppGeneratedChild ??
+                                  Container(), // MainLayout 被 PlatformWrapper 包裹
                             ),
-                          ),
-                        ),
-                      ],
+                          );
+                        },
+                      ),
                     ),
                   ),
                 ),
-              );
-            },
-            home: MainLayout(),
-            onGenerateRoute: AppRoutes.onGenerateRoute,
-          );
-        },
-      ),
+              ),
+            );
+
+            return Stack(
+              children: [
+                appContentWithCustomChrome, // 你的完整应用界面（含自定义标题栏和侧边栏）
+
+                if (windowState.isResizingWindow)
+                  Positioned.fill(
+                    child: InitializationScreen(
+                      status: InitializationStatus.inProgress,
+                      message: " ", // 或者适当的消息
+                      progress: 0.0,
+                      onRetry: null,
+                      onExit: null,
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }

@@ -41,15 +41,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _forumService = context.read<ForumService>();
       _hasInitializedDependencies = true;
     }
-    // if (_hasInitializedDependencies) {
-    //   WidgetsBinding.instance.addPostFrameCallback((_) {
-    //     if (mounted) {
-    //       setState(() {
-    //         _darkModeEnabled = _themeProvider.isDarkMode;
-    //       });
-    //     }
-    //   });
-    // }
   }
 
   Future<void> _clearHistory() async {

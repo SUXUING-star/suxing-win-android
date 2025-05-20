@@ -16,10 +16,10 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../models/game/game.dart';
-import '../../../services/main/game/game_service.dart';
-import '../../../widgets/components/screen/game/card/base_game_card.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 class MyGamesScreen extends StatefulWidget {
   const MyGamesScreen({super.key});
@@ -45,7 +45,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   @override
   void initState() {
     super.initState();
-
     _scrollController.addListener(_scrollListener);
   }
 
@@ -68,8 +67,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     _scrollController.dispose();
     super.dispose();
   }
-
-  // --- Data Loading ---
 
   Future<void> _loadInitialGames() async {
     if (!mounted) return;
@@ -140,7 +137,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      print('加载更多我的游戏失败: $e');
       // Optionally show a snackbar or allow retry
       setState(() {
         _isFetchingMore = false;
@@ -158,7 +154,15 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   }
 
   Future<void> _handleResubmit(Game game) async {
-    // 使用 CustomConfirmDialog 进行确认
+    if (!mounted) return;
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (game.authorId != _authProvider.currentUserId) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
     await CustomConfirmDialog.show(
       // 或者 showConfirm，取决于你的实现
       context: context,
@@ -179,11 +183,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   /// 2. 执行实际的重新提交逻辑 (被 onConfirm 调用)
   Future<void> _executeResubmit(Game game) async {
     // 检查状态，虽然理论上按钮只在 rejected 时显示
-    if (game.approvalStatus != 'rejected') return;
+    if (game.approvalStatus != GameStatus.rejected) return;
 
     // 这里可以加一个 Loading 状态，但确认对话框自带了，所以可能不需要
     try {
-      await _gameService.resubmitGame(game.id);
+      await _gameService.resubmitGame(game);
       if (!mounted) return; // 检查 context 是否有效
 
       // 使用 AppSnackBar 显示成功信息
@@ -193,7 +197,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       await _loadInitialGames(); // 使用 await 确保刷新完成后再继续
     } catch (e) {
       if (!mounted) return; // 检查 context 是否有效
-      print('重新提交失败: $e');
       // 使用 AppSnackBar 显示错误信息
       AppSnackBar.showError(context, '重新提交失败: $e');
     }
@@ -252,12 +255,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
     // 2. 计算每行卡片数
     final cardsPerRow = DeviceUtils.calculateCardsPerRow(context);
-    if (cardsPerRow <= 0) return CustomErrorWidget(errorMessage: "渲染错误");
+    if (cardsPerRow <= 0) return const CustomErrorWidget(errorMessage: "渲染错误");
     final isDesktop = DeviceUtils.isDesktop;
 
     // 使用 _errorMessage 来显示具体的错误信息
     if (_hasError) {
-      // 错误提示也加个动画
       return CustomErrorWidget(
         onRetry: _loadInitialGames,
         errorMessage: _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',

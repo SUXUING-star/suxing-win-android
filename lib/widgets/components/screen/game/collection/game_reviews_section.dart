@@ -39,8 +39,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
   bool _hasMoreEntries = true; // *** 修改变量名 ***
   bool _isProcessingPageOne = false;
   int _loadReviewsCallCount = 0;
-  bool _hasInit = false;
+  bool _hasInitializedDependencies = false;
   late final GameCollectionService _collectionService;
+  User? _currentUser;
 
   @override
   void initState() {
@@ -50,11 +51,12 @@ class GameReviewSectionState extends State<GameReviewSection> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasInit) {
+    if (!_hasInitializedDependencies) {
       _collectionService = context.read<GameCollectionService>();
-      _hasInit = true;
+      _hasInitializedDependencies = true;
     }
-    if (_hasInit) {
+    if (_hasInitializedDependencies) {
+      _currentUser = widget.currentUser;
       _loadReviews(isInitialLoad: true);
     }
   }
@@ -73,8 +75,12 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
     if (gameIdChanged) {
       refresh();
-    } else if (ratingDataChanged && mounted) {
-      setState(() {});
+    }
+    if (widget.currentUser != oldWidget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
@@ -353,7 +359,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
                   child: UserInfoBadge(
                       userDataStatus: userDataStatus,
                       currentUser: widget.currentUser,
-                      userId: userId,
+                      targetUserId: userId,
                       showFollowButton: false,
                       mini: true)),
               const SizedBox(width: 8),

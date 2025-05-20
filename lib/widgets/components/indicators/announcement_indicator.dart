@@ -8,7 +8,11 @@ import '../dialogs/announcement/announcement_dialog.dart';
 import '../../../providers/auth/auth_provider.dart';
 
 class AnnouncementIndicator extends StatefulWidget {
-  const AnnouncementIndicator({super.key});
+  final AuthProvider authProvider;
+  const AnnouncementIndicator({
+    super.key,
+    required this.authProvider,
+  });
 
   @override
   State<AnnouncementIndicator> createState() => _AnnouncementIndicatorState();
@@ -23,19 +27,15 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
   late final AuthProvider _authProvider;
   late final AnnouncementService _announcementService;
 
+  // 跟踪是否正在显示公告
+  bool _isShowingAnnouncement = false;
+
   // 最小检查间隔
   static const Duration _minCheckInterval = Duration(minutes: 5);
 
   @override
   void initState() {
     super.initState();
-
-    // 延迟执行，等待构建完成
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _checkAnnouncements();
-      }
-    });
   }
 
   @override
@@ -45,7 +45,7 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
       _announcementService =
           Provider.of<AnnouncementService>(context, listen: false);
       // 检查用户登录状态变化
-      _authProvider = Provider.of<AuthProvider>(context, listen: true);
+      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -172,9 +172,6 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     }
   }
 
-  // 跟踪是否正在显示公告
-  static bool _isShowingAnnouncement = false;
-
   // 递归显示下一条公告，添加错误处理
   void _showNextAnnouncement(List<dynamic> announcements, int index) {
     if (!mounted || index >= announcements.length) {
@@ -266,4 +263,3 @@ class _AnnouncementIndicatorState extends State<AnnouncementIndicator> {
     );
   }
 }
-

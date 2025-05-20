@@ -3,12 +3,12 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-class ParticleEffect extends StatefulWidget {
+class CheckinParticleEffect extends StatefulWidget {
   final AnimationController controller;
   final Color? color;
   final int particleCount;
 
-  const ParticleEffect({
+  const CheckinParticleEffect({
     super.key,
     required this.controller,
     this.color,
@@ -16,10 +16,10 @@ class ParticleEffect extends StatefulWidget {
   });
 
   @override
-  _ParticleEffectState createState() => _ParticleEffectState();
+  _CheckinParticleEffectState createState() => _CheckinParticleEffectState();
 }
 
-class _ParticleEffectState extends State<ParticleEffect> {
+class _CheckinParticleEffectState extends State<CheckinParticleEffect> {
   List<Particle> particles = [];
   final Random random = Random();
   bool _isDisposed = false;

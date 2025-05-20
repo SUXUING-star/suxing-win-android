@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
@@ -95,11 +94,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   String? _initialCategory;
   bool _hasInitializedDependencies = false;
   late final GameFormCacheService _cacheService;
-  late final AuthProvider _authProvider;
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.currentUser;
   }
 
   @override
@@ -107,7 +107,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _cacheService = context.read<GameFormCacheService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -120,6 +119,17 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // 再次检查 mounted
           _checkAndRestoreDraft(); // 检查并恢复草稿
         }
+      });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant GameForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
       });
     }
   }
@@ -218,14 +228,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     // 如果是编辑模式，加载现有数据并存储初始状态
     if (widget.game != null) {
       final game = widget.game!;
-      // 创建一个副本用于比较，避免直接修改 widget.game
-      // 注意：Game 对象的 copyWith 方法需要正确实现深拷贝（特别是 List 和 Map）
-      // 如果 copyWith 实现不完善，这里的比较可能不准确
       try {
         _initialGameData = game.copyWith(); // 假设 copyWith 存在且正确
       } catch (e) {
-        print(
-            "Error creating initial game data copy: $e. Comparisons might be inaccurate.");
         _initialGameData = game; // Fallback to shallow copy (less reliable)
       }
 
@@ -257,11 +262,37 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
       _selectedTags = List<String>.from(game.tags); // 初始标签列表副本
     }
+  }
 
-    if (widget.game != null) {
-      // print(
-      //     "Initial Cover: $_initialCoverImageUrl, Initial Images: $_initialGameImageUrls");
+  Future<void> _handleCancelRestoreDraft() async {
+    if (_draftKey == null) {
+      return; // Key 无效，无法操作
     }
+
+    GameFormDraft? draftToDiscard; // 用来保存文件路径
+    try {
+      // 关键步骤 1: 加载要丢弃的草稿数据
+      draftToDiscard = await _cacheService.loadDraft(_draftKey!);
+
+      // 关键步骤 2: 从 Hive 中清除
+      await _cacheService.clearDraft(_draftKey!);
+
+      // 关键步骤 3: 删除关联的文件
+      await _deleteDraftFiles(draftToDiscard);
+
+      // 丢弃成功后，可以给个提示（如果需要）
+      if (mounted) {
+        // AppSnackBar.showInfo(context, '草稿已丢弃'); // 暂时不需要，对话框关闭即可
+      }
+    } catch (e) {
+      // print(
+      //     "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
+      if (mounted) {
+        AppSnackBar.showError(context, '丢弃草稿时出错');
+      }
+      // 即使出错，也要确保 onCancel 回调结束，对话框能正常关闭
+    }
+    // onCancel 通常只是关闭对话框，不需要在这里 pop 页面等
   }
 
   // --- 草稿相关方法 ---
@@ -304,37 +335,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           },
 
           // --- 取消回调：清除草稿 ---
-          onCancel: () async {
-            if (_draftKey == null) {
-              return; // Key 无效，无法操作
-            }
-
-            GameFormDraft? draftToDiscard; // 用来保存文件路径
-            try {
-              // 关键步骤 1: 加载要丢弃的草稿数据
-              draftToDiscard = await _cacheService.loadDraft(_draftKey!);
-
-              // 关键步骤 2: 从 Hive 中清除
-              await _cacheService.clearDraft(_draftKey!);
-
-              // 关键步骤 3: 删除关联的文件
-              await _deleteDraftFiles(draftToDiscard);
-
-              // 丢弃成功后，可以给个提示（如果需要）
-              if (mounted) {
-                // AppSnackBar.showInfo(context, '草稿已丢弃'); // 暂时不需要，对话框关闭即可
-              }
-            } catch (e) {
-              // print(
-              //     "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
-              if (mounted) {
-                AppSnackBar.showError(context, '丢弃草稿时出错');
-              }
-              // 即使出错，也要确保 onCancel 回调结束，对话框能正常关闭
-            }
-            // onCancel 通常只是关闭对话框，不需要在这里 pop 页面等
-          },
+          onCancel: _handleCancelRestoreDraft,
         );
+
         // CustomConfirmDialog.show 返回 Future<void>，await 它会等待 onConfirm 完成
         // 如果 onConfirm 出错，错误会从这里抛出
       } catch (e) {
@@ -803,15 +806,14 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 folder: 'games/covers');
             //print("New cover URL: $finalCoverImageUrl");
             if (finalCoverImageUrl.isEmpty) {
-              throw Exception(
-                  "Cover image upload failed or returned empty URL.");
+              throw Exception("上传失败");
             }
           } else if (currentCoverSource is String &&
               currentCoverSource.isNotEmpty) {
             finalCoverImageUrl = currentCoverSource; // 使用现有 URL
           } else {
             // 理论上 _validateForm 已经阻止了这种情况，但加个保险
-            throw Exception("Cover image source is invalid or missing!");
+            throw Exception("图片不合法");
           }
 
           // 3b. 处理游戏截图上传 (XFile -> 上传, String -> 使用, null -> 忽略)
@@ -843,8 +845,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                 folder: 'games/screenshots');
             if (uploadedUrls.length != filesToUpload.length) {
               // 上传数量不匹配，是个严重问题
-              throw Exception(
-                  "Screenshot upload count mismatch! Expected ${filesToUpload.length}, got ${uploadedUrls.length}");
+              throw Exception("图片上传部分失败");
             }
             //print("New screenshot URLs: $uploadedUrls");
 
@@ -875,21 +876,17 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             summary: _summaryController.text.trim(),
             description: _descriptionController.text.trim(),
             category: _selectedCategory ?? '',
-            coverImage: finalCoverImageUrl, // 已确保非空
-            images: finalGameImagesUrls, // 最终 URL 列表
-            tags: List<String>.from(_selectedTags), // 确保是副本
-            // 评分相关字段：添加时不设置，编辑时保留原值，由评分系统更新
+            coverImage: finalCoverImageUrl,
+            images: finalGameImagesUrls,
+            tags: List<String>.from(_selectedTags),
             rating: widget.game?.rating ?? 0.0,
             totalRatingSum: widget.game?.totalRatingSum ?? 0.0,
             ratingCount: widget.game?.ratingCount ?? 0,
-            // 时间戳：添加时用当前时间，编辑时用旧的创建时间，更新时间总是当前时间
             createTime: widget.game?.createTime ?? DateTime.now(),
             updateTime: DateTime.now(),
-            // 计数器：添加时为 0，编辑时保留原值
             viewCount: widget.game?.viewCount ?? 0,
             likeCount: widget.game?.likeCount ?? 0,
             likedBy: widget.game?.likedBy ?? [], // 编辑时保留
-            // 收藏计数器：同上
             wantToPlayCount: widget.game?.wantToPlayCount ?? 0,
             playingCount: widget.game?.playingCount ?? 0,
             playedCount: widget.game?.playedCount ?? 0,
@@ -1008,20 +1005,17 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     final bool allowImmediatePop =
         !(_isProcessing || hasUnsavedChanges || isAddModeWithContent);
 
-    final String? currentUserId = _authProvider.currentUserId;
+    final String? currentUserId = widget.currentUser?.id;
 
-    if (currentUserId == null || !_authProvider.isLoggedIn) {
-      return LoginPromptWidget();
+    if (currentUserId == null) {
+      return const LoginPromptWidget();
     }
 
     // 使用 Stack 包裹，方便显示全局加载指示器
     return Stack(
       children: [
-        // *** REPLACE WillPopScope WITH PopScope ***
         PopScope<Object?>(
-          // <-- 1. 添加泛型 (Object? 因为 GameForm 本身不pop带特定结果)
           canPop: allowImmediatePop,
-          // <-- 2. 使用 onPopInvokedWithResult 并更新签名
           onPopInvokedWithResult: (bool didPop, Object? result) {
             if (!didPop) {
               _handleBlockedPopAttempt(); // Call the handler logic

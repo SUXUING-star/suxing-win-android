@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../../../widgets/ui/inputs/comment_input_field.dart'; // 导入可复用的评论输入组件
 import '../../../../../widgets/ui/buttons/login_prompt.dart';
+
 class ActivityCommentInput extends StatefulWidget {
   final Function(String) onSubmit;
   final bool isAlternate; // 是否交替布局
@@ -24,11 +25,8 @@ class ActivityCommentInput extends StatefulWidget {
 }
 
 class _ActivityCommentInputState extends State<ActivityCommentInput> {
-
   @override
   void dispose() {
-    // --- 不再需要释放 Controller ---
-    // _controller.dispose();
     super.dispose();
   }
 
@@ -42,9 +40,7 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
 
     // --- 直接调用外部 onSubmit ---
     widget.onSubmit(comment);
-
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -59,32 +55,34 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
       // --- 2. Replace the custom Card with LoginPrompt ---
       loginPrompt: const LoginPrompt(
         message: '登录后发表评论', // 自定义提示信息
-        buttonText: '立即登录',    // 自定义按钮文字
+        buttonText: '立即登录', // 自定义按钮文字
       ),
-      lockedContent: widget.isLocked ? Card(
-        elevation: 1,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-          side: BorderSide(color: Colors.grey.shade200),
-        ),
-        child: Container(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                '评论已锁定',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+      lockedContent: widget.isLocked
+          ? Card(
+              elevation: 1,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+                side: BorderSide(color: Colors.grey.shade200),
+              ),
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      '评论已锁定',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text('该内容已被锁定，无法评论'),
+                  ],
                 ),
               ),
-              const SizedBox(height: 16),
-              const Text('该内容已被锁定，无法评论'),
-            ],
-          ),
-        ),
-      ) : null,
+            )
+          : null,
     );
   }
 }

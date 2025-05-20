@@ -2,10 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/post/post.dart';
 import '../../../services/main/forum/forum_service.dart';
@@ -28,6 +30,7 @@ class _EditPostScreenState extends State<EditPostScreen>
   bool _hasInitializedDependencies = false;
   Post? _post;
   late final ForumService _forumService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -39,6 +42,7 @@ class _EditPostScreenState extends State<EditPostScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _forumService = context.read<ForumService>();
+      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -67,7 +71,7 @@ class _EditPostScreenState extends State<EditPostScreen>
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
       await _forumService.updatePost(
-          _post!.id, data.title, data.content, postTags);
+          _post!, data.title, data.content, postTags);
       showSnackbar(message: "编辑成功", type: SnackbarType.success);
       if (!mounted) return;
       NavigationUtils.pop(context, true);
@@ -76,6 +80,12 @@ class _EditPostScreenState extends State<EditPostScreen>
     } finally {
       setState(() => _isSubmitting = false);
     }
+  }
+
+  bool _checkCanEditPost(Post post) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == post.authorId;
   }
 
   @override
@@ -87,7 +97,17 @@ class _EditPostScreenState extends State<EditPostScreen>
 
     if (_post == null) {
       // 保持这个检查
-      return CustomErrorWidget(title: '无法加载帖子数据');
+      return const CustomErrorWidget(title: '无法加载帖子数据');
+    }
+    if (!_checkCanEditPost(_post!)) {
+      return CustomErrorWidget(
+        title: "你没有权限编辑该帖子",
+        onRetry: () => NavigationUtils.pop(context),
+        retryText: "点击返回",
+      );
+    }
+    if (_authProvider.currentUserId == null || !_authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
     }
 
     // 安全地处理 postIdInfo
@@ -107,13 +127,14 @@ class _EditPostScreenState extends State<EditPostScreen>
           ? _post!.updateTime.toString().substring(0, 16)
           : _post!.updateTime.toString();
     } catch (e) {
-      print("Error formatting updateTime: $e");
+      //print("Error formatting updateTime: $e");
       // 保留默认值 "未知时间"
     }
 
     return PostForm(
       title: '编辑帖子',
-      initialTitle: _post!.title, // 这些也最好有非空检查，但如果 ID 为空，它们可能也为空
+      currentUser: _authProvider.currentUser,
+      initialTitle: _post!.title,
       initialContent: _post!.content,
       initialTags: List.from(_post!.tags),
       availableTags: _availablePostTags,

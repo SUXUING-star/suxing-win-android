@@ -133,7 +133,7 @@ class GameHeader extends StatelessWidget {
             // 使用新的用户信息组件
             UserInfoBadge(
               userDataStatus: userDataStatus,
-              userId: game.authorId,
+              targetUserId: game.authorId,
               currentUser: currentUser,
               mini: false,
               showLevel: true,

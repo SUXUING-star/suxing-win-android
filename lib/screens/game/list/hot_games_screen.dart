@@ -32,7 +32,9 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
       _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
-    _fetchHotGames(); // 初始化时开始加载数据
+    if (_hasInitializedDependencies) {
+      _fetchHotGames(); // 初始化时开始加载数据
+    }
   }
 
   @override

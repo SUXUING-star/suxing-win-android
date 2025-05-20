@@ -138,7 +138,7 @@ class AnnouncementImageField extends StatelessWidget {
         File(source.path),
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print("本地图片预览错误: ${source.path}, $error");
+          // print("本地图片预览错误: ${source.path}, $error");
           return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );

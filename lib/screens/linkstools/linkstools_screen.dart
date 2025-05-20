@@ -22,13 +22,18 @@ import '../../widgets/ui/common/error_widget.dart';
 import '../../widgets/ui/animation/fade_in_slide_up_item.dart';
 
 class LinksToolsScreen extends StatefulWidget {
-  const LinksToolsScreen({super.key});
+  final AuthProvider? authProvider;
+  const LinksToolsScreen({
+    super.key,
+    this.authProvider,
+  });
 
   @override
   _LinksToolsScreenState createState() => _LinksToolsScreenState();
 }
 
-class _LinksToolsScreenState extends State<LinksToolsScreen> {
+class _LinksToolsScreenState extends State<LinksToolsScreen>
+    with WidgetsBindingObserver {
   // --- 数据状态 (保持不变) ---
   List<Link>? _links;
   List<Tool>? _tools;
@@ -36,32 +41,68 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
 
   // --- 懒加载核心状态 (保持不变) ---
   bool _isInitialized = false;
-  bool _hasInit = false;
+  bool _hasInitializedDependencies = false;
   bool _isVisible = false;
   bool _isLoadingData = false; // 这个状态仍然控制加载指示器
 
   late final LinkToolService _linkToolService;
+  late final AuthProvider _authProvider;
+
+  String? _currentUserId;
 
   final double _desktopBreakpoint = 900.0;
 
   @override
   void initState() {
     super.initState();
-    // 注意：这里不加载数据，等待 VisibilityDetector 触发
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasInit) {
+    if (!_hasInitializedDependencies) {
       _linkToolService = context.read<LinkToolService>();
-      _hasInit = true;
+
+      _authProvider = widget.authProvider ??
+          Provider.of<AuthProvider>(context, listen: false);
+      _currentUserId = _authProvider.currentUserId;
+      _hasInitializedDependencies = true;
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (!mounted) return;
+
+    if (state == AppLifecycleState.resumed) {
+      if (_currentUserId != _authProvider.currentUserId) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
+      _loadData();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant LinksToolsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+        _currentUserId != _authProvider.currentUserId) {
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
     }
   }
 
   @override
   void dispose() {
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   // --- 核心：触发首次数据加载 (保持不变) ---
@@ -73,9 +114,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     }
   }
 
-  // --- 加载链接和工具数据 (只修改内部调用 Service 的方式) ---
+  // --- 加载链接和工具数据 ---
   Future<void> _loadData() async {
-    // *** 函数签名恢复原样，没有 forceRefresh ***
     if (_isLoadingData || !mounted) return; // 逻辑不变
     setState(() {
       // 状态更新逻辑不变
@@ -108,7 +148,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
       });
     }
   }
-  // --- 结束修改 ---
 
   // --- _launchURL (保持不变) ---
   Future<void> _launchURL(BuildContext context, String url) async {
@@ -167,32 +206,40 @@ class _LinksToolsScreenState extends State<LinksToolsScreen> {
     });
   }
 
+  void _handleVisibilityChange(VisibilityInfo info) {
+    if (!mounted) return;
+    final bool currentlyVisible = info.visibleFraction > 0;
+    if (_currentUserId != _authProvider.currentUserId) {
+      setState(() {
+        _currentUserId = _authProvider.currentUserId;
+      });
+    }
+    if (currentlyVisible != _isVisible) {
+      Future.microtask(() {
+        if (mounted) {
+          setState(() => _isVisible = currentlyVisible);
+        } else {
+          _isVisible = currentlyVisible;
+        }
+        if (_isVisible) {
+          if (!_isInitialized) {
+            _triggerInitialLoad(); // 内部调用 _loadData()
+          } else {}
+        }
+      });
+    }
+  }
+
   // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final isAdmin = authProvider.isAdmin;
+    final isAdmin = _authProvider.isAdmin;
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= _desktopBreakpoint;
 
     return VisibilityDetector(
       key: Key('linkstools_screen_visibility'),
-      onVisibilityChanged: (VisibilityInfo info) {
-        // 逻辑不变
-        final bool currentlyVisible = info.visibleFraction > 0;
-        if (currentlyVisible != _isVisible) {
-          Future.microtask(() {
-            if (mounted) {
-              setState(() => _isVisible = currentlyVisible);
-            } else {
-              _isVisible = currentlyVisible;
-            }
-            if (_isVisible) {
-              _triggerInitialLoad(); // 内部调用 _loadData()
-            }
-          });
-        }
-      },
+      onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
         appBar: CustomAppBar(title: '实用工具'), // actions 移除不变
         body: RefreshIndicator(

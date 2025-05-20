@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 你的颜色扩展
 
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 保持导入
+// --- Constants ---
+const double _kMinOpacity = 0.01;
+const double _kMinSize = 0.1;
+const Duration _kParticleUpdateInterval = Duration(milliseconds: 16);
 
 class MouseTrailParticle {
   Offset position;
@@ -11,6 +16,8 @@ class MouseTrailParticle {
   double size;
   double angle;
   double speed;
+  Color color;
+  bool isActive;
 
   MouseTrailParticle({
     required this.position,
@@ -18,15 +25,38 @@ class MouseTrailParticle {
     this.size = 3.0,
     this.angle = 0.0,
     this.speed = 1.5,
+    required this.color,
+    this.isActive = false,
   });
 
+  void reset({
+    required Offset newPosition,
+    required double newAngle,
+    required double newSpeed,
+    required double newSize,
+    required double newOpacity,
+    required Color newColor,
+  }) {
+    position = newPosition;
+    angle = newAngle;
+    speed = newSpeed;
+    size = newSize;
+    opacity = newOpacity;
+    color = newColor;
+    isActive = true;
+  }
+
   void update() {
+    if (!isActive) return;
     position = Offset(
-        position.dx + math.cos(angle) * speed,
-        position.dy + math.sin(angle) * speed
+      position.dx + math.cos(angle) * speed,
+      position.dy + math.sin(angle) * speed,
     );
     opacity *= 0.94;
     size *= 0.97;
+    if (opacity < _kMinOpacity || size < _kMinSize) {
+      isActive = false;
+    }
   }
 }
 
@@ -34,14 +64,12 @@ class MouseTrailEffect extends StatefulWidget {
   final Widget child;
   final Color particleColor;
   final int maxParticles;
-  final Duration particleLifespan;
 
   const MouseTrailEffect({
     super.key,
     required this.child,
     this.particleColor = Colors.blue,
-    this.maxParticles = 15, // 可以适当调整个数
-    this.particleLifespan = const Duration(milliseconds: 600), // 可以调整生命周期
+    this.maxParticles = 20,
   });
 
   @override
@@ -50,140 +78,154 @@ class MouseTrailEffect extends StatefulWidget {
 
 class _MouseTrailEffectState extends State<MouseTrailEffect>
     with SingleTickerProviderStateMixin {
-  final List<MouseTrailParticle> _particles = [];
-  Offset? _lastPosition;
-  Timer? _cleanupTimer;
+  final List<MouseTrailParticle> _particlePool = [];
+  final List<MouseTrailParticle> _activeParticles = [];
+  Offset? _lastMousePosition;
   late AnimationController _animationController;
   final math.Random _random = math.Random();
-  bool _isEnabled = true; // 默认启用
+  bool _isEnabled = true;
 
   @override
   void initState() {
     super.initState();
-    // --- 修改平台判断逻辑 ---
-    // 在 Windows, macOS, Linux 上启用特效
-    _isEnabled = Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-    // 如果只想在 Windows 上启用:
-    // _isEnabled = Platform.isWindows;
-    // 如果想在所有平台启用 (包括移动端):
-    // _isEnabled = true; // 或者直接删除这行和后续的 if(!_isEnabled) 判断
+    _isEnabled =
+        !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    if (!_isEnabled) return; // 如果平台不符，则不初始化动画等
+    if (!_isEnabled) return;
 
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 16), // ~60 FPS
-    )..addListener(_updateParticles);
-
-    _cleanupTimer = Timer.periodic(
-      const Duration(milliseconds: 50),
-          (_) => _cleanupParticles(),
-    );
-  }
-
-  void _updateParticles() {
-    if (!_isEnabled) return; // 如果禁用了，不更新
-
-    List<MouseTrailParticle> currentParticles = List.from(_particles);
-    for (var particle in currentParticles) {
-      particle.update();
-    }
-    if (mounted) setState(() {});
-  }
-
-  void _cleanupParticles() {
-    if (!_isEnabled) return; // 如果禁用了，不清理
-
-    _particles.removeWhere((particle) => particle.opacity < 0.01 || particle.size < 0.1);
-    if (_particles.isEmpty && _animationController.isAnimating) {
-      _animationController.stop();
-    }
-    // 不需要 setState，因为 _updateParticles 会触发刷新
-  }
-
-  void _addParticle(Offset position) {
-    if (!_isEnabled) return; // 如果禁用了，不添加
-
-    // 稍微增加粒子数量和调整参数可能效果更好
-    if (_particles.length >= widget.maxParticles) {
-      // 可以考虑移除最旧的几个，而不是只移除一个
-      _particles.removeRange(0, (_particles.length - widget.maxParticles + 2).clamp(1, 5));
-    }
-
-    // 尝试生成更多样化的粒子
-    for (int i = 0; i < 3; i++) { // 增加每次生成的粒子数
-      final angle = _random.nextDouble() * 2 * math.pi;
-      final speed = 0.6 + _random.nextDouble() * 1.0; // 减小一点速度范围
-      final initialSize = 2.0 + _random.nextDouble() * 2.0; // 稍微增大尺寸范围
-      final initialOpacity = 0.5 + _random.nextDouble() * 0.4; // 增加基础不透明度
-
-      _particles.add(MouseTrailParticle(
-        position: position + Offset(_random.nextDouble()*4-2, _random.nextDouble()*4-2), // 初始位置稍微随机化
-        size: initialSize,
-        angle: angle,
-        speed: speed,
-        opacity: initialOpacity,
+    for (int i = 0; i < widget.maxParticles * 2; i++) {
+      _particlePool.add(MouseTrailParticle(
+        position: Offset.zero,
+        color: widget.particleColor,
+        isActive: false,
       ));
     }
 
-    if (!_animationController.isAnimating) {
+    _animationController = AnimationController(
+      vsync: this,
+      duration: _kParticleUpdateInterval,
+    )..addListener(_updateParticlesAndCheckCleanup);
+    // _animationController.repeat(); // 不在 initState 中 repeat，在有粒子时才 repeat
+  }
+
+  void _updateParticlesAndCheckCleanup() {
+    if (!_isEnabled || !mounted) return;
+
+    for (int i = _activeParticles.length - 1; i >= 0; i--) {
+      final particle = _activeParticles[i];
+      particle.update();
+      if (!particle.isActive) {
+        _activeParticles.removeAt(i);
+        _particlePool.add(particle);
+      }
+    }
+
+    if (_activeParticles.isEmpty && _animationController.isAnimating) {
+      _animationController.stop();
+    }
+    // 不需要 setState，CustomPaint 通过 repaint Listenable 更新
+  }
+
+  void _addParticlesAtPosition(Offset position) {
+    if (!_isEnabled) return;
+    const int particlesToAddPerEvent = 2;
+    int addedCount = 0;
+
+    for (int i = 0;
+        i < _particlePool.length && addedCount < particlesToAddPerEvent;
+        i++) {
+      if (!_particlePool[i].isActive) {
+        final particle = _particlePool.removeAt(i);
+        final angle = _random.nextDouble() * 2 * math.pi;
+        final speed = 0.8 + _random.nextDouble() * 1.2;
+        final initialSize = 2.5 + _random.nextDouble() * 2.5;
+        final initialOpacity = 0.6 + _random.nextDouble() * 0.4;
+
+        // --- 修正颜色 Hue 的获取和设置 ---
+        HSLColor hslColor = HSLColor.fromColor(widget.particleColor);
+        // 随机调整 hue 值，例如在 +/- 15 度范围内
+        double newHue =
+            (hslColor.hue + _random.nextDouble() * 30.0 - 15.0) % 360.0;
+        if (newHue < 0) newHue += 360.0; // 确保 hue 在 0-360
+        final newParticleColor = hslColor.withHue(newHue).toColor();
+
+        particle.reset(
+          newPosition: position +
+              Offset(
+                  _random.nextDouble() * 6 - 3, _random.nextDouble() * 6 - 3),
+          newAngle: angle,
+          newSpeed: speed,
+          newSize: initialSize,
+          newOpacity: initialOpacity,
+          newColor: newParticleColor,
+        );
+        _activeParticles.add(particle);
+        addedCount++;
+
+        if (_activeParticles.length > widget.maxParticles) {
+          final oldestParticle = _activeParticles.removeAt(0);
+          oldestParticle.isActive = false;
+          _particlePool.add(oldestParticle);
+        }
+      }
+    }
+
+    if (!_animationController.isAnimating && _activeParticles.isNotEmpty) {
       _animationController.repeat();
+    }
+  }
+
+  void _handleMouseMove(Offset localPosition) {
+    if (_lastMousePosition != null) {
+      final distanceMoved = (localPosition - _lastMousePosition!).distance;
+      if (distanceMoved > 0.5) {
+        final int numInterpolationPoints =
+            (distanceMoved / 5.0).clamp(1, 4).toInt();
+        for (int i = 0; i < numInterpolationPoints; i++) {
+          final t = (i + 1) / numInterpolationPoints;
+          final interpolatedPosition =
+              Offset.lerp(_lastMousePosition!, localPosition, t)!;
+          _addParticlesAtPosition(interpolatedPosition);
+        }
+        _lastMousePosition = localPosition;
+      }
+    } else {
+      _addParticlesAtPosition(localPosition);
+      _lastMousePosition = localPosition;
     }
   }
 
   @override
   void dispose() {
-    _cleanupTimer?.cancel();
     _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    // 如果禁用了，直接返回 child
     if (!_isEnabled) {
       return widget.child;
     }
 
-    // 使用 Directionality 保证方向正确性
-    return Directionality(
-      textDirection: TextDirection.ltr,
+    return Listener(
+      onPointerHover: (event) => _handleMouseMove(event.localPosition),
+      onPointerDown: (event) => _handleMouseMove(event.localPosition),
+      onPointerMove: (event) => _handleMouseMove(event.localPosition),
+      behavior: HitTestBehavior.translucent,
       child: Stack(
         children: [
-          widget.child, // 应用内容在下面
-          Positioned.fill( // 特效层铺满
-            child: MouseRegion(
-              opaque: false, // 允许下层接收事件
-              onHover: (event) {
-                // 优化：只有在鼠标移动时才添加粒子
-                if (_lastPosition != null) {
-                  final distanceMoved = (event.localPosition - _lastPosition!).distance;
-                  if(distanceMoved > 1.0) { // 仅当移动超过一个像素时处理
-                    // 使用插值让粒子轨迹更平滑
-                    final numPoints = (distanceMoved / 6).clamp(1, 5).toInt(); // 根据距离插值，但限制数量
-                    for (int i = 1; i <= numPoints; i++) {
-                      final t = i / numPoints;
-                      final interpolatedPosition = Offset.lerp(_lastPosition!, event.localPosition, t)!;
-                      _addParticle(interpolatedPosition);
-                    }
-                    _lastPosition = event.localPosition;
-                  }
-                } else {
-                  _lastPosition = event.localPosition;
-                }
-
-              },
-              onExit: (_) {
-                _lastPosition = null; // 鼠标移出区域时重置
-              },
-              child: IgnorePointer( // 特效层不响应指针事件
-                child: CustomPaint(
-                  size: Size.infinite,
-                  painter: _MouseTrailPainter(
-                    particles: _particles,
-                    color: widget.particleColor,
-                  ),
+          widget.child,
+          Positioned.fill(
+            child: IgnorePointer(
+              child: CustomPaint(
+                // --- 修正 CustomPaint 的 repaint 方式 ---
+                // 将 AnimationController 传递给 Painter
+                painter: _MouseTrailPainter(
+                  particles: _activeParticles,
+                  animation:
+                      _animationController, // <--- 将 animationController 传递给 painter
                 ),
+                size: Size.infinite,
               ),
             ),
           ),
@@ -195,40 +237,32 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
 
 class _MouseTrailPainter extends CustomPainter {
   final List<MouseTrailParticle> particles;
-  final Color color;
 
-  _MouseTrailPainter({
-    required this.particles,
-    required this.color,
-  });
+  _MouseTrailPainter({required this.particles, required Listenable animation})
+      : super(repaint: animation);
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..style = PaintingStyle.fill
       ..strokeCap = StrokeCap.round;
-    // 考虑移除模糊，看是否性能更好或效果更清晰
-    // ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.5);
 
-    // 复制列表以避免在迭代时修改
-    List<MouseTrailParticle> currentParticles = List.from(particles);
-    for (var particle in currentParticles) {
-      paint.color = color.withSafeOpacity(particle.opacity.clamp(0.0, 1.0)); // 确保透明度在0-1之间
-      canvas.drawCircle(
-        particle.position,
-        particle.size.clamp(0.0, 10.0), // 限制粒子大小
-        paint,
-      );
+    for (final particle in particles) {
+      if (particle.isActive) {
+        paint.color =
+            particle.color.withSafeOpacity(particle.opacity.clamp(0.0, 1.0));
+        canvas.drawCircle(
+          particle.position,
+          particle.size.clamp(0.0, 15.0),
+          paint,
+        );
+      }
     }
   }
 
-  // 优化：只有当粒子列表或颜色改变时才重绘
   @override
-  bool shouldRepaint(_MouseTrailPainter oldDelegate) =>
-      particles != oldDelegate.particles || color != oldDelegate.color;
-
-// 如果粒子列表是可变的，可能需要更复杂的比较，但这里 List.from 应该每次都创建新列表引用
-// 或者直接返回 true 也可以，性能影响通常不大，除非粒子非常多
-// @override
-// bool shouldRepaint(_MouseTrailPainter oldDelegate) => true;
+  bool shouldRepaint(_MouseTrailPainter oldDelegate) {
+    return particles != oldDelegate.particles ||
+        particles.length != oldDelegate.particles.length;
+  }
 }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
@@ -24,15 +25,20 @@ import 'package:suxingchahui/routes/app_routes.dart';
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
   final bool isNeedHistory;
-  const GameDetailScreen({super.key, this.gameId, this.isNeedHistory = true});
+  const GameDetailScreen({
+    super.key,
+    this.gameId,
+    this.isNeedHistory = true,
+  });
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
 }
 
-class _GameDetailScreenState extends State<GameDetailScreen> {
+class _GameDetailScreenState extends State<GameDetailScreen>
+    with WidgetsBindingObserver {
   late final GameService _gameService;
-  late AuthProvider _authProvider;
-  late String? _currentUser;
+  late final AuthProvider _authProvider;
+  late String? _currentUserId;
 
   Game? _game;
   GameCollectionItem? _collectionStatus;
@@ -47,6 +53,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
@@ -55,6 +62,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (!_hasInitializedDependencies) {
       _gameService = context.read<GameService>();
       _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
     if (widget.gameId != null && _hasInitializedDependencies) {
@@ -77,7 +85,20 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void didUpdateWidget(GameDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_hasInitializedDependencies && oldWidget.gameId != widget.gameId) {
+    bool didUpdate = false;
+
+    if (oldWidget.gameId != widget.gameId) {
+      didUpdate = true;
+    }
+    if (_authProvider.currentUserId != _currentUserId) {
+      didUpdate = true;
+      if (mounted) {
+        setState(() {
+          _currentUserId = _authProvider.currentUserId;
+        });
+      }
+    }
+    if (didUpdate) {
       // 这是回调更新，第二次构建的情况
       setState(() {
         _game = null;
@@ -106,23 +127,33 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      if (_currentUserId != _authProvider.currentUserId) {
+        if (mounted) {
+          setState(() {
+            _currentUserId = _authProvider.currentUserId;
+          });
+        }
+      }
+    }
+  }
+
+  @override
   void dispose() {
     super.dispose();
+    WidgetsBinding.instance.removeObserver(this);
   }
 
   // --- 尝试增加游戏浏览次数 ---
   Future<void> _tryIncrementViewCount() async {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
-            widget.gameId != null &&
-            _game!.approvalStatus == GameStatus.approved && // <--- 检查状态
-            widget.isNeedHistory // <--- 检查是否需要记录历史 (预览模式判断)
-        ) {
+        widget.gameId != null &&
+        _game!.approvalStatus == GameStatus.approved &&
+        widget.isNeedHistory) {
       await _gameService.incrementGameView(widget.gameId!);
-    } else {
-      // 打印跳过原因，方便调试
-      //print(
-      //    "GameDetailScreen (${widget.gameId}): Skipping view count increment. Status: ${_game?.approvalStatus}, NeedHistory: ${widget.isNeedHistory}");
     }
   }
 
@@ -173,14 +204,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     if (Navigator.canPop(context)) {
                       Navigator.pop(context);
                     } else {
-                      // 如果不能 pop (比如是根路由)，可以导航到主页
-                      NavigationUtils.pushReplacementNamed(
-                          context, AppRoutes.home);
+                      NavigationUtils.navigateToHome(context);
                     }
                   } catch (popError) {
                     // 备用方案：导航到主页
-                    NavigationUtils.pushReplacementNamed(
-                        context, AppRoutes.home);
+                    NavigationUtils.navigateToHome(context);
                   }
                 }
               },
@@ -349,8 +377,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
 
     if (!_authProvider.isLoggedIn) {
-      AppSnackBar.showWarning(context, '请先登录');
-      NavigationUtils.pushNamed(context, AppRoutes.login);
+      AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
 
@@ -362,7 +389,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // 调用返回 Future<bool> 的 service 方法
       final newIsLikedStatus = await _gameService.toggleLike(widget.gameId!);
 
-      // *** 直接用返回结果更新状态 ***
       if (mounted) {
         // 异步操作后再次检查 mounted
         setState(() {
@@ -391,21 +417,60 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // 检查当前用户是否有权限编辑游戏
-  bool _canEditGame(BuildContext context, Game game) {
-    final canEdit = _authProvider.isAdmin ||
-        (_authProvider.isLoggedIn &&
-            _authProvider.currentUser?.id == game.authorId);
+  bool _canEditOrDeleteGame(Game game) {
+    final canEdit = _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == game.authorId;
     return canEdit;
   }
 
   // 处理编辑按钮点击事件
-  void _handleEditPressed(BuildContext context, String gameId) async {
-    //print("GameDetailScreen (${widget.gameId}): Edit button pressed.");
+  void _handleEditPressed(Game game) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+    }
+    if (!_canEditOrDeleteGame(game)) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
-        arguments: gameId);
+        arguments: game.id);
     if (result == true && mounted) {
       _refreshGameDetails(); // 强制刷新
-    } else {}
+    }
+  }
+
+  /// Handles delete action (using your original onConfirm logic).
+  Future<void> _handleDeletePressed(Game game) async {
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_canEditOrDeleteGame(game)) {
+      AppSnackBar.showError(context, "你没有权限编辑");
+      return;
+    }
+    await CustomConfirmDialog.show(
+      context: context,
+      title: '确认删除',
+      message: '确定要删除这个游戏吗？此操作无法撤销。',
+      confirmButtonText: '删除',
+      confirmButtonColor: Colors.red,
+      iconData: Icons.delete_forever,
+      iconColor: Colors.red,
+      onConfirm: () async {
+        // onConfirm 是 AsyncCallback?
+        try {
+          await _gameService.deleteGame(game);
+          // 刷新由 cache watcher 触发
+          if (!mounted) return;
+          AppSnackBar.showSuccess(context, "成功删除游戏");
+        } catch (e) {
+          AppSnackBar.showError(context, "删除游戏失败");
+          // print("删除游戏失败: $gameId, Error: $e");
+        }
+      },
+    );
   }
 
   // --- UI 构建方法 ---
@@ -428,10 +493,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildActionButtonsGroup(BuildContext context, Game game) {
-    final bool canEdit = _canEditGame(context, game);
+    final bool canEdit = _canEditOrDeleteGame(game);
+    final bool canDelete = _canEditOrDeleteGame(game);
     final String editHeroTag = MediaQuery.of(context).size.width >= 1024
         ? 'editButtonDesktop'
         : 'editButtonMobile';
+    final String deleteHeroTag = MediaQuery.of(context).size.width >= 1024
+        ? 'deleteButtonDesktop'
+        : 'deleteButtonMobile';
     final String likeHeroTag = MediaQuery.of(context).size.width >= 1024
         ? 'likeButtonDesktop'
         : 'likeButtonMobile'; // 给点赞按钮也加上区分的 heroTag
@@ -456,13 +525,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               icon: _isLiked!
                   ? Icons.favorite
                   : Icons.favorite_border, // 根据状态切换图标
-              // --- 颜色控制 (示例) ---
-              // 点赞时使用主题色，未点赞时使用灰色或默认色
+              mini: true,
               foregroundColor: _isLiked! ? primaryColor : greyColor,
               onPressed: _handleToggleLike, // 点击回调保持不变
               isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
-              // 可以调整大小，比如都用 mini？或者保持默认大小
-              // mini: true,
             )
           else
             // 加载占位符 (保持不变)
@@ -476,14 +542,23 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                       child: CircularProgressIndicator(strokeWidth: 2))),
             ),
 
-          // --- 第二个按钮：编辑按钮 (如果允许) ---
           if (canEdit)
             GenericFloatingActionButton(
               heroTag: editHeroTag, // 使用区分后的 heroTag
               mini: true, // 统一使用 mini 尺寸，或根据需要调整
               tooltip: '编辑',
               icon: Icons.edit,
-              onPressed: () => _handleEditPressed(context, game.id),
+              onPressed: () => _handleEditPressed(game),
+              backgroundColor: Colors.white, // 白色背景
+              foregroundColor: Theme.of(context).primaryColor, // 主题色图标
+            ),
+          if (canDelete)
+            GenericFloatingActionButton(
+              heroTag: deleteHeroTag, // 使用区分后的 heroTag
+              mini: true, // 统一使用 mini 尺寸，或根据需要调整
+              tooltip: '删除',
+              icon: Icons.delete_forever,
+              onPressed: () => _handleDeletePressed(game),
               backgroundColor: Colors.white, // 白色背景
               foregroundColor: Theme.of(context).primaryColor, // 主题色图标
             ),
@@ -493,7 +568,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Mobile Layout 构建
-  Widget _buildMobileLayout(Game game, bool isPending) {
+  Widget _buildMobileLayout(Game game, bool isPending, bool isDesktop) {
     final flexibleSpaceBackground = Stack(
       fit: StackFit.expand,
       children: [
@@ -532,12 +607,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final ScrollController mobileScrollController = ScrollController();
 
     return Scaffold(
-      // **** [核心改动] 用 Scrollbar 包裹 RefreshIndicator ****
       body: Scrollbar(
-        // <--- 添加 Scrollbar
         interactive: false,
-        controller: mobileScrollController, // <--- 传入 Controller
-        thumbVisibility: true, // <--- 让滚动条一直可见 (或者 isAlwaysShown: true)
+        controller: mobileScrollController,
+        thumbVisibility: true,
         child: RefreshIndicator(
           onRefresh: _refreshGameDetails,
           child: CustomScrollView(
@@ -561,7 +634,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               SliverPadding(
                 padding: const EdgeInsets.only(bottom: 80),
                 sliver: SliverToBoxAdapter(
-                  child: _buildGameContent(game, isPending),
+                  child: _buildGameContent(game, isPending, isDesktop),
                 ),
               ),
             ],
@@ -576,7 +649,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   // Desktop Layout 构建
-  Widget _buildDesktopLayout(Game game, bool isPending) {
+  Widget _buildDesktopLayout(Game game, bool isPending, bool isDesktop) {
     return Scaffold(
       appBar: CustomAppBar(
         title: game.title,
@@ -586,7 +659,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         key: ValueKey('game_detail_desktop_${widget.gameId}_$_refreshCounter'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
-          child: _buildGameContent(game, isPending),
+          child: _buildGameContent(game, isPending, isDesktop),
         ),
       ),
       floatingActionButton: _buildActionButtonsGroup(context, game),
@@ -595,16 +668,63 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
-  Widget _buildGameContent(Game game, bool isPending) {
+  Widget _buildGameContent(Game game, bool isPending, bool isDesktop) {
     final bool isPreview = isPending ? true : false;
     return GameDetailContent(
       game: game,
+      isDesktop: isDesktop,
       currentUser: _authProvider.currentUser,
       initialCollectionStatus: _collectionStatus,
-      onCollectionChanged: _handleCollectionStateChangedInButton, // <--- 传递这个函数
+      onCollectionChanged: _handleCollectionStateChangedInButton,
       onNavigate: _handleNavigate,
       navigationInfo: _navigationInfo,
       isPreviewMode: isPreview,
+    );
+  }
+
+  Widget _buildPendingContent() {
+    return Scaffold(
+      appBar: CustomAppBar(
+        // 或者使用通用 AppBar
+        title: '游戏详情',
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => NavigationUtils.pop(context), // 提供返回按钮
+        ),
+      ),
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.hourglass_empty_rounded,
+                  size: 64, color: Colors.orange.shade700),
+              SizedBox(height: 16),
+              Text(
+                '游戏正在审核中',
+                style: Theme.of(context)
+                    .textTheme
+                    .headlineSmall
+                    ?.copyWith(fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              SizedBox(height: 12),
+              Text(
+                '该游戏内容尚未对公众开放，或者您没有权限查看。请等待审核通过后再试。',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyLarge,
+              ),
+              SizedBox(height: 24),
+              FunctionalTextButton(
+                // 或者 ElevatedButton
+                onPressed: () => NavigationUtils.pop(context),
+                label: '返回上一页',
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -629,54 +749,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (_error != null && _game == null) {
       if (_error == 'pending_approval') {
         // --- 返回特定的“审核中/无权查看”UI ---
-        return Scaffold(
-          appBar: CustomAppBar(
-            // 或者使用通用 AppBar
-            title: '游戏详情',
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back),
-              onPressed: () => NavigationUtils.pop(context), // 提供返回按钮
-            ),
-          ),
-          body: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.hourglass_empty_rounded,
-                      size: 64, color: Colors.orange.shade700),
-                  SizedBox(height: 16),
-                  Text(
-                    '游戏正在审核中',
-                    style: Theme.of(context)
-                        .textTheme
-                        .headlineSmall
-                        ?.copyWith(fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 12),
-                  Text(
-                    '该游戏内容尚未对公众开放，或者您没有权限查看。请等待审核通过后再试。',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                  SizedBox(height: 24),
-                  FunctionalTextButton(
-                    // 或者 ElevatedButton
-                    onPressed: () => NavigationUtils.pop(context),
-                    label: '返回上一页',
-                  ),
-                ],
-              ),
-            ),
-          ),
-        );
+        return _buildPendingContent();
       }
       // 首次加载失败时全屏 Error
       if (_error == 'not_found' && _game == null) {
-        // 这个页面可能在对话框关闭后、导航完成前的短暂瞬间显示
-        // 或者如果对话框弹出失败，会显示这个
         return NotFoundErrorWidget(
             message: "抱歉，该游戏不存在或已被移除。",
             onBack: () {
@@ -690,41 +766,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       if (_error == 'network_error') {
         return NetworkErrorWidget(
             onRetry: () => _loadGameDetailsWithStatus(forceRefresh: true));
-      }
-      if (_error == 'pending_approval') {
-        return Scaffold(
-          appBar: CustomAppBar(
-            title: '游戏详情',
-            leading: IconButton(
-              icon: Icon(Icons.arrow_back),
-              onPressed: () => NavigationUtils.pop(context),
-            ),
-          ),
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.pending_actions, size: 64, color: Colors.orange),
-                SizedBox(height: 16),
-                Text(
-                  '游戏正在审核中',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(height: 8),
-                Text(
-                  '该游戏正在等待管理员审核，审核通过后将可以查看。',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16),
-                ),
-                SizedBox(height: 24),
-                FunctionalTextButton(
-                  onPressed: () => NavigationUtils.pop(context),
-                  label: '返回',
-                ),
-              ],
-            ),
-          ),
-        );
       }
       return CustomErrorWidget(
           title: '无法加载游戏数据',
@@ -740,7 +781,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       );
     }
 
-    final bool isPending = _game!.approvalStatus == 'pending';
+    final bool isPending = _game!.approvalStatus == GameStatus.pending;
 
     Widget bodyContent;
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---
@@ -748,26 +789,22 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       // 正在刷新且有旧数据
       bodyContent = LoadingWidget.fullScreen(message: "正在加载游戏数据");
     } else {
-      // 正常渲染
       final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
       bodyContent = isDesktop
-          ? _buildDesktopLayout(_game!, isPending)
-          : _buildMobileLayout(_game!, isPending);
+          ? _buildDesktopLayout(_game!, isPending, isDesktop)
+          : _buildMobileLayout(_game!, isPending, isDesktop);
     }
     if (isPending) {
-      // 如果是 pending，返回 Material -> Column -> [Banner, Expanded(bodyContent)]
       return Material(
-        // 用 Material 做根，保证背景和主题
         child: Column(
           children: [
-            _buildPendingApprovalBanner(), // 调用你已有的 Banner 方法
-            Expanded(child: bodyContent), // 把 Scaffold 或 LoadingWidget 放下面填满
+            _buildPendingApprovalBanner(),
+            Expanded(child: bodyContent),
           ],
         ),
       );
     } else {
-      // 如果不是 pending，直接返回 bodyContent (它自己是 Scaffold 或 LoadingWidget)
       return bodyContent;
     }
   }

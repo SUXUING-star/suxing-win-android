@@ -23,7 +23,7 @@ class ActivityDetailContent extends StatelessWidget {
   final bool isLoadingComments;
   final ScrollController scrollController;
   final Function(String) onAddComment;
-  final Function(String) onCommentDeleted;
+  final Function(ActivityComment) onCommentDeleted;
   final Function(ActivityComment) onCommentLikeToggled;
   final VoidCallback onActivityUpdated; // 这个回调看起来没有在当前布局中使用，但保留
   final VoidCallback? onEditActivity;

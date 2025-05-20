@@ -1,11 +1,10 @@
-// 文件路径: lib/widgets/components/screen/gamelist/common_game_list_screen.dart
+// lib/widgets/components/screen/gamelist/common_game_list_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/check/admin_check.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -67,25 +66,24 @@ class CommonGameListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final isDesktop = DeviceUtils.isDesktop;
     final displayTitle = title;
+    final finalShowAddButton = currentUser == null ? false : showAddButton;
 
     final appBar = useScaffold
         ? CustomAppBar(
-      title: displayTitle,
-      actions: _buildAppBarActions(context, isDesktop),
-      bottom: null,
-    )
+            title: displayTitle,
+            actions: _buildAppBarActions(context, isDesktop),
+            bottom: null,
+          )
         : null;
 
-    final floatingActionButton = (useScaffold && showAddButton)
-        ? AdminCheck(
-      child: GenericFloatingActionButton(
-        onPressed: onAddPressed ??
+    final floatingActionButton = (useScaffold && finalShowAddButton)
+        ? GenericFloatingActionButton(
+            onPressed: onAddPressed ??
                 () => NavigationUtils.pushNamed(context, AppRoutes.addGame),
-        icon: Icons.add,
-        tooltip: '添加游戏',
-        heroTag: 'common_game_list_fab_${key?.toString() ?? title}',
-      ),
-    )
+            icon: Icons.add,
+            tooltip: '添加游戏',
+            heroTag: 'common_game_list_fab_${key?.toString() ?? title}',
+          )
         : null;
 
     Widget bodyContent;
@@ -121,8 +119,10 @@ class CommonGameListScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildContentList({required BuildContext context, required bool isDesktop}) {
-    final cardsPerRow = DeviceUtils.calculateCardsPerRow(context, withPanels: false);
+  Widget _buildContentList(
+      {required BuildContext context, required bool isDesktop}) {
+    final cardsPerRow =
+        DeviceUtils.calculateCardsPerRow(context, withPanels: false);
     if (cardsPerRow <= 0) return InlineErrorWidget(errorMessage: "渲染错误");
     final cardRatio = DeviceUtils.calculateSimpleCardRatio(context);
 
@@ -143,18 +143,18 @@ class CommonGameListScreen extends StatelessWidget {
             child: customCardBuilder != null
                 ? customCardBuilder!(game)
                 : BaseGameCard(
-              key: ValueKey(game.id),
-              currentUser: currentUser,
-              game: game,
-              isGridItem: true,
-              adaptForPanels: false,
-              showCollectionStats: true,
-              forceCompact: cardsPerRow > 3,
-              maxTags: 1, // 简化，如果需要更复杂逻辑可在 BaseGameCard 内处理
-              onDeleteAction: onDeleteGameAction != null
-                  ? () => onDeleteGameAction!(game)
-                  : null,
-            ),
+                    key: ValueKey(game.id),
+                    currentUser: currentUser,
+                    game: game,
+                    isGridItem: true,
+                    adaptForPanels: false,
+                    showCollectionStats: true,
+                    forceCompact: cardsPerRow > 3,
+                    maxTags: 1, // 简化，如果需要更复杂逻辑可在 BaseGameCard 内处理
+                    onDeleteAction: onDeleteGameAction != null
+                        ? () => onDeleteGameAction!(game)
+                        : null,
+                  ),
           );
         });
   }
@@ -163,26 +163,33 @@ class CommonGameListScreen extends StatelessWidget {
     final actions = <Widget>[];
     final Color enabledColor = Colors.white;
 
+    final finalShowMySubmissionsButton =
+        currentUser == null ? false : showMySubmissionsButton;
+    final finalShowAddButtonInAppBar =
+        currentUser == null ? false : showAddButtonInAppBar;
+
     if (additionalActions != null) {
       actions.addAll(additionalActions!);
     }
-    if (showAddButtonInAppBar) {
-      actions.add(AdminCheck(
-          child: IconButton(
-              icon: Icon(Icons.add, color: enabledColor),
-              onPressed: onAddPressed ?? () => NavigationUtils.pushNamed(context, AppRoutes.addGame),
-              tooltip: '添加游戏')));
+    if (finalShowAddButtonInAppBar) {
+      actions.add(IconButton(
+          icon: Icon(Icons.add, color: enabledColor),
+          onPressed: onAddPressed ??
+              () => NavigationUtils.pushNamed(context, AppRoutes.addGame),
+          tooltip: '添加游戏'));
     }
-    if (showMySubmissionsButton) {
+    if (finalShowMySubmissionsButton) {
       actions.add(IconButton(
           icon: Icon(Icons.history_edu, color: enabledColor),
-          onPressed: onMySubmissionsPressed ?? () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
+          onPressed: onMySubmissionsPressed ??
+              () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
           tooltip: '我的提交'));
     }
     if (showSearchButton) {
       actions.add(IconButton(
           icon: Icon(Icons.search, color: enabledColor),
-          onPressed: () => NavigationUtils.pushNamed(context, AppRoutes.searchGame),
+          onPressed: () =>
+              NavigationUtils.pushNamed(context, AppRoutes.searchGame),
           tooltip: '搜索游戏'));
     }
     if (showSortOptions && onFilterPressed != null) {
@@ -200,15 +207,16 @@ class CommonGameListScreen extends StatelessWidget {
   }
 
   static Widget _buildError(String message, Future<void> Function()? onRetry) {
-    return FadeInItem(child: InlineErrorWidget(errorMessage: message, onRetry: onRetry));
+    return FadeInItem(
+        child: InlineErrorWidget(errorMessage: message, onRetry: onRetry));
   }
 
   // *** 改为非静态，可以访问 emptyStateMessage ***
   Widget _buildEmptyState(BuildContext context) {
     return EmptyStateWidget(
-      iconData: emptyStateIcon as IconData? ?? Icons.sentiment_dissatisfied_outlined, // 使用传入的 Icon 或默认
+      iconData: emptyStateIcon as IconData? ??
+          Icons.sentiment_dissatisfied_outlined, // 使用传入的 Icon 或默认
       message: emptyStateMessage, // 使用传入的消息
     );
   }
-
-} // End of CommonGameListScreen
+}

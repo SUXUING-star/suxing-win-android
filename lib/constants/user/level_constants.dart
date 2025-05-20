@@ -1,6 +1,23 @@
 import 'package:flutter/material.dart';
 
 class LevelUtils {
+  // 获取等级描述
+  static String getLevelDescription(int level) {
+    switch (level) {
+      case 1:
+        return "茶会新人，刚刚踏入茶会的大门";
+      case 2:
+        return "茶会学徒，对茶会有了初步了解";
+      case 3:
+        return "茶会探索者，在茶会中游刃有余";
+      case 4:
+        return "茶会专家，对茶会了如指掌";
+      case 5:
+        return "茶会大师，茶会的荣誉成员";
+      default:
+        return "茶会新人，刚刚踏入茶会的大门";
+    }
+  }
   // 根据等级返回不同的颜色
   // 1-10级：每级颜色不同，尽量鲜艳且有区分度
   // 11-20级：一组颜色，代表进阶

@@ -12,12 +12,13 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../utils/device/device_utils.dart';
-import '../../../widgets/components/screen/forum/card/post_grid_view.dart';
-import '../../../routes/app_routes.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/ui/buttons/functional_text_button.dart'; // 确保导入 FunctionalTextButton
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 确保导入 FunctionalTextButton
 
 class MyPostsScreen extends StatefulWidget {
   const MyPostsScreen({super.key});
@@ -28,7 +29,6 @@ class MyPostsScreen extends StatefulWidget {
 
 class _MyPostsScreenState extends State<MyPostsScreen>
     with SnackBarNotifierMixin {
-  // --- 依赖的服务 ---
 
   // --- 状态变量 ---
   List<Post> _posts = [];
@@ -130,6 +130,12 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     await _fetchPosts();
   }
 
+  bool _checkCanEditOrDeletePost(Post post) {
+    return _authProvider.isAdmin
+        ? true
+        : _authProvider.currentUserId == post.authorId;
+  }
+
   // --- 处理删除帖子 ---
   Future<void> _handleDeletePost(Post post) async {
     final postId = post.id;
@@ -139,6 +145,16 @@ class _MyPostsScreenState extends State<MyPostsScreen>
       _posts.removeWhere((post) => post.id == postId);
       _error = null; // 清除可能存在的旧错误
     });
+
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
+    if (!_checkCanEditOrDeletePost(post)) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
 
     try {
       // 显示确认对话框
@@ -194,50 +210,6 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     // 如果编辑成功返回，触发刷新
     if (result == true && _isMounted) {
       _fetchPosts(); // 刷新列表
-    }
-  }
-
-  // --- 处理切换锁定状态 ---
-  Future<void> _handleToggleLockAction(String postId) async {
-    if (!_isMounted) return;
-
-    // 找到帖子并乐观更新 UI
-    final postIndex = _posts.indexWhere((p) => p.id == postId);
-    if (postIndex == -1) {
-      return; // 或者触发刷新
-    }
-
-    final Post postToUpdate = _posts[postIndex];
-    final PostStatus originalStatus = postToUpdate.status;
-    final PostStatus newStatus = originalStatus == PostStatus.locked
-        ? PostStatus.active
-        : PostStatus.locked;
-    final Post updatedPostOptimistic = postToUpdate.copyWith(status: newStatus);
-
-    setState(() {
-      _posts[postIndex] = updatedPostOptimistic;
-      _error = null; // 清除错误
-    });
-
-    try {
-      // 调用 Service 执行实际操作
-      await _forumService.togglePostLock(postId);
-      showSnackbar(message: '状态切换成功', type: SnackbarType.success);
-    } catch (e) {
-      if (_isMounted) {
-        // 操作失败，回滚状态并显示错误
-        setState(() {
-          // 找到可能因为其他操作更新过的 post
-          final currentPostIndex = _posts.indexWhere((p) => p.id == postId);
-          if (currentPostIndex != -1) {
-            _posts[currentPostIndex] = postToUpdate; // 恢复原始状态
-          } else {
-            // 如果帖子已经不在列表里了（比如并发删除了），就不用恢复了
-          }
-          _error = '切换帖子状态失败: $e';
-        });
-        showSnackbar(message: '切换帖子状态失败: $e', type: SnackbarType.error);
-      }
     }
   }
 
@@ -353,7 +325,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
       isDesktopLayout: isDesktop,
       onDeleteAction: _handleDeletePost,
       onEditAction: _handleEditPost,
-      onToggleLockAction: _handleToggleLockAction,
+      onToggleLockAction: null,
     );
   }
 }

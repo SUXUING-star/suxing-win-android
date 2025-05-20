@@ -28,6 +28,7 @@ class BaseGameCard extends StatelessWidget {
   final bool forceCompact;
   final bool showCollectionStats;
   final VoidCallback? onDeleteAction; // 删除按钮点击回调
+  final VoidCallback? onEditAction;
 
   const BaseGameCard({
     super.key,
@@ -40,6 +41,7 @@ class BaseGameCard extends StatelessWidget {
     this.forceCompact = false,
     this.showCollectionStats = true,
     this.onDeleteAction,
+    this.onEditAction,
   });
 
   @override
@@ -272,6 +274,7 @@ class BaseGameCard extends StatelessWidget {
     final isAdmin = currentUser?.isAdmin ?? false;
     final canModify = (game.authorId.toString() == currentUserId) || isAdmin;
     final hasDeleteAction = onDeleteAction != null;
+    final hasEditAction = onEditAction != null;
 
     // 如果不能修改或者没有删除回调，不显示
     if (!canModify || !hasDeleteAction) {
@@ -286,13 +289,17 @@ class BaseGameCard extends StatelessWidget {
       elevation: 2.0, // 设置阴影
       itemHeight: 40, // 设置项高
 
-      // *** 直接提供数据列表 ***
       items: [
         // 删除选项
         if (hasDeleteAction) // 使用计算好的变量
           StylishMenuItemData(
             value: 'delete',
             child: AppText('删除', type: AppTextType.error), // 使用主题颜色
+          ),
+        if (hasEditAction)
+          StylishMenuItemData(
+            value: 'edit',
+            child: AppText('编辑', type: AppTextType.error), // 使用主题颜色
           ),
         // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData
       ],
@@ -301,8 +308,9 @@ class BaseGameCard extends StatelessWidget {
       onSelected: (value) {
         if (value == 'delete') {
           onDeleteAction?.call(); // 直接调用
+        } else if (value == 'edit') {
+          onEditAction?.call();
         }
-        // else if (value == 'edit') { ... }
       },
     );
   }
