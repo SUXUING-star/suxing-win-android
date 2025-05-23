@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../../../../models/post/post.dart';
 import 'post_card.dart'; // 确保导入 PostCard
@@ -11,10 +12,11 @@ import 'post_card.dart'; // 确保导入 PostCard
 class PostGridView extends StatelessWidget {
   final List<Post> posts;
   final User? currentUser;
+  final UserFollowService followService;
   final ScrollController? scrollController;
   final bool isLoading; // 用于显示加载更多指示器
   final bool hasMoreData; // 是否还有更多数据可加载
-  // final VoidCallback? onLoadMore; // 这个似乎没在 MasonryGridView 中直接使用
+  final UserInfoProvider infoProvider;
   final bool isDesktopLayout;
 
   // --- 新增：接收来自父组件的回调函数 ---
@@ -26,6 +28,8 @@ class PostGridView extends StatelessWidget {
     super.key,
     required this.posts,
     required this.currentUser,
+    required this.followService,
+    required this.infoProvider,
     this.scrollController,
     this.isLoading = false,
     this.hasMoreData = false,
@@ -54,8 +58,6 @@ class PostGridView extends StatelessWidget {
       // 桌面端的复杂逻辑可能需要父组件传入列数
     }
 
-    final userInfoProvider = context.watch<UserInfoProvider>();
-
     // 使用 MasonryGridView.count (瀑布流)
     return MasonryGridView.count(
       controller: scrollController, // 绑定滚动控制器
@@ -68,13 +70,10 @@ class PostGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index < posts.length) {
           final post = posts[index];
-          final userId = post.authorId.toString();
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          final UserDataStatus userDataStatus =
-              userInfoProvider.getUserStatus(userId);
           return PostCard(
             currentUser: currentUser,
-            userDataStatus: userDataStatus,
+            infoProvider: infoProvider,
+            followService: followService,
             post: post,
             isDesktopLayout: isDesktopLayout,
             onDeleteAction: onDeleteAction,

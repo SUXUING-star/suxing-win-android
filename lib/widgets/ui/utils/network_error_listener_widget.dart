@@ -44,8 +44,8 @@ class _NetworkErrorListenerWidgetState
           _handleNetworkChange();
         }
       } catch (e) {
-        print(
-            "NetworkErrorListener: Error obtaining NetworkManager or setting listener: $e");
+        // print(
+        //     "NetworkErrorListener: Error obtaining NetworkManager or setting listener: $e");
       }
     });
   }

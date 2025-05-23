@@ -10,8 +10,14 @@ import 'package:provider/provider.dart';
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
@@ -33,6 +39,11 @@ import 'field/tags_field.dart';
 import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
+  final GameService gameService;
+  final GameCollectionService gameCollectionService;
+  final AuthProvider authProvider;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   final Game? game; // 编辑时传入的游戏对象
   final User? currentUser;
   final Function(Game) onSubmit; // 提交成功后的回调
@@ -40,6 +51,11 @@ class GameForm extends StatefulWidget {
   const GameForm({
     super.key,
     this.game,
+    required this.authProvider,
+    required this.followService,
+    required this.infoProvider,
+    required this.gameService,
+    required this.gameCollectionService,
     required this.currentUser,
     required this.onSubmit,
   });
@@ -94,6 +110,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   String? _initialCategory;
   bool _hasInitializedDependencies = false;
   late final GameFormCacheService _cacheService;
+  late final InputStateService _inputStateService;
   User? _currentUser;
 
   @override
@@ -107,6 +124,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _cacheService = context.read<GameFormCacheService>();
+      _inputStateService =
+          Provider.of<InputStateService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -1317,6 +1336,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 标题字段
   Widget _buildTitleField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       controller: _titleController,
       focusNode: _titleFocusNode,
       decoration: const InputDecoration(
@@ -1336,6 +1356,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 简介字段
   Widget _buildSummaryField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       controller: _summaryController,
       focusNode: _summaryFocusNode,
       decoration: const InputDecoration(
@@ -1357,6 +1378,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 描述字段
   Widget _buildDescriptionField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       controller: _descriptionController,
       focusNode: _descriptionFocusNode,
       decoration: InputDecoration(
@@ -1382,6 +1404,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 音乐链接字段
   Widget _buildMusicUrlField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       controller: _musicUrlController,
       focusNode: _musicUrlFocusNode,
       decoration: const InputDecoration(
@@ -1405,6 +1428,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // BVID 字段
   Widget _buildBvidField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       controller: _bvidController,
       focusNode: _bvidFocusNode,
       decoration: const InputDecoration(
@@ -1540,7 +1564,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         .toList();
 
     return GamePreviewButton(
-      // 传递控制器和当前状态给预览按钮
+      gameCollectionService: widget.gameCollectionService,
+      authProvider: widget.authProvider,
+      gameService: widget.gameService,
+      infoProvider: widget.infoProvider,
+      inputStateService: _inputStateService,
+      followService: widget.followService,
       currentUser: widget.currentUser,
       titleController: _titleController,
       summaryController: _summaryController,

@@ -1,6 +1,7 @@
 // lib/screens/linkstools/linkstools_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -9,23 +10,25 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
 // --- 确保引入正确的 Service ---
-import '../../models/linkstools/link.dart';
-import '../../models/linkstools/tool.dart';
-import '../../providers/auth/auth_provider.dart';
-import '../../widgets/components/form/linkform/link_form_dialog.dart';
-import '../../widgets/components/form/toolform/tool_form_dialog.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/components/screen/linkstools/links_section.dart';
-import '../../widgets/components/screen/linkstools/tools_section.dart';
-import '../../widgets/ui/common/loading_widget.dart';
-import '../../widgets/ui/common/error_widget.dart';
-import '../../widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/models/linkstools/tool.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
+import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/components/screen/linkstools/links_section.dart';
+import 'package:suxingchahui/widgets/components/screen/linkstools/tools_section.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 
 class LinksToolsScreen extends StatefulWidget {
-  final AuthProvider? authProvider;
+  final AuthProvider authProvider;
+  final LinkToolService linkToolService;
   const LinksToolsScreen({
     super.key,
-    this.authProvider,
+    required this.authProvider,
+    required this.linkToolService,
   });
 
   @override
@@ -62,10 +65,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _linkToolService = context.read<LinkToolService>();
+      _linkToolService = widget.linkToolService;
 
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
+      _authProvider = widget.authProvider;
       _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
@@ -89,7 +91,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   @override
   void didUpdateWidget(covariant LinksToolsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
@@ -136,9 +138,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
         _tools = List<Tool>.from(results[1] as List? ?? []);
         _isLoadingData = false;
       });
-    } catch (e, s) {
+    } catch (e) {
       // 错误处理逻辑不变
-      print('LinksToolsScreen: Load data error: $e\nStackTrace: $s');
+      //print('LinksToolsScreen: Load data error: $e\nStackTrace: $s');
       if (!mounted) return;
       setState(() {
         _errorMessage = '加载失败：${e.toString()}';
@@ -156,15 +158,19 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
-        throw '无法打开链接 $url';
+        //throw '无法打开链接 $url';
       }
     } catch (e) {
-      print("Error launching URL $url: $e");
+      //print("Error launching URL $url: $e");
     }
   }
 
   // --- _showAddLinkDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddLinkDialog(BuildContext context) {
+    if (!_checkCanEditOrDelete()) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
     showDialog<Map<String, dynamic>>(
         context: context,
         builder: (context) => LinkFormDialog()).then((linkData) async {
@@ -183,8 +189,16 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     });
   }
 
+  bool _checkCanEditOrDelete() {
+    return _authProvider.isAdmin;
+  }
+
   // --- _showAddToolDialog (保持不变, 调用 _loadData 时不传参数) ---
   void _showAddToolDialog(BuildContext context) {
+    if (!_checkCanEditOrDelete()) {
+      AppSnackBar.showPermissionDenySnackBar(context);
+      return;
+    }
     showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
@@ -233,27 +247,35 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---
   @override
   Widget build(BuildContext context) {
-    final isAdmin = _authProvider.isAdmin;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= _desktopBreakpoint;
+    return StreamBuilder<User?>(
+        stream: _authProvider.currentUserStream,
+        initialData: _authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final currentUser = authSnapshot.data;
 
-    return VisibilityDetector(
-      key: Key('linkstools_screen_visibility'),
-      onVisibilityChanged: _handleVisibilityChange,
-      child: Scaffold(
-        appBar: CustomAppBar(title: '实用工具'), // actions 移除不变
-        body: RefreshIndicator(
-          onRefresh: _loadData,
-          child: _buildLinksToolsContent(isAdmin, isDesktop), // 内部逻辑不变
-        ),
-        floatingActionButton: _buildFloatButtons(isAdmin, context), // 逻辑不变
-      ),
-    );
+          final isAdmin = currentUser?.isAdmin ?? false;
+          final screenWidth = MediaQuery.of(context).size.width;
+          final isDesktop = screenWidth >= _desktopBreakpoint;
+
+          return VisibilityDetector(
+            key: Key('linkstools_screen_visibility'),
+            onVisibilityChanged: _handleVisibilityChange,
+            child: Scaffold(
+              appBar: const CustomAppBar(title: '实用工具'), // actions 移除不变
+              body: RefreshIndicator(
+                onRefresh: _loadData,
+                child: _buildLinksToolsContent(isAdmin, isDesktop), // 内部逻辑不变
+              ),
+              floatingActionButton:
+                  _buildFloatButtons(isAdmin, context), // 逻辑不变
+            ),
+          );
+        });
   }
 
   // --- _buildFloatButtons (保持不变) ---
   Widget _buildFloatButtons(bool isAdmin, BuildContext context) {
-    if (!isAdmin) return SizedBox.shrink();
+    if (!isAdmin) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
       child: FloatingActionButtonGroup(

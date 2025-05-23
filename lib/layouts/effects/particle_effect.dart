@@ -10,9 +10,9 @@ class Particle {
   double opacity;
   double velocityX;
   double velocityY;
-  double angle;  // 用于旋转效果
-  ParticleShape shape;  // 粒子形状
-  Color color;  // 粒子颜色
+  double angle;
+  ParticleShape shape;
+  Color color;
 
   Particle({
     required this.x,
@@ -28,13 +28,7 @@ class Particle {
   });
 }
 
-// 定义粒子形状
-enum ParticleShape {
-  circle,
-  heart,
-  star,
-  bubble
-}
+enum ParticleShape { circle, heart, star, bubble }
 
 class ParticlesPainter extends CustomPainter {
   final List<Particle> particles;
@@ -47,11 +41,7 @@ class ParticlesPainter extends CustomPainter {
 
     for (var particle in particles) {
       paint.color = particle.color.withSafeOpacity(particle.opacity);
-
-      final position = Offset(
-        particle.x * size.width / 400,
-        particle.y * size.height / 800,
-      );
+      final position = Offset(particle.x, particle.y);
 
       switch (particle.shape) {
         case ParticleShape.circle:
@@ -71,10 +61,7 @@ class ParticlesPainter extends CustomPainter {
   }
 
   void _drawBubble(Canvas canvas, Offset position, double size, Paint paint) {
-    // 绘制泡泡效果
     canvas.drawCircle(position, size, paint);
-
-    // 添加高光效果
     final highlightPaint = Paint()
       ..color = Colors.white.withSafeOpacity(0.5)
       ..style = PaintingStyle.fill;
@@ -85,44 +72,47 @@ class ParticlesPainter extends CustomPainter {
     );
   }
 
-  void _drawHeart(Canvas canvas, Offset position, double size, Paint paint, double angle) {
+  void _drawHeart(
+      Canvas canvas, Offset position, double size, Paint paint, double angle) {
     canvas.save();
     canvas.translate(position.dx, position.dy);
     canvas.rotate(angle);
-
     final path = Path();
     path.moveTo(0, size * 0.2);
     path.cubicTo(
-      size * 0.5, -size * 0.3,
-      size, size * 0.2,
-      0, size,
+      size * 0.5,
+      -size * 0.3,
+      size,
+      size * 0.2,
+      0,
+      size,
     );
     path.cubicTo(
-      -size, size * 0.2,
-      -size * 0.5, -size * 0.3,
-      0, size * 0.2,
+      -size,
+      size * 0.2,
+      -size * 0.5,
+      -size * 0.3,
+      0,
+      size * 0.2,
     );
-
     canvas.drawPath(path, paint);
     canvas.restore();
   }
 
-  void _drawStar(Canvas canvas, Offset position, double size, Paint paint, double angle) {
+  void _drawStar(
+      Canvas canvas, Offset position, double size, Paint paint, double angle) {
     canvas.save();
     canvas.translate(position.dx, position.dy);
     canvas.rotate(angle);
-
     final path = Path();
-    final points = 5;
+    const points = 5;
     final innerRadius = size * 0.4;
     final outerRadius = size;
-
     for (var i = 0; i < points * 2; i++) {
       final radius = i.isEven ? outerRadius : innerRadius;
-      final anglePoint = i * math.pi / points;
+      final anglePoint = (i * math.pi / points) - (math.pi / 2);
       final x = math.cos(anglePoint) * radius;
       final y = math.sin(anglePoint) * radius;
-
       if (i == 0) {
         path.moveTo(x, y);
       } else {
@@ -130,17 +120,12 @@ class ParticlesPainter extends CustomPainter {
       }
     }
     path.close();
-
     canvas.drawPath(path, paint);
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(ParticlesPainter oldDelegate) => true;
-}
-
-class ParticleEffectKey extends GlobalKey<ParticleEffectState> {
-  const ParticleEffectKey() : super.constructor();
 }
 
 class ParticleEffect extends StatefulWidget {
@@ -155,38 +140,23 @@ class ParticleEffect extends StatefulWidget {
   ParticleEffectState createState() => ParticleEffectState();
 }
 
-class ParticleEffectState extends State<ParticleEffect> with SingleTickerProviderStateMixin {
+class ParticleEffectState extends State<ParticleEffect>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   final List<Particle> _particles = [];
   final List<Color> _pastelColors = [
-    Color(0xFFFFB3BA), // 粉红
-    Color(0xFFBAE1FF), // 天蓝
-    Color(0xFFBAFFBF), // 薄荷绿
-    Color(0xFFFFDFBA), // 桃色
-    Color(0xFFE3BAFF), // 淡紫
+    const Color(0xFFFFB3BA),
+    const Color(0xFFBAE1FF),
+    const Color(0xFFBAFFBF),
+    const Color(0xFFFFDFBA),
+    const Color(0xFFE3BAFF),
   ];
+  Size _currentSize = Size.zero;
 
   @override
   void initState() {
     super.initState();
-    _initParticles();
     _setupAnimation();
-  }
-
-  void applyRippleEffect(Offset position, double strength) {
-    for (var particle in _particles) {
-      final dx = (particle.x - position.dx);
-      final dy = (particle.y - position.dy);
-      final distance = math.sqrt(dx * dx + dy * dy);
-
-      if (distance < 100) {
-        final angle = math.atan2(dy, dx);
-        final force = (1 - distance / 100) * strength * 3;
-
-        particle.velocityX += math.cos(angle) * force;
-        particle.velocityY += math.sin(angle) * force;
-      }
-    }
   }
 
   @override
@@ -195,18 +165,25 @@ class ParticleEffectState extends State<ParticleEffect> with SingleTickerProvide
     super.dispose();
   }
 
-  void _initParticles() {
+  void _initParticlesIfNeeded(Size size) {
+    if (_particles.isNotEmpty &&
+        (_currentSize.width - size.width).abs() < 1 &&
+        (_currentSize.height - size.height).abs() < 1) {
+      return;
+    }
+    _currentSize = size;
+    _particles.clear();
     final random = math.Random();
     for (int i = 0; i < widget.particleCount; i++) {
-      final shape = ParticleShape.values[random.nextInt(ParticleShape.values.length)];
+      final shape =
+          ParticleShape.values[random.nextInt(ParticleShape.values.length)];
       final color = _pastelColors[random.nextInt(_pastelColors.length)];
-
       _particles.add(
         Particle(
-          x: random.nextDouble() * 400,
-          y: random.nextDouble() * 800,
-          speed: 0.3 + random.nextDouble() * 0.8, // 降低基础速度
-          size: 2 + random.nextDouble() * 4,  // 略微增大粒子
+          x: random.nextDouble() * _currentSize.width,
+          y: random.nextDouble() * _currentSize.height,
+          speed: 0.3 + random.nextDouble() * 0.8,
+          size: 2 + random.nextDouble() * 4,
           opacity: 0.3 + random.nextDouble() * 0.4,
           angle: random.nextDouble() * math.pi * 2,
           shape: shape,
@@ -221,55 +198,85 @@ class ParticleEffectState extends State<ParticleEffect> with SingleTickerProvide
       vsync: this,
       duration: const Duration(milliseconds: 16),
     )..addListener(() {
-      _updateParticles();
-    });
-    _controller.repeat();
+        if (_controller.isAnimating && mounted) {
+          _updateParticles();
+        }
+      });
+  }
+
+  void _startAnimationIfNeeded() {
+    if (mounted && !_controller.isAnimating && _particles.isNotEmpty) {
+      _controller.repeat();
+    }
   }
 
   void _updateParticles() {
+    if (!mounted || _currentSize == Size.zero) return;
     final random = math.Random();
-
     setState(() {
       for (var particle in _particles) {
-        // 添加随机摆动
         particle.velocityX += (random.nextDouble() - 0.5) * 0.1;
-
-        // 基础向上运动
         particle.y -= particle.speed;
-
-        // 应用速度
         particle.x += particle.velocityX;
         particle.y += particle.velocityY;
-
-        // 旋转角度
         particle.angle += 0.02;
-
-        // 速度衰减
         particle.velocityX *= 0.98;
         particle.velocityY *= 0.98;
 
-        // 边界检查
-        if (particle.y < 0) {
-          // 重置粒子
-          particle.y = 800;
-          particle.x = random.nextDouble() * 400;
+        if (particle.y < -particle.size) {
+          particle.y = _currentSize.height + particle.size;
+          particle.x = random.nextDouble() * _currentSize.width;
           particle.velocityX = 0;
           particle.velocityY = 0;
-          // 随机新的形状和颜色
-          particle.shape = ParticleShape.values[random.nextInt(ParticleShape.values.length)];
+          particle.opacity = 0.3 + random.nextDouble() * 0.4;
+          particle.shape =
+              ParticleShape.values[random.nextInt(ParticleShape.values.length)];
           particle.color = _pastelColors[random.nextInt(_pastelColors.length)];
+        }
+        if (particle.x < -particle.size) {
+          particle.x = _currentSize.width + particle.size;
+        } else if (particle.x > _currentSize.width + particle.size) {
+          particle.x = -particle.size;
         }
       }
     });
+  }
+
+  void applyRippleEffect(Offset position, double strength) {
+    if (!mounted || _currentSize == Size.zero) return;
+    // final localPosition = position; // 确保 position 是正确的局部坐标
+
+    for (var particle in _particles) {
+      final dx = (particle.x - position.dx); // 使用传入的 position
+      final dy = (particle.y - position.dy); // 使用传入的 position
+      final distance = math.sqrt(dx * dx + dy * dy);
+
+      if (distance < 100) {
+        final angle = math.atan2(dy, dx);
+        final force = (1 - distance / 100) * strength * 3;
+        particle.velocityX += math.cos(angle) * force;
+        particle.velocityY += math.sin(angle) * force;
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final newSize = constraints.biggest;
+        if (_currentSize != newSize || _particles.isEmpty) {
+          _initParticlesIfNeeded(newSize);
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _startAnimationIfNeeded();
+          });
+        }
+        if (_particles.isEmpty) {
+          return const SizedBox.shrink();
+        }
         return CustomPaint(
           painter: ParticlesPainter(_particles),
-          size: Size(constraints.maxWidth, constraints.maxHeight),
+          size: Size.infinite,
         );
       },
     );

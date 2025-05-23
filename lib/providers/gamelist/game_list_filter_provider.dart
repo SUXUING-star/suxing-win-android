@@ -21,13 +21,13 @@ class GameListFilterProvider with ChangeNotifier {
   void setTag(String? newTag) {
     // 只有当新标签与当前标签不同时才更新
     if (_selectedTag != newTag) {
-      print('GameListFilterProvider: Setting tag to -> $newTag');
+      // print('GameListFilterProvider: Setting tag to -> $newTag');
       _selectedTag = newTag;
       _tagHasBeenSet = true; // 标记 Tag 已设置
 
       // *** 互斥逻辑: 设置 Tag 时清除 Category ***
       if (newTag != null && _selectedCategory != null) {
-        print('GameListFilterProvider: Clearing category because tag was set.');
+        // print('GameListFilterProvider: Clearing category because tag was set.');
         _selectedCategory = null;
         _categoryHasBeenSet = false; // 分类被清除了，重置标记
       }
@@ -92,6 +92,6 @@ class GameListFilterProvider with ChangeNotifier {
   void resetFlags() {
     //bool changed = _tagHasBeenSet || _categoryHasBeenSet;
     _tagHasBeenSet = false;
-    _categoryHasBeenSet = false;;
+    _categoryHasBeenSet = false;
   }
 }

@@ -1,17 +1,20 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../services/main/game/game_service.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'random_game_card.dart';
 
 class RandomGamesSection extends StatefulWidget {
   final String currentGameId;
+  final GameService gameService;
 
   const RandomGamesSection({
     super.key,
     required this.currentGameId,
+    required this.gameService,
   });
 
   @override
@@ -21,22 +24,24 @@ class RandomGamesSection extends StatefulWidget {
 class _RandomGamesSectionState extends State<RandomGamesSection> {
   List<Game> _randomGames = [];
   bool _isLoading = true;
-  bool _hasInit = false;
-  late final GameService _gameService;
+  bool _hasInitializedDependencies = false;
+  late String _currentGameId;
+  String? _errMsg;
 
   @override
   void initState() {
     super.initState();
+    _errMsg = null;
+    _currentGameId = widget.currentGameId;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    if (!_hasInit) {
-      _gameService = context.read<GameService>();
-      _hasInit = true;
+    if (!_hasInitializedDependencies) {
+      _hasInitializedDependencies = true;
     }
-    if (_hasInit) {
+    if (_hasInitializedDependencies) {
       _loadRandomGames();
     }
   }
@@ -44,6 +49,19 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
   @override
   void dispose() {
     super.dispose();
+    _errMsg = null;
+  }
+
+  @override
+  void didUpdateWidget(covariant RandomGamesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentGameId != widget.currentGameId ||
+        oldWidget.currentGameId != widget.currentGameId) {
+      setState(() {
+        _currentGameId = widget.currentGameId;
+      });
+      _loadRandomGames();
+    }
   }
 
   Future<void> _loadRandomGames() async {
@@ -52,41 +70,55 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
 
     setState(() {
       _isLoading = true;
+      _errMsg = null;
     });
 
     try {
-      final games = await _gameService.getRandomGames(
+      final games = await widget.gameService.getRandomGames(
         excludeId: widget.currentGameId,
       );
 
-      // ----> 关键修改点 (用 mounted 替换 _isMounted) <----
       if (!mounted) return; // 在 await 后、setState 前检查
 
       setState(() {
         _randomGames = games;
         _isLoading = false;
+        _errMsg = null;
       });
     } catch (e) {
-      // ----> 关键修改点 (用 mounted 替换 _isMounted) <----
       if (!mounted) return; // 在 catch 块内的 setState 前检查
 
       setState(() {
         _isLoading = false;
+        _errMsg = e.toString();
       });
-      print('Error loading random games: $e');
+      // print('Error loading random games: $e');
     }
+  }
+
+  void _handleRetry() {
+    if (!mounted) return;
+
+    _loadRandomGames();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
       return LoadingWidget.inline(
-        size: 10,
+        size: 24,
+      );
+    }
+    if (_errMsg != null) {
+      return InlineErrorWidget(
+        onRetry: () => _handleRetry(),
+        retryText: "尝试重试",
+        errorMessage: _errMsg,
       );
     }
 
     if (_randomGames.isEmpty) {
-      return const SizedBox.shrink();
+      return const EmptyStateWidget(message: "暂无推荐");
     }
 
     // 获取屏幕宽度以计算卡片宽度

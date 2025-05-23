@@ -108,7 +108,7 @@ class RobustNetworkImage extends StatelessWidget {
       Uri safeUri = uri.replace(path: newPath);
       return safeUri.toString();
     } catch (e) {
-      print('URL编码错误: $e');
+      // print('URL编码错误: $e');
       // 如果解析失败，尝试简单的编码
       try {
         // 分离协议和主机部分
@@ -134,7 +134,7 @@ class RobustNetworkImage extends StatelessWidget {
           }
         }
       } catch (e) {
-        print('简单URL编码失败: $e');
+        // print('简单URL编码失败: $e');
       }
 
       // 所有尝试都失败，返回原始URL
@@ -151,7 +151,7 @@ class RobustNetworkImage extends StatelessWidget {
       fit: fit,
       placeholder: (context, url) => _buildLoadingContainer(context),
       errorWidget: (context, url, error) {
-        print('图片加载错误[$url]: $error');
+        // print('图片加载错误[$url]: $error');
         return _buildErrorContainer(context);
       },
       memCacheWidth: width != null ? (width! * 2).toInt() : null,

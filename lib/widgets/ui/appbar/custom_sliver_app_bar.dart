@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io' show Platform;
 
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-
 class CustomSliverAppBar extends StatelessWidget {
   final String titleText;
   final List<Widget>? actions;
@@ -43,23 +41,23 @@ class CustomSliverAppBar extends StatelessWidget {
     this.actionsIconTheme = const IconThemeData(color: Colors.white), // 默认白色图标
   }) : assert(!snap || floating, 'snap=true requires floating=true');
 
-  // 辅助函数：构建默认底部线条 (可选)
-  PreferredSizeWidget _buildDefaultBottom(BuildContext context, bool isAndroidLandscape) {
-    final double bottomLineHeightFactor = isAndroidLandscape ? 0.5 : 1.0;
-    final double visualHeight = 1.0 * bottomLineHeightFactor;
-    final double preferredHeight = 4.0 * bottomLineHeightFactor;
-
-    return PreferredSize(
-      preferredSize: Size.fromHeight(preferredHeight),
-      child: Opacity(
-        opacity: 0.7,
-        child: Container(
-          color: Colors.white.withSafeOpacity(0.2),
-          height: visualHeight,
-        ),
-      ),
-    );
-  }
+  // // 辅助函数：构建默认底部线条 (可选)
+  // PreferredSizeWidget _buildDefaultBottom(BuildContext context, bool isAndroidLandscape) {
+  //   final double bottomLineHeightFactor = isAndroidLandscape ? 0.5 : 1.0;
+  //   final double visualHeight = 1.0 * bottomLineHeightFactor;
+  //   final double preferredHeight = 4.0 * bottomLineHeightFactor;
+  //
+  //   return PreferredSize(
+  //     preferredSize: Size.fromHeight(preferredHeight),
+  //     child: Opacity(
+  //       opacity: 0.7,
+  //       child: Container(
+  //         color: Colors.white.withSafeOpacity(0.2),
+  //         height: visualHeight,
+  //       ),
+  //     ),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {

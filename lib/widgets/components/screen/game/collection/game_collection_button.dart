@@ -4,6 +4,7 @@ import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -13,6 +14,8 @@ import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 class GameCollectionButton extends StatefulWidget {
   final Game game;
+  final GameCollectionService gameCollectionService;
+  final InputStateService inputStateService;
   final bool compact;
   final User? currentUser;
   final Function(CollectionChangeResult)? onCollectionChanged;
@@ -22,6 +25,8 @@ class GameCollectionButton extends StatefulWidget {
   const GameCollectionButton({
     super.key,
     required this.game,
+    required this.gameCollectionService,
+    required this.inputStateService,
     required this.currentUser,
     this.isPreview = false,
     this.compact = false,
@@ -37,7 +42,6 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     with SnackBarNotifierMixin {
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
-  late final GameCollectionService _collectionService;
 
   User? _currentUser;
   bool _hasInitializedDependencies = false;
@@ -54,7 +58,6 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _collectionService = context.read<GameCollectionService>();
       _hasInitializedDependencies = true;
     }
   }
@@ -105,7 +108,6 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     // *** 记住操作前的状态 ***
     final GameCollectionItem? oldStatus = _collectionStatus;
 
-    // ***  使用 showGeneralDialog 替换 showDialog  ***
     final result = await showGeneralDialog<Map<String, dynamic>>(
       context: context,
       barrierDismissible: true, //  允许点击外部关闭
@@ -118,6 +120,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
           Animation<double> secondaryAnimation) {
         // 返回 CollectionDialog 实例
         return CollectionDialog(
+          inputStateService: widget.inputStateService,
+          currentUser: widget.currentUser,
           gameId: widget.game.id,
           gameName: widget.game.title,
           currentStatus: _collectionStatus?.status,
@@ -169,8 +173,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
           final rating = result['rating'] as double?;
 
           // 调用 Service
-          final (item, returnedStatus) =
-              await _collectionService.setGameCollection(widget.game.id, status,
+          final (item, returnedStatus) = await widget.gameCollectionService
+              .setGameCollection(widget.game.id, status,
                   notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
@@ -186,8 +190,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
           }
         } else if (action == 'remove') {
           // 调用 Service
-          final success =
-              await _collectionService.removeGameCollection(widget.game.id);
+          final success = await widget.gameCollectionService
+              .removeGameCollection(widget.game.id);
           if (success) {
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***
@@ -213,8 +217,8 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         }
       } catch (e) {
         // 统一处理 Service 调用失败或解析失败的异常
-        print(
-            'GameCollectionButton (${widget.game.id}): Operation error in dialog handler: $e');
+        // print(
+        //     'GameCollectionButton (${widget.game.id}): Operation error in dialog handler: $e');
         showSnackbar(
             message: '操作失败: ${e.toString().split(':').last.trim()}',
             type: SnackbarType.error);
@@ -291,7 +295,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
 
     // 预览模式下不允许显示按钮
     if (widget.isPreview) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
     // 根据是否已收藏，返回不同的按钮 Widget
     if (hasStatus) {

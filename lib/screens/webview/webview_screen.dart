@@ -175,7 +175,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         // 注意：即使调用了，状态更新也可能稍有延迟，Stream 是最终一致的保障
       }
     } catch (e) {
-      print("检查导航状态时出错: $e");
+      // print("检查导航状态时出错: $e");
       return;
     }
 
@@ -208,12 +208,12 @@ class _WebViewScreenState extends State<WebViewScreen>
             // 直接用 result，它可能是 null 或 string
             pageTitle = result?.toString();
           } catch (e) {
-            print("Error decoding title from JS: $e, raw result: $result");
+            // print("Error decoding title from JS: $e, raw result: $result");
           }
         }
       }
     } catch (e) {
-      print("获取页面标题时出错: $e");
+      // print("获取页面标题时出错: $e");
     }
 
     if (mounted) {

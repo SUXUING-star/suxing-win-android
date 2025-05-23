@@ -2,23 +2,30 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../services/main/game/game_service.dart';
-import '../../../../models/game/game.dart';
-import '../../../widgets/components/screen/game/card/base_game_card.dart';
-import '../../../../widgets/ui/dialogs/confirm_dialog.dart';
-import '../../../../widgets/ui/dialogs/edit_dialog.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 
 class GameManagement extends StatefulWidget {
-  const GameManagement({super.key});
+  final User? currentUser;
+  final GameService gameService;
+  const GameManagement({
+    super.key,
+    required this.currentUser,
+    required this.gameService,
+  });
 
   @override
   State<GameManagement> createState() => _GameManagementState();
@@ -40,7 +47,8 @@ class _GameManagementState extends State<GameManagement>
 
   bool _hasInitializedDependencies = false;
   late final GameService _gameService;
-  late final AuthProvider _authProvider;
+  late final InputStateService _inputStateService;
+  User? _currentUser;
 
   // "All Games" Tab 的 Future (暂时保持不变)
   late Future<List<Game>> _allGamesFuture;
@@ -57,8 +65,9 @@ class _GameManagementState extends State<GameManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _gameService = widget.gameService;
+      _currentUser = widget.currentUser;
+      _inputStateService = context.read<InputStateService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -75,6 +84,17 @@ class _GameManagementState extends State<GameManagement>
     _rejectedScrollController.removeListener(_onRejectedScroll);
     _rejectedScrollController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant GameManagement oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   // --- 数据加载 ---
@@ -271,6 +291,7 @@ class _GameManagementState extends State<GameManagement>
     } else {
       // --- Reject Case: Use EditDialog first to get the reason ---
       await EditDialog.show(
+        inputStateService: _inputStateService,
         context: context,
         title: '输入拒绝原因',
         initialText: '', // Start with empty text
@@ -361,7 +382,7 @@ class _GameManagementState extends State<GameManagement>
                       title: '游戏管理',
                       useScaffold: false,
                       games: snapshot.hasData ? snapshot.data! : [],
-                      currentUser: _authProvider.currentUser,
+                      currentUser: _currentUser,
                       isLoading:
                           snapshot.connectionState == ConnectionState.waiting,
                       error:
@@ -468,7 +489,7 @@ class _GameManagementState extends State<GameManagement>
               CommonGameListScreen(
                 title: "", // title 不重要
                 useScaffold: false,
-                currentUser: _authProvider.currentUser,
+                currentUser: _currentUser,
                 games: games,
                 isLoading: false, // 外部处理
                 error: null, // 外部处理
@@ -494,7 +515,7 @@ class _GameManagementState extends State<GameManagement>
   Widget _buildGameCard(Game game) {
     return BaseGameCard(
       game: game,
-      currentUser: _authProvider.currentUser,
+      currentUser: _currentUser,
       showTags: true, // 卡片上显示标签
       maxTags: 1, // 示例，根据卡片大小调整
     );

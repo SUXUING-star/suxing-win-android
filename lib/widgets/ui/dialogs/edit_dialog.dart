@@ -1,20 +1,22 @@
 // lib/widgets/ui/dialogs/edit_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 假设路径正确
 import 'dart:async';
 import 'base_input_dialog.dart';
 
 class EditDialog {
   /// 显示【单行/多行】编辑对话框的静态方法 (调用 BaseInputDialog.show)
-  /// 返回 Future<void>: 仅用于表示对话框关闭或 onSave 抛出错误
+  /// 返回 Future: 仅用于表示对话框关闭或 onSave 抛出错误
   static Future<void> show({
+    required InputStateService inputStateService,
     required BuildContext context,
     required String title,
     required String initialText,
     required Future<void> Function(String text) onSave,
     // --- 设置交互参数的默认值 ---
-    bool isDraggable = true, // <<--- 默认允许拖拽
-    bool isScalable = true,  // <<--- 编辑对话框默认允许缩放
+    bool isDraggable = true, //
+    bool isScalable = true, //
     double minScale = 0.7, // 默认值
     double maxScale = 2.0, // 默认值
     // ------------------
@@ -27,21 +29,18 @@ class EditDialog {
     TextInputType? keyboardType,
     double maxWidth = 350, // 编辑对话框可能需要稍宽一点
     bool barrierDismissible = true, // 编辑对话框默认允许外部关闭
-  }) async { // 改为 async
+  }) async {
+    // 改为 async
     final theme = Theme.of(context);
     final effectiveIconColor = iconColor ?? theme.primaryColor;
     final formKey = GlobalKey<FormState>();
-    // !!! 重要：Controller 需要在 BaseInputDialog 内部创建或传递给它管理 !!!
-    // !!! 或者在 BaseInputDialog 返回后 dispose。当前结构有风险 !!!
-    // 修正：我们将 Controller 的创建和销毁移到 BaseInputDialog 能访问的范围内
-    //      或者确保它在 Future 完成后被 dispose。
-    //      一个更安全的模式是把 Form 和 Controller 放在 contentBuilder 里。
 
     // Controller 在这里创建，需要在 finally 中 dispose
     final controller = TextEditingController(text: initialText);
 
     try {
-      await BaseInputDialog.show<bool>( // 等待结果
+      await BaseInputDialog.show<bool>(
+        // 等待结果
         context: context,
         title: title,
         iconData: iconData,
@@ -58,6 +57,7 @@ class EditDialog {
             key: formKey,
             child: FormTextInputField(
               controller: controller, // 使用上面创建的 controller
+              inputStateService: inputStateService,
               decoration: InputDecoration(
                 hintText: hintText,
                 filled: true,
@@ -68,11 +68,14 @@ class EditDialog {
                 ),
                 focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: theme.primaryColor, width: 1.5)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    borderSide:
+                        BorderSide(color: theme.primaryColor, width: 1.5)),
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
               maxLines: maxLines,
-              textInputAction: maxLines > 1 ? TextInputAction.newline : TextInputAction.done,
+              textInputAction:
+                  maxLines > 1 ? TextInputAction.newline : TextInputAction.done,
               keyboardType: keyboardType,
               autofocus: true, // 自动聚焦输入框
               validator: (value) {
@@ -113,7 +116,8 @@ class EditDialog {
       // 当 BaseInputDialog.show 的 Future 完成时（无论成功、失败、取消）
       // 这个 finally 块会被执行
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (controller.toString().contains('disposed') == false) { // 检查是否已 dispose
+        if (controller.toString().contains('disposed') == false) {
+          // 检查是否已 dispose
           controller.dispose();
         }
       });

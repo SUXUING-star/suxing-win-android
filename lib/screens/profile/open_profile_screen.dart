@@ -1,7 +1,7 @@
 // lib/screens/profile/open_profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -24,9 +24,19 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
+  final UserService userService;
+  final AuthProvider authProvider;
+  final UserFollowService followService;
+  final ForumService forumService;
+  final GameService gameService;
 
   const OpenProfileScreen({
     super.key,
+    required this.userService,
+    required this.gameService,
+    required this.authProvider,
+    required this.forumService,
+    required this.followService,
     required this.userId,
   });
 
@@ -47,7 +57,6 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   late TabController _tabController;
   bool _hasInitializedDependencies = false;
   User? _currentUser;
-  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -60,8 +69,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _currentUser = _authProvider.currentUser;
+      _currentUser = widget.authProvider.currentUser;
     }
     if (_hasInitializedDependencies) {
       _loadUserProfile();
@@ -71,10 +79,14 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   @override
   void didUpdateWidget(covariant OpenProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUser != _authProvider.currentUser) {
+    if (_currentUser != widget.authProvider.currentUser ||
+        oldWidget.authProvider.currentUser != widget.authProvider.currentUser) {
       setState(() {
-        _currentUser = _authProvider.currentUser;
+        _currentUser = widget.authProvider.currentUser;
       });
+    }
+    if (oldWidget.userId != widget.userId) {
+      setState(() {});
     }
   }
 
@@ -92,8 +104,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
     try {
       // 获取当前登录用户ID
-      final String? currentUserId = _authProvider.currentUserId;
-      final User? currentUser = _authProvider.currentUser;
+      final String? currentUserId = widget.authProvider.currentUserId;
+      final User? currentUser = widget.authProvider.currentUser;
       _isCurrentUser = currentUserId == widget.userId;
 
       if (_isCurrentUser && currentUser != null) {
@@ -101,32 +113,24 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       } else {
         // *** userService开始了它的使命 *** //
         // 这个用户不是你
-        UserService? userService = context.read<UserService>();
-        _user = await userService.getUserInfoById(widget.userId);
-        userService = null;
+        _user = await widget.userService.getUserInfoById(widget.userId);
         // *** userService结束了它的使命 *** //
       }
 
       // *** forumService开始了它的使命 *** //
       // 加载用户帖子
-      if (!mounted) return;
-      ForumService? forumService = context.read<ForumService>();
-      final userPosts = await forumService.getRecentUserPosts(widget.userId);
-      forumService = null;
+      final userPosts = await widget.forumService.getRecentUserPosts(widget.userId);
       // *** forumService结束了它的使命 *** //
 
       // *** gameService开始了它的使命 *** //
       // 加载用户发布的游戏
-      if (!mounted) return;
-      GameService? gameService = context.read<GameService>();
-      final userGames = await gameService.getGamesPaginated(
+      final userGames = await widget.gameService.getGamesPaginated(
         page: 1,
         pageSize: 10,
         sortBy: 'createTime',
         descending: true,
         authorId: widget.userId,
       );
-      gameService = null;
       // *** gameService结束了它的使命 *** //
 
       setState(() {
@@ -260,7 +264,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   }
 
   Widget _buildUserHeader() {
-    if (_user == null) return SizedBox.shrink();
+    if (_user == null) return const SizedBox.shrink();
 
     // 1. 确定头像在这个屏幕的显示半径
     const double avatarRadiusInProfile =
@@ -356,7 +360,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
             SizedBox(height: 12),
             if (!_isCurrentUser)
               FollowUserButton(
-                currentUser: _authProvider.currentUser,
+                currentUser: widget.authProvider.currentUser,
+                followService: widget.followService,
                 targetUserId: widget.userId,
                 showIcon: true,
               ),
@@ -508,7 +513,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   }
 
   Widget _buildUserStatistics() {
-    if (_user == null) return SizedBox.shrink();
+    if (_user == null) return const SizedBox.shrink();
 
     return Card(
       elevation: 2,

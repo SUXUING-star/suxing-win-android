@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -20,6 +20,9 @@ enum FeedCollapseMode { none, byUser, byType }
 
 class CollapsibleActivityFeed extends StatefulWidget {
   final List<UserActivity> activities;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
   final User? currentUser;
   final bool isLoading;
   final bool isLoadingMore;
@@ -48,6 +51,9 @@ class CollapsibleActivityFeed extends StatefulWidget {
   const CollapsibleActivityFeed({
     super.key,
     required this.activities,
+    required this.followService,
+    required this.infoProvider,
+    required this.inputStateService,
     required this.currentUser,
     this.isLoading = false,
     this.isLoadingMore = false,
@@ -216,6 +222,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
               child: ActivityCard(
                 key: ValueKey(activity.id),
                 currentUser: widget.currentUser,
+                infoProvider: widget.infoProvider,
+                followService: widget.followService,
+                inputStateService: widget.inputStateService,
                 activity: activity,
                 isAlternate: isAlternate,
                 onActivityTap: widget.onActivityTap,
@@ -245,7 +254,6 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
 
   Widget _buildCollapsibleFeed(
       Map<String, List<UserActivity>> groupedActivities) {
-    final userInfoProvider = context.watch<UserInfoProvider>();
     return ListView.builder(
       controller: widget.scrollController,
       padding: const EdgeInsets.symmetric(vertical: 8),
@@ -259,17 +267,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
         }
 
         final groupKey = groupedActivities.keys.elementAt(index);
-        UserDataStatus? userDataStatus;
-        if (widget.collapseMode == FeedCollapseMode.byUser) {
-          final String userId = groupKey;
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          userDataStatus = userInfoProvider.getUserStatus(userId);
-        }
-
         final activities = groupedActivities[groupKey]!;
         final isExpanded = _expandedGroups[groupKey] ?? false;
-        return _buildCollapsibleGroup(
-            groupKey, activities, isExpanded, index, userDataStatus);
+        return _buildCollapsibleGroup(groupKey, activities, isExpanded, index);
       },
     );
   }
@@ -280,7 +280,6 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     List<UserActivity> activities, // 这个分组下的所有活动
     bool isExpanded, // 当前分组是否展开
     int groupIndex, // 分组在列表中的索引 (用于动画)
-    UserDataStatus? userDataStatus,
   ) {
     // --- 1. 获取分组的视觉属性 ---
     final Color groupColor = _getGroupColor(groupKey); // 根据 groupKey 获取颜色
@@ -377,8 +376,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                                         "badge_$groupKey"), // 提供 Key 确保重建
                                     targetUserId:
                                         groupKey, // 将 groupKey (即 userId) 传递给 Badge
-                                    userDataStatus: userDataStatus!,
-                                    // 这个地方当这个if条件成立上层传递这个userDataStatus不可能为空值
+
+                                    infoProvider: widget.infoProvider,
+                                    followService: widget.followService,
                                     currentUser: widget.currentUser,
                                     mini: true, // 使用紧凑模式
                                     showFollowButton: false, // 不显示关注按钮
@@ -470,6 +470,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
           child: ActivityCard(
             key: ValueKey(activity.id), activity: activity,
             currentUser: widget.currentUser,
+            infoProvider: widget.infoProvider,
+            inputStateService: widget.inputStateService,
+            followService: widget.followService,
             isAlternate: isAlternate,
             onActivityTap: widget.onActivityTap, hasOwnBackground: false,
             // --- 操作回调传递 ---

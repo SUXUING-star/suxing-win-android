@@ -1,13 +1,12 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/global_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -20,11 +19,17 @@ class RecentGlobalReplies extends StatefulWidget {
   final int limit;
   final Post post;
   final User? currentUser;
+  final ForumService forumService;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
 
   const RecentGlobalReplies({
     super.key,
     this.limit = 5,
     required this.post,
+    required this.infoProvider,
+    required this.followService,
+    required this.forumService,
     required this.currentUser,
   });
 
@@ -65,7 +70,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInit) {
-      _forumService = context.read<ForumService>();
+      _forumService = widget.forumService;
       _hasInit = true;
     }
     if (_hasInit) {
@@ -129,8 +134,6 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
   @override
   Widget build(BuildContext context) {
-    final userInfoProvider = context.watch<UserInfoProvider>();
-
     return Container(
       margin: const EdgeInsets.only(top: 16),
       decoration: BoxDecoration(
@@ -219,7 +222,6 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                   itemBuilder: (context, index) => _buildReplyItem(
                     context,
                     replies[index],
-                    userInfoProvider,
                   ),
                 );
               }
@@ -236,12 +238,12 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   }
 
   // _buildReplyItem 方法保持不变
-  Widget _buildReplyItem(BuildContext context, GlobalReplyItem reply,
-      UserInfoProvider userInfoProvider) {
+  Widget _buildReplyItem(
+    BuildContext context,
+    GlobalReplyItem reply,
+  ) {
     final userId = reply.authorId;
-    userInfoProvider.ensureUserInfoLoaded(userId);
-    final UserDataStatus userDataStatus =
-        userInfoProvider.getUserStatus(userId);
+
     return Card(
       elevation: 0,
       color: Colors.grey[50],
@@ -266,9 +268,10 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 children: [
                   UserInfoBadge(
                     targetUserId: userId,
-                    userDataStatus: userDataStatus,
                     showFollowButton: false,
                     currentUser: widget.currentUser,
+                    infoProvider: widget.infoProvider,
+                    followService: widget.followService,
                     mini: true,
                   ),
                   const SizedBox(width: 8),

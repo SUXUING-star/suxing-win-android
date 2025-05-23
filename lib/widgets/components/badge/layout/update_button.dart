@@ -101,11 +101,7 @@ class UpdateButton extends StatelessWidget {
         if (!updateService.updateAvailable) {
           AppSnackBar.showInfo(context, '当前已是最新版本');
         } else {
-          // 如果检查后发现有更新，则再次调用 _handleUpdateTap 以显示对话框
-          // 为避免无限递归（虽然不太可能），可以加个标志位或直接在这里处理对话框逻辑
-          // 但更简单的是，用户会看到图标变化，再次点击即可
-          // 或者，如果希望检查后立即弹窗，可以在这里复制弹窗逻辑，但这会有点重复
-          // 当前设计是，用户看到图标变化（或没变化），再次点击会进入下面的逻辑
+//
         }
       }
       return; // 首次点击且无更新时，检查完就返回，等待用户再次交互或UI自动更新

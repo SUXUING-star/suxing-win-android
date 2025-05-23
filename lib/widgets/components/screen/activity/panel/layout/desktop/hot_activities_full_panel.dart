@@ -2,11 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import '../../stats/activity_stats_card.dart';
 import '../../stats/hot_activities_list.dart';
 
 class HotActivitiesFullPanel extends StatelessWidget {
+  final UserFollowService userFollowService;
+  final UserInfoProvider userInfoProvider;
   final List<UserActivity> hotActivities;
   final User? currentUser;
   final Map<String, int> activityStats;
@@ -20,6 +24,8 @@ class HotActivitiesFullPanel extends StatelessWidget {
 
   const HotActivitiesFullPanel({
     super.key,
+    required this.userFollowService,
+    required this.userInfoProvider,
     required this.hotActivities,
     required this.currentUser,
     required this.activityStats,
@@ -83,15 +89,19 @@ class HotActivitiesFullPanel extends StatelessWidget {
               // 热门动态列表
               Expanded(
                 child: isLoading
-                    ? LoadingWidget.inline(size: 12,)
+                    ? LoadingWidget.inline(
+                        size: 12,
+                      )
                     : hasError
-                    ? Center(child: Text(errorMessage))
-                    : HotActivitiesList(
-                  currentUser: currentUser,
-                  hotActivities: hotActivities,
-                  getActivityTypeName: getActivityTypeName,
-                  getActivityTypeColor: getActivityTypeColor,
-                ),
+                        ? Center(child: Text(errorMessage))
+                        : HotActivitiesList(
+                            userFollowService: userFollowService,
+                            userInfoProvider: userInfoProvider,
+                            currentUser: currentUser,
+                            hotActivities: hotActivities,
+                            getActivityTypeName: getActivityTypeName,
+                            getActivityTypeColor: getActivityTypeColor,
+                          ),
               ),
             ],
           ),

@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/widgets/components/screen/game/download/game_download_links.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../download/game_download_links.dart';
+import 'package:suxingchahui/models/game/game.dart';
 
 class GameDescription extends StatelessWidget {
   final Game game;
+  final User? currentUser;
 
   const GameDescription({
     super.key,
     required this.game,
+    required this.currentUser,
   });
 
   @override
@@ -85,7 +88,10 @@ class GameDescription extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 16),
-              GameDownloadLinks(downloadLinks: game.downloadLinks),
+              GameDownloadLinks(
+                  downloadLinks: game.downloadLinks,
+                currentUser: currentUser,
+              ),
             ],
           ],
         ),

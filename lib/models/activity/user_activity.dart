@@ -23,8 +23,8 @@ class CheckInActivityDetails {
           try {
             parsedRecentCheckIns.add(DateTime.parse(item).toLocal());
           } catch (e) {
-            print(
-                "Error parsing recentCheckIn date string from metadata: '$item'. Error: $e");
+            // print(
+            //     "Error parsing recentCheckIn date string from metadata: '$item'. Error: $e");
           }
         }
       }
@@ -85,7 +85,7 @@ class UserActivity {
       try {
         return DateTime.parse(dateString).toLocal(); // 确保转为本地时间
       } catch (e) {
-        print("Error parsing date: $dateString. Error: $e");
+        // print("Error parsing date: $dateString. Error: $e");
         return DateTime(1970); // 解析失败也返回默认值
       }
     }
@@ -100,7 +100,7 @@ class UserActivity {
                 comment as Map<String, dynamic>)) // 确保类型转换
             .toList();
       } catch (e) {
-        print("Error parsing comments: ${json['comments']}. Error: $e");
+        // print("Error parsing comments: ${json['comments']}. Error: $e");
         // 解析评论列表失败，返回空列表，避免整个活动解析失败
       }
     }
@@ -167,8 +167,8 @@ class UserActivity {
       try {
         return CheckInActivityDetails.fromMetadata(metadata!);
       } catch (e) {
-        print(
-            "Error creating CheckInActivityDetails from UserActivity.metadata: $e. Metadata: $metadata");
+        // print(
+        //     "Error creating CheckInActivityDetails from UserActivity.metadata: $e. Metadata: $metadata");
         return null;
       }
     }
@@ -200,7 +200,7 @@ class ActivityComment {
       try {
         return DateTime.parse(dateString).toLocal();
       } catch (e) {
-        print("Error parsing comment date: $dateString. Error: $e");
+        // print("Error parsing comment date: $dateString. Error: $e");
         return DateTime(1970);
       }
     }

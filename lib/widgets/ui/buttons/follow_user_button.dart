@@ -1,12 +1,12 @@
 // lib/widgets/ui/buttons/follow_user_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'dart:async';
 
-class FollowUserButton extends StatefulWidget {
+class FollowUserButton extends StatelessWidget {
+  final UserFollowService followService;
   final String targetUserId;
   final User? currentUser;
   final Color? color;
@@ -17,6 +17,7 @@ class FollowUserButton extends StatefulWidget {
 
   const FollowUserButton({
     super.key,
+    required this.followService,
     required this.targetUserId,
     required this.currentUser,
     this.color,
@@ -26,235 +27,133 @@ class FollowUserButton extends StatefulWidget {
     this.initialIsFollowing,
   });
 
-  @override
-  _FollowUserButtonState createState() => _FollowUserButtonState();
-}
-
-class _FollowUserButtonState extends State<FollowUserButton>
-    with SnackBarNotifierMixin {
-  late bool _isFollowing;
-  late bool _isLoading; // 只在 API 调用期间为 true
-  bool _internalStateInitialized = false; // 标记内部状态是否已初始化
-
-  StreamSubscription? _followStatusSubscription; // 保留流监听，用于外部触发刷新
-  bool _mounted = true;
-
-  User? _currentUser;
-  String? _targatUserId;
-
-  @override
-  void initState() {
-    super.initState();
-    _mounted = true;
-    _isFollowing =
-        widget.initialIsFollowing ?? false; // 如果父组件没传（理论上不该发生），默认 false
-    _isLoading = false; // 初始时不加载
-    _internalStateInitialized = true; // 标记内部状态已根据父组件初始化
-    _currentUser = widget.currentUser;
-    _targatUserId = widget.targetUserId;
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    /// ** 作用域开始 **
-    UserFollowService? followService = context.read<UserFollowService>();
-    _followStatusSubscription =
-        followService.followStatusStream.listen((changedUserId) {});
-    followService = null;
-
-    /// 使用完立即消除引用
-    /// 保持语义清晰
-    /// ** 作用域结束 **
-  }
-
-  @override
-  void didUpdateWidget(FollowUserButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    // --- 当父组件传递的状态更新时，同步内部状态 ---
-    // 只有当父组件传递的状态确实变化了，才更新
-    if (widget.initialIsFollowing != null &&
-        widget.initialIsFollowing != _isFollowing) {
-      // 只有在内部状态已经初始化后，才接受来自父组件的更新
-      // 避免覆盖用户刚刚点击操作后的乐观 UI 状态
-      // （或者，如果需要严格同步父状态，可以去掉 _internalStateInitialized 判断）
-      if (_internalStateInitialized && _mounted) {
-        setState(() {
-          _isFollowing = widget.initialIsFollowing!;
-          // 如果此时正在加载（不太可能，但作为保险），取消加载
-          if (_isLoading) _isLoading = false;
-        });
+  Future<void> _handleFollowTap(
+      BuildContext context, bool currentIsFollowingState) async {
+    if (currentUser == null) {
+      if (!context.mounted) {
+        AppSnackBar.showInfo(context, '请先登录');
       }
-    }
-    if (widget.currentUser != oldWidget.currentUser ||
-        _currentUser != widget.currentUser) {
-      setState(() {
-        _currentUser = widget.currentUser;
-      });
-    }
-    if (widget.targetUserId != oldWidget.targetUserId ||
-        _targatUserId != widget.targetUserId) {
-      setState(() {
-        _targatUserId = widget.targetUserId;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _mounted = false;
-    _followStatusSubscription?.cancel();
-    super.dispose();
-  }
-
-  /// 处理关注/取消关注按钮的点击事件
-  Future<void> _handleFollowTap() async {
-    if (!_mounted) return;
-
-    if (widget.currentUser == null) {
-      showSnackbar(message: '请先登录', type: SnackbarType.info);
       return;
     }
-    if (_isLoading) return; // 防止重复点击
-
-    // 暂存旧状态，用于失败时回滚
-    final bool oldState = _isFollowing;
-    setState(() {
-      _isFollowing = !_isFollowing; // 先改状态
-      _isLoading = true; // 显示加载
-    });
 
     bool success = false;
+    String? apiErrorMessage;
 
     try {
-      /// ** 作用域开始 **
-      UserFollowService? followService = context.read<UserFollowService>();
-      if (!oldState) {
-        // 如果之前是 false (未关注)，现在是 true (已关注)
-        success = await followService.followUser(widget.targetUserId);
+      if (!currentIsFollowingState) {
+        success = await followService.followUser(targetUserId);
       } else {
-        // 如果之前是 true (已关注)，现在是 false (未关注)
-        success = await followService.unfollowUser(widget.targetUserId);
+        success = await followService.unfollowUser(targetUserId);
       }
-      followService = null;
 
-      /// 使用完立即消除引用
-      /// 保持语义清晰
-      /// ** 作用域结束 **
-
-      if (!_mounted) return;
+      if (!context.mounted) return;
 
       if (success) {
-        setState(() {
-          _isLoading = false; // API 成功，结束加载
-        });
-        widget.onFollowChanged?.call(); // 调用回调
+        onFollowChanged?.call();
       } else {
-        // API 失败，回滚状态
-        setState(() {
-          _isFollowing = oldState; // 恢复旧状态
-          _isLoading = false;
-        });
-        showSnackbar(
-            message: oldState ? '取消关注失败' : '关注失败', type: SnackbarType.error);
+        AppSnackBar.showError(
+            context, currentIsFollowingState ? '取消关注失败' : '关注失败');
       }
     } catch (e) {
-      if (_mounted) {
-        // 异常，回滚状态
-        setState(() {
-          _isFollowing = oldState; // 恢复旧状态
-          _isLoading = false;
-        });
-        showSnackbar(
-            message: '操作失败: ${e.toString()}', type: SnackbarType.error);
-      }
+      apiErrorMessage = e.toString();
+      if (!context.mounted) return;
+      AppSnackBar.showError(context, '操作失败: $apiErrorMessage');
     }
   }
 
-  Widget _buildMini(Color themeColor) {
+  @override
+  Widget build(BuildContext context) {
+    final Color themeColor = color ?? Theme.of(context).primaryColor;
+
+    return FutureBuilder<bool>(
+      future: followService.isFollowing(targetUserId),
+      initialData: initialIsFollowing,
+      builder: (context, initialSnapshot) {
+        bool isFollowingState =
+            initialSnapshot.data ?? initialIsFollowing ?? false;
+
+        if (initialSnapshot.connectionState == ConnectionState.waiting &&
+            initialSnapshot.data == null) {
+          // 如果 Future 正在加载且没有 initialData，可以显示一个加载指示器或使用默认值
+          // 这里简单地使用 initialIsFollowing (如果提供) 或 false
+          isFollowingState = initialIsFollowing ?? false;
+        } else if (initialSnapshot.hasError) {
+          isFollowingState = initialIsFollowing ?? false;
+        } else if (initialSnapshot.hasData) {
+          isFollowingState = initialSnapshot.data!;
+        }
+
+        return StreamBuilder<Map<String, bool>>(
+          stream: followService.followStatusStream,
+          builder: (context, streamSnapshot) {
+            if (streamSnapshot.hasData &&
+                streamSnapshot.data!.containsKey(targetUserId)) {
+              isFollowingState = streamSnapshot.data![targetUserId]!;
+            }
+
+            if (mini) {
+              return _buildMiniButton(context, themeColor, isFollowingState);
+            } else {
+              return isFollowingState
+                  ? _buildIsFollowingButton(
+                      context, themeColor, isFollowingState)
+                  : _buildCanFollowButton(
+                      context, themeColor, isFollowingState);
+            }
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMiniButton(
+      BuildContext context, Color themeColor, bool isFollowing) {
     return SizedBox(
       height: 30,
       child: OutlinedButton(
-        onPressed: _handleFollowTap,
+        onPressed: () => _handleFollowTap(context, isFollowing),
         style: OutlinedButton.styleFrom(
-          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 0),
-          side: BorderSide(color: _isFollowing ? Colors.grey : themeColor),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 0),
+          side: BorderSide(color: isFollowing ? Colors.grey : themeColor),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
-        child: _isLoading
-            ? SizedBox(
-                width: 12,
-                height: 12,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                      _isFollowing ? Colors.grey : themeColor),
-                ),
-              )
-            : Text(
-                _isFollowing ? '已关注' : '关注',
-                style: TextStyle(
-                    fontSize: 8,
-                    color: _isFollowing ? Colors.grey : themeColor),
-              ),
+        child: Text(
+          isFollowing ? '已关注' : '关注',
+          style: TextStyle(
+              fontSize: 8, color: isFollowing ? Colors.grey : themeColor),
+        ),
       ),
     );
   }
 
-  Widget _buildIsFollowing(Color themeColor) {
+  Widget _buildIsFollowingButton(
+      BuildContext context, Color themeColor, bool currentIsFollowing) {
     return OutlinedButton.icon(
-      onPressed: _handleFollowTap,
-      icon: _isLoading
-          ? SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.grey)))
-          : widget.showIcon
-              ? Icon(Icons.check, size: 12, color: Colors.grey)
-              : SizedBox.shrink(),
-      label: Text('已关注', style: TextStyle(color: Colors.grey)),
+      onPressed: () => _handleFollowTap(context, currentIsFollowing),
+      icon: showIcon
+          ? const Icon(Icons.check, size: 12, color: Colors.grey)
+          : const SizedBox.shrink(),
+      label: const Text('已关注', style: TextStyle(color: Colors.grey)),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(color: Colors.grey),
+        side: const BorderSide(color: Colors.grey),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
   }
 
-  Widget _buildCanFollow(Color themeColor) {
+  Widget _buildCanFollowButton(
+      BuildContext context, Color themeColor, bool currentIsFollowing) {
     return ElevatedButton.icon(
-      onPressed: _handleFollowTap,
-      icon: _isLoading
-          ? SizedBox(
-              width: 12,
-              height: 12,
-              child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white)))
-          : widget.showIcon
-              ? Icon(Icons.add, size: 12)
-              : SizedBox.shrink(),
-      label: Text('关注'),
+      onPressed: () => _handleFollowTap(context, currentIsFollowing),
+      icon:
+          showIcon ? const Icon(Icons.add, size: 12) : const SizedBox.shrink(),
+      label: const Text('关注'),
       style: ElevatedButton.styleFrom(
         backgroundColor: themeColor,
         foregroundColor: Colors.white,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
     );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    buildSnackBar(context);
-    final Color themeColor = widget.color ?? Theme.of(context).primaryColor;
-
-    if (widget.mini) return _buildMini(themeColor);
-
-    return _isFollowing
-        ? _buildIsFollowing(themeColor)
-        : _buildCanFollow(themeColor);
   }
 }

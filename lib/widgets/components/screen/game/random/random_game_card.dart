@@ -3,10 +3,10 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
-/// A specialized card widget for displaying random games with simplified interface
+
 class RandomGameCard extends StatelessWidget {
   final Game game;
   final VoidCallback? onTap;
@@ -74,7 +74,7 @@ class RandomGameCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 memCacheWidth: DeviceUtils.isDesktop ? 240 : 320,
                 onError: (url, error) {
-                  print('随机游戏图片加载失败: $url, 错误: $error');
+                  // print('随机游戏图片加载失败: $url, 错误: $error');
                 },
               ),
 

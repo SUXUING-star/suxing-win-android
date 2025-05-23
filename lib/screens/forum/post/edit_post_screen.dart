@@ -1,7 +1,7 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
@@ -15,8 +15,15 @@ import '../../../widgets/components/form/postform/post_form.dart';
 
 class EditPostScreen extends StatefulWidget {
   final String postId;
+  final ForumService forumService;
+  final AuthProvider authProvider;
 
-  const EditPostScreen({super.key, required this.postId});
+  const EditPostScreen({
+    super.key,
+    required this.postId,
+    required this.forumService,
+    required this.authProvider,
+  });
 
   @override
   _EditPostScreenState createState() => _EditPostScreenState();
@@ -41,8 +48,8 @@ class _EditPostScreenState extends State<EditPostScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -82,12 +89,6 @@ class _EditPostScreenState extends State<EditPostScreen>
     }
   }
 
-  bool _checkCanEditPost(Post post) {
-    return _authProvider.isAdmin
-        ? true
-        : _authProvider.currentUserId == post.authorId;
-  }
-
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
@@ -98,16 +99,6 @@ class _EditPostScreenState extends State<EditPostScreen>
     if (_post == null) {
       // 保持这个检查
       return const CustomErrorWidget(title: '无法加载帖子数据');
-    }
-    if (!_checkCanEditPost(_post!)) {
-      return CustomErrorWidget(
-        title: "你没有权限编辑该帖子",
-        onRetry: () => NavigationUtils.pop(context),
-        retryText: "点击返回",
-      );
-    }
-    if (_authProvider.currentUserId == null || !_authProvider.isLoggedIn) {
-      return const LoginPromptWidget();
     }
 
     // 安全地处理 postIdInfo
@@ -131,21 +122,43 @@ class _EditPostScreenState extends State<EditPostScreen>
       // 保留默认值 "未知时间"
     }
 
-    return PostForm(
-      title: '编辑帖子',
-      currentUser: _authProvider.currentUser,
-      initialTitle: _post!.title,
-      initialContent: _post!.content,
-      initialTags: List.from(_post!.tags),
-      availableTags: _availablePostTags,
-      isSubmitting: _isSubmitting,
-      onSubmit: _submitEdit,
-      submitButtonText: '保存修改',
-      postIdInfo: displayPostId, // <-- 使用安全处理后的 ID
-      updatetimeInfo: displayUpdateTime, // <-- 使用安全处理后的时间
-      additionalInfo: PostGuidelines(
-        guidelines: PostConstants.postGuideRules,
-      ),
+    return StreamBuilder<User?>(
+      stream: _authProvider.currentUserStream,
+      initialData: _authProvider.currentUser,
+      builder: (context, currentUserSnapshot) {
+        final User? currentUser = currentUserSnapshot.data;
+        final String? currentUserId = currentUser?.id;
+        final bool isAdmin = currentUser?.isAdmin ?? false;
+        if (currentUser == null) {
+          return const LoginPromptWidget();
+        }
+        final canEdit = isAdmin ? true : currentUserId == _post?.authorId;
+        if (!canEdit) {
+          return CustomErrorWidget(
+            errorMessage: "你没有权限编辑",
+            title: "错误",
+            retryText: "返回上一页",
+            onRetry: () => NavigationUtils.pop(context),
+          );
+        }
+
+        return PostForm(
+          title: '编辑帖子',
+          currentUser: _authProvider.currentUser,
+          initialTitle: _post!.title,
+          initialContent: _post!.content,
+          initialTags: List.from(_post!.tags),
+          availableTags: _availablePostTags,
+          isSubmitting: _isSubmitting,
+          onSubmit: _submitEdit,
+          submitButtonText: '保存修改',
+          postIdInfo: displayPostId,
+          updatetimeInfo: displayUpdateTime,
+          additionalInfo: PostGuidelines(
+            guidelines: PostConstants.postGuideRules,
+          ),
+        );
+      },
     );
   }
 }

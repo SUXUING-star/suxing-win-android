@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 核心依赖
 import 'dart:math' as math;
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -17,7 +19,9 @@ class ActivityHeader extends StatelessWidget {
 
   final User? currentUser;
 
-  final UserDataStatus userDataStatus;
+  final UserFollowService followService;
+
+  final UserInfoProvider infoProvider;
 
   /// 活动创建时间。
   final DateTime createTime;
@@ -47,7 +51,8 @@ class ActivityHeader extends StatelessWidget {
     super.key,
     required this.userId, // *** 改为接收 userId ***
     required this.currentUser,
-    required this.userDataStatus,
+    required this.infoProvider,
+    required this.followService,
     required this.createTime,
     this.updateTime,
     this.isEdited = false,
@@ -85,7 +90,8 @@ class ActivityHeader extends StatelessWidget {
               child: UserInfoBadge(
                 targetUserId: userId,
                 currentUser: currentUser,
-                userDataStatus: userDataStatus,
+                infoProvider: infoProvider,
+                followService: followService,
                 showFollowButton: false,
                 mini: true, // 使用紧凑模式
                 showLevel: true, // 可配置是否显示等级

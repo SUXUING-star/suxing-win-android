@@ -1,18 +1,32 @@
 // lib/screens/game/add/add_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 可以不用
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart'; // 引入 Mixin
-import '../../../models/game/game.dart';
-import '../../../services/main/game/game_service.dart';
-import '../../../widgets/components/form/gameform/game_form.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class AddGameScreen extends StatefulWidget {
-  const AddGameScreen({super.key});
+  final GameService gameService;
+  final AuthProvider authProvider;
+  final GameCollectionService gameCollectionService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  const AddGameScreen({
+    super.key,
+    required this.gameCollectionService,
+    required this.gameService,
+    required this.authProvider,
+    required this.followService,
+    required this.infoProvider,
+  });
 
   @override
   _AddGameScreenState createState() => _AddGameScreenState();
@@ -21,8 +35,6 @@ class AddGameScreen extends StatefulWidget {
 class _AddGameScreenState extends State<AddGameScreen>
     with SnackBarNotifierMixin {
   bool _hasInitializedDependencies = false;
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
   @override
   void initState() {
     super.initState();
@@ -32,11 +44,10 @@ class _AddGameScreenState extends State<AddGameScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
   }
+
   @override
   void dispose() {
     super.dispose();
@@ -46,12 +57,12 @@ class _AddGameScreenState extends State<AddGameScreen>
     if (!mounted) return;
 
     try {
-      await _gameService.addGame(gameDataFromForm);
+      await widget.gameService.addGame(gameDataFromForm);
 
       if (!mounted) return;
       // 添加成功后，直接显示审核通知对话框
 
-      if (!_authProvider.isAdmin) {
+      if (!widget.authProvider.isAdmin) {
         // 编辑模式且非管理员
         _showReviewNoticeDialogAfterApiSuccess();
       } else {
@@ -102,16 +113,30 @@ class _AddGameScreenState extends State<AddGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context); // Mixin 的方法
-
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '添加新游戏',
-      ),
-      body: GameForm(
-        currentUser: _authProvider.currentUser,
-        onSubmit: _handleGameFormSubmit, // 传递 State 的方法
-      ),
+    buildSnackBar(context);
+    return StreamBuilder<String?>(
+      stream: widget.authProvider.currentUserIdStream,
+      initialData: widget.authProvider.currentUserId,
+      builder: (context, currentUserIdSnapshot) {
+        final String? currentUserId = currentUserIdSnapshot.data;
+        if (currentUserId == null) {
+          return const LoginPromptWidget();
+        }
+        return Scaffold(
+          appBar: const CustomAppBar(
+            title: '添加新游戏',
+          ),
+          body: GameForm(
+            gameCollectionService: widget.gameCollectionService,
+            authProvider: widget.authProvider,
+            followService: widget.followService,
+            infoProvider: widget.infoProvider,
+            gameService: widget.gameService,
+            currentUser: widget.authProvider.currentUser,
+            onSubmit: _handleGameFormSubmit, // 传递 State 的方法
+          ),
+        );
+      },
     );
   }
 }

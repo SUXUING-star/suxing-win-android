@@ -1,13 +1,11 @@
 // lib/screens/forum/forum_screen.dart
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -33,12 +31,18 @@ import 'refresh_controller.dart';
 
 class ForumScreen extends StatefulWidget {
   final String? tag;
-  final AuthProvider? authProvider;
+  final AuthProvider authProvider;
+  final ForumService forumService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
 
   const ForumScreen({
     super.key,
     this.tag,
-    this.authProvider,
+    required this.authProvider,
+    required this.forumService,
+    required this.followService,
+    required this.infoProvider,
   });
 
   @override
@@ -88,6 +92,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   late final ForumService _forumService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -102,9 +107,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     if (!_hasInitializedDependencies) {
       // 这里才开始初始化服务变量
-      _forumService = context.read<ForumService>();
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
       _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
@@ -136,7 +141,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant ForumScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
@@ -726,25 +731,22 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
                 iconButtonPadding: EdgeInsets.zero,
               ),
             ),
-            Consumer<AuthProvider>(
-              builder: (context, authProvider, child) {
-                return authProvider.isLoggedIn
-                    ? Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                        child: FunctionalIconButton(
-                          icon: AppBarAction.createForumPost.icon,
-                          tooltip: AppBarAction.createForumPost.defaultTooltip!,
-                          iconColor:
-                              AppBarAction.createForumPost.defaultIconColor,
-                          buttonBackgroundColor:
-                              AppBarAction.createForumPost.defaultBgColor,
-                          onPressed: _navigateToCreatePost, // 动态
-                          iconButtonPadding: EdgeInsets.zero,
-                        ),
-                      )
-                    : const SizedBox.shrink();
-              },
-            ),
+
+            _authProvider.isLoggedIn
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FunctionalIconButton(
+                      icon: AppBarAction.createForumPost.icon,
+                      tooltip: AppBarAction.createForumPost.defaultTooltip!,
+                      iconColor: AppBarAction.createForumPost.defaultIconColor,
+                      buttonBackgroundColor:
+                          AppBarAction.createForumPost.defaultBgColor,
+                      onPressed: _navigateToCreatePost, // 动态
+                      iconButtonPadding: EdgeInsets.zero,
+                    ),
+                  )
+                : const SizedBox.shrink()
+
             // --- 移除所有 SizedBox(width: 8) ---
           ],
         ),
@@ -780,7 +782,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   // --- 构建 Body 内容 ---
   Widget _buildBodyContent(
       bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
-    final UserInfoProvider userInfoProvider = context.watch<UserInfoProvider>();
     // 1. 如果出错，并且没有帖子数据显示（或者帖子为空）
     if (_errorMessage != null && (_posts == null || _posts!.isEmpty)) {
       return FadeInItem(
@@ -805,9 +806,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     if (_posts != null && _posts!.isNotEmpty) {
       // 构建主布局，列表构建函数内部会处理 _posts!
       return isDesktop
-          ? _buildDesktopLayout(
-              userInfoProvider, actuallyShowLeftPanel, actuallyShowRightPanel)
-          : _buildMobileLayout(userInfoProvider);
+          ? _buildDesktopLayout(actuallyShowLeftPanel, actuallyShowRightPanel)
+          : _buildMobileLayout();
     }
 
     // 可能是在初始化但还不可见，或者状态异常
@@ -815,7 +815,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 构建桌面布局 (Row + Panels + List) ---
-  Widget _buildDesktopLayout(UserInfoProvider userInfoProvider,
+  Widget _buildDesktopLayout(
       bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     // 定义面板动画参数
     const Duration panelAnimationDuration = Duration(milliseconds: 300);
@@ -840,8 +840,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           ),
         // 中间帖子列表区域
         Expanded(
-          child: _buildPostsList(true, userInfoProvider, actuallyShowLeftPanel,
-              actuallyShowRightPanel), // 传递布局信息
+          child: _buildPostsList(
+              true, actuallyShowLeftPanel, actuallyShowRightPanel), // 传递布局信息
         ),
         // 右侧统计面板
         // --- 右侧统计面板带动画 ---
@@ -866,15 +866,15 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 构建移动端布局 (仅列表，由外部 Column 添加 Filter 和 Pagination) ---
-  Widget _buildMobileLayout(UserInfoProvider userInfoProvider) {
+  Widget _buildMobileLayout() {
     // 移动端布局只包含帖子列表，由 _buildPostsList 构建
     // RefreshIndicator 包裹在 _buildPostsList 返回的 Widget 外部（如果需要）
     // 或者在 _buildPostsList 内部返回 RefreshIndicator 包裹的列表
-    return _buildPostsList(false, userInfoProvider); // 调用列表构建器
+    return _buildPostsList(false); // 调用列表构建器
   }
 
   // --- 构建帖子列表/网格 (处理空状态和 Null) ---
-  Widget _buildPostsList(bool isDesktop, UserInfoProvider userInfoProvider,
+  Widget _buildPostsList(bool isDesktop,
       [bool actuallyShowLeftPanel = false,
       bool actuallyShowRightPanel = false]) {
     // 安全检查：如果 _posts 是 null (理论上在调用此方法前已被处理，但加一层保险)
@@ -884,13 +884,12 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     final listOrGridWidget = isDesktop
         ? _buildDesktopPostsGrid(
-            userInfoProvider,
             actuallyShowLeftPanel,
             actuallyShowRightPanel,
             onDeleteAction: _handleDeletePostFromCard,
             onEditAction: _handleEditPostFromCard,
           )
-        : _buildMobilePostsList(userInfoProvider,
+        : _buildMobilePostsList(
             onDeleteAction: _handleDeletePostFromCard,
             onEditAction: _handleEditPostFromCard);
 
@@ -904,8 +903,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 构建移动端帖子列表 (ListView) ---
-  Widget _buildMobilePostsList(
-    UserInfoProvider userInfoProvider, {
+  Widget _buildMobilePostsList({
     required Future<void> Function(Post post) onDeleteAction,
     required void Function(Post post) onEditAction,
   }) {
@@ -920,10 +918,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       itemCount: _posts!.length,
       itemBuilder: (context, index) {
         final post = _posts![index];
-        final userId = post.authorId;
-        userInfoProvider.ensureUserInfoLoaded(userId);
-        final UserDataStatus userDataStatus =
-            userInfoProvider.getUserStatus(userId);
+
         return FadeInSlideUpItem(
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
@@ -935,7 +930,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
               child: PostCard(
                 currentUser: _authProvider.currentUser,
                 post: post,
-                userDataStatus: userDataStatus,
+                infoProvider: widget.infoProvider,
+                followService: _followService,
                 isDesktopLayout: false,
                 onDeleteAction: onDeleteAction,
                 onEditAction: onEditAction,
@@ -950,7 +946,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- 构建桌面端帖子网格 (MasonryGridView) ---
   Widget _buildDesktopPostsGrid(
-    UserInfoProvider userInfoProvider,
     bool actuallyShowLeftPanel,
     bool actuallyShowRightPanel, {
     required Future<void> Function(Post post) onDeleteAction,
@@ -977,11 +972,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       itemCount: _posts!.length,
       itemBuilder: (context, index) {
         final post = _posts![index];
-        final userId = post.authorId;
-        userInfoProvider.ensureUserInfoLoaded(userId);
-        final UserDataStatus userDataStatus =
-            userInfoProvider.getUserStatus(userId);
-
         return FadeInSlideUpItem(
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
@@ -989,7 +979,8 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           child: PostCard(
             currentUser: _authProvider.currentUser,
             post: post,
-            userDataStatus: userDataStatus,
+            followService: _followService,
+            infoProvider: widget.infoProvider,
             isDesktopLayout: true,
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,

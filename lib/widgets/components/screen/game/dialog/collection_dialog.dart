@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../widgets/components/form/collection/collection_form.dart';
+import 'package:suxingchahui/widgets/components/form/collection/collection_form.dart';
 
 class CollectionDialog extends StatelessWidget {
   final String gameId;
+  final InputStateService inputStateService;
+  final User? currentUser;
   final String gameName;
   final String? currentStatus;
   final String? currentNotes;
@@ -13,6 +17,8 @@ class CollectionDialog extends StatelessWidget {
   const CollectionDialog({
     super.key,
     required this.gameId,
+    required this.inputStateService,
+    required this.currentUser,
     required this.gameName,
     this.currentStatus,
     this.currentNotes,
@@ -25,7 +31,6 @@ class CollectionDialog extends StatelessWidget {
     final isEditing = currentStatus != null && currentStatus!.isNotEmpty;
     final title = isEditing ? '编辑收藏' : '添加收藏';
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    // final theme = Theme.of(context); // 获取主题
 
     return Center(
       // 1. 使用 Center 包裹，让对话框居中
@@ -73,7 +78,8 @@ class CollectionDialog extends StatelessWidget {
                           ),
                         ),
                         CollectionForm(
-                          //  表单内容保持不变
+                          inputStateService: inputStateService,
+                          currentUser: currentUser,
                           gameId: gameId,
                           initialStatus: currentStatus ?? '',
                           initialNotes: currentNotes,

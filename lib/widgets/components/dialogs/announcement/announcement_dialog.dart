@@ -7,11 +7,11 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 // 确认以下导入路径正确
-import '../../../../models/announcement/announcement.dart';
-import '../../../../services/main/announcement/announcement_service.dart';
-import '../../../ui/buttons/functional_text_button.dart';
-import '../../../ui/image/safe_cached_image.dart';
-import '../../../ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/models/announcement/announcement.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 // --- 显示公告对话框的辅助函数 (修改：增加 imageSource 参数) ---
 void showAnnouncementDialog(

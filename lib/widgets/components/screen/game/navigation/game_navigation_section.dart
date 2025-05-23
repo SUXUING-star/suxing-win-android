@@ -41,7 +41,7 @@ class GameNavigationSection extends StatelessWidget {
 
     // 如果没有对应的导航游戏 ID，则返回占位
     if (gameId == null || gameId.isEmpty) {
-      return Expanded(child: SizedBox.shrink());
+      return const Expanded(child: SizedBox.shrink());
     }
 
     final icon = isPrevious

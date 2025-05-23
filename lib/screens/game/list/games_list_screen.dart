@@ -35,13 +35,14 @@ import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right
 
 class GamesListScreen extends StatefulWidget {
   final String? selectedTag;
-  final AuthProvider? authProvider;
-  // mainLayout会watch authProvider下发这个引用对象
+  final AuthProvider authProvider;
+  final GameService gameService;
 
   const GamesListScreen({
     super.key,
     this.selectedTag,
-    this.authProvider,
+    required this.authProvider,
+    required this.gameService,
   });
 
   @override
@@ -79,7 +80,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   Timer? _refreshDebounceTimer;
 
   static const int _pageSize = GameService.gamesLimit;
-  static const Duration _cacheDebounceDuration = Duration(milliseconds: 300);
+  static const Duration _cacheDebounceDuration = Duration(milliseconds: 1000);
   final Map<String, String> _sortOptions = GameConstants.defaultFilter;
   static const double _hideRightPanelThreshold = 1000.0;
   static const double _hideLeftPanelThreshold = 800.0;
@@ -106,31 +107,31 @@ class _GamesListScreenState extends State<GamesListScreen>
       _filterProvider =
           Provider.of<GameListFilterProvider>(context, listen: false);
 
-      /// 这个authProvider尤其注意，因为gameList是一级页面，它初始化非常早，之后会页面处于假死状态
-      /// 需要让它下发的子组件的状态都是正确的
-      /// mainLayout会下发一个authProvider
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
-      _gameService = context.read<GameService>();
+      _authProvider = widget.authProvider;
+      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
       // 初始化 _currentTag
       _currentUserId = _authProvider.currentUserId;
-      _initializeCurrentTag();
-      _loadTags(); // 异步加载可用标签列表
+
     }
   }
 
   @override
   void didUpdateWidget(covariant GamesListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
           _currentUserId = _authProvider.currentUserId;
         });
+      }
+    }
+    if (widget.selectedTag != oldWidget.selectedTag) {
+      if (mounted) {
+        setState(() {});
       }
     }
   }
@@ -195,6 +196,8 @@ class _GamesListScreenState extends State<GamesListScreen>
 
       // 2. 处理加载逻辑
       if (!_isInitialized) {
+        _initializeCurrentTag();
+        _loadTags(); // 异步加载可用标签列表
         // 初始加载使用当前的 _currentTag (可能已被 _checkProvider 更新)
         _loadGames(pageToFetch: 1, isInitialLoad: true);
       } else if (_needsRefresh) {

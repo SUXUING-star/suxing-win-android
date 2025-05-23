@@ -5,11 +5,11 @@ import 'dart:async';
 
 // Models
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 
 // Services
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 
 // Providers
@@ -30,7 +30,19 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
-  const SearchPostScreen({super.key});
+  final UserService userService;
+  final ForumService forumService;
+  final UserFollowService followService;
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  const SearchPostScreen({
+    super.key,
+    required this.forumService,
+    required this.userService,
+    required this.followService,
+    required this.authProvider,
+    required this.infoProvider,
+  });
 
   @override
   _SearchPostScreenState createState() => _SearchPostScreenState();
@@ -66,9 +78,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _userService = context.read<UserService>();
-      _forumService = context.read<ForumService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _userService = widget.userService;
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -118,7 +130,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         _error = null;
       });
     } catch (e) {
-      print("SearchPostScreen: Error loading search history: $e");
+      // print("SearchPostScreen: Error loading search history: $e");
       if (!mounted) return;
       // 仅在搜索框为空时显示历史错误
       if (_searchController.text.isEmpty) {
@@ -236,8 +248,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         if (isNewSearch) {
           _addToHistory(trimmedQuery);
         }
-      } catch (e, s) {
-        print("SearchPostScreen: Search failed: $e\n$s");
+      } catch (e) {
+        // print("SearchPostScreen: Search failed: $e\n$s");
         if (!mounted) return;
         setState(() {
           _error = '搜索失败：$e'; // 设置错误信息
@@ -545,7 +557,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     const Duration cardAnimationDuration = Duration(milliseconds: 350);
     const Duration cardDelayIncrement = Duration(milliseconds: 40);
 
-    final userInfoProvider = context.watch<UserInfoProvider>();
 
     // 结果列表 + 加载更多指示器
     return ListView.builder(
@@ -566,11 +577,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         // 帖子卡片 (确保 index 在范围内)
         if (index < _searchResults.length) {
           final post = _searchResults[index];
-
-          final userId = post.authorId;
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          final UserDataStatus userDataStatus =
-              userInfoProvider.getUserStatus(userId);
           // --- 使用 FadeInSlideUpItem 包裹卡片 ---
           return FadeInSlideUpItem(
             key: ValueKey(post
@@ -583,7 +589,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               child: PostCard(
                 currentUser: _authProvider.currentUser,
                 post: post,
-                userDataStatus: userDataStatus,
+                followService: widget.followService,
+                infoProvider: widget.infoProvider,
                 onDeleteAction: _handleDeletePostAction,
                 onEditAction: _handleEditPostAction,
                 onToggleLockAction: _handleToggleLockAction,

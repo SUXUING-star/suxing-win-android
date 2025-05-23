@@ -1,15 +1,14 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../models/post/post.dart';
-import '../../../../services/main/forum/forum_service.dart';
-import '../../../../widgets/components/screen/forum/card/post_grid_view.dart';
-import '../../../../widgets/ui/common/loading_widget.dart';
-import '../../../../widgets/ui/common/error_widget.dart';
-import '../../../../utils/device/device_utils.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class PostFavoritesTab extends StatefulWidget {
   // 静态刷新方法，供主页面调用
@@ -21,8 +20,14 @@ class PostFavoritesTab extends StatefulWidget {
   static final GlobalKey<_PostFavoritesTabState> _postTabKey =
       GlobalKey<_PostFavoritesTabState>();
   final User? currentUser;
+  final ForumService forumService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   PostFavoritesTab(
     this.currentUser,
+    this.forumService,
+    this.followService,
+    this.infoProvider,
   ) : super(key: _postTabKey);
 
   @override
@@ -42,23 +47,34 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
   bool _hasMoreData = true; // 这个可以根据 totalPages 计算
 
   bool _hasInitializedDependencies = false;
-  late final ForumService _forumService;
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
       _loadFavoritePosts();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant PostFavoritesTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
@@ -85,8 +101,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final result = await _forumService.getUserFavoritePostsPage(
-          page: _currentPage, limit: _limit);
+      final result = await widget.forumService
+          .getUserFavoritePostsPage(page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---
       final List<Post> fetchedPosts = result['posts'] as List<Post>? ?? [];
@@ -144,7 +160,6 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return _loadFavoritePosts();
   }
 
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -196,6 +211,8 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
     return RefreshIndicator(
       onRefresh: refreshPosts, // 下拉刷新回调
       child: PostGridView(
+        followService: widget.followService,
+        infoProvider: widget.infoProvider,
         currentUser: widget.currentUser,
         posts: _favoritePosts,
         scrollController: _scrollController,

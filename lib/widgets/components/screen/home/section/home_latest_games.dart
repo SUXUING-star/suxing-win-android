@@ -1,14 +1,13 @@
 // lib/widgets/components/screen/home/section/home_latest_games.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 保留以防其他用途
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../routes/app_routes.dart';
-import '../../../../ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class HomeLatestGames extends StatelessWidget {
   final List<Game>? games;

@@ -16,7 +16,11 @@ import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/mob
 import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
 
 class GameCollectionScreen extends StatefulWidget {
-  const GameCollectionScreen({super.key});
+  final AuthProvider authProvider;
+  const GameCollectionScreen({
+    super.key,
+    required this.authProvider,
+  });
 
   @override
   _GameCollectionScreenState createState() => _GameCollectionScreenState();
@@ -66,7 +70,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     super.didChangeDependencies();
 
     if (!_hasInitializedDependencies) {
-      _authProvider = Provider.of<AuthProvider>(context);
+      _authProvider = widget.authProvider;
       _gameCollectionService = context.read<GameCollectionService>();
       _hasInitializedDependencies = true;
     }
@@ -247,7 +251,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     _isDesktopLayout = isDesktop && screenSize.width > 900;
 
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: '我的收藏',
       ),
       // *** 直接调用 _buildBody，依赖当前的状态变量 ***

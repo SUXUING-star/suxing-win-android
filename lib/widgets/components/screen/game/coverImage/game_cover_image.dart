@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/game/coverImage/game_cover_image.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class GameCoverImage extends StatelessWidget {
   final String imageUrl;
@@ -35,7 +35,7 @@ class GameCoverImage extends StatelessWidget {
       backgroundColor: Colors.grey[200], // 修改为浅灰色背景以便更好地显示图片
       borderRadius: BorderRadius.circular(borderRadius),
       onError: (url, error) {
-        print('游戏封面图片加载失败: $url, 错误: $error');
+        // print('游戏封面图片加载失败: $url, 错误: $error');
       },
     );
 

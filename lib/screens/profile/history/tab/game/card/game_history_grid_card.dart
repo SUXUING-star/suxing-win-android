@@ -4,9 +4,9 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
-import '../../../../../../routes/app_routes.dart';
-import '../../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../../../widgets/ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 // 游戏历史网格卡片组件
 class GameHistoryGridCard extends StatelessWidget {
@@ -47,7 +47,7 @@ class GameHistoryGridCard extends StatelessWidget {
                     imageUrl: historyItem['coverImage']?.toString() ?? '',
                     fit: BoxFit.cover,
                     onError: (url, error) {
-                      print('历史游戏封面加载失败: $url, 错误: $error');
+                      // print('历史游戏封面加载失败: $url, 错误: $error');
                     },
                   ),
 

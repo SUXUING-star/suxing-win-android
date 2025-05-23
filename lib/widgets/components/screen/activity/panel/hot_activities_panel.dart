@@ -4,13 +4,21 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'layout/desktop/hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
   final User? currentUser;
+  final UserInfoProvider userInfoProvider;
+  final UserActivityService activityService;
+  final UserFollowService followService;
   const HotActivitiesPanel({
     required this.currentUser,
+    required this.activityService,
+    required this.userInfoProvider,
+    required this.followService,
     super.key,
   });
 
@@ -30,7 +38,6 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
   bool get wantKeepAlive => true;
 
   bool _hasInitializedDependencies = false;
-  late final UserActivityService _activityService;
 
   @override
   void initState() {
@@ -41,7 +48,6 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = context.read<UserActivityService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -59,8 +65,8 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     try {
       // 并行加载数据
       final results = await Future.wait([
-        _activityService.getHotActivities(),
-        _activityService.getActivityTypeStats(),
+        widget.activityService.getHotActivities(),
+        widget.activityService.getActivityTypeStats(),
       ]);
 
       if (mounted) {
@@ -93,6 +99,8 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
       builder: (context, constraints) {
         // 默认完整面板
         return HotActivitiesFullPanel(
+          userInfoProvider: widget.userInfoProvider,
+          userFollowService: widget.followService,
           currentUser: widget.currentUser,
           hotActivities: _hotActivities,
           activityStats: _activityStats,

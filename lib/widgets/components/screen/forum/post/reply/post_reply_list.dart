@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:collection/collection.dart'; // 用于 groupBy
-import 'package:provider/provider.dart'; // 获取 AuthProvider 和 InputStateService
+import 'package:collection/collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 发评论按钮
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态
@@ -21,6 +21,16 @@ import 'post_reply_item.dart'; // 评论项组件
 class PostReplyList extends StatefulWidget {
   final User? currentUser;
 
+  final AuthProvider authProvider;
+
+  final UserInfoProvider infoProvider;
+
+  final InputStateService inputStateService;
+
+  final UserFollowService followService;
+
+  final ForumService forumService;
+
   /// 帖子 ID
   final String postId;
 
@@ -30,6 +40,11 @@ class PostReplyList extends StatefulWidget {
   const PostReplyList({
     super.key,
     required this.currentUser,
+    required this.authProvider,
+    required this.infoProvider,
+    required this.inputStateService,
+    required this.followService,
+    required this.forumService,
     required this.postId,
     this.isScrollableInternally = false, // 默认为 false，依赖外部滚动
   });
@@ -45,7 +60,7 @@ class _PostReplyListState extends State<PostReplyList> {
   late final String _topLevelReplySlotName; // 顶层评论输入框的唯一标识符
   ScrollController? _scrollController; // 滚动控制器（仅在需要内部滚动时创建）
   bool _hasInitializedDependencies = false;
-  late final ForumService _forumService;
+
   User? _currentUser;
   late String _postId;
 
@@ -64,7 +79,6 @@ class _PostReplyListState extends State<PostReplyList> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -100,7 +114,7 @@ class _PostReplyListState extends State<PostReplyList> {
   /// 核心加载/刷新逻辑
   void _loadReplies() {
     setState(() {
-      _repliesFuture = _forumService.fetchReplies(widget.postId);
+      _repliesFuture = widget.forumService.fetchReplies(widget.postId);
     });
   }
 
@@ -121,14 +135,10 @@ class _PostReplyListState extends State<PostReplyList> {
     }
 
     try {
-      await _forumService.addReply(widget.postId, content, parentId: null);
+      await widget.forumService
+          .addReply(widget.postId, content, parentId: null);
       if (mounted) {
-        // 保持用途明确
-        InputStateService? inputStateService =
-            Provider.of<InputStateService>(context, listen: false);
-        inputStateService.clearText(_topLevelReplySlotName);
-        inputStateService = null;
-        //
+        widget.inputStateService.clearText(_topLevelReplySlotName);
 
         AppSnackBar.showSuccess(context, '评论发表成功');
         _loadReplies(); // 重新加载列表
@@ -181,6 +191,8 @@ class _PostReplyListState extends State<PostReplyList> {
                 top: 16,
               ),
               child: CommentInputField(
+                currentUser: widget.currentUser,
+                inputStateService: widget.inputStateService,
                 slotName: _topLevelReplySlotName,
                 hintText: '写下你的评论...',
                 submitButtonText: '发表评论',
@@ -207,8 +219,6 @@ class _PostReplyListState extends State<PostReplyList> {
 
   @override
   Widget build(BuildContext context) {
-    final userInfoProvider = context.watch<UserInfoProvider>();
-
     return FutureBuilder<List<Reply>>(
       future: _repliesFuture,
       builder: (context, snapshot) {
@@ -330,11 +340,6 @@ class _PostReplyListState extends State<PostReplyList> {
             itemBuilder: (context, index) {
               final topReply = topLevelReplies[index];
               final children = nestedRepliesMap[topReply.id] ?? [];
-              final userId = topReply.authorId;
-              userInfoProvider.ensureUserInfoLoaded(userId);
-
-              final UserDataStatus userDataStatus =
-                  userInfoProvider.getUserStatus(userId);
 
               return Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -343,9 +348,12 @@ class _PostReplyListState extends State<PostReplyList> {
                   children: [
                     // 渲染顶层回复项
                     PostReplyItem(
+                      inputStateService: widget.inputStateService,
+                      authProvider: widget.authProvider,
+                      followService: widget.followService,
+                      infoProvider: widget.infoProvider,
                       currentUser: widget.currentUser,
-                      userDataStatus: userDataStatus,
-                      forumService: _forumService,
+                      forumService: widget.forumService,
                       reply: topReply,
                       floor: topLevelReplies.length - index,
                       postId: widget.postId,
@@ -359,18 +367,16 @@ class _PostReplyListState extends State<PostReplyList> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: children.map((nestedReply) {
-                            final userId = nestedReply.authorId;
-                            userInfoProvider.ensureUserInfoLoaded(userId);
-
-                            final UserDataStatus userDataStatus =
-                                userInfoProvider.getUserStatus(userId);
                             return Padding(
                               padding: const EdgeInsets.only(top: 8.0),
                               child: PostReplyItem(
+                                inputStateService: widget.inputStateService,
+                                authProvider: widget.authProvider,
                                 currentUser: widget.currentUser,
-                                forumService: _forumService,
+                                forumService: widget.forumService,
                                 reply: nestedReply,
-                                userDataStatus: userDataStatus,
+                                followService: widget.followService,
+                                infoProvider: widget.infoProvider,
                                 floor: 0, // 嵌套不显示楼层
                                 postId: widget.postId,
                                 onActionSuccess: _loadReplies, // 回调刷新

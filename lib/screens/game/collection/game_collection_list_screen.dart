@@ -5,24 +5,25 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 
-import '../../../models/game/game_collection.dart';
-import '../../../providers/auth/auth_provider.dart';
-import '../../../routes/app_routes.dart';
-import '../../../services/main/game/collection/game_collection_service.dart';
-import '../../../utils/device/device_utils.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/components/screen/game/card/base_game_card.dart';
-import '../../../widgets/ui/common/error_widget.dart'; // Import error widgets
-import '../../../widgets/ui/common/loading_widget.dart'; // Import loading widgets
+import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // Import error widgets
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // Import loading widgets
 
 class GameCollectionListScreen extends StatefulWidget {
   final String collectionType;
   final String title;
+  final AuthProvider authProvider;
 
   const GameCollectionListScreen({
     super.key,
     required this.collectionType,
     required this.title,
+    required this.authProvider,
   });
 
   @override
@@ -48,7 +49,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _authProvider = Provider.of<AuthProvider>(context);
+      _authProvider = widget.authProvider;
       _gameCollectionService = context.read<GameCollectionService>();
     }
     if (_hasInitializedDependencies) {

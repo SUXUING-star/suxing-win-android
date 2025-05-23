@@ -1,12 +1,10 @@
 // lib/screens/profile/tabs/game_favorites_tab.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../models/game/game.dart';
-import '../../../../services/main/game/game_service.dart';
-import '../../../../widgets/components/screen/profile/favorite/responsive_favorites_layout.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/favorite/responsive_favorites_layout.dart';
 
 class GameFavoritesTab extends StatefulWidget {
   // 静态刷新方法，供主页面调用
@@ -19,8 +17,10 @@ class GameFavoritesTab extends StatefulWidget {
       GlobalKey<_GameFavoritesTabState>();
 
   final User? currentUser;
+  final GameService gameService;
   GameFavoritesTab(
     this.currentUser,
+    this.gameService,
   ) : super(key: _gameTabKey);
 
   @override
@@ -34,12 +34,19 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
   bool _isLoading = false;
   bool _hasInitializedDependencies = false;
   late final GameService _gameService;
+  User? _currentUser;
+
+  @override
+  void initState() {
+    _currentUser = widget.currentUser;
+    super.initState();
+  }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
+      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -50,6 +57,17 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
   @override
   void dispose() {
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant GameFavoritesTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   Future<void> _loadFavoriteGames() async {

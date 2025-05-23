@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart'; // 用于时间格式化
 import 'package:suxingchahui/models/message/message_type.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import '../../../../models/message/message.dart';

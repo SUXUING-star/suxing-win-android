@@ -1,11 +1,13 @@
 // lib/widgets/components/form/announcementform/field/action_field.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
 class ActionField extends StatelessWidget {
   final String? actionUrl;
   final String? actionText;
+  final InputStateService inputStateService;
   final Function(String) onActionUrlChanged;
   final Function(String) onActionTextChanged;
 
@@ -13,6 +15,7 @@ class ActionField extends StatelessWidget {
     super.key,
     required this.actionUrl,
     required this.actionText,
+    required this.inputStateService,
     required this.onActionUrlChanged,
     required this.onActionTextChanged,
   });
@@ -40,6 +43,7 @@ class ActionField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         FormTextInputField(
+          inputStateService: inputStateService,
           initialValue: actionUrl ?? '',
           decoration: const InputDecoration(
             hintText: '输入链接URL',
@@ -75,6 +79,7 @@ class ActionField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         FormTextInputField(
+          inputStateService: inputStateService,
           initialValue: actionText ?? '',
           decoration: const InputDecoration(
             hintText: '输入按钮显示文本',

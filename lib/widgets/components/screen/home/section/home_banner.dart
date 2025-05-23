@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 

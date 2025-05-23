@@ -1,21 +1,39 @@
 // lib/screens/game/edit/edit_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../models/game/game.dart';
-import '../../../services/main/game/game_service.dart';
-import '../../../widgets/components/form/gameform/game_form.dart';
-import '../../../widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class EditGameScreen extends StatefulWidget {
   final String gameId;
-  const EditGameScreen({super.key, required this.gameId});
+  final GameCollectionService gameCollectionService;
+  final UserFollowService followService;
+  final GameService gameService;
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  const EditGameScreen({
+    super.key,
+    required this.gameId,
+    required this.gameCollectionService,
+    required this.gameService,
+    required this.followService,
+    required this.authProvider,
+    required this.infoProvider,
+  });
 
   @override
   _EditGameScreenState createState() => _EditGameScreenState();
@@ -24,8 +42,6 @@ class EditGameScreen extends StatefulWidget {
 class _EditGameScreenState extends State<EditGameScreen>
     with SnackBarNotifierMixin {
   bool _hasInitializedDependencies = false;
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
   bool _isLoading = false;
   Game? _game;
 
@@ -38,8 +54,6 @@ class _EditGameScreenState extends State<EditGameScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -56,7 +70,7 @@ class _EditGameScreenState extends State<EditGameScreen>
     try {
       setState(() => _isLoading = true);
 
-      final Game? game = await _gameService.getGameById(widget.gameId);
+      final Game? game = await widget.gameService.getGameById(widget.gameId);
       if (game != null) {
         if (mounted) {
           setState(() {
@@ -86,12 +100,12 @@ class _EditGameScreenState extends State<EditGameScreen>
     if (!mounted) return;
 
     try {
-      await _gameService.updateGame(gameDataFromForm);
+      await widget.gameService.updateGame(gameDataFromForm);
 
       // API 调用成功
       if (!mounted) return;
 
-      if (!_authProvider.isAdmin) {
+      if (!widget.authProvider.isAdmin) {
         // 编辑模式且非管理员
         _showReviewNoticeDialogAfterApiSuccess();
       } else {
@@ -142,9 +156,33 @@ class _EditGameScreenState extends State<EditGameScreen>
   }
 
   bool _checkCanEditGame(Game game) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == game.authorId;
+        : widget.authProvider.currentUserId == game.authorId;
+  }
+
+  Widget _buildNeedToPending() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.blue.shade50,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.blue.shade200),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.info_outline, color: Colors.blue),
+          SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '提示：编辑游戏后，该游戏将需要重新审核，在审核通过前将不会在游戏列表中显示。',
+              style: TextStyle(fontSize: 14),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -161,53 +199,52 @@ class _EditGameScreenState extends State<EditGameScreen>
       // 保持这个检查
       return const CustomErrorWidget(title: '无法加载游戏数据');
     }
-    if (!_checkCanEditGame(_game!)) {
-      return CustomErrorWidget(
-        title: "你没有权限编辑该游戏",
-        onRetry: () => NavigationUtils.pop(context),
-        retryText: "点击返回",
-      );
-    }
+    return StreamBuilder<User?>(
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, currentUserSnapshot) {
+        final User? currentUser = currentUserSnapshot.data;
+        final String? currentUserId = currentUser?.id;
+        final bool isAdmin = currentUser?.isAdmin ?? false;
+        if (currentUser == null) {
+          return const LoginPromptWidget();
+        }
+        final canEdit = isAdmin ? true : currentUserId == _game?.authorId;
+        if (!canEdit) {
+          return CustomErrorWidget(
+            errorMessage: "你没有权限编辑",
+            title: "错误",
+            retryText: "返回上一页",
+            onRetry: () => NavigationUtils.pop(context),
+          );
+        }
 
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: appBarTitle,
-        // 如果 GameForm 内部有 _isProcessing 状态来禁用返回，这里可能不需要特殊处理
-        // 否则，如果需要阻止返回，可以考虑 EditGameScreen 的状态
-      ),
-      body: Column(
-        children: [
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.blue.shade50,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.blue.shade200),
-            ),
-            child: const Row(
-              children: [
-                Icon(Icons.info_outline, color: Colors.blue),
-                SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    '提示：编辑游戏后，该游戏将需要重新审核，在审核通过前将不会在游戏列表中显示。',
-                    style: TextStyle(fontSize: 14),
-                  ),
+        return Scaffold(
+          appBar: CustomAppBar(
+            title: appBarTitle,
+            // 如果 GameForm 内部有 _isProcessing 状态来禁用返回，这里可能不需要特殊处理
+            // 否则，如果需要阻止返回，可以考虑 EditGameScreen 的状态
+          ),
+          body: Column(
+            children: [
+              if (!isAdmin) _buildNeedToPending(),
+              Expanded(
+                child: GameForm(
+                  gameCollectionService: widget.gameCollectionService,
+                  authProvider: widget.authProvider,
+                  gameService: widget.gameService,
+                  followService: widget.followService,
+                  infoProvider: widget.infoProvider,
+                  currentUser: widget.authProvider.currentUser,
+                  game: _game,
+                  onSubmit: _handleGameFormSubmit, // 传递 State 的方法作为回调
+                  // isSubmitting 属性现在由 GameForm 内部的 _isProcessing 控制
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Expanded(
-            child: GameForm(
-              currentUser: _authProvider.currentUser,
-              game: _game,
-              onSubmit: _handleGameFormSubmit, // 传递 State 的方法作为回调
-              // isSubmitting 属性现在由 GameForm 内部的 _isProcessing 控制
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }

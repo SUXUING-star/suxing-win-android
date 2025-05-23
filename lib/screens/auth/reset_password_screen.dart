@@ -1,7 +1,7 @@
 // lib/screens/auth/reset_password_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -10,15 +10,22 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../services/main/user/user_service.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/ui/common/error_widget.dart';
-import '../../widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class ResetPasswordScreen extends StatefulWidget {
   final String email;
+  final UserService userService;
+  final InputStateService inputStateService;
 
-  const ResetPasswordScreen({super.key, required this.email});
+  const ResetPasswordScreen({
+    super.key,
+    required this.email,
+    required this.userService,
+    required this.inputStateService,
+  });
 
   @override
   _ResetPasswordScreenState createState() => _ResetPasswordScreenState();
@@ -41,7 +48,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _userService = context.read<UserService>();
+      _userService = widget.userService;
       _hasInitializedDependencies = true;
     }
   }
@@ -51,6 +58,14 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     _passwordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(covariant ResetPasswordScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.email != widget.email) {
+      setState(() {});
+    }
   }
 
   Future<void> _resetPassword() async {
@@ -86,6 +101,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
   Widget _buildNewPassWordFormField() {
     return FormTextInputField(
+      inputStateService: widget.inputStateService,
       controller: _passwordController,
       isEnabled: !_isLoading,
       obscureText: _obscurePassword,
@@ -115,6 +131,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
 
   Widget _buildRepeatPassWordFormField() {
     return FormTextInputField(
+      inputStateService: widget.inputStateService,
       controller: _confirmPasswordController,
       isEnabled: !_isLoading,
       obscureText: _obscureConfirmPassword, // <--- 设置 obscureText
@@ -155,8 +172,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
               ),
             ),
           )
-        // --- 结束修改 ---
-        : SizedBox.shrink();
+        :  const SizedBox.shrink();
   }
 
   @override
@@ -167,7 +183,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
     const Duration stagger = Duration(milliseconds: 80);
 
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: '重置密码',
       ),
       body: Stack(

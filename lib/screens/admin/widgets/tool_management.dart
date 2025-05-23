@@ -8,11 +8,15 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../models/linkstools/tool.dart';
-import '../../../widgets/components/form/toolform/tool_form_dialog.dart';
+import 'package:suxingchahui/models/linkstools/tool.dart';
+import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.dart';
 
 class ToolManagement extends StatefulWidget {
-  const ToolManagement({super.key});
+  final LinkToolService linkToolService;
+  const ToolManagement({
+    super.key,
+    required this.linkToolService,
+  });
 
   @override
   State<ToolManagement> createState() => _ToolManagementState();
@@ -34,7 +38,7 @@ class _ToolManagementState extends State<ToolManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _linkToolService = context.read<LinkToolService>();
+      _linkToolService = widget.linkToolService;
       _hasInitializedDependencies = true;
     }
 

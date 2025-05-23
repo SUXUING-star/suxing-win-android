@@ -1,14 +1,13 @@
 // lib/widgets/components/screen/game/collection/game_reviews_section.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
-import 'package:suxingchahui/models/game/game_review.dart'; // 使用这个模型
+import 'package:suxingchahui/models/game/game_review.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -21,10 +20,16 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 class GameReviewSection extends StatefulWidget {
   final Game game;
   final User? currentUser;
+  final GameCollectionService gameCollectionService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   const GameReviewSection({
     super.key,
     required this.game,
     required this.currentUser,
+    required this.followService,
+    required this.gameCollectionService,
+    required this.infoProvider,
   });
   @override
   GameReviewSectionState createState() => GameReviewSectionState();
@@ -36,9 +41,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
   String? _error;
   int _page = 1;
   final int _pageSize = 15;
-  bool _hasMoreEntries = true; // *** 修改变量名 ***
+  bool _hasMoreEntries = true;
   bool _isProcessingPageOne = false;
-  int _loadReviewsCallCount = 0;
+  // int _loadReviewsCallCount = 0;
   bool _hasInitializedDependencies = false;
   late final GameCollectionService _collectionService;
   User? _currentUser;
@@ -52,7 +57,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _collectionService = context.read<GameCollectionService>();
+      _collectionService = widget.gameCollectionService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -75,6 +80,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
     if (gameIdChanged) {
       refresh();
+    } else if (ratingDataChanged && mounted) {
+      setState(() {});
     }
     if (widget.currentUser != oldWidget.currentUser ||
         _currentUser != widget.currentUser) {
@@ -88,16 +95,16 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (_isProcessingPageOne || !mounted) return;
     setState(() {
       _page = 1;
-      _entries = []; // *** 修改变量名 ***
+      _entries = [];
       _isLoading = true;
       _error = null;
-      _hasMoreEntries = true; // *** 修改变量名 ***
+      _hasMoreEntries = true;
     });
     _loadReviews(isInitialLoad: true);
   }
 
   Future<void> _loadReviews({bool isInitialLoad = false}) async {
-    _loadReviewsCallCount++;
+    // _loadReviewsCallCount++;
     final bool forPageOne = isInitialLoad || _page == 1;
 
     if (forPageOne) {
@@ -131,11 +138,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
       setState(() {
         if (_page == 1) {
-          _entries = fetchedEntries; // *** 修改变量名 ***
+          _entries = fetchedEntries;
         } else {
-          _entries.addAll(fetchedEntries); // *** 修改变量名 ***
+          _entries.addAll(fetchedEntries);
         }
-        _hasMoreEntries = fetchedEntries.length >= _pageSize; // *** 修改变量名 ***
+        _hasMoreEntries = fetchedEntries.length >= _pageSize;
         _error = null;
       });
     } catch (e) {
@@ -143,10 +150,10 @@ class GameReviewSectionState extends State<GameReviewSection> {
       setState(() {
         if (_page == 1) {
           _error = '加载条目失败: ${e.toString().split(':').last.trim()}';
-          _entries = []; // *** 修改变量名 ***
+          _entries = [];
         } else {
           if (context.mounted) AppSnackBar.showError(context, '加载更多条目失败');
-          _hasMoreEntries = false; // *** 修改变量名 ***
+          _hasMoreEntries = false;
         }
       });
     } finally {
@@ -165,7 +172,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
   void _loadMoreReviews() {
     if (!_isLoading && _hasMoreEntries) {
-      // *** 修改变量名 ***
       setState(() => _page++);
       _loadReviews();
     }
@@ -316,10 +322,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     final String status = entry.status;
     final String? notesText = entry.notes;
 
-    final userInfoProvider = context.watch<UserInfoProvider>();
-    userInfoProvider.ensureUserInfoLoaded(userId);
-    final UserDataStatus userDataStatus =
-        userInfoProvider.getUserStatus(userId);
+
 
     String statusLabel;
     IconData statusIcon;
@@ -357,7 +360,8 @@ class GameReviewSectionState extends State<GameReviewSection> {
             children: [
               Expanded(
                   child: UserInfoBadge(
-                      userDataStatus: userDataStatus,
+                      followService: widget.followService,
+                      infoProvider: widget.infoProvider,
                       currentUser: widget.currentUser,
                       targetUserId: userId,
                       showFollowButton: false,

@@ -4,7 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'dart:math' as math;
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
@@ -12,7 +13,8 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 class ActivityTarget extends StatelessWidget {
   final UserActivity activity;
   final User? currentUser;
-  final UserDataStatus userDataStatus;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
   final bool isAlternate;
   final double cardHeight;
 
@@ -20,7 +22,8 @@ class ActivityTarget extends StatelessWidget {
     super.key,
     required this.activity,
     required this.currentUser,
-    required this.userDataStatus,
+    required this.followService,
+    required this.infoProvider,
     this.isAlternate = false,
     this.cardHeight = 1.0,
   });
@@ -72,8 +75,8 @@ class ActivityTarget extends StatelessWidget {
                   fit: BoxFit.cover,
                   borderRadius: BorderRadius.circular(borderRadiusValue),
                 )
-              : _buildPlaceholderImage(
-                  ActivityTargetTypeConstants.game), // Fallback if no cover image URL
+              : _buildPlaceholderImage(ActivityTargetTypeConstants
+                  .game), // Fallback if no cover image URL
           SizedBox(width: 12 * cardHeight),
           Expanded(
             child: Text(
@@ -151,7 +154,8 @@ class ActivityTarget extends StatelessWidget {
           key: ValueKey('target_badge_$targetUserId'), // 给 Badge 一个 Key
           currentUser: currentUser,
           targetUserId: targetUserId, // 传递目标用户 ID
-          userDataStatus: userDataStatus,
+          infoProvider: infoProvider,
+          followService: followService,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
           mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini
@@ -175,7 +179,8 @@ class ActivityTarget extends StatelessWidget {
           key: ValueKey('default_$userId'), // 给 Badge 一个 Key
           currentUser: currentUser,
           targetUserId: userId, // 传递目标用户 ID
-          userDataStatus: userDataStatus,
+          infoProvider: infoProvider,
+          followService: followService,
           showFollowButton: true, // 在 Target 显示时通常需要关注按钮
           showLevel: true,
           mini: cardHeight < 1.0, // 根据外部尺寸判断是否 mini

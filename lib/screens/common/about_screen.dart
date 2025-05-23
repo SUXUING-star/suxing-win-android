@@ -227,7 +227,7 @@ class AboutScreen extends StatelessWidget {
     final Color techStackIconColor = Colors.teal.shade400; // 换个颜色区分
 
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: '关于宿星茶会',
       ),
       body: SingleChildScrollView(

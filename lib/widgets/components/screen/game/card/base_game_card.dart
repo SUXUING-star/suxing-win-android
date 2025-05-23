@@ -8,13 +8,13 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
-import '../../../../../models/game/game.dart';
+import 'package:suxingchahui/models/game/game.dart';
 // 需要路由
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/image/safe_cached_image.dart';
-import '../../../../ui/components/game/game_category_tag.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import 'game_stats_widget.dart';
-import '../../../../ui/components/game/game_tag_list.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
 import 'game_collection_dialog.dart'; // 保留，用于显示收藏统计
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能

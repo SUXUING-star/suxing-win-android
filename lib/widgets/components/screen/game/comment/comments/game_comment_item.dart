@@ -1,20 +1,26 @@
 // lib/widgets/components/screen/game/comment/comments/game_comment_item.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/models/comment/comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import '../replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class GameCommentItem extends StatefulWidget {
   final User? currentUser;
-  final UserDataStatus userDataStatus;
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
+  final UserFollowService followService;
   final Comment comment;
   final Future<void> Function(Comment comment, String newContent)
       onUpdateComment;
@@ -26,7 +32,10 @@ class GameCommentItem extends StatefulWidget {
   const GameCommentItem({
     super.key,
     required this.currentUser,
-    required this.userDataStatus,
+    required this.authProvider,
+    required this.infoProvider,
+    required this.inputStateService,
+    required this.followService,
     required this.comment,
     required this.onUpdateComment,
     required this.onDeleteComment,
@@ -58,12 +67,18 @@ class _GameCommentItemState extends State<GameCommentItem>
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void didChangeDependencies() {
     _currentUser = widget.currentUser;
+    super.didChangeDependencies();
   }
 
   @override
   void didUpdateWidget(covariant GameCommentItem oldWidget) {
     super.didUpdateWidget(oldWidget);
+
     if (_currentUser != widget.currentUser ||
         oldWidget.currentUser != widget.currentUser) {
       setState(() {
@@ -76,11 +91,6 @@ class _GameCommentItemState extends State<GameCommentItem>
   Widget _buildActionsMenu(BuildContext context, Comment item) {
     final theme = Theme.of(context);
     final bool isReply = item.parentId != null;
-
-    final bool canEdit = item.userId == widget.currentUser?.id;
-    final bool canDelete = canEdit || widget.currentUser?.isAdmin == true;
-
-    if (!canEdit && !canDelete) return const SizedBox.shrink();
 
     bool isLocallyDeleting = false;
     bool isLocallyUpdating = false; // 主要用于未来编辑弹窗即时反馈
@@ -96,82 +106,95 @@ class _GameCommentItemState extends State<GameCommentItem>
     final bool isDisabled = isLocallyDeleting ||
         isLocallyUpdating ||
         (isReply ? false : (widget.isDeleting || widget.isUpdating));
-
-    return StylishPopupMenuButton<String>(
-      icon: Icons.more_vert,
-      iconSize: isReply ? 18 : 20,
-      iconColor: Colors.grey[600],
-      triggerPadding: const EdgeInsets.all(0),
-      tooltip: isReply ? '回复选项' : '评论选项',
-      menuColor: theme.canvasColor,
-      elevation: 2.0,
-      itemHeight: 40,
-      // 按钮整体是否可用
-      isEnabled: !isDisabled, // 如果正在进行任何相关操作，则禁用
-      items: [
-        if (canEdit)
-          StylishMenuItemData(
-            value: 'edit',
-            // 编辑按钮本身不显示 loading，依赖 isEnabled
-            child: Row(
-              children: [
-                Icon(Icons.edit_outlined,
-                    size: isReply ? 16 : 18, color: theme.colorScheme.primary),
-                SizedBox(width: isReply ? 8 : 10),
-                const Text('编辑'),
-              ],
-            ),
-            // 编辑项是否可用 (如果正在删除中，则不可编辑)
-            enabled:
-                !isLocallyDeleting && !(isReply ? false : widget.isDeleting),
-          ),
-        if (canEdit && canDelete) const StylishMenuDividerData(),
-        if (canDelete)
-          StylishMenuItemData(
-            value: 'delete',
-            // 根据 *本地* isLocallyDeleting 状态显示菊花或文字
-            child: isLocallyDeleting
-                ? Row(children: [
-                    SizedBox(
-                        width: isReply ? 16 : 18,
-                        height: isReply ? 16 : 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: theme.disabledColor)),
-                    SizedBox(width: isReply ? 8 : 10),
-                    Text('删除中...',
-                        style: TextStyle(color: theme.disabledColor)),
-                  ])
-                : Row(children: [
-                    Icon(Icons.delete_outline,
+    return StreamBuilder<User?>(
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final currentUser = authSnapshot.data;
+        if (currentUser == null) return const SizedBox.shrink();
+        final isAdmin = currentUser.isAdmin;
+        final isAuthor = currentUser.id == item.userId;
+        final bool canDelete = isAdmin ? true : isAuthor;
+        if (!canDelete) return const SizedBox.shrink();
+        return StylishPopupMenuButton<String>(
+          icon: Icons.more_vert,
+          iconSize: isReply ? 18 : 20,
+          iconColor: Colors.grey[600],
+          triggerPadding: const EdgeInsets.all(0),
+          tooltip: isReply ? '回复选项' : '评论选项',
+          menuColor: theme.canvasColor,
+          elevation: 2.0,
+          itemHeight: 40,
+          // 按钮整体是否可用
+          isEnabled: !isDisabled,
+          // 如果正在进行任何相关操作，则禁用
+          items: [
+            if (isAuthor)
+              StylishMenuItemData(
+                value: 'edit',
+                // 编辑按钮本身不显示 loading，依赖 isEnabled
+                child: Row(
+                  children: [
+                    Icon(Icons.edit_outlined,
                         size: isReply ? 16 : 18,
-                        color: theme.colorScheme.error),
+                        color: theme.colorScheme.primary),
                     SizedBox(width: isReply ? 8 : 10),
-                    Text('删除',
-                        style: TextStyle(color: theme.colorScheme.error)),
-                  ]),
-            // 删除项是否可用 (如果正在删除中，则不可用)
-            enabled:
-                !isLocallyDeleting && !(isReply ? false : widget.isDeleting),
-          ),
-      ],
-      onSelected: (value) {
-        // 防止在 loading 状态下触发
-        if (isDisabled) return;
+                    const Text('编辑'),
+                  ],
+                ),
+                // 编辑项是否可用 (如果正在删除中，则不可编辑)
+                enabled: !isLocallyDeleting &&
+                    !(isReply ? false : widget.isDeleting),
+              ),
+            if (canDelete)
+              StylishMenuItemData(
+                value: 'delete',
+                child: isLocallyDeleting
+                    ? Row(children: [
+                        SizedBox(
+                            width: isReply ? 16 : 18,
+                            height: isReply ? 16 : 18,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: theme.disabledColor)),
+                        SizedBox(width: isReply ? 8 : 10),
+                        Text('删除中...',
+                            style: TextStyle(color: theme.disabledColor)),
+                      ])
+                    : Row(children: [
+                        Icon(Icons.delete_outline,
+                            size: isReply ? 16 : 18,
+                            color: theme.colorScheme.error),
+                        SizedBox(width: isReply ? 8 : 10),
+                        Text('删除',
+                            style: TextStyle(color: theme.colorScheme.error)),
+                      ]),
+                // 删除项是否可用 (如果正在删除中，则不可用)
+                enabled: !isLocallyDeleting &&
+                    !(isReply ? false : widget.isDeleting),
+              ),
+          ],
+          onSelected: (value) {
+            // 防止在 loading 状态下触发
+            if (isDisabled) return;
 
-        switch (value) {
-          case 'edit':
-            // 再次检查是否可编辑（虽然按钮已禁用，双重保险）
-            if (!isLocallyDeleting && !(isReply ? false : widget.isDeleting)) {
-              _showEditDialog(context, item);
+            switch (value) {
+              case 'edit':
+                // 再次检查是否可编辑（虽然按钮已禁用，双重保险）
+                if (!isLocallyDeleting &&
+                    !(isReply ? false : widget.isDeleting)) {
+                  _showEditDialog(context, item);
+                }
+                break;
+              case 'delete':
+                // 再次检查是否可删除
+                if (!isLocallyDeleting &&
+                    !(isReply ? false : widget.isDeleting)) {
+                  _showDeleteDialog(context, item);
+                }
+                break;
             }
-            break;
-          case 'delete':
-            // 再次检查是否可删除
-            if (!isLocallyDeleting && !(isReply ? false : widget.isDeleting)) {
-              _showDeleteDialog(context, item);
-            }
-            break;
-        }
+          },
+        );
       },
     );
   }
@@ -179,6 +202,7 @@ class _GameCommentItemState extends State<GameCommentItem>
   // --- 通用的 Dialog 方法 ---
   void _showEditDialog(BuildContext context, Comment item) {
     EditDialog.show(
+      inputStateService: widget.inputStateService,
       context: context,
       title: item.parentId == null ? '编辑评论' : '编辑回复',
       initialText: item.content,
@@ -324,7 +348,8 @@ class _GameCommentItemState extends State<GameCommentItem>
             children: [
               Expanded(
                 child: UserInfoBadge(
-                  userDataStatus: widget.userDataStatus,
+                  infoProvider: widget.infoProvider,
+                  followService: widget.followService,
                   targetUserId: reply.userId,
                   currentUser: widget.currentUser,
                   showFollowButton: false,
@@ -373,7 +398,8 @@ class _GameCommentItemState extends State<GameCommentItem>
               children: [
                 Expanded(
                   child: UserInfoBadge(
-                    userDataStatus: widget.userDataStatus,
+                    infoProvider: widget.infoProvider,
+                    followService: widget.followService,
                     currentUser: widget.currentUser,
                     targetUserId: widget.comment.userId,
                     showFollowButton: false,
@@ -473,6 +499,8 @@ class _GameCommentItemState extends State<GameCommentItem>
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
                     child: GameReplyInput(
+                      inputStateService: widget.inputStateService,
+                      currentUser: widget.currentUser,
                       // Key 确保输入框状态在显示/隐藏时保持（如果需要的话）
                       key: ValueKey('reply_input_${widget.comment.id}'),
                       onSubmitReply: _submitReply,

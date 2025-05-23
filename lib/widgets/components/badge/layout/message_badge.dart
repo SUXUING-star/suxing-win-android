@@ -3,14 +3,17 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../services/main/message/message_service.dart';
+import 'package:suxingchahui/services/main/message/message_service.dart';
 
 class MessageBadge extends StatelessWidget {
-  const MessageBadge({super.key});
+  final MessageService messageService;
+  const MessageBadge({
+    super.key,
+    required this.messageService,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final messageService = context.read<MessageService>();
     return StreamBuilder<int>(
       stream: messageService.getUnreadCountStream(),
       builder: (context, snapshot) {

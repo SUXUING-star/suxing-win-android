@@ -1,11 +1,13 @@
 // lib/widgets/components/screen/game/comment/game_comments_section.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'dart:async';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/comment/comment.dart';
-
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/limiter/rate_limit_dialog.dart'; // 速率限制对话框
 import 'package:suxingchahui/widgets/components/screen/game/comment/comments/game_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/comments/game_comment_list.dart';
@@ -16,11 +18,23 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // SnackBar 提示
 
 class GameCommentsSection extends StatefulWidget {
+  final GameService gameService;
   final String gameId;
+  final User? currentUser;
+  final AuthProvider authProvider;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
 
   const GameCommentsSection({
     super.key,
+    required this.gameService,
+    required this.authProvider,
+    required this.currentUser,
     required this.gameId,
+    required this.followService,
+    required this.infoProvider,
+    required this.inputStateService,
   });
   @override
   State<GameCommentsSection> createState() => _GameCommentsSectionState();
@@ -33,27 +47,24 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   bool _isAddingComment = false; // 正在提交顶级评论
   final Set<String> _deletingCommentIds = {}; // 正在删除的评论 ID 集合
   final Set<String> _updatingCommentIds = {}; // 正在更新的评论 ID 集合
-  // FutureBuilder 会处理主要的加载状态，不再需要 _isFetchingLatest
 
   bool _hasInitializedDependencies = false;
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
+  User? _currentUser;
 
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _commentsFuture = _gameService.fetchGameComments(widget.gameId);
+      _commentsFuture = widget.gameService.fetchGameComments(widget.gameId);
     }
   }
 
@@ -64,7 +75,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
 
   // 加载/重新加载评论数据的方法
   void _loadComments() {
-    _commentsFuture = _gameService.fetchGameComments(widget.gameId);
+    _commentsFuture = widget.gameService.fetchGameComments(widget.gameId);
   }
 
   // --- 刷新回调函数 ---
@@ -90,24 +101,30 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
         _loadComments(); // 重新加载新 gameId 的评论
       });
     }
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   bool _checkCanUpdateOrDeleteComment(Comment comment) {
-    return _authProvider.isAdmin
+    return _currentUser?.isAdmin ?? false
         ? true
-        : _authProvider.currentUserId == comment.userId;
+        : _currentUser?.id == comment.userId;
   }
 
   /// 处理添加顶级评论
   Future<void> _handleAddComment(String content) async {
     if (content.isEmpty || !mounted) return;
     setState(() => _isAddingComment = true); // 开始 loading
-    if (!_authProvider.isLoggedIn) {
+    if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     try {
-      await _gameService.addComment(widget.gameId, content);
+      await widget.gameService.addComment(widget.gameId, content);
       if (mounted) AppSnackBar.showSuccess(context, '成功发表评论'); // 成功提示
       _refreshComments();
     } catch (e) {
@@ -121,14 +138,15 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   /// 处理添加回复
   Future<void> _handleAddReply(String content, String parentId) async {
     if (content.isEmpty || !mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     try {
-      await _gameService.addComment(widget.gameId, content, parentId: parentId);
+      await widget.gameService
+          .addComment(widget.gameId, content, parentId: parentId);
       if (mounted) AppSnackBar.showSuccess(context, '回复已提交');
-      _refreshComments(); // <<<--- 成功后刷新列表
+      _refreshComments();
     } catch (e) {
       _handleError(e, '回复评论失败');
     }
@@ -138,7 +156,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   /// 处理更新评论
   Future<void> _handleUpdateComment(Comment comment, String newContent) async {
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -150,9 +168,10 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     setState(() => _updatingCommentIds.add(commentId)); // 添加到更新中的 ID 集合
 
     try {
-      await _gameService.updateComment(widget.gameId, comment, newContent);
+      await widget.gameService
+          .updateComment(widget.gameId, comment, newContent);
       if (mounted) AppSnackBar.showSuccess(context, '评论已更新');
-      _refreshComments(); // <<<--- 成功后刷新列表
+      _refreshComments();
     } catch (e) {
       _handleError(e, '更新评论失败');
     } finally {
@@ -164,7 +183,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   /// 处理删除评论
   Future<void> _handleDeleteComment(Comment comment) async {
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -176,9 +195,9 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     setState(() => _deletingCommentIds.add(commentId)); // 添加到删除中的 ID 集合
 
     try {
-      await _gameService.deleteComment(widget.gameId, comment);
+      await widget.gameService.deleteComment(widget.gameId, comment);
       if (mounted) AppSnackBar.showSuccess(context, '评论已删除');
-      _refreshComments(); // <<<--- 成功后刷新列表
+      _refreshComments();
     } catch (e) {
       _handleError(e, '删除评论失败');
     } finally {
@@ -290,16 +309,18 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
             SizedBox(height: 16),
 
             // --- 根据登录状态显示输入框或登录提示 ---
-            _authProvider.currentUser != null
+            _currentUser != null
                 ? Column(
                     // 已登录：显示输入框和评论列表
                     children: [
                       GameCommentInput(
+                        currentUser: widget.currentUser,
                         gameId: widget.gameId,
                         key: ValueKey(
                             'comment_input_${widget.gameId}'), // 使用 ValueKey 保证状态保留
                         onCommentAdded: _handleAddComment, // 传递添加评论的处理函数
                         isSubmitting: _isAddingComment, // 传递顶级评论提交状态
+                        inputStateService: widget.inputStateService,
                       ),
                       SizedBox(height: 16),
                       // --- 评论列表构建区域 ---
@@ -360,7 +381,11 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
         // 将 Action Handlers 和 Loading 状态传递给 CommentList
         return GameCommentList(
           key: ValueKey('comment_list_${widget.gameId}'), // 保证列表状态
-          currentUser: _authProvider.currentUser,
+          currentUser: _currentUser,
+          authProvider: widget.authProvider,
+          inputStateService: widget.inputStateService,
+          infoProvider: widget.infoProvider,
+          followService: widget.followService,
           comments: commentsToDisplay,
           onUpdateComment: _handleUpdateComment, // 传递更新处理
           onDeleteComment: _handleDeleteComment, // 传递删除处理
@@ -370,5 +395,5 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
         );
       },
     );
-  } // End of _buildCommentListSection
-} // End of _CommentsSectionState
+  }
+}

@@ -52,7 +52,7 @@ class HistoryGameGridCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: DeviceUtils.isDesktop ? 400 : 240,
                     onError: (url, error) {
-                      print('历史游戏封面加载失败: $url, 错误: $error');
+                      // print('历史游戏封面加载失败: $url, 错误: $error');
                     },
                   ),
 

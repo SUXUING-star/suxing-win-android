@@ -1,11 +1,11 @@
 import 'dart:async';
-
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/button/activity_action_buttons.dart';
@@ -18,6 +18,9 @@ import 'dart:math' as math;
 
 class ActivityCard extends StatefulWidget {
   final UserActivity activity;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
+  final InputStateService inputStateService;
   final User? currentUser;
   final bool isAlternate;
   final VoidCallback? onUpdated;
@@ -41,7 +44,10 @@ class ActivityCard extends StatefulWidget {
   const ActivityCard({
     super.key,
     required this.activity,
+    required this.inputStateService,
     required this.currentUser,
+    required this.followService,
+    required this.infoProvider,
     this.isAlternate = false,
     this.onUpdated,
     this.isInDetailView = false,
@@ -205,10 +211,6 @@ class _ActivityCardState extends State<ActivityCard> {
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
     final calculatedWidth = screenWidth * _cardWidth;
-    final UserInfoProvider userInfoProvider = context.watch<UserInfoProvider>();
-    userInfoProvider.ensureUserInfoLoaded(_activity.userId);
-    final UserDataStatus userDataStatus =
-        userInfoProvider.getUserStatus(_activity.userId);
 
     // --- 内容 Widget (传递 edit/delete 给 Header) ---
     Widget contentWidget = Column(
@@ -217,8 +219,9 @@ class _ActivityCardState extends State<ActivityCard> {
       children: [
         ActivityHeader(
           userId: _activity.userId,
+          infoProvider: widget.infoProvider,
+          followService: widget.followService,
           currentUser: widget.currentUser,
-          userDataStatus: userDataStatus,
           createTime: _activity.createTime,
           updateTime: _activity.updateTime,
           isEdited: _activity.isEdited,
@@ -242,8 +245,9 @@ class _ActivityCardState extends State<ActivityCard> {
           SizedBox(height: 12 * _cardHeight),
           ActivityTarget(
               currentUser: widget.currentUser,
+              infoProvider: widget.infoProvider,
+              followService: widget.followService,
               activity: _activity,
-              userDataStatus: userDataStatus,
               isAlternate: _isAlternate,
               cardHeight: _cardHeight),
         ],
@@ -261,7 +265,7 @@ class _ActivityCardState extends State<ActivityCard> {
         ),
         if (_showComments || _activity.comments.isNotEmpty) ...[
           const Divider(height: 24, indent: 16, endIndent: 16, thickness: 0.5),
-          _buildComments(userInfoProvider),
+          _buildComments(),
         ]
       ],
     );
@@ -316,7 +320,7 @@ class _ActivityCardState extends State<ActivityCard> {
   }
 
   // --- 构建评论区 (完整实现) ---
-  Widget _buildComments(UserInfoProvider userInfoProvider) {
+  Widget _buildComments() {
     return Padding(
       padding: const EdgeInsets.only(top: 8.0),
       child: Column(
@@ -333,16 +337,12 @@ class _ActivityCardState extends State<ActivityCard> {
                   : _activity.comments.length,
               itemBuilder: (context, index) {
                 final comment = _activity.comments[index];
-                final userId = comment.userId;
-                userInfoProvider.ensureUserInfoLoaded(userId);
-                final UserDataStatus userDataStatus =
-                    userInfoProvider.getUserStatus(userId);
-
                 return ActivityCommentItem(
                   key: ValueKey(comment.id),
                   comment: comment,
+                  userFollowService: widget.followService,
+                  userInfoProvider: widget.infoProvider,
                   currentUser: widget.currentUser,
-                  userDataStatus: userDataStatus,
                   activityId: _activity.id,
                   isAlternate: _isAlternate,
                   // --- 传递评论的操作回调 ---
@@ -380,6 +380,8 @@ class _ActivityCardState extends State<ActivityCard> {
             Padding(
               padding: const EdgeInsets.only(top: 12.0),
               child: ActivityCommentInput(
+                inputStateService: widget.inputStateService,
+                currentUser: widget.currentUser,
                 onSubmit: _addComment, // 调用 _addComment 方法
                 isSubmitting: _isSubmittingComment,
                 isAlternate: _isAlternate,

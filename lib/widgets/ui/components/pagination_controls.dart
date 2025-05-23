@@ -3,8 +3,6 @@ import 'package:suxingchahui/widgets/ui/buttons/popup/custom_page_popup_item.dar
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-// --- 完整修改后的 PaginationControls 组件 (方案三：使用 PopupMenuButton) ---
-
 class PaginationControls extends StatelessWidget {
   final int currentPage;
   final int totalPages;

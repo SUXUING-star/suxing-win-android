@@ -1,11 +1,10 @@
 // lib/widgets/components/screen/home/section/home_hot_posts.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -17,6 +16,8 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 class HomeHotPosts extends StatelessWidget {
   final List<Post>? posts;
   final User? currentUser;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback? onRetry;
@@ -25,6 +26,8 @@ class HomeHotPosts extends StatelessWidget {
     super.key,
     required this.posts,
     required this.currentUser,
+    required this.infoProvider,
+    required this.followService,
     required this.isLoading,
     this.errorMessage,
     this.onRetry,
@@ -32,12 +35,6 @@ class HomeHotPosts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // AuthProvider 仍然可以通过 Provider.of 获取，因为它可能用于UI展示（比如当前用户）
-    // UserInfoProvider 也是如此
-
-    final userInfoProvider =
-        context.watch<UserInfoProvider>(); // watch 因为 UserInfoBadge 可能依赖它的变化
-
     return Opacity(
       opacity: 0.9,
       child: Container(
@@ -83,7 +80,7 @@ class HomeHotPosts extends StatelessWidget {
             ),
             SizedBox(height: 16),
             _buildPostListArea(
-                context, userInfoProvider), // 传递 context 和 providers
+                context), // 传递 context 和 providers
           ],
         ),
       ),
@@ -91,8 +88,7 @@ class HomeHotPosts extends StatelessWidget {
   }
 
   Widget _buildPostListArea(
-    BuildContext context, // 传入 context
-    UserInfoProvider userInfoProvider,
+    BuildContext context,
   ) {
     if (isLoading && posts == null) {
       return Padding(
@@ -141,16 +137,8 @@ class HomeHotPosts extends StatelessWidget {
           itemBuilder: (ctx, index) {
             // 使用 ctx
             final post = itemsToShow[index];
-            final userId = post.authorId;
-            // UserInfoProvider 的 ensureUserInfoLoaded 仍然可以在这里调用，
-            // 因为它是惰性加载，如果 HomeScreen 还没来得及加载，这里可以触发。
-            // 或者，你也可以把这个逻辑上移到 HomeScreen，在获取到帖子列表后统一 ensure。
-            // 为简单起见，暂时保留在这里。
-            userInfoProvider.ensureUserInfoLoaded(userId);
-            final UserDataStatus userDataStatus =
-                userInfoProvider.getUserStatus(userId);
             return _buildPostListItem(
-                ctx, post, userDataStatus); // 传递 ctx 和 authProvider
+                ctx, post); // 传递 ctx 和 authProvider
           },
         ),
         if (isLoading && displayPosts.isNotEmpty)
@@ -166,7 +154,6 @@ class HomeHotPosts extends StatelessWidget {
   Widget _buildPostListItem(
     BuildContext context, // 传入 context
     Post post,
-    UserDataStatus userDataStatus,
   ) {
     return InkWell(
       borderRadius: BorderRadius.circular(8),
@@ -201,7 +188,8 @@ class HomeHotPosts extends StatelessWidget {
                   Row(
                     children: [
                       UserInfoBadge(
-                          userDataStatus: userDataStatus,
+                          followService: followService,
+                          infoProvider: infoProvider,
                           currentUser: currentUser,
                           targetUserId: post.authorId,
                           mini: true,

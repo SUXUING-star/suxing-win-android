@@ -1,21 +1,21 @@
 // lib/widgets/screens/auth/account_bubble_menu.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/services/main/user/cache/account_cache_service.dart';
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 
 class AccountBubbleMenu extends StatelessWidget {
   final Function(SavedAccount) onAccountSelected;
+  final List<SavedAccount> accounts;
   final BuildContext anchorContext;
   final Offset? anchorOffset;
   final Color? backgroundColor;
 
   const AccountBubbleMenu({
     super.key,
+    required this.accounts,
     required this.onAccountSelected,
     required this.anchorContext,
     this.anchorOffset,
@@ -24,9 +24,6 @@ class AccountBubbleMenu extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accountCache = Provider.of<AccountCacheService>(context);
-    final accounts = accountCache.getAllAccounts();
-
     // 获取屏幕宽度
     final screenWidth = MediaQuery.of(context).size.width;
 

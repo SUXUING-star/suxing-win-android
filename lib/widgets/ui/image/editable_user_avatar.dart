@@ -1,23 +1,22 @@
+// editable_user_avatar.dart
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:provider/provider.dart';
-import 'package:suxingchahui/models/user/user.dart'; // 引入 User 模型
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 引入上传服务
-import 'package:suxingchahui/services/main/user/user_service.dart'; // 引入用户服务
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 引入安全图片加载
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'custom_crop_dialog.dart';
 
 class EditableUserAvatar extends StatelessWidget {
   final User user;
-  final double radius; // 控制头像大小
-  final Function(bool isLoading) onUploadStateChanged; // 通知父组件上传状态
-  final Function() onUploadSuccess; // 通知父组件上传成功（用于刷新）
-  final double iconSizeRatio; // 编辑图标相对于半径的比例
+  final double radius;
+  final RateLimitedFileUpload fileUpload;
+  final Function(bool isLoading) onUploadStateChanged;
+  final Function(String?) onUploadSuccess; // 这个回调应该只关心最终的URL
+  final double iconSizeRatio;
   final Color iconColor;
   final Color iconBackgroundColor;
   final Color placeholderColor;
@@ -27,76 +26,78 @@ class EditableUserAvatar extends StatelessWidget {
     super.key,
     required this.user,
     required this.radius,
+    required this.fileUpload,
     required this.onUploadStateChanged,
     required this.onUploadSuccess,
-    this.iconSizeRatio = 0.3, // 图标默认占半径的 30%
+    this.iconSizeRatio = 0.3,
     this.iconColor = Colors.white,
-    this.iconBackgroundColor = Colors.blue, // 默认用蓝色
+    this.iconBackgroundColor = Colors.blue,
     this.placeholderColor = Colors.grey,
     this.placeholderIcon = Icons.person_outline,
   });
 
-  // --- 核心逻辑：处理头像点击、裁剪和上传 ---
-  Future<void> _handleAvatarUpdate(
-      BuildContext context,
-      AuthProvider authProvider,
-      RateLimitedFileUpload fileUploadService) async {
-    // 1. 显示裁剪对话框
-    final Uint8List? croppedBytes = await CustomCropDialog.show(context);
+  Future<void> _handleAvatarUpdate(BuildContext context) async {
+    // 1. 显示裁剪对话框，现在返回 CropResult?
+    final CropResult? cropResult = await CustomCropDialog.show(context);
 
-    // 2. 处理裁剪结果
-    if (croppedBytes != null && context.mounted) {
-      // 检查 context 是否有效
-      onUploadStateChanged(true); // 通知开始上传
-      try {
-        // 保存到临时文件
-        final tempDir = await getTemporaryDirectory();
-        final tempFileName =
-            'cropped_avatar_${DateTime.now().millisecondsSinceEpoch}.png';
-        final tempFile = File('${tempDir.path}/$tempFileName');
-        await tempFile.writeAsBytes(croppedBytes);
+    // 用户取消或裁剪失败
+    if (cropResult == null || cropResult.bytes.isEmpty) {
+      // 不需要设置 onUploadStateChanged(true) 因为没有东西要上传
+      return;
+    }
 
-        // 调用上传服务
+    // 确保 context 仍然有效
+    if (!context.mounted) return;
 
-        final avatarUrl = await fileUploadService.uploadAvatar(
-          tempFile,
-          maxWidth: 200,
-          maxHeight: 200,
-          quality: 90,
-          oldAvatarUrl: user.avatar,
-        );
+    onUploadStateChanged(true); // 准备开始上传，设置加载状态
 
-        // 更新用户资料
+    File? tempFileToDelete; // 用于在 finally 中删除创建的临时文件
 
-        await authProvider.updateUserProfile(avatarUrl: avatarUrl);
+    try {
+      final Uint8List croppedBytes = cropResult.bytes;
+      final String outputExtension =
+          cropResult.outputExtension; // 例如 ".jpg" 或 ".png"
 
-        // 上传和更新成功
-        if (context.mounted) {
-          AppSnackBar.showSuccess(context, '头像更新成功');
-        }
-        onUploadSuccess(); // 通知父组件成功，父组件负责刷新
-      } catch (e) {
-        if (context.mounted) {
-          // 简化错误处理：显示通用消息或速率限制消息
-          final errorMsg = e.toString();
-          if (errorMsg.contains('头像上传速率超限')) {
-            AppSnackBar.showWarning(context, '头像上传过于频繁，请稍后再试。');
-            // 如果需要显示之前的 RateLimitDialog，需要确保能访问到它
-            // final remainingSeconds = parseRemainingSecondsFromError(errorMsg);
-            // showAvatarRateLimitDialog(context, remainingSeconds);
-          } else {
-            AppSnackBar.showError(context, '上传头像失败: ${e.toString()}');
-          }
-        }
-      } finally {
-        // 确保在任何情况下都通知加载结束
-        if (context.mounted) {
-          // 再次检查 context
-          onUploadStateChanged(false); // 通知结束上传
+      final tempDir = await getTemporaryDirectory();
+      // 根据 outputExtension 生成正确的文件名
+      final tempFileName =
+          'cropped_avatar_${DateTime.now().millisecondsSinceEpoch}$outputExtension';
+      final tempFile = File('${tempDir.path}/$tempFileName');
+      tempFileToDelete = tempFile; // 记录以便删除
+
+      await tempFile.writeAsBytes(croppedBytes);
+
+      // 调用上传服务
+      // RateLimitedFileUpload.uploadAvatar 现在接收 File 对象
+      final avatarUrl = await fileUpload.uploadAvatar(tempFile); // 传整个File对象
+
+      if (context.mounted) {
+        AppSnackBar.showSuccess(context, '头像更新成功');
+      }
+      onUploadSuccess(avatarUrl); // 通知父组件成功，父组件负责刷新
+    } catch (e) {
+      if (context.mounted) {
+        final errorMsg = e.toString();
+        if (errorMsg.contains('头像上传速率超限')) {
+          AppSnackBar.showWarning(context, '头像上传过于频繁，请稍后再试。');
+        } else {
+          AppSnackBar.showError(context, '上传头像失败: ${e.toString()}');
         }
       }
-    } else {
-      print("EditableUserAvatar: Cropping cancelled or failed.");
+    } finally {
+      if (context.mounted) {
+        onUploadStateChanged(false); // 结束上传，重置加载状态
+      }
+      // 清理临时文件
+      if (tempFileToDelete != null) {
+        try {
+          if (await tempFileToDelete.exists()) {
+            await tempFileToDelete.delete();
+          }
+        } catch (_) {
+          // Log deletion error if necessary
+        }
+      }
     }
   }
 
@@ -105,25 +106,19 @@ class EditableUserAvatar extends StatelessWidget {
     final iconSize = radius * iconSizeRatio;
     final bool hasValidAvatar =
         user.avatar != null && user.avatar!.trim().isNotEmpty;
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-
-    final fileUploadService = context.read<RateLimitedFileUpload>();
 
     return GestureDetector(
-      onTap: () =>
-          _handleAvatarUpdate(context, authProvider, fileUploadService),
+      onTap: () => _handleAvatarUpdate(context),
       child: Stack(
-        alignment: Alignment.center, // 确保内容居中
+        alignment: Alignment.center,
         children: [
-          // 头像主体 (圆形)
           Container(
             width: radius * 2,
             height: radius * 2,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: placeholderColor.withSafeOpacity(0.2), // 占位背景色
+              color: placeholderColor.withSafeOpacity(0.2),
               boxShadow: [
-                // 可选：加点阴影提升质感
                 BoxShadow(
                   color: Colors.black.withSafeOpacity(0.1),
                   blurRadius: 5,
@@ -134,37 +129,33 @@ class EditableUserAvatar extends StatelessWidget {
             child: ClipOval(
               child: hasValidAvatar
                   ? SafeCachedImage(
-                      key: ValueKey(user.avatar!), // URL 变化时强制刷新
+                      key: ValueKey(user.avatar!),
                       imageUrl: user.avatar!,
                       width: radius * 2,
                       height: radius * 2,
                       fit: BoxFit.cover,
-                      // SafeCachedImage 自带占位和错误处理
                     )
                   : Center(
-                      // 无有效头像时的占位图标
                       child: Icon(
                         placeholderIcon,
-                        size: radius, // 图标大小约为半径
+                        size: radius,
                         color: placeholderColor,
                       ),
                     ),
             ),
           ),
-
-          // 编辑图标覆盖层
           Positioned(
-            bottom: 0, // 调整位置，使其稍微偏右下
+            bottom: 0,
             right: 0,
             child: Container(
-              padding: EdgeInsets.all(radius * 0.1), // 内边距也相对化
+              padding: EdgeInsets.all(radius * 0.1),
               decoration: BoxDecoration(
                 color: iconBackgroundColor,
                 shape: BoxShape.circle,
-                border: Border.all(color: Colors.white, width: 1.5), // 白色描边
+                border: Border.all(color: Colors.white, width: 1.5),
               ),
               child: Icon(
-                Icons.camera_alt, // 或者 Icons.edit
+                Icons.camera_alt,
                 color: iconColor,
                 size: iconSize,
               ),

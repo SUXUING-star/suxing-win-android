@@ -2,9 +2,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/maintenance/maintenance_info.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../../services/main/maintenance/maintenance_service.dart';
+import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
@@ -15,10 +16,9 @@ class MaintenanceDialog {
 
   // 静态方法，用于显示维护弹窗
   // 返回 Future<void>，因为 BaseInputDialog.show 返回 Future
-  static Future<void> showMaintenanceDialog(BuildContext context,
+  static Future<void> showMaintenanceDialog(
+      BuildContext context, MaintenanceService maintenanceService,
       {bool canDismiss = false}) {
-    final maintenanceService =
-        Provider.of<MaintenanceService>(context, listen: false);
     final info = maintenanceService.maintenanceInfo;
 
     // --- 1. 处理 info 为 null 的情况 ---
@@ -62,12 +62,12 @@ class MaintenanceDialog {
 
       // --- 4. 构建对话框内容 ---
       contentBuilder: (dialogContext) {
-        // 使用 Consumer 监听 MaintenanceService 的变化
-        return Consumer<MaintenanceService>(
-          builder: (context, service, _) {
-            // 重新获取最新的 info 和 remainingMinutes
-            final currentInfo = service.maintenanceInfo;
-            final remainingMinutes = service.remainingMinutes;
+        return StreamBuilder<MaintenanceInfo?>(
+          stream: maintenanceService.maintenanceInfoStream,
+          initialData: maintenanceService.maintenanceInfo,
+          builder: (context, maintenanceSnapshot) {
+            final currentInfo = maintenanceService.maintenanceInfo;
+            final remainingMinutes = maintenanceService.remainingMinutes;
 
             // 如果在对话框显示期间 info 变为 null (例如刷新失败?)
             if (currentInfo == null) {
@@ -118,7 +118,6 @@ class MaintenanceDialog {
           rethrow;
         }
         // 注意：BaseInputDialog 的 finally 块会执行 Navigator.pop
-
       },
 
       // --- 6. 定义取消操作 ---

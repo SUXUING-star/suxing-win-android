@@ -39,7 +39,7 @@ class GameReview {
       try {
         parsedCreateTime = DateTime.parse(json['createTime']).toLocal();
       } catch (e) {
-        print("Warning: Failed to parse createTime ('${json['createTime']}'), using default. Error: $e");
+        // print("Warning: Failed to parse createTime ('${json['createTime']}'), using default. Error: $e");
       }
     }
 
@@ -48,7 +48,7 @@ class GameReview {
       try {
         parsedUpdateTime = DateTime.parse(json['updateTime']).toLocal();
       } catch (e) {
-        print("Warning: Failed to parse updateTime ('${json['updateTime']}'), using default. Error: $e");
+        // print("Warning: Failed to parse updateTime ('${json['updateTime']}'), using default. Error: $e");
       }
     }
 

@@ -1,7 +1,17 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/app.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
+import 'package:suxingchahui/services/main/message/message_service.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/screens/home/home_screen.dart';
 import 'package:suxingchahui/screens/game/list/games_list_screen.dart';
@@ -16,7 +26,35 @@ import 'package:suxingchahui/layouts/mobile/top_navigation_bar.dart';
 import 'package:suxingchahui/layouts/mobile/bottom_navigation_bar.dart';
 
 class MainLayout extends StatefulWidget {
-  const MainLayout({super.key});
+  final SidebarProvider sidebarProvider;
+  final MessageService messageService;
+  final AuthProvider authProvider;
+  final UserService userService;
+  final GameService gameService;
+  final ForumService forumService;
+  final UserActivityService activityService;
+  final LinkToolService linkToolService;
+  final UserFollowService followService;
+  final AnnouncementService announcementService;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
+  final UserCheckInService checkInService;
+  const MainLayout({
+    super.key,
+    required this.sidebarProvider,
+    required this.messageService,
+    required this.authProvider,
+    required this.activityService,
+    required this.linkToolService,
+    required this.forumService,
+    required this.gameService,
+    required this.userService,
+    required this.followService,
+    required this.infoProvider,
+    required this.announcementService,
+    required this.inputStateService,
+    required this.checkInService,
+  });
 
   @override
   _MainLayoutState createState() => _MainLayoutState();
@@ -24,30 +62,8 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> with RouteAware {
   bool _hasInitializedProviders = false;
-  late final SidebarProvider _sidebarProvider;
-
-  List<Widget> _buildScreens(AuthProvider authProvider) {
-    return [
-      HomeScreen(
-        authProvider: authProvider,
-      ),
-      GamesListScreen(
-        authProvider: authProvider,
-      ),
-      ForumScreen(
-        authProvider: authProvider,
-      ),
-      ActivityFeedScreen(
-        authProvider: authProvider,
-      ),
-      LinksToolsScreen(
-        authProvider: authProvider,
-      ),
-      ProfileScreen(
-        authProvider: authProvider,
-      ),
-    ];
-  }
+  bool _hasInitializedScreens = false;
+  late List<Widget> _screens;
 
   @override
   void initState() {
@@ -59,9 +75,11 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)!);
     if (!_hasInitializedProviders) {
-      _sidebarProvider = Provider.of<SidebarProvider>(context, listen: false);
-      // AuthProvider 不再在这里获取，会在 build 方法中 watch
       _hasInitializedProviders = true;
+    }
+    if (_hasInitializedProviders && !_hasInitializedScreens) {
+      _screens = _buildScreens();
+      _hasInitializedScreens = true;
     }
   }
 
@@ -92,7 +110,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   void _updateSubRouteStatus(bool isActive) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _sidebarProvider.setSubRouteActive(isActive);
+        widget.sidebarProvider.setSubRouteActive(isActive);
       }
     });
   }
@@ -100,48 +118,101 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   // _handleProfileTap 现在需要 isLoggedIn 参数
   void _handleProfileTap(bool isLoggedIn) {
     if (isLoggedIn) {
-      _sidebarProvider.setCurrentIndex(5); // 假设 5 是 ProfileScreen 的索引
+      widget.sidebarProvider.setCurrentIndex(5); // 假设 5 是 ProfileScreen 的索引
     } else {
       NavigationUtils.navigateToLogin(context);
     }
+  }
+
+  List<Widget> _buildScreens() {
+    return [
+      HomeScreen(
+        authProvider: widget.authProvider,
+        gameService: widget.gameService,
+        forumService: widget.forumService,
+        followService: widget.followService,
+        infoProvider: widget.infoProvider,
+      ),
+      GamesListScreen(
+        authProvider: widget.authProvider,
+        gameService: widget.gameService,
+      ),
+      ForumScreen(
+        authProvider: widget.authProvider,
+        forumService: widget.forumService,
+        followService: widget.followService,
+        infoProvider: widget.infoProvider,
+      ),
+      ActivityFeedScreen(
+        authProvider: widget.authProvider,
+        activityService: widget.activityService,
+        followService: widget.followService,
+        infoProvider: widget.infoProvider,
+        inputStateService: widget.inputStateService,
+      ),
+      LinksToolsScreen(
+        authProvider: widget.authProvider,
+        linkToolService: widget.linkToolService,
+      ),
+      ProfileScreen(
+        authProvider: widget.authProvider,
+        userService: widget.userService,
+        inputStateService: widget.inputStateService,
+      ),
+    ];
   }
 
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop;
 
-    final authProvider = context.watch<AuthProvider>();
-    final bool isLoggedIn = authProvider.isLoggedIn;
+    return StreamBuilder<int>(
+      // 最外层的 StreamBuilder 不变
+      stream: widget.sidebarProvider.indexStream,
+      initialData: widget.sidebarProvider.currentIndex,
+      builder: (context, sidebarSnapshot) {
+        final selectedIndex =
+            sidebarSnapshot.data ?? widget.sidebarProvider.currentIndex;
+        final validIndex = selectedIndex >= 0 && selectedIndex < _screens.length
+            ? selectedIndex
+            : 0;
 
-    final selectedIndex = context.watch<SidebarProvider>().currentIndex;
-
-    final screens = _buildScreens(authProvider);
-
-    final validIndex = selectedIndex >= 0 && selectedIndex < screens.length
-        ? selectedIndex
-        : 0;
-
-    return Scaffold(
-      appBar: !isDesktop
-          ? TopNavigationBar(
-              authProvider: authProvider,
-              onLogoTap: () {
-                _sidebarProvider.setCurrentIndex(0);
-              },
-              onProfileTap: () =>
-                  _handleProfileTap(isLoggedIn), // 把 isLoggedIn 传给处理函数
-            )
-          : null,
-      body: IndexedStack(
-        index: validIndex,
-        children: screens,
-      ),
-      bottomNavigationBar: !isDesktop
-          ? CustomBottomNavigationBar(
-              currentIndex: validIndex,
-              onTap: (index) => _sidebarProvider.setCurrentIndex(index),
-            )
-          : null,
+        return StreamBuilder<bool>(
+          stream: widget.authProvider.isLoggedInStream,
+          initialData: widget.authProvider.isLoggedIn,
+          builder: (context, isLoggedInSnapshot) {
+            final bool isLoggedIn =
+                isLoggedInSnapshot.data ?? widget.authProvider.isLoggedIn;
+            // 主体 Scaffold 结构
+            Widget mainContent = Scaffold(
+              appBar: !isDesktop
+                  ? TopNavigationBar(
+                      announcementService: widget.announcementService,
+                      messageService: widget.messageService,
+                      checkInService: widget.checkInService,
+                      authProvider: widget.authProvider, // TopNav 内部处理认证状态显示
+                      onLogoTap: () {
+                        widget.sidebarProvider.setCurrentIndex(0);
+                      },
+                      onProfileTap: () => _handleProfileTap(isLoggedIn),
+                    )
+                  : null,
+              body: IndexedStack(
+                index: validIndex,
+                children: _screens,
+              ),
+              bottomNavigationBar: !isDesktop
+                  ? CustomBottomNavigationBar(
+                      currentIndex: validIndex,
+                      onTap: (index) =>
+                          widget.sidebarProvider.setCurrentIndex(index),
+                    )
+                  : null,
+            );
+            return mainContent; // AuthProvider 不在加载状态，直接返回主内容
+          },
+        );
+      },
     );
   }
 }

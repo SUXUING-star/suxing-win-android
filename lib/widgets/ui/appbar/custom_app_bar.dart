@@ -129,7 +129,7 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     // 在桌面端不显示否则就是摆设
     final needShowTile = !(showTitleInDesktop == false && isDesktop);
 
-    if (leading == null && isDesktop && hasNoActions) return SizedBox.shrink();
+    if (leading == null && isDesktop && hasNoActions) return const SizedBox.shrink();
 
     return AppBar(
       title: AppText(

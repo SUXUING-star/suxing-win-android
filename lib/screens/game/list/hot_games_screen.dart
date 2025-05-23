@@ -1,23 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import '../../../models/game/game.dart';
-import '../../../services/main/game/game_service.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'common_game_list_screen.dart'; // 引入纯净版
 
 class HotGamesScreen extends StatefulWidget {
-  const HotGamesScreen({super.key});
+  final GameService gameService;
+  final AuthProvider authProvider;
+  const HotGamesScreen({
+    super.key,
+    required this.authProvider,
+    required this.gameService,
+  });
 
   @override
   _HotGamesScreenState createState() => _HotGamesScreenState();
 }
 
 class _HotGamesScreenState extends State<HotGamesScreen> {
-  // *** 修改: 管理实际数据和状态 ***
   List<Game> _hotGames = [];
   bool _isLoading = true; // 初始为 true
   String? _error;
-  late final GameService _gameService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -29,7 +33,6 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -54,7 +57,7 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
     });
 
     try {
-      final games = await _gameService.getHotGames(); // 直接 await 获取数据
+      final games = await widget.gameService.getHotGames(); // 直接 await 获取数据
       if (!mounted) return; // 异步操作后再次检查
       setState(() {
         _hotGames = games; // 更新数据
@@ -77,24 +80,28 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    return CommonGameListScreen(
-      key: ValueKey(
-          'hot_games_${_hotGames.length}_$_isLoading$_error'), // Key 可以更精细反映状态
-      title: '热门游戏',
-      currentUser: authProvider.currentUser,
-      games: _hotGames,
-      isLoading: _isLoading,
-      error: _error,
-      onRefreshTriggered: _handleRefresh, // 传递刷新回调
-      onDeleteGameAction: null, // 这些页面通常不需要删除操作
-      emptyStateMessage: '暂无热门游戏',
-      emptyStateIcon:
-          Icon(Icons.local_fire_department, size: 48, color: Colors.grey),
-      useScaffold: true,
-      showAddButton: false,
-      showSortOptions: false,
-      // 移除了 showTagSelection, showPanelToggles
-    );
+    return StreamBuilder<User?>(
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final User? currentUser = authSnapshot.data;
+          return CommonGameListScreen(
+            key: ValueKey('hot_games_${_hotGames.length}_$_isLoading$_error'),
+            title: '热门游戏',
+            currentUser: currentUser,
+            games: _hotGames,
+            isLoading: _isLoading,
+            error: _error,
+            onRefreshTriggered: _handleRefresh,
+            // 传递刷新回调
+            onDeleteGameAction: null,
+            emptyStateMessage: '暂无热门游戏',
+            emptyStateIcon:
+                Icon(Icons.local_fire_department, size: 48, color: Colors.grey),
+            useScaffold: true,
+            showAddButton: false,
+            showSortOptions: false,
+          );
+        });
   }
 }

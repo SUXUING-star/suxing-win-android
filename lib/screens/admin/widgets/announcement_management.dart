@@ -1,17 +1,21 @@
 // lib/screens/admin/widgets/announcement_management.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../models/announcement/announcement.dart';
-import '../../../services/main/announcement/announcement_service.dart';
-import '../../../widgets/components/dialogs/announcement/announcement_dialog.dart';
-import '../../../widgets/components/form/announcementform/announcement_form.dart';
+import 'package:suxingchahui/models/announcement/announcement.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
+import 'package:suxingchahui/widgets/components/form/announcementform/announcement_form.dart';
 
 class AnnouncementManagement extends StatefulWidget {
-  const AnnouncementManagement({super.key});
+  final AnnouncementService announcementService;
+
+  const AnnouncementManagement({
+    super.key,
+    required this.announcementService,
+  });
 
   @override
   State<AnnouncementManagement> createState() => _AnnouncementManagementState();
@@ -26,8 +30,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
   int _totalPages = 1;
   String _errorMessage = '';
 
-  late final AnnouncementService _announcementService;
-
   @override
   void initState() {
     super.initState();
@@ -37,7 +39,6 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _announcementService = context.read<AnnouncementService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -54,8 +55,8 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
 
     try {
       // 获取公告列表
-      final result =
-          await _announcementService.getAllAnnouncements(_currentPage, 10);
+      final result = await widget.announcementService
+          .getAllAnnouncements(_currentPage, 10);
 
       setState(() {
         if (result['announcements'] != null) {
@@ -109,13 +110,13 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
       try {
         if (existingAnnouncement == null) {
           // 创建新公告
-          await _announcementService.createAnnouncement(result);
+          await widget.announcementService.createAnnouncement(result);
 
           showSnackbar(message: '新公告已创建', type: SnackbarType.success);
         } else {
           // 更新现有公告
-          await _announcementService.updateAnnouncement(
-              existingAnnouncement.id, result);
+          await widget.announcementService
+              .updateAnnouncement(existingAnnouncement.id, result);
 
           showSnackbar(message: '公告已更新', type: SnackbarType.success);
         }
@@ -165,7 +166,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
     });
 
     try {
-      await _announcementService.deleteAnnouncement(id);
+      await widget.announcementService.deleteAnnouncement(id);
 
       showSnackbar(message: '公告已删除', type: SnackbarType.success);
 

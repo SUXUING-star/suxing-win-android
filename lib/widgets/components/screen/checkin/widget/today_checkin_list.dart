@@ -3,23 +3,29 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../models/user/user_checkin.dart';
-import '../../../../../services/main/user/user_checkin_service.dart';
-import '../../../../ui/badges/user_info_badge.dart'; // 导入 UserInfoBadge
+import 'package:suxingchahui/models/user/user_checkin.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class TodayCheckInList extends StatefulWidget {
   final User? currentUser;
-  final double maxHeight;
+  final UserFollowService followService;
+  final UserCheckInService checkInService;
+  final UserInfoProvider infoProvider;
+  final double? maxHeight; // 改为可空的 double，移除了默认值
   final bool showTitle;
 
   const TodayCheckInList({
     super.key,
     required this.currentUser,
-    this.maxHeight = 250, // 默认最大高度
+    required this.followService,
+    required this.checkInService,
+    required this.infoProvider,
+    this.maxHeight, // 默认值已移除, 现在可以为 null
     this.showTitle = true, // 默认显示标题
   });
 
@@ -30,13 +36,10 @@ class TodayCheckInList extends StatefulWidget {
 class _TodayCheckInListState extends State<TodayCheckInList> {
   bool _isLoading = true;
   CheckInUserList? _checkInList; // 类型是 CheckInUserList，内部 users 是 List<String>
-  late UserCheckInService _checkInService;
 
   @override
   void initState() {
     super.initState();
-    // 获取 Provider 服务，不监听变化，因为加载逻辑在本组件内处理
-    _checkInService = Provider.of<UserCheckInService>(context, listen: false);
     _loadData(); // 初始化时加载数据
   }
 
@@ -49,7 +52,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
 
     try {
       // 调用 service 获取数据，这里返回的是适配后的 CheckInUserList
-      final list = await _checkInService.getTodayCheckInList();
+      final list = await widget.checkInService.getTodayCheckInList();
       if (mounted) {
         setState(() {
           _checkInList = list;
@@ -132,18 +135,20 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
 
   // 构建列表内容或状态显示的 Widget
   Widget _buildContent() {
-    final userInfoProvider = context.watch<UserInfoProvider>();
     // --- 加载中状态 ---
     if (_isLoading) {
+      // 处理 maxHeight 为 null 的情况，给 LoadingWidget 一个合理的高度
+      double loadingDisplayHeight = 100.0; // 默认加载高度
+      if (widget.maxHeight != null && widget.maxHeight! < 100.0) {
+        loadingDisplayHeight = widget.maxHeight!;
+      }
       return SizedBox(
-        // 给 Loading 一个最小高度，避免界面跳动
-        height: widget.maxHeight < 100 ? widget.maxHeight : 100,
+        height: loadingDisplayHeight,
         child: LoadingWidget.inline(), // 使用内联 Loading
       );
     }
 
     // --- 空状态或错误状态 ---
-    // (_checkInList 为 null 也可能是加载失败，这里统一处理为空列表的情况)
     if (_checkInList == null || _checkInList!.users.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(
@@ -156,24 +161,31 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
     }
 
     // --- 列表内容 ---
+    ScrollPhysics physics;
+    if (widget.maxHeight != null) {
+      // 当提供了 maxHeight 时，根据内容是否超出 maxHeight 决定滚动行为
+      physics = _checkInList!.users.length > (widget.maxHeight! / 50.0).floor()
+          ? const AlwaysScrollableScrollPhysics()
+          : const NeverScrollableScrollPhysics();
+    } else {
+      // 当 maxHeight 为 null 时，ListView 因 shrinkWrap: true 会自适应内容高度，
+      // 内部不需要滚动。如果内容超出父容器，由父容器处理滚动。
+      physics = const NeverScrollableScrollPhysics();
+    }
+
     return Container(
-      // 限制列表的最大高度
-      constraints: BoxConstraints(maxHeight: widget.maxHeight),
+      // 根据 widget.maxHeight 设置约束，如果为 null 则不限制最大高度
+      constraints: widget.maxHeight != null
+          ? BoxConstraints(maxHeight: widget.maxHeight!)
+          : const BoxConstraints(), // maxHeight 为 null 时，使用默认约束 (maxHeight 为 infinity)
       child: ListView.builder(
         itemCount: _checkInList!.users.length, // 列表项数量
         padding:
             const EdgeInsets.symmetric(horizontal: 12, vertical: 8), // 列表内边距
-        shrinkWrap: true, // 让 ListView 高度包裹内容 (如果内容少于 maxHeight)
-        // 根据列表项数量和估算高度决定是否需要滚动
-        physics: _checkInList!.users.length >
-                (widget.maxHeight / 50).floor() // 假设每项高约50
-            ? const AlwaysScrollableScrollPhysics() // 内容多，允许滚动
-            : const NeverScrollableScrollPhysics(), // 内容少，禁用滚动
+        shrinkWrap: true, // 让 ListView 高度包裹内容
+        physics: physics, // 使用上面计算的滚动物理效果
         itemBuilder: (context, index) {
           final String userId = _checkInList!.users[index];
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          final UserDataStatus userDataStatus =
-              userInfoProvider.getUserStatus(userId);
 
           // 构建每一行列表项
           return Padding(
@@ -200,11 +212,11 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
                 const SizedBox(width: 8), // 排名和用户信息的间距
 
                 // --- 用户信息 Badge ---
-                // 使用 Expanded 填充剩余空间
                 Expanded(
                   child: UserInfoBadge(
                     currentUser: widget.currentUser,
-                    userDataStatus: userDataStatus,
+                    infoProvider: widget.infoProvider,
+                    followService: widget.followService,
                     targetUserId: userId, // **传递 userId 给 Badge**
                     showFollowButton: true, // 显示关注按钮 (如果需要)
                     mini: true, // 使用紧凑样式

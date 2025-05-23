@@ -1,14 +1,20 @@
 // lib/screens/admin/widgets/maintenance_management.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../services/main/maintenance/maintenance_service.dart';
+import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
 
 class MaintenanceManagement extends StatefulWidget {
-  const MaintenanceManagement({super.key});
+  final MaintenanceService maintenanceService;
+  final InputStateService inputStateService;
+  const MaintenanceManagement({
+    super.key,
+    required this.inputStateService,
+    required this.maintenanceService,
+  });
 
   @override
   State<MaintenanceManagement> createState() => _MaintenanceManagementState();
@@ -21,7 +27,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
   bool _allowLogin = false;
   bool _forceLogout = false;
   String _maintenanceType = 'scheduled';
-  late final MaintenanceService _maintenanceService;
+
   bool _hasInitializedDependencies = false;
   String _message = '系统正在维护中，请稍后再试。';
 
@@ -45,8 +51,6 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _maintenanceService =
-          Provider.of<MaintenanceService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -55,8 +59,8 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
         _loadCurrentMaintenanceStatus();
       });
     }
-
   }
+
   @override
   void dispose() {
     super.dispose();
@@ -65,13 +69,13 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
   Future<void> _loadCurrentMaintenanceStatus() async {
     try {
       // 强制刷新维护状态
-      await _maintenanceService.checkMaintenanceStatus();
+      await widget.maintenanceService.checkMaintenanceStatus();
 
       // 如果当前有维护状态，则加载到表单中
       if (mounted &&
-          _maintenanceService.isInMaintenance &&
-          _maintenanceService.maintenanceInfo != null) {
-        final info = _maintenanceService.maintenanceInfo!;
+          widget.maintenanceService.isInMaintenance &&
+          widget.maintenanceService.maintenanceInfo != null) {
+        final info = widget.maintenanceService.maintenanceInfo!;
         setState(() {
           _isActive = true;
           _message = info.message;
@@ -97,7 +101,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
     });
 
     try {
-      final success = await _maintenanceService.setMaintenanceMode(
+      final success = await widget.maintenanceService.setMaintenanceMode(
         isActive: _isActive,
         startTime: _startTime,
         endTime: _endTime,
@@ -359,6 +363,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
                       ),
                       const SizedBox(height: 8),
                       FormTextInputField(
+                        inputStateService: widget.inputStateService,
                         initialValue: _message,
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),

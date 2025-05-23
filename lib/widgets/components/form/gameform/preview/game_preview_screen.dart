@@ -1,6 +1,12 @@
 // lib/widgets/form/gameform/preview/game_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -8,13 +14,25 @@ import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.
 import 'package:suxingchahui/utils/font/font_config.dart';
 
 class GamePreviewScreen extends StatelessWidget {
+  final GameService gameService;
+  final GameCollectionService gameCollectionService;
+  final AuthProvider authProvider;
   final Game game;
   final User? currentUser;
+  final InputStateService inputStateService;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
 
   const GamePreviewScreen({
     super.key,
+    required this.gameCollectionService,
+    required this.gameService,
+    required this.authProvider,
     required this.currentUser,
     required this.game,
+    required this.inputStateService,
+    required this.infoProvider,
+    required this.followService,
   });
 
   @override
@@ -35,8 +53,14 @@ class GamePreviewScreen extends StatelessWidget {
 
   Widget _buildGameContent(BuildContext context, bool isDesktop) {
     return GameDetailContent(
+      gameCollectionService: gameCollectionService,
+      authProvider: authProvider,
+      inputStateService: inputStateService,
+      followService: followService,
+      infoProvider: infoProvider,
       isDesktop: isDesktop,
       currentUser: currentUser,
+      gameService: gameService,
       game: game,
       isPreviewMode: true,
     );

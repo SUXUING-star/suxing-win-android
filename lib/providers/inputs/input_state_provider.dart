@@ -28,14 +28,14 @@ class InputStateService with ChangeNotifier {
         // 清空 Controller 的文本
         try {
           controller.clear();
-        } catch (e, s) {
+        } catch (e) {
           // print("Error clearing controller in clearText for slot '$slotName': $e\n$s");
         }
         // 移除监听器
         if (listener != null) {
           try {
             controller.removeListener(listener);
-          } catch (e, s) {
+          } catch (e) {
             // print("Error removing listener in clearText for slot '$slotName': $e\n$s");
           }
         }
@@ -78,7 +78,7 @@ class InputStateService with ChangeNotifier {
       if (listener != null) {
         try {
           controller.removeListener(listener);
-        } catch (e, s) {
+        } catch (e) {
           // print(
           //     "Error removing listener during service dispose for slot '$slotName': $e\n$s");
         }
@@ -86,9 +86,9 @@ class InputStateService with ChangeNotifier {
       try {
         // 在 Service 销毁时 dispose Controller
         controller.dispose();
-      } catch (e, s) {
-        print(
-            "Error disposing controller during service dispose for slot '$slotName': $e\n$s");
+      } catch (e) {
+        // print(
+        //     "Error disposing controller during service dispose for slot '$slotName': $e\n$s");
       }
     });
     _controllers.clear();

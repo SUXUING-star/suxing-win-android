@@ -1,12 +1,14 @@
 // lib/widgets/ui/inputs/form_text_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'text_input_field.dart'; // 导入 TextInputField
 
 class FormTextInputField extends FormField<String> {
   // 接收 slotName
   final String? slotName;
   final TextEditingController? controller;
+  final InputStateService inputStateService;
   final FocusNode? focusNode;
   final String? hintText;
   final int? maxLines;
@@ -27,6 +29,7 @@ class FormTextInputField extends FormField<String> {
 
   FormTextInputField({
     super.key,
+    required this.inputStateService,
     required FormFieldValidator<String> validator,
     super.onSaved,
     super.initialValue, // 只有在没有 controller 和 slotName 时才可能用到
@@ -72,6 +75,7 @@ class FormTextInputField extends FormField<String> {
           final bool useSlotName = slotName != null && slotName.isNotEmpty;
 
           return TextInputField(
+            inputStateService: inputStateService,
             slotName: useSlotName ? slotName : null,
             controller: useSlotName ? null : state._effectiveController, // **关键**
             focusNode: focusNode,

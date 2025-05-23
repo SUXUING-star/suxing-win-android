@@ -1,6 +1,6 @@
 // lib/screens/profile/tab/post_history_tab.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -13,11 +13,15 @@ import './card/post_history_card.dart'; // Import the new widget
 class PostHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
+  final User? currentUser;
+  final ForumService forumService;
 
   const PostHistoryTab({
     super.key,
     required this.isLoaded,
     required this.onLoad,
+    required this.currentUser,
+    required this.forumService,
   });
 
   @override
@@ -33,7 +37,8 @@ class _PostHistoryTabState extends State<PostHistoryTab>
   bool _hasInitializedDependencies = false;
   late int _page;
   final int _pageSize = 10;
-  late final ForumService _forumService;
+
+  User? _currentUser;
 
   @override
   bool get wantKeepAlive => true; // 保持状态，避免切换标签页时重建
@@ -42,13 +47,13 @@ class _PostHistoryTabState extends State<PostHistoryTab>
   void initState() {
     super.initState();
     _page = 1;
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -67,10 +72,18 @@ class _PostHistoryTabState extends State<PostHistoryTab>
     super.didUpdateWidget(oldWidget);
     // 当 isLoaded 从 false 变为 true 时，触发加载
     if (widget.isLoaded && !oldWidget.isLoaded) {
-      _page = 1; // 重置页码
-      _postHistoryWithDetails = null; // 清空旧数据
-      _isInitialLoading = true; // 标记为首次加载（对于这个 Tab 来说）
+      setState(() {
+        _page = 1; // 重置页码
+        _postHistoryWithDetails = null; // 清空旧数据
+        _isInitialLoading = true; // 标记为首次加载（对于这个 Tab 来说）
+      });
       _loadHistory();
+    }
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
@@ -95,7 +108,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
 
     try {
       final results =
-          await _forumService.getPostHistoryWithDetails(_page, _pageSize);
+          await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
 
       if (!mounted) return; // 异步操作后再次检查
 
@@ -157,7 +170,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
 
     try {
       final results =
-          await _forumService.getPostHistoryWithDetails(_page, _pageSize);
+          await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
       List<Map<String, dynamic>> currentItems = _postHistoryWithDetails ?? [];

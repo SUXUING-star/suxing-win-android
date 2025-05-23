@@ -1,6 +1,10 @@
 // lib/screens/forum/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
@@ -27,8 +31,19 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 class PostDetailScreen extends StatefulWidget {
   final String postId;
   final bool needHistory;
-  const PostDetailScreen(
-      {super.key, required this.postId, this.needHistory = true});
+  final AuthProvider authProvider;
+  final ForumService forumService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  const PostDetailScreen({
+    super.key,
+    required this.postId,
+    required this.authProvider,
+    required this.forumService,
+    required this.followService,
+    required this.infoProvider,
+    this.needHistory = true,
+  });
   @override
   _PostDetailScreenState createState() => _PostDetailScreenState();
 }
@@ -44,6 +59,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   bool _isTogglingLock = false; // 标记是否正在切换锁定状态
   late final ForumService _forumService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
+  late final InputStateService _inputStateService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -55,8 +72,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
+      _inputStateService =
+          Provider.of<InputStateService>(context, listen: false);
       _currentUserId = _authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
@@ -346,7 +366,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // --- 加载状态 ---
     if (_isLoading && _post == null) {
       return Scaffold(
-        appBar: CustomAppBar(title: '帖子详情'),
+        appBar: const CustomAppBar(title: '帖子详情'),
         body: FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载帖子...')),
       );
     }
@@ -354,7 +374,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // --- 错误状态 ---
     if (_error != null && _post == null) {
       return Scaffold(
-        appBar: CustomAppBar(title: '帖子详情'),
+        appBar: const CustomAppBar(title: '帖子详情'),
         body: FadeInItem(
             child: CustomErrorWidget(
                 errorMessage: _error!, onRetry: _loadPostDetails)),
@@ -365,7 +385,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     if (_post == null) {
       // 理论上这种情况已经被前面的逻辑覆盖，但作为最后防线
       return Scaffold(
-        appBar: CustomAppBar(title: '帖子详情'),
+        appBar: const CustomAppBar(title: '帖子详情'),
         body: NotFoundErrorWidget(
           message: '无法显示帖子内容 (错误)',
           onBack: () => NavigationUtils.pop(context, _hasInteraction),
@@ -380,24 +400,32 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             widget.postId, _authProvider.currentUserId ?? "guest");
 
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: '帖子详情',
       ),
       body: RefreshIndicator(
         onRefresh: _refreshPost,
         child: isDesktop
             ? PostDetailDesktopLayout(
-                currentUser: _authProvider.currentUser,
+                authProvider: _authProvider,
+                inputStateService: _inputStateService,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
+                forumService: _forumService,
+                infoProvider: widget.infoProvider,
+                followService: _followService,
               )
             : PostDetailMobileLayout(
-                currentUser: _authProvider.currentUser,
+                authProvider: _authProvider,
+                inputStateService: _inputStateService,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
+                followService: _followService,
+                forumService: _forumService,
+                infoProvider: widget.infoProvider,
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
               ),
       ),
@@ -409,19 +437,22 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
   // 构建浮动操作按钮组 (完整)
   Widget _buildPostActionButtonsGroup(BuildContext context, Post post) {
-    return Consumer<AuthProvider>(
-      builder: (context, auth, _) {
-        if (!auth.isLoggedIn) return const SizedBox.shrink();
-        final bool canEdit = auth.currentUser?.id == post.authorId;
-        final bool canDelete = canEdit || auth.currentUser?.isAdmin == true;
-        final bool canLock = auth.currentUser?.isAdmin == true;
-        if (!canEdit && !canDelete && !canLock) return const SizedBox.shrink();
+    return StreamBuilder<User?>(
+      stream: _authProvider.currentUserStream,
+      initialData: _authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final currentUser = authSnapshot.data;
+        if (currentUser == null) return const SizedBox.shrink();
+
+        final bool canEdit =
+            currentUser.isAdmin ? true : currentUser.id == post.authorId;
+        final bool canLock = currentUser.isAdmin;
+        if (!canEdit && !canLock) return const SizedBox.shrink();
         final String editHeroTag = 'postEditFab_${post.id}';
         final String deleteHeroTag = 'postDeleteFab_${post.id}';
         final String lockHeroTag = 'postLockFab_${post.id}';
         final double bottomPadding =
             DeviceUtils.isDesktop ? 16.0 : 80.0; // 调整移动端底部间距
-
         return Padding(
           padding: EdgeInsets.only(bottom: bottomPadding, right: 16.0),
           child: FloatingActionButtonGroup(
@@ -430,35 +461,44 @@ class _PostDetailScreenState extends State<PostDetailScreen>
             children: [
               if (canEdit)
                 GenericFloatingActionButton(
-                  heroTag: editHeroTag, mini: true, tooltip: '编辑帖子',
+                  heroTag: editHeroTag,
+                  mini: true,
+                  tooltip: '编辑帖子',
                   icon: Icons.edit_outlined,
                   onPressed: (_isLoading || _isTogglingLock)
                       ? null
-                      : () => _handleEditPost(context), // 加载或锁定时禁用
+                      : () => _handleEditPost(context),
+                  // 加载或锁定时禁用
                   backgroundColor: Colors.white,
                   foregroundColor: Theme.of(context).colorScheme.primary,
                 ),
-              if (canDelete)
+              if (canEdit)
                 GenericFloatingActionButton(
-                  heroTag: deleteHeroTag, mini: true, tooltip: '删除帖子',
+                  heroTag: deleteHeroTag,
+                  mini: true,
+                  tooltip: '删除帖子',
                   icon: Icons.delete_forever_outlined,
                   onPressed: (_isLoading || _isTogglingLock)
                       ? null
-                      : () => _handleDeletePost(context), // 加载或锁定时禁用
+                      : () => _handleDeletePost(context),
+                  // 加载或锁定时禁用
                   backgroundColor: Colors.red[400],
                   foregroundColor: Colors.white,
                 ),
               if (canLock)
                 GenericFloatingActionButton(
-                  heroTag: lockHeroTag, mini: true,
+                  heroTag: lockHeroTag,
+                  mini: true,
                   tooltip: post.status == PostStatus.locked ? '解锁帖子' : '锁定帖子',
                   icon: post.status == PostStatus.locked
                       ? Icons.lock_open_outlined
                       : Icons.lock_outline,
-                  isLoading: _isTogglingLock, // 使用切换锁定状态
+                  isLoading: _isTogglingLock,
+                  // 使用切换锁定状态
                   onPressed: (_isLoading || _isTogglingLock)
                       ? null
-                      : () => _handleToggleLock(context), // 加载或锁定时禁用
+                      : () => _handleToggleLock(context),
+                  // 加载或锁定时禁用
                   backgroundColor: post.status == PostStatus.locked
                       ? Colors.grey[600]
                       : Colors.orange[600],

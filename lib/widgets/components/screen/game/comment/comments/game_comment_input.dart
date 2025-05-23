@@ -1,51 +1,36 @@
 // lib/widgets/components/screen/game/comment/comments/game_comment_input.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../../ui/inputs/comment_input_field.dart'; // 使用修改后的输入框
+import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 
-class GameCommentInput extends StatefulWidget {
+class GameCommentInput extends StatelessWidget {
   final Future<void> Function(String comment) onCommentAdded;
   final bool isSubmitting;
-  final String gameId; // 需要传入 gameId 以生成 slotName
+  final User? currentUser;
+  final InputStateService inputStateService;
+  final String slotName;
 
   const GameCommentInput({
     super.key,
     required this.onCommentAdded,
     required this.isSubmitting,
-    required this.gameId,
-  });
+    required String gameId, // 构造函数仍然接收 gameId
+    required this.currentUser,
+    required this.inputStateService,
+  }) : slotName = 'game_comment_$gameId'; // 在初始化列表中生成 slotName
 
-  @override
-  State<GameCommentInput> createState() => _GameCommentInputState();
-}
-
-class _GameCommentInputState extends State<GameCommentInput> {
-  late String _slotName;
-
-  @override
-  void initState() {
-    super.initState();
-    // 根据 gameId 生成唯一的 slotName
-    _slotName = 'game_comment_${widget.gameId}';
-  }
-
-  Future<void> _handleCommentSubmit(String comment) async {
-    if (comment.isEmpty || widget.isSubmitting) return;
+  Future<void> _handleCommentSubmit(
+      BuildContext context, String comment) async {
+    if (comment.isEmpty || isSubmitting) return;
     try {
-      await widget.onCommentAdded(comment); // 调用外部提交逻辑
-      // 成功后清除状态
-      if (mounted) {
-        // 保持用途明确
-        InputStateService? inputStateService =
-            Provider.of<InputStateService>(context, listen: false);
-        inputStateService.clearText(_slotName);
-        inputStateService = null;
+      await onCommentAdded(comment);
+      if (context.mounted) {
+        inputStateService.clearText(slotName); // 使用 this.slotName
       }
     } catch (e) {
-      // 提交失败，保留输入内容
-      if (mounted) {
+      if (context.mounted) {
         AppSnackBar.showError(context, '评论发表失败: $e');
       }
     }
@@ -54,13 +39,17 @@ class _GameCommentInputState extends State<GameCommentInput> {
   @override
   Widget build(BuildContext context) {
     return CommentInputField(
-      slotName: _slotName, // 传递 slotName
-      onSubmit: _handleCommentSubmit,
+      currentUser: currentUser,
+      inputStateService: inputStateService,
+      slotName: slotName, // 直接使用成员变量 slotName
+      onSubmit: (String comment) {
+        _handleCommentSubmit(context, comment);
+      },
       hintText: '发表评论...',
       submitButtonText: '发表',
-      isSubmitting: widget.isSubmitting,
+      isSubmitting: isSubmitting,
       maxLines: 3,
-      maxLength: 100, // 或根据需要调整
+      maxLength: 100,
     );
   }
 }

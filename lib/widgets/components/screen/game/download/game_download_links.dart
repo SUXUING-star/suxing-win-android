@@ -1,28 +1,27 @@
 // lib/widgets/components/screen/game/game_download_links.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:provider/provider.dart';
-import '../../../../../models/game/game.dart'; // 你的数据模型
-import '../../../../../providers/auth/auth_provider.dart'; // 你的认证 Provider
+import 'package:suxingchahui/models/game/game.dart'; // 你的数据模型
 
 class GameDownloadLinks extends StatelessWidget {
   final List<DownloadLink> downloadLinks;
+  final User? currentUser;
 
   const GameDownloadLinks({
     super.key,
+    required this.currentUser,
     required this.downloadLinks,
   });
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
-
-    if (!authProvider.isLoggedIn) {
+    if (currentUser == null) {
       return _buildLoginRequiredMessage(context);
     }
 

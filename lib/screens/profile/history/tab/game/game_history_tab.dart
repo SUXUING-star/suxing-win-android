@@ -1,13 +1,13 @@
 // lib/screens/profile/tab/game_history_tab.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'card/game_history_grid_card.dart'; // 导入网格布局卡片
 import './card/game_history_list_card.dart'; // 导入列表布局卡片
 
@@ -15,11 +15,15 @@ import './card/game_history_list_card.dart'; // 导入列表布局卡片
 class GameHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
+  final User? currentUser;
+  final GameService gameService;
 
   const GameHistoryTab({
     super.key,
     required this.isLoaded,
     required this.onLoad,
+    required this.currentUser,
+    required this.gameService,
   });
 
   @override
@@ -36,6 +40,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   late final GameService _gameService;
   late int _page;
   final int _pageSize = 15;
+  User? _currentUser;
 
   @override
   bool get wantKeepAlive => true; // 保持状态，避免切换标签页时重建
@@ -44,13 +49,14 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   void initState() {
     super.initState();
     _page = 1;
+    _currentUser = widget.currentUser;
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
+      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -68,10 +74,18 @@ class _GameHistoryTabState extends State<GameHistoryTab>
   void didUpdateWidget(GameHistoryTab oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.isLoaded && !oldWidget.isLoaded) {
-      _page = 1;
-      _gameHistoryWithDetails = null;
-      _isInitialLoading = true;
+      setState(() {
+        _page = 1;
+        _gameHistoryWithDetails = null;
+        _isInitialLoading = true;
+      });
       _loadHistory();
+    }
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 

@@ -1,17 +1,15 @@
 // === 文件: lib/widgets/components/screen/forum/post/post_interaction_buttons.dart ===
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保导入
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确保导入
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class PostInteractionButtons extends StatefulWidget {
   final Post post;
+  final ForumService forumService;
   final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
@@ -20,6 +18,7 @@ class PostInteractionButtons extends StatefulWidget {
     super.key,
     required this.post,
     required this.currentUser,
+    required this.forumService,
     required this.userActions,
     required this.onPostUpdated,
   });
@@ -56,7 +55,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = context.read<ForumService>();
+      _forumService = widget.forumService;
       _hasInitializedDependencies = true;
     }
   }
@@ -95,22 +94,19 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     required Function(bool isLoading) setLoadingState,
     required String actionName, // 'like', 'agree', 'favorite'
   }) async {
-    final auth = Provider.of<AuthProvider>(context, listen: false);
-    if (!auth.isLoggedIn) {
-      _showLoginDialog();
+    final currentUserId = widget.currentUser?.id;
+    if (currentUserId == null) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
-    final userId = auth.currentUserId;
-    if (userId == null) {
-      return;
-    }
+
     if (getLoadingState()) return;
 
     // --- 获取当前状态（从 widget.userActions）和计数（从本地状态）用于计算 ---
     final String postId = widget.post.id;
-    final bool currentliked = widget.userActions.liked;
-    final bool currentagreed = widget.userActions.agreed;
-    final bool currentfavorited = widget.userActions.agreed;
+    final bool currentLiked = widget.userActions.liked;
+    final bool currentAgreed = widget.userActions.agreed;
+    final bool currentFavorited = widget.userActions.favorited;
     // 原始计数用于回滚和计算新 Post
     final int originalLikeCount = widget.post.likeCount;
     final int originalAgreeCount = widget.post.agreeCount;
@@ -121,15 +117,15 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
     int optimisticCountChange;
     switch (actionName) {
       case 'like':
-        optimisticNewStatus = !currentliked;
+        optimisticNewStatus = !currentLiked;
         optimisticCountChange = optimisticNewStatus ? 1 : -1;
         break;
       case 'agree':
-        optimisticNewStatus = !currentagreed;
+        optimisticNewStatus = !currentAgreed;
         optimisticCountChange = optimisticNewStatus ? 1 : -1;
         break;
       case 'favorite':
-        optimisticNewStatus = !currentfavorited;
+        optimisticNewStatus = !currentFavorited;
         optimisticCountChange = optimisticNewStatus ? 1 : -1;
         break;
       default:
@@ -176,7 +172,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
 
         // --- 构建新的 UserPostActions (包含确认的状态) ---
         final newActions = UserPostActions(
-          postId: postId, userId: userId,
+          postId: postId, userId: currentUserId,
           // 使用 API 返回的状态更新对应项，其他项保持 widget 传入的值
           liked: (actionName == 'like')
               ? actualNewStatus
@@ -188,10 +184,9 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
               ? actualNewStatus
               : widget.userActions.favorited,
         );
-        final forumService = context.read<ForumService>();
 
         // --- 调用 Service 写入缓存 ---
-        await forumService.cacheNewPostData(newPost, newActions);
+        await widget.forumService.cacheNewPostData(newPost, newActions);
 
         // --- 更新本地 UI 计数为最终确认的值 ---
         // （如果 API 返回的状态与乐观更新不符，这里会修正计数的显示）
@@ -253,11 +248,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
       setLoadingState: (isLoading) => _isFavoriting = isLoading,
       actionName: 'favorite',
     );
-  }
-
-  // 显示登录对话框
-  void _showLoginDialog() {
-    NavigationUtils.showLoginDialog(context);
   }
 
   @override

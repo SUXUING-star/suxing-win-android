@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import '../../../models/game/game.dart';
-import '../../../services/main/game/game_service.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'common_game_list_screen.dart'; // 引入纯净版
 
 class LatestGamesScreen extends StatefulWidget {
-  const LatestGamesScreen({super.key});
+  final GameService gameService;
+  final AuthProvider authProvider;
+  const LatestGamesScreen({
+    super.key,
+    required this.gameService,
+    required this.authProvider,
+  });
 
   @override
   _LatestGamesScreenState createState() => _LatestGamesScreenState();
@@ -16,7 +22,6 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
   List<Game> _latestGames = [];
   bool _isLoading = true; // 初始为 true
   String? _error;
-  late final GameService _gameService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -28,7 +33,6 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -51,7 +55,7 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
     });
 
     try {
-      final games = await _gameService.getLatestGames(); // 直接 await 获取数据
+      final games = await widget.gameService.getLatestGames(); // 直接 await 获取数据
       if (!mounted) return;
       setState(() {
         _latestGames = games;
@@ -74,23 +78,30 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    return CommonGameListScreen(
-      key: ValueKey('latest_games_${_latestGames.length}_$_isLoading$_error'),
-      title: '最新发布',
-      currentUser: authProvider.currentUser,
-      games: _latestGames,
-      isLoading: _isLoading,
-      error: _error,
-      onRefreshTriggered: _handleRefresh, // 传递刷新回调
-      // --- 其他参数保持不变 ---
-      onDeleteGameAction: null,
-      emptyStateMessage: '暂无最新游戏',
-      emptyStateIcon: Icon(Icons.new_releases, size: 48, color: Colors.grey),
-      useScaffold: true,
-      showAddButton: false,
-      showSortOptions: false,
-      // 移除了 showTagSelection, showPanelToggles
-    );
+    return StreamBuilder<User?>(
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final User? currentUser = authSnapshot.data;
+          return CommonGameListScreen(
+            key: ValueKey(
+                'latest_games_${_latestGames.length}_$_isLoading$_error'),
+            title: '最新发布',
+            currentUser: currentUser,
+            games: _latestGames,
+            isLoading: _isLoading,
+            error: _error,
+            onRefreshTriggered: _handleRefresh,
+            // 传递刷新回调
+            // --- 其他参数保持不变 ---
+            onDeleteGameAction: null,
+            emptyStateMessage: '暂无最新游戏',
+            emptyStateIcon:
+                Icon(Icons.new_releases, size: 48, color: Colors.grey),
+            useScaffold: true,
+            showAddButton: false,
+            showSortOptions: false,
+          );
+        });
   }
 }

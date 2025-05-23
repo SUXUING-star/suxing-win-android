@@ -7,18 +7,23 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class HotActivitiesList extends StatelessWidget {
   final List<UserActivity> hotActivities;
   final User? currentUser;
+  final UserFollowService userFollowService;
+  final UserInfoProvider userInfoProvider;
   final String Function(String) getActivityTypeName;
   final Color Function(String) getActivityTypeColor;
 
   const HotActivitiesList({
     super.key,
     required this.currentUser,
+    required this.userFollowService,
+    required this.userInfoProvider,
     required this.hotActivities,
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
@@ -29,7 +34,6 @@ class HotActivitiesList extends StatelessWidget {
     if (hotActivities.isEmpty) {
       return Center(child: Text('暂无热门动态'));
     }
-    final userInfoProvider = context.watch<UserInfoProvider>();
 
     return AnimationLimiter(
       child: ListView.builder(
@@ -37,10 +41,6 @@ class HotActivitiesList extends StatelessWidget {
         itemCount: hotActivities.length,
         itemBuilder: (context, index) {
           final activity = hotActivities[index];
-          final userId = activity.userId;
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          final userDataStatus = userInfoProvider.getUserStatus(userId);
-
           return AnimationConfiguration.staggeredList(
             position: index,
             duration: const Duration(milliseconds: 375),
@@ -48,7 +48,7 @@ class HotActivitiesList extends StatelessWidget {
               verticalOffset: 50.0,
               child: FadeInAnimation(
                 child: _buildHotActivityItem(
-                    context, activity, index, userDataStatus),
+                    context, activity, index),
               ),
             ),
           );
@@ -59,7 +59,7 @@ class HotActivitiesList extends StatelessWidget {
 
   // 构建单个热门动态项
   Widget _buildHotActivityItem(BuildContext context, UserActivity activity,
-      int index, UserDataStatus userDataStatus) {
+      int index) {
     final typeColor = getActivityTypeColor(activity.type);
 
     return Card(
@@ -85,7 +85,9 @@ class HotActivitiesList extends StatelessWidget {
               Row(
                 children: [
                   UserInfoBadge(
-                    userDataStatus: userDataStatus,
+                    followService: userFollowService,
+                    infoProvider: userInfoProvider,
+
                     currentUser: currentUser,
                     targetUserId: activity.userId,
                     showFollowButton: false, // 可能不需要关注按钮

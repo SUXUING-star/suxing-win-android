@@ -1,19 +1,20 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_user_profile.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../providers/auth/auth_provider.dart';
-import '../../models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 
 class DesktopSidebarUserProfile extends StatelessWidget {
   final VoidCallback onProfileTap;
+  final AuthProvider authProvider;
 
   const DesktopSidebarUserProfile({
     super.key,
     required this.onProfileTap,
+    required this.authProvider,
   });
 
   // 根据等级返回不同的颜色
@@ -77,8 +78,11 @@ class DesktopSidebarUserProfile extends StatelessWidget {
   // 已登录状态的用户信息
   // 已登录状态的用户信息 (直接从 AuthProvider 获取 User 对象)
   Widget _buildLoggedInProfile(BuildContext context, User user) {
-    final double devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
-    final int cacheSize = (40 * devicePixelRatio).round();
+    final avatarRadiusInProfile = 50;
+
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final int calculatedMemCacheSize =
+        (avatarRadiusInProfile * 2 * devicePixelRatio).round();
 
     return Material(
       color: Colors.transparent,
@@ -110,8 +114,8 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                               username: user.username,
                               radius: 50,
                               enableNavigation: false,
-                              memCacheWidth: cacheSize,
-                              memCacheHeight: cacheSize,
+                              memCacheWidth: calculatedMemCacheSize,
+                              memCacheHeight: calculatedMemCacheSize,
                             )
                           : _fallbackAvatar(user.username),
                     ),
@@ -195,21 +199,15 @@ class DesktopSidebarUserProfile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
-      child: Consumer<AuthProvider>(
-        builder: (context, authProvider, child) {
-          // 如果未登录，显示登录提示
-          if (!authProvider.isLoggedIn) {
-            return _buildLoginPrompt(context);
-          }
+      child: StreamBuilder<User?>(
+        stream: authProvider.currentUserStream,
+        initialData: authProvider.currentUser,
+        builder: (context, currentUserSnapshot) {
+          final User? currentUser = currentUserSnapshot.data;
 
-          // 已登录状态 - 直接从 AuthProvider 获取用户信息
-          final User? currentUser = authProvider.currentUser;
-
-          // 如果 AuthProvider 说已登录，但 currentUser 暂时是 null (可能正在加载或初始化中)
-          // 可以显示一个加载状态或者暂时还是显示登录提示，避免出错
           if (currentUser == null) {
-            // return CircularProgressIndicator(color: Colors.white); // 或者显示加载圈
-            return _buildLoginPrompt(context); // 或者暂时显示登录入口，避免界面崩溃
+            return _buildLoginPrompt(
+                context); // 或者，如果初始化阶段不希望显示 loading，则暂时还是登录提示
           }
 
           return _buildLoggedInProfile(context, currentUser);

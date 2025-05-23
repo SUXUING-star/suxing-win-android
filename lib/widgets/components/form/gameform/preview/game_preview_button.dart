@@ -2,15 +2,26 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../providers/auth/auth_provider.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'game_preview_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class GamePreviewButton extends StatelessWidget {
+  final GameService gameService;
+  final GameCollectionService gameCollectionService;
+  final UserInfoProvider infoProvider;
+  final AuthProvider authProvider;
+  final InputStateService inputStateService;
+  final UserFollowService followService;
   final User? currentUser;
   final TextEditingController titleController;
   final TextEditingController summaryController;
@@ -27,6 +38,12 @@ class GamePreviewButton extends StatelessWidget {
 
   const GamePreviewButton({
     super.key,
+    required this.followService,
+    required this.infoProvider,
+    required this.authProvider,
+    required this.inputStateService,
+    required this.gameService,
+    required this.gameCollectionService,
     required this.currentUser,
     required this.titleController,
     required this.summaryController,
@@ -59,9 +76,6 @@ class GamePreviewButton extends StatelessWidget {
   }
 
   void _handlePreview(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final currentUserId = authProvider.currentUserId;
-
     final bvid = bvidController!.text.isEmpty ? null : bvidController?.text;
     final musicUrl =
         musicUrlController!.text.isEmpty ? null : musicUrlController?.text;
@@ -78,7 +92,7 @@ class GamePreviewButton extends StatelessWidget {
     }
     final previewGame = Game(
       id: existingGame?.id ?? mongo.ObjectId().oid,
-      authorId: existingGame?.authorId ?? currentUserId ?? 'preview_mode',
+      authorId: existingGame?.authorId ?? currentUser?.id ?? 'preview_mode',
       title: titleController.text.isEmpty ? "游戏标题预览" : titleController.text,
       summary:
           summaryController.text.isEmpty ? "游戏简介预览" : summaryController.text,
@@ -106,6 +120,12 @@ class GamePreviewButton extends StatelessWidget {
       NavigationUtils.of(context).push(
         MaterialPageRoute(
           builder: (context) => GamePreviewScreen(
+            gameCollectionService: gameCollectionService,
+            authProvider: authProvider,
+            inputStateService: inputStateService,
+            infoProvider: infoProvider,
+            followService: followService,
+            gameService: gameService,
             game: previewGame,
             currentUser: currentUser,
           ),

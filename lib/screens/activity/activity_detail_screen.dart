@@ -1,11 +1,11 @@
 // lib/screens/activity/activity_detail_screen.dart
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 引入 Provider
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/activity_detail_content.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:flutter/services.dart';
@@ -20,10 +20,20 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 class ActivityDetailScreen extends StatefulWidget {
   final String activityId;
   final UserActivity? activity;
+  final AuthProvider authProvider;
+  final UserActivityService activityService;
+  final UserFollowService followService;
+  final InputStateService inputStateService;
+  final UserInfoProvider infoProvider;
 
   const ActivityDetailScreen({
     super.key,
     required this.activityId,
+    required this.activityService,
+    required this.followService,
+    required this.authProvider,
+    required this.inputStateService,
+    required this.infoProvider,
     this.activity,
   });
 
@@ -42,6 +52,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   bool _hasInitializedDependencies = false;
   late final UserActivityService _activityService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -53,8 +64,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = context.read<UserActivityService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _activityService = widget.activityService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -268,6 +280,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       // 使用 EditDialog.show
       await EditDialog.show(
         context: context,
+        inputStateService: widget.inputStateService,
         title: '编辑动态',
         initialText: _activity.content,
         hintText: '输入新的动态内容...',
@@ -372,7 +385,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 AppSnackBar.showSuccess(context, '动态已删除');
               }
             } else {
-              throw Exception('Deletion failed');
+              throw Exception('删除失败');
             }
           } catch (e) {
             if (mounted) {
@@ -399,26 +412,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
-    final userInfoProvider = context.watch<UserInfoProvider>();
-
     Widget body;
 
     if (_isLoading) {
       body = LoadingWidget();
     } else if (_error.isNotEmpty) {
-      body = InlineErrorWidget(errorMessage: _error);
+      body = CustomErrorWidget(errorMessage: _error);
     } else {
-      final userId = _activity.userId;
-      userInfoProvider.ensureUserInfoLoaded(userId);
-      final UserDataStatus userDataStatus =
-          userInfoProvider.getUserStatus(userId);
       // 传递编辑和删除的回调给 ActivityDetailContent
       body = RefreshIndicator(
         onRefresh: _refreshActivity,
         child: ActivityDetailContent(
+          inputStateService: widget.inputStateService,
           key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
           currentUser: _authProvider.currentUser,
-          userDataStatus: userDataStatus,
+          userInfoProvider: widget.infoProvider,
+          userFollowService: _followService,
           activity: _activity,
           comments: _activity.comments,
           isLoadingComments: _isLoadingComments,
@@ -449,7 +458,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 const SizedBox(width: 16),
               ],
             )
-          : CustomAppBar(
+          : const CustomAppBar(
               title: '动态详情',
             ),
       body: body,

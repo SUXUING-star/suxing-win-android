@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/screens/auth/widgets/account_bubble_menu.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -12,15 +13,20 @@ import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
-import '../../services/main/user/cache/account_cache_service.dart';
-import '../../utils/navigation/navigation_utils.dart';
-import '../../providers/auth/auth_provider.dart';
-import '../../providers/inputs/input_state_provider.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import './widgets/account_bubble_menu.dart';
+import 'package:suxingchahui/services/main/user/cache/account_cache_service.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthProvider authProvider;
+  final InputStateService inputStateService;
+  const LoginScreen({
+    super.key,
+    required this.authProvider,
+    required this.inputStateService,
+  });
 
   @override
   _LoginScreenState createState() => _LoginScreenState();
@@ -41,13 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
   // 账号缓存服务
   late final AccountCacheService _accountCache;
   late final AuthProvider _authProvider;
+  late final InputStateService _inputStateService;
 
   bool _hasInitializedDependencies = false;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _checkSavedAccounts());
   }
 
   @override
@@ -56,11 +62,13 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_hasInitializedDependencies) {
       // 避免重复获取和调用
       _accountCache = Provider.of<AccountCacheService>(context, listen: false);
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _authProvider = widget.authProvider;
+      _inputStateService = widget.inputStateService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _checkSavedAccounts(); // _checkSavedAccounts 会用 _accountCache
+      WidgetsBinding.instance
+          .addPostFrameCallback((_) => _checkSavedAccounts());
     }
   }
 
@@ -93,6 +101,7 @@ class _LoginScreenState extends State<LoginScreen> {
         barrierDismissible: true,
         pageBuilder: (BuildContext context, _, __) {
           return AccountBubbleMenu(
+            accounts: accounts,
             anchorContext: context, // 使用 LoginScreen 的 context 作为 anchor
             anchorOffset: offset,
             onAccountSelected: _autoLoginWithAccount,
@@ -106,11 +115,10 @@ class _LoginScreenState extends State<LoginScreen> {
   void _autoLoginWithAccount(SavedAccount account) {
     // 获取 InputStateService 并更新状态
     try {
-      InputStateService? inputService =
-          Provider.of<InputStateService>(context, listen: false);
-      inputService.getController(emailSlotName).text = account.email;
-      inputService.getController(passwordSlotName).text = account.password;
-      inputService = null;
+      _inputStateService.getController(emailSlotName).text = account.email;
+      _inputStateService.getController(passwordSlotName).text =
+          account.password;
+
       // 更新记住我状态（如果需要的话，或者保持当前选择）
       // setState(() { _rememberMe = true; });
     } catch (e) {
@@ -132,21 +140,18 @@ class _LoginScreenState extends State<LoginScreen> {
       _errorMessage = null;
     });
 
-    InputStateService? inputService =
-        Provider.of<InputStateService>(context, listen: false);
     // 从 Service 获取值
-    final email = inputService.getText(emailSlotName).trim();
+    final email = _inputStateService.getText(emailSlotName).trim();
 
-    final password = inputService.getText(passwordSlotName).trim();
+    final password = _inputStateService.getText(passwordSlotName).trim();
 
     try {
       // 委托authProvider传递
       // ui组件不需要管理添加和删除缓存
       await _authProvider.signIn(email, password, _rememberMe);
       // 登录成功后，清除输入状态
-      inputService.clearText(emailSlotName);
-      inputService.clearText(passwordSlotName);
-      inputService = null;
+      _inputStateService.clearText(emailSlotName);
+      _inputStateService.clearText(passwordSlotName);
 
       await Future.delayed(Duration(milliseconds: 500)); // 稍微减少延迟
 
@@ -156,7 +161,6 @@ class _LoginScreenState extends State<LoginScreen> {
         AppSnackBar.showSuccess(context, successMessage);
       }
     } catch (e) {
-      inputService = null;
       if (mounted) {
         setState(() {
           _errorMessage = '登录失败：${e.toString()}';
@@ -167,7 +171,6 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } finally {
-      inputService = null;
       // 确保无论成功失败，如果组件还在挂载，都结束 loading 状态
       if (mounted && _isLoading) {
         setState(() {
@@ -190,12 +193,13 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
           )
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 
   // --- 修改：使用 slotName ---
   Widget _buildEmailFormField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       key: _emailFieldKey, // GlobalKey 保持
       slotName: emailSlotName, // <-- 使用 slotName
       isEnabled: !_isLoading,
@@ -224,6 +228,7 @@ class _LoginScreenState extends State<LoginScreen> {
   // --- 修改：使用 slotName ---
   Widget _buildPassWordFormField() {
     return FormTextInputField(
+      inputStateService: _inputStateService,
       slotName: passwordSlotName, // <-- 使用 slotName
       isEnabled: !_isLoading,
       obscureText: _obscurePassword,
@@ -256,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
     const Duration stagger = Duration(milliseconds: 80);
 
     return Scaffold(
-      appBar: CustomAppBar(title: '登录'),
+      appBar: const CustomAppBar(title: '登录'),
       body: Center(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),

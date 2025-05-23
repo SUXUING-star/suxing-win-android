@@ -1,14 +1,15 @@
 // 文件路径: lib/widgets/components/screen/forum/card/post_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 
-import '../../../../../models/post/post.dart';
-import '../../../../../routes/app_routes.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../../utils/navigation/navigation_utils.dart'; // 用于导航
-import '../../../../ui/badges/user_info_badge.dart'; // 用户信息徽章
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 用于导航
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章
 
 import 'post_statistics_row.dart'; // 帖子统计行
 import 'post_tag_row.dart'; // 帖子标签行
@@ -22,7 +23,9 @@ class PostCard extends StatelessWidget {
 
   final User? currentUser;
 
-  final UserDataStatus userDataStatus;
+  final UserFollowService followService;
+
+  final UserInfoProvider infoProvider;
 
   /// 是否采用桌面布局样式。
   final bool isDesktopLayout;
@@ -46,7 +49,8 @@ class PostCard extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.post,
-    required this.userDataStatus,
+    required this.followService,
+    required this.infoProvider,
     this.isDesktopLayout = false,
     this.onDeleteAction, // 已设为可选
     this.onEditAction, // 已设为可选
@@ -77,7 +81,6 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         // --- 点击卡片导航到详情页 ---
         onTap: () async {
-          print("PostCard onTap: Navigating to post detail for ${post.id}");
           final result = await NavigationUtils.pushNamed(
             context,
             AppRoutes.postDetail,
@@ -168,8 +171,10 @@ class PostCard extends StatelessWidget {
                         // 用户信息徽章（允许扩展）
                         Expanded(
                           child: UserInfoBadge(
-                            targetUserId: post.authorId.toString(), // 确保传递字符串 ID
-                            userDataStatus: userDataStatus,
+                            targetUserId:
+                                post.authorId.toString(), // 确保传递字符串 ID
+                            infoProvider: infoProvider,
+                            followService: followService,
                             showFollowButton: false,
                             currentUser: currentUser,
                             mini: true,
@@ -195,7 +200,8 @@ class PostCard extends StatelessWidget {
                         // 用户信息徽章
                         UserInfoBadge(
                           targetUserId: post.authorId.toString(),
-                          userDataStatus: userDataStatus,
+                          followService: followService,
+                          infoProvider: infoProvider,
                           showFollowButton: false,
                           currentUser: currentUser,
                           mini: true,
@@ -329,7 +335,9 @@ class PostCard extends StatelessWidget {
       if (callback != null) {
         try {
           await callback(post);
-        } catch (e) {}
+        } catch (e) {
+          //
+        }
       } else {
         // print("PostCard: Delete option selected, but onDeleteAction is null.");
       }

@@ -51,7 +51,7 @@ class Message {
     // 可以在这里添加一些断言或日志，帮助调试类型解析
     // assert(this.messageType != MessageType.unknown, 'Message ID $id has an unknown type string: $type');
     if (messageType == MessageType.unknown && kDebugMode) {
-      print('Debug: Message ID $id created with unknown type string: "$type"');
+      // print('Debug: Message ID $id created with unknown type string: "$type"');
     }
   }
 

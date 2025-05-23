@@ -3,7 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保导入模型
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/sections/check_in_history_expansion.dart';
@@ -16,7 +17,9 @@ class ActivityInfoSection extends StatelessWidget {
   /// 要显示的活动对象。
   final UserActivity activity;
 
-  final UserDataStatus userDataStatus;
+  final UserFollowService followService;
+
+  final UserInfoProvider infoProvider;
 
   final User? currentUser;
 
@@ -32,7 +35,8 @@ class ActivityInfoSection extends StatelessWidget {
   const ActivityInfoSection({
     super.key,
     required this.currentUser,
-    required this.userDataStatus,
+    required this.infoProvider,
+    required this.followService,
     required this.activity,
     this.onEditActivity,
     this.onDeleteActivity,
@@ -69,8 +73,9 @@ class ActivityInfoSection extends StatelessWidget {
         children: [
           ActivityHeader(
             userId: activity.userId,
-            userDataStatus: userDataStatus,
             currentUser: currentUser,
+            followService: followService,
+            infoProvider: infoProvider,
             createTime: activity.createTime,
             updateTime: activity.updateTime,
             isEdited: activity.isEdited,

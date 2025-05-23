@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../screens/game/detail/image_preview_screen.dart';
-import '../../../../ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/screens/game/detail/image_preview_screen.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class GameImages extends StatelessWidget {
   final Game game;
@@ -101,7 +101,7 @@ class GameImages extends StatelessWidget {
               fit: BoxFit.cover,
               memCacheWidth: 560, // 2倍于显示宽度
               onError: (url, error) {
-                print('游戏截图加载失败: $url, 错误: $error');
+                // print('游戏截图加载失败: $url, 错误: $error');
               },
             ),
           ),

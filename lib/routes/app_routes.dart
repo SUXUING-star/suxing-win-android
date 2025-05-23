@@ -1,11 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'package:suxingchahui/providers/notifiers/review_refresh_notifier.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
 import 'package:suxingchahui/screens/message/message_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/screens/search/search_post_screen.dart';
 import 'package:suxingchahui/screens/webview/webview_screen.dart';
+import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/services/main/email/email_service.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
+import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
+import 'package:suxingchahui/services/main/message/message_service.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/screens/home/home_screen.dart';
 import 'package:suxingchahui/screens/common/notfound_screen.dart';
@@ -86,7 +99,24 @@ class AppRoutes {
   static const String webView = '/webview';
   static const String message = '/message';
 
-  static Route<dynamic> onGenerateRoute(RouteSettings settings) {
+  static Route<dynamic> onGenerateRoute(
+    RouteSettings settings,
+    AuthProvider authProvider,
+    UserService userService,
+    ForumService forumService,
+    GameService gameService,
+    UserFollowService followService,
+    UserActivityService activityService,
+    LinkToolService linkToolService,
+    MessageService messageService,
+    GameCollectionService gameCollectionService,
+    UserInfoProvider infoProvider,
+    InputStateService inputStateService,
+    EmailService emailService,
+    UserCheckInService checkInService,
+    AnnouncementService announcementService,
+    MaintenanceService maintenanceService,
+  ) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
     switch (routeName) {
@@ -106,21 +136,49 @@ class AppRoutes {
               WidgetsBinding.instance.addPostFrameCallback((_) {
                 NavigationUtils.navigateToHome(context, tabIndex: tabIndex);
               });
-              return HomeScreen();
+              return HomeScreen(
+                infoProvider: infoProvider,
+                authProvider: authProvider,
+                followService: followService,
+                gameService: gameService,
+                forumService: forumService,
+              );
             });
           }
         }
 
         // 默认行为，无参数时直接返回主页面
-        return MaterialPageRoute(builder: (_) => HomeScreen());
+        return MaterialPageRoute(
+            builder: (_) => HomeScreen(
+                  infoProvider: infoProvider,
+                  authProvider: authProvider,
+                  followService: followService,
+                  gameService: gameService,
+                  forumService: forumService,
+                ));
       case about:
         return MaterialPageRoute(builder: (_) => AboutScreen());
       case login:
-        return MaterialPageRoute(builder: (_) => LoginScreen());
+        return MaterialPageRoute(
+            builder: (_) => LoginScreen(
+                  authProvider: authProvider,
+                  inputStateService: inputStateService,
+                ));
       case register:
-        return MaterialPageRoute(builder: (_) => RegisterScreen());
+        return MaterialPageRoute(
+            builder: (_) => RegisterScreen(
+                  emailService: emailService,
+                  inputStateService: inputStateService,
+                  authProvider: authProvider,
+                  userService: userService,
+                ));
       case forgotPassword:
-        return MaterialPageRoute(builder: (_) => ForgotPasswordScreen());
+        return MaterialPageRoute(
+            builder: (_) => ForgotPasswordScreen(
+                  inputStateService: inputStateService,
+                  infoProvider: infoProvider,
+                  emailService: emailService,
+                ));
       case resetPassword:
         final arguments = settings.arguments;
         if (arguments is! String || (arguments).isEmpty) {
@@ -133,9 +191,17 @@ class AppRoutes {
         }
         final String email = arguments;
         return MaterialPageRoute(
-            builder: (_) => ResetPasswordScreen(email: email));
+            builder: (_) => ResetPasswordScreen(
+                  email: email,
+                  inputStateService: inputStateService,
+                  userService: userService,
+                ));
       case searchGame:
-        return MaterialPageRoute(builder: (_) => SearchGameScreen());
+        return MaterialPageRoute(
+            builder: (_) => SearchGameScreen(
+                  gameService: gameService,
+                  userService: userService,
+                ));
 
       case gameDetail:
         final arguments = settings.arguments;
@@ -158,10 +224,14 @@ class AppRoutes {
         }
         // 此时 gameId 一定非空，可以安全地传递给 GameDetailScreen
         return MaterialPageRoute(
-          settings: settings,
-          builder: (context) => ChangeNotifierProvider(
-            create: (_) => ReviewRefreshNotifier(), // 创建实例
-            child: GameDetailScreen(gameId: gameId),
+          builder: (_) => GameDetailScreen(
+            gameId: gameId,
+            inputStateService: inputStateService,
+            authProvider: authProvider,
+            infoProvider: infoProvider,
+            gameService: gameService,
+            followService: followService,
+            gameCollectionService: gameCollectionService,
           ),
         );
       case gamesList:
@@ -171,16 +241,37 @@ class AppRoutes {
           selectedTag = arguments;
         } else {}
         return MaterialPageRoute(
-            builder: (_) => GamesListScreen(selectedTag: selectedTag));
+            builder: (_) => GamesListScreen(
+                  selectedTag: selectedTag,
+                  gameService: gameService,
+                  authProvider: authProvider,
+                ));
       case hotGames:
-        return MaterialPageRoute(builder: (_) => HotGamesScreen());
+        return MaterialPageRoute(
+            builder: (_) => HotGamesScreen(
+                  authProvider: authProvider,
+                  gameService: gameService,
+                ));
       case latestGames:
-        return MaterialPageRoute(builder: (_) => LatestGamesScreen());
+        return MaterialPageRoute(
+            builder: (_) => LatestGamesScreen(
+                  authProvider: authProvider,
+                  gameService: gameService,
+                ));
       case externalLinks:
-        return MaterialPageRoute(builder: (_) => LinksToolsScreen());
+        return MaterialPageRoute(
+            builder: (_) => LinksToolsScreen(
+                  authProvider: authProvider,
+                  linkToolService: linkToolService,
+                ));
 
       case profile:
-        return MaterialPageRoute(builder: (_) => ProfileScreen());
+        return MaterialPageRoute(
+            builder: (_) => ProfileScreen(
+                  inputStateService: inputStateService,
+                  userService: userService,
+                  authProvider: authProvider,
+                ));
       case openProfile:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
@@ -193,10 +284,24 @@ class AppRoutes {
         }
         final String userId = settings.arguments as String;
         return MaterialPageRoute(
-            builder: (_) => OpenProfileScreen(userId: userId));
+            builder: (_) => OpenProfileScreen(
+                  userId: userId,
+                  userService: userService,
+                  authProvider: authProvider,
+                  gameService: gameService,
+                  forumService: forumService,
+                  followService: followService,
+                ));
 
       case addGame:
-        return MaterialPageRoute(builder: (_) => AddGameScreen());
+        return MaterialPageRoute(
+            builder: (_) => AddGameScreen(
+                  infoProvider: infoProvider,
+                  gameCollectionService: gameCollectionService,
+                  authProvider: authProvider,
+                  gameService: gameService,
+                  followService: followService,
+                ));
       case editGame:
         final arguments = settings.arguments;
         if (arguments is! String) {
@@ -209,22 +314,68 @@ class AppRoutes {
         }
         final String gameId = arguments;
         return MaterialPageRoute(
-          builder: (_) => EditGameScreen(gameId: gameId),
+          builder: (_) => EditGameScreen(
+            infoProvider: infoProvider,
+            gameCollectionService: gameCollectionService,
+            gameId: gameId,
+            authProvider: authProvider,
+            gameService: gameService,
+            followService: followService,
+          ),
         );
       case checkin:
-        return MaterialPageRoute(builder: (_) => CheckInScreen());
+        return MaterialPageRoute(
+            builder: (_) => CheckInScreen(
+                  checkInService: checkInService,
+                  infoProvider: infoProvider,
+                  followService: followService,
+                  authProvider: authProvider,
+                ));
       case favorites:
-        return MaterialPageRoute(builder: (_) => FavoritesScreen());
+        return MaterialPageRoute(
+            builder: (_) => FavoritesScreen(
+                  authProvider: authProvider,
+                  infoProvider: infoProvider,
+                  gameService: gameService,
+                  followService: followService,
+                  forumService: forumService,
+                ));
       case history:
-        return MaterialPageRoute(builder: (_) => HistoryScreen());
+        return MaterialPageRoute(
+            builder: (_) => HistoryScreen(
+                  authProvider: authProvider,
+                  gameService: gameService,
+                  forumService: forumService,
+                ));
       case myPosts:
-        return MaterialPageRoute(builder: (_) => MyPostsScreen());
+        return MaterialPageRoute(
+            builder: (_) => MyPostsScreen(
+                  infoProvider: infoProvider,
+                  authProvider: authProvider,
+                  forumService: forumService,
+                  followService: followService,
+                ));
       case settingPage:
-        return MaterialPageRoute(builder: (_) => SettingsScreen());
+        return MaterialPageRoute(
+            builder: (_) => SettingsScreen(
+                  gameService: gameService,
+                  forumService: forumService,
+                  authProvider: authProvider,
+                ));
       case myCollections:
-        return MaterialPageRoute(builder: (_) => GameCollectionScreen());
+        return MaterialPageRoute(
+            builder: (_) => GameCollectionScreen(
+                  authProvider: authProvider,
+                ));
       case activityFeed:
-        return MaterialPageRoute(builder: (_) => ActivityFeedScreen());
+        return MaterialPageRoute(
+            builder: (_) => ActivityFeedScreen(
+                  inputStateService: inputStateService,
+                  infoProvider: infoProvider,
+                  activityService: activityService,
+                  authProvider: authProvider,
+                  followService: followService,
+                ));
 
       case userActivities:
         if (settings.arguments is! String ||
@@ -239,6 +390,11 @@ class AppRoutes {
         final String userId = settings.arguments as String;
         return MaterialPageRoute(
           builder: (_) => MyActivityFeedScreen(
+            infoProvider: infoProvider,
+            inputStateService: inputStateService,
+            authProvider: authProvider,
+            activityService: activityService,
+            followService: followService,
             userId: userId,
             title: '用户动态',
           ),
@@ -287,6 +443,11 @@ class AppRoutes {
 
         return MaterialPageRoute(
           builder: (_) => ActivityDetailScreen(
+            authProvider: authProvider,
+            activityService: activityService,
+            followService: followService,
+            inputStateService: inputStateService,
+            infoProvider: infoProvider,
             activityId: activityId.toString(),
             activity: activity,
           ),
@@ -295,6 +456,7 @@ class AppRoutes {
       case wantToPlayGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            authProvider: authProvider,
             collectionType: 'wantToPlay',
             title: '想玩的游戏',
           ),
@@ -302,6 +464,7 @@ class AppRoutes {
       case playingGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            authProvider: authProvider,
             collectionType: 'playing',
             title: '在玩的游戏',
           ),
@@ -309,6 +472,7 @@ class AppRoutes {
       case playedGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            authProvider: authProvider,
             collectionType: 'played',
             title: '玩过的游戏',
           ),
@@ -316,15 +480,30 @@ class AppRoutes {
       case allCollections:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            authProvider: authProvider,
             collectionType: 'all',
             title: '全部收藏',
           ),
         );
       case searchPost:
-        return MaterialPageRoute(builder: (_) => SearchPostScreen());
-      // case forum:
-      //   final String? tag = settings.arguments as String?;
-      //   return MaterialPageRoute(builder: (_) => ForumScreen(tag: tag));
+        return MaterialPageRoute(
+            builder: (_) => SearchPostScreen(
+                  infoProvider: infoProvider,
+                  authProvider: authProvider,
+                  followService: followService,
+                  forumService: forumService,
+                  userService: userService,
+                ));
+      case forum:
+        final String? tag = settings.arguments as String?;
+        return MaterialPageRoute(
+            builder: (_) => ForumScreen(
+                  tag: tag,
+                  infoProvider: infoProvider,
+                  forumService: forumService,
+                  authProvider: authProvider,
+                  followService: followService,
+                ));
       case postDetail:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
@@ -337,9 +516,19 @@ class AppRoutes {
         }
         final String postId = settings.arguments as String;
         return MaterialPageRoute(
-            builder: (_) => PostDetailScreen(postId: postId));
+            builder: (_) => PostDetailScreen(
+                  postId: postId,
+                  infoProvider: infoProvider,
+                  authProvider: authProvider,
+                  forumService: forumService,
+                  followService: followService,
+                ));
       case createPost:
-        return MaterialPageRoute(builder: (_) => CreatePostScreen());
+        return MaterialPageRoute(
+            builder: (_) => CreatePostScreen(
+                  forumService: forumService,
+                  authProvider: authProvider,
+                ));
       case editPost:
         if (settings.arguments is! String ||
             (settings.arguments as String).isEmpty) {
@@ -352,11 +541,28 @@ class AppRoutes {
         }
         final String postId = settings.arguments as String;
         return MaterialPageRoute(
-            builder: (_) => EditPostScreen(postId: postId));
+            builder: (_) => EditPostScreen(
+                  postId: postId,
+                  forumService: forumService,
+                  authProvider: authProvider,
+                ));
       case adminDashboard:
-        return MaterialPageRoute(builder: (_) => AdminDashboard());
+        return MaterialPageRoute(
+            builder: (_) => AdminDashboard(
+                  maintenanceService: maintenanceService,
+                  announcementService: announcementService,
+                  userService: userService,
+                  gameService: gameService,
+                  linkToolService: linkToolService,
+                  authProvider: authProvider,
+                  inputStateService: inputStateService,
+                ));
       case myGames:
-        return MaterialPageRoute(builder: (_) => MyGamesScreen());
+        return MaterialPageRoute(
+            builder: (_) => MyGamesScreen(
+                  gameService: gameService,
+                  authProvider: authProvider,
+                ));
       case userFollows:
         if (settings.arguments is! Map<String, dynamic>) {
           return MaterialPageRoute(
@@ -381,13 +587,20 @@ class AppRoutes {
 
         return MaterialPageRoute(
           builder: (_) => UserFollowsScreen(
+            infoProvider: infoProvider,
+            authProvider: authProvider,
+            followService: followService,
             userId: args['userId'],
             username: args['username'],
             initialShowFollowing: args['initialShowFollowing'] ?? true,
           ),
         );
       case message:
-        return MaterialPageRoute(builder: (_) => MessageScreen());
+        return MaterialPageRoute(
+            builder: (_) => MessageScreen(
+                  authProvider: authProvider,
+                  messageService: messageService,
+                ));
       case webView: // 处理 /webview 路由
         final args = settings.arguments;
         if (args is Map<String, dynamic> && args.containsKey('url')) {

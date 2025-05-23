@@ -1,8 +1,10 @@
 // lib/widgets/components/form/announcementform/field/basic_info_field.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
 class BasicInfoField extends StatelessWidget {
+  final InputStateService inputStateService;
   final String title;
   final String content;
   final String type;
@@ -12,6 +14,7 @@ class BasicInfoField extends StatelessWidget {
 
   const BasicInfoField({
     super.key,
+    required this.inputStateService,
     required this.title,
     required this.content,
     required this.type,
@@ -37,6 +40,7 @@ class BasicInfoField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         FormTextInputField(
+          inputStateService: inputStateService,
           initialValue: title,
           decoration: const InputDecoration(
             hintText: '输入公告标题',
@@ -63,6 +67,7 @@ class BasicInfoField extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         FormTextInputField(
+          inputStateService: inputStateService,
           initialValue: content,
           decoration: const InputDecoration(
             hintText: '输入公告内容',

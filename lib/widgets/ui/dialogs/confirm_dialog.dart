@@ -5,7 +5,7 @@ import 'base_input_dialog.dart';
 
 class CustomConfirmDialog {
   /// 显示自定义【确认】对话框的静态方法 (调用 BaseInputDialog.show)
-  /// 返回 Future<void>: 确认时完成，取消或关闭时也完成（可能带错误）
+  /// 返回 Future: 确认时完成，取消或关闭时也完成（可能带错误）
   static Future<void> show({
     required BuildContext context,
     required String title,
@@ -28,7 +28,7 @@ class CustomConfirmDialog {
     double maxWidth = 300,
   }) async {
     // 改为 async，因为 BaseInputDialog.show 返回 Future
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
     // 使用主题色作为默认确认按钮颜色和图标颜色可能更好
     final effectiveConfirmButtonColor = confirmButtonColor;
     final effectiveIconColor = iconColor;

@@ -2,13 +2,14 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../services/main/denfence/defence_service.dart';
+import 'package:suxingchahui/services/main/denfence/defence_service.dart';
 
 class IPManagement extends StatefulWidget {
   const IPManagement({super.key});
@@ -24,6 +25,7 @@ class _IPManagementState extends State<IPManagement>
   final TextEditingController _ipController = TextEditingController();
   final TextEditingController _blacklistIpController = TextEditingController();
   late final DefenceService _defenceService;
+  late final InputStateService _inputStateService;
   bool _hasInit = false;
 
   @override
@@ -37,6 +39,8 @@ class _IPManagementState extends State<IPManagement>
     super.didChangeDependencies();
     if (!_hasInit) {
       _defenceService = context.read<DefenceService>();
+      _inputStateService =
+          Provider.of<InputStateService>(context, listen: false);
       _hasInit = true;
     }
   }
@@ -156,6 +160,7 @@ class _IPManagementState extends State<IPManagement>
             children: [
               Expanded(
                 child: TextInputField(
+                  inputStateService: _inputStateService,
                   controller: _blacklistIpController,
                   decoration: const InputDecoration(
                     labelText: '添加IP到黑名单',
@@ -254,6 +259,7 @@ class _IPManagementState extends State<IPManagement>
             children: [
               Expanded(
                 child: TextInputField(
+                  inputStateService: _inputStateService,
                   controller: _ipController,
                   decoration: const InputDecoration(
                     labelText: '添加IP到白名单',

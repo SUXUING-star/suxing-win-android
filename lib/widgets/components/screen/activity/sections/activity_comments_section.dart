@@ -4,8 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -14,6 +15,9 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityCommentsSection extends StatelessWidget {
   final String activityId;
+  final UserFollowService userFollowService;
+  final UserInfoProvider userInfoProvider;
+  final InputStateService inputStateService;
   final User? currentUser;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
@@ -25,6 +29,9 @@ class ActivityCommentsSection extends StatelessWidget {
   const ActivityCommentsSection({
     super.key,
     required this.activityId,
+    required this.userFollowService,
+    required this.userInfoProvider,
+    required this.inputStateService,
     required this.currentUser,
     required this.comments,
     required this.isLoadingComments,
@@ -34,12 +41,10 @@ class ActivityCommentsSection extends StatelessWidget {
     required this.isDesktop,
   });
 
-
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
     final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
-    final UserInfoProvider userInfoProvider = context.watch<UserInfoProvider>();
 
     final commentInput = Padding(
       padding: EdgeInsets.only(bottom: isDesktop ? 16 : 0), // 调整padding
@@ -52,6 +57,8 @@ class ActivityCommentsSection extends StatelessWidget {
             const SizedBox(height: 10)
           ],
           ActivityCommentInput(
+            inputStateService: inputStateService,
+            currentUser: currentUser,
             onSubmit: onAddComment,
             isAlternate: false,
             hintText: '添加你的看法...',
@@ -93,15 +100,14 @@ class ActivityCommentsSection extends StatelessWidget {
         itemBuilder: (context, index) {
           final comment = comments[index];
           final userId = comment.userId;
-          userInfoProvider.ensureUserInfoLoaded(userId);
-          final userDataStatus = userInfoProvider.getUserStatus(userId);
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(
+              userFollowService: userFollowService,
+              userInfoProvider: userInfoProvider,
               comment: comment,
               currentUser: currentUser,
-              userDataStatus: userDataStatus,
               activityId: activityId,
               isAlternate: false,
               onLike: () => onCommentLikeToggled(comment),

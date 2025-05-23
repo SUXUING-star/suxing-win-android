@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -21,7 +21,13 @@ import 'package:suxingchahui/widgets/components/screen/message/message_list.dart
 
 /// 消息中心屏幕
 class MessageScreen extends StatefulWidget {
-  const MessageScreen({super.key});
+  final AuthProvider authProvider;
+  final MessageService messageService;
+  const MessageScreen({
+    super.key,
+    required this.authProvider,
+    required this.messageService,
+  });
 
   @override
   _MessageScreenState createState() => _MessageScreenState();
@@ -58,8 +64,8 @@ class _MessageScreenState extends State<MessageScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _messageService = context.read<MessageService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _messageService = widget.messageService;
+      _authProvider = widget.authProvider;
       _hasInitializedDependencies = false;
     }
     if (_hasInitializedDependencies) {
@@ -595,7 +601,7 @@ class _MessageScreenState extends State<MessageScreen>
                     child: _buildRightPanel(),
                   )
                 // Use SizedBox.shrink() for the 'empty' state
-                : SizedBox.shrink(key: ValueKey<String>('empty_panel')),
+                : const SizedBox.shrink(key: ValueKey<String>('empty_panel')),
           ),
         ],
       ),
@@ -626,14 +632,21 @@ class _MessageScreenState extends State<MessageScreen>
   Widget build(BuildContext context) {
     buildSnackBar(context);
     final isDesktop = DeviceUtils.isDesktop;
-    if (!_authProvider.isLoggedIn) {
-      return const LoginPromptWidget();
-    }
-    // 根据设备类型选择不同的布局
-    if (isDesktop) {
-      return _buildDesktopLayout();
-    } else {
-      return _buildMobileLayout();
-    }
+    return StreamBuilder<User?>(
+      stream: _authProvider.currentUserStream,
+      initialData: _authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final currentUser = authSnapshot.data;
+        if (currentUser == null) {
+          return const LoginPromptWidget();
+        }
+        // 根据设备类型选择不同的布局
+        if (isDesktop) {
+          return _buildDesktopLayout();
+        } else {
+          return _buildMobileLayout();
+        }
+      },
+    );
   }
 }

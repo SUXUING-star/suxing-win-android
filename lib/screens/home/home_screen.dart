@@ -2,12 +2,13 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:provider/provider.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_extension.dart';
@@ -21,10 +22,18 @@ import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class HomeScreen extends StatefulWidget {
-  final AuthProvider? authProvider;
+  final AuthProvider authProvider;
+  final GameService gameService;
+  final ForumService forumService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   const HomeScreen({
     super.key,
-    this.authProvider,
+    required this.authProvider,
+    required this.gameService,
+    required this.forumService,
+    required this.followService,
+    required this.infoProvider,
   });
 
   @override
@@ -84,6 +93,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   late final GameService _gameService;
   late final ForumService _forumService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -97,10 +107,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _forumService = context.read<ForumService>();
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
+      _gameService = widget.gameService;
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
 
       _hasInitializedDependencies = true;
     }
@@ -112,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
@@ -725,6 +735,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final Widget hotPostsWidget = HomeHotPosts(
       key: ValueKey('hot_posts_$_hotPostsKeyCounter'),
       currentUser: _authProvider.currentUser,
+      followService: _followService,
+      infoProvider: widget.infoProvider,
       posts: _hotPostsData,
       isLoading: _isHotPostsLoading,
       errorMessage: _hotPostsError,

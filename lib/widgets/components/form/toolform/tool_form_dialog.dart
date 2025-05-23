@@ -1,6 +1,8 @@
 // lib/path/to/your/dialogs/tool_form_dialog.dart
 
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
@@ -39,6 +41,9 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
   late String _color;
   late List<Map<String, String>> _downloadsState;
 
+  late final InputStateService _inputStateService;
+  bool _hasInitializedDependencies = false;
+
   bool _isSubmitting = false; // 跟踪提交状态
 
   // 用于颜色预览的 State 变量
@@ -65,6 +70,16 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
     _updatePreviewColor(_color);
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _inputStateService =
+          Provider.of<InputStateService>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+  }
+
   // 更新颜色预览的辅助函数
   void _updatePreviewColor(String hexColor) {
     try {
@@ -74,7 +89,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
       });
     } catch (e) {
       // 如果颜色值无效，可以设置一个默认颜色或保持不变
-      print("Invalid color format: $hexColor. Using default preview.");
+      // print("Invalid color format: $hexColor. Using default preview.");
       setState(() {
         _previewColor = Colors.grey; // 或其他默认色
       });
@@ -233,6 +248,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                               SizedBox(height: 8), // 顶部留白
                               // --- 工具名称 ---
                               FormTextInputField(
+                                inputStateService: _inputStateService,
                                 initialValue: _name,
                                 decoration: InputDecoration(
                                   labelText: '工具名称 *', // 标记必填
@@ -252,6 +268,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
 
                               // --- 工具描述 ---
                               FormTextInputField(
+                                inputStateService: _inputStateService,
                                 initialValue: _description,
                                 decoration: InputDecoration(
                                   labelText: '工具描述 *',
@@ -275,6 +292,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
 
                               // --- 颜色选择 ---
                               FormTextInputField(
+                                inputStateService: _inputStateService,
                                 initialValue: _color,
                                 decoration: InputDecoration(
                                   labelText: '颜色 (Hex) *',
@@ -345,6 +363,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                       children: [
                                         // 下载名称
                                         FormTextInputField(
+                                          inputStateService: _inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['name'],
                                           decoration: InputDecoration(
@@ -368,6 +387,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                         SizedBox(height: 10),
                                         // 下载描述
                                         FormTextInputField(
+                                          inputStateService: _inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['description'],
                                           decoration: InputDecoration(
@@ -391,6 +411,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                         SizedBox(height: 10),
                                         // 下载链接
                                         FormTextInputField(
+                                          inputStateService: _inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['url'],
                                           decoration: InputDecoration(

@@ -26,7 +26,7 @@ class ExpDialogContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
 
     // **** 不再需要前端计算等级，直接使用 User 对象里的数据 ****
     // final UserLevelDetails levelInfo = getUserLevelInfo(totalExperience); // 删除！

@@ -105,7 +105,7 @@ extension MessageTypeInfo on MessageType {
     // }
 
     // 如果以上都不匹配，作为未知类型处理
-    print("警告: 未能将字符串 '$typeString' 匹配到任何 MessageType 枚举值, 返回 MessageType.unknown");
+    // print("警告: 未能将字符串 '$typeString' 匹配到任何 MessageType 枚举值, 返回 MessageType.unknown");
     return MessageType.unknown;
   }
 }

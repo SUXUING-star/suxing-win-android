@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径
 import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart';    // 确认路径
@@ -13,8 +14,9 @@ class MobileProfileHeader extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
+  final RateLimitedFileUpload fileUpload;
   final Function(bool) onUploadStateChanged;
-  final Function() onUploadSuccess;
+  final Function(String?) onUploadSuccess;
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
@@ -25,6 +27,7 @@ class MobileProfileHeader extends StatelessWidget {
     required this.user,
     required this.onEditProfile,
     required this.onLogout,
+    required this.fileUpload,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
@@ -60,7 +63,7 @@ class MobileProfileHeader extends StatelessWidget {
                 radius: avatarRadius,
                 onUploadStateChanged: onUploadStateChanged,
                 onUploadSuccess: onUploadSuccess,
-                // 移动端使用不同的编辑图标样式
+                fileUpload: fileUpload,
                 iconBackgroundColor: Colors.white,
                 iconColor: Colors.black54,
               ),

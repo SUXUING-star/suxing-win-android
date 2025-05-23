@@ -1,7 +1,10 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
@@ -25,19 +28,31 @@ import 'package:suxingchahui/routes/app_routes.dart';
 class GameDetailScreen extends StatefulWidget {
   final String? gameId;
   final bool isNeedHistory;
+  final GameCollectionService gameCollectionService;
+  final AuthProvider authProvider;
+  final GameService gameService;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
+  final InputStateService inputStateService;
   const GameDetailScreen({
     super.key,
     this.gameId,
     this.isNeedHistory = true,
+    required this.authProvider,
+    required this.gameCollectionService,
+    required this.infoProvider,
+    required this.inputStateService,
+    required this.gameService,
+    required this.followService,
   });
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
 }
 
-class _GameDetailScreenState extends State<GameDetailScreen>
-    with WidgetsBindingObserver {
+class _GameDetailScreenState extends State<GameDetailScreen> {
   late final GameService _gameService;
   late final AuthProvider _authProvider;
+  late final GameCollectionService _gameCollectionService;
   late String? _currentUserId;
 
   Game? _game;
@@ -53,16 +68,17 @@ class _GameDetailScreenState extends State<GameDetailScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      _gameService = widget.gameService;
+      _gameCollectionService = widget.gameCollectionService;
+      _authProvider = widget.authProvider;
       _currentUserId = _authProvider.currentUserId;
+
       _hasInitializedDependencies = true;
     }
     if (widget.gameId != null && _hasInitializedDependencies) {
@@ -127,23 +143,12 @@ class _GameDetailScreenState extends State<GameDetailScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (state == AppLifecycleState.resumed) {
-      if (_currentUserId != _authProvider.currentUserId) {
-        if (mounted) {
-          setState(() {
-            _currentUserId = _authProvider.currentUserId;
-          });
-        }
-      }
-    }
-  }
-
-  @override
   void dispose() {
     super.dispose();
-    WidgetsBinding.instance.removeObserver(this);
+    _currentUserId = null;
+    _game = null;
+    _error = null;
+    _isLiked = null;
   }
 
   // --- 尝试增加游戏浏览次数 ---
@@ -371,7 +376,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
     }
   }
 
-  // *** 核心改动：处理点赞切换的回调函数 ***
+  // 处理点赞切换的回调函数
   Future<void> _handleToggleLike() async {
     // 保持前置检查
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
@@ -402,7 +407,6 @@ class _GameDetailScreenState extends State<GameDetailScreen>
             context, '操作失败: ${e.toString().split(':').last.trim()}');
       }
     } finally {
-      // *** 结束按钮 loading ***
       if (mounted) {
         setState(() {
           _isTogglingLike = false; // 结束 loading
@@ -670,27 +674,40 @@ class _GameDetailScreenState extends State<GameDetailScreen>
 
   Widget _buildGameContent(Game game, bool isPending, bool isDesktop) {
     final bool isPreview = isPending ? true : false;
-    return GameDetailContent(
-      game: game,
-      isDesktop: isDesktop,
-      currentUser: _authProvider.currentUser,
-      initialCollectionStatus: _collectionStatus,
-      onCollectionChanged: _handleCollectionStateChangedInButton,
-      onNavigate: _handleNavigate,
-      navigationInfo: _navigationInfo,
-      isPreviewMode: isPreview,
-    );
+    return StreamBuilder<String?>(
+        stream: _authProvider.currentUserIdStream,
+        initialData: _authProvider.currentUserId,
+        builder: (context, authSnapshot) {
+          if (_currentUserId != authSnapshot.data) {
+            setState(() {
+              _currentUserId = _authProvider.currentUserId;
+            });
+          }
+
+          return GameDetailContent(
+            authProvider: _authProvider,
+            inputStateService: widget.inputStateService,
+            gameService: _gameService,
+            gameCollectionService: _gameCollectionService,
+            game: game,
+            isDesktop: isDesktop,
+            infoProvider: widget.infoProvider,
+            followService: widget.followService,
+            currentUser: _authProvider.currentUser,
+            initialCollectionStatus: _collectionStatus,
+            onCollectionChanged: _handleCollectionStateChangedInButton,
+            onNavigate: _handleNavigate,
+            navigationInfo: _navigationInfo,
+            isPreviewMode: isPreview,
+          );
+        });
   }
 
   Widget _buildPendingContent() {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         // 或者使用通用 AppBar
         title: '游戏详情',
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => NavigationUtils.pop(context), // 提供返回按钮
-        ),
       ),
       body: Center(
         child: Padding(
@@ -733,7 +750,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
   Widget build(BuildContext context) {
     // 初始 ID 检查
     if (widget.gameId == null) {
-      return CustomErrorWidget(
+      return const CustomErrorWidget(
         errorMessage: '无效的游戏 ID',
         isNeedLoadingAnimation: true,
       );
@@ -753,15 +770,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
       }
       // 首次加载失败时全屏 Error
       if (_error == 'not_found' && _game == null) {
-        return NotFoundErrorWidget(
-            message: "抱歉，该游戏不存在或已被移除。",
-            onBack: () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              } else {
-                NavigationUtils.navigateToHome(context);
-              }
-            });
+        return const NotFoundErrorWidget(message: "抱歉，该游戏不存在或已被移除。");
       }
       if (_error == 'network_error') {
         return NetworkErrorWidget(
@@ -775,7 +784,7 @@ class _GameDetailScreenState extends State<GameDetailScreen>
 
     // 如果 _game 为 null 但不在加载也没错误，显示错误
     if (_game == null) {
-      return CustomErrorWidget(
+      return const CustomErrorWidget(
         title: "无法加载数据",
         errorMessage: '游戏数据不存在',
       );

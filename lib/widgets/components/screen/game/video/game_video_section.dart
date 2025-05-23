@@ -21,7 +21,6 @@ class _GameVideoSectionState extends State<GameVideoSection> {
   bool _isLoadingVideo = false; // 状态：WebView 是否正在加载页面
   String? _loadingError; // 状态：记录加载错误信息
 
-
   // 根据 bvid 构建嵌入式播放器 URL
   String? get _embedUrl {
     if (widget.bvid == null || widget.bvid!.isEmpty) {
@@ -153,7 +152,7 @@ class _GameVideoSectionState extends State<GameVideoSection> {
             },
             onWebResourceError: (error) {
               // 加载出错，取消 Loading 并记录错误
-              print("WebView Error in GameVideoSection: $error");
+              // print("WebView Error in GameVideoSection: $error");
               if (mounted) {
                 setState(() {
                   _isLoadingVideo = false;

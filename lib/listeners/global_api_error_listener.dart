@@ -44,22 +44,22 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
         .on<IdempotencyApiErrorEvent>() // 只精确监听这个类型的事件
         .listen(_handleIdempotencyError, onError: (error) {
       // 处理事件流本身的错误（理论上很少发生）
-      print("Error in IdempotencyApiErrorEvent stream: $error");
+      //  print("Error in IdempotencyApiErrorEvent stream: $error");
     }, onDone: () {
       // 事件流关闭时（理论上 App 退出时）
-      print("IdempotencyApiErrorEvent stream closed.");
+      // print("IdempotencyApiErrorEvent stream closed.");
     });
   }
 
-  // --- 新增：监听 UnauthorizedAccessEvent ---
+  // --- 监听 UnauthorizedAccessEvent ---
   void _listenForUnauthorizedErrors() {
     _unauthorizedSubscription?.cancel();
     _unauthorizedSubscription = appEventBus
         .on<UnauthorizedAccessEvent>()
         .listen(_handleUnauthorizedAccess, onError: (error) {
-      print("Error in UnauthorizedAccessEvent stream: $error");
+      // print("Error in UnauthorizedAccessEvent stream: $error");
     }, onDone: () {
-      print("UnauthorizedAccessEvent stream closed.");
+      // print("UnauthorizedAccessEvent stream closed.");
     });
   }
 
@@ -69,7 +69,7 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
     if (_lastIdempotencyErrorTimestamp != null &&
         now.difference(_lastIdempotencyErrorTimestamp!) <
             _idempotencyDebounceDuration) {
-      print("Debouncing IdempotencyApiErrorEvent (too close to last one).");
+      // print("Debouncing IdempotencyApiErrorEvent (too close to last one).");
       return;
     }
 
@@ -77,8 +77,8 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
       _lastIdempotencyErrorTimestamp = now;
       _showIdempotencyErrorDialog(context, event); // <--- 改用专门的方法显示
     } else {
-      print(
-          "Listener is not mounted, cannot show dialog for idempotency error.");
+      // print(
+      //     "Listener is not mounted, cannot show dialog for idempotency error.");
     }
   }
 
@@ -109,8 +109,8 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
       BuildContext _, IdempotencyApiErrorEvent event) {
     final navigatorContext = mainNavigatorKey.currentContext;
     if (navigatorContext == null) {
-      print(
-          "Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
+      // print(
+      //     "Error: mainNavigatorKey.currentContext is null. Cannot show idempotency dialog.");
       // 这里可以考虑加个日志或者备用方案，但通常不应该为 null
       return;
     }
@@ -153,7 +153,7 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
       barrierDismissible: true,
       // onClose 是可选的
       onClose: () {
-        print("Idempotency error dialog closed.");
+        // print("Idempotency error dialog closed.");
       },
     );
   }
@@ -186,7 +186,7 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
   @override
   void dispose() {
     _idempotencyErrorSubscription?.cancel();
-    _unauthorizedSubscription?.cancel(); // <--- 别忘了取消 401 监听
+    _unauthorizedSubscription?.cancel();
     super.dispose();
   }
 

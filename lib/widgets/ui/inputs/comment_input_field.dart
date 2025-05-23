@@ -1,15 +1,17 @@
 // lib/widgets/ui/inputs/comment_input_field.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 直接使用
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 直接使用
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 直接使用
-import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart'; // 直接使用
-import 'text_input_field.dart'; // 导入修改后的 TextInputField
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'text_input_field.dart';
 
 class CommentInputField extends StatefulWidget {
   final String? slotName;
+  final User? currentUser;
+  final InputStateService inputStateService;
   final TextEditingController? controller;
   final Function(String) onSubmit;
   final String hintText;
@@ -33,6 +35,8 @@ class CommentInputField extends StatefulWidget {
     this.slotName,
     this.controller,
     required this.onSubmit,
+    required this.currentUser,
+    required this.inputStateService,
     this.hintText = '发表评论...',
     this.submitButtonText = '发表',
     this.isSubmitting = false,
@@ -60,6 +64,7 @@ class _CommentInputFieldState extends State<CommentInputField> {
   late FocusNode _focusNode;
   bool _isInternalFocusNode = false;
   TextEditingController? _internalController; // 内部控制器（如果需要）
+  User? _currentUser;
 
   @override
   void initState() {
@@ -67,6 +72,13 @@ class _CommentInputFieldState extends State<CommentInputField> {
     _initializeFocusNode();
     _initializeInternalControllerIfNeeded();
   }
+
+  @override
+  void didChangeDependencies() {
+    _currentUser = widget.currentUser;
+    super.didChangeDependencies();
+  }
+
 
   void _initializeFocusNode() {
     // 假设 CommentInputField 创建并向下传递 FocusNode
@@ -96,8 +108,12 @@ class _CommentInputFieldState extends State<CommentInputField> {
       }
       _initializeInternalControllerIfNeeded();
     }
-    // FocusNode 更新逻辑（如果允许外部传入）
-    // if (widget.focusNode != oldWidget.focusNode) { ... }
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   @override
@@ -120,15 +136,8 @@ class _CommentInputFieldState extends State<CommentInputField> {
   void _handleCancel() {
     if (widget.isSubmitting) return;
 
-    InputStateService? service;
-    try {
-      service = Provider.of<InputStateService>(context, listen: false);
-    } catch (_) {/* Service not found, ignore */}
-
-    if (widget.slotName != null &&
-        widget.slotName!.isNotEmpty &&
-        service != null) {
-      service.clearText(widget.slotName!);
+    if (widget.slotName != null && widget.slotName!.isNotEmpty) {
+      widget.inputStateService.clearText(widget.slotName!);
     } else if (widget.controller != null) {
       widget.controller!.clear();
     } else {
@@ -140,15 +149,11 @@ class _CommentInputFieldState extends State<CommentInputField> {
 
   @override
   Widget build(BuildContext context) {
-    final authProvider =
-        Provider.of<AuthProvider>(context); // 直接使用 AuthProvider
-    final theme = Theme.of(context);
-
     if (widget.lockedContent != null) {
       return Padding(padding: widget.padding, child: widget.lockedContent!);
     }
 
-    if (!authProvider.isLoggedIn) {
+    if (widget.currentUser == null) {
       if (widget.loginPrompt != null) {
         return Padding(padding: widget.padding, child: widget.loginPrompt!);
       }
@@ -163,7 +168,7 @@ class _CommentInputFieldState extends State<CommentInputField> {
           buttonText: '登录',
           onLoginPressed: widget.onLoginRequired ??
               () => NavigationUtils.pushNamed(
-                  context, '/login'), // 直接使用 NavigationUtils
+                  context, AppRoutes.login), // 直接使用 NavigationUtils
         ),
       );
     }
@@ -179,6 +184,7 @@ class _CommentInputFieldState extends State<CommentInputField> {
         children: [
           Expanded(
             child: TextInputField(
+              inputStateService: widget.inputStateService,
               slotName: widget.slotName,
               controller: effectiveController,
               focusNode: _focusNode,
@@ -225,16 +231,10 @@ class _CommentInputFieldState extends State<CommentInputField> {
             label: widget.submitButtonText,
             onPressed: () {
               String currentText = '';
-              InputStateService? service;
-              try {
-                service =
-                    Provider.of<InputStateService>(context, listen: false);
-              } catch (_) {/* Service not found */}
 
-              if (widget.slotName != null &&
-                  widget.slotName!.isNotEmpty &&
-                  service != null) {
-                currentText = service.getText(widget.slotName!);
+              if (widget.slotName != null && widget.slotName!.isNotEmpty) {
+                currentText =
+                    widget.inputStateService.getText(widget.slotName!);
               } else if (effectiveController != null) {
                 currentText = effectiveController.text;
               }

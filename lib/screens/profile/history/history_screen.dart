@@ -1,17 +1,25 @@
 // lib/screens/profile/history_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
 import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final AuthProvider authProvider;
+  final GameService gameService;
+  final ForumService forumService;
+  const HistoryScreen({
+    super.key,
+    required this.gameService,
+    required this.authProvider,
+    required this.forumService,
+  });
 
   @override
   _HistoryScreenState createState() => _HistoryScreenState();
@@ -21,6 +29,8 @@ class _HistoryScreenState extends State<HistoryScreen>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
   String? _error;
+  late final AuthProvider _authProvider;
+  bool _hasInitializedProviders = false;
 
   // 标记是否已经加载过数据
   bool _gameHistoryLoaded = false;
@@ -45,6 +55,10 @@ class _HistoryScreenState extends State<HistoryScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    if (!_hasInitializedProviders) {
+      _authProvider = widget.authProvider;
+      _hasInitializedProviders = true;
+    }
 
     // 应用启动时只预加载当前选中的标签页数据
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -111,7 +125,9 @@ class _HistoryScreenState extends State<HistoryScreen>
         _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
         _postHistoryLoaded = false; // 加载失败，允许重试
       });
-    } finally {}
+    } finally {
+      //
+    }
   }
 
   // 刷新当前选中的历史
@@ -151,20 +167,25 @@ class _HistoryScreenState extends State<HistoryScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    if (!authProvider.isLoggedIn) {
-      return const LoginPromptWidget();
-    }
-    return Scaffold(
-      appBar: CustomAppBar(title: '浏览历史'),
-      body: RefreshIndicator(
-        onRefresh: _refreshCurrentHistory,
-        child: _buildContent(),
-      ),
-    );
+    return StreamBuilder<User?>(
+        stream: _authProvider.currentUserStream,
+        initialData: _authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final currentUser = authSnapshot.data;
+          if (currentUser == null) {
+            return const LoginPromptWidget();
+          }
+          return Scaffold(
+            appBar: const CustomAppBar(title: '浏览历史'),
+            body: RefreshIndicator(
+              onRefresh: _refreshCurrentHistory,
+              child: _buildContent(_authProvider.currentUser),
+            ),
+          );
+        });
   }
 
-  Widget _buildContent() {
+  Widget _buildContent(User? currentUser) {
     if (_error != null) {
       return _buildErrorContent();
     }
@@ -172,7 +193,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     return Column(
       children: [
         _buildTabBar(),
-        _buildTabContent(),
+        _buildTabContent(currentUser),
       ],
     );
   }
@@ -193,7 +214,7 @@ class _HistoryScreenState extends State<HistoryScreen>
     );
   }
 
-  Widget _buildTabContent() {
+  Widget _buildTabContent(User? currentUser) {
     return Expanded(
       child: TabBarView(
         controller: _tabController,
@@ -202,11 +223,15 @@ class _HistoryScreenState extends State<HistoryScreen>
           GameHistoryTab(
             isLoaded: _gameHistoryLoaded,
             onLoad: _loadGameHistory,
+            currentUser: currentUser,
+            gameService: widget.gameService,
           ),
           // 帖子历史标签页 - 使用组件拆分提高性能
           PostHistoryTab(
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
+            currentUser: currentUser,
+            forumService: widget.forumService,
           ),
         ],
       ),

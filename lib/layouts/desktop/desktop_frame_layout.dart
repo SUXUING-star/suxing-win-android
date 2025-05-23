@@ -1,8 +1,11 @@
 // lib/widgets/layouts/desktop/desktop_frame_layout.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/services/main/message/message_service.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/checkin_badge.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/message_badge.dart';
 import 'package:suxingchahui/widgets/components/badge/layout/update_button.dart';
@@ -16,6 +19,16 @@ import 'package:suxingchahui/wrapper/platform_wrapper.dart'; // For kDesktopTitl
 import 'package:window_manager/window_manager.dart';
 
 class DesktopFrameLayout extends StatelessWidget {
+  final SidebarProvider sidebarProvider;
+
+  final AuthProvider authProvider;
+
+  final MessageService messageService;
+
+  final UserCheckInService checkInService;
+
+  final AnnouncementService announcementService;
+
   /// 要显示的主要内容 Widget
   final Widget child;
 
@@ -36,6 +49,11 @@ class DesktopFrameLayout extends StatelessWidget {
 
   const DesktopFrameLayout({
     super.key,
+    required this.announcementService,
+    required this.authProvider,
+    required this.sidebarProvider,
+    required this.messageService,
+    required this.checkInService,
     required this.child,
     this.showSidebar = true, // 默认显示侧边栏
     this.showTitleBarActions = true, // 默认显示动作按钮
@@ -72,7 +90,11 @@ class DesktopFrameLayout extends StatelessWidget {
 
     // 2. 根据 showSidebar 构建基础布局
     Widget baseLayout = showSidebar
-        ? DesktopSidebar(child: paddedChild) // 如果显示侧边栏，用 DesktopSidebar 包裹
+        ? DesktopSidebar(
+            sidebarProvider: sidebarProvider,
+            authProvider: authProvider,
+            child: paddedChild,
+          ) // 如果显示侧边栏，用 DesktopSidebar 包裹
         : paddedChild; // 否则直接使用带 Padding 的 child
 
     // 3. 使用 Stack 将自定义标题栏叠加在基础布局之上
@@ -137,23 +159,37 @@ class DesktopFrameLayout extends StatelessWidget {
 
                 // --- b) 动作按钮区域 (条件显示) ---
                 if (showTitleBarActions)
-                  Consumer<AuthProvider>(
-                    // 仍然需要 Consumer 来判断登录状态
-                    builder: (context, authProvider, _) {
+                  // ⭐ 使用 StreamBuilder 代替 Consumer
+                  StreamBuilder<bool>(
+                    stream: authProvider.isLoggedInStream,
+                    initialData: authProvider.isLoggedIn, // 使用 getter 获取初始值
+                    builder: (context, isLoggedInSnapshot) {
+                      final bool isLoggedIn =
+                          isLoggedInSnapshot.data ?? authProvider.isLoggedIn;
                       return Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           _buildTitleBarButtonWrapper(
                               const UpdateButton(), '检查更新'),
                           _buildTitleBarButtonWrapper(
-                              AnnouncementIndicator(authProvider: authProvider),
+                              // AnnouncementIndicator 现在直接接收 authProvider
+                              AnnouncementIndicator(
+                                authProvider: authProvider,
+                                announcementService: announcementService,
+                              ),
                               '查看公告'),
-                          if (authProvider.isLoggedIn)
+                          if (isLoggedIn) // ⭐ 根据 Stream 的结果判断
                             _buildTitleBarButtonWrapper(
-                                const MessageBadge(), '未读消息'),
+                                MessageBadge(
+                                  messageService: messageService,
+                                ),
+                                '未读消息'),
                           _buildTitleBarButtonWrapper(
-                              const CheckInBadge(), '每日签到'),
-                          const SizedBox(width: 8), // 与窗口控件的间距
+                              CheckInBadge(
+                                checkInService: checkInService,
+                              ),
+                              '每日签到'),
+                          const SizedBox(width: 8),
                         ],
                       );
                     },

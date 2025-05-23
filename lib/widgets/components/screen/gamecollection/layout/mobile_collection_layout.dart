@@ -1,11 +1,11 @@
 // lib/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/components/screen/gamecollection/card/collection_game_card.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import '../../../../../models/game/game_collection.dart'; // 确保路径正确
-import '../../../../../utils/navigation/navigation_utils.dart'; // 确保路径正确
-import '../../../../../routes/app_routes.dart'; // 确保路径正确
-import '../card/collection_game_card.dart'; // 确保路径正确
+import 'package:suxingchahui/models/game/game_collection.dart'; // 确保路径正确
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保路径正确
+
 
 /// 移动设备游戏收藏展示布局 - 只负责展示列表
 /// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成

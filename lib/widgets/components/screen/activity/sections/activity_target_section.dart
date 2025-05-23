@@ -3,20 +3,24 @@ import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityTargetSection extends StatelessWidget {
   final UserActivity activity;
-  final UserDataStatus userDataStatus;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
   final User? currentUser;
   final bool isDesktop;
 
   const ActivityTargetSection({
     super.key,
     required this.currentUser,
-    required this.userDataStatus,
+    required this.followService,
+    required this.infoProvider,
     required this.activity,
     required this.isDesktop,
   });
@@ -92,7 +96,8 @@ class ActivityTargetSection extends StatelessWidget {
           // --- 原有的内容 ---
           ActivityTarget(
             currentUser: currentUser,
-            userDataStatus: userDataStatus,
+            infoProvider: infoProvider,
+            followService: followService,
             activity: activity,
             isAlternate: false, // 注意：isAlternate
           ),

@@ -1,6 +1,5 @@
 // lib/screens/auth/register_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/account.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -13,16 +12,26 @@ import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'dart:async';
-import '../../services/main/email/email_service.dart';
-import '../../services/main/user/user_service.dart';
-import '../../providers/inputs/input_state_provider.dart';
-import '../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../widgets/ui/common/error_widget.dart';
-import '../../widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/services/main/email/email_service.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 // --- ---
 
 class RegisterScreen extends StatefulWidget {
-  const RegisterScreen({super.key});
+  final AuthProvider authProvider;
+  final UserService userService;
+  final InputStateService inputStateService;
+  final EmailService emailService;
+  const RegisterScreen({
+    super.key,
+    required this.userService,
+    required this.authProvider,
+    required this.inputStateService,
+    required this.emailService,
+  });
 
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
@@ -50,7 +59,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   Timer? _timer;
   int _countDown = 0;
   late final AuthProvider _authProvider;
-  late final EmailService _emailService;
   late final UserService _userService;
 
   bool _hasInitializedDependencies = false;
@@ -59,9 +67,8 @@ class _RegisterScreenState extends State<RegisterScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _userService = context.read<UserService>();
-      _emailService = context.read<EmailService>();
+      _authProvider = widget.authProvider;
+      _userService = widget.userService;
       _hasInitializedDependencies = true;
     }
   }
@@ -94,10 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen>
   Future<void> _sendVerificationCode() async {
     // 验证逻辑现在只依赖 FormTextInputField 内部的 validator
     // 但我们仍然需要邮箱值来发送请求
-    final InputStateService inputService =
-        Provider.of<InputStateService>(context, listen: false);
 
-    final email = inputService.getText(emailSlotName).trim();
+    final email = widget.inputStateService.getText(emailSlotName).trim();
 
     // 简单的邮箱格式前端校验（也可以依赖 FormField 的 validator）
     if (email.isEmpty || !email.contains('@')) {
@@ -112,7 +117,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     });
 
     try {
-      await _emailService.requestVerificationCode(email, 'register');
+      await widget.emailService.requestVerificationCode(email, 'register');
       if (!mounted) return;
       _startTimer();
       setState(() {
@@ -145,22 +150,19 @@ class _RegisterScreenState extends State<RegisterScreen>
       _error = null;
     });
 
-    final InputStateService inputService =
-        Provider.of<InputStateService>(context, listen: false);
-
     // 从 Service 获取所有需要的值
-    final email = inputService.getText(emailSlotName).trim();
-    final username = inputService.getText(usernameSlotName).trim();
-    final password = inputService.getText(passwordSlotName);
+    final email = widget.inputStateService.getText(emailSlotName).trim();
+    final username = widget.inputStateService.getText(usernameSlotName).trim();
+    final password = widget.inputStateService.getText(passwordSlotName);
     final verificationCode =
-        inputService.getText(verificationCodeSlotName).trim();
+        widget.inputStateService.getText(verificationCodeSlotName).trim();
 
     bool isCodeValid = false;
     String registrationError = '';
 
     try {
-      isCodeValid =
-          await _emailService.verifyCode(email, verificationCode, 'register');
+      isCodeValid = await widget.emailService
+          .verifyCode(email, verificationCode, 'register');
       if (!mounted) return;
 
       if (!isCodeValid) {
@@ -190,11 +192,11 @@ class _RegisterScreenState extends State<RegisterScreen>
       if (!mounted) return;
 
       // 注册成功后，清除所有相关的输入状态
-      inputService.clearText(usernameSlotName);
-      inputService.clearText(emailSlotName);
-      inputService.clearText(passwordSlotName);
-      inputService.clearText(confirmPasswordSlotName);
-      inputService.clearText(verificationCodeSlotName);
+      widget.inputStateService.clearText(usernameSlotName);
+      widget.inputStateService.clearText(emailSlotName);
+      widget.inputStateService.clearText(passwordSlotName);
+      widget.inputStateService.clearText(confirmPasswordSlotName);
+      widget.inputStateService.clearText(verificationCodeSlotName);
 
       showSnackbar(message: "注册成功，即将跳转...", type: SnackbarType.success);
       await Future.delayed(Duration(milliseconds: 1000));
@@ -214,7 +216,8 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Widget _buildPassWordFormField(bool isLoading) {
     return FormTextInputField(
-      slotName: passwordSlotName, // <-- 使用 slotName
+      inputStateService: widget.inputStateService,
+      slotName: passwordSlotName,
       isEnabled: !isLoading,
       obscureText: _obscurePassword,
       decoration: InputDecoration(
@@ -240,6 +243,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Widget _buildVerificationCodeField(bool isLoading) {
     return FormTextInputField(
+      inputStateService: widget.inputStateService,
       slotName: verificationCodeSlotName, // <-- 使用 slotName
       isEnabled: !isLoading && _codeSent,
       decoration: const InputDecoration(
@@ -262,6 +266,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   // --- 修改：使用 slotName ---
   Widget _buildUserNameFormField(bool isLoading) {
     return FormTextInputField(
+      inputStateService: widget.inputStateService,
       slotName: usernameSlotName, // <-- 使用 slotName
       isEnabled: !isLoading,
       decoration: const InputDecoration(
@@ -279,6 +284,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     final bool isSendCodeButtonEnabled = !isLoading && _countDown <= 0;
 
     final emailField = FormTextInputField(
+      inputStateService: widget.inputStateService,
       slotName: emailSlotName,
       isEnabled: !isLoading,
       decoration: const InputDecoration(
@@ -319,6 +325,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Widget _buildRepeatPassWordFormField(bool isLoading) {
     return FormTextInputField(
+      inputStateService: widget.inputStateService,
       slotName: confirmPasswordSlotName,
       isEnabled: !isLoading,
       obscureText: _obscureConfirmPassword,
@@ -337,10 +344,9 @@ class _RegisterScreenState extends State<RegisterScreen>
       textInputAction: TextInputAction.done,
       validator: (value) {
         if (value == null || value.isEmpty) return '请再次输入密码';
-        // 从 Service 获取密码字段的值进行比较
-        final inputService =
-            Provider.of<InputStateService>(context, listen: false);
-        final password = inputService.getText(passwordSlotName); // 不需要 trim
+
+        final password =
+            widget.inputStateService.getText(passwordSlotName); // 不需要 trim
         if (value != password) return '两次输入的密码不一致';
         return null;
       },
@@ -365,7 +371,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               ),
             ),
           )
-        : SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 
   @override
@@ -382,7 +388,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     const Duration stagger = Duration(milliseconds: 70);
 
     return Scaffold(
-      appBar: CustomAppBar(title: '注册'),
+      appBar: const CustomAppBar(title: '注册'),
       body: Stack(
         children: [
           if (isLoading) LoadingWidget.fullScreen(message: loadingMessage),

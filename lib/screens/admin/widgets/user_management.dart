@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -9,13 +11,20 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../providers/auth/auth_provider.dart';
-import '../../../services/main/user/user_service.dart';
-import '../../../services/main/user/user_ban_service.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/services/main/user/user_ban_service.dart';
 import 'package:intl/intl.dart'; // 用于日期格式化
 
 class UserManagement extends StatefulWidget {
-  const UserManagement({super.key});
+  final User? currentUser;
+  final UserService userService;
+  final InputStateService inputStateService;
+  const UserManagement({
+    super.key,
+    required this.currentUser,
+    required this.userService,
+    required this.inputStateService,
+  });
 
   @override
   State<UserManagement> createState() => _UserManagementState();
@@ -27,7 +36,7 @@ class _UserManagementState extends State<UserManagement>
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
   late final UserBanService _banService;
-  late final AuthProvider _authProvider;
+  User? _currentUser;
   late final UserService _userService;
 
   // 刷新用户列表
@@ -40,6 +49,7 @@ class _UserManagementState extends State<UserManagement>
   @override
   void initState() {
     super.initState();
+    _currentUser = widget.currentUser;
   }
 
   @override
@@ -47,9 +57,19 @@ class _UserManagementState extends State<UserManagement>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _banService = context.read<UserBanService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _userService = context.read<UserService>();
+      _userService = widget.userService;
       _hasInitializedDependencies = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant UserManagement oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
@@ -65,7 +85,6 @@ class _UserManagementState extends State<UserManagement>
     final TextEditingController reasonController = TextEditingController();
     DateTime? endTime;
     bool isPermanent = true;
-    final rootContext = context;
 
     await showDialog(
       context: context,
@@ -78,6 +97,7 @@ class _UserManagementState extends State<UserManagement>
               Text('确定要封禁用户 ${user['username']} 吗？'),
               SizedBox(height: 16),
               TextInputField(
+                inputStateService: widget.inputStateService,
                 controller: reasonController,
                 decoration: InputDecoration(
                   labelText: '封禁原因',
@@ -194,7 +214,7 @@ class _UserManagementState extends State<UserManagement>
                         userId: user['id'].toString(), // <--- 使用 'id'
                         reason: reasonController.text.trim(),
                         endTime: isPermanent ? null : endTime,
-                        bannedBy: _authProvider.currentUser!.id,
+                        bannedBy: _currentUser!.id,
                       );
                       if (!mounted) return;
                       NavigationUtils.pop(context);
@@ -263,9 +283,10 @@ class _UserManagementState extends State<UserManagement>
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
+    final bool isSuperAdmin = _currentUser?.isAdmin ?? false;
 
     // 权限检查
-    if (!_authProvider.isSuperAdmin) {
+    if (!isSuperAdmin) {
       return const CustomErrorWidget(
         errorMessage: '只有超级管理员可以访问用户管理',
       );
@@ -283,11 +304,11 @@ class _UserManagementState extends State<UserManagement>
               errorMessage: '加载用户列表失败: ${snapshot.error}\n请尝试下拉刷新。');
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return EmptyStateWidget(message: '没有用户数据');
+          return const EmptyStateWidget(message: '没有用户数据');
         }
 
         final users = snapshot.data!;
-        final currentUserId = _authProvider.currentUser?.id; // 获取当前用户ID
+        final currentUserId = _currentUser?.id; // 获取当前用户ID
 
         return RefreshIndicator(
           onRefresh: () async => _refreshUserList(),

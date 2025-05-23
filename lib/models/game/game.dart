@@ -93,7 +93,7 @@ class Game {
             .whereType<DownloadLink>() // Filter out nulls
             .toList();
       } catch (e) {
-        print('Error parsing download links: $e');
+        // print('Error parsing download links: $e');
         return [];
       }
     }
@@ -104,7 +104,7 @@ class Game {
         try {
           return tags.map((tag) => tag.toString()).toList();
         } catch (e) {
-          print('Error parsing tags: $e');
+          // print('Error parsing tags: $e');
           return [];
         }
       }
@@ -127,7 +127,7 @@ class Game {
         // 尝试解析 ISO 8601 字符串
         return DateTime.parse(dateValue.toString());
       } catch (e) {
-        print('Error parsing date $dateValue: $e');
+        // print('Error parsing date $dateValue: $e');
         // 尝试解析数字（毫秒时间戳）
         final millis = int.tryParse(dateValue.toString());
         if (millis != null) {
@@ -266,7 +266,6 @@ class Game {
     int? playingCount,
     int? playedCount,
     int? totalCollections,
-    // *** 添加 copyWith 参数 ***
     double? totalRatingSum,
     int? ratingCount,
     DateTime? ratingUpdateTime,

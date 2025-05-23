@@ -2,14 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import '../../../../../../models/comment/comment.dart';
+import 'package:suxingchahui/models/comment/comment.dart';
 import 'game_comment_item.dart'; // 导入 CommentItem
 
 class GameCommentList extends StatelessWidget {
   final User? currentUser;
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
+  final InputStateService inputStateService;
   final List<Comment> comments;
   final Future<void> Function(Comment comment, String content) onUpdateComment;
   final Future<void> Function(Comment comment) onDeleteComment;
@@ -20,6 +27,10 @@ class GameCommentList extends StatelessWidget {
   const GameCommentList({
     super.key,
     required this.currentUser,
+    required this.authProvider,
+    required this.infoProvider,
+    required this.followService,
+    required this.inputStateService,
     required this.comments,
     required this.onUpdateComment, // 接收需要 ID 的 onUpdate
     required this.onDeleteComment, // 接收需要 ID 的 onDelete
@@ -35,7 +46,6 @@ class GameCommentList extends StatelessWidget {
       return const EmptyStateWidget(
           message: '暂无评论', iconData: Icons.maps_ugc_outlined);
     }
-    final userInfoProvider = context.watch<UserInfoProvider>();
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 0),
@@ -44,16 +54,14 @@ class GameCommentList extends StatelessWidget {
       itemCount: comments.length,
       itemBuilder: (context, index) {
         final comment = comments[index];
-        final userId = comment.userId;
-        userInfoProvider.ensureUserInfoLoaded(userId);
-        final UserDataStatus userDataStatus =
-            userInfoProvider.getUserStatus(userId);
-
         return GameCommentItem(
           key: ValueKey(comment.id), // 使用 Key
           currentUser: currentUser,
+          authProvider: authProvider,
           comment: comment,
-          userDataStatus: userDataStatus,
+          infoProvider: infoProvider,
+          inputStateService: inputStateService,
+          followService: followService,
           onUpdateComment: onUpdateComment,
           onDeleteComment: onDeleteComment,
           onAddReply: onAddReply,

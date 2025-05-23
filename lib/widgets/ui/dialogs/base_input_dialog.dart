@@ -75,8 +75,7 @@ class BaseInputDialog<T> extends StatefulWidget {
     final completer = Completer<T?>(); // Completer 的类型是 T?
 
     // 使用导入的 animatedDialog (假设它包含 showAppAnimatedDialog)
-    animatedDialog
-        .showAppAnimatedDialog<T>(
+    AnimatedDialog.showAppAnimatedDialog<T>(
       context: context,
       maxWidth: maxWidth,
       barrierDismissible: barrierDismissible,
@@ -115,8 +114,7 @@ class BaseInputDialog<T> extends StatefulWidget {
           maxScale: maxScale,
         );
       },
-    )
-        .then((result) {
+    ).then((result) {
       // showGeneralDialog 返回的是 T?
       // 当对话框关闭时 (Navigator.pop(context, result) 被调用)
       if (!completer.isCompleted) {
@@ -156,17 +154,16 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
     T? result;
     bool shouldPop = false;
     Object? error;
-    StackTrace? stackTrace;
+    // StackTrace? stackTrace;
 
     try {
       result = await widget.onConfirm();
       shouldPop = true; // 确认操作完成就应该关闭，无论结果是否为 null
-    } catch (e, s) {
+    } catch (e) {
       error = e;
-      stackTrace = s;
       shouldPop = true; // 出错也尝试关闭
       // 可以在这里添加更详细的错误处理或日志记录
-      print('BaseInputDialog: onConfirm error: $e\n$stackTrace');
+      // print('BaseInputDialog: onConfirm error: $e\n$stackTrace');
     } finally {
       // 确保组件仍然挂载
       if (mounted) {
@@ -432,13 +429,13 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
                 behavior: SnackBarBehavior.floating, // 悬浮提示更好看
               ));
             } else {
-              print(
-                  "BaseInputDialog PopScope: Cannot show SnackBar, context or messenger invalid.");
+              // print(
+              //     "BaseInputDialog PopScope: Cannot show SnackBar, context or messenger invalid.");
             }
           } else if (!widget.dismissibleWhenNotProcessing) {
             // 如果是因为设置了不允许关闭
-            print(
-                "Pop prevented because dismissibleWhenNotProcessing is false.");
+            // print(
+            //     "Pop prevented because dismissibleWhenNotProcessing is false.");
           }
         } else {
           // 如果 pop 成功了 (通过非按钮方式，如 back 键或点击 barrier)

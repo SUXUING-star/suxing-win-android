@@ -1,19 +1,25 @@
 // lib/widgets/components/screen/activity/comment/activity_comment_input_updated.dart
 
 import 'package:flutter/material.dart';
-import '../../../../../widgets/ui/inputs/comment_input_field.dart'; // 导入可复用的评论输入组件
-import '../../../../../widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 
 class ActivityCommentInput extends StatefulWidget {
   final Function(String) onSubmit;
+  final InputStateService inputStateService;
   final bool isAlternate; // 是否交替布局
   final String hintText;
   final bool isLocked; // 是否锁定状态
   final bool isSubmitting;
+  final User? currentUser;
 
   const ActivityCommentInput({
     super.key,
     required this.onSubmit,
+    required this.inputStateService,
+    required this.currentUser,
     this.isAlternate = false,
     this.hintText = '发表评论...',
     this.isLocked = false, // 默认为未锁定
@@ -25,9 +31,28 @@ class ActivityCommentInput extends StatefulWidget {
 }
 
 class _ActivityCommentInputState extends State<ActivityCommentInput> {
+  User? _currentUser;
+
+  @override
+  void didUpdateWidget(covariant ActivityCommentInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.currentUser ||
+        oldWidget.currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _currentUser = widget.currentUser;
   }
 
   void _handleSubmit(String comment) {
@@ -46,6 +71,8 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
   Widget build(BuildContext context) {
     // 使用可复用的CommentInputField组件
     return CommentInputField(
+      inputStateService: widget.inputStateService,
+      currentUser: widget.currentUser,
       hintText: widget.hintText,
       submitButtonText: '发送',
       isSubmitting: widget.isSubmitting,

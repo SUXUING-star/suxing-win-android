@@ -95,7 +95,7 @@ class HomeHotGames extends StatelessWidget {
 
     // 4. 正常显示内容 (即使在加载中，如果有旧数据也显示)
     final displayGames = games ?? []; // 使用 HomeScreen 传来的数据
-    if (!context.mounted) return SizedBox.shrink();
+    if (!context.mounted) return const SizedBox.shrink();
 
     final int cardsCountPerPage =
         getCardsPerPage(context); // 动态计算或由 HomeScreen 传入
@@ -140,14 +140,14 @@ class HomeHotGames extends StatelessWidget {
                     onPageChanged: onPageChanged, // 回调给 HomeScreen
                     itemBuilder: (context, pageIndex) {
                       final startIndex = pageIndex * cardsCountPerPage;
-                      if (!context.mounted) return SizedBox.shrink();
+                      if (!context.mounted)  return const SizedBox.shrink();
                       // PageView 内部的 LayoutBuilder 保持不变，用于动态决定每页实际卡片数
                       return Container(
                         margin: EdgeInsets.symmetric(
                             horizontal: 8), // PageView item 的边距
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            if (!context.mounted) return SizedBox.shrink();
+                            if (!context.mounted) return const SizedBox.shrink();
                             double availableWidth = constraints.maxWidth;
                             // 这里再次计算是为了确保 PageView 内部item能正确布局
                             // 如果 HomeScreen 能准确预估这里的宽度，也可以由 HomeScreen 计算后传入

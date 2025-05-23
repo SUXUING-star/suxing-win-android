@@ -1,6 +1,5 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'dart:async';
@@ -19,7 +18,13 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 
 class SearchGameScreen extends StatefulWidget {
-  const SearchGameScreen({super.key});
+  final GameService gameService;
+  final UserService userService;
+  const SearchGameScreen({
+    super.key,
+    required this.gameService,
+    required this.userService,
+  });
 
   @override
   _SearchGameScreenState createState() => _SearchGameScreenState();
@@ -50,8 +55,8 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _userService = context.read<UserService>();
-      _gameService = context.read<GameService>();
+      _userService = widget.userService;
+      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {

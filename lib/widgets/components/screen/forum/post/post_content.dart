@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/post_interaction_buttons.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -14,6 +14,9 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class PostContent extends StatelessWidget {
   final Post post;
+  final ForumService forumService;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
   final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
@@ -21,6 +24,9 @@ class PostContent extends StatelessWidget {
   const PostContent({
     super.key,
     required this.currentUser,
+    required this.forumService,
+    required this.infoProvider,
+    required this.followService,
     required this.userActions,
     required this.post,
     required this.onPostUpdated,
@@ -126,6 +132,7 @@ class PostContent extends StatelessWidget {
             // 添加交互按钮
             const SizedBox(height: 16),
             PostInteractionButtons(
+              forumService: forumService,
               userActions: userActions, // 使用 userActions
               post: post, // 使用 post
               currentUser: currentUser,
@@ -170,17 +177,15 @@ class PostContent extends StatelessWidget {
 
   Widget _buildAuthorRow(BuildContext context, bool isDesktop) {
     final userId = post.authorId; // 使用 post
-    final userInfoProvider = context.watch<UserInfoProvider>();
-    userInfoProvider.ensureUserInfoLoaded(userId);
-    final UserDataStatus userDataStatus =
-        userInfoProvider.getUserStatus(userId);
+
     return Row(
       children: [
         // 使用UserInfoBadge替换原有的用户信息显示
         Expanded(
           child: UserInfoBadge(
             currentUser: currentUser, // 使用 currentUser
-            userDataStatus: userDataStatus,
+            infoProvider: infoProvider,
+            followService: followService,
             targetUserId: userId,
             showFollowButton: false,
             mini: !isDesktop,

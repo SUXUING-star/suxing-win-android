@@ -33,8 +33,10 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
   Map<String, dynamic>? _services;
   // 保存具体的初始化错误信息，用于可能更详细的显示
   String? _initializationError;
+  String? get initializationError => _initializationError;
   // 标记是否发生过网络相关或认证失败的错误（用于网络恢复时的逻辑判断）
   bool _networkOrAuthErrorOccurred = false;
+  bool get networkOrAuthErrorOccurred => _networkOrAuthErrorOccurred;
   // 防止在 initState 完成前或初始化进行中重复调用 _startInitialization
   bool _hasAttemptedInit = false;
   // 标记组件是否仍在 Widget 树中
@@ -105,7 +107,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
       if (_isMounted) {
         _services = initializedServices; // 保存初始化成功的服务实例
 
-        // *** 从服务中获取 NetworkManager 和 AuthProvider ***
         final networkManager = _services!['networkManager'] as NetworkManager?;
         final authProvider = _services!['authProvider'] as AuthProvider?;
 
@@ -119,17 +120,16 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
               () => _handleNetworkRestored(authProvider);
         } else {
           // 如果关键服务没找到，这是一个严重问题，记录日志
-          print(
-              "InitializationWrapper: WARNING - NetworkManager or AuthProvider instance not found after successful initialization!");
+          // print(
+          //     "InitializationWrapper: WARNING - NetworkManager or AuthProvider instance not found after successful initialization!");
         }
 
-        // *** 设置 Provider 状态为 Completed ***
         // 这会触发 _onProviderUpdate -> setState -> build，最终显示主应用界面
         _initProvider.setCompleted();
         //print("InitializationWrapper: Initialization status set to Completed.");
       } else {
-        print(
-            "InitializationWrapper: Initialization successful, but widget disposed before completion handling.");
+        // print(
+        //     "InitializationWrapper: Initialization successful, but widget disposed before completion handling.");
       }
     } catch (e) {
       // 检查组件是否还在树中
@@ -155,7 +155,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
           // print("InitializationWrapper: Non-network/auth error detected.");
         }
 
-        // *** 设置 Provider 状态为 Error ***
         // 这会触发 _onProviderUpdate -> setState -> build，显示错误界面
         _initProvider.setError(errorMessage);
       } else {
@@ -226,17 +225,14 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
       }
     } catch (e) {
       // 捕获清理过程中的任何异常
-      print(
-          "InitializationWrapper: Error during cleanup of network callback: $e");
+      // print(
+      //     "InitializationWrapper: Error during cleanup of network callback: $e");
     }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    //print("InitializationWrapper: Building UI for status: ${_initProvider.status}");
-
-    // *** 根据 InitializationProvider 的当前状态来决定显示哪个界面 ***
     switch (_initProvider.status) {
       case InitializationStatus.inProgress:
       case InitializationStatus.idle: // Idle 状态也视为正在加载/准备中

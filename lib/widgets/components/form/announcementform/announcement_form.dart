@@ -2,11 +2,12 @@ import 'dart:io'; // 需要导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart'; // 需要导入 image_picker
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入 AppSnackBar
-import '../../../../models/announcement/announcement.dart';
-import '../../../../utils/device/device_utils.dart';
+import 'package:suxingchahui/models/announcement/announcement.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'field/basic_info_field.dart';
 import 'field/display_settings_field.dart';
 import 'field/action_field.dart';
@@ -32,11 +33,22 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   final _formKey = GlobalKey<FormState>();
   late AnnouncementFull _formData; // 使用 _formData 来跟踪表单状态
   bool _isLoading = false; // 表单级别的加载状态
+  bool _hasInitializedDependencies = false;
+  late final InputStateService _inputStateService;
 
   // --- 图片状态 ---
   dynamic _imageSource; // String? (URL) 或 XFile? (本地文件) or null
   String? _originalImageUrl; // 编辑时记录原始 URL
-  // --- 图片状态结束 ---
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_hasInitializedDependencies) {
+      _inputStateService =
+          Provider.of<InputStateService>(context, listen: false);
+      _hasInitializedDependencies = true;
+    }
+  }
 
   @override
   void initState() {
@@ -86,7 +98,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         finalImageUrl = await uploadService.uploadImage(
           fileToUpload,
           folder: 'announcements', // 指定文件夹
-
         );
         //print("新图片上传成功，URL: $finalImageUrl");
       } else if (_imageSource is String &&
@@ -217,6 +228,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const SizedBox(height: 16),
                           // --- ActionField ---
                           ActionField(
+                            inputStateService: _inputStateService,
                             actionUrl: _formData.actionUrl,
                             actionText: _formData.actionText,
                             onActionUrlChanged: (value) => setState(() =>
@@ -256,6 +268,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const SizedBox(height: 16),
                           // --- BasicInfoField ---
                           BasicInfoField(
+                            inputStateService: _inputStateService,
                             title: _formData.title,
                             content: _formData.content,
                             type: _formData.type,
@@ -294,6 +307,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: BasicInfoField(
+              inputStateService: _inputStateService,
               title: _formData.title,
               content: _formData.content,
               type: _formData.type,
@@ -340,6 +354,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: ActionField(
+              inputStateService: _inputStateService,
               actionUrl: _formData.actionUrl,
               actionText: _formData.actionText,
               onActionUrlChanged: (value) => setState(() => _formData =

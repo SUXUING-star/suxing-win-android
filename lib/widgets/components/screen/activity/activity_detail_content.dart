@@ -2,7 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保 ActivityComment 也在此或单独导入
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_data_status.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -15,9 +18,10 @@ import 'sections/activity_target_section.dart';
 import 'sections/activity_comments_section.dart';
 
 class ActivityDetailContent extends StatelessWidget {
-  // 保持 StatelessWidget，因为动画依赖 Key 触发
   final UserActivity activity;
-  final UserDataStatus userDataStatus;
+  final UserFollowService userFollowService;
+  final UserInfoProvider userInfoProvider;
+  final InputStateService inputStateService;
   final User? currentUser;
   final List<ActivityComment> comments;
   final bool isLoadingComments;
@@ -32,7 +36,9 @@ class ActivityDetailContent extends StatelessWidget {
   const ActivityDetailContent({
     super.key,
     required this.activity,
-    required this.userDataStatus,
+    required this.userFollowService,
+    required this.userInfoProvider,
+    required this.inputStateService,
     required this.currentUser,
     required this.comments,
     required this.isLoadingComments,
@@ -60,8 +66,9 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay,
       slideOffset: slideOffset,
       child: ActivityInfoSection(
+        infoProvider: userInfoProvider,
+        followService: userFollowService,
         currentUser: currentUser,
-        userDataStatus: userDataStatus,
         activity: activity,
         onEditActivity: onEditActivity,
         onDeleteActivity: onDeleteActivity,
@@ -101,7 +108,8 @@ class ActivityDetailContent extends StatelessWidget {
       duration: duration,
       delay: delay,
       child: ActivityTargetSection(
-        userDataStatus: userDataStatus,
+        followService: userFollowService,
+        infoProvider: userInfoProvider,
         currentUser: currentUser,
         activity: activity,
         isDesktop: isDesktop,
@@ -123,6 +131,9 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay,
       slideOffset: slideOffset,
       child: ActivityCommentsSection(
+        inputStateService: inputStateService,
+        userInfoProvider: userInfoProvider,
+        userFollowService: userFollowService,
         currentUser: currentUser,
         activityId: activity.id,
         comments: comments,

@@ -41,7 +41,7 @@ class UserCheckIn {
         try {
           return DateTime.parse(value);
         } catch (_) {
-          print('Error parsing DateTime from String: $value');
+          // print('Error parsing DateTime from String: $value');
           return defaultValue;
         }
       }
@@ -51,11 +51,11 @@ class UserCheckIn {
         try {
           return DateTime.parse(value['\$date']);
         } catch (e) {
-          print('Error parsing DateTime from BSON: $e, value: $value');
+          // print('Error parsing DateTime from BSON: $e, value: $value');
           return defaultValue;
         }
       }
-      print('Unexpected DateTime format: ${value.runtimeType}');
+      // print('Unexpected DateTime format: ${value.runtimeType}');
       return defaultValue;
     }
 
@@ -217,7 +217,7 @@ class CheckInUser {
         try {
           return DateTime.parse(value);
         } catch (_) {
-          print('Error parsing DateTime from String: $value');
+          // print('Error parsing DateTime from String: $value');
           return defaultValue;
         }
       }
@@ -227,11 +227,11 @@ class CheckInUser {
         try {
           return DateTime.parse(value['\$date']);
         } catch (e) {
-          print('Error parsing DateTime from BSON: $e, value: $value');
+          // print('Error parsing DateTime from BSON: $e, value: $value');
           return defaultValue;
         }
       }
-      print('Unexpected DateTime format: ${value.runtimeType}');
+      // print('Unexpected DateTime format: ${value.runtimeType}');
       return defaultValue;
     }
 
@@ -303,7 +303,7 @@ class CheckInUserList {
           .map((item) => item?.toString() ?? '') // 将每个元素转为 String
           .where((id) => id.isNotEmpty) // 过滤掉空的 ID
           .toList();
-      print("Warning: Received 'list' field instead of 'users' for check-in list. Assuming it contains user IDs.");
+      // print("Warning: Received 'list' field instead of 'users' for check-in list. Assuming it contains user IDs.");
     }
 
 

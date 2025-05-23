@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -29,10 +31,14 @@ import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
-  final AuthProvider? authProvider;
+  final AuthProvider authProvider;
+  final UserService userService;
+  final InputStateService inputStateService;
   const ProfileScreen({
     super.key,
-    this.authProvider,
+    required this.authProvider,
+    required this.userService,
+    required this.inputStateService,
   });
 
   @override
@@ -51,6 +57,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   static const Duration _minRefreshInterval = Duration(minutes: 1);
   late final AuthProvider _authProvider;
   late final UserService _userService;
+  late final RateLimitedFileUpload _fileUploadService;
   String? _currentUserId;
 
   DailyProgressData? _dailyProgressData;
@@ -68,9 +75,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
-      _userService = Provider.of<UserService>(context, listen: false);
+      _authProvider = widget.authProvider;
+      _userService = widget.userService;
+      _fileUploadService = context.read<RateLimitedFileUpload>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -84,10 +91,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (!mounted) return;
 
     if (state == AppLifecycleState.resumed) {
-      if (mounted) {
-        setState(() {
-          _currentUserId = _authProvider.currentUserId;
-        });
+      if (_currentUserId != _authProvider.currentUserId) {
+        if (mounted) {
+          setState(() {
+            _currentUserId = _authProvider.currentUserId;
+          });
+        }
       }
     } else if (state == AppLifecycleState.paused) {
       //
@@ -97,7 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   @override
   void didUpdateWidget(covariant ProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
@@ -277,6 +286,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       return;
     }
     EditDialog.show(
+      inputStateService: widget.inputStateService,
       context: context,
       title: '修改用户名',
       initialText: currentUser.username,
@@ -291,7 +301,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (newUsername.trim() == currentUser.username) return;
 
         try {
-          await _authProvider.updateUserProfile(username: newUsername.trim());
+          await _userService.updateUserProfile(username: newUsername.trim());
           await _authProvider.refreshUserState();
 
           if (!mounted) return;
@@ -425,9 +435,12 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
-  Future<void> _handleUploadSuccess(BuildContext context) async {
+  Future<void> _handleUploadSuccess(
+      BuildContext context, String? avatarUrl) async {
     if (!mounted) return;
     try {
+      await _userService.updateUserProfile(avatar: avatarUrl);
+
       await _authProvider.refreshUserState();
       if (mounted && _authProvider.isLoggedIn) {
         await _loadDailyExperienceProgress(forceRefresh: true);
@@ -451,7 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: CustomAppBar(title: '个人中心', actions: const []),
+        appBar: const CustomAppBar(title: '个人中心', actions: const []),
         body: RefreshIndicator(
           onRefresh: () => _refreshProfile(),
           child: _buildProfileContent(useDesktopLayout),
@@ -551,8 +564,9 @@ class _ProfileScreenState extends State<ProfileScreen>
                       onLogout: () =>
                           _showLogoutDialog(context), // context 来自 State
                       onUploadStateChanged: _handleUploadStateChanged,
-                      onUploadSuccess: () =>
-                          _handleUploadSuccess(context), // context 来自 State
+                      fileUpload: _fileUploadService,
+                      onUploadSuccess: (avatarUrl) => _handleUploadSuccess(
+                          context, avatarUrl), // context 来自 State
                       dailyProgressData: _dailyProgressData,
                       isLoadingExpData: _isLoadingExpData,
                       expDataError: _expDataError,
@@ -587,9 +601,10 @@ class _ProfileScreenState extends State<ProfileScreen>
                       currentUser, context), // context 来自 State
                   onLogout: () =>
                       _showLogoutDialog(context), // context 来自 State
+                  fileUpload: _fileUploadService,
                   onUploadStateChanged: _handleUploadStateChanged,
-                  onUploadSuccess: () =>
-                      _handleUploadSuccess(context), // context 来自 State
+                  onUploadSuccess: (avatarUrl) => _handleUploadSuccess(
+                      context, avatarUrl), // context 来自 State
                   dailyProgressData: _dailyProgressData,
                   isLoadingExpData: _isLoadingExpData,
                   expDataError: _expDataError,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径正确
 import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart'; // 确认路径正确
@@ -13,9 +14,9 @@ class DesktopProfileCard extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
-  // 这两个回调由 EditableUserAvatar 内部处理后触发，父级 (ProfileScreen) 监听
+  final RateLimitedFileUpload fileUpload;
   final Function(bool) onUploadStateChanged;
-  final Function() onUploadSuccess;
+  final Function(String?) onUploadSuccess;
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
@@ -26,6 +27,7 @@ class DesktopProfileCard extends StatelessWidget {
     required this.user,
     required this.onEditProfile,
     required this.onLogout,
+    required this.fileUpload,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
@@ -69,6 +71,7 @@ class DesktopProfileCard extends StatelessWidget {
                   EditableUserAvatar(
                     user: user,
                     radius: avatarRadius, // 控制头像大小
+                    fileUpload: fileUpload,
                     onUploadStateChanged: onUploadStateChanged, // 将回调传递下去
                     onUploadSuccess: onUploadSuccess,         // 将回调传递下去
                     iconBackgroundColor: Theme.of(context).primaryColor, // 编辑图标背景色

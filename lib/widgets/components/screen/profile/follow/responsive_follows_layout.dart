@@ -1,19 +1,23 @@
 // lib/widgets/components/screen/profile/responsive_follows_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/badges/safe_user_avatar.dart';
-import '../../../../../routes/app_routes.dart';
-import '../../../../ui/buttons/follow_user_button.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 
 class ResponsiveFollowsLayout extends StatelessWidget {
   final User? currentUser;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
   final TabController tabController;
   final List<Map<String, dynamic>> followings;
   final List<Map<String, dynamic>> followers;
@@ -29,6 +33,8 @@ class ResponsiveFollowsLayout extends StatelessWidget {
 
   const ResponsiveFollowsLayout({
     super.key,
+    required this.infoProvider,
+    required this.followService,
     required this.currentUser,
     required this.tabController,
     required this.followings,
@@ -216,7 +222,6 @@ class ResponsiveFollowsLayout extends StatelessWidget {
       {required bool isFollowing}) {
     // --- 空状态处理 ---
     if (users.isEmpty) {
-      // *** 修改这里：为空状态添加动画 ***
       return FadeInSlideUpItem(
         // 包裹动画
         child: Opacity(
@@ -281,7 +286,6 @@ class ResponsiveFollowsLayout extends StatelessWidget {
         final username = user['username'] ?? '未知用户';
         final avatarUrl = user['avatar'];
 
-        // *** 修改这里：为每个列表项 Card 添加动画 ***
         return FadeInSlideUpItem(
           // 使用 index 计算交错延迟
           delay: Duration(milliseconds: 50 * index),
@@ -344,9 +348,13 @@ class ResponsiveFollowsLayout extends StatelessWidget {
                     // 不显示对自己的关注按钮
                     if (userId != currentUserId)
                       FollowUserButton(
+                        followService: followService,
                         currentUser: currentUser,
                         targetUserId: userId,
                         mini: true,
+                        onFollowChanged: () {
+                          infoProvider.refreshUserInfo(userId);
+                        },
                       ),
                   ],
                 ),

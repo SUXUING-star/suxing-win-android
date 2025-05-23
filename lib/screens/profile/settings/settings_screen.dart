@@ -1,17 +1,26 @@
 // lib/screens/profile/settings_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import '../../../routes/app_routes.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class SettingsScreen extends StatefulWidget {
-  const SettingsScreen({super.key});
+  final GameService gameService;
+  final ForumService forumService;
+  final AuthProvider authProvider;
+  const SettingsScreen({
+    super.key,
+    required this.gameService,
+    required this.forumService,
+    required this.authProvider,
+  });
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -23,9 +32,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = false;
   String? _loadingMessage;
   bool _hasInitializedDependencies = false;
-  //late final ThemeProvider _themeProvider;
   late final ForumService _forumService;
   late final GameService _gameService;
+  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -36,9 +45,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      //_themeProvider = Provider.of<ThemeProvider>(context, listen: false);
-      _gameService = context.read<GameService>();
-      _forumService = context.read<ForumService>();
+      _gameService = widget.gameService;
+      _forumService = widget.forumService;
+      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
   }
@@ -57,7 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '浏览历史已清除');
-    } catch (e, s) {
+    } catch (e) {
       //print("清除历史记录时出错: $e\n$s");
       if (!mounted) return;
       AppSnackBar.showError(context, '清除失败: ${e.toString()}');
@@ -72,7 +81,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(title: '设置'),
+      appBar: const CustomAppBar(title: '设置'),
       body: Stack(
         children: [
           ListView(
@@ -94,21 +103,32 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
               const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.delete_sweep_outlined),
-                title: const Text('清除浏览历史'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () async {
-                  await CustomConfirmDialog.show(
-                    context: context,
-                    title: '确认清除',
-                    message: '确定要清除所有游戏和帖子的浏览历史吗？此操作无法撤销。',
-                    confirmButtonText: '确认清除',
-                    confirmButtonColor: Colors.red,
-                    iconData: Icons.warning_amber_rounded,
-                    iconColor: Colors.orange,
-                    onConfirm: _clearHistory, // 直接传递方法引用
-                  );
+              StreamBuilder<User?>(
+                stream: _authProvider.currentUserStream,
+                initialData: _authProvider.currentUser,
+                builder: (context, authSnapshot) {
+                  final currentUser = authSnapshot.data;
+                  if (currentUser == null) {
+                    return const SizedBox.shrink();
+                  } else {
+                    return ListTile(
+                      leading: const Icon(Icons.delete_sweep_outlined),
+                      title: const Text('清除浏览历史'),
+                      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                      onTap: () async {
+                        await CustomConfirmDialog.show(
+                          context: context,
+                          title: '确认清除',
+                          message: '确定要清除所有游戏和帖子的浏览历史吗？此操作无法撤销。',
+                          confirmButtonText: '确认清除',
+                          confirmButtonColor: Colors.red,
+                          iconData: Icons.warning_amber_rounded,
+                          iconColor: Colors.orange,
+                          onConfirm: _clearHistory, // 直接传递方法引用
+                        );
+                      },
+                    );
+                  }
                 },
               ),
               const Divider(height: 1),

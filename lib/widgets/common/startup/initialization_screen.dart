@@ -12,7 +12,6 @@ import 'package:suxingchahui/windows/ui/windows_controls.dart'; // 引入 Window
 import 'package:suxingchahui/wrapper/platform_wrapper.dart'; // 引入用于高度常量
 import 'package:window_manager/window_manager.dart'; // 引入 window_manager
 import 'dart:math'; // For Random
-import '../../../utils/font/font_config.dart'; // 引入字体配置
 
 class InitializationScreen extends StatefulWidget {
   final InitializationStatus status;
@@ -41,6 +40,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
       : 'assets/images/cappo1.gif';
 
   Widget _buildWindowsControlsSection() {
+
     return Positioned(
       // 顶层放置一个 Positioned Widget 作为标题栏区域
       top: 0, // 紧贴顶部
@@ -234,9 +234,6 @@ class _InitializationScreenState extends State<InitializationScreen> {
                           AppText(
                             widget.message,
                             style: TextStyle(
-                              // 自定义样式
-                              fontFamily:
-                                  FontConfig.defaultFontFamily, // 使用默认字体
                               color: Colors.grey[800],
                               fontSize: 16,
                               height: 1.5, // 行高

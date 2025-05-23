@@ -6,7 +6,6 @@ import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
-
 // --- 导入你的 UI 组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -42,7 +41,8 @@ class EmbeddedWebView extends StatefulWidget {
 class _EmbeddedWebViewState extends State<EmbeddedWebView> {
   // 控制器
   WebViewController? _androidController;
-  final windows_wv.WebviewController _windowsController = windows_wv.WebviewController();
+  final windows_wv.WebviewController _windowsController =
+      windows_wv.WebviewController();
 
   // 状态
   bool _isInitializing = true;
@@ -79,7 +79,8 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
         // --- 修改 Windows 初始化，使用你版本提供的 API ---
         await _initializeWindowsWebView_V0_2_0();
       } else {
-        throw UnsupportedError('Platform ${Platform.operatingSystem} is not supported.');
+        throw UnsupportedError(
+            'Platform ${Platform.operatingSystem} is not supported.');
       }
       if (mounted) setState(() => _isInitializing = false);
     } catch (e) {
@@ -119,11 +120,12 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
     if (mounted) widget.onWebViewCreated?.call(_androidController);
   }
 
-
   /// --- 使用 V0.2.0 API 的 Windows 初始化 ---
   Future<void> _initializeWindowsWebView_V0_2_0() async {
     // 清理旧订阅
-    for (var s in _windowsSubscriptions) { s.cancel(); }
+    for (var s in _windowsSubscriptions) {
+      s.cancel();
+    }
     _windowsSubscriptions.clear();
 
     // 1. 直接尝试初始化，用 try-catch 捕获环境问题
@@ -131,19 +133,22 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
       await _windowsController.initialize();
     } catch (e) {
       // 初始化失败，很可能是 WebView2 Runtime 问题
-      throw Exception('无法初始化 Windows WebView: $e. 请确保已安装 Microsoft Edge WebView2 Runtime。');
+      throw Exception(
+          '无法初始化 Windows WebView: $e. 请确保已安装 Microsoft Edge WebView2 Runtime。');
     }
 
     // 2. 监听需要的 Stream (基于你提供的源码)
     //    监听 URL 变化
-    _windowsSubscriptions.add(_windowsController.url.listen((url) { // <--- 这个 Stream 是有的
+    _windowsSubscriptions.add(_windowsController.url.listen((url) {
+      // <--- 这个 Stream 是有的
       if (!mounted) return;
       _lastWindowsUrl = url; // <--- 更新最后已知的 URL
       widget.onPageStarted?.call(url); // URL 变化近似 PageStarted
     }));
 
     //    监听加载状态变化
-    _windowsSubscriptions.add(_windowsController.loadingState.listen((state) { // <--- 这个 Stream 是有的
+    _windowsSubscriptions.add(_windowsController.loadingState.listen((state) {
+      // <--- 这个 Stream 是有的
       if (!mounted) return;
       if (state == windows_wv.LoadingState.navigationCompleted) {
         // 使用我们保存的最后一个 URL
@@ -153,7 +158,8 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
     }));
 
     //    监听导航错误 (这个 Stream 是有的)
-    _windowsSubscriptions.add(_windowsController.onLoadError.listen((status) { // <--- 这个 Stream 是有的
+    _windowsSubscriptions.add(_windowsController.onLoadError.listen((status) {
+      // <--- 这个 Stream 是有的
       if (!mounted) return;
       final error = Exception("导航错误: $status"); // 封装成通用 Exception
       widget.onWebResourceError?.call(error);
@@ -172,7 +178,8 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
 
     // --- 其他初始化配置 ---
     await _windowsController.setBackgroundColor(Colors.transparent);
-    await _windowsController.setPopupWindowPolicy(windows_wv.WebviewPopupWindowPolicy.deny);
+    await _windowsController
+        .setPopupWindowPolicy(windows_wv.WebviewPopupWindowPolicy.deny);
 
     // 加载初始 URL
     await _windowsController.loadUrl(widget.initialUrl);
@@ -182,7 +189,6 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
       widget.onWebViewCreated?.call(_windowsController);
     }
   }
-
 
   @override
   void dispose() {
@@ -195,8 +201,8 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
       if (_windowsController.value.isInitialized) {
         try {
           _windowsController.dispose();
-        } catch(e) {
-          print("Error disposing windows controller: $e");
+        } catch (e) {
+          // print("Error disposing windows controller: $e");
         }
       }
     }
@@ -228,9 +234,12 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
         );
       } else if (Platform.isWindows) {
         // --- 检查 Windows 控制器状态 (初始化后是否还有效) ---
-        if (!_windowsController.value.isInitialized) { // <--- WebviewValue 有 isInitialized
+        if (!_windowsController.value.isInitialized) {
+          // <--- WebviewValue 有 isInitialized
           return EmptyStateWidget(
-            message: _errorDetails.isNotEmpty ? _errorDetails : 'Windows WebView 控制器失效，请重试。',
+            message: _errorDetails.isNotEmpty
+                ? _errorDetails
+                : 'Windows WebView 控制器失效，请重试。',
             iconData: Icons.desktop_access_disabled,
             iconColor: Colors.red,
             action: FunctionalTextButton(
@@ -241,8 +250,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
         }
         // --- 返回 Windows WebView Widget ---
         return windows_wv.Webview(_windowsController); // <--- 这个 Widget 是有的
-      }
-      else if (Platform.isAndroid) {
+      } else if (Platform.isAndroid) {
         // ... (Android 构建逻辑不变) ...
         if (_androidController == null) {
           return EmptyStateWidget(
@@ -255,8 +263,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
           );
         }
         return WebViewWidget(controller: _androidController!);
-      }
-      else {
+      } else {
         return EmptyStateWidget(
           message: '平台 ${Platform.operatingSystem} 不支持内嵌 WebView',
           iconData: Icons.device_unknown,

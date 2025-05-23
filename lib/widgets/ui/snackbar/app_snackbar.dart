@@ -82,7 +82,7 @@ class _CustomSnackBarWidgetState extends State<_CustomSnackBarWidget>
         }
       }).catchError((e) {
         // 如果 reverse 过程中 widget 被 dispose，可能会出错
-        print("Error during reverse animation: $e");
+        // print("Error during reverse animation: $e");
         if (mounted) {
           widget.onDismissed(); // 确保即使动画出错也调用
         }
@@ -198,13 +198,13 @@ class AppSnackBar {
     IconData iconData, {
     Duration duration = const Duration(seconds: 3),
     double maxWidth = _defaultMaxWidth,
-    String? actionLabel, // <-- 新增: Action 文字
-    VoidCallback? onActionPressed, // <-- 新增: Action 回调
+    String? actionLabel,
+    VoidCallback? onActionPressed,
   }) {
     // 如果 context 不再可用，直接返回
     if (!context.mounted) {
-      print(
-          "AppSnackBar Error: BuildContext is not mounted. Cannot show SnackBar.");
+      // print(
+      //     "AppSnackBar Error: BuildContext is not mounted. Cannot show SnackBar.");
       return;
     }
 
@@ -217,7 +217,7 @@ class AppSnackBar {
       try {
         _currentOverlayEntry!.remove();
       } catch (e) {
-        print("Error removing previous OverlayEntry: $e");
+        //print("Error removing previous OverlayEntry: $e");
       } finally {
         _currentOverlayEntry = null; // 确保置空
       }
@@ -230,8 +230,8 @@ class AppSnackBar {
         if (!context.mounted) {
           // 如果在此期间 context 失效，则不构建任何东西
           // 或者可以返回一个空的 Container
-          print(
-              "AppSnackBar Warning: BuildContext became unmounted during OverlayEntry build.");
+          // print(
+          //     "AppSnackBar Warning: BuildContext became unmounted during OverlayEntry build.");
           // 尝试移除自身？但这比较复杂，因为 entry 可能还没插入
           // 最好是外部调用前就确保 context 有效
           return const SizedBox.shrink(); // 返回空 Widget
@@ -280,7 +280,7 @@ class AppSnackBar {
                   entry?.remove();
                   // }
                 } catch (e) {
-                  print("Error removing OverlayEntry in onDismissed: $e");
+                  // print("Error removing OverlayEntry in onDismissed: $e");
                 } finally {
                   // 只有当成功移除的是当前 entry 时才清空引用
                   if (_currentOverlayEntry == entry) {
@@ -386,7 +386,7 @@ class AppSnackBar {
       try {
         _currentOverlayEntry!.remove();
       } catch (e) {
-        print("Error removing OverlayEntry manually: $e");
+        // print("Error removing OverlayEntry manually: $e");
       } finally {
         _currentOverlayEntry = null;
       }
@@ -409,6 +409,34 @@ class AppSnackBar {
       },
       // 可以考虑给需要用户操作的提示稍微长一点的显示时间
       duration: const Duration(seconds: 5),
+    );
+  }
+
+  static void showPostDeleteSuccessfullySnackBar(BuildContext context) {
+    showSuccess(
+      context,
+      "你成功删除帖子",
+    );
+  }
+
+  static void showPostEditSuccessfullySnackBar(BuildContext context) {
+    showSuccess(
+      context,
+      "你成功编辑帖子",
+    );
+  }
+
+  static void showGameDeleteSuccessfullySnackBar(BuildContext context) {
+    showSuccess(
+      context,
+      "你成功删除游戏",
+    );
+  }
+
+  static void showGameEditSuccessfullySnackBar(BuildContext context) {
+    showSuccess(
+      context,
+      "你成功编辑游戏",
     );
   }
 

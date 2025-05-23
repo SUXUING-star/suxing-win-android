@@ -8,8 +8,11 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activities_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
@@ -21,14 +24,22 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
 class ActivityFeedScreen extends StatefulWidget {
-  final AuthProvider? authProvider;
+  final AuthProvider authProvider;
+  final UserActivityService activityService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
   final String title;
   final bool useAlternatingLayout;
   final bool showHotActivities;
 
   const ActivityFeedScreen({
     super.key,
-    this.authProvider,
+    required this.authProvider,
+    required this.activityService,
+    required this.followService,
+    required this.infoProvider,
+    required this.inputStateService,
     this.title = '动态广场', // Default title for this screen
     this.useAlternatingLayout = true,
     this.showHotActivities = true, // Usually show hot panel on public feed
@@ -75,12 +86,14 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   bool _hasInitializedDependencies = false;
   late final UserActivityService _activityService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
+  late final UserInfoProvider _infoProvider;
+  late final InputStateService _inputStateService;
   String? _currentUserId;
 
   @override
   void initState() {
     super.initState();
-    // Initialize state from widget properties
     _useAlternatingLayout = widget.useAlternatingLayout;
     _showHotActivities = widget.showHotActivities;
 
@@ -89,16 +102,17 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         vsync: this, duration: const Duration(milliseconds: 800));
     _scrollController.addListener(_scrollListener);
     WidgetsBinding.instance.addObserver(this);
-    // Initial data load is triggered by the VisibilityDetector
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = context.read<UserActivityService>();
-      _authProvider = widget.authProvider ??
-          Provider.of<AuthProvider>(context, listen: false);
+      _activityService = widget.activityService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
+      _infoProvider = widget.infoProvider;
+      _inputStateService = widget.inputStateService;
 
       _hasInitializedDependencies = true;
     }
@@ -122,7 +136,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   @override
   void didUpdateWidget(covariant ActivityFeedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider?.currentUserId ||
+    if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != _authProvider.currentUserId) {
       if (mounted) {
         setState(() {
@@ -139,9 +153,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     if (state == AppLifecycleState.resumed) {
       if (_currentUserId != _authProvider.currentUserId) {
         _needsRefresh = true;
-        _currentUserId = _authProvider.currentUserId;
+
         if (mounted) {
-          setState(() {});
+          setState(() {
+            _currentUserId = _authProvider.currentUserId;
+          });
         }
       }
 
@@ -823,6 +839,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                           padding: const EdgeInsets.only(
                               top: 8.0, right: 8.0, bottom: 8.0),
                           child: HotActivitiesPanel(
+                            activityService: _activityService,
+                            userInfoProvider: _infoProvider,
+                            followService: _followService,
                             currentUser: _authProvider.currentUser,
                           ), // The hot activities widget
                         ),
@@ -855,6 +874,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       // Use a key that changes only when necessary (e.g., collapse mode)
       key: ValueKey('public_feed_${_collapseMode.index}'),
       currentUser: _authProvider.currentUser,
+      followService: _followService,
+      inputStateService: _inputStateService,
+      infoProvider: _infoProvider,
       activities: _activities,
       isLoading: _isLoadingData && _activities.isEmpty,
       isLoadingMore: _isLoadingMore,

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class animatedDialog {
+class AnimatedDialog {
   // --- 通用动画显示函数 (保持或移到工具类) ---
 // 这个函数保持不变，它负责初始的进入动画和定位
  static Future<T?> showAppAnimatedDialog<T>({

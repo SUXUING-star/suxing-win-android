@@ -1,14 +1,14 @@
 // lib/layouts/background/app_background.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import 'dart:ui';
+import 'dart:ui'; // For ImageFilter
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/foundation.dart';
-import 'package:device_info_plus/device_info_plus.dart';
-import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'dart:io'; // For Platform
+import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:suxingchahui/providers/windows/window_state_provider.dart'; // 必须导入
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../effects/particle_effect.dart';
 
+// 背景图片列表
 const List<String> backgroundImages = [
   'assets/images/bg-1.jpg',
   'assets/images/bg-2.jpg'
@@ -18,12 +18,17 @@ const List<String> backgroundImagesRotated = [
   'assets/images/bg-2rotate.jpg'
 ];
 
+// ⭐ 给 ParticleEffect 一个固定的 Key
+const Key _particleEffectKey = ValueKey('global_particle_effect');
+
 class AppBackground extends StatefulWidget {
   final Widget child;
+  final WindowStateProvider windowStateProvider;
 
   const AppBackground({
     super.key,
     required this.child,
+    required this.windowStateProvider,
   });
 
   @override
@@ -32,164 +37,196 @@ class AppBackground extends StatefulWidget {
 
 class _AppBackgroundState extends State<AppBackground>
     with SingleTickerProviderStateMixin {
-  Timer? _imageTimer; // 改为 nullable，在需要时初始化
+  Timer? _imageTimer;
   int _currentImageIndex = 0;
   bool _isAndroidPortrait = false;
 
-  // 标志位，确保效果的初始化只在非 resizing 状态下进行一次
   bool _backgroundEffectsInitialized = false;
+  bool _isCurrentlyResizing = false; // 由 Stream 更新
+
+  StreamSubscription<bool>? _resizingSubscription;
 
   @override
   void initState() {
     super.initState();
-    // initState 中不执行依赖 windowState 的初始化
-  }
 
-  Future<void> _initBackgroundEffects() async {
-    if (!mounted || _backgroundEffectsInitialized) return;
+    _isCurrentlyResizing = widget.windowStateProvider.isResizingWindow;
 
-    _setupImageRotation(); // 初始化并启动 Timer
-    await _checkDeviceOrientation(); // 检查初始方向
-
-    _backgroundEffectsInitialized = true; // 标记已初始化
-  }
-
-  Future<void> _checkDeviceOrientation() async {
-    if (kIsWeb || !mounted) return;
-
-    if (Platform.isAndroid) {
-      DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-      AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
+    _resizingSubscription = widget.windowStateProvider.isResizingWindowStream
+        .listen((isResizingFromStream) {
       if (!mounted) return;
-      try {
-        Orientation orientation = MediaQuery.of(context).orientation;
-        if (mounted &&
-            _isAndroidPortrait != (orientation == Orientation.portrait)) {
-          setState(() {
-            _isAndroidPortrait = orientation == Orientation.portrait;
+
+      if (_isCurrentlyResizing != isResizingFromStream) {
+        setState(() {
+          _isCurrentlyResizing = isResizingFromStream;
+        });
+
+        if (isResizingFromStream) {
+          if (_backgroundEffectsInitialized) {
+            _cancelBackgroundEffects(); // 例如，暂停图片轮播 Timer
+            // ParticleEffect 的动画会因为 Offstage 自动暂停 Ticker (大部分情况)
+            // 或者 ParticleEffectState 内部可以监听 TickerMode 的变化来暂停
+          }
+        } else {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted && !_isCurrentlyResizing) {
+              _initializeOrRestoreBackgroundEffects(); // 例如，恢复图片轮播
+              // ParticleEffect 的动画会因为 Offstage 恢复 Ticker (大部分情况)
+            }
           });
         }
-      } catch (e) {
-        debugPrint('AppBackground: Error getting orientation: $e');
       }
-    } else if (mounted) {
-      if (_isAndroidPortrait) {
-        // 如果之前是 true (不太可能，但为了完备性)
-        setState(() {
-          _isAndroidPortrait = false;
-        });
-      }
+    });
+
+    if (!_isCurrentlyResizing) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_isCurrentlyResizing) {
+          _initializeOrRestoreBackgroundEffects();
+        }
+      });
     }
   }
 
-  void _setupImageRotation() {
-    // 如果之前的 Timer 存在且活动，先取消
+  void _initializeOrRestoreBackgroundEffects() {
+    if (!mounted || _isCurrentlyResizing) return;
+
+    if (!_backgroundEffectsInitialized) {
+      _initBackgroundEffects();
+    } else {
+      if (_imageTimer == null || !_imageTimer!.isActive) {
+        _setupImageRotationTimer();
+      }
+      _checkDeviceOrientationIfNeeded();
+    }
+  }
+
+  Future<void> _initBackgroundEffects() async {
+    if (!mounted || _backgroundEffectsInitialized || _isCurrentlyResizing)
+      return;
+
+    _setupImageRotationTimer();
+    await _checkDeviceOrientationIfNeeded();
+    _backgroundEffectsInitialized = true;
+  }
+
+  void _cancelBackgroundEffects() {
     _imageTimer?.cancel();
-    // 创建新的 Timer
-    _imageTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+    _imageTimer = null;
+    // 注意：这里不需要手动停止粒子动画，Offstage 会处理 Ticker
+    // _backgroundEffectsInitialized = false; // 这个标志根据你的逻辑决定是否重置
+    // 如果只是暂停，则不应重置
+    // 如果 resizing 时希望效果完全重来，则重置
+    // 根据当前代码，它更像是“是否首次初始化完成”的标志
+  }
+
+  Future<void> _checkDeviceOrientationIfNeeded() async {
+    if (kIsWeb || !Platform.isAndroid || !mounted) return;
+    try {
+      final orientation = MediaQuery.of(context).orientation;
       if (mounted) {
-        // 确保在回调时 widget 仍然 mounted
+        final newIsPortrait = orientation == Orientation.portrait;
+        if (_isAndroidPortrait != newIsPortrait) {
+          setState(() {
+            _isAndroidPortrait = newIsPortrait;
+          });
+        }
+      }
+    } catch (e) {
+      //
+    }
+  }
+
+  void _setupImageRotationTimer() {
+    _imageTimer?.cancel();
+    _imageTimer = Timer.periodic(const Duration(seconds: 10), (timer) {
+      if (mounted && !_isCurrentlyResizing) {
+        // 只有非 resizing 状态才切换图片
         setState(() {
           _currentImageIndex =
               (_currentImageIndex + 1) % backgroundImages.length;
         });
-      } else {
-        timer.cancel(); // 如果 widget unmounted，取消 timer
+      } else if (!mounted) {
+        // 如果 unmounted 则取消
+        timer.cancel();
       }
+      // 如果正在 resizing，timer 依然运行，但不会 setState 切换图片
+      // 或者在 _cancelBackgroundEffects 里直接取消 timer
     });
-  }
-
-  void _cancelImageRotation() {
-    _imageTimer?.cancel();
-    _imageTimer = null;
-    _backgroundEffectsInitialized = false; // 允许在下次非 resizing 时重新初始化
   }
 
   @override
   void dispose() {
-    _imageTimer?.cancel(); // 确保 Timer 在 dispose 时被取消
+    _imageTimer?.cancel();
+    _resizingSubscription?.cancel();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final windowState = context.watch<WindowStateProvider>();
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final List<Color> gradientColors = isDark
+        ? [
+            const Color.fromRGBO(0, 0, 0, 0.6),
+            const Color.fromRGBO(0, 0, 0, 0.4)
+          ]
+        : [
+            const Color.fromRGBO(255, 255, 255, 0.7),
+            const Color.fromRGBO(255, 255, 255, 0.5)
+          ];
 
-    if (windowState.isResizingWindow) {
-      // 如果正在调整大小，取消图片旋转并标记效果未初始化
-      if (_backgroundEffectsInitialized) {
-        // 只有当效果已初始化时才取消
-        _cancelImageRotation();
-      }
-      // 直接返回 child，不渲染任何背景效果
+    List<String> imagesToUse =
+        _isAndroidPortrait ? backgroundImagesRotated : backgroundImages;
+
+    if (imagesToUse.isEmpty && _isCurrentlyResizing) {
+      // 如果没图片且在 resizing，直接返回 child
       return widget.child;
-    } else {
-      // 如果不是正在调整大小，并且效果尚未初始化，则初始化它们
-      if (!_backgroundEffectsInitialized) {
-        // 使用 addPostFrameCallback 确保在 build 完成后再执行异步初始化
-        // 避免在 build 过程中 setState
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !windowState.isResizingWindow) {
-            // 再次检查状态，防止回调时状态已变
-            _initBackgroundEffects();
-          }
-        });
-      } else {
-        // 如果效果已初始化，确保 Timer 是活动的 (例如从 resizing 状态恢复)
-        if (_imageTimer == null || !_imageTimer!.isActive) {
-          _setupImageRotation();
-        }
-        // 并且在每次 build 时（如果不是 resizing），都可能需要检查方向
-        // （或者更优：只在特定条件下检查，比如路由变化或应用恢复）
-        // 为了简单，这里每次非 resizing 的 build 都检查一次，但用 addPostFrameCallback
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted && !windowState.isResizingWindow) {
-            _checkDeviceOrientation();
-          }
-        });
-      }
+    }
+    if (imagesToUse.isNotEmpty && _currentImageIndex >= imagesToUse.length) {
+      _currentImageIndex = 0;
+    }
 
-      // --- 正常渲染 AppBackground 的完整效果 ---
-      final isDark = Theme.of(context).brightness == Brightness.dark;
-      final List<Color> gradientColors = isDark
-          ? [
-              const Color.fromRGBO(0, 0, 0, 0.6),
-              const Color.fromRGBO(0, 0, 0, 0.4)
-            ]
-          : [
-              const Color.fromRGBO(255, 255, 255, 0.7),
-              const Color.fromRGBO(255, 255, 255, 0.5)
-            ];
-      List<String> imagesToUse =
-          _isAndroidPortrait ? backgroundImagesRotated : backgroundImages;
-
-      // 如果 imagesToUse 为空（不太可能，但作为防御性编程）或者 _currentImageIndex 超出范围
-      if (imagesToUse.isEmpty || _currentImageIndex >= imagesToUse.length) {
-        // 可以返回一个占位符或者默认背景，避免崩溃
-        // 这里简单返回 child，表示背景加载失败或无背景
-        if (imagesToUse.isEmpty) return widget.child;
-        _currentImageIndex = 0; // 重置索引
-      }
-
-      return LayoutBuilder(
-        builder: (context, constraints) {
-          return Stack(
-            fit: StackFit.expand,
-            children: [
-              AnimatedSwitcher(
-                duration: const Duration(milliseconds: 800),
-                transitionBuilder: (Widget child, Animation<double> animation) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-                child: Image.asset(
-                  imagesToUse[_currentImageIndex], // 使用当前索引
-                  key: ValueKey<int>(_currentImageIndex),
-                  fit: BoxFit.cover,
-                  width: constraints.maxWidth,
-                  height: constraints.maxHeight,
-                ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            // 背景图片切换动画
+            // 当 resizing 时，不显示 AnimatedSwitcher，可以显示一个静态占位或透明
+            Offstage(
+              offstage: _isCurrentlyResizing,
+              child: (imagesToUse.isNotEmpty)
+                  ? AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 800),
+                      transitionBuilder:
+                          (Widget child, Animation<double> animation) {
+                        return FadeTransition(opacity: animation, child: child);
+                      },
+                      child: Image.asset(
+                        imagesToUse[_currentImageIndex],
+                        key: ValueKey<int>(_currentImageIndex),
+                        fit: BoxFit.cover,
+                        width: constraints.maxWidth,
+                        height: constraints.maxHeight,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(color: Colors.grey[800]); // 深色占位
+                        },
+                      ),
+                    )
+                  : Container(color: Colors.transparent), // 没有图片时
+            ),
+            // 如果 resizing 时也需要一个基础背景色（比如避免闪烁）
+            if (_isCurrentlyResizing)
+              Container(
+                // 根据主题给一个非常简单的背景色，避免完全透明导致内容“浮”在最底层
+                color: Theme.of(context)
+                    .scaffoldBackgroundColor
+                    .withSafeOpacity(0.5),
               ),
-              BackdropFilter(
+
+            // 模糊和渐变叠加层
+            Offstage(
+              offstage: _isCurrentlyResizing,
+              child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 6.0, sigmaY: 6.0),
                 child: Container(
                   decoration: BoxDecoration(
@@ -201,12 +238,22 @@ class _AppBackgroundState extends State<AppBackground>
                   ),
                 ),
               ),
-              ParticleEffect(particleCount: 50),
-              widget.child,
-            ],
-          );
-        },
-      );
-    }
+            ),
+
+            // ⭐ 粒子效果：使用 Offstage 控制显隐，并给一个固定的 Key
+            Offstage(
+              offstage: _isCurrentlyResizing,
+              child: ParticleEffect(
+                key: _particleEffectKey, // 使用之前定义的 Key
+                particleCount: 50,
+              ),
+            ),
+
+            // 应用主内容
+            widget.child,
+          ],
+        );
+      },
+    );
   }
 }

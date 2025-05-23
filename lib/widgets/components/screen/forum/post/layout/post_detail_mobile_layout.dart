@@ -1,15 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import '../../../../../../models/post/post.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import '../post_content.dart';
 import '../reply/post_reply_list.dart';
 
 class PostDetailMobileLayout extends StatelessWidget {
   final Post post;
-  final User? currentUser;
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
+  final UserFollowService followService;
+  final ForumService forumService;
   final UserPostActions userActions;
   final String postId;
   // 添加交互成功回调
@@ -18,7 +26,11 @@ class PostDetailMobileLayout extends StatelessWidget {
   const PostDetailMobileLayout({
     super.key,
     required this.post,
-    required this.currentUser,
+    required this.infoProvider,
+    required this.inputStateService,
+    required this.forumService,
+    required this.followService,
+    required this.authProvider,
     required this.userActions,
     required this.postId,
     required this.onPostUpdated,
@@ -40,7 +52,10 @@ class PostDetailMobileLayout extends StatelessWidget {
           duration: contentDuration,
           delay: baseDelay, // 先出现
           child: PostContent(
-            currentUser: currentUser,
+            forumService: forumService,
+            currentUser: authProvider.currentUser,
+            followService:  followService,
+            infoProvider: infoProvider,
             userActions: userActions,
             post: post,
             onPostUpdated: onPostUpdated,
@@ -56,7 +71,12 @@ class PostDetailMobileLayout extends StatelessWidget {
           delay: baseDelay + replyDelay, // 稍后出现
 
           child: PostReplyList(
-            currentUser: currentUser,
+            infoProvider: infoProvider,
+            inputStateService: inputStateService,
+            followService: followService,
+            forumService: forumService,
+            authProvider: authProvider,
+            currentUser: authProvider.currentUser,
             postId: postId,
           ),
         ),

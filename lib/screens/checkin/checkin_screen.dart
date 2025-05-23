@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
@@ -9,13 +11,23 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/models/user/user_checkin.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/layout/responsive_checkin_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/layout/checkin_content.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/effects/particle_effect.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class CheckInScreen extends StatefulWidget {
-  const CheckInScreen({super.key});
+  final AuthProvider authProvider;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
+  final UserCheckInService checkInService;
+  const CheckInScreen({
+    super.key,
+    required this.authProvider,
+    required this.infoProvider,
+    required this.followService,
+    required this.checkInService,
+  });
 
   @override
   _CheckInScreenState createState() => _CheckInScreenState();
@@ -39,10 +51,6 @@ class _CheckInScreenState extends State<CheckInScreen>
   // 动画控制器
   late AnimationController _particleController;
 
-  // 服务实例
-  late UserCheckInService _checkInService;
-  late AuthProvider _authProvider;
-
   @override
   void initState() {
     super.initState();
@@ -57,8 +65,7 @@ class _CheckInScreenState extends State<CheckInScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _checkInService = context.read<UserCheckInService>();
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
+      ;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -85,9 +92,9 @@ class _CheckInScreenState extends State<CheckInScreen>
     });
 
     try {
-      final currentUser = _authProvider.currentUser;
+      final currentUser = widget.authProvider.currentUser;
       // 必须确保用户已登录且用户信息已加载
-      if (!_authProvider.isLoggedIn || currentUser == null) {
+      if (!widget.authProvider.isLoggedIn || currentUser == null) {
         // 可以抛出异常或设置错误消息
         throw Exception("用户未登录或信息获取失败");
       }
@@ -95,10 +102,10 @@ class _CheckInScreenState extends State<CheckInScreen>
       // 2. 并行获取签到状态和月度数据 (如果需要初始化服务，放在前面)
       // await _checkInService.initialize(); // 如果需要初始化
       final results = await Future.wait([
-        _checkInService.getCheckInStats(), // 获取签到统计 (返回精简后的 CheckInStats)
-        _checkInService.getMonthlyCheckInData(
+        widget.checkInService.getCheckInStats(), // 获取签到统计 (返回精简后的 CheckInStats)
+        widget.checkInService.getMonthlyCheckInData(
             year: _selectedYear, month: _selectedMonth), // 获取日历数据
-        _checkInService.calculateConsecutiveMissedDays(), // 计算断签天数
+        widget.checkInService.calculateConsecutiveMissedDays(), // 计算断签天数
       ]);
 
       // 处理获取结果
@@ -121,7 +128,7 @@ class _CheckInScreenState extends State<CheckInScreen>
         });
       }
     } catch (e) {
-      print('签到数据加载失败: $e');
+      // print('签到数据加载失败: $e');
       if (mounted) {
         setState(() {
           // 显示更友好的错误信息
@@ -178,7 +185,7 @@ class _CheckInScreenState extends State<CheckInScreen>
       }
       return missedCount;
     } catch (e) {
-      print('计算漏签天数时发生错误: $e');
+      // print('计算漏签天数时发生错误: $e');
       return 0; // 出错时返回 0
     }
   }
@@ -198,7 +205,7 @@ class _CheckInScreenState extends State<CheckInScreen>
 
     try {
       // 调用签到服务接口
-      final result = await _checkInService.performCheckIn(); // 返回精简后的结果
+      final result = await widget.checkInService.performCheckIn(); // 返回精简后的结果
 
       // 播放签到成功粒子效果
       if (mounted) {
@@ -284,7 +291,7 @@ class _CheckInScreenState extends State<CheckInScreen>
     });
 
     // 异步加载新月份的签到数据
-    _checkInService
+    widget.checkInService
         .getMonthlyCheckInData(year: year, month: month)
         .then((data) {
       if (mounted) {
@@ -312,7 +319,10 @@ class _CheckInScreenState extends State<CheckInScreen>
   }
 
   Widget _buildContentLayout() {
-    return ResponsiveCheckInLayout(
+    return CheckInContent(
+      infoProvider: widget.infoProvider,
+      checkInService: widget.checkInService,
+      followService: widget.followService,
       checkInStats: _checkInStats!, // 传递签到统计
       currentUser: _currentUser!, // 传递当前用户信息
       monthlyData: _monthlyData, // 传递月度日历数据
@@ -365,7 +375,7 @@ class _CheckInScreenState extends State<CheckInScreen>
       // 使用 Stack 放置粒子效果
       children: [
         _buildMainSection(),
-        _buildEffectSection() ?? SizedBox.shrink(),
+        _buildEffectSection() ?? const SizedBox.shrink(),
       ],
     );
   }
@@ -373,10 +383,10 @@ class _CheckInScreenState extends State<CheckInScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: CustomAppBar(
+      appBar: const CustomAppBar(
         title: '每日签到',
       ),
-      body: _authProvider.isLoggedIn
+      body: widget.authProvider.isLoggedIn
           ? _buildMainContent()
           : const LoginPromptWidget(),
       floatingActionButton: _buildFab(),

@@ -28,7 +28,6 @@ class GameCollectionItem {
   });
 
   factory GameCollectionItem.fromJson(Map<String, dynamic> json) {
-
     // 确保gameId是字符串
     String gameId;
     if (json['gameId'] is String) {
@@ -50,14 +49,14 @@ class GameCollectionItem {
     try {
       createTime = DateTime.parse(json['createTime']);
     } catch (e) {
-      print('解析createTime失败: ${json['createTime']}，使用当前时间');
+      // print('解析createTime失败: ${json['createTime']}，使用当前时间');
       createTime = DateTime.now();
     }
 
     try {
       updateTime = DateTime.parse(json['updateTime']);
     } catch (e) {
-      print('解析updateTime失败: ${json['updateTime']}，使用当前时间');
+      // print('解析updateTime失败: ${json['updateTime']}，使用当前时间');
       updateTime = DateTime.now();
     }
 
@@ -74,7 +73,7 @@ class GameCollectionItem {
         try {
           rating = double.parse(json['rating']);
         } catch (e) {
-          print('评分 "${json['rating']}" 不是有效的数字');
+          // print('评分 "${json['rating']}" 不是有效的数字');
         }
       }
     }
@@ -112,6 +111,7 @@ class GameCollectionItem {
     return data;
   }
 }
+
 // 游戏收藏统计（用户收藏数量）
 class GameCollectionCounts {
   final int wantToPlay;
@@ -181,6 +181,7 @@ class GameCollectionCounts {
     return 'GameCollectionCounts{wantToPlay: $wantToPlay, playing: $playing, played: $played, total: $total}';
   }
 }
+
 // 游戏收藏统计（单个游戏的收藏人数）
 class GameCollectionStats {
   final int wantToPlayCount;
@@ -212,7 +213,7 @@ class GameCollectionStats {
         try {
           wantToPlayCount = int.parse(json['wantToPlayCount']);
         } catch (e) {
-          print('无法解析wantToPlayCount: ${json['wantToPlayCount']}');
+          // print('无法解析wantToPlayCount: ${json['wantToPlayCount']}');
         }
       }
     }
@@ -227,7 +228,7 @@ class GameCollectionStats {
         try {
           playingCount = int.parse(json['playingCount']);
         } catch (e) {
-          print('无法解析playingCount: ${json['playingCount']}');
+          // print('无法解析playingCount: ${json['playingCount']}');
         }
       }
     }
@@ -242,7 +243,7 @@ class GameCollectionStats {
         try {
           playedCount = int.parse(json['playedCount']);
         } catch (e) {
-          print('无法解析playedCount: ${json['playedCount']}');
+          // print('无法解析playedCount: ${json['playedCount']}');
         }
       }
     }
@@ -257,7 +258,7 @@ class GameCollectionStats {
         try {
           totalCount = int.parse(json['totalCount']);
         } catch (e) {
-          print('无法解析totalCount: ${json['totalCount']}');
+          //   print('无法解析totalCount: ${json['totalCount']}');
         }
       }
     } else {
@@ -312,6 +313,7 @@ class GameWithCollection {
     };
   }
 }
+
 class GroupedGameCollections {
   final List<GameWithCollection> wantToPlay;
   final List<GameWithCollection> playing;
@@ -327,25 +329,31 @@ class GroupedGameCollections {
 
   // *** 必须实现 toJson ***
   Map<String, dynamic> toJson() => {
-    'wantToPlay': wantToPlay.map((gwc) => gwc.toJson()).toList(), // 假设 GameWithCollection 有 toJson
-    'playing': playing.map((gwc) => gwc.toJson()).toList(),
-    'played': played.map((gwc) => gwc.toJson()).toList(),
-    'counts': counts.toJson(), // 假设 GameCollectionCounts 有 toJson
-  };
+        'wantToPlay': wantToPlay
+            .map((gwc) => gwc.toJson())
+            .toList(), // 假设 GameWithCollection 有 toJson
+        'playing': playing.map((gwc) => gwc.toJson()).toList(),
+        'played': played.map((gwc) => gwc.toJson()).toList(),
+        'counts': counts.toJson(), // 假设 GameCollectionCounts 有 toJson
+      };
 
   // *** 必须实现 fromJson ***
   factory GroupedGameCollections.fromJson(Map<String, dynamic> json) {
     return GroupedGameCollections(
       wantToPlay: (json['wantToPlay'] as List<dynamic>)
-          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>)) // 假设 GameWithCollection 有 fromJson
+          .map((item) => GameWithCollection.fromJson(
+              item as Map<String, dynamic>)) // 假设 GameWithCollection 有 fromJson
           .toList(),
       playing: (json['playing'] as List<dynamic>)
-          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              GameWithCollection.fromJson(item as Map<String, dynamic>))
           .toList(),
       played: (json['played'] as List<dynamic>)
-          .map((item) => GameWithCollection.fromJson(item as Map<String, dynamic>))
+          .map((item) =>
+              GameWithCollection.fromJson(item as Map<String, dynamic>))
           .toList(),
-      counts: GameCollectionCounts.fromJson(json['counts'] as Map<String, dynamic>), // 假设 GameCollectionCounts 有 fromJson
+      counts: GameCollectionCounts.fromJson(json['counts']
+          as Map<String, dynamic>), // 假设 GameCollectionCounts 有 fromJson
     );
   }
 }

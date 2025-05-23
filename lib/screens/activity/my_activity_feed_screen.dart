@@ -6,9 +6,13 @@ import 'package:flutter/services.dart'; // For HapticFeedback
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
@@ -22,10 +26,20 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 class MyActivityFeedScreen extends StatefulWidget {
   final String userId; // 必须提供用户ID
   final String title; // 屏幕标题
+  final AuthProvider authProvider;
+  final UserActivityService activityService;
+  final UserFollowService followService;
+  final InputStateService inputStateService;
+  final UserInfoProvider infoProvider;
 
   const MyActivityFeedScreen({
     super.key,
     required this.userId,
+    required this.authProvider,
+    required this.activityService,
+    required this.followService,
+    required this.inputStateService,
+    required this.infoProvider,
     this.title = 'TA的动态', // 默认标题可以改得通用些
   });
 
@@ -61,9 +75,10 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   Timer? _refreshDebounceTimer;
   bool _hasInitializedDependencies = false;
   bool _isInitialized = false;
-  late String _currentUserId;
+  String? _currentUserId;
   late final UserActivityService _activityService;
   late final AuthProvider _authProvider;
+  late final UserFollowService _followService;
 
   // === Lifecycle Methods ===
   @override
@@ -79,8 +94,9 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = context.read<UserActivityService>();
-      _authProvider = Provider.of<AuthProvider>(context);
+      _activityService = widget.activityService;
+      _authProvider = widget.authProvider;
+      _followService = widget.followService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies && !_isInitialized) {
@@ -578,22 +594,40 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
         // --- Activity Feed ---
         Expanded(
-          child: CollapsibleActivityFeed(
-            // Key ensures widget rebuilds when crucial state like collapse mode changes
+          child: _buildCollapsibleActivities(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCollapsibleActivities() {
+    return StreamBuilder<String?>(
+        stream: _authProvider.currentUserIdStream,
+        initialData: _authProvider.currentUserId,
+        builder: (context, currentUserIdSnapshot) {
+          final String? currentUserId = currentUserIdSnapshot.data;
+          if (_currentUserId != currentUserId) {
+            setState(() {
+              _currentUserId = currentUserId;
+            });
+          }
+
+          return CollapsibleActivityFeed(
             key: ValueKey('my_feed_${widget.userId}_${_collapseMode.index}'),
             activities: _activities,
+            inputStateService: widget.inputStateService,
+            infoProvider: widget.infoProvider,
+            followService: _followService,
             currentUser: _authProvider.currentUser,
-            isLoading: _isLoading &&
-                _activities.isEmpty, // Only show full feed loading if empty
+            isLoading: _isLoading && _activities.isEmpty,
             isLoadingMore: _isLoadingMore,
             error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
             collapseMode: _collapseMode, // Current collapse mode
             useAlternatingLayout: _useAlternatingLayout, // Current layout mode
             scrollController: _scrollController, // Pass the scroll controller-
             onActivityTap: _navigateToActivityDetail,
-            onRefresh: _refreshData, // For pull-to-refresh
-            onLoadMore:
-                _loadMoreActivities, // For triggering load more internally
+            onRefresh: _refreshData,
+            onLoadMore: _loadMoreActivities,
             onDeleteActivity: _handleDeleteActivity,
             onLikeActivity: _handleLikeActivity,
             onUnlikeActivity: _handleUnlikeActivity,
@@ -602,10 +636,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             onLikeComment: _handleLikeComment,
             onUnlikeComment: _handleUnlikeComment,
             onEditActivity: null, // Edit not implemented yet
-          ),
-        ),
-      ],
-    );
+          );
+        });
   }
 
   /// Builds the action bar containing view controls.

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import '../../../../models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection.dart';
 
 class CollectionForm extends StatefulWidget {
   final String gameId;
+  final User? currentUser;
+  final InputStateService inputStateService;
   final String initialStatus;
   final String? initialNotes;
   final String? initialReview;
@@ -18,6 +23,8 @@ class CollectionForm extends StatefulWidget {
   const CollectionForm({
     super.key,
     required this.gameId,
+    required this.currentUser,
+    required this.inputStateService,
     required this.initialStatus,
     this.initialNotes,
     this.initialReview,
@@ -36,6 +43,8 @@ class _CollectionFormState extends State<CollectionForm> {
   late String _selectedStatus;
   late TextEditingController _notesController;
   late TextEditingController _reviewController;
+  User? _currentUser;
+  bool _hasInitializedDependencies = false;
   double? _rating;
   bool _showRating = false;
   bool _showReview = false;
@@ -53,6 +62,26 @@ class _CollectionFormState extends State<CollectionForm> {
     _showRating = _selectedStatus == GameCollectionStatus.played;
     _showReview = _selectedStatus == GameCollectionStatus.played;
     _isSubmitting = false; // 初始化提交状态
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _currentUser = widget.currentUser;
+    if (!_hasInitializedDependencies) {
+      _hasInitializedDependencies = true;
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant CollectionForm oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
+    }
   }
 
   @override
@@ -176,6 +205,7 @@ class _CollectionFormState extends State<CollectionForm> {
         ),
         const SizedBox(height: 8),
         TextInputField(
+          inputStateService: widget.inputStateService,
           controller: _notesController, // 传递 controller
           hintText: '添加个人备注...',
           maxLines: 2,
@@ -198,7 +228,8 @@ class _CollectionFormState extends State<CollectionForm> {
           ),
         ),
         const SizedBox(height: 8),
-        TextInputField( // <--- 使用封装的组件
+        TextInputField(
+          inputStateService: widget.inputStateService,
           controller: _reviewController,
           hintText: '写下你对这款游戏的评价...',
           maxLines: 5,

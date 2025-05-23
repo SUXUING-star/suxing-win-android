@@ -33,7 +33,7 @@ class DesktopProfileGameCard extends StatelessWidget {
                 fit: BoxFit.cover,
                 backgroundColor: Colors.grey[200],
                 onError: (url, error) {
-                  print('游戏封面加载失败: $url, 错误: $error');
+                  // print('游戏封面加载失败: $url, 错误: $error');
                 },
               ),
             ),

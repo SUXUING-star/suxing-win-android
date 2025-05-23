@@ -1,6 +1,6 @@
 // lib/screens/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -13,6 +13,7 @@ import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -22,7 +23,13 @@ import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 class MyGamesScreen extends StatefulWidget {
-  const MyGamesScreen({super.key});
+  final GameService gameService;
+  final AuthProvider authProvider;
+  const MyGamesScreen({
+    super.key,
+    required this.gameService,
+    required this.authProvider,
+  });
 
   @override
   _MyGamesScreenState createState() => _MyGamesScreenState();
@@ -41,6 +48,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   bool _hasInitializedDependencies = false;
   late final GameService _gameService;
   late final AuthProvider _authProvider;
+  User? _currentUser;
 
   @override
   void initState() {
@@ -52,8 +60,9 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = context.read<GameService>();
-      _authProvider = Provider.of<AuthProvider>(context);
+      _gameService = widget.gameService;
+      _authProvider = widget.authProvider;
+      _currentUser = _authProvider.currentUser;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -218,31 +227,53 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     );
   }
 
+  void _handleAddGame() {
+    if (_currentUser != _authProvider.currentUser) {
+      setState(() {
+        _currentUser = _authProvider.currentUser;
+      });
+    }
+    if (!_authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
+      if (result == true && mounted) {
+        _loadInitialGames();
+      }
+    });
+  }
+
+  Widget _buildFab() {
+    return GenericFloatingActionButton(
+      onPressed: () => _handleAddGame(),
+      icon: Icons.add,
+      tooltip: '提交新游戏',
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: '我的游戏', // Changed title
-        // No bottom TabBar needed
-      ),
-      body: RefreshIndicator(
-        onRefresh: _loadInitialGames, // Pull to refresh loads page 1
-        child: _buildBody(),
-      ),
-      floatingActionButton: GenericFloatingActionButton(
-        onPressed: () async {
-          // Navigate and potentially refresh list after returning
-          final result =
-              await NavigationUtils.pushNamed(context, AppRoutes.addGame);
-          if (result == true) {
-            // Check if add game screen indicates success
-            _loadInitialGames();
+    return StreamBuilder<User?>(
+        stream: _authProvider.currentUserStream,
+        initialData: _authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final currentUser = authSnapshot.data;
+          if (currentUser == null) {
+            return const LoginPromptWidget();
           }
-        },
-        icon: Icons.add,
-        tooltip: '提交新游戏',
-      ),
-    );
+          return Scaffold(
+            appBar: const CustomAppBar(
+              title: '我的游戏', // Changed title
+              // No bottom TabBar needed
+            ),
+            body: RefreshIndicator(
+              onRefresh: _loadInitialGames, // Pull to refresh loads page 1
+              child: _buildBody(),
+            ),
+            floatingActionButton: _buildFab(),
+          );
+        });
   }
 
   Widget _buildBody() {
@@ -273,14 +304,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
         child: EmptyStateWidget(
           message: '您还没有提交过游戏',
           action: FunctionalTextButton(
-              onPressed: () {
-                NavigationUtils.pushNamed(context, AppRoutes.addGame)
-                    .then((result) {
-                  if (result == true && mounted) {
-                    _loadInitialGames();
-                  }
-                });
-              },
+              onPressed: () => _handleAddGame(),
               label: '创建新游戏',
               icon: Icons.videogame_asset_rounded),
         ),
@@ -305,7 +329,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
             itemCount: _myGames.length,
             itemBuilder: (context, index) {
               final game = _myGames[index];
-              // *** 为每个 Grid Item 应用动画 ***
+              // 为每个 Grid Item 应用动画
               return FadeInSlideUpItem(
                 // 根据索引计算延迟，实现交错效果
                 delay: Duration(milliseconds: 50 * index),
@@ -340,7 +364,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
         // 游戏状态、评论、操作按钮的 Overlay
         GameStatusOverlay(
           game: game,
-          // 传递处理函数引用
           onResubmit: () => _handleResubmit(game),
           onShowReviewComment: _showReviewCommentDialog,
         ),

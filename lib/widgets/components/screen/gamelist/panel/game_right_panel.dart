@@ -223,7 +223,7 @@ class GameRightPanel extends StatelessWidget {
     required bool isSelected,
     required Function(String?)? onSelected,
   }) {
-    final theme = Theme.of(context);
+    // final theme = Theme.of(context);
 
     // 1. --- 获取分类的基础颜色 ---
     Color baseColor;
@@ -438,7 +438,7 @@ class GameRightPanel extends StatelessWidget {
         SizedBox(height: 8),
         ...categoryStats.map((category) {
           if (category.count == 0 && category.name.isEmpty) {
-            return SizedBox.shrink();
+            return const SizedBox.shrink();
           }
           final displayName = category.name.isEmpty ? '(未分类)' : category.name;
 

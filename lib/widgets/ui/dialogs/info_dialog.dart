@@ -64,7 +64,7 @@ class CustomInfoDialog extends BaseInputDialog<bool> {
   );
 
   /// 显示自定义信息对话框的静态方法
-  /// *** 现在调用 BaseInputDialog.show<bool> ***
+  /// *** 现在调用 BaseInputDialog.show ***
   static Future<void> show({
     required BuildContext context,
     required String title,

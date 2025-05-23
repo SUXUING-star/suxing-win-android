@@ -76,7 +76,7 @@ class Tool {
             var downloadMap = Map<String, dynamic>.from(item);
             downloads.add(ToolDownload.fromJson(downloadMap));
           } catch (e) {
-            print('Error parsing download: $e');
+            // print('Error parsing download: $e');
           }
         }
       }

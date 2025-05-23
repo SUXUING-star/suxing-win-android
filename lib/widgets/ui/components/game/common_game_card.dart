@@ -1,5 +1,6 @@
 // lib/widgets/ui/components/common_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
@@ -23,7 +24,7 @@ class CommonGameCard extends StatelessWidget {
     required this.game,
     this.isGridItem = true,
     this.adaptForPanels = false,
-    this.showTags = true,
+    this.showTags = false,
     this.maxTags = 2,
     this.forceCompact = false,
   });
@@ -100,7 +101,7 @@ class CommonGameCard extends StatelessWidget {
                     memCacheWidth: 480,
                     backgroundColor: Colors.grey[200],
                     onError: (url, error) {
-                      print('游戏封面加载失败: $url, 错误: $error');
+                      // print('游戏封面加载失败: $url, 错误: $error');
                     },
                   ),
 
@@ -180,7 +181,7 @@ class CommonGameCard extends StatelessWidget {
             memCacheHeight: cacheHeight,
             backgroundColor: Colors.grey[200],
             onError: (url, error) {
-              print('游戏卡片图片加载失败: $url, 错误: $error');
+              // print('游戏卡片图片加载失败: $url, 错误: $error');
             },
           ),
         ),
@@ -330,29 +331,6 @@ class CommonGameCard extends StatelessWidget {
     );
   }
 
-  // 构建游戏标签 - 列表布局
-  Widget _buildTags(List<String> tags) {
-    return Wrap(
-      spacing: 4,
-      runSpacing: 4,
-      children: tags.take(maxTags).map((tag) {
-        return Container(
-          padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-          decoration: BoxDecoration(
-            color: Colors.grey[200],
-            borderRadius: BorderRadius.circular(4),
-          ),
-          child: Text(
-            tag,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.grey[700],
-            ),
-          ),
-        );
-      }).toList(),
-    );
-  }
 
   // 构建统计信息行 - 列表布局
   Widget _buildStatsRow(BuildContext context) {
@@ -421,18 +399,18 @@ class CommonGameCard extends StatelessWidget {
   void _onCardTap(BuildContext context) {
     NavigationUtils.pushNamed(
       context,
-      '/game/detail',
+      AppRoutes.gameDetail,
       arguments: game,
     );
   }
 
   // 列表布局右上角操作区域 - 子类重写
   Widget _buildListTopRightAction(BuildContext context) {
-    return SizedBox.shrink(); // 默认不显示任何内容
+    return const SizedBox.shrink(); // 默认不显示任何内容
   }
 
   // 网格布局右上角操作区域 - 子类重写
   Widget _buildGridTopRightAction(BuildContext context) {
-    return SizedBox.shrink(); // 默认不显示任何内容
+    return const SizedBox.shrink(); // 默认不显示任何内容
   }
 }

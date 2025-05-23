@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import '../../../../../../models/post/post.dart';
@@ -11,14 +16,22 @@ import '../recent_global_replies.dart';
 
 class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;
-  final User? currentUser;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
+  final ForumService forumService;
+  final AuthProvider authProvider;
   final UserPostActions userActions;
   final String postId;
   final Function(Post, UserPostActions) onPostUpdated;
 
   const PostDetailDesktopLayout({
     super.key,
-    required this.currentUser,
+    required this.followService,
+    required this.forumService,
+    required this.infoProvider,
+    required this.inputStateService,
+    required this.authProvider,
     required this.post,
     required this.userActions,
     required this.postId,
@@ -54,7 +67,10 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     duration: primaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
                     child: PostContent(
-                      currentUser: currentUser,
+                      forumService: forumService,
+                      infoProvider: infoProvider,
+                      followService: followService,
+                      currentUser: authProvider.currentUser,
                       userActions: userActions,
                       post: post,
                       onPostUpdated: onPostUpdated,
@@ -75,9 +91,12 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     duration: secondaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
                     child: RecentGlobalReplies(
+                      infoProvider: infoProvider,
+                      followService: followService,
                       limit: 5,
                       post: post,
-                      currentUser: currentUser,
+                      currentUser: authProvider.currentUser,
+                      forumService: forumService,
                     ),
                   ),
                 ],
@@ -104,7 +123,12 @@ class PostDetailDesktopLayout extends StatelessWidget {
                         (incrementDelay * rightDelayIndex++) +
                         incrementDelay,
                     child: PostReplyList(
-                      currentUser: currentUser,
+                      inputStateService: inputStateService,
+                      currentUser: authProvider.currentUser,
+                      followService: followService,
+                      infoProvider: infoProvider,
+                      forumService: forumService,
+                      authProvider: authProvider,
                       postId: postId,
                       isScrollableInternally: true,
                     ),

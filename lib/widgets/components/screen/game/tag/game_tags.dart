@@ -5,8 +5,8 @@ import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../../../../../models/game/game.dart';
-import '../../../../../../utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class GameTags extends StatelessWidget {
   final Game game;
@@ -35,7 +35,7 @@ class GameTags extends StatelessWidget {
     final List<String> tags = game.tags ;
 
     if (tags.isEmpty) {
-      return SizedBox.shrink();
+      return const SizedBox.shrink();
     }
 
     final displayTags = maxTags != null && tags.length > maxTags!

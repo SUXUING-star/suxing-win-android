@@ -7,6 +7,7 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 使用 AppText
 import '../menus/context_menu_bubble.dart'; // 使用 ContextMenuBubble
 
 class TextInputField extends StatefulWidget {
+  final InputStateService inputStateService;
   final String? slotName; // 槽名称，用于状态管理
   final TextEditingController? controller;
   final String? hintText;
@@ -37,6 +38,7 @@ class TextInputField extends StatefulWidget {
 
   const TextInputField({
     super.key,
+    required this.inputStateService,
     this.slotName,
     this.controller,
     this.hintText = '请输入内容...',
@@ -76,7 +78,6 @@ class _TextInputFieldState extends State<TextInputField> {
   late TextEditingController _controller;
   late FocusNode _focusNode;
 
-  InputStateService? _inputStateService;
   bool _usesStateService = false;
   bool _isInternalController = false;
   bool _isInternalFocusNode = false;
@@ -111,10 +112,7 @@ class _TextInputFieldState extends State<TextInputField> {
     // 优先使用 slotName
     if (widget.slotName != null && widget.slotName!.isNotEmpty) {
       try {
-        // 尝试获取 Service
-        _inputStateService =
-            Provider.of<InputStateService>(context, listen: false);
-        _controller = _inputStateService!.getController(widget.slotName!);
+        _controller = widget.inputStateService.getController(widget.slotName!);
         _usesStateService = true;
         _isInternalController = false;
       } catch (e) {
@@ -391,10 +389,9 @@ class _TextInputFieldState extends State<TextInputField> {
     if (widget.clearOnSubmit) {
       // 如果使用 Service 且 Service 存在
       if (_usesStateService &&
-          _inputStateService != null &&
           widget.slotName != null &&
           widget.slotName!.isNotEmpty) {
-        _inputStateService!.clearText(widget.slotName!);
+        widget.inputStateService.clearText(widget.slotName!);
       }
       // 否则，直接清空当前 Controller (外部或内部)
       else {

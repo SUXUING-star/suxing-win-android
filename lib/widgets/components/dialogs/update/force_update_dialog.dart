@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/foundation.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ForceUpdateDialog {
@@ -88,10 +87,10 @@ class ForceUpdateDialog {
       onConfirm: () async {
         // onConfirm 是 Future<void> Function()
         if (updateUrl.isEmpty) {
-          if (kDebugMode) {
-            print(
-                'ForceUpdateDialog: Release Page URL (from updateUrl prop) is empty.');
-          }
+          // if (kDebugMode) {
+          //   print(
+          //       'ForceUpdateDialog: Release Page URL (from updateUrl prop) is empty.');
+          // }
           if (context.mounted) {
             // 使用 AppSnackBar 显示错误
             AppSnackBar.showError(context, '未配置有效的更新页面链接。');
@@ -103,21 +102,21 @@ class ForceUpdateDialog {
         final Uri uri =
             Uri.parse(updateUrl); // updateUrl 就是 AppConfig.releasePage
         try {
-          if (kDebugMode) {
-            print("ForceUpdateDialog: Launching release page URL: $uri");
-          }
+          // if (kDebugMode) {
+          //   print("ForceUpdateDialog: Launching release page URL: $uri");
+          // }
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } else {
-            if (kDebugMode) print('ForceUpdateDialog: Cannot launch URL: $uri');
+            // if (kDebugMode) print('ForceUpdateDialog: Cannot launch URL: $uri');
             if (context.mounted) {
               AppSnackBar.showError(context, '无法打开更新页面，请尝试手动访问。');
             }
           }
         } catch (e) {
-          if (kDebugMode) {
-            print("ForceUpdateDialog: Error launching URL $uri: $e");
-          }
+          // if (kDebugMode) {
+          //   print("ForceUpdateDialog: Error launching URL $uri: $e");
+          // }
           if (context.mounted) {
             AppSnackBar.showError(context,
                 '打开链接时发生错误: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');

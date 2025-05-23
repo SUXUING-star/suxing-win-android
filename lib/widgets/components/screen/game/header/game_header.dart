@@ -1,25 +1,28 @@
 // lib/widgets/game/game_header.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/components/screen/game/tag/game_tags.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../../../../models/game/game.dart';
-import '../tag/game_tags.dart'; // 导入游戏标签组件
-import '../../../../ui/badges/user_info_badge.dart'; // 导入新的用户信息组件
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class GameHeader extends StatelessWidget {
   final Game game;
   final User? currentUser;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
 
   const GameHeader({
     super.key,
     required this.game,
     required this.currentUser,
+    required this.infoProvider,
+    required this.followService,
   });
 
   @override
@@ -116,10 +119,7 @@ class GameHeader extends StatelessWidget {
       height: 1.4,
     );
     final userId = game.authorId;
-    final userInfoProvider = context.watch<UserInfoProvider>();
-    userInfoProvider.ensureUserInfoLoaded(userId);
-    final UserDataStatus userDataStatus =
-        userInfoProvider.getUserStatus(userId);
+
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -132,7 +132,8 @@ class GameHeader extends StatelessWidget {
           children: [
             // 使用新的用户信息组件
             UserInfoBadge(
-              userDataStatus: userDataStatus,
+              infoProvider: infoProvider,
+              followService: followService,
               targetUserId: game.authorId,
               currentUser: currentUser,
               mini: false,

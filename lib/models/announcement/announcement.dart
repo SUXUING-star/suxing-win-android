@@ -33,7 +33,7 @@ class Announcement {
         try {
           return DateTime.parse(dateValue);
         } catch (e) {
-          print('日期解析错误: $e');
+          // print('日期解析错误: $e');
           return DateTime.now();
         }
       }
@@ -111,7 +111,7 @@ class AnnouncementFull {
         try {
           return DateTime.parse(dateValue);
         } catch (e) {
-          print('日期解析错误: $e');
+          // print('日期解析错误: $e');
           return DateTime.now();
         }
       }
