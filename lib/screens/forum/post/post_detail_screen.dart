@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -38,6 +39,7 @@ class PostDetailScreen extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
   final SidebarProvider sidebarProvider;
+  final PostListFilterProvider postListFilterProvider;
   const PostDetailScreen({
     super.key,
     required this.postId,
@@ -47,6 +49,7 @@ class PostDetailScreen extends StatefulWidget {
     required this.infoProvider,
     required this.inputStateService,
     required this.sidebarProvider,
+    required this.postListFilterProvider,
     this.needHistory = true,
   });
   @override
@@ -354,6 +357,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         : widget.authProvider.currentUserId == post.authorId;
   }
 
+  void _handleFilterTagSelect(BuildContext context, String newTagString) {
+    widget.postListFilterProvider.setTag(newTagString);
+    NavigationUtils.navigateToHome(widget.sidebarProvider, context,
+        tabIndex: 2);
+  }
+
   // *** 构建界面 ***
   @override
   Widget build(BuildContext context) {
@@ -413,6 +422,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 forumService: widget.forumService,
                 infoProvider: widget.infoProvider,
                 followService: widget.followService,
+                onTagTap: (context, newTagString) =>
+                    _handleFilterTagSelect(context, newTagString),
               )
             : PostDetailMobileLayout(
                 authProvider: widget.authProvider,
@@ -423,6 +434,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 followService: widget.followService,
                 forumService: widget.forumService,
                 infoProvider: widget.infoProvider,
+                onTagTap: (context, newTagString) =>
+                    _handleFilterTagSelect(context, newTagString),
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
               ),
       ),

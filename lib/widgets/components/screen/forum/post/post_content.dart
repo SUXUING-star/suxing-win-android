@@ -5,7 +5,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/post_interaction_buttons.dart';
-import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/tag/post_tags.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -20,6 +20,7 @@ class PostContent extends StatelessWidget {
   final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
+  final Function(BuildContext context, String tagString)? onTagTap;
 
   const PostContent({
     super.key,
@@ -30,6 +31,7 @@ class PostContent extends StatelessWidget {
     required this.userActions,
     required this.post,
     required this.onPostUpdated,
+    required this.onTagTap,
   });
 
   // 移除了 _PostContentState 和相关生命周期方法
@@ -92,24 +94,13 @@ class PostContent extends StatelessWidget {
             const SizedBox(height: 20),
 
             // 标签栏
-            if (post.tags.isNotEmpty) // 使用 post
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(vertical: 4.0),
-                child: Row(
-                  children: post.tags.map((tagString) {
-                    // 使用 post
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8.0),
-                      child: PostTagItem(
-                        tagString: tagString,
-                        isMini: !isDesktop,
-                      ),
-                    );
-                  }).toList(),
-                ),
+            if (post.tags.isNotEmpty)
+              PostTags(
+                post: post,
+                isMini: !isDesktop,
+                onTagTap: onTagTap,
               ),
-            if (post.tags.isNotEmpty) const SizedBox(height: 20), // 使用 post
+            if (post.tags.isNotEmpty) const SizedBox(height: 20),
             // 内容栏
             Container(
               width: double.infinity,

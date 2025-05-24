@@ -19,12 +19,14 @@ class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final Function(BuildContext context, String tagString)? onTagTap;
   final InputStateService inputStateService;
   final ForumService forumService;
   final AuthProvider authProvider;
   final UserPostActions userActions;
   final String postId;
   final Function(Post, UserPostActions) onPostUpdated;
+
 
   const PostDetailDesktopLayout({
     super.key,
@@ -37,6 +39,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
     required this.userActions,
     required this.postId,
     required this.onPostUpdated,
+    required this.onTagTap,
   });
 
   @override
@@ -68,6 +71,7 @@ class PostDetailDesktopLayout extends StatelessWidget {
                     duration: primaryDuration,
                     delay: baseDelay + (incrementDelay * leftDelayIndex++),
                     child: PostContent(
+                      onTagTap: onTagTap,
                       forumService: forumService,
                       infoProvider: infoProvider,
                       followService: followService,

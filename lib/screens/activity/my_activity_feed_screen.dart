@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // For HapticFeedback
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -599,14 +600,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   }
 
   Widget _buildCollapsibleActivities() {
-    return StreamBuilder<String?>(
-        stream: _authProvider.currentUserIdStream,
-        initialData: _authProvider.currentUserId,
-        builder: (context, currentUserIdSnapshot) {
-          final String? currentUserId = currentUserIdSnapshot.data;
-          if (_currentUserId != currentUserId) {
+    return StreamBuilder<User?>(
+        stream: _authProvider.currentUserStream,
+        initialData: _authProvider.currentUser,
+        builder: (context, currentUserSnapshot) {
+          final User? currentUser = currentUserSnapshot.data;
+          if (_currentUserId != currentUser?.id) {
             setState(() {
-              _currentUserId = currentUserId;
+              _currentUserId = currentUser?.id;
             });
           }
 
@@ -616,7 +617,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             inputStateService: widget.inputStateService,
             infoProvider: widget.infoProvider,
             followService: _followService,
-            currentUser: _authProvider.currentUser,
+            currentUser: currentUser,
             isLoading: _isLoading && _activities.isEmpty,
             isLoadingMore: _isLoadingMore,
             error: _error.isNotEmpty && _activities.isEmpty ? _error : '',

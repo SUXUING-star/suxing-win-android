@@ -1,19 +1,20 @@
 // import 'dart:io'; // 这个文件不再需要 dart:io 或 XFile
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/announcement/announcement.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-// import 'package:image_picker/image_picker.dart'; // 移除
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 移除
-import '../../../../../models/announcement/announcement.dart';
-// --- 直接调用 showAnnouncementDialog ---
-import '../../../dialogs/announcement/announcement_dialog.dart'; // 导入修改后的 dialog
 
 class AnnouncementPreviewScreen extends StatelessWidget {
-  final AnnouncementFull announcementFormData; // 从表单传递的完整数据
-  final dynamic imageSource; // 图片源 (XFile, String, or null)
+  final AnnouncementService announcementService;
+  final AnnouncementFull announcementFormData;
+  final dynamic imageSource;
 
   const AnnouncementPreviewScreen({
     super.key,
-    required this.announcementFormData, // 修改变量名以区分
+    required this.announcementService,
+    required this.announcementFormData,
     required this.imageSource,
   });
 
@@ -37,9 +38,11 @@ class AnnouncementPreviewScreen extends StatelessWidget {
     // --- 使用 Scaffold 包装，并在 build 完成后显示 Dialog ---
     // 这样可以确保 context 是有效的，并且 Dialog 出现在屏幕之上
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (context.mounted) { // 再次检查 context
+      if (context.mounted) {
+        // 再次检查 context
         showAnnouncementDialog(
           context,
+          announcementService,
           previewDisplayData, // 传递临时的 Announcement 对象
           imageSource: imageSource, // !!! 传递当前的图片源 !!!
           onClose: () {

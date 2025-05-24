@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -9,6 +10,7 @@ import 'package:suxingchahui/screens/message/message_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/screens/search/search_post_screen.dart';
 import 'package:suxingchahui/screens/webview/webview_screen.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/email/email_service.dart';
@@ -120,6 +122,8 @@ class AppRoutes {
     MaintenanceService maintenanceService,
     GameListFilterProvider gameListFilterProvider,
     SidebarProvider sidebarProvider,
+    PostListFilterProvider postListFilterProvider,
+    RateLimitedFileUpload fileUploadService,
   ) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
@@ -284,6 +288,7 @@ class AppRoutes {
                   inputStateService: inputStateService,
                   userService: userService,
                   authProvider: authProvider,
+                  fileUpload: fileUploadService,
                 ));
       case openProfile:
         if (settings.arguments is! String ||
@@ -310,6 +315,7 @@ class AppRoutes {
       case addGame:
         return MaterialPageRoute(
             builder: (_) => AddGameScreen(
+                  fileUpload: fileUploadService,
                   sidebarProvider: sidebarProvider,
                   infoProvider: infoProvider,
                   gameCollectionService: gameCollectionService,
@@ -333,6 +339,7 @@ class AppRoutes {
         return MaterialPageRoute(
           builder: (_) => EditGameScreen(
             gameId: gameId,
+            fileUpload: fileUploadService,
             sidebarProvider: sidebarProvider,
             authProvider: authProvider,
             gameService: gameService,
@@ -532,6 +539,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => ForumScreen(
                   tag: tag,
+                  postListFilterProvider: postListFilterProvider,
                   infoProvider: infoProvider,
                   forumService: forumService,
                   authProvider: authProvider,
@@ -552,6 +560,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => PostDetailScreen(
                   postId: postId,
+                  postListFilterProvider: postListFilterProvider,
                   sidebarProvider: sidebarProvider,
                   inputStateService: inputStateService,
                   infoProvider: infoProvider,
@@ -588,6 +597,7 @@ class AppRoutes {
       case adminDashboard:
         return MaterialPageRoute(
             builder: (_) => AdminDashboard(
+                  fileUpload: fileUploadService,
                   maintenanceService: maintenanceService,
                   announcementService: announcementService,
                   userService: userService,

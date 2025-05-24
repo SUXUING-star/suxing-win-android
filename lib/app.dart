@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
@@ -11,6 +12,7 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/email/email_service.dart';
@@ -89,6 +91,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final EmailService _emailService;
   late final UserCheckInService _checkInService;
   late final MaintenanceService _maintenanceService;
+  late final PostListFilterProvider _postListFilterProvider;
+  late final RateLimitedFileUpload _fileUploadService;
 
   late final Widget _mainLayout;
 
@@ -109,6 +113,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
           Provider.of<WindowStateProvider>(context, listen: false);
       _gameListFilterProvider =
           Provider.of<GameListFilterProvider>(context, listen: false);
+      _postListFilterProvider =
+          Provider.of<PostListFilterProvider>(context, listen: false);
+      _fileUploadService = context.read<RateLimitedFileUpload>();
       _messageService = context.read<MessageService>();
       _announcementService = context.read<AnnouncementService>();
       _maintenanceService = context.read<MaintenanceService>();
@@ -174,6 +181,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _maintenanceService,
       _gameListFilterProvider,
       _sidebarProvider,
+      _postListFilterProvider,
+      _fileUploadService,
     );
   }
 
@@ -193,6 +202,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       activityService: _activityService,
       followService: _followService,
       infoProvider: _infoProvider,
+      postListFilterProvider: _postListFilterProvider,
+      fileUpload: _fileUploadService,
     );
   }
 

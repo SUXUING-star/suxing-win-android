@@ -69,7 +69,6 @@ class DesktopSidebar extends StatelessWidget {
 
   // 导航到指定页面
   void _navigateToMainScreen(BuildContext context, int index) {
-    sidebarProvider.setCurrentIndex(index);
     NavigationUtils.navigateToHome(sidebarProvider, context, tabIndex: index);
   }
 

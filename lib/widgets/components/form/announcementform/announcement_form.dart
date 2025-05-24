@@ -1,26 +1,33 @@
 import 'dart:io'; // 需要导入 dart:io
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart'; // 需要导入 image_picker
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入 AppSnackBar
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'field/basic_info_field.dart';
 import 'field/display_settings_field.dart';
 import 'field/action_field.dart';
-import 'preview/announcement_preview_button.dart'; // 预览按钮也需要调整
+import 'preview/announcement_preview_button.dart';
 
 class AnnouncementForm extends StatefulWidget {
   final AnnouncementFull announcement;
   final Function(AnnouncementFull) onSubmit;
+  final RateLimitedFileUpload fileUpload;
+  final AnnouncementService announcementService;
+  final InputStateService inputStateService;
   final VoidCallback onCancel;
 
   const AnnouncementForm({
     super.key,
     required this.announcement,
+    required this.announcementService,
+    required this.fileUpload,
+    required this.inputStateService,
     required this.onSubmit,
     required this.onCancel,
   });
@@ -34,18 +41,15 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   late AnnouncementFull _formData; // 使用 _formData 来跟踪表单状态
   bool _isLoading = false; // 表单级别的加载状态
   bool _hasInitializedDependencies = false;
-  late final InputStateService _inputStateService;
 
   // --- 图片状态 ---
-  dynamic _imageSource; // String? (URL) 或 XFile? (本地文件) or null
-  String? _originalImageUrl; // 编辑时记录原始 URL
+  dynamic _imageSource;
+  String? _originalImageUrl;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
   }
@@ -92,10 +96,8 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         // 1. 需要上传新图片
         final fileToUpload = File((_imageSource as XFile).path);
 
-        final uploadService = context.read<RateLimitedFileUpload>();
-
         //print("准备上传新图片... 旧 URL (如替换): $oldUrlToReplace");
-        finalImageUrl = await uploadService.uploadImage(
+        finalImageUrl = await widget.fileUpload.uploadImage(
           fileToUpload,
           folder: 'announcements', // 指定文件夹
         );
@@ -119,10 +121,8 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       // 创建最终要提交的 AnnouncementFull 对象
       // 合并表单数据和处理后的图片 URL
       final AnnouncementFull announcementToSubmit = _formData.copyWith(
-        // 关键：用处理后的 finalImageUrl 更新
         imageUrl: finalImageUrl,
         clearImageUrl: finalImageUrl == null, // 如果最终url是null，明确告诉copyWith清除
-        // 其他字段已通过各自的 onChanged 在 _formData 中更新
       );
 
       widget.onSubmit(announcementToSubmit);
@@ -228,7 +228,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const SizedBox(height: 16),
                           // --- ActionField ---
                           ActionField(
-                            inputStateService: _inputStateService,
+                            inputStateService: widget.inputStateService,
                             actionUrl: _formData.actionUrl,
                             actionText: _formData.actionText,
                             onActionUrlChanged: (value) => setState(() =>
@@ -268,7 +268,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const SizedBox(height: 16),
                           // --- BasicInfoField ---
                           BasicInfoField(
-                            inputStateService: _inputStateService,
+                            inputStateService: widget.inputStateService,
                             title: _formData.title,
                             content: _formData.content,
                             type: _formData.type,
@@ -307,7 +307,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: BasicInfoField(
-              inputStateService: _inputStateService,
+              inputStateService: widget.inputStateService,
               title: _formData.title,
               content: _formData.content,
               type: _formData.type,
@@ -354,7 +354,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: ActionField(
-              inputStateService: _inputStateService,
+              inputStateService: widget.inputStateService,
               actionUrl: _formData.actionUrl,
               actionText: _formData.actionText,
               onActionUrlChanged: (value) => setState(() => _formData =
@@ -384,7 +384,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
         const SizedBox(width: 16),
         // --- 预览按钮 ---
         AnnouncementPreviewButton(
-          // 传递当前的表单数据和图片源给预览按钮
+          announcementService: widget.announcementService,
           announcement: _formData,
           imageSourceForPreview: _imageSource,
           isLoading: _isLoading,

@@ -20,8 +20,8 @@ class PostDetailMobileLayout extends StatelessWidget {
   final ForumService forumService;
   final UserPostActions userActions;
   final String postId;
-  // 添加交互成功回调
   final Function(Post, UserPostActions) onPostUpdated;
+  final Function(BuildContext context, String tagString)? onTagTap;
 
   const PostDetailMobileLayout({
     super.key,
@@ -34,6 +34,7 @@ class PostDetailMobileLayout extends StatelessWidget {
     required this.userActions,
     required this.postId,
     required this.onPostUpdated,
+    required this.onTagTap,
   });
 
   @override
@@ -58,6 +59,7 @@ class PostDetailMobileLayout extends StatelessWidget {
             infoProvider: infoProvider,
             userActions: userActions,
             post: post,
+            onTagTap: onTagTap,
             onPostUpdated: onPostUpdated,
           ),
         ),

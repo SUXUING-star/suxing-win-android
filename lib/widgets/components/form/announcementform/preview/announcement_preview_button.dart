@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 // 移除 navigation_utils，如果只用 Navigator.push
 // import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import '../../../../../models/announcement/announcement.dart';
 import 'announcement_preview_screen.dart'; // 保持导入
 
 class AnnouncementPreviewButton extends StatelessWidget {
-  final AnnouncementFull announcement; // 当前表单数据
-  final dynamic imageSourceForPreview; // 新增：接收当前图片源
+  final AnnouncementService announcementService;
+  final AnnouncementFull announcement;
+  final dynamic imageSourceForPreview;
   final bool isLoading;
 
   const AnnouncementPreviewButton({
     super.key,
+    required this.announcementService,
     required this.announcement,
     required this.imageSourceForPreview, // 新增：设为 required
     this.isLoading = false,
@@ -28,7 +32,7 @@ class AnnouncementPreviewButton extends StatelessWidget {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (context) => AnnouncementPreviewScreen(
-                    // 传递表单数据和当前的图片源
+                    announcementService: announcementService,
                     announcementFormData: announcement,
                     imageSource: imageSourceForPreview, // 传递 imageSource
                   ),

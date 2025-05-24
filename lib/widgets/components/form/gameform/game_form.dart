@@ -42,6 +42,7 @@ import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
   final GameService gameService;
+  final RateLimitedFileUpload fileUpload;
   final SidebarProvider sidebarProvider;
   final GameCollectionService gameCollectionService;
   final GameListFilterProvider gameListFilterProvider;
@@ -58,6 +59,7 @@ class GameForm extends StatefulWidget {
     required this.sidebarProvider,
     required this.authProvider,
     required this.followService,
+    required this.fileUpload,
     required this.infoProvider,
     required this.gameService,
     required this.gameListFilterProvider,
@@ -810,7 +812,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     // 3. 设置处理状态，请求锁
     if (mounted) setState(() => _isProcessing = true);
-    final uploadService = context.read<RateLimitedFileUpload>();
 
     bool actionExecuted = await RequestLockService.instance.tryLockAsync(
       operationKey,
@@ -827,8 +828,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             final fileToUpload = File(currentCoverSource.path);
 
             // 注意：FileUpload.uploadImage 需要处理可能发生的异常
-            finalCoverImageUrl = await uploadService.uploadImage(fileToUpload,
-                folder: 'games/covers');
+            finalCoverImageUrl = await widget.fileUpload
+                .uploadImage(fileToUpload, folder: 'games/covers');
             //print("New cover URL: $finalCoverImageUrl");
             if (finalCoverImageUrl.isEmpty) {
               throw Exception("上传失败");
@@ -866,8 +867,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           if (filesToUpload.isNotEmpty) {
             //print("Uploading ${filesToUpload.length} new screenshots...");
             // 注意：FileUpload.uploadFiles 需要处理异常
-            uploadedUrls = await uploadService.uploadImages(filesToUpload,
-                folder: 'games/screenshots');
+            uploadedUrls = await widget.fileUpload
+                .uploadImages(filesToUpload, folder: 'games/screenshots');
             if (uploadedUrls.length != filesToUpload.length) {
               // 上传数量不匹配，是个严重问题
               throw Exception("图片上传部分失败");

@@ -1,7 +1,6 @@
 // lib/screens/profile/profile_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -36,12 +35,14 @@ class ProfileScreen extends StatefulWidget {
   final UserService userService;
   final InputStateService inputStateService;
   final SidebarProvider sidebarProvider;
+  final RateLimitedFileUpload fileUpload;
   const ProfileScreen({
     super.key,
     required this.authProvider,
     required this.userService,
     required this.inputStateService,
     required this.sidebarProvider,
+    required this.fileUpload,
   });
 
   @override
@@ -58,7 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
   static const Duration _minRefreshInterval = Duration(minutes: 1);
-  late final RateLimitedFileUpload _fileUploadService;
   String? _currentUserId;
 
   DailyProgressData? _dailyProgressData;
@@ -76,7 +76,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _fileUploadService = context.read<RateLimitedFileUpload>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -559,7 +558,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                             onLogout: () => _showLogoutDialog(context),
                             // context 来自 State
                             onUploadStateChanged: _handleUploadStateChanged,
-                            fileUpload: _fileUploadService,
+                            fileUpload: widget.fileUpload,
                             onUploadSuccess: (avatarUrl) =>
                                 _handleUploadSuccess(context, avatarUrl),
                             // context 来自 State
@@ -599,7 +598,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                         // context 来自 State
                         onLogout: () => _showLogoutDialog(context),
                         // context 来自 State
-                        fileUpload: _fileUploadService,
+                        fileUpload: widget.fileUpload,
                         onUploadStateChanged: _handleUploadStateChanged,
                         onUploadSuccess: (avatarUrl) =>
                             _handleUploadSuccess(context, avatarUrl),

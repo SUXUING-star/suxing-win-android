@@ -8,8 +8,8 @@ import '../../../../ui/image/safe_cached_image.dart';
 import '../../../../ui/snackbar/app_snackbar.dart'; // 使用 AppSnackBar
 
 class AnnouncementImageField extends StatelessWidget {
-  final dynamic imageSource; // 可以是 XFile, String (URL), or null
-  final ValueChanged<dynamic> onImageSourceChanged; // 回调 XFile, String, or null
+  final dynamic imageSource;
+  final ValueChanged<dynamic> onImageSourceChanged;
 
   const AnnouncementImageField({
     super.key,
@@ -29,7 +29,6 @@ class AnnouncementImageField extends StatelessWidget {
       onImageSourceChanged(image); // 回调 XFile
     }
   }
-
 
   void _clearImage(BuildContext context) {
     if (imageSource != null) {
@@ -64,11 +63,11 @@ class AnnouncementImageField extends StatelessWidget {
                 onPressed: () => _pickImage(context),
                 icon: const Icon(Icons.upload_file),
                 label: const Text('本地图片'),
-                style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12)),
+                style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 12)),
               ),
             ),
             const SizedBox(width: 10),
-
           ],
         ),
         SizedBox(height: verticalSpacing),
@@ -93,7 +92,10 @@ class AnnouncementImageField extends StatelessWidget {
             const Expanded(
               child: Text(
                 '添加图片让公告更生动。',
-                style: TextStyle(fontSize: 12, color: Colors.grey, fontStyle: FontStyle.italic),
+                style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic),
                 overflow: TextOverflow.ellipsis,
               ),
             ),
@@ -103,8 +105,10 @@ class AnnouncementImageField extends StatelessWidget {
                 // onPressed: isLoading ? null : () => _confirmDeleteImage(context), // 移除 isLoading 判断
                 // 直接调用清除方法，不再需要确认对话框，因为还没上传
                 onPressed: () => _clearImage(context),
-                icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
-                label: const Text('清除图片', style: TextStyle(color: Colors.redAccent, fontSize: 13)),
+                icon: const Icon(Icons.delete_outline,
+                    color: Colors.redAccent, size: 20),
+                label: const Text('清除图片',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 13)),
                 style: TextButton.styleFrom(padding: EdgeInsets.zero),
               ),
           ],
@@ -116,7 +120,6 @@ class AnnouncementImageField extends StatelessWidget {
   // 新的预览方法，处理 XFile 和 String
   Widget _buildImagePreview(BuildContext context) {
     final source = imageSource;
-    final uploadService = context.read<RateLimitedFileUpload>();
 
     if (source == null) {
       return const Center(
@@ -139,14 +142,15 @@ class AnnouncementImageField extends StatelessWidget {
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
           // print("本地图片预览错误: ${source.path}, $error");
-          return const Center(child: Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
+          return const Center(
+              child:
+                  Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );
     } else if (source is String && source.isNotEmpty) {
       // 预览网络 URL
       final imageUrl = source;
-      // 确保 URL 完整 (假设 FileUpload.baseUrl 已定义)
-      final String displayUrl = imageUrl.startsWith('http') ? imageUrl : '${uploadService.baseUrl}/$imageUrl';
+      final String displayUrl = imageUrl;
       imageWidget = SafeCachedImage(
         memCacheWidth: 140,
         imageUrl: displayUrl,
@@ -154,7 +158,8 @@ class AnnouncementImageField extends StatelessWidget {
       );
     } else {
       // 无效的源或空字符串
-      return const Center(child: Icon(Icons.help_outline, size: 48, color: Colors.grey));
+      return const Center(
+          child: Icon(Icons.help_outline, size: 48, color: Colors.grey));
     }
 
     // 添加圆角裁剪

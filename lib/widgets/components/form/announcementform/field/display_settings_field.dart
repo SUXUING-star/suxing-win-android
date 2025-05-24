@@ -1,22 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'image_field.dart'; // 保持导入 image_field
+import 'image_field.dart';
 
 class DisplaySettingsField extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
   final bool isActive;
   final int priority;
-  // final String? imageUrl; // 移除 imageUrl
-  final dynamic imageSource; // 添加 imageSource
+  final dynamic imageSource;
   final Function(DateTime) onStartDateChanged;
   final Function(DateTime) onEndDateChanged;
   final Function(bool) onActiveChanged;
   final Function(int) onPriorityChanged;
-  // final Function(String) onImageUrlChanged; // 移除 onImageUrlChanged
-  final ValueChanged<dynamic> onImageSourceChanged; // 添加 onImageSourceChanged
-  // final bool isLoading; // 移除 isLoading
-  // final Function(bool) onLoadingChanged; // 移除 onLoadingChanged
+  final ValueChanged<dynamic> onImageSourceChanged;
 
   const DisplaySettingsField({
     super.key,
@@ -30,8 +26,6 @@ class DisplaySettingsField extends StatelessWidget {
     required this.onActiveChanged,
     required this.onPriorityChanged,
     required this.onImageSourceChanged, // 修改
-    // this.isLoading = false, // 移除
-    // required this.onLoadingChanged, // 移除
   });
 
   @override
@@ -89,12 +83,8 @@ class DisplaySettingsField extends StatelessWidget {
 
         // --- 图片上传组件 (修改) ---
         AnnouncementImageField(
-          // imageUrl: imageUrl, // 移除
           imageSource: imageSource, // 传入 imageSource
-          // onImageUrlChanged: onImageUrlChanged, // 移除
           onImageSourceChanged: onImageSourceChanged, // 传入 onImageSourceChanged
-          // isLoading: isLoading, // 移除
-          // onLoadingChanged: onLoadingChanged, // 移除
         ),
         const SizedBox(height: 16),
 

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -35,6 +36,7 @@ class ForumScreen extends StatefulWidget {
   final ForumService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final PostListFilterProvider postListFilterProvider;
 
   const ForumScreen({
     super.key,
@@ -43,6 +45,7 @@ class ForumScreen extends StatefulWidget {
     required this.forumService,
     required this.followService,
     required this.infoProvider,
+    required this.postListFilterProvider,
   });
 
   @override
@@ -78,6 +81,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   // --- Debounce Timer ---
   Timer? _refreshDebounceTimer;
+  Timer? _checkProviderDebounceTimer;
 
   bool _hasInitializedDependencies = false;
 
@@ -89,10 +93,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   DateTime? _lastForumRefreshAttemptTime; // 上次尝试论坛下拉刷新的时间戳
   // 定义最小刷新间隔 (40 秒)
   static const Duration _minForumRefreshInterval = Duration(seconds: 40);
-
-  late final ForumService _forumService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
+  static const Duration _cacheDebounceDuration = Duration(milliseconds: 800);
+  static const Duration _checkProviderDebounceDuration =
+      Duration(milliseconds: 300);
 
   @override
   void initState() {
@@ -106,35 +109,44 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     super.didChangeDependencies();
 
     if (!_hasInitializedDependencies) {
-      // 这里才开始初始化服务变量
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
-      _currentUserId = _authProvider.currentUserId;
-      _hasInitializedDependencies = true;
-    }
+      _currentUserId = widget.authProvider.currentUserId;
 
-    // --- 初始化 selectedTag ---
-    if (_hasInitializedDependencies && widget.tag != null) {
-      // 尝试从路由字符串转换
-      _selectedTag = PostTagsUtils.tagFromString(widget.tag!);
-      // 如果转换结果是 other 但原始 tag 不是 other 的显示文本，视为无效，置为 null
-      if (_selectedTag == PostTag.other &&
-          widget.tag != PostTag.other.displayText) {
+      // --- 初始化 _selectedTag ---
+      // 优先使用 Provider 的值 (如果被设置过)
+      final providerTagString = widget.postListFilterProvider.selectedTagString;
+      final providerTagWasSet = widget.postListFilterProvider.tagHasBeenSet;
+
+      String? initialTagString;
+
+      if (providerTagWasSet && providerTagString != null) {
+        initialTagString = providerTagString;
+        // print("ForumScreen: Initializing tag from Provider: $initialTagString");
+        widget.postListFilterProvider.resetTagFlag(); // 用了就重置标记
+      } else if (widget.tag != null) {
+        initialTagString = widget.tag;
+        // print("ForumScreen: Initializing tag from widget.tag: $initialTagString");
+      }
+
+      if (initialTagString != null) {
+        _selectedTag = PostTagsUtils.tagFromString(initialTagString);
+        if (_selectedTag == PostTag.other &&
+            initialTagString != PostTag.other.displayText) {
+          _selectedTag = null; // 无效的 "other"
+        }
+      } else {
         _selectedTag = null;
       }
-    } else {
-      _selectedTag = null; // 默认 null (全部)
+      _hasInitializedDependencies = true;
     }
   }
 
   @override
   void dispose() {
-    // print("ForumScreen dispose: Tag=$_selectedTag");
-    _stopWatchingCache(); // 停止监听
+    _stopWatchingCache();
     WidgetsBinding.instance.removeObserver(this);
     _refreshController.dispose();
-    _refreshDebounceTimer?.cancel(); // 取消 debounce timer
+    _refreshDebounceTimer?.cancel();
+    _checkProviderDebounceTimer?.cancel();
     super.dispose();
   }
 
@@ -142,40 +154,93 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   void didUpdateWidget(covariant ForumScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
+      }
+    }
+    // 如果外部传入的 widget.tag 变化了，也需要重新评估 (但 Provider 优先级更高)
+    if (widget.tag != oldWidget.tag &&
+        !widget.postListFilterProvider.tagHasBeenSet) {
+      // print("ForumScreen: widget.tag changed to ${widget.tag}");
+      PostTag? newTagFromWidget =
+          widget.tag != null ? PostTagsUtils.tagFromString(widget.tag!) : null;
+      if (newTagFromWidget == PostTag.other &&
+          widget.tag != PostTag.other.displayText) {
+        newTagFromWidget = null;
+      }
+      if (_selectedTag != newTagFromWidget) {
+        // print("ForumScreen: Applying new widget.tag, calling _onTagSelected");
+        _onTagSelected(newTagFromWidget,
+            fromProvider: false); // 明确不是来自 provider
       }
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      if (_authProvider.currentUserId != _currentUserId) {
+      if (widget.authProvider.currentUserId != _currentUserId) {
         if (mounted) {
           setState(() {
-            _currentUserId = _authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId;
           });
         }
       }
-      if (_needsRefresh && _isVisible) {
-        _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
-        _needsRefresh = false; // 重置标记
-      } else if (_isVisible) {
-        _refreshDataIfNeeded(reason: "App Resumed");
+      if (_isVisible) {
+        _checkProviderAndApplyFilterIfNeeded(reason: "App Resumed");
+        if (_needsRefresh) {
+          _refreshDataIfNeeded(reason: "App Resumed with NeedsRefresh");
+          _needsRefresh = false;
+        } else {
+          _refreshDataIfNeeded(
+              reason: "App Resumed (visible, no explicit needsRefresh flag)");
+        }
+      } else {
+        _needsRefresh = true;
       }
-      // 如果恢复时不可见，则在 VisibilityDetector 变为可见时处理 _needsRefresh
     } else if (state == AppLifecycleState.paused) {
-      _needsRefresh = true; // App 进入后台，标记下次回来时需要检查刷新
+      _needsRefresh = true;
     }
   }
 
-  // --- 新增：处理来自 PostCard 的锁定/解锁请求 ---
+  // 检查 Provider 并应用筛选器
+  void _checkProviderAndApplyFilterIfNeeded({required String reason}) {
+    _checkProviderDebounceTimer?.cancel();
+    _checkProviderDebounceTimer = Timer(_checkProviderDebounceDuration, () {
+      if (!mounted || !_isVisible) return;
+
+      final providerTagString = widget.postListFilterProvider.selectedTagString;
+      final bool providerTagWasSet =
+          widget.postListFilterProvider.tagHasBeenSet;
+
+      if (providerTagWasSet) {
+        PostTag? newTagFromProvider;
+        if (providerTagString != null) {
+          newTagFromProvider = PostTagsUtils.tagFromString(providerTagString);
+          if (newTagFromProvider == PostTag.other &&
+              providerTagString != PostTag.other.displayText) {
+            newTagFromProvider = null;
+          }
+        } else {
+          newTagFromProvider = null;
+        }
+
+        widget.postListFilterProvider.resetTagFlag();
+
+        if (_selectedTag != newTagFromProvider) {
+          _onTagSelected(newTagFromProvider, fromProvider: true);
+        }
+      }
+    });
+  }
+
+  // ---  PostCard 的锁定/解锁请求
   Future<void> _handleToggleLockFromCard(String postId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -185,7 +250,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
     try {
       // 调用 ForumService
-      await _forumService.togglePostLock(postId);
+      await widget.forumService.togglePostLock(postId);
       if (!mounted) return; // 检查组件是否还在
       AppSnackBar.showSuccess(context, '帖子状态已切换');
       await _loadPosts(page: _currentPage, isRefresh: true);
@@ -228,7 +293,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // --- 调用 Service 获取数据 ---
     try {
       final String? tagParam = _selectedTag?.displayText;
-      final result = await _forumService.getPostsPage(
+      final result = await widget.forumService.getPostsPage(
         tag: tagParam,
         page: page,
         limit: _postListLimit,
@@ -382,7 +447,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     try {
       final String? tagParam = _selectedTag?.displayText;
-      _cacheSubscription = _forumService
+      _cacheSubscription = widget.forumService
           .watchForumPageChanges(
         tag: tagParam,
         page: _currentPage,
@@ -427,7 +492,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   void _refreshDataIfNeeded({required String reason}) {
     if (!mounted) return;
     _refreshDebounceTimer?.cancel();
-    _refreshDebounceTimer = Timer(const Duration(milliseconds: 500), () {
+    _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
       // 稍微加长 debounce 时间
       if (mounted && _isVisible && !_isLoadingData) {
         // 确保执行时可见且不在加载
@@ -440,23 +505,32 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   // --- 处理标签选择 ---
-  void _onTagSelected(PostTag? tag) {
-    if (_selectedTag == tag || _isLoadingData) return;
+  void _onTagSelected(PostTag? newTag, {bool fromProvider = false}) {
+    if (_selectedTag == newTag || _isLoadingData) {
+      return;
+    }
+
     setState(() {
-      _selectedTag = tag;
-      _currentPage = 1; // 重置到第一页
+      _selectedTag = newTag;
+      _currentPage = 1;
       _totalPages = 1;
-      _posts = null; // 清空旧数据，准备显示 Loading
+      _posts = null;
       _errorMessage = null;
-      _isInitialized = false; // 重置初始化状态
-      _needsRefresh = false; // 清除刷新标记
-      _isLoadingData = false; // 确保不在加载状态
+      _isInitialized = false;
+      _needsRefresh = false;
     });
-    // 停止旧标签的监听
+
     _stopWatchingCache();
-    // 如果当前可见，立即触发新标签的加载
+
+    if (!fromProvider) {
+      widget.postListFilterProvider.setTag(newTag?.displayText);
+      widget.postListFilterProvider.resetTagFlag();
+    }
+
     if (_isVisible) {
-      _triggerInitialLoad(); // 这会调用 _loadPosts(isInitialLoad: true)
+      _triggerInitialLoad();
+    } else {
+      _needsRefresh = true;
     }
   }
 
@@ -534,7 +608,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _handleDeletePostFromCard(Post post) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -551,7 +625,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       onConfirm: () async {
         try {
           // 调用 Service 删除
-          await _forumService.deletePost(post);
+          await widget.forumService.deletePost(post);
           if (!mounted) return;
           AppSnackBar.showSuccess(context, '帖子已删除');
           // 删除成功后，刷新列表（通常回到第一页）
@@ -565,7 +639,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   void _handleEditPostFromCard(Post post) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -588,49 +662,55 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   bool _checkCanLockPost() {
-    return _authProvider.isAdmin;
+    return widget.authProvider.isAdmin;
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == post.authorId;
+        : widget.authProvider.currentUserId == post.authorId;
   }
 
   void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
     final bool currentlyVisible = visibilityInfo.visibleFraction > 0;
-    if (_authProvider.currentUserId != _currentUserId) {
+
+    if (widget.authProvider.currentUserId != _currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
+
     if (currentlyVisible != _isVisible) {
       if (mounted) {
         setState(() {
           _isVisible = currentlyVisible;
-        }); // 更新可见状态
+        });
       }
 
       if (_isVisible) {
-        // --- 变为可见 ---
+        // 1. 优先处理 Provider 的指令
+        _checkProviderAndApplyFilterIfNeeded(
+            reason: "Became Visible - Check Provider First");
+
+        // 2. 处理常规加载/刷新逻辑 (这里只是示例，实际代码会更复杂)
         if (!_isInitialized) {
-          _triggerInitialLoad(); // 确保首次加载被触发（如果还没加载过）
+          _triggerInitialLoad(); // Provider 可能已经触发了加载，这里是后备
         }
-        _startOrUpdateWatchingCache(); // 启动或更新监听
-        // 如果需要刷新（例如后台回来，或缓存事件发生时不可见）
+        _startOrUpdateWatchingCache();
         if (_needsRefresh) {
-          _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
-          _needsRefresh = false; // 重置标记
+          _refreshDataIfNeeded(
+              reason:
+                  "Became Visible with NeedsRefresh (after provider check)");
+          _needsRefresh = false;
         } else if (_isInitialized && _posts == null && !_isLoadingData) {
-          // 如果初始化过但没数据（可能上次加载失败），也尝试重新加载
           _loadPosts(page: _currentPage, isRefresh: true);
         }
       } else {
-        // --- 变为不可见 ---
-        _stopWatchingCache(); // 停止监听
-        _refreshDebounceTimer?.cancel(); // 取消可能存在的 debounce
+        _stopWatchingCache();
+        _refreshDebounceTimer?.cancel();
+        _checkProviderDebounceTimer?.cancel();
       }
     }
   }
@@ -732,7 +812,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
               ),
             ),
 
-            _authProvider.isLoggedIn
+            widget.authProvider.isLoggedIn
                 ? Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: FunctionalIconButton(
@@ -928,10 +1008,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             child: Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
               child: PostCard(
-                currentUser: _authProvider.currentUser,
+                currentUser: widget.authProvider.currentUser,
                 post: post,
                 infoProvider: widget.infoProvider,
-                followService: _followService,
+                followService: widget.followService,
                 isDesktopLayout: false,
                 onDeleteAction: onDeleteAction,
                 onEditAction: onEditAction,
@@ -977,9 +1057,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
           duration: cardAnimationDuration,
           delay: cardDelayIncrement * index, // 交错延迟
           child: PostCard(
-            currentUser: _authProvider.currentUser,
+            currentUser: widget.authProvider.currentUser,
             post: post,
-            followService: _followService,
+            followService: widget.followService,
             infoProvider: widget.infoProvider,
             isDesktopLayout: true,
             onDeleteAction: onDeleteAction,

@@ -6,6 +6,7 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -23,6 +24,7 @@ class EditGameScreen extends StatefulWidget {
   final String gameId;
   final GameCollectionService gameCollectionService;
   final UserFollowService followService;
+  final RateLimitedFileUpload fileUpload;
   final GameService gameService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
@@ -32,6 +34,7 @@ class EditGameScreen extends StatefulWidget {
     super.key,
     required this.gameId,
     required this.gameCollectionService,
+    required this.fileUpload,
     required this.gameService,
     required this.followService,
     required this.authProvider,
@@ -231,6 +234,7 @@ class _EditGameScreenState extends State<EditGameScreen>
               if (!isAdmin) _buildNeedToPending(),
               Expanded(
                 child: GameForm(
+                  fileUpload: widget.fileUpload,
                   sidebarProvider: widget.sidebarProvider,
                   gameListFilterProvider: widget.gameListFilterProvider,
                   gameCollectionService: widget.gameCollectionService,

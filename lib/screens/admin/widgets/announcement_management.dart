@@ -1,5 +1,7 @@
 // lib/screens/admin/widgets/announcement_management.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -11,10 +13,14 @@ import 'package:suxingchahui/widgets/components/form/announcementform/announceme
 
 class AnnouncementManagement extends StatefulWidget {
   final AnnouncementService announcementService;
+  final RateLimitedFileUpload fileUpload;
+  final InputStateService inputStateService;
 
   const AnnouncementManagement({
     super.key,
     required this.announcementService,
+    required this.inputStateService,
+    required this.fileUpload,
   });
 
   @override
@@ -92,6 +98,9 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
         title: Text(existingAnnouncement == null ? '创建新公告' : '编辑公告'),
         content: SingleChildScrollView(
           child: AnnouncementForm(
+            announcementService: widget.announcementService,
+            fileUpload: widget.fileUpload,
+            inputStateService: widget.inputStateService,
             announcement: announcement,
             onSubmit: (updatedAnnouncement) {
               NavigationUtils.of(context).pop(updatedAnnouncement);
@@ -199,6 +208,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
 
     showAnnouncementDialog(
       context,
+      widget.announcementService,
       clientAnnouncement,
     );
   }

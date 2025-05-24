@@ -1,4 +1,4 @@
-// lib/widgets/game/tag/game_tags.dart
+// lib/widgets/components/screen/game/tag/game_tags.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/models/game/game.dart';

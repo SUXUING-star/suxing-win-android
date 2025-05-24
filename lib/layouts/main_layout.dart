@@ -1,9 +1,11 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/app.dart';
+import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
@@ -41,6 +43,8 @@ class MainLayout extends StatefulWidget {
   final InputStateService inputStateService;
   final UserCheckInService checkInService;
   final GameListFilterProvider gameListFilterProvider;
+  final PostListFilterProvider postListFilterProvider;
+  final RateLimitedFileUpload fileUpload;
   const MainLayout({
     super.key,
     required this.sidebarProvider,
@@ -57,6 +61,8 @@ class MainLayout extends StatefulWidget {
     required this.inputStateService,
     required this.checkInService,
     required this.gameListFilterProvider,
+    required this.postListFilterProvider,
+    required this.fileUpload,
   });
 
   @override
@@ -146,6 +152,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         forumService: widget.forumService,
         followService: widget.followService,
         infoProvider: widget.infoProvider,
+        postListFilterProvider: widget.postListFilterProvider,
       ),
       ActivityFeedScreen(
         authProvider: widget.authProvider,
@@ -164,6 +171,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         authProvider: widget.authProvider,
         userService: widget.userService,
         inputStateService: widget.inputStateService,
+        fileUpload: widget.fileUpload,
       ),
     ];
   }

@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
@@ -27,6 +28,7 @@ class AdminDashboard extends StatefulWidget {
   final InputStateService inputStateService;
   final MaintenanceService maintenanceService;
   final AnnouncementService announcementService;
+  final RateLimitedFileUpload fileUpload;
   const AdminDashboard({
     super.key,
     required this.authProvider,
@@ -35,6 +37,7 @@ class AdminDashboard extends StatefulWidget {
     required this.inputStateService,
     required this.linkToolService,
     required this.maintenanceService,
+    required this.fileUpload,
     required this.announcementService,
   });
 
@@ -105,7 +108,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
           userService: widget.userService,
         ),
         AnnouncementManagement(
+          fileUpload: widget.fileUpload,
           announcementService: widget.announcementService,
+          inputStateService: widget.inputStateService,
         ), // 添加公告管理页面
         MaintenanceManagement(
           maintenanceService: widget.maintenanceService,

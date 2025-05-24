@@ -84,12 +84,20 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   final Map<String, bool> _expandedGroups = {};
   late AnimationController _animationController;
 
+  User? _currentUser;
+
   @override
   void initState() {
     super.initState();
     _animationController = AnimationController(
         duration: const Duration(milliseconds: 300), vsync: this);
     _initExpandedGroups();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _currentUser = widget.currentUser;
   }
 
   @override
@@ -104,6 +112,11 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     if (oldWidget.collapseMode != widget.collapseMode ||
         _listPossiblyChanged(oldWidget.activities, widget.activities)) {
       _initExpandedGroups();
+    }
+    if (_currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 
