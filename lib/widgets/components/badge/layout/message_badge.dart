@@ -1,6 +1,5 @@
 // lib/widgets/components/badge/layout/message_badge.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';

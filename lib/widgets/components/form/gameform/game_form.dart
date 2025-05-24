@@ -11,7 +11,9 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
@@ -40,7 +42,9 @@ import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
   final GameService gameService;
+  final SidebarProvider sidebarProvider;
   final GameCollectionService gameCollectionService;
+  final GameListFilterProvider gameListFilterProvider;
   final AuthProvider authProvider;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
@@ -51,10 +55,12 @@ class GameForm extends StatefulWidget {
   const GameForm({
     super.key,
     this.game,
+    required this.sidebarProvider,
     required this.authProvider,
     required this.followService,
     required this.infoProvider,
     required this.gameService,
+    required this.gameListFilterProvider,
     required this.gameCollectionService,
     required this.currentUser,
     required this.onSubmit,
@@ -1094,7 +1100,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             // Try saving the draft
             await _saveDraftIfNecessary();
           } catch (e) {
-            print("Error saving draft during PopScope confirmation: $e");
+            // print("Error saving draft during PopScope confirmation: $e");
             // Saving draft failed, but user chose to leave anyway.
           } finally {
             // IMPORTANT: Manually trigger the pop now!
@@ -1564,6 +1570,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         .toList();
 
     return GamePreviewButton(
+      sidebarProvider: widget.sidebarProvider,
+      gameListFilterProvider: widget.gameListFilterProvider,
       gameCollectionService: widget.gameCollectionService,
       authProvider: widget.authProvider,
       gameService: widget.gameService,

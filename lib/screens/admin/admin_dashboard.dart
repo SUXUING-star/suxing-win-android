@@ -1,6 +1,5 @@
 // lib/screens/admin/admin_dashboard.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
@@ -46,6 +45,8 @@ class AdminDashboard extends StatefulWidget {
 class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
   String? _currentUserId;
+  bool _hasInitializedPage = false;
+  late final List<Widget> _pages;
 
   @override
   void initState() {
@@ -56,6 +57,10 @@ class _AdminDashboardState extends State<AdminDashboard> {
   void didChangeDependencies() {
     _currentUserId = widget.authProvider.currentUserId;
     super.didChangeDependencies();
+    if (!_hasInitializedPage) {
+      _pages = _getPages();
+      _hasInitializedPage = true;
+    }
   }
 
   @override
@@ -71,17 +76,22 @@ class _AdminDashboardState extends State<AdminDashboard> {
   }
 
   // 添加公告管理页面到页面列表
-  List<Widget> _getPages(bool isSuperAdmin, User? currentUser) {
+  List<Widget> _getPages() {
+    final bool isSuperAdmin = widget.authProvider.isSuperAdmin;
+    final User? currentUser = widget.authProvider.currentUser;
     final commonPages = [
       GameManagement(
         currentUser: currentUser,
         gameService: widget.gameService,
+        inputStateService: widget.inputStateService,
       ),
       ToolManagement(
         linkToolService: widget.linkToolService,
+        inputStateService: widget.inputStateService,
       ),
       LinkManagement(
         linkToolService: widget.linkToolService,
+        inputStateService: widget.inputStateService,
       ),
     ];
 
@@ -101,14 +111,17 @@ class _AdminDashboardState extends State<AdminDashboard> {
           maintenanceService: widget.maintenanceService,
           inputStateService: widget.inputStateService,
         ),
-        const IPManagement(),
+        IPManagement(
+          inputStateService: widget.inputStateService,
+        ),
       ];
     }
 
     return commonPages;
   }
 
-  List<NavigationDestination> _buildDestinations(bool isSuperAdmin) {
+  List<NavigationDestination> _buildDestinations() {
+    final bool isSuperAdmin = widget.authProvider.isSuperAdmin;
     final commonDestinations = [
       const NavigationDestination(
         icon: Icon(Icons.games),
@@ -150,11 +163,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
     return commonDestinations;
   }
 
-  String _getTitle(bool isSuperAdmin) {
+  String _getTitle() {
+    final bool isSuperAdmin = widget.authProvider.isSuperAdmin;
     if (!isSuperAdmin && _selectedIndex >= 5) {
       return '管理面板';
     }
-
     switch (_selectedIndex) {
       case 0:
         return '游戏管理';
@@ -183,9 +196,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
       builder: (context, currentUserSnapshot) {
         final User? currentUser = currentUserSnapshot.data;
 
-        final isSuperAdmin = currentUser?.isSuperAdmin ?? false;
         final isAdmin = currentUser?.isAdmin ?? false;
-        final pages = _getPages(isSuperAdmin, currentUser);
 
         if (isAdmin) {
           return CustomErrorWidget(
@@ -198,9 +209,9 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         return Scaffold(
           appBar: CustomAppBar(
-            title: _getTitle(isSuperAdmin),
+            title: _getTitle(),
           ),
-          body: pages[_selectedIndex],
+          body: _pages[_selectedIndex],
           bottomNavigationBar: NavigationBar(
             selectedIndex: _selectedIndex,
             onDestinationSelected: (index) {
@@ -208,7 +219,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
                 _selectedIndex = index;
               });
             },
-            destinations: _buildDestinations(isSuperAdmin),
+            destinations: _buildDestinations(),
           ),
         );
       },

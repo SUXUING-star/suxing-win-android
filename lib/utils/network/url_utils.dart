@@ -33,7 +33,7 @@ class UrlUtils {
       Uri safeUri = uri.replace(path: newPath);
       return safeUri.toString();
     } catch (e) {
-      print('URL编码错误: $e');
+      // print('URL编码错误: $e');
 
       // 如果解析失败，尝试简单的编码
       try {
@@ -60,7 +60,7 @@ class UrlUtils {
           }
         }
       } catch (e) {
-        print('简单URL编码失败: $e');
+        // print('简单URL编码失败: $e');
       }
 
       // 所有尝试都失败，返回原始URL

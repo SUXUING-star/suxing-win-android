@@ -1,6 +1,5 @@
 // lib/screens/profile/favorites_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/forum_service.dart';
@@ -79,12 +78,13 @@ class _FavoritesScreenState extends State<FavoritesScreen>
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
+    return StreamBuilder<bool>(
+        stream: widget.authProvider.isLoggedInStream,
+        initialData: widget.authProvider.isLoggedIn,
         builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
-          if (currentUser == null) {
+          final bool isLoggedIn =
+              authSnapshot.data ?? widget.authProvider.isLoggedIn;
+          if (!isLoggedIn) {
             return const LoginPromptWidget();
           }
           return Scaffold(

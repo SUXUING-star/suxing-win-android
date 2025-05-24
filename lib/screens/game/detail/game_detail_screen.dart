@@ -1,7 +1,10 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -34,6 +37,8 @@ class GameDetailScreen extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   final InputStateService inputStateService;
+  final GameListFilterProvider gameListFilterProvider;
+  final SidebarProvider sidebarProvider;
   const GameDetailScreen({
     super.key,
     this.gameId,
@@ -43,16 +48,15 @@ class GameDetailScreen extends StatefulWidget {
     required this.infoProvider,
     required this.inputStateService,
     required this.gameService,
+    required this.gameListFilterProvider,
     required this.followService,
+    required this.sidebarProvider,
   });
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
 }
 
 class _GameDetailScreenState extends State<GameDetailScreen> {
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
-  late final GameCollectionService _gameCollectionService;
   late String? _currentUserId;
 
   Game? _game;
@@ -74,11 +78,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = widget.gameService;
-      _gameCollectionService = widget.gameCollectionService;
-      _authProvider = widget.authProvider;
-      _currentUserId = _authProvider.currentUserId;
-
+      _currentUserId = widget.authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
     if (widget.gameId != null && _hasInitializedDependencies) {
@@ -106,11 +106,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (oldWidget.gameId != widget.gameId) {
       didUpdate = true;
     }
-    if (_authProvider.currentUserId != _currentUserId) {
+    if (widget.authProvider.currentUserId != _currentUserId) {
       didUpdate = true;
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -158,7 +158,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         widget.gameId != null &&
         _game!.approvalStatus == GameStatus.approved &&
         widget.isNeedHistory) {
-      await _gameService.incrementGameView(widget.gameId!);
+      await widget.gameService.incrementGameView(widget.gameId!);
     }
   }
 
@@ -178,7 +178,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     bool gameWasRemoved = false; // 新增标志位
 
     try {
-      result = await _gameService.getGameDetailsWithStatus(widget.gameId!);
+      result =
+          await widget.gameService.getGameDetailsWithStatus(widget.gameId!);
     } catch (e) {
       if (!mounted) return;
       // 检查是否是 "not_found" 异常
@@ -209,11 +210,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     if (Navigator.canPop(context)) {
                       Navigator.pop(context);
                     } else {
-                      NavigationUtils.navigateToHome(context);
+                      NavigationUtils.navigateToHome(
+                          widget.sidebarProvider, context);
                     }
                   } catch (popError) {
                     // 备用方案：导航到主页
-                    NavigationUtils.navigateToHome(context);
+                    NavigationUtils.navigateToHome(
+                        widget.sidebarProvider, context);
                   }
                 }
               },
@@ -360,7 +363,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 确保使用 dialog 返回的最新 status (result.newStatus) 来缓存
-      await _gameService.cacheNewData(updatedGame, result.newStatus);
+      await widget.gameService.cacheNewData(updatedGame, result.newStatus);
       // 6. 使用 setState 更新状态 (在缓存成功后)
       // 不再需要加延迟，await 已经保证了顺序
       if (mounted) {
@@ -381,7 +384,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // 保持前置检查
     if (widget.gameId == null || _isTogglingLike || !mounted) return;
 
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -392,7 +395,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 调用返回 Future<bool> 的 service 方法
-      final newIsLikedStatus = await _gameService.toggleLike(widget.gameId!);
+      final newIsLikedStatus =
+          await widget.gameService.toggleLike(widget.gameId!);
 
       if (mounted) {
         // 异步操作后再次检查 mounted
@@ -422,15 +426,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   // 检查当前用户是否有权限编辑游戏
   bool _canEditOrDeleteGame(Game game) {
-    final canEdit = _authProvider.isAdmin
+    final canEdit = widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == game.authorId;
+        : widget.authProvider.currentUserId == game.authorId;
     return canEdit;
   }
 
   // 处理编辑按钮点击事件
   void _handleEditPressed(Game game) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
     }
     if (!_canEditOrDeleteGame(game)) {
@@ -446,7 +450,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   /// Handles delete action (using your original onConfirm logic).
   Future<void> _handleDeletePressed(Game game) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -465,7 +469,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       onConfirm: () async {
         // onConfirm 是 AsyncCallback?
         try {
-          await _gameService.deleteGame(game);
+          await widget.gameService.deleteGame(game);
           // 刷新由 cache watcher 触发
           if (!mounted) return;
           AppSnackBar.showSuccess(context, "成功删除游戏");
@@ -497,8 +501,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildActionButtonsGroup(BuildContext context, Game game) {
-    final bool canEdit = _canEditOrDeleteGame(game);
-    final bool canDelete = _canEditOrDeleteGame(game);
     final String editHeroTag = MediaQuery.of(context).size.width >= 1024
         ? 'editButtonDesktop'
         : 'editButtonMobile';
@@ -512,62 +514,80 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final Color primaryColor = Theme.of(context).colorScheme.primary;
     final Color greyColor = Colors.grey.shade600; // 用于未点赞状态的颜色（可选）
 
-    return Padding(
-      // 给整个按钮组添加统一的外边距
-      padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
-      child: FloatingActionButtonGroup(
-        spacing: 16.0, // 按钮间距
-        alignment: MainAxisAlignment.end, // 底部对齐
-        children: [
-          // --- 第一个按钮：点赞按钮或占位符 ---
-          if (_isLiked != null) // 确保状态已加载
-            GenericFloatingActionButton(
-              key: ValueKey('like_fab_${widget.gameId}'), // 使用 FAB 特定的 Key
-              heroTag: likeHeroTag,
-              backgroundColor: Colors.white,
-              tooltip: _isLiked! ? '取消点赞' : '点赞', // 根据状态显示不同提示
-              icon: _isLiked!
-                  ? Icons.favorite
-                  : Icons.favorite_border, // 根据状态切换图标
-              mini: true,
-              foregroundColor: _isLiked! ? primaryColor : greyColor,
-              onPressed: _handleToggleLike, // 点击回调保持不变
-              isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
-            )
-          else
-            // 加载占位符 (保持不变)
-            const SizedBox(
-              width: 56,
-              height: 56,
-              child: Center(
-                  child: SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(strokeWidth: 2))),
-            ),
+    return StreamBuilder<User?>(
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, currentUserSnapshot) {
+        final User? currentUser = currentUserSnapshot.data;
+        if (currentUser == null) return const SizedBox.shrink();
+        final bool isAdmin = currentUser.isAdmin;
+        final bool canEdit = isAdmin ? true : currentUser.id == game.authorId;
+        return Padding(
+          // 给整个按钮组添加统一的外边距
+          padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
+          child: FloatingActionButtonGroup(
+            spacing: 16.0, // 按钮间距
+            alignment: MainAxisAlignment.end, // 底部对齐
+            children: [
+              // --- 第一个按钮：点赞按钮或占位符 ---
+              if (_isLiked != null) // 确保状态已加载
+                GenericFloatingActionButton(
+                  key: ValueKey('like_fab_${widget.gameId}'),
+                  // 使用 FAB 特定的 Key
+                  heroTag: likeHeroTag,
+                  backgroundColor: Colors.white,
+                  tooltip: _isLiked! ? '取消点赞' : '点赞',
+                  // 根据状态显示不同提示
+                  icon: _isLiked! ? Icons.favorite : Icons.favorite_border,
+                  // 根据状态切换图标
+                  mini: true,
+                  foregroundColor: _isLiked! ? primaryColor : greyColor,
+                  onPressed: _handleToggleLike,
+                  // 点击回调保持不变
+                  isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
+                )
+              else
+                // 加载占位符 (保持不变)
+                const SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: Center(
+                      child: SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(strokeWidth: 2))),
+                ),
 
-          if (canEdit)
-            GenericFloatingActionButton(
-              heroTag: editHeroTag, // 使用区分后的 heroTag
-              mini: true, // 统一使用 mini 尺寸，或根据需要调整
-              tooltip: '编辑',
-              icon: Icons.edit,
-              onPressed: () => _handleEditPressed(game),
-              backgroundColor: Colors.white, // 白色背景
-              foregroundColor: Theme.of(context).primaryColor, // 主题色图标
-            ),
-          if (canDelete)
-            GenericFloatingActionButton(
-              heroTag: deleteHeroTag, // 使用区分后的 heroTag
-              mini: true, // 统一使用 mini 尺寸，或根据需要调整
-              tooltip: '删除',
-              icon: Icons.delete_forever,
-              onPressed: () => _handleDeletePressed(game),
-              backgroundColor: Colors.white, // 白色背景
-              foregroundColor: Theme.of(context).primaryColor, // 主题色图标
-            ),
-        ],
-      ),
+              if (canEdit)
+                GenericFloatingActionButton(
+                  heroTag: editHeroTag,
+                  // 使用区分后的 heroTag
+                  mini: true,
+                  // 统一使用 mini 尺寸，或根据需要调整
+                  tooltip: '编辑',
+                  icon: Icons.edit,
+                  onPressed: () => _handleEditPressed(game),
+                  backgroundColor: Colors.white,
+                  // 白色背景
+                  foregroundColor: Theme.of(context).primaryColor, // 主题色图标
+                ),
+              if (canEdit)
+                GenericFloatingActionButton(
+                  heroTag: deleteHeroTag,
+                  // 使用区分后的 heroTag
+                  mini: true,
+                  // 统一使用 mini 尺寸，或根据需要调整
+                  tooltip: '删除',
+                  icon: Icons.delete_forever,
+                  onPressed: () => _handleDeletePressed(game),
+                  backgroundColor: Colors.white,
+                  // 白色背景
+                  foregroundColor: Theme.of(context).primaryColor, // 主题色图标
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -674,33 +694,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   Widget _buildGameContent(Game game, bool isPending, bool isDesktop) {
     final bool isPreview = isPending ? true : false;
-    return StreamBuilder<String?>(
-        stream: _authProvider.currentUserIdStream,
-        initialData: _authProvider.currentUserId,
-        builder: (context, authSnapshot) {
-          if (_currentUserId != authSnapshot.data) {
-            setState(() {
-              _currentUserId = _authProvider.currentUserId;
-            });
-          }
-
-          return GameDetailContent(
-            authProvider: _authProvider,
-            inputStateService: widget.inputStateService,
-            gameService: _gameService,
-            gameCollectionService: _gameCollectionService,
-            game: game,
-            isDesktop: isDesktop,
-            infoProvider: widget.infoProvider,
-            followService: widget.followService,
-            currentUser: _authProvider.currentUser,
-            initialCollectionStatus: _collectionStatus,
-            onCollectionChanged: _handleCollectionStateChangedInButton,
-            onNavigate: _handleNavigate,
-            navigationInfo: _navigationInfo,
-            isPreviewMode: isPreview,
-          );
-        });
+    return GameDetailContent(
+      gameListFilterProvider: widget.gameListFilterProvider,
+      authProvider: widget.authProvider,
+      sidebarProvider: widget.sidebarProvider,
+      inputStateService: widget.inputStateService,
+      gameService: widget.gameService,
+      gameCollectionService: widget.gameCollectionService,
+      game: game,
+      isDesktop: isDesktop,
+      infoProvider: widget.infoProvider,
+      followService: widget.followService,
+      currentUser: widget.authProvider.currentUser,
+      initialCollectionStatus: _collectionStatus,
+      onCollectionChanged: _handleCollectionStateChangedInButton,
+      onNavigate: _handleNavigate,
+      navigationInfo: _navigationInfo,
+      isPreviewMode: isPreview,
+    );
   }
 
   Widget _buildPendingContent() {

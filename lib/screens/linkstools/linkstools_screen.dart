@@ -1,7 +1,7 @@
 // lib/screens/linkstools/linkstools_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -25,10 +25,12 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 class LinksToolsScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final LinkToolService linkToolService;
+  final InputStateService inputStateService;
   const LinksToolsScreen({
     super.key,
     required this.authProvider,
     required this.linkToolService,
+    required this.inputStateService,
   });
 
   @override
@@ -173,7 +175,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
     showDialog<Map<String, dynamic>>(
         context: context,
-        builder: (context) => LinkFormDialog()).then((linkData) async {
+        builder: (context) => LinkFormDialog(
+              inputStateService: widget.inputStateService,
+            )).then((linkData) async {
       if (linkData != null) {
         try {
           await _linkToolService.addLink(Link.fromJson(linkData));
@@ -202,7 +206,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     showDialog<Map<String, dynamic>>(
         context: context,
         barrierDismissible: false,
-        builder: (context) => ToolFormDialog()).then((toolData) async {
+        builder: (context) => ToolFormDialog(
+              inputStateService: widget.inputStateService,
+            )).then((toolData) async {
       if (toolData != null) {
         try {
           await _linkToolService.addTool(Tool.fromJson(toolData));
@@ -457,7 +463,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
 
   // --- _buildLinksContent (保持不变, 重试调用 _loadData()) ---
   Widget _buildLinksContent(bool isAdmin) {
-    final linkToolService = context.read<LinkToolService>();
     if (_links == null && _isLoadingData) {
       // 首次加载中
       return SliverFillRemaining(child: LoadingWidget.inline());
@@ -484,7 +489,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
       isAdmin: isAdmin,
       onRefresh: _loadData, // *** 调用恢复原样 ***
       onLaunchURL: (url) => _launchURL(context, url),
-      linkToolService: linkToolService, // 传递 service 用于编辑删除
+      linkToolService: widget.linkToolService, // 传递 service 用于编辑删除
+      inputStateService: widget.inputStateService,
     );
   }
 

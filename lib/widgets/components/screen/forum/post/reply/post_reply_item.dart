@@ -128,7 +128,6 @@ class PostReplyItem extends StatelessWidget {
     BuildContext context,
     ForumService forumService,
   ) {
-    // +++ 生成唯一的 slotName +++
     final slotName = 'post_reply_${postId}_${reply.id}';
     bool isSubmitting = false; // 状态用于控制 CommentInputField 的 loading
 
@@ -207,6 +206,21 @@ class PostReplyItem extends StatelessWidget {
     );
   }
 
+  Widget _buildReplyButton(BuildContext context) {
+    return currentUser == null
+        ? const SizedBox.shrink()
+        : TextButton.icon(
+            icon: const Icon(Icons.reply, size: 16),
+            label: const Text('回复', style: TextStyle(fontSize: 12)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: () => _showReplyBottomSheet(context, forumService),
+          );
+  }
+
   // --- build 方法和 _buildReplyActions 不变 ---
   @override
   Widget build(BuildContext context) {
@@ -240,7 +254,7 @@ class PostReplyItem extends StatelessWidget {
                 ),
               ),
             const SizedBox(width: 8),
-            _buildReplyActions(context, reply, forumService),
+            _buildReplyActions(context, reply),
           ],
         ),
         const SizedBox(height: 12),
@@ -259,28 +273,9 @@ class PostReplyItem extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  StreamBuilder<User?>(
-                    stream: authProvider.currentUserStream,
-                    initialData: authProvider.currentUser,
-                    builder: (context, authSnapshot) {
-                      final currentUser = authSnapshot.data;
-                      if (currentUser == null) return const SizedBox.shrink();
-                      return TextButton.icon(
-                        icon: const Icon(Icons.reply, size: 16),
-                        label: const Text('回复', style: TextStyle(fontSize: 12)),
-                        style: TextButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
-                          minimumSize: Size.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                        onPressed: () =>
-                            _showReplyBottomSheet(context, forumService),
-                      );
-                    },
-                  ),
                   Row(
                     children: [
+                      _buildReplyButton(context),
                       Text(
                         DateTimeFormatter.formatStandard(reply.createTime),
                         style: TextStyle(color: Colors.grey[600], fontSize: 12),
@@ -308,71 +303,63 @@ class PostReplyItem extends StatelessWidget {
   Widget _buildReplyActions(
     BuildContext context,
     Reply reply,
-    ForumService forumService,
   ) {
-    return StreamBuilder<User?>(
-        stream: authProvider.currentUserStream,
-        initialData: authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
-          if (currentUser == null) return const SizedBox.shrink();
-          final theme = Theme.of(context);
-          final currentUserId = currentUser.id;
-          final replyAuthorId = reply.authorId;
-          final isAuthor = currentUserId == replyAuthorId;
-          final isAdmin = currentUser.isAdmin;
+    final currentUserId = currentUser?.id;
+    if (currentUser == null || currentUserId == null) {
+      return const SizedBox.shrink();
+    }
+    final replyAuthorId = reply.authorId;
+    final bool isAuthor = currentUserId == replyAuthorId;
+    final bool isAdmin = currentUser?.isAdmin ?? false;
 
-          if (!isAuthor && !isAdmin) return const SizedBox.shrink();
+    if (!isAuthor && !isAdmin) return const SizedBox.shrink();
 
-          return StylishPopupMenuButton<String>(
-            icon: Icons.more_vert,
-            iconSize: 18,
-            iconColor: Colors.grey[600],
-            triggerPadding: const EdgeInsets.all(0),
-            tooltip: '回复操作',
-            menuColor: theme.canvasColor,
-            elevation: 3,
-            itemHeight: 40,
-            items: [
-              if (isAuthor)
-                StylishMenuItemData(
-                  value: 'edit',
-                  child: Row(children: [
-                    Icon(Icons.edit_outlined,
-                        size: 18, color: theme.textTheme.bodyMedium?.color),
-                    const SizedBox(width: 10),
-                    const Text('编辑')
-                  ]),
-                ),
-              if (isAuthor && isAdmin) const StylishMenuDividerData(),
-              if (isAuthor || isAdmin)
-                StylishMenuItemData(
-                  value: 'delete',
-                  child: Row(children: [
-                    Icon(Icons.delete_outline,
-                        size: 18, color: theme.colorScheme.error),
-                    const SizedBox(width: 10),
-                    Text('删除', style: TextStyle(color: theme.colorScheme.error))
-                  ]),
-                ),
-            ],
-            onSelected: (value) {
-              switch (value) {
-                case 'edit':
-                  _handleEditReply(
-                    context,
-                    reply,
-                  );
-                  break;
-                case 'delete':
-                  _handleDeleteReply(
-                    context,
-                    reply,
-                  );
-                  break;
-              }
-            },
-          );
-        });
+    return StylishPopupMenuButton<String>(
+      icon: Icons.more_vert,
+      iconSize: 18,
+      iconColor: Colors.grey[600],
+      triggerPadding: const EdgeInsets.all(0),
+      tooltip: '回复操作',
+      menuColor: Colors.white,
+      elevation: 3,
+      itemHeight: 40,
+      items: [
+        if (isAuthor)
+          StylishMenuItemData(
+            value: 'edit',
+            child: Row(children: [
+              Icon(Icons.edit_outlined, size: 18, color: Colors.blue[300]),
+              const SizedBox(width: 10),
+              const Text('编辑')
+            ]),
+          ),
+        if (isAuthor && isAdmin) const StylishMenuDividerData(),
+        if (isAuthor || isAdmin)
+          StylishMenuItemData(
+            value: 'delete',
+            child: Row(children: [
+              Icon(Icons.delete_outline, size: 18, color: Colors.white),
+              const SizedBox(width: 10),
+              Text('删除', style: TextStyle(color: Colors.red))
+            ]),
+          ),
+      ],
+      onSelected: (value) {
+        switch (value) {
+          case 'edit':
+            _handleEditReply(
+              context,
+              reply,
+            );
+            break;
+          case 'delete':
+            _handleDeleteReply(
+              context,
+              reply,
+            );
+            break;
+        }
+      },
+    );
   }
 }

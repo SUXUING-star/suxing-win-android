@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
 class NotFoundScreen extends StatelessWidget {
-  const NotFoundScreen({super.key});
+  final SidebarProvider sidebarProvider;
+  const NotFoundScreen({
+    super.key,
+    required this.sidebarProvider,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -34,11 +39,11 @@ class NotFoundScreen extends StatelessWidget {
               ),
               const SizedBox(height: 32.0),
               FunctionalTextButton(
-                onPressed: () {
-                  NavigationUtils.navigateToHome(context);
-                },
-                label: '返回主页'
-              ),
+                  onPressed: () {
+                    NavigationUtils.navigateToHome(sidebarProvider, context,
+                        tabIndex: 0);
+                  },
+                  label: '返回主页'),
             ],
           ),
         ),

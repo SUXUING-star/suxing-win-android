@@ -23,11 +23,13 @@ const Key _particleEffectKey = ValueKey('global_particle_effect');
 
 class AppBackground extends StatefulWidget {
   final Widget child;
+  final bool isDark;
   final WindowStateProvider windowStateProvider;
 
   const AppBackground({
     super.key,
     required this.child,
+    required this.isDark,
     required this.windowStateProvider,
   });
 
@@ -163,8 +165,7 @@ class _AppBackgroundState extends State<AppBackground>
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final List<Color> gradientColors = isDark
+    final List<Color> gradientColors = widget.isDark
         ? [
             const Color.fromRGBO(0, 0, 0, 0.6),
             const Color.fromRGBO(0, 0, 0, 0.4)

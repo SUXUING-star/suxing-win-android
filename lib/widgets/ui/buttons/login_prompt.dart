@@ -60,7 +60,8 @@ class LoginPrompt extends StatelessWidget {
               SizedBox(height: 12),
               // --- 将 ElevatedButton 替换为 FunctionalButton ---
               FunctionalButton(
-                onPressed: onLoginPressed ?? () => NavigationUtils.navigateToLogin(context),
+                onPressed: onLoginPressed ??
+                    () => NavigationUtils.navigateToLogin(context),
                 label: buttonText,
                 icon: Icons.login, // 使用默认的登录图标，或者使用 buttonIcon 参数
               ),

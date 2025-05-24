@@ -1,6 +1,7 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/app.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
@@ -39,6 +40,7 @@ class MainLayout extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
   final UserCheckInService checkInService;
+  final GameListFilterProvider gameListFilterProvider;
   const MainLayout({
     super.key,
     required this.sidebarProvider,
@@ -54,6 +56,7 @@ class MainLayout extends StatefulWidget {
     required this.announcementService,
     required this.inputStateService,
     required this.checkInService,
+    required this.gameListFilterProvider,
   });
 
   @override
@@ -136,6 +139,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
       GamesListScreen(
         authProvider: widget.authProvider,
         gameService: widget.gameService,
+        gameListFilterProvider: widget.gameListFilterProvider,
       ),
       ForumScreen(
         authProvider: widget.authProvider,
@@ -153,8 +157,10 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
       LinksToolsScreen(
         authProvider: widget.authProvider,
         linkToolService: widget.linkToolService,
+        inputStateService: widget.inputStateService,
       ),
       ProfileScreen(
+        sidebarProvider: widget.sidebarProvider,
         authProvider: widget.authProvider,
         userService: widget.userService,
         inputStateService: widget.inputStateService,
@@ -177,6 +183,15 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
             ? selectedIndex
             : 0;
 
+        final bottomBar = CustomBottomNavigationBar(
+          currentIndex: validIndex,
+          onTap: (index) => widget.sidebarProvider.setCurrentIndex(index),
+        );
+        final indexedStack = IndexedStack(
+          index: validIndex,
+          children: _screens,
+        );
+
         return StreamBuilder<bool>(
           stream: widget.authProvider.isLoggedInStream,
           initialData: widget.authProvider.isLoggedIn,
@@ -197,17 +212,8 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
                       onProfileTap: () => _handleProfileTap(isLoggedIn),
                     )
                   : null,
-              body: IndexedStack(
-                index: validIndex,
-                children: _screens,
-              ),
-              bottomNavigationBar: !isDesktop
-                  ? CustomBottomNavigationBar(
-                      currentIndex: validIndex,
-                      onTap: (index) =>
-                          widget.sidebarProvider.setCurrentIndex(index),
-                    )
-                  : null,
+              body: indexedStack,
+              bottomNavigationBar: !isDesktop ? bottomBar : null,
             );
             return mainContent; // AuthProvider 不在加载状态，直接返回主内容
           },

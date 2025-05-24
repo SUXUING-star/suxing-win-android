@@ -14,7 +14,7 @@ class FunctionalTextButton extends StatelessWidget {
   final bool isEnabled;
   final Color? foregroundColor; // <-- 重命名 customColor 为 foregroundColor
   final Color? backgroundColor; // <-- 新增: 背景色 (TextButton 通常透明)
-  final double? minWidth;       // <-- 新增: 最小宽度，方便布局
+  final double? minWidth; // <-- 新增: 最小宽度，方便布局
 
   const FunctionalTextButton({
     super.key,
@@ -28,7 +28,7 @@ class FunctionalTextButton extends StatelessWidget {
     this.isEnabled = true,
     this.foregroundColor, // <-- 使用新名称
     this.backgroundColor, // <-- 新增
-    this.minWidth,       // <-- 新增
+    this.minWidth, // <-- 新增
   });
 
   @override
@@ -36,22 +36,27 @@ class FunctionalTextButton extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     // --- 确定前景色 ---
     // 优先使用传入的 foregroundColor，否则使用 Theme 的 primary color
-    final Color effectiveForegroundColor = foregroundColor ?? theme.colorScheme.primary;
+    final Color effectiveForegroundColor =
+        foregroundColor ?? theme.colorScheme.primary;
     // 禁用状态的前景色
     final Color disabledForegroundColor = Colors.grey.shade400;
 
     // --- 确定背景色 ---
     // 优先使用传入的 backgroundColor，否则默认为透明
-    final Color effectiveBackgroundColor = backgroundColor ?? Colors.transparent;
+    final Color effectiveBackgroundColor =
+        backgroundColor ?? Colors.transparent;
     // 禁用状态的背景色 (通常 TextButton 禁用时也保持透明或非常淡)
-    final Color disabledBackgroundColor = Colors.grey.shade200.withSafeOpacity(0.1); // 可以保持透明或给个非常淡的灰色
+    final Color disabledBackgroundColor =
+        Colors.grey.shade200.withSafeOpacity(0.1); // 可以保持透明或给个非常淡的灰色
 
     // --- 根据状态确定最终颜色 ---
-    final Color currentForegroundColor = isEnabled ? effectiveForegroundColor : disabledForegroundColor;
+    final Color currentForegroundColor =
+        isEnabled ? effectiveForegroundColor : disabledForegroundColor;
     // final Color currentBackgroundColor = isEnabled ? effectiveBackgroundColor : disabledBackgroundColor;
 
     // --- 统一处理 onPressed 回调 ---
-    final VoidCallback? effectiveOnPressed = isEnabled && !isLoading ? onPressed : null;
+    final VoidCallback? effectiveOnPressed =
+        isEnabled && !isLoading ? onPressed : null;
 
     // --- 统一处理按钮样式 (TextButton 样式) ---
     final ButtonStyle buttonStyle = TextButton.styleFrom(
@@ -92,11 +97,13 @@ class FunctionalTextButton extends StatelessWidget {
         ),
       );
     } else if (icon != null) {
-      iconWidget = Icon(icon!, size: iconSize, color: currentForegroundColor); // Icon 颜色也根据状态
+      iconWidget = Icon(icon!,
+          size: iconSize, color: currentForegroundColor); // Icon 颜色也根据状态
     }
 
     // --- 构建最终按钮 ---
-    if (icon != null || (isLoading && icon == null)) { // 有图标，或没图标但在加载
+    if (icon != null || (isLoading && icon == null)) {
+      // 有图标，或没图标但在加载
       // 使用 TextButton.icon 或模拟 icon 效果
       return TextButton.icon(
         onPressed: effectiveOnPressed,

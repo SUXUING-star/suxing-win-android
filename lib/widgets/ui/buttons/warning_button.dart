@@ -40,18 +40,19 @@ class WarningButton extends StatelessWidget {
       onPressed: isEnabled && !isLoading ? onPressed : null,
       icon: isLoading
           ? SizedBox(
-        width: iconSize,
-        height: iconSize,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          color: buttonForegroundColor,
-        ),
-      )
+              width: iconSize,
+              height: iconSize,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: buttonForegroundColor,
+              ),
+            )
           : Icon(
-        icon,
-        size: iconSize,
-        color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
-      ),
+              icon,
+              size: iconSize,
+              color:
+                  isEnabled ? buttonForegroundColor : disabledForegroundColor,
+            ),
       label: Text(
         label,
         style: TextStyle(
@@ -63,8 +64,10 @@ class WarningButton extends StatelessWidget {
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
-        foregroundColor: buttonForegroundColor, // 这个会被 disabledForegroundColor 覆盖
+        backgroundColor:
+            isEnabled ? buttonBackgroundColor : disabledBackgroundColor,
+        foregroundColor:
+            buttonForegroundColor, // 这个会被 disabledForegroundColor 覆盖
         disabledForegroundColor: disabledForegroundColor,
         disabledBackgroundColor: disabledBackgroundColor,
         elevation: 0,
@@ -73,15 +76,6 @@ class WarningButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
         ),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        // (可选) 点击效果
-        // overlayColor: MaterialStateProperty.resolveWith<Color?>(
-        //   (Set<MaterialState> states) {
-        //     if (states.contains(MaterialState.pressed)) {
-        //       return warningColor.withAlpha((255 * 0.25).round());
-        //     }
-        //     return null;
-        //   },
-        // ),
       ),
     );
   }

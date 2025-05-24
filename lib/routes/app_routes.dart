@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
 import 'package:suxingchahui/screens/message/message_screen.dart';
@@ -116,6 +118,8 @@ class AppRoutes {
     UserCheckInService checkInService,
     AnnouncementService announcementService,
     MaintenanceService maintenanceService,
+    GameListFilterProvider gameListFilterProvider,
+    SidebarProvider sidebarProvider,
   ) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
@@ -134,7 +138,8 @@ class AppRoutes {
             // 返回主页面并在下一帧设置标签索引
             return MaterialPageRoute(builder: (context) {
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                NavigationUtils.navigateToHome(context, tabIndex: tabIndex);
+                NavigationUtils.navigateToHome(sidebarProvider, context,
+                    tabIndex: tabIndex);
               });
               return HomeScreen(
                 infoProvider: infoProvider,
@@ -161,6 +166,7 @@ class AppRoutes {
       case login:
         return MaterialPageRoute(
             builder: (_) => LoginScreen(
+                  sidebarProvider: sidebarProvider,
                   authProvider: authProvider,
                   inputStateService: inputStateService,
                 ));
@@ -184,6 +190,7 @@ class AppRoutes {
         if (arguments is! String || (arguments).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
+              sidebarProvider,
               paramName: '邮箱',
               onAction: () => NavigationUtils.pushNamed(_, forgotPassword),
             ),
@@ -217,6 +224,7 @@ class AppRoutes {
         if (gameId == null || gameId.isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '游戏',
               onAction: () => NavigationUtils.pushNamed(_, gamesList),
             ),
@@ -227,6 +235,8 @@ class AppRoutes {
           builder: (_) => GameDetailScreen(
             gameId: gameId,
             inputStateService: inputStateService,
+            sidebarProvider: sidebarProvider,
+            gameListFilterProvider: gameListFilterProvider,
             authProvider: authProvider,
             infoProvider: infoProvider,
             gameService: gameService,
@@ -244,6 +254,7 @@ class AppRoutes {
             builder: (_) => GamesListScreen(
                   selectedTag: selectedTag,
                   gameService: gameService,
+                  gameListFilterProvider: gameListFilterProvider,
                   authProvider: authProvider,
                 ));
       case hotGames:
@@ -262,12 +273,14 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => LinksToolsScreen(
                   authProvider: authProvider,
+                  inputStateService: inputStateService,
                   linkToolService: linkToolService,
                 ));
 
       case profile:
         return MaterialPageRoute(
             builder: (_) => ProfileScreen(
+                  sidebarProvider: sidebarProvider,
                   inputStateService: inputStateService,
                   userService: userService,
                   authProvider: authProvider,
@@ -277,6 +290,7 @@ class AppRoutes {
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '用户',
               onAction: () => NavigationUtils.pop(_),
             ),
@@ -296,9 +310,11 @@ class AppRoutes {
       case addGame:
         return MaterialPageRoute(
             builder: (_) => AddGameScreen(
+                  sidebarProvider: sidebarProvider,
                   infoProvider: infoProvider,
                   gameCollectionService: gameCollectionService,
                   authProvider: authProvider,
+                  gameListFilterProvider: gameListFilterProvider,
                   gameService: gameService,
                   followService: followService,
                 ));
@@ -307,6 +323,7 @@ class AppRoutes {
         if (arguments is! String) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
+              sidebarProvider,
               paramName: '游戏数据',
               onAction: () => NavigationUtils.pushNamed(_, gamesList),
             ),
@@ -315,12 +332,14 @@ class AppRoutes {
         final String gameId = arguments;
         return MaterialPageRoute(
           builder: (_) => EditGameScreen(
-            infoProvider: infoProvider,
-            gameCollectionService: gameCollectionService,
             gameId: gameId,
+            sidebarProvider: sidebarProvider,
             authProvider: authProvider,
             gameService: gameService,
             followService: followService,
+            infoProvider: infoProvider,
+            gameCollectionService: gameCollectionService,
+            gameListFilterProvider: gameListFilterProvider,
           ),
         );
       case checkin:
@@ -365,6 +384,8 @@ class AppRoutes {
       case myCollections:
         return MaterialPageRoute(
             builder: (_) => GameCollectionScreen(
+                  sidebarProvider: sidebarProvider,
+                  gameCollectionService: gameCollectionService,
                   authProvider: authProvider,
                 ));
       case activityFeed:
@@ -382,6 +403,7 @@ class AppRoutes {
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '用户',
               onAction: () => NavigationUtils.pop(_),
             ),
@@ -415,6 +437,7 @@ class AppRoutes {
             // 如果ID不是String类型，返回错误页面
             return MaterialPageRoute(
               builder: (_) => RouteErrorScreen.invalidId(
+                sidebarProvider,
                 resourceType: '动态',
                 onAction: () => NavigationUtils.pushNamed(_, activityFeed),
               ),
@@ -425,6 +448,7 @@ class AppRoutes {
           // 如果参数类型不正确，返回错误页面
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
+              sidebarProvider,
               paramName: '动态ID',
               onAction: () => NavigationUtils.pushNamed(_, activityFeed),
             ),
@@ -435,6 +459,7 @@ class AppRoutes {
         if (activityId.isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '动态',
               onAction: () => NavigationUtils.pushNamed(_, activityFeed),
             ),
@@ -456,6 +481,8 @@ class AppRoutes {
       case wantToPlayGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            sidebarProvider: sidebarProvider,
+            gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             collectionType: 'wantToPlay',
             title: '想玩的游戏',
@@ -464,6 +491,8 @@ class AppRoutes {
       case playingGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            sidebarProvider: sidebarProvider,
+            gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             collectionType: 'playing',
             title: '在玩的游戏',
@@ -472,6 +501,8 @@ class AppRoutes {
       case playedGames:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            sidebarProvider: sidebarProvider,
+            gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             collectionType: 'played',
             title: '玩过的游戏',
@@ -480,6 +511,8 @@ class AppRoutes {
       case allCollections:
         return MaterialPageRoute(
           builder: (_) => GameCollectionListScreen(
+            sidebarProvider: sidebarProvider,
+            gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             collectionType: 'all',
             title: '全部收藏',
@@ -509,6 +542,7 @@ class AppRoutes {
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '帖子',
               onAction: () => NavigationUtils.pushNamed(_, forum),
             ),
@@ -518,6 +552,8 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => PostDetailScreen(
                   postId: postId,
+                  sidebarProvider: sidebarProvider,
+                  inputStateService: inputStateService,
                   infoProvider: infoProvider,
                   authProvider: authProvider,
                   forumService: forumService,
@@ -526,6 +562,7 @@ class AppRoutes {
       case createPost:
         return MaterialPageRoute(
             builder: (_) => CreatePostScreen(
+                  inputStateService: inputStateService,
                   forumService: forumService,
                   authProvider: authProvider,
                 ));
@@ -534,6 +571,7 @@ class AppRoutes {
             (settings.arguments as String).isEmpty) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.invalidId(
+              sidebarProvider,
               resourceType: '帖子',
               onAction: () => NavigationUtils.pushNamed(_, forum),
             ),
@@ -543,6 +581,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => EditPostScreen(
                   postId: postId,
+                  inputStateService: inputStateService,
                   forumService: forumService,
                   authProvider: authProvider,
                 ));
@@ -567,6 +606,7 @@ class AppRoutes {
         if (settings.arguments is! Map<String, dynamic>) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
+              sidebarProvider,
               paramName: '用户关注',
               onAction: () => NavigationUtils.pop(_),
             ),
@@ -579,6 +619,7 @@ class AppRoutes {
         if (args['userId'] == null || args['username'] == null) {
           return MaterialPageRoute(
             builder: (_) => RouteErrorScreen.missingParameter(
+              sidebarProvider,
               paramName: '用户ID或用户名',
               onAction: () => NavigationUtils.pop(_),
             ),
@@ -601,7 +642,7 @@ class AppRoutes {
                   authProvider: authProvider,
                   messageService: messageService,
                 ));
-      case webView: // 处理 /webview 路由
+      case webView: // 处理 /webView 路由
         final args = settings.arguments;
         if (args is Map<String, dynamic> && args.containsKey('url')) {
           final String url = args['url'];
@@ -613,13 +654,16 @@ class AppRoutes {
         // 如果参数不正确，返回错误页面
         return MaterialPageRoute(
           builder: (_) => RouteErrorScreen.missingParameter(
+            sidebarProvider,
             paramName: 'URL参数',
             onAction: () => NavigationUtils.pop(_), // 返回上一页
           ),
         );
       default:
         return MaterialPageRoute(
-          builder: (_) => const NotFoundScreen(),
+          builder: (_) => NotFoundScreen(
+            sidebarProvider: sidebarProvider,
+          ),
         );
     }
   }

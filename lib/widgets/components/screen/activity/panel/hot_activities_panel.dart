@@ -1,6 +1,5 @@
 // lib/widgets/components/screen/activity/hot_activities_panel.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -33,16 +32,12 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
+  User? _currentUser;
 
   @override
   bool get wantKeepAlive => true;
 
   bool _hasInitializedDependencies = false;
-
-  @override
-  void initState() {
-    super.initState();
-  }
 
   @override
   void didChangeDependencies() {
@@ -51,7 +46,19 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
+      _currentUser = widget.currentUser;
       _loadData();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant HotActivitiesPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentUser != widget.currentUser ||
+        _currentUser != widget.currentUser) {
+      setState(() {
+        _currentUser = widget.currentUser;
+      });
     }
   }
 

@@ -27,7 +27,8 @@ class AppButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final bool effectiveIsDisabled = isDisabled || isLoading || onPressed == null;
+    final bool effectiveIsDisabled =
+        isDisabled || isLoading || onPressed == null;
 
     // --- 1. 计算样式变量 ---
 
@@ -41,16 +42,19 @@ class AppButton extends StatelessWidget {
     // 图标和字体 (保留 isMini 逻辑)
     final double iconSize = isMini ? 16.0 : 18.0;
     final double fontSize = isMini ? 13.0 : 15.0; // 调整字体大小
-    final double effectiveIconSpacing = isMini ? 5.0 : iconSpacing; // 调整 mini 图标间距
+    final double effectiveIconSpacing =
+        isMini ? 5.0 : iconSpacing; // 调整 mini 图标间距
     const FontWeight fontWeight = FontWeight.w600; // 统一字体粗细
 
     // --- 2. 颜色计算 (核心修改) ---
     // 定义基础颜色
     final Color primaryBaseColor = colorScheme.primary;
-    final Color secondaryBaseColor = colorScheme.secondary; // 用于 isPrimaryAction
+    final Color secondaryBaseColor =
+        colorScheme.secondary; // 用于 isPrimaryAction
 
     // 根据 isPrimaryAction 选择当前操作的基础色
-    final Color activeBaseColor = isPrimaryAction ? secondaryBaseColor : primaryBaseColor;
+    final Color activeBaseColor =
+        isPrimaryAction ? secondaryBaseColor : primaryBaseColor;
 
     // 定义透明度 (alpha 值 0-255)
     final int backgroundAlpha = (255 * 0.15).round(); // 15% 透明度
@@ -64,8 +68,10 @@ class AppButton extends StatelessWidget {
     final Color disabledFgColor = Colors.grey.shade400; // 禁用文字/图标颜色
 
     // 根据禁用状态确定最终颜色
-    final Color currentBgColor = effectiveIsDisabled ? disabledBgColor : activeBgColor;
-    final Color currentFgColor = effectiveIsDisabled ? disabledFgColor : activeFgColor;
+    final Color currentBgColor =
+        effectiveIsDisabled ? disabledBgColor : activeBgColor;
+    final Color currentFgColor =
+        effectiveIsDisabled ? disabledFgColor : activeFgColor;
 
     // --- 3. 构建按钮内容 (Child) ---
     Widget buttonChild;
@@ -89,9 +95,9 @@ class AppButton extends StatelessWidget {
           Theme(
             data: theme.copyWith(
                 iconTheme: theme.iconTheme.copyWith(
-                  color: currentFgColor,
-                  size: iconSize,
-                )),
+              color: currentFgColor,
+              size: iconSize,
+            )),
             child: icon!, // 直接使用传入的 Widget
           ),
           SizedBox(width: effectiveIconSpacing),

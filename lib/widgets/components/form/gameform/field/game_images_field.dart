@@ -40,9 +40,6 @@ class GameImagesField extends StatelessWidget {
     if (isLoading) return; // 父组件加载时禁用
     if (index < 0 || index >= gameImagesSources.length) return;
 
-    // 获取要删除的源（可能是 String 或 XFile）
-    final sourceToDelete = gameImagesSources[index];
-
     // 创建一个不包含该索引项的新列表
     final newList = List<dynamic>.from(gameImagesSources);
     newList.removeAt(index);
@@ -93,14 +90,14 @@ class GameImagesField extends StatelessWidget {
 
                 // 根据源类型创建预览 Widget
                 if (source is XFile) {
-                  print(
-                      "Game Image Preview [$index]: Rendering XFile: ${source.path}");
+                  // print(
+                  //     "Game Image Preview [$index]: Rendering XFile: ${source.path}");
                   imageWidget =
                       Image.file(File(source.path), // <--- 从 XFile 创建 File
                           width: imageWidth,
                           height: imageHeight,
                           fit: BoxFit.cover, errorBuilder: (ctx, err, st) {
-                    print("Error rendering XFile preview ${source.path}: $err");
+                    // print("Error rendering XFile preview ${source.path}: $err");
                     return Container(
                         width: imageWidth,
                         height: imageHeight,
@@ -108,14 +105,13 @@ class GameImagesField extends StatelessWidget {
                         child: const Icon(Icons.broken_image));
                   });
                 } else if (source is File) {
-                  // <--- 新增: 处理 File 对象
-                  print(
-                      "Game Image Preview [$index]: Rendering File: ${source.path}");
+                  // print(
+                  //     "Game Image Preview [$index]: Rendering File: ${source.path}");
                   imageWidget = Image.file(source, // <--- 直接使用 File 对象
                       width: imageWidth,
                       height: imageHeight,
                       fit: BoxFit.cover, errorBuilder: (ctx, err, st) {
-                    print("Error rendering File preview ${source.path}: $err");
+                    // print("Error rendering File preview ${source.path}: $err");
                     return Container(
                         width: imageWidth,
                         height: imageHeight,
@@ -123,8 +119,8 @@ class GameImagesField extends StatelessWidget {
                         child: const Icon(Icons.broken_image));
                   });
                 } else if (source is String) {
-                  print(
-                      "Game Image Preview [$index]: Rendering String URL: $source");
+                  // print(
+                  //     "Game Image Preview [$index]: Rendering String URL: $source");
                   final imageUrl = source;
                   // 不需要再拼接 baseUrl
                   final String displayUrl = imageUrl;
@@ -135,8 +131,8 @@ class GameImagesField extends StatelessWidget {
                     fit: BoxFit.cover,
                   );
                 } else {
-                  print(
-                      "Game Image Preview [$index]: Unknown source type: ${source.runtimeType}");
+                  // print(
+                  //     "Game Image Preview [$index]: Unknown source type: ${source.runtimeType}");
                   imageWidget = Container(
                       width: imageWidth,
                       height: imageHeight,

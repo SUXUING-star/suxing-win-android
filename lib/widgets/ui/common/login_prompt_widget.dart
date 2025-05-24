@@ -57,7 +57,7 @@ class LoginPromptWidget extends StatelessWidget {
               const SizedBox(height: 32),
               FunctionalButton(
                 onPressed: () {
-                  NavigationUtils.pushNamed(context, AppRoutes.login);
+                  NavigationUtils.navigateToLogin(context);
                 },
                 label: '立即登录',
               ),
@@ -116,7 +116,7 @@ class LoginPromptWidget extends StatelessWidget {
                   children: [
                     FunctionalButton(
                       onPressed: () {
-                        NavigationUtils.pushNamed(context, AppRoutes.login);
+                        NavigationUtils.navigateToLogin(context);
                       },
                       label: '立即登录',
                     ),

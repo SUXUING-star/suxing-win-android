@@ -208,7 +208,7 @@ class CommonGameListScreen extends StatelessWidget {
 
   static Widget _buildError(String message, Future<void> Function()? onRetry) {
     return FadeInItem(
-        child: InlineErrorWidget(errorMessage: message, onRetry: onRetry));
+        child: CustomErrorWidget(errorMessage: message, onRetry: onRetry));
   }
 
   // *** 改为非静态，可以访问 emptyStateMessage ***

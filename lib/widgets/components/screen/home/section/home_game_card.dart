@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_stats_widget.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
@@ -56,7 +56,9 @@ class HomeGameCard extends StatelessWidget {
                     Positioned(
                         top: 8,
                         left: 8,
-                        child: GameCategoryTag(category: game.category)),
+                        child: GameCategoryTagView(
+                          category: game.category,
+                        )),
                     Positioned(
                       bottom: 4,
                       right: 4,

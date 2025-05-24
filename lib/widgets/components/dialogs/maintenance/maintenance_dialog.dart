@@ -1,7 +1,6 @@
 // lib/widgets/dialogs/maintenance_dialog.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/maintenance/maintenance_info.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';

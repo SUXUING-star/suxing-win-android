@@ -86,14 +86,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription? _hotGamesWatchSub;
   StreamSubscription? _latestGamesWatchSub;
   StreamSubscription? _hotPostsWatchSub;
-  static const Duration _cacheDebounceDuration = Duration(milliseconds: 500);
+  static const Duration _cacheDebounceDuration = Duration(milliseconds: 1000);
 
   bool _hasInitializedDependencies = false;
   String? _currentUserId;
-  late final GameService _gameService;
-  late final ForumService _forumService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -107,15 +103,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = widget.gameService;
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
-
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
     }
   }
 
@@ -123,10 +114,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -147,10 +138,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return;
 
     if (state == AppLifecycleState.resumed) {
-      if (_authProvider.currentUserId != _currentUserId) {
+      if (widget.authProvider.currentUserId != _currentUserId) {
         if (mounted) {
           setState(() {
-            _currentUserId = _authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId;
           });
         }
       }
@@ -178,10 +169,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final bool wasVisible = _isVisible;
     final bool currentlyVisible = visibilityInfo.visibleFraction > 0.1;
 
-    if (_authProvider.currentUserId != _currentUserId) {
+    if (widget.authProvider.currentUserId != _currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -334,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       dynamic data;
       switch (type) {
         case HomeDataType.hotGames:
-          data = await _gameService.getHotGames();
+          data = await widget.gameService.getHotGames();
           if (mounted) {
             setState(() {
               _hotGamesData = data;
@@ -346,11 +337,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
           break;
         case HomeDataType.latestGames:
-          data = await _gameService.getLatestGames();
+          data = await widget.gameService.getLatestGames();
           if (mounted) setState(() => _latestGamesData = data);
           break;
         case HomeDataType.hotPosts:
-          data = await _forumService.getHotPosts();
+          data = await widget.forumService.getHotPosts();
           if (mounted) setState(() => _hotPostsData = data);
           break;
       }
@@ -438,14 +429,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _subscribeToCacheChanges() {
     _unsubscribeFromCacheChanges();
     try {
-      _hotGamesWatchSub = _gameService.hotGamesCacheChangeNotifier
+      _hotGamesWatchSub = widget.gameService.hotGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(HomeDataType.hotGames, event));
-      _latestGamesWatchSub = _gameService.latestGamesCacheChangeNotifier
+      _latestGamesWatchSub = widget.gameService.latestGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen(
               (event) => _handleCacheChange(HomeDataType.latestGames, event));
-      _hotPostsWatchSub = _forumService.hotPostsCacheChangeNotifier
+      _hotPostsWatchSub = widget.forumService.hotPostsCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(HomeDataType.hotPosts, event));
     } catch (e) {
@@ -734,8 +725,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
     final Widget hotPostsWidget = HomeHotPosts(
       key: ValueKey('hot_posts_$_hotPostsKeyCounter'),
-      currentUser: _authProvider.currentUser,
-      followService: _followService,
+      currentUser: widget.authProvider.currentUser,
+      followService: widget.followService,
       infoProvider: widget.infoProvider,
       posts: _hotPostsData,
       isLoading: _isHotPostsLoading,

@@ -71,7 +71,8 @@ class GenericFloatingActionButton extends StatelessWidget {
     this.iconSize,
     this.loadingIndicatorSize = 20.0,
     this.loadingIndicatorStrokeWidth = 2.5,
-  }) : assert(icon != null || child != null, 'Must provide either an icon or a child'); // 断言确保 icon 或 child 至少有一个
+  }) : assert(icon != null || child != null,
+            'Must provide either an icon or a child'); // 断言确保 icon 或 child 至少有一个
 
   @override
   Widget build(BuildContext context) {
@@ -83,17 +84,19 @@ class GenericFloatingActionButton extends StatelessWidget {
     // 优先使用 child，然后是 icon，最后是加载指示器
     final Widget buttonContent = isLoading
         ? SizedBox(
-      width: loadingIndicatorSize,
-      height: loadingIndicatorSize,
-      child: CircularProgressIndicator(
-        strokeWidth: loadingIndicatorStrokeWidth,
-        color: effectiveLoadingIndicatorColor,
-      ),
-    )
-        : child ?? Icon( // 如果 child 不为 null 则用 child，否则用 icon
-      icon!, // 断言保证了此时 icon 不为 null
-      size: iconSize,
-    );
+            width: loadingIndicatorSize,
+            height: loadingIndicatorSize,
+            child: CircularProgressIndicator(
+              strokeWidth: loadingIndicatorStrokeWidth,
+              color: effectiveLoadingIndicatorColor,
+            ),
+          )
+        : child ??
+            Icon(
+              // 如果 child 不为 null 则用 child，否则用 icon
+              icon!, // 断言保证了此时 icon 不为 null
+              size: iconSize,
+            );
 
     return FloatingActionButton(
       onPressed: effectiveOnPressed,

@@ -246,7 +246,7 @@ class UserInfoBadge extends StatelessWidget {
             const SizedBox(width: 8),
             FollowUserButton(
               key: ValueKey(
-                  '${targetUserId}_${targetUser?.id}_$iFollowTarget'), // 确保 key 唯一
+                  '${targetUserId}_${targetUser.id}_$iFollowTarget'), // 确保 key 唯一
               currentUser: currentUser,
               targetUserId: targetUserId, // 总是 targetUserId
               followService: followService,

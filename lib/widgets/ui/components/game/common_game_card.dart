@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
 import '../../../../models/game/game.dart';
 import '../../../../utils/device/device_utils.dart';
@@ -199,7 +199,7 @@ class CommonGameCard extends StatelessWidget {
   // 类别标签
   Widget _buildCategoryTag(BuildContext context) {
     final category = game.category;
-    return GameCategoryTag(
+    return GameCategoryTagView(
       category: category,
     );
   }
@@ -330,7 +330,6 @@ class CommonGameCard extends StatelessWidget {
       ],
     );
   }
-
 
   // 构建统计信息行 - 列表布局
   Widget _buildStatsRow(BuildContext context) {

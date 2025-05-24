@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -83,10 +84,13 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final LinkToolService _linkToolService;
   late final AnnouncementService _announcementService;
   late final UserInfoProvider _infoProvider;
+  late final GameListFilterProvider _gameListFilterProvider;
   late final InputStateService _inputStateService;
   late final EmailService _emailService;
   late final UserCheckInService _checkInService;
   late final MaintenanceService _maintenanceService;
+
+  late final Widget _mainLayout;
 
   @override
   void initState() {
@@ -103,6 +107,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _authProvider = Provider.of<AuthProvider>(context, listen: false);
       _windowStateProvider =
           Provider.of<WindowStateProvider>(context, listen: false);
+      _gameListFilterProvider =
+          Provider.of<GameListFilterProvider>(context, listen: false);
       _messageService = context.read<MessageService>();
       _announcementService = context.read<AnnouncementService>();
       _maintenanceService = context.read<MaintenanceService>();
@@ -124,6 +130,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _hasInitializedStateService = true;
       _checkInService.initialize();
       _followService.initialize();
+      _mainLayout = _buildMainLayout();
     }
   }
 
@@ -147,14 +154,88 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
+  Route<dynamic> _buildAppRoutes(RouteSettings routeSettings) {
+    return AppRoutes.onGenerateRoute(
+      routeSettings,
+      _authProvider,
+      _userService,
+      _forumService,
+      _gameService,
+      _followService,
+      _activityService,
+      _linkToolService,
+      _messageService,
+      _gameCollectionService,
+      _infoProvider,
+      _inputStateService,
+      _emailService,
+      _checkInService,
+      _announcementService,
+      _maintenanceService,
+      _gameListFilterProvider,
+      _sidebarProvider,
+    );
+  }
+
+  Widget _buildMainLayout() {
+    return MainLayout(
+      gameListFilterProvider: _gameListFilterProvider,
+      checkInService: _checkInService,
+      inputStateService: _inputStateService,
+      announcementService: _announcementService,
+      sidebarProvider: _sidebarProvider,
+      messageService: _messageService,
+      authProvider: _authProvider,
+      userService: _userService,
+      gameService: _gameService,
+      forumService: _forumService,
+      linkToolService: _linkToolService,
+      activityService: _activityService,
+      followService: _followService,
+      infoProvider: _infoProvider,
+    );
+  }
+
+  Widget _buildBaseContent(ThemeProvider themeProvider, Color particleColor,
+      Widget? materialAppGeneratedChild) {
+    return NetworkErrorListenerWidget(
+      child: GlobalApiErrorListener(
+        child: MaintenanceWrapper(
+          maintenanceService: _maintenanceService,
+          authProvider: _authProvider,
+          child: AppBackground(
+            isDark: themeProvider.themeMode == ThemeMode.dark,
+            windowStateProvider: _windowStateProvider,
+            child: MouseTrailEffect(
+              particleColor: particleColor, // 来自 ThemeProvider
+              child: Navigator(
+                onGenerateRoute: (settings) {
+                  return MaterialPageRoute(
+                    settings: settings,
+                    builder: (_) => PlatformWrapper(
+                      checkInService: _checkInService,
+                      messageService: _messageService,
+                      sidebarProvider: _sidebarProvider,
+                      authProvider: _authProvider,
+                      announcementService: _announcementService,
+                      child: materialAppGeneratedChild ?? Container(),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_hasInitializedProviders) {
       return const Center(child: CircularProgressIndicator());
     }
 
-    // ThemeProvider 仍然可以通过 Consumer 或 context.watch 获取，因为它影响粒子颜色等
-    // 但 WindowStateProvider 的 isResizingWindow 将通过 StreamBuilder 处理
     return Consumer<ThemeProvider>(
       builder: (context, themeProvider, _) {
         final particleColor = themeProvider.themeMode == ThemeMode.dark
@@ -169,70 +250,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
           themeMode: themeProvider.themeMode,
           debugShowCheckedModeBanner: false,
           navigatorObservers: [routeObserver],
-          onGenerateRoute: (routeSettings) => AppRoutes.onGenerateRoute(
-              routeSettings,
-              _authProvider,
-              _userService,
-              _forumService,
-              _gameService,
-              _followService,
-              _activityService,
-              _linkToolService,
-              _messageService,
-              _gameCollectionService,
-              _infoProvider,
-              _inputStateService,
-              _emailService,
-              _checkInService,
-              _announcementService,
-              _maintenanceService),
-          home: MainLayout(
-            checkInService: _checkInService,
-            inputStateService: _inputStateService,
-            announcementService: _announcementService,
-            sidebarProvider: _sidebarProvider,
-            messageService: _messageService,
-            authProvider: _authProvider,
-            userService: _userService,
-            gameService: _gameService,
-            forumService: _forumService,
-            linkToolService: _linkToolService,
-            activityService: _activityService,
-            followService: _followService,
-            infoProvider: _infoProvider,
-          ),
+          onGenerateRoute: (routeSettings) => _buildAppRoutes(routeSettings),
+          home: _mainLayout,
           builder: (builderContext, materialAppGeneratedChild) {
-            // 构建基础的应用内容，这里不再包含顶层的 Stack 和 InitializationScreen
-            Widget baseAppContent = NetworkErrorListenerWidget(
-              child: GlobalApiErrorListener(
-                child: MaintenanceWrapper(
-                  maintenanceService: _maintenanceService,
-                  authProvider: _authProvider,
-                  child: AppBackground(
-                    windowStateProvider: _windowStateProvider,
-                    child: MouseTrailEffect(
-                      particleColor: particleColor, // 来自 ThemeProvider
-                      child: Navigator(
-                        onGenerateRoute: (settings) {
-                          return MaterialPageRoute(
-                            settings: settings,
-                            builder: (_) => PlatformWrapper(
-                              checkInService: _checkInService,
-                              messageService: _messageService,
-                              sidebarProvider: _sidebarProvider,
-                              authProvider: _authProvider,
-                              announcementService: _announcementService,
-                              child: materialAppGeneratedChild ?? Container(),
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            );
-
             // 使用 StreamBuilder 来监听 isResizingWindowStream，控制 InitializationScreen
             return StreamBuilder<bool>(
               stream: _windowStateProvider.isResizingWindowStream,
@@ -241,14 +261,16 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
               builder: (context, snapshot) {
                 final bool isResizing =
                     snapshot.data ?? _windowStateProvider.isResizingWindow;
+
                 return Stack(
                   children: [
-                    baseAppContent, // 基础应用内容
+                    _buildBaseContent(themeProvider, particleColor,
+                        materialAppGeneratedChild), // 基础应用内容
                     if (isResizing) // 根据 Stream 的结果来决定是否显示
                       Positioned.fill(
                         child: InitializationScreen(
                           status: InitializationStatus.inProgress,
-                          message: " ", // 或者 "正在调整窗口大小..."
+                          message: "正在调整窗口大小...", // 或者 "正在调整窗口大小..."
                           progress: 0.0, // 可以设为 null 如果不显示进度条
                           onRetry: null,
                           onExit: null,

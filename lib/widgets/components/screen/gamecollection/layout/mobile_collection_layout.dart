@@ -1,24 +1,24 @@
 // lib/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/gamecollection/card/collection_game_card.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 确保路径正确
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保路径正确
 
-
 /// 移动设备游戏收藏展示布局 - 只负责展示列表
 /// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
 class MobileCollectionLayout extends StatelessWidget {
-  // 改为 StatelessWidget
   final List<GameWithCollection> games;
+  final SidebarProvider sidebarProvider;
   final String collectionType;
 
   const MobileCollectionLayout({
     super.key,
     required this.games,
+    required this.sidebarProvider,
     required this.collectionType,
-    // *** 移除 onRefresh 参数 ***
   });
 
   @override
@@ -28,8 +28,6 @@ class MobileCollectionLayout extends StatelessWidget {
       return _buildEmptyState(context);
     }
 
-    // *** 移除 RefreshIndicator ***
-    // 直接返回 Padding 和 ListView
     return Padding(
       // 可以根据需要调整内边距
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
@@ -73,7 +71,9 @@ class MobileCollectionLayout extends StatelessWidget {
       message: message,
       action: FunctionalButton(
         label: '发现游戏',
-        onPressed: () => NavigationUtils.navigateToHome(context, tabIndex: 1),
+        onPressed: () => NavigationUtils.navigateToHome(
+            sidebarProvider, context,
+            tabIndex: 1),
         icon: Icons.search_rounded,
       ),
     );

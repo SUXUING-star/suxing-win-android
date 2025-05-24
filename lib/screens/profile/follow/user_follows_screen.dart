@@ -1,15 +1,15 @@
 // lib/screens/profile/follow/user_follows_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'dart:async';
-import '../../../services/main/user/user_follow_service.dart';
-import '../../../widgets/ui/appbar/custom_app_bar.dart';
-import '../../../utils/device/device_utils.dart';
-import '../../../widgets/components/screen/profile/follow/responsive_follows_layout.dart';
+
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/follow/responsive_follows_layout.dart';
 
 class UserFollowsScreen extends StatefulWidget {
   final String userId;

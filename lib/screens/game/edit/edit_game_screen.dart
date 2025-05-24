@@ -1,8 +1,9 @@
 // lib/screens/game/edit/edit_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
@@ -25,6 +26,8 @@ class EditGameScreen extends StatefulWidget {
   final GameService gameService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
+  final GameListFilterProvider gameListFilterProvider;
+  final SidebarProvider sidebarProvider;
   const EditGameScreen({
     super.key,
     required this.gameId,
@@ -33,6 +36,8 @@ class EditGameScreen extends StatefulWidget {
     required this.followService,
     required this.authProvider,
     required this.infoProvider,
+    required this.gameListFilterProvider,
+    required this.sidebarProvider,
   });
 
   @override
@@ -155,11 +160,7 @@ class _EditGameScreenState extends State<EditGameScreen>
     );
   }
 
-  bool _checkCanEditGame(Game game) {
-    return widget.authProvider.isAdmin
-        ? true
-        : widget.authProvider.currentUserId == game.authorId;
-  }
+
 
   Widget _buildNeedToPending() {
     return Container(
@@ -230,6 +231,8 @@ class _EditGameScreenState extends State<EditGameScreen>
               if (!isAdmin) _buildNeedToPending(),
               Expanded(
                 child: GameForm(
+                  sidebarProvider: widget.sidebarProvider,
+                  gameListFilterProvider: widget.gameListFilterProvider,
                   gameCollectionService: widget.gameCollectionService,
                   authProvider: widget.authProvider,
                   gameService: widget.gameService,

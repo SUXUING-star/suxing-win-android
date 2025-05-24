@@ -131,8 +131,8 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
     int addedCount = 0;
 
     for (int i = 0;
-        i < _particlePool.length && addedCount < particlesToAddPerEvent;
-        i++) {
+    i < _particlePool.length && addedCount < particlesToAddPerEvent;
+    i++) {
       if (!_particlePool[i].isActive) {
         final particle = _particlePool.removeAt(i);
         final angle = _random.nextDouble() * 2 * math.pi;
@@ -179,11 +179,11 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
       final distanceMoved = (localPosition - _lastMousePosition!).distance;
       if (distanceMoved > 0.5) {
         final int numInterpolationPoints =
-            (distanceMoved / 5.0).clamp(1, 4).toInt();
+        (distanceMoved / 5.0).clamp(1, 4).toInt();
         for (int i = 0; i < numInterpolationPoints; i++) {
           final t = (i + 1) / numInterpolationPoints;
           final interpolatedPosition =
-              Offset.lerp(_lastMousePosition!, localPosition, t)!;
+          Offset.lerp(_lastMousePosition!, localPosition, t)!;
           _addParticlesAtPosition(interpolatedPosition);
         }
         _lastMousePosition = localPosition;
@@ -222,7 +222,7 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
                 painter: _MouseTrailPainter(
                   particles: _activeParticles,
                   animation:
-                      _animationController, // <--- 将 animationController 传递给 painter
+                  _animationController, // <--- 将 animationController 传递给 painter
                 ),
                 size: Size.infinite,
               ),

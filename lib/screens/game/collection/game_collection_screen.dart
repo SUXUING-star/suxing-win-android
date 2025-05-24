@@ -1,10 +1,10 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
@@ -17,9 +17,13 @@ import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/des
 
 class GameCollectionScreen extends StatefulWidget {
   final AuthProvider authProvider;
+  final GameCollectionService gameCollectionService;
+  final SidebarProvider sidebarProvider;
   const GameCollectionScreen({
     super.key,
     required this.authProvider,
+    required this.gameCollectionService,
+    required this.sidebarProvider,
   });
 
   @override
@@ -45,13 +49,12 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   };
   bool _isDesktopLayout = false;
 
+  User? _currentUser;
+
   // 用于跟踪上一次的登录状态
   bool? _previousIsLoggedIn;
 
   bool _hasInitializedDependencies = false;
-
-  late final AuthProvider _authProvider;
-  late final GameCollectionService _gameCollectionService;
 
   // 节流相关状态
   bool _isRefreshing = false; // 标记是否正在执行下拉刷新操作
@@ -70,13 +73,22 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     super.didChangeDependencies();
 
     if (!_hasInitializedDependencies) {
-      _authProvider = widget.authProvider;
-      _gameCollectionService = context.read<GameCollectionService>();
       _hasInitializedDependencies = true;
     }
     // 确认初始化后才进行获取数据
     if (_hasInitializedDependencies) {
+      _currentUser = widget.authProvider.currentUser;
       _checkUserHasChanged();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant GameCollectionScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_currentUser != widget.authProvider.currentUser) {
+      setState(() {
+        _currentUser = widget.authProvider.currentUser;
+      });
     }
   }
 
@@ -87,7 +99,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   }
 
   void _checkUserHasChanged() {
-    final currentIsLoggedIn = _authProvider.isLoggedIn;
+    final currentIsLoggedIn = widget.authProvider.isLoggedIn;
     // --- 处理登录状态变化 ---
     // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
     // 且当前登录状态与上次不同时，才处理变化
@@ -128,7 +140,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   // --- 数据加载方法 (保持不变，但调用时机改变) ---
   Future<void> _loadData({bool forceRefresh = false}) async {
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -146,7 +158,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     }
 
     try {
-      final groupedData = await _gameCollectionService
+      final groupedData = await widget.gameCollectionService
           .getAllUserGameCollectionsGrouped(forceRefresh: forceRefresh);
       if (mounted) {
         if (groupedData != null) {
@@ -202,7 +214,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   Future<void> _handleRefresh() async {
     // 1. 防止重复触发：如果已经在刷新中，直接返回
     if (_isRefreshing) {
-      print("节流：已经在刷新中，忽略本次触发");
       return;
     }
 
@@ -242,10 +253,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   @override
   Widget build(BuildContext context) {
-    // 直接使用当前状态变量来决定显示什么
-    final isLoggedIn =
-        _authProvider.isLoggedIn; // 或者直接使用 _previousIsLoggedIn (理论上此时应该同步了)
-
     final screenSize = MediaQuery.of(context).size;
     final bool isDesktop = DeviceUtils.isDesktop;
     _isDesktopLayout = isDesktop && screenSize.width > 900;
@@ -254,15 +261,14 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
       appBar: const CustomAppBar(
         title: '我的收藏',
       ),
-      // *** 直接调用 _buildBody，依赖当前的状态变量 ***
-      body: _buildBody(isLoggedIn), // 传递当前获取的登录状态
+      body: _buildBody(), // 传递当前获取的登录状态
     );
   }
 
   // 构建 Body (逻辑基本不变，依赖状态变量)
-  Widget _buildBody(bool isLoggedIn) {
+  Widget _buildBody() {
     // 1. 未登录
-    if (!isLoggedIn && _error == '请先登录后再查看收藏') {
+    if (!widget.authProvider.isLoggedIn && _error == '请先登录后再查看收藏') {
       // 明确检查错误信息
 
       return const LoginPromptWidget();
@@ -294,7 +300,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   // 构建 Mobile 布局
   Widget _buildMobileLayout() {
-    // *** RefreshIndicator 在 _buildBody 中处理，这里直接返回 Column ***
     return Column(
       children: [
         TabBar(
@@ -328,14 +333,17 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
             children: [
               // *** 调用简化的 MobileCollectionLayout，不再传递 onRefresh ***
               MobileCollectionLayout(
+                sidebarProvider: widget.sidebarProvider,
                 games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
                 collectionType: GameCollectionStatus.wantToPlay,
               ),
               MobileCollectionLayout(
+                sidebarProvider: widget.sidebarProvider,
                 games: _gameCollections[GameCollectionStatus.playing] ?? [],
                 collectionType: GameCollectionStatus.playing,
               ),
               MobileCollectionLayout(
+                sidebarProvider: widget.sidebarProvider,
                 games: _gameCollections[GameCollectionStatus.played] ?? [],
                 collectionType: GameCollectionStatus.played,
               ),
@@ -348,9 +356,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
 
   // 构建 Desktop 布局
   Widget _buildDesktopLayout() {
-    // *** RefreshIndicator 在 _buildBody 中处理 ***
-    // 如果希望桌面端也能下拉刷新，需要让 Row 可滚动，例如包在 ListView 中
-    // 这里假设桌面端不需要下拉刷新，RefreshIndicator 主要对移动端生效
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
@@ -359,6 +364,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           Expanded(
             // *** 调用简化的 DesktopCollectionLayout，不再传递 onRefresh ***
             child: DesktopCollectionLayout(
+              sidebarProvider: widget.sidebarProvider,
               games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
               collectionType: GameCollectionStatus.wantToPlay,
               title:
@@ -369,6 +375,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           const SizedBox(width: 16),
           Expanded(
             child: DesktopCollectionLayout(
+              sidebarProvider: widget.sidebarProvider,
               games: _gameCollections[GameCollectionStatus.playing] ?? [],
               collectionType: GameCollectionStatus.playing,
               title: '在玩的游戏 (${_tabCounts[GameCollectionStatus.playing]})',
@@ -378,6 +385,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           const SizedBox(width: 16),
           Expanded(
             child: DesktopCollectionLayout(
+              sidebarProvider: widget.sidebarProvider,
               games: _gameCollections[GameCollectionStatus.played] ?? [],
               collectionType: GameCollectionStatus.played,
               title: '玩过的游戏 (${_tabCounts[GameCollectionStatus.played]})',

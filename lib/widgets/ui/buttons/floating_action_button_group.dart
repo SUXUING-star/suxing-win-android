@@ -73,9 +73,9 @@ class _DefaultHeroTag {
   String toString() => 'Default HeroTag: $description';
 }
 
-
 class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
-    with SingleTickerProviderStateMixin { // 需要 TickerProvider 用于动画
+    with SingleTickerProviderStateMixin {
+  // 需要 TickerProvider 用于动画
   late bool _isExpanded;
   late AnimationController _animationController;
   late Animation<double> _rotateAnimation; // 用于图标旋转动画 (可选)
@@ -92,9 +92,10 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
     );
 
     // 图标旋转动画 (0.0 -> 0.5 Pi, 即 90 度) - 可选，如果不需要可以移除
-    _rotateAnimation = Tween<double>(begin: 0.0, end: 0.375) // 旋转 135 度 (Add -> Close 效果)
-        .animate(CurvedAnimation(
-        parent: _animationController, curve: Curves.easeInOut));
+    _rotateAnimation =
+        Tween<double>(begin: 0.0, end: 0.375) // 旋转 135 度 (Add -> Close 效果)
+            .animate(CurvedAnimation(
+                parent: _animationController, curve: Curves.easeInOut));
 
     // 子按钮透明度动画
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
@@ -104,7 +105,6 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
         curve: const Interval(0.5, 1.0, curve: Curves.easeInOut),
       ),
     );
-
 
     if (_isExpanded) {
       _animationController.value = 1.0; // 如果初始展开，动画直接到结束状态
@@ -132,12 +132,13 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     // 确定主切换按钮的颜色
-    final bgColor = widget.toggleButtonBackgroundColor ?? theme.colorScheme.secondary; // 优先使用传入颜色，否则用主题色
-    final fgColor = widget.toggleButtonForegroundColor ?? theme.colorScheme.onSecondary;
+    final bgColor = widget.toggleButtonBackgroundColor ??
+        theme.colorScheme.secondary; // 优先使用传入颜色，否则用主题色
+    final fgColor =
+        widget.toggleButtonForegroundColor ?? theme.colorScheme.onSecondary;
 
     // 过滤掉 null 子项
-    final validChildren =
-    widget.children.where((child) => child != null).toList();
+    final validChildren = widget.children.toList();
 
     return Column(
       mainAxisAlignment: widget.alignment,
@@ -155,7 +156,8 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
               }
               return FadeTransition(
                   opacity: _opacityAnimation, // 应用淡入淡出效果
-                  child: IgnorePointer( // 收起过程中或完全收起时，子按钮不可交互
+                  child: IgnorePointer(
+                      // 收起过程中或完全收起时，子按钮不可交互
                       ignoring: !_isExpanded,
                       child: Padding(
                         // 在子按钮和主按钮之间添加一点间距
@@ -166,19 +168,15 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: validChildren
                               .expand((subChild) => [
-                            subChild,
-                            // 在子按钮之间添加间距
-                            if (subChild != validChildren.last)
-                              SizedBox(height: widget.spacing),
-                          ])
+                                    subChild,
+                                    // 在子按钮之间添加间距
+                                    if (subChild != validChildren.last)
+                                      SizedBox(height: widget.spacing),
+                                  ])
                               .toList(),
                         ),
-                      )
-                  )
-              );
-            }
-        ),
-
+                      )));
+            }),
 
         // ----- 主切换按钮 -----
         GenericFloatingActionButton(
@@ -194,9 +192,8 @@ class _FloatingActionButtonGroupState extends State<FloatingActionButtonGroup>
             builder: (context, child) {
               return Transform.rotate(
                 angle: _rotateAnimation.value * math.pi * 2, // 转换为弧度
-                child: Icon(
-                    _isExpanded ? widget.collapseIcon : widget.expandIcon
-                ),
+                child:
+                    Icon(_isExpanded ? widget.collapseIcon : widget.expandIcon),
               );
             },
           ),

@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 // 引入自定义菜单按钮
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -12,7 +11,7 @@ import 'package:suxingchahui/models/game/game.dart';
 // 需要路由
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 import 'game_stats_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
 import 'game_collection_dialog.dart'; // 保留，用于显示收藏统计
@@ -58,7 +57,7 @@ class BaseGameCard extends StatelessWidget {
 
   // --- 列表布局卡片 ---
   Widget _buildListCard(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop; // 传入 context
+    final bool isDesktop = DeviceUtils.isDesktop;
     return Card(
       elevation: 2,
       clipBehavior: Clip.antiAlias,
@@ -109,11 +108,10 @@ class BaseGameCard extends StatelessWidget {
                   Positioned(
                       top: 8,
                       left: 8,
-                      child: GameCategoryTag(category: game.category)), // 类别
-                  Positioned(
-                      top: 4,
-                      right: 4,
-                      child: _buildPopupMenu(context)), // <--- 添加菜单按钮
+                      child: GameCategoryTagView(
+                        category: game.category,
+                      )), // 类别
+                  Positioned(top: 4, right: 4, child: _buildPopupMenu(context)),
                   Positioned(
                     bottom: 8,
                     right: 8,
@@ -164,7 +162,11 @@ class BaseGameCard extends StatelessWidget {
             backgroundColor: Colors.grey[200],
           ),
           Positioned(
-              top: 8, left: 8, child: GameCategoryTag(category: game.category)),
+              top: 8,
+              left: 8,
+              child: GameCategoryTagView(
+                category: game.category,
+              )),
         ],
       ),
     );
@@ -261,7 +263,7 @@ class BaseGameCard extends StatelessWidget {
 
   // 卡片点击事件
   void _onCardTap(BuildContext context) {
-    NavigationUtils.pushNamed(
+    Navigator.pushNamed(
       context,
       AppRoutes.gameDetail,
       arguments: game,
@@ -272,7 +274,7 @@ class BaseGameCard extends StatelessWidget {
   Widget _buildPopupMenu(BuildContext context) {
     final currentUserId = currentUser?.id;
     final isAdmin = currentUser?.isAdmin ?? false;
-    final canModify = (game.authorId.toString() == currentUserId) || isAdmin;
+    final canModify = isAdmin ? true : game.authorId == currentUserId;
     final hasDeleteAction = onDeleteAction != null;
     final hasEditAction = onEditAction != null;
 

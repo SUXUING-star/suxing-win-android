@@ -322,8 +322,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
     final String status = entry.status;
     final String? notesText = entry.notes;
 
-
-
     String statusLabel;
     IconData statusIcon;
     Color statusColor;
@@ -416,7 +414,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
             Padding(
               padding: const EdgeInsets.only(top: 8.0),
               child: Text(
-                userId == widget.currentUser
+                userId == widget.currentUser?.id
                     ? "我做的笔记: $notesText"
                     : "笔记: $notesText", // 区分本人笔记
                 style: TextStyle(
@@ -431,13 +429,11 @@ class GameReviewSectionState extends State<GameReviewSection> {
   }
 
   Widget _buildLoadMoreSection() {
-    // *** 修改加载中文本 ***
     if (_isLoading && !_isProcessingPageOne && _page > 1) {
       return Padding(
           padding: const EdgeInsets.only(top: 16.0),
           child: LoadingWidget.inline(size: 20, message: "加载中..."));
     }
-    // *** 修改条件和按钮文本 ***
     if (!_isLoading && _hasMoreEntries && _entries.isNotEmpty) {
       return Center(
         child: Padding(

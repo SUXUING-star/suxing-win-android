@@ -19,10 +19,12 @@ class CacheManagerProviderWidget extends StatefulWidget {
   });
 
   @override
-  _CacheManagerProviderWidgetState createState() => _CacheManagerProviderWidgetState();
+  _CacheManagerProviderWidgetState createState() =>
+      _CacheManagerProviderWidgetState();
 }
 
-class _CacheManagerProviderWidgetState extends State<CacheManagerProviderWidget> {
+class _CacheManagerProviderWidgetState
+    extends State<CacheManagerProviderWidget> {
   late final BaseCacheManager _cacheManager;
 
   @override

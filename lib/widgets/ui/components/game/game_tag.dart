@@ -1,7 +1,7 @@
 // lib/widgets/ui/components/game/game_tag.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // <--- 用回这个！
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class GameTag extends StatelessWidget {
   final String tag;
@@ -9,10 +9,10 @@ class GameTag extends StatelessWidget {
   final bool isSelected;
 
   // 统一样式参数 (可以微调)
-  static const double tagBorderRadius = 12.0; // 圆角大一点试试？
+  static const double tagBorderRadius = 12.0;
   static const double tagHorizontalPadding = 8.0;
   static const double tagVerticalPadding = 4.0;
-  static const double tagFontSize = 11.0; // 字号稍微调整
+  static const double tagFontSize = 11.0;
   static const double tagCountFontSize = 9.0;
 
   const GameTag({

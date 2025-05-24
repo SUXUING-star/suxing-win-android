@@ -1,6 +1,8 @@
 // lib/screens/game/add/add_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
@@ -16,12 +18,16 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 class AddGameScreen extends StatefulWidget {
   final GameService gameService;
   final AuthProvider authProvider;
+  final SidebarProvider sidebarProvider;
+  final GameListFilterProvider gameListFilterProvider;
   final GameCollectionService gameCollectionService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   const AddGameScreen({
     super.key,
     required this.gameCollectionService,
+    required this.gameListFilterProvider,
+    required this.sidebarProvider,
     required this.gameService,
     required this.authProvider,
     required this.followService,
@@ -127,6 +133,8 @@ class _AddGameScreenState extends State<AddGameScreen>
             title: '添加新游戏',
           ),
           body: GameForm(
+            sidebarProvider: widget.sidebarProvider,
+            gameListFilterProvider: widget.gameListFilterProvider,
             gameCollectionService: widget.gameCollectionService,
             authProvider: widget.authProvider,
             followService: widget.followService,

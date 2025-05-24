@@ -21,10 +21,12 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 class GameManagement extends StatefulWidget {
   final User? currentUser;
   final GameService gameService;
+  final InputStateService inputStateService;
   const GameManagement({
     super.key,
     required this.currentUser,
     required this.gameService,
+    required this.inputStateService,
   });
 
   @override
@@ -47,7 +49,6 @@ class _GameManagementState extends State<GameManagement>
 
   bool _hasInitializedDependencies = false;
   late final GameService _gameService;
-  late final InputStateService _inputStateService;
   User? _currentUser;
 
   // "All Games" Tab 的 Future (暂时保持不变)
@@ -67,7 +68,6 @@ class _GameManagementState extends State<GameManagement>
     if (!_hasInitializedDependencies) {
       _gameService = widget.gameService;
       _currentUser = widget.currentUser;
-      _inputStateService = context.read<InputStateService>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -291,7 +291,7 @@ class _GameManagementState extends State<GameManagement>
     } else {
       // --- Reject Case: Use EditDialog first to get the reason ---
       await EditDialog.show(
-        inputStateService: _inputStateService,
+        inputStateService: widget.inputStateService,
         context: context,
         title: '输入拒绝原因',
         initialText: '', // Start with empty text

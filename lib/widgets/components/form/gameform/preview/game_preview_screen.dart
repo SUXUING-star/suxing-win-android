@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -17,22 +19,26 @@ class GamePreviewScreen extends StatelessWidget {
   final GameService gameService;
   final GameCollectionService gameCollectionService;
   final AuthProvider authProvider;
+  final SidebarProvider sidebarProvider;
   final Game game;
   final User? currentUser;
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
+  final GameListFilterProvider gameListFilterProvider;
 
   const GamePreviewScreen({
     super.key,
     required this.gameCollectionService,
     required this.gameService,
     required this.authProvider,
+    required this.sidebarProvider,
     required this.currentUser,
     required this.game,
     required this.inputStateService,
     required this.infoProvider,
     required this.followService,
+    required this.gameListFilterProvider,
   });
 
   @override
@@ -53,6 +59,8 @@ class GamePreviewScreen extends StatelessWidget {
 
   Widget _buildGameContent(BuildContext context, bool isDesktop) {
     return GameDetailContent(
+      sidebarProvider: sidebarProvider,
+      gameListFilterProvider: gameListFilterProvider,
       gameCollectionService: gameCollectionService,
       authProvider: authProvider,
       inputStateService: inputStateService,

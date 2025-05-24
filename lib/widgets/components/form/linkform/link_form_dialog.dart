@@ -1,6 +1,5 @@
 // lib/widgets/link_form_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -9,7 +8,12 @@ import 'package:suxingchahui/models/linkstools/link.dart';
 
 class LinkFormDialog extends StatefulWidget {
   final Link? link;
-  const LinkFormDialog({super.key, this.link});
+  final InputStateService inputStateService;
+  const LinkFormDialog({
+    super.key,
+    required this.inputStateService,
+    this.link,
+  });
 
   @override
   State<LinkFormDialog> createState() => _LinkFormDialogState();
@@ -23,7 +27,6 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
   late TextEditingController _urlController;
   late TextEditingController _colorController;
   late TextEditingController _orderController;
-  late final InputStateService _inputStateService;
   bool _hasInitializedDependencies = false;
   bool _isActive = true;
 
@@ -45,8 +48,6 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
   }
@@ -72,7 +73,7 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               FormTextInputField(
-                inputStateService: _inputStateService,
+                inputStateService: widget.inputStateService,
                 controller: _titleController,
                 decoration: const InputDecoration(labelText: '标题'),
                 validator: (value) {
@@ -83,7 +84,7 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
                 },
               ),
               FormTextInputField(
-                inputStateService: _inputStateService,
+                inputStateService: widget.inputStateService,
                 controller: _descriptionController,
                 decoration: const InputDecoration(labelText: '描述'),
                 validator: (value) {
@@ -94,7 +95,7 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
                 },
               ),
               FormTextInputField(
-                inputStateService: _inputStateService,
+                inputStateService: widget.inputStateService,
                 controller: _urlController,
                 decoration: const InputDecoration(labelText: 'URL'),
                 validator: (value) {
@@ -108,7 +109,7 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
                 },
               ),
               FormTextInputField(
-                inputStateService: _inputStateService,
+                inputStateService: widget.inputStateService,
                 controller: _colorController,
                 decoration: const InputDecoration(
                   labelText: '颜色代码',
@@ -125,7 +126,7 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
                 },
               ),
               FormTextInputField(
-                inputStateService: _inputStateService,
+                inputStateService: widget.inputStateService,
                 controller: _orderController,
                 decoration: const InputDecoration(labelText: '排序'),
                 keyboardType: TextInputType.number,

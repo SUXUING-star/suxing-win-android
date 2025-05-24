@@ -32,12 +32,15 @@ class CustomPagePopupItem extends StatelessWidget {
       decoration: BoxDecoration(
         color: backgroundColor,
         // 可以给非当前页加个细微的边框？
-         border: !isCurrentPage ? Border.all(color: Colors.grey.shade200, width: 0.5) : null,
-         borderRadius: BorderRadius.circular(4), // 如果想要圆角效果
+        border: !isCurrentPage
+            ? Border.all(color: Colors.grey.shade200, width: 0.5)
+            : null,
+        borderRadius: BorderRadius.circular(4), // 如果想要圆角效果
       ),
       // 控制内边距，让文字离边缘有距离
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-      child: Row( // 用 Row 来布局，可以加图标等
+      child: Row(
+        // 用 Row 来布局，可以加图标等
         mainAxisAlignment: MainAxisAlignment.spaceBetween, // 让页码和总数分开点
         children: [
           Text(
@@ -48,17 +51,16 @@ class CustomPagePopupItem extends StatelessWidget {
               fontSize: 13, // 稍微大一点的字号
             ),
           ),
-          // 如果需要，可以在右边显示总页数或其他信息
-          // Text(
-          //   '/ $totalPages',
-          //   style: TextStyle(
-          //     color: textColor.withSafeOpacity(0.7),
-          //     fontSize: 11,
-          //   ),
-          // ),
+          //如果需要，可以在右边显示总页数或其他信息
+          Text(
+            '/ $totalPages',
+            style: TextStyle(
+              color: textColor.withSafeOpacity(0.7),
+              fontSize: 11,
+            ),
+          ),
           // 或者给当前页加个小对勾图标？
-          if (isCurrentPage)
-            Icon(Icons.check, size: 16, color: textColor)
+          if (isCurrentPage) Icon(Icons.check, size: 16, color: textColor)
         ],
       ),
     );

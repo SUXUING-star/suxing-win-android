@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -47,8 +46,6 @@ class _MessageScreenState extends State<MessageScreen>
   bool _showMessageDetails = false;
   // 当前在详情面板中显示的消息
   Message? _selectedMessage;
-  late final MessageService _messageService;
-  late final AuthProvider _authProvider;
   String? _currentUserId;
   bool _hasInitializedDependencies = false;
 
@@ -64,12 +61,10 @@ class _MessageScreenState extends State<MessageScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _messageService = widget.messageService;
-      _authProvider = widget.authProvider;
       _hasInitializedDependencies = false;
     }
     if (_hasInitializedDependencies) {
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
       _loadGroupedMessages(); // 初始化时加载消息
     }
   }
@@ -83,10 +78,10 @@ class _MessageScreenState extends State<MessageScreen>
   @override
   void didUpdateWidget(covariant MessageScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != _authProvider.currentUserId) {
+    if (_currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -100,7 +95,8 @@ class _MessageScreenState extends State<MessageScreen>
     }); // 开始加载，显示加载指示器
     try {
       // 调用服务获取分组消息
-      final groupedMessages = await _messageService.getGroupedMessagesOnce();
+      final groupedMessages =
+          await widget.messageService.getGroupedMessagesOnce();
       if (!mounted) return; // 获取数据后再次检查页面是否还在
 
       // 对每个分组内部的消息按时间倒序排序 (最新的在前)
@@ -180,7 +176,7 @@ class _MessageScreenState extends State<MessageScreen>
   Future<void> _markAllAsRead() async {
     if (_allMessagesRead || !mounted) return; // 如果已全部已读或页面已销毁，则不操作
     try {
-      await _messageService.markAllAsRead();
+      await widget.messageService.markAllAsRead();
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
 
@@ -231,7 +227,7 @@ class _MessageScreenState extends State<MessageScreen>
           }
 
           // 异步调用 API 在后端标记已读 (不需要 await，避免阻塞 UI)
-          _messageService.markAsRead(message.id).then((_) {
+          widget.messageService.markAsRead(message.id).then((_) {
             // 可以在这里再次检查全局已读状态，确保精确
             if (mounted) _checkAllMessagesReadStatus();
           }).catchError((e, stackTrace) {
@@ -241,7 +237,7 @@ class _MessageScreenState extends State<MessageScreen>
             if (mounted) {}
           });
         } else {
-          await _messageService.markAsRead(message.id); // 尝试直接调用
+          await widget.messageService.markAsRead(message.id); // 尝试直接调用
           _loadGroupedMessages(); // 作为后备，重新加载列表
         }
       } catch (e) {
@@ -336,7 +332,7 @@ class _MessageScreenState extends State<MessageScreen>
 
         try {
           // 调用服务执行删除操作
-          await _messageService.deleteMessage(message.id);
+          await widget.messageService.deleteMessage(message.id);
           if (!mounted) return; // 异步操作后再次检查
 
           // --- 删除成功 ---
@@ -632,12 +628,13 @@ class _MessageScreenState extends State<MessageScreen>
   Widget build(BuildContext context) {
     buildSnackBar(context);
     final isDesktop = DeviceUtils.isDesktop;
-    return StreamBuilder<User?>(
-      stream: _authProvider.currentUserStream,
-      initialData: _authProvider.currentUser,
+    return StreamBuilder<bool>(
+      stream: widget.authProvider.isLoggedInStream,
+      initialData: widget.authProvider.isLoggedIn,
       builder: (context, authSnapshot) {
-        final currentUser = authSnapshot.data;
-        if (currentUser == null) {
+        final bool isLoggedIn =
+            authSnapshot.data ?? widget.authProvider.isLoggedIn;
+        if (!isLoggedIn) {
           return const LoginPromptWidget();
         }
         // 根据设备类型选择不同的布局

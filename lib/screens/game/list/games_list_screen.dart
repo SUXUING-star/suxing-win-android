@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/tag/tag.dart';
@@ -37,12 +36,14 @@ class GamesListScreen extends StatefulWidget {
   final String? selectedTag;
   final AuthProvider authProvider;
   final GameService gameService;
+  final GameListFilterProvider gameListFilterProvider;
 
   const GamesListScreen({
     super.key,
     this.selectedTag,
     required this.authProvider,
     required this.gameService,
+    required this.gameListFilterProvider,
   });
 
   @override
@@ -69,18 +70,17 @@ class _GamesListScreenState extends State<GamesListScreen>
   String? _currentUserId;
   String? _currentCategory;
   // 直接上升为生命周期管控内部状态变量，不要写为可空的变量！！！！！！！！
-  late final GameListFilterProvider _filterProvider;
-  late final AuthProvider _authProvider;
-  late final GameService _gameService;
 
   List<Tag> _availableTags = [];
   final List<String> _availableCategories = GameConstants.defaultGameCategory;
   StreamSubscription<BoxEvent>? _cacheSubscription;
   String _currentWatchIdentifier = '';
   Timer? _refreshDebounceTimer;
-
+  Timer? _checkProviderDebounceTimer;
   static const int _pageSize = GameService.gamesLimit;
   static const Duration _cacheDebounceDuration = Duration(milliseconds: 1000);
+  static const Duration _checkProviderDebounceDuration =
+      Duration(milliseconds: 500);
   final Map<String, String> _sortOptions = GameConstants.defaultFilter;
   static const double _hideRightPanelThreshold = 1000.0;
   static const double _hideLeftPanelThreshold = 800.0;
@@ -103,18 +103,11 @@ class _GamesListScreenState extends State<GamesListScreen>
     super.didChangeDependencies();
 
     if (!_hasInitializedDependencies) {
-      // 统一在状态依赖生命周期里面初始化变量
-      _filterProvider =
-          Provider.of<GameListFilterProvider>(context, listen: false);
-
-      _authProvider = widget.authProvider;
-      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
       // 初始化 _currentTag
-      _currentUserId = _authProvider.currentUserId;
-
+      _currentUserId = widget.authProvider.currentUserId;
     }
   }
 
@@ -122,10 +115,10 @@ class _GamesListScreenState extends State<GamesListScreen>
   void didUpdateWidget(covariant GamesListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -141,6 +134,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     WidgetsBinding.instance.removeObserver(this);
     _stopWatchingCache();
     _refreshDebounceTimer?.cancel();
+    _checkProviderDebounceTimer?.cancel();
     super.dispose();
     // 不需要dispose内部监听的provider和服务状态变量自己会被gc掉
   }
@@ -149,10 +143,10 @@ class _GamesListScreenState extends State<GamesListScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
-      if (_currentUserId != _authProvider.currentUserId) {
+      if (_currentUserId != widget.authProvider.currentUserId) {
         if (mounted) {
           setState(() {
-            _currentUserId = _authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId;
           });
         }
       }
@@ -171,8 +165,8 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   void _initializeCurrentTag() {
-    final initialProviderTag = _filterProvider.selectedTag;
-    final tagWasSet = _filterProvider.tagHasBeenSet;
+    final initialProviderTag = widget.gameListFilterProvider.selectedTag;
+    final tagWasSet = widget.gameListFilterProvider.tagHasBeenSet;
     _currentTag = tagWasSet ? initialProviderTag : widget.selectedTag;
   }
 
@@ -181,10 +175,10 @@ class _GamesListScreenState extends State<GamesListScreen>
     // 使用一个稍微宽松的阈值，避免快速切换时误判
     final bool nowVisible = visibilityInfo.visibleFraction > 0;
 
-    if (_authProvider.currentUserId != _currentUserId) {
+    if (widget.authProvider.currentUserId != _currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -215,45 +209,49 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
-  // === 检查provider是否需要更新内部状态 ===
+// === 检查provider是否需要更新内部状态 ===
   void _checkProviderAndApplyFilterIfNeeded({required String reason}) {
-    final providerTag = _filterProvider.selectedTag;
-    final providerCategory = _filterProvider.selectedCategory;
-    final tagWasSet = _filterProvider.tagHasBeenSet;
-    final categoryWasSet = _filterProvider.categoryHasBeenSet;
+    _checkProviderDebounceTimer?.cancel(); // 取消上一个计时器（如果存在）
+    _checkProviderDebounceTimer = Timer(_checkProviderDebounceDuration, () {
+      if (!mounted) return; // 确保 Widget 仍然挂载
 
-    // 核心逻辑：只有当 Provider 标记被设置过，并且 Provider 的 tag 和当前页面的 tag 不同时，才需要动作
-    if (tagWasSet && !categoryWasSet && providerTag != _currentTag) {
-      // 应用新的 tag，这会更新 _currentTag 并触发刷新
-      _applyFilterAndSort(
-          tag: providerTag,
-          category: null,
-          sortBy: _currentSortBy,
-          descending: _isDescending);
-      // !!! 关键：处理完后，重置 Provider 中的标志位 !!!
-      _filterProvider.resetTagFlag();
-    } else if (tagWasSet && providerTag == _currentTag) {
-      _filterProvider.resetTagFlag();
-    }
+      final providerTag = widget.gameListFilterProvider.selectedTag;
+      final providerCategory = widget.gameListFilterProvider.selectedCategory;
+      final tagWasSet = widget.gameListFilterProvider.tagHasBeenSet;
+      final categoryWasSet = widget.gameListFilterProvider.categoryHasBeenSet;
 
-    if (categoryWasSet && !tagWasSet && providerTag != _currentTag) {
-      // 应用新的 tag，这会更新 _currentTag 并触发刷新
-      _applyFilterAndSort(
-          tag: null,
-          category: providerCategory,
-          sortBy: _currentSortBy,
-          descending: _isDescending);
-      // !!! 关键：处理完后，重置 Provider 中的标志位 !!!
-      _filterProvider.resetCategoryFlag();
-    } else if (tagWasSet && providerTag == _currentTag) {
-      _filterProvider.resetCategoryFlag();
-    }
+      if (tagWasSet && !categoryWasSet && providerTag != _currentTag) {
+        _applyFilterAndSort(
+            tag: providerTag,
+            category: null,
+            sortBy: _currentSortBy,
+            descending: _isDescending);
+        widget.gameListFilterProvider.resetTagFlag();
+      } else if (tagWasSet && providerTag == _currentTag) {
+        // 即使 tag 相同，如果 provider 标记被设置过，也应该重置
+        widget.gameListFilterProvider.resetTagFlag();
+      }
+
+      if (categoryWasSet &&
+          !tagWasSet &&
+          providerCategory != _currentCategory) {
+        _applyFilterAndSort(
+            tag: null,
+            category: providerCategory,
+            sortBy: _currentSortBy,
+            descending: _isDescending);
+        widget.gameListFilterProvider.resetCategoryFlag();
+      } else if (categoryWasSet && providerCategory == _currentCategory) {
+        // 即使 category 相同，如果 provider 标记被设置过，也应该重置
+        widget.gameListFilterProvider.resetCategoryFlag();
+      }
+    });
   }
 
   // === 加载标签 ===
   Future<void> _loadTags() async {
     try {
-      final tags = await _gameService.getAllTags();
+      final tags = await widget.gameService.getAllTags();
       if (mounted) setState(() => _availableTags = tags);
     } catch (e) {
       if (mounted) {
@@ -295,7 +293,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       Map<String, dynamic> result;
       if (_currentCategory != null) {
         // *** 优先检查分类 ***
-        result = await _gameService.getGamesByCategoryWithInfo(
+        result = await widget.gameService.getGamesByCategoryWithInfo(
           categoryName: _currentCategory!, // 使用分类 API
           page: targetPage,
           pageSize: _pageSize,
@@ -304,7 +302,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           forceRefresh: forceRefresh,
         );
       } else if (_currentTag != null) {
-        result = await _gameService.getGamesByTagWithInfo(
+        result = await widget.gameService.getGamesByTagWithInfo(
           tag: _currentTag!,
           page: targetPage,
           pageSize: _pageSize,
@@ -314,7 +312,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         );
       } else {
         // *** 最后是默认分页 ***
-        result = await _gameService.getGamesPaginatedWithInfo(
+        result = await widget.gameService.getGamesPaginatedWithInfo(
           page: targetPage,
           pageSize: _pageSize,
           sortBy: _currentSortBy,
@@ -385,7 +383,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     _stopWatchingCache();
     _currentWatchIdentifier = newWatchIdentifier;
     try {
-      _cacheSubscription = _gameService
+      _cacheSubscription = widget.gameService
           .watchGameListPageChanges(
         tag: _currentTag,
         categoryName: _currentCategory,
@@ -731,8 +729,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         sortBy: _currentSortBy,
         descending: _isDescending);
     // *** Provider 只处理 Tag ***
-    _filterProvider.clearTag(); // 更新 Provider 状态为 null
-    _filterProvider.resetTagFlag(); // 标记处理完成
+    widget.gameListFilterProvider.clearTag(); // 更新 Provider 状态为 null
+    widget.gameListFilterProvider.resetTagFlag(); // 标记处理完成
   }
 
   // 清除分类筛选的处理
@@ -757,14 +755,14 @@ class _GamesListScreenState extends State<GamesListScreen>
       descending: newDescending,
     );
     // 2. 同步更新 Provider 状态
-    if (_filterProvider.selectedTag != newTag) {
-      _filterProvider.setTag(newTag);
+    if (widget.gameListFilterProvider.selectedTag != newTag) {
+      widget.gameListFilterProvider.setTag(newTag);
     }
-    if (_filterProvider.selectedCategory != newCategory) {
-      _filterProvider.setCategory(newCategory);
+    if (widget.gameListFilterProvider.selectedCategory != newCategory) {
+      widget.gameListFilterProvider.setCategory(newCategory);
     }
     // 3. 因为是页面内部操作触发，立即重置标志位
-    _filterProvider.resetTagFlag();
+    widget.gameListFilterProvider.resetTagFlag();
   }
 
   // <<< 新增：处理左右面板或未来可能的分类选择器点击 >>>
@@ -777,8 +775,8 @@ class _GamesListScreenState extends State<GamesListScreen>
         sortBy: _currentSortBy,
         descending: _isDescending);
     if (_currentTag != null) {
-      _filterProvider.clearTag();
-      _filterProvider.resetTagFlag();
+      widget.gameListFilterProvider.clearTag();
+      widget.gameListFilterProvider.resetTagFlag();
     }
   }
 
@@ -792,16 +790,16 @@ class _GamesListScreenState extends State<GamesListScreen>
         sortBy: _currentSortBy,
         descending: _isDescending);
     // 2. 同步更新 Provider 状态
-    if (_filterProvider.selectedTag != newTag) {
-      _filterProvider.setTag(newTag);
+    if (widget.gameListFilterProvider.selectedTag != newTag) {
+      widget.gameListFilterProvider.setTag(newTag);
     }
     // 3. 因为是页面内部操作触发，立即重置标志位
-    _filterProvider.resetTagFlag();
+    widget.gameListFilterProvider.resetTagFlag();
   }
 
   /// 删除游戏回调
   Future<void> _handleDeleteGame(Game game) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -820,7 +818,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       onConfirm: () async {
         // onConfirm 是 AsyncCallback?
         try {
-          await _gameService.deleteGame(game);
+          await widget.gameService.deleteGame(game);
           // 刷新由 cache watcher 触发
           if (!mounted) return;
           AppSnackBar.showSuccess(context, "成功删除游戏");
@@ -834,14 +832,14 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   // 权限检查
   bool _checkCanEditOrDeleteGame(Game game) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == game.authorId;
+        : widget.authProvider.currentUserId == game.authorId;
   }
 
   // 处理编辑按钮点击事件
   Future<void> _handleEditGame(Game game) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -859,7 +857,7 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// 添加游戏
   void _handleAddGame() {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -1200,7 +1198,7 @@ class _GamesListScreenState extends State<GamesListScreen>
               key: ValueKey(game.id),
               delay: Duration(milliseconds: animationDelayIndex * 50),
               child: BaseGameCard(
-                currentUser: _authProvider.currentUser,
+                currentUser: widget.authProvider.currentUser,
                 game: game,
                 isGridItem: true,
                 adaptForPanels: withPanels,
@@ -1333,7 +1331,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   Widget? _buildFab() {
     if (_isLoadingData) return null; // 加载时不显示
 
-    return _authProvider.isLoggedIn ? _addGameFab() : _toLoginFab();
+    return widget.authProvider.isLoggedIn ? _addGameFab() : _toLoginFab();
   }
 
   Widget _addGameFab() {

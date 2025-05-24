@@ -129,7 +129,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
     } catch (e) {
       // 捕获上传或处理过程中的错误
       uploadError = '处理公告时出错: $e';
-      print(uploadError);
+      // print(uploadError);
       if (mounted) {
         AppSnackBar.showError(context, uploadError);
       }

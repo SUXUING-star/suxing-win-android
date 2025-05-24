@@ -1,8 +1,9 @@
 // lib/widgets/form/gameform/preview/game_preview_button.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -19,6 +20,8 @@ class GamePreviewButton extends StatelessWidget {
   final GameService gameService;
   final GameCollectionService gameCollectionService;
   final UserInfoProvider infoProvider;
+  final GameListFilterProvider gameListFilterProvider;
+  final SidebarProvider sidebarProvider;
   final AuthProvider authProvider;
   final InputStateService inputStateService;
   final UserFollowService followService;
@@ -39,6 +42,8 @@ class GamePreviewButton extends StatelessWidget {
   const GamePreviewButton({
     super.key,
     required this.followService,
+    required this.sidebarProvider,
+    required this.gameListFilterProvider,
     required this.infoProvider,
     required this.authProvider,
     required this.inputStateService,
@@ -120,6 +125,8 @@ class GamePreviewButton extends StatelessWidget {
       NavigationUtils.of(context).push(
         MaterialPageRoute(
           builder: (context) => GamePreviewScreen(
+            sidebarProvider: sidebarProvider,
+            gameListFilterProvider: gameListFilterProvider,
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             inputStateService: inputStateService,

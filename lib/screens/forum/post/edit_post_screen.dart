@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -17,12 +18,14 @@ class EditPostScreen extends StatefulWidget {
   final String postId;
   final ForumService forumService;
   final AuthProvider authProvider;
+  final InputStateService inputStateService;
 
   const EditPostScreen({
     super.key,
     required this.postId,
     required this.forumService,
     required this.authProvider,
+    required this.inputStateService,
   });
 
   @override
@@ -36,8 +39,6 @@ class _EditPostScreenState extends State<EditPostScreen>
   bool _isLoading = true;
   bool _hasInitializedDependencies = false;
   Post? _post;
-  late final ForumService _forumService;
-  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -48,8 +49,6 @@ class _EditPostScreenState extends State<EditPostScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -61,7 +60,7 @@ class _EditPostScreenState extends State<EditPostScreen>
     try {
       setState(() => _isLoading = true);
 
-      final post = await _forumService.getPost(widget.postId);
+      final post = await widget.forumService.getPost(widget.postId);
       setState(() {
         _post = post;
         _isLoading = false;
@@ -77,8 +76,8 @@ class _EditPostScreenState extends State<EditPostScreen>
     try {
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
-      await _forumService.updatePost(
-          _post!, data.title, data.content, postTags);
+      await widget.forumService
+          .updatePost(_post!, data.title, data.content, postTags);
       showSnackbar(message: "编辑成功", type: SnackbarType.success);
       if (!mounted) return;
       NavigationUtils.pop(context, true);
@@ -123,8 +122,8 @@ class _EditPostScreenState extends State<EditPostScreen>
     }
 
     return StreamBuilder<User?>(
-      stream: _authProvider.currentUserStream,
-      initialData: _authProvider.currentUser,
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
       builder: (context, currentUserSnapshot) {
         final User? currentUser = currentUserSnapshot.data;
         final String? currentUserId = currentUser?.id;
@@ -144,7 +143,8 @@ class _EditPostScreenState extends State<EditPostScreen>
 
         return PostForm(
           title: '编辑帖子',
-          currentUser: _authProvider.currentUser,
+          inputStateService: widget.inputStateService,
+          currentUser: currentUser,
           initialTitle: _post!.title,
           initialContent: _post!.content,
           initialTags: List.from(_post!.tags),

@@ -12,7 +12,11 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/services/main/denfence/defence_service.dart';
 
 class IPManagement extends StatefulWidget {
-  const IPManagement({super.key});
+  final InputStateService inputStateService;
+  const IPManagement({
+    super.key,
+    required this.inputStateService,
+  });
 
   @override
   State<IPManagement> createState() => _IPManagementState();
@@ -25,7 +29,6 @@ class _IPManagementState extends State<IPManagement>
   final TextEditingController _ipController = TextEditingController();
   final TextEditingController _blacklistIpController = TextEditingController();
   late final DefenceService _defenceService;
-  late final InputStateService _inputStateService;
   bool _hasInit = false;
 
   @override
@@ -39,8 +42,6 @@ class _IPManagementState extends State<IPManagement>
     super.didChangeDependencies();
     if (!_hasInit) {
       _defenceService = context.read<DefenceService>();
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       _hasInit = true;
     }
   }
@@ -75,8 +76,7 @@ class _IPManagementState extends State<IPManagement>
 
     setState(() => _isLoading = true);
     try {
-      final defenceService = context.read<DefenceService>();
-      await defenceService.addToBlacklist(ip);
+      await _defenceService.addToBlacklist(ip);
       _blacklistIpController.clear();
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '已添加到黑名单: $ip');
@@ -97,8 +97,7 @@ class _IPManagementState extends State<IPManagement>
 
     setState(() => _isLoading = true);
     try {
-      final defenceService = context.read<DefenceService>();
-      await defenceService.addToWhitelist(ip);
+      await _defenceService.addToWhitelist(ip);
       _ipController.clear();
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '已添加到白名单: $ip');
@@ -113,8 +112,7 @@ class _IPManagementState extends State<IPManagement>
   Future<void> _removeFromWhitelist(String ip) async {
     setState(() => _isLoading = true);
     try {
-      final defenceService = context.read<DefenceService>();
-      await defenceService.removeFromWhitelist(ip);
+      await _defenceService.removeFromWhitelist(ip);
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '已从白名单移除: $ip');
       setState(() {});
@@ -151,7 +149,6 @@ class _IPManagementState extends State<IPManagement>
   }
 
   Widget _buildBlacklistTab() {
-    final defenceService = context.read<DefenceService>();
     return Column(
       children: [
         Padding(
@@ -160,7 +157,7 @@ class _IPManagementState extends State<IPManagement>
             children: [
               Expanded(
                 child: TextInputField(
-                  inputStateService: _inputStateService,
+                  inputStateService: widget.inputStateService,
                   controller: _blacklistIpController,
                   decoration: const InputDecoration(
                     labelText: '添加IP到黑名单',
@@ -182,7 +179,7 @@ class _IPManagementState extends State<IPManagement>
         ),
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: defenceService.getBlacklist(),
+            future: _defenceService.getBlacklist(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return LoadingWidget.inline();
@@ -250,7 +247,6 @@ class _IPManagementState extends State<IPManagement>
   }
 
   Widget _buildWhitelistTab() {
-    final defenceService = context.read<DefenceService>();
     return Column(
       children: [
         Padding(
@@ -259,7 +255,7 @@ class _IPManagementState extends State<IPManagement>
             children: [
               Expanded(
                 child: TextInputField(
-                  inputStateService: _inputStateService,
+                  inputStateService: widget.inputStateService,
                   controller: _ipController,
                   decoration: const InputDecoration(
                     labelText: '添加IP到白名单',
@@ -280,7 +276,7 @@ class _IPManagementState extends State<IPManagement>
         ),
         Expanded(
           child: FutureBuilder<List<Map<String, dynamic>>>(
-            future: defenceService.getWhitelist(),
+            future: _defenceService.getWhitelist(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return LoadingWidget.inline();

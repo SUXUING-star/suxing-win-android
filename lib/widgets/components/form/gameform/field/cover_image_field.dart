@@ -86,12 +86,12 @@ class CoverImageField extends StatelessWidget {
 
     Widget imageWidget;
     if (source is XFile) {
-      print("Cover Preview: Rendering XFile: ${source.path}");
+      // print("Cover Preview: Rendering XFile: ${source.path}");
       imageWidget = Image.file(
         File(source.path), // <--- 从 XFile 创建 File
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print("Error rendering XFile preview ${source.path}: $error");
+          // print("Error rendering XFile preview ${source.path}: $error");
           return const Center(
               child:
                   Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
@@ -99,19 +99,19 @@ class CoverImageField extends StatelessWidget {
       );
     } else if (source is File) {
       // <--- 新增: 处理 File 对象
-      print("Cover Preview: Rendering File: ${source.path}");
+      // print("Cover Preview: Rendering File: ${source.path}");
       imageWidget = Image.file(
         source, // <--- 直接使用 File 对象
         fit: BoxFit.cover,
         errorBuilder: (context, error, stackTrace) {
-          print("Error rendering File preview ${source.path}: $error");
+          // print("Error rendering File preview ${source.path}: $error");
           return const Center(
               child:
                   Icon(Icons.broken_image, size: 48, color: Colors.redAccent));
         },
       );
     } else if (source is String) {
-      print("Cover Preview: Rendering String URL: $source");
+      // print("Cover Preview: Rendering String URL: $source");
       final imageUrl = source;
       // 不需要再拼接 baseUrl，因为存的时候已经是完整路径或 URL
       final String displayUrl = imageUrl;
@@ -120,7 +120,7 @@ class CoverImageField extends StatelessWidget {
         fit: BoxFit.cover,
       );
     } else {
-      print("Cover Preview: Unknown source type: ${source.runtimeType}");
+      // print("Cover Preview: Unknown source type: ${source.runtimeType}");
       imageWidget = const Center(child: Icon(Icons.help_outline, size: 48));
     }
 

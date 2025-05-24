@@ -73,14 +73,11 @@ class HomeHotPosts extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           color: Colors.grey[900])),
                   Spacer(),
-                  // 可选：如果需要更多按钮
-                  // InkWell(...)
                 ],
               ),
             ),
             SizedBox(height: 16),
-            _buildPostListArea(
-                context), // 传递 context 和 providers
+            _buildPostListArea(context), // 传递 context 和 providers
           ],
         ),
       ),
@@ -137,8 +134,7 @@ class HomeHotPosts extends StatelessWidget {
           itemBuilder: (ctx, index) {
             // 使用 ctx
             final post = itemsToShow[index];
-            return _buildPostListItem(
-                ctx, post); // 传递 ctx 和 authProvider
+            return _buildPostListItem(ctx, post); // 传递 ctx 和 authProvider
           },
         ),
         if (isLoading && displayPosts.isNotEmpty)

@@ -1,30 +1,37 @@
 // lib/path/to/your/dialogs/tool_form_dialog.dart
-
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import '../../../../models/linkstools/tool.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ToolFormDialog extends StatefulWidget {
+  final InputStateService inputStateService;
   final Tool? tool; // 编辑时传入的对象，添加时为 null
 
-  const ToolFormDialog({super.key, this.tool});
+  const ToolFormDialog({
+    super.key,
+    required this.inputStateService,
+    this.tool,
+  });
 
   // 静态方法用于显示对话框并返回结果
   // 返回 Future<Map<String, dynamic>?> 因为用户可能取消
-  static Future<Map<String, dynamic>?> show(BuildContext context,
+  static Future<Map<String, dynamic>?> show(
+      BuildContext context, InputStateService inputStateService,
       {Tool? tool}) {
     return showDialog<Map<String, dynamic>>(
       // 指定 showDialog 的返回类型
       context: context,
       // barrierDismissible: false, // 可以根据需要设置点击外部是否关闭，默认为 true
       builder: (BuildContext dialogContext) {
-        return ToolFormDialog(tool: tool);
+        return ToolFormDialog(
+          tool: tool,
+          inputStateService: inputStateService,
+        );
       },
     );
   }
@@ -41,7 +48,6 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
   late String _color;
   late List<Map<String, String>> _downloadsState;
 
-  late final InputStateService _inputStateService;
   bool _hasInitializedDependencies = false;
 
   bool _isSubmitting = false; // 跟踪提交状态
@@ -74,8 +80,6 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
   }
@@ -169,7 +173,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
           }
         });
       } catch (e) {
-        print("Error creating Tool object or toJson: $e");
+        // print("Error creating Tool object or toJson: $e");
         if (mounted) {
           AppSnackBar.showError(context, "保存失败：数据格式错误");
           setState(() {
@@ -248,7 +252,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                               SizedBox(height: 8), // 顶部留白
                               // --- 工具名称 ---
                               FormTextInputField(
-                                inputStateService: _inputStateService,
+                                inputStateService: widget.inputStateService,
                                 initialValue: _name,
                                 decoration: InputDecoration(
                                   labelText: '工具名称 *', // 标记必填
@@ -268,7 +272,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
 
                               // --- 工具描述 ---
                               FormTextInputField(
-                                inputStateService: _inputStateService,
+                                inputStateService: widget.inputStateService,
                                 initialValue: _description,
                                 decoration: InputDecoration(
                                   labelText: '工具描述 *',
@@ -292,7 +296,7 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
 
                               // --- 颜色选择 ---
                               FormTextInputField(
-                                inputStateService: _inputStateService,
+                                inputStateService: widget.inputStateService,
                                 initialValue: _color,
                                 decoration: InputDecoration(
                                   labelText: '颜色 (Hex) *',
@@ -363,7 +367,8 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                       children: [
                                         // 下载名称
                                         FormTextInputField(
-                                          inputStateService: _inputStateService,
+                                          inputStateService:
+                                              widget.inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['name'],
                                           decoration: InputDecoration(
@@ -387,7 +392,8 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                         SizedBox(height: 10),
                                         // 下载描述
                                         FormTextInputField(
-                                          inputStateService: _inputStateService,
+                                          inputStateService:
+                                              widget.inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['description'],
                                           decoration: InputDecoration(
@@ -411,7 +417,8 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
                                         SizedBox(height: 10),
                                         // 下载链接
                                         FormTextInputField(
-                                          inputStateService: _inputStateService,
+                                          inputStateService:
+                                              widget.inputStateService,
                                           initialValue: _downloadsState[index]
                                               ['url'],
                                           decoration: InputDecoration(

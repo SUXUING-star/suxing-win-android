@@ -43,24 +43,26 @@ class CustomPopupMenuButton<T> extends StatelessWidget {
     final Color disabledColor = theme.disabledColor;
     final Color defaultIconColor = theme.iconTheme.color ?? Colors.grey[600]!;
     final Color calculatedIconColor = iconColor ?? defaultIconColor;
-    final Color effectiveIconColor = isEnabled ? calculatedIconColor : disabledColor;
+    final Color effectiveIconColor =
+        isEnabled ? calculatedIconColor : disabledColor;
 
-    final Widget triggerWidget = child ?? Icon(
-      icon,
-      size: iconSize,
-      color: effectiveIconColor,
-    );
+    final Widget triggerWidget = child ??
+        Icon(
+          icon,
+          size: iconSize,
+          color: effectiveIconColor,
+        );
 
     return PopupMenuButton<T>(
       itemBuilder: itemBuilder,
       onSelected: isEnabled ? onSelected : null,
       tooltip: tooltip,
       offset: offset,
-      shape: shape ?? RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(10.0),
-      ),
+      shape: shape ??
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10.0),
+          ),
       elevation: elevation ?? 4.0,
-      // *** 把接收到的 menuBackgroundColor 传递给底层 PopupMenuButton 的 color 属性 ***
       color: menuBackgroundColor, // 这才是设置菜单面板背景色的地方！
       padding: padding,
       splashRadius: splashRadius,

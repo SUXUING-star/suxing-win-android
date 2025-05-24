@@ -1,6 +1,7 @@
 // lib/screens/admin/widgets/tool_management.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -13,9 +14,11 @@ import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.d
 
 class ToolManagement extends StatefulWidget {
   final LinkToolService linkToolService;
+  final InputStateService inputStateService;
   const ToolManagement({
     super.key,
     required this.linkToolService,
+    required this.inputStateService,
   });
 
   @override
@@ -168,7 +171,9 @@ class _ToolManagementState extends State<ToolManagement>
       final result = await showDialog<Map<String, dynamic>>(
         // 指定泛型类型
         context: context,
-        builder: (context) => const ToolFormDialog(),
+        builder: (context) => ToolFormDialog(
+          inputStateService: widget.inputStateService,
+        ),
       );
 
       if (result != null && mounted) {
@@ -193,7 +198,10 @@ class _ToolManagementState extends State<ToolManagement>
       final result = await showDialog<Map<String, dynamic>>(
         // 指定泛型类型
         context: context,
-        builder: (context) => ToolFormDialog(tool: tool),
+        builder: (context) => ToolFormDialog(
+          tool: tool,
+          inputStateService: widget.inputStateService,
+        ),
       );
 
       if (result != null && mounted) {

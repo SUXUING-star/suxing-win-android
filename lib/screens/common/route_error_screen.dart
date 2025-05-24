@@ -1,5 +1,6 @@
 // lib/screens/common/route_error_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -9,6 +10,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 /// This screen centralizes error handling for invalid routes or route parameters,
 /// providing a consistent user experience when navigation errors occur.
 class RouteErrorScreen extends StatelessWidget {
+  final SidebarProvider sidebarProvider;
   final String errorTitle;
   final String errorMessage;
   final String buttonText;
@@ -19,6 +21,7 @@ class RouteErrorScreen extends StatelessWidget {
 
   const RouteErrorScreen({
     super.key,
+    required this.sidebarProvider,
     this.errorTitle = '路由错误',
     this.errorMessage = '无法访问请求的页面',
     this.buttonText = '返回首页',
@@ -29,12 +32,14 @@ class RouteErrorScreen extends StatelessWidget {
   });
 
   /// Factory constructor for invalid ID error cases
-  factory RouteErrorScreen.invalidId({
+  factory RouteErrorScreen.invalidId(
+    SidebarProvider sidebarProvider, {
     String resourceType = '资源',
     VoidCallback? onAction,
     bool showHomeButton = true,
   }) {
     return RouteErrorScreen(
+      sidebarProvider: sidebarProvider,
       errorTitle: '无效的ID',
       errorMessage: '无法找到所请求的$resourceType，ID可能无效或已被删除',
       icon: Icons.search_off,
@@ -45,12 +50,14 @@ class RouteErrorScreen extends StatelessWidget {
   }
 
   /// Factory constructor for missing parameter error cases
-  factory RouteErrorScreen.missingParameter({
+  factory RouteErrorScreen.missingParameter(
+    SidebarProvider sidebarProvider, {
     String paramName = '参数',
     VoidCallback? onAction,
     bool showHomeButton = true,
   }) {
     return RouteErrorScreen(
+      sidebarProvider: sidebarProvider,
       errorTitle: '缺少参数',
       errorMessage: '请求缺少必要的$paramName信息',
       icon: Icons.warning_amber_rounded,
@@ -61,12 +68,14 @@ class RouteErrorScreen extends StatelessWidget {
   }
 
   /// Factory constructor for unauthorized access error cases
-  factory RouteErrorScreen.unauthorized({
+  factory RouteErrorScreen.unauthorized(
+    SidebarProvider sidebarProvider, {
     String message = '您需要登录才能访问此页面',
     VoidCallback? onLogin,
     bool showHomeButton = true,
   }) {
     return RouteErrorScreen(
+      sidebarProvider: sidebarProvider,
       errorTitle: '需要登录',
       errorMessage: message,
       buttonText: '去登录',
@@ -78,12 +87,14 @@ class RouteErrorScreen extends StatelessWidget {
   }
 
   /// Factory constructor for resource not found error cases
-  factory RouteErrorScreen.notFound({
+  factory RouteErrorScreen.notFound(
+    SidebarProvider sidebarProvider, {
     String resourceType = '资源',
     VoidCallback? onAction,
     bool showHomeButton = true,
   }) {
     return RouteErrorScreen(
+      sidebarProvider: sidebarProvider,
       errorTitle: '未找到',
       errorMessage: '无法找到请求的$resourceType',
       icon: Icons.search_off,
@@ -122,7 +133,10 @@ class RouteErrorScreen extends StatelessWidget {
                   (onAction == null || buttonText != '返回首页')) ...[
                 TextButton(
                   onPressed: () {
-                    NavigationUtils.navigateToHome(context);
+                    NavigationUtils.navigateToHome(
+                      sidebarProvider,
+                      context,
+                    );
                   },
                   child: const Text('返回首页'),
                 ),

@@ -36,6 +36,7 @@ class PostFormData {
 
 class PostForm extends StatefulWidget {
   final User? currentUser;
+  final InputStateService inputStateService;
   final String title;
   final String? initialTitle; // 从外部传入的原始值
   final String? initialContent; // 从外部传入的原始值
@@ -51,6 +52,7 @@ class PostForm extends StatefulWidget {
   const PostForm({
     super.key,
     required this.currentUser,
+    required this.inputStateService,
     required this.title,
     this.initialTitle,
     this.initialContent,
@@ -109,7 +111,7 @@ class _PostFormState extends State<PostForm> {
   }
 
   void initText() {
-      // 决定标题初始值：优先使用 Service 中的草稿
+    // 决定标题初始值：优先使用 Service 中的草稿
     final titleFromService = _inputStateService.getText(_titleSlotName);
     _effectiveInitialTitle = (titleFromService.isNotEmpty)
         ? titleFromService // 使用草稿
@@ -495,10 +497,9 @@ class _PostFormState extends State<PostForm> {
       return;
     }
 
-    final inputStateService = context.read<InputStateService>();
     // *** 从 InputStateService 获取最终提交的值 ***
-    final finalTitle = inputStateService.getText(_titleSlotName);
-    final finalContent = inputStateService.getText(_contentSlotName);
+    final finalTitle = widget.inputStateService.getText(_titleSlotName);
+    final finalContent = widget.inputStateService.getText(_contentSlotName);
 
     // 再次校验从 Service 获取的值
     if (finalTitle.trim().isEmpty || finalContent.trim().isEmpty) {
@@ -521,11 +522,11 @@ class _PostFormState extends State<PostForm> {
           widget.onSubmit(data); // 调用外部提交
 
           // *** 提交成功或开始后，清除 Service 中的状态 ***
-          inputStateService.clearText(_titleSlotName);
-          inputStateService.clearText(_contentSlotName);
-          print("提交触发，已清除 Title 和 Content 的内存状态。");
+          widget.inputStateService.clearText(_titleSlotName);
+          widget.inputStateService.clearText(_contentSlotName);
+          // print("提交触发，已清除 Title 和 Content 的内存状态。");
         } catch (e) {
-          print("执行提交操作时出错: $e");
+          // print("执行提交操作时出错: $e");
           if (mounted) AppSnackBar.showError(context, '提交时发生错误');
         }
       },

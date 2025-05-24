@@ -1,16 +1,17 @@
 // lib/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/gamecollection/card/collection_game_card.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 确保路径正确
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 确保路径正确
 
-
 /// 桌面设备游戏收藏展示布局 - 只负责展示列表
 /// 刷新、加载、错误处理由父组件 (GameCollectionScreen) 完成
 class DesktopCollectionLayout extends StatelessWidget {
   final List<GameWithCollection> games;
+  final SidebarProvider sidebarProvider;
   final String collectionType;
   final String title; // 标题现在可以包含数量，由父组件传入
   final IconData icon;
@@ -18,6 +19,7 @@ class DesktopCollectionLayout extends StatelessWidget {
   const DesktopCollectionLayout({
     super.key,
     required this.games,
+    required this.sidebarProvider,
     required this.collectionType,
     required this.title,
     required this.icon,
@@ -137,7 +139,9 @@ class DesktopCollectionLayout extends StatelessWidget {
       message: message,
       action: FunctionalButton(
         label: '发现游戏',
-        onPressed: () => NavigationUtils.navigateToHome(context, tabIndex: 1),
+        onPressed: () => NavigationUtils.navigateToHome(
+            sidebarProvider, context,
+            tabIndex: 1),
         icon: Icons.search_rounded,
       ),
     );

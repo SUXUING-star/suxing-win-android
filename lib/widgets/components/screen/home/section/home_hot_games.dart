@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/home/section/home_hot_games.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -106,7 +106,7 @@ class HomeHotGames extends StatelessWidget {
         _buildSection(
           title: '热门游戏',
           onMorePressed: () {
-            NavigationUtils.pushNamed(context, AppRoutes.hotGames);
+            Navigator.pushNamed(context, AppRoutes.hotGames);
           },
           child: Stack(
             children: [
@@ -140,14 +140,16 @@ class HomeHotGames extends StatelessWidget {
                     onPageChanged: onPageChanged, // 回调给 HomeScreen
                     itemBuilder: (context, pageIndex) {
                       final startIndex = pageIndex * cardsCountPerPage;
-                      if (!context.mounted)  return const SizedBox.shrink();
+                      if (!context.mounted) return const SizedBox.shrink();
                       // PageView 内部的 LayoutBuilder 保持不变，用于动态决定每页实际卡片数
                       return Container(
                         margin: EdgeInsets.symmetric(
                             horizontal: 8), // PageView item 的边距
                         child: LayoutBuilder(
                           builder: (context, constraints) {
-                            if (!context.mounted) return const SizedBox.shrink();
+                            if (!context.mounted) {
+                              return const SizedBox.shrink();
+                            }
                             double availableWidth = constraints.maxWidth;
                             // 这里再次计算是为了确保 PageView 内部item能正确布局
                             // 如果 HomeScreen 能准确预估这里的宽度，也可以由 HomeScreen 计算后传入
@@ -172,7 +174,7 @@ class HomeHotGames extends StatelessWidget {
                                   duration: const Duration(milliseconds: 300),
                                   child: HomeGameCard(
                                     game: displayGames[gameIndex],
-                                    onTap: () => NavigationUtils.pushNamed(
+                                    onTap: () => Navigator.pushNamed(
                                       context,
                                       AppRoutes.gameDetail,
                                       arguments: displayGames[gameIndex],

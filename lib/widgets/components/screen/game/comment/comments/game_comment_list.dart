@@ -1,10 +1,8 @@
 // lib/widgets/components/screen/game/comment/comments/game_comment_list.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -47,26 +45,32 @@ class GameCommentList extends StatelessWidget {
           message: '暂无评论', iconData: Icons.maps_ugc_outlined);
     }
 
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 0),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: comments.length,
-      itemBuilder: (context, index) {
-        final comment = comments[index];
-        return GameCommentItem(
-          key: ValueKey(comment.id), // 使用 Key
-          currentUser: currentUser,
-          authProvider: authProvider,
-          comment: comment,
-          infoProvider: infoProvider,
-          inputStateService: inputStateService,
-          followService: followService,
-          onUpdateComment: onUpdateComment,
-          onDeleteComment: onDeleteComment,
-          onAddReply: onAddReply,
-          isDeleting: deletingCommentIds.contains(comment.id),
-          isUpdating: updatingCommentIds.contains(comment.id),
+    return StreamBuilder<User?>(
+      stream: authProvider.currentUserStream,
+      initialData: authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        return ListView.builder(
+          padding: const EdgeInsets.only(bottom: 0),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: comments.length,
+          itemBuilder: (context, index) {
+            final comment = comments[index];
+            return GameCommentItem(
+              key: ValueKey(comment.id),
+              currentUser: authSnapshot.data,
+              authProvider: authProvider,
+              comment: comment,
+              infoProvider: infoProvider,
+              inputStateService: inputStateService,
+              followService: followService,
+              onUpdateComment: onUpdateComment,
+              onDeleteComment: onDeleteComment,
+              onAddReply: onAddReply,
+              isDeleting: deletingCommentIds.contains(comment.id),
+              isUpdating: updatingCommentIds.contains(comment.id),
+            );
+          },
         );
       },
     );

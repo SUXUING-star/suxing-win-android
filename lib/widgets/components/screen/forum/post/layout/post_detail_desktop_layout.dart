@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
-import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -8,11 +8,12 @@ import 'package:suxingchahui/services/main/forum/forum_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import '../../../../../../models/post/post.dart';
-import '../post_content.dart';
-import '../reply/post_reply_list.dart';
+
 import '../community_guidelines.dart';
+import '../post_content.dart';
 import '../recent_global_replies.dart';
+import '../reply/post_reply_list.dart';
+
 
 class PostDetailDesktopLayout extends StatelessWidget {
   final Post post;

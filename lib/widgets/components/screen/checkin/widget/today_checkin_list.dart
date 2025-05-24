@@ -1,6 +1,5 @@
 // lib/widgets/components/screen/checkin/widget/today_checkin_list.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';

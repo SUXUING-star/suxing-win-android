@@ -47,7 +47,7 @@ class HomeLatestGames extends StatelessWidget {
               decoration: BoxDecoration(
                   border: Border(
                       bottom:
-                      BorderSide(color: Colors.grey.shade200, width: 1))),
+                          BorderSide(color: Colors.grey.shade200, width: 1))),
               child: Row(
                 children: [
                   Container(
@@ -71,7 +71,7 @@ class HomeLatestGames extends StatelessWidget {
                       },
                       child: Padding(
                           padding:
-                          EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           child: Row(children: [
                             Text('更多',
                                 style: TextStyle(
@@ -91,7 +91,8 @@ class HomeLatestGames extends StatelessWidget {
     );
   }
 
-  Widget _buildGameListArea(BuildContext context) { // context 作为参数
+  Widget _buildGameListArea(BuildContext context) {
+    // context 作为参数
     if (isLoading && games == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -112,7 +113,7 @@ class HomeLatestGames extends StatelessWidget {
     if (!isLoading && displayGames.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: EmptyStateWidget(
+        child: const EmptyStateWidget(
           message: '暂无最新游戏',
           iconData: Icons.inbox_outlined,
           iconSize: 40,
@@ -121,21 +122,21 @@ class HomeLatestGames extends StatelessWidget {
       );
     }
 
-
     return Stack(
       children: [
         _buildVerticalGameList(displayGames, context), // context 传入
         if (isLoading && displayGames.isNotEmpty)
           Positioned.fill(
               child: Container(
-                color: Colors.white.withSafeOpacity(0.5),
-                child: Center(child: LoadingWidget.inline(size: 30)),
-              )),
+            color: Colors.white.withSafeOpacity(0.5),
+            child: Center(child: LoadingWidget.inline(size: 30)),
+          )),
       ],
     );
   }
 
-  Widget _buildVerticalGameList(List<Game> gameList, BuildContext context) { // context 传入
+  Widget _buildVerticalGameList(List<Game> gameList, BuildContext context) {
+    // context 传入
     final itemsToShow = gameList.take(3).toList();
     if (itemsToShow.isEmpty) {
       // 即使 !isLoading && displayGames.isEmpty 已经在 _buildGameListArea 处理了
@@ -154,14 +155,16 @@ class HomeLatestGames extends StatelessWidget {
           indent: 88,
           endIndent: 16,
           color: Colors.grey.withSafeOpacity(0.1)),
-      itemBuilder: (ctx, index) { // 使用 ctx 避免和外部 context 混淆
+      itemBuilder: (ctx, index) {
+        // 使用 ctx 避免和外部 context 混淆
         final game = itemsToShow[index];
         return _buildGameListItem(game, ctx); // 使用 ctx
       },
     );
   }
 
-  Widget _buildGameListItem(Game game, BuildContext context) { // context 传入
+  Widget _buildGameListItem(Game game, BuildContext context) {
+    // context 传入
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () {
@@ -236,10 +239,14 @@ class HomeLatestGames extends StatelessWidget {
         _buildStatItem(Icons.remove_red_eye_outlined, game.viewCount,
             Colors.blueGrey[300]),
         SizedBox(height: 6),
-        _buildStatItem(Icons.star_border_purple500_outlined, game.ratingCount, // 假设是 ratingCount
+        _buildStatItem(
+            Icons.star_border_purple500_outlined,
+            game.ratingCount, // 假设是 ratingCount
             Colors.orange[400]),
         SizedBox(height: 6),
-        _buildStatItem(Icons.thumb_up_off_alt_outlined, game.likeCount, // 假设是 likeCount
+        _buildStatItem(
+            Icons.thumb_up_off_alt_outlined,
+            game.likeCount, // 假设是 likeCount
             Colors.redAccent[100]),
       ],
     );

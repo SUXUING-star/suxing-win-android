@@ -190,31 +190,42 @@ class _PostReplyListState extends State<PostReplyList> {
                 right: 16,
                 top: 16,
               ),
-              child: CommentInputField(
-                currentUser: widget.currentUser,
-                inputStateService: widget.inputStateService,
-                slotName: _topLevelReplySlotName,
-                hintText: '写下你的评论...',
-                submitButtonText: '发表评论',
-                isSubmitting: isSubmitting, // 使用状态控制按钮加载
-                maxLines: 4,
-                maxLength: 500,
-                onCancel: () {
-                  if (bottomSheetContext.mounted) {
-                    Navigator.pop(bottomSheetContext);
-                  }
-                },
-                onSubmit: (text) async {
-                  // 调用外部状态的提交方法，并传入模态框 context
-                  await _submitTopLevelReply(bottomSheetContext, text);
-                  // 注意：关闭模态框的逻辑现在在 _submitTopLevelReply 成功时处理
-                },
-              ),
+              child: _buildTopReplyInput(bottomSheetContext, isSubmitting),
             );
           },
         );
       },
     );
+  }
+
+  Widget _buildTopReplyInput(
+      BuildContext bottomSheetContext, bool isSubmitting) {
+    return StreamBuilder<User?>(
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          return CommentInputField(
+            currentUser: widget.currentUser,
+            inputStateService: widget.inputStateService,
+            slotName: _topLevelReplySlotName,
+            hintText: '写下你的评论...',
+            submitButtonText: '发表评论',
+            isSubmitting: isSubmitting,
+            // 使用状态控制按钮加载
+            maxLines: 4,
+            maxLength: 500,
+            onCancel: () {
+              if (bottomSheetContext.mounted) {
+                Navigator.pop(bottomSheetContext);
+              }
+            },
+            onSubmit: (text) async {
+              // 调用外部状态的提交方法，并传入模态框 context
+              await _submitTopLevelReply(bottomSheetContext, text);
+              // 注意：关闭模态框的逻辑现在在 _submitTopLevelReply 成功时处理
+            },
+          );
+        });
   }
 
   @override
@@ -327,72 +338,80 @@ class _PostReplyListState extends State<PostReplyList> {
         } else {
           // 情况 B: 有评论，构建 ListView
           Widget listView = ListView.builder(
-            // 仅在需要内部滚动时关联控制器
-            controller:
-                widget.isScrollableInternally ? _scrollController : null,
-            // 根据是否需要内部滚动设置 shrinkWrap 和 physics
-            shrinkWrap: !widget.isScrollableInternally, // 移动端 true, 桌面端 false
-            physics: widget.isScrollableInternally
-                ? const AlwaysScrollableScrollPhysics() // 桌面端允许滚动
-                : const NeverScrollableScrollPhysics(), // 移动端禁止滚动
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            itemCount: topLevelReplies.length,
-            itemBuilder: (context, index) {
-              final topReply = topLevelReplies[index];
-              final children = nestedRepliesMap[topReply.id] ?? [];
+              // 仅在需要内部滚动时关联控制器
+              controller:
+                  widget.isScrollableInternally ? _scrollController : null,
+              // 根据是否需要内部滚动设置 shrinkWrap 和 physics
+              shrinkWrap: !widget.isScrollableInternally, // 移动端 true, 桌面端 false
+              physics: widget.isScrollableInternally
+                  ? const AlwaysScrollableScrollPhysics() // 桌面端允许滚动
+                  : const NeverScrollableScrollPhysics(), // 移动端禁止滚动
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              itemCount: topLevelReplies.length,
+              itemBuilder: (context, index) {
+                final topReply = topLevelReplies[index];
+                final children = nestedRepliesMap[topReply.id] ?? [];
 
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // 渲染顶层回复项
-                    PostReplyItem(
-                      inputStateService: widget.inputStateService,
-                      authProvider: widget.authProvider,
-                      followService: widget.followService,
-                      infoProvider: widget.infoProvider,
-                      currentUser: widget.currentUser,
-                      forumService: widget.forumService,
-                      reply: topReply,
-                      floor: topLevelReplies.length - index,
-                      postId: widget.postId,
-                      onActionSuccess: _loadReplies, // 回调刷新
-                    ),
-                    // 渲染嵌套回复
-                    if (children.isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(
-                            left: 32.0, top: 8.0, bottom: 8.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: children.map((nestedReply) {
-                            return Padding(
-                              padding: const EdgeInsets.only(top: 8.0),
-                              child: PostReplyItem(
-                                inputStateService: widget.inputStateService,
-                                authProvider: widget.authProvider,
-                                currentUser: widget.currentUser,
-                                forumService: widget.forumService,
-                                reply: nestedReply,
-                                followService: widget.followService,
-                                infoProvider: widget.infoProvider,
-                                floor: 0, // 嵌套不显示楼层
-                                postId: widget.postId,
-                                onActionSuccess: _loadReplies, // 回调刷新
+                return StreamBuilder<User?>(
+                  stream: widget.authProvider.currentUserStream,
+                  initialData: widget.authProvider.currentUser,
+                  builder: (context, authSnapshot) {
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // 渲染顶层回复项
+                          PostReplyItem(
+                            inputStateService: widget.inputStateService,
+                            authProvider: widget.authProvider,
+                            followService: widget.followService,
+                            infoProvider: widget.infoProvider,
+                            currentUser: authSnapshot.data,
+                            forumService: widget.forumService,
+                            reply: topReply,
+                            floor: topLevelReplies.length - index,
+                            postId: widget.postId,
+                            onActionSuccess: _loadReplies, // 回调刷新
+                          ),
+                          // 渲染嵌套回复
+                          if (children.isNotEmpty)
+                            Padding(
+                              padding: const EdgeInsets.only(
+                                  left: 32.0, top: 8.0, bottom: 8.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: children.map((nestedReply) {
+                                  return Padding(
+                                    padding: const EdgeInsets.only(top: 8.0),
+                                    child: PostReplyItem(
+                                      inputStateService:
+                                          widget.inputStateService,
+                                      authProvider: widget.authProvider,
+                                      currentUser: authSnapshot.data,
+                                      forumService: widget.forumService,
+                                      reply: nestedReply,
+                                      followService: widget.followService,
+                                      infoProvider: widget.infoProvider,
+                                      floor: 0,
+                                      // 嵌套不显示楼层
+                                      postId: widget.postId,
+                                      onActionSuccess: _loadReplies, // 回调刷新
+                                    ),
+                                  );
+                                }).toList(),
                               ),
-                            );
-                          }).toList(),
-                        ),
+                            ),
+                          // 分隔线
+                          if (index < topLevelReplies.length - 1)
+                            const Divider(
+                                height: 32, thickness: 0.5, indent: 48),
+                        ],
                       ),
-                    // 分隔线
-                    if (index < topLevelReplies.length - 1)
-                      const Divider(height: 32, thickness: 0.5, indent: 48),
-                  ],
-                ),
-              );
-            },
-          );
+                    );
+                  },
+                );
+              });
 
           // **核心改动：根据 isScrollableInternally 决定是否包裹 Scrollbar**
           if (widget.isScrollableInternally) {

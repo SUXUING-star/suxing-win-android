@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -99,8 +98,6 @@ class ActivityCommentsSection extends StatelessWidget {
         itemCount: comments.length,
         itemBuilder: (context, index) {
           final comment = comments[index];
-          final userId = comment.userId;
-
           return Padding(
             padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(

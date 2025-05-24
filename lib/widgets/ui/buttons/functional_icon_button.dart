@@ -79,11 +79,15 @@ class FunctionalIconButton extends StatelessWidget {
 
     // --- 1. 解析有效状态 ---
     final bool effectiveIsEnabled = isEnabled && !isLoading;
-    final VoidCallback? effectiveOnPressed = effectiveIsEnabled ? onPressed : null;
+    final VoidCallback? effectiveOnPressed =
+        effectiveIsEnabled ? onPressed : null;
 
     // --- 2. 解析颜色 ---
     // 图标字形颜色
-    final Color defaultIconColor = iconColor ?? (iconBackgroundColor != null ? colorScheme.onPrimaryContainer : colorScheme.primary); // 优先用 onPrimaryContainer
+    final Color defaultIconColor = iconColor ??
+        (iconBackgroundColor != null
+            ? colorScheme.onPrimaryContainer
+            : colorScheme.primary); // 优先用 onPrimaryContainer
     final Color effectiveIconColor = effectiveIsEnabled
         ? defaultIconColor
         : (disabledIconColor ?? theme.disabledColor.withAlpha(150)); // 禁用颜色稍微调淡
@@ -96,8 +100,9 @@ class FunctionalIconButton extends StatelessWidget {
     // 图标背景容器边框颜色
     final Color? effectiveIconContainerBorderColor = showIconContainerBorder
         ? effectiveIsEnabled
-        ? (iconContainerBorderColor ?? colorScheme.outline.withAlpha(77)) // 默认用 outline 30%
-        : theme.disabledColor.withAlpha(51) // 禁用时更淡 20%
+            ? (iconContainerBorderColor ??
+                colorScheme.outline.withAlpha(77)) // 默认用 outline 30%
+            : theme.disabledColor.withAlpha(51) // 禁用时更淡 20%
         : null;
 
     // IconButton 按钮本身的背景色
@@ -117,7 +122,8 @@ class FunctionalIconButton extends StatelessWidget {
       iconContentWidget = SizedBox(
         width: containerSize,
         height: containerSize,
-        child: Center( // 确保指示器居中
+        child: Center(
+          // 确保指示器居中
           child: SizedBox(
             // 指示器大小基于 iconSize 更合理
             width: iconSize * 0.8,
@@ -138,22 +144,25 @@ class FunctionalIconButton extends StatelessWidget {
           color: effectiveIconBackgroundColor, // 应用图标背景色
           shape: iconBackgroundShape,
           borderRadius: (iconBackgroundShape == BoxShape.rectangle)
-              ? (iconBackgroundBorderRadius ?? BorderRadius.circular(containerSize * 0.2)) // 矩形默认给点圆角
+              ? (iconBackgroundBorderRadius ??
+                  BorderRadius.circular(containerSize * 0.2)) // 矩形默认给点圆角
               : null,
           border: effectiveIconContainerBorderColor != null
               ? Border.all(
-            color: effectiveIconContainerBorderColor,
-            width: iconContainerBorderWidth,
-          )
+                  color: effectiveIconContainerBorderColor,
+                  width: iconContainerBorderWidth,
+                )
               : null, // 应用容器边框
-          // 可以考虑添加阴影效果
-          // boxShadow: effectiveIconBackgroundColor != null ? [
-          //   BoxShadow(
-          //     color: Colors.black.withAlpha(30),
-          //     blurRadius: 3.0,
-          //     offset: Offset(0, 1),
-          //   )
-          // ] : null,
+          //可以考虑添加阴影效果
+          boxShadow: effectiveIconBackgroundColor != null
+              ? [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(30),
+                    blurRadius: 3.0,
+                    offset: Offset(0, 1),
+                  )
+                ]
+              : null,
         ),
         // 使用 Center 确保图标在容器内居中
         child: Center(
@@ -171,7 +180,8 @@ class FunctionalIconButton extends StatelessWidget {
       // IconButton 的背景色，如果设置了，会在 iconContentWidget 后面
       backgroundColor: effectiveButtonBackgroundColor,
       // disabledBackgroundColor: disabledButtonBackgroundColor, // 按钮自身的禁用背景
-      padding: EdgeInsets.zero, // Style 的 padding 设为 0, 由 IconButton 的 padding 参数控制
+      padding:
+          EdgeInsets.zero, // Style 的 padding 设为 0, 由 IconButton 的 padding 参数控制
       minimumSize: Size(containerSize, containerSize), // 最小尺寸基于容器
       // *** 设置 visualDensity 为 compact ***
       visualDensity: VisualDensity.compact, // 让按钮更紧凑，减少固有间距
@@ -180,17 +190,22 @@ class FunctionalIconButton extends StatelessWidget {
     ).copyWith(
       // 使用 WidgetStateProperty 控制覆盖色 (水波纹、悬停等)
       overlayColor: WidgetStateProperty.resolveWith<Color?>(
-            (Set<WidgetState> states) {
+        (Set<WidgetState> states) {
           // 基于按钮的前景色或图标颜色来计算覆盖色
           final Color baseOverlayColor = iconColor ?? colorScheme.primary;
           // 使用 alpha 值设置透明度 (0-255)
-          final Color hoverOverlay = hoverColor ?? baseOverlayColor.withAlpha(20); // ~8%
-          final Color focusPressOverlay = splashColor ?? baseOverlayColor.withAlpha(31); // ~12%
+          final Color hoverOverlay =
+              hoverColor ?? baseOverlayColor.withAlpha(20); // ~8%
+          final Color focusPressOverlay =
+              splashColor ?? baseOverlayColor.withAlpha(31); // ~12%
 
           if (!effectiveIsEnabled) return null; // 禁用时不显示覆盖色
 
           if (states.contains(WidgetState.hovered)) return hoverOverlay;
-          if (states.contains(WidgetState.focused) || states.contains(WidgetState.pressed)) return focusPressOverlay;
+          if (states.contains(WidgetState.focused) ||
+              states.contains(WidgetState.pressed)) {
+            return focusPressOverlay;
+          }
           return null;
         },
       ),

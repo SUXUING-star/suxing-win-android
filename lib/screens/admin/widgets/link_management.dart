@@ -1,6 +1,6 @@
 // lib/screens/admin/widgets/link_management.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 引入 Button
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 引入 Button
@@ -10,9 +10,11 @@ import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.d
 
 class LinkManagement extends StatefulWidget {
   final LinkToolService linkToolService;
+  final InputStateService inputStateService;
   const LinkManagement({
     super.key,
     required this.linkToolService,
+    required this.inputStateService,
   });
 
   @override
@@ -199,7 +201,9 @@ class _LinkManagementState extends State<LinkManagement>
       final result = await showDialog<Map<String, dynamic>>(
         // 指定泛型类型
         context: context,
-        builder: (context) => const LinkFormDialog(),
+        builder: (context) => LinkFormDialog(
+          inputStateService: widget.inputStateService,
+        ),
       );
 
       if (result != null && mounted) {
@@ -223,7 +227,10 @@ class _LinkManagementState extends State<LinkManagement>
       final result = await showDialog<Map<String, dynamic>>(
         // 指定泛型类型
         context: context,
-        builder: (context) => LinkFormDialog(link: link),
+        builder: (context) => LinkFormDialog(
+          link: link,
+          inputStateService: widget.inputStateService,
+        ),
       );
 
       if (result != null && mounted) {

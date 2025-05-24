@@ -1,6 +1,7 @@
 // lib/screens/collection/game_collection_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
@@ -18,12 +19,16 @@ class GameCollectionListScreen extends StatefulWidget {
   final String collectionType;
   final String title;
   final AuthProvider authProvider;
+  final GameCollectionService gameCollectionService;
+  final SidebarProvider sidebarProvider;
 
   const GameCollectionListScreen({
     super.key,
     required this.collectionType,
     required this.title,
     required this.authProvider,
+    required this.sidebarProvider,
+    required this.gameCollectionService,
   });
 
   @override
@@ -36,8 +41,6 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   bool _hasInitializedDependencies = false;
-  late final AuthProvider _authProvider;
-  late final GameCollectionService _gameCollectionService;
 
   @override
   void initState() {
@@ -49,8 +52,6 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _authProvider = widget.authProvider;
-      _gameCollectionService = context.read<GameCollectionService>();
     }
     if (_hasInitializedDependencies) {
       _loadCollectionGames(); // Load games directly in initState
@@ -64,7 +65,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     });
 
     try {
-      if (!_authProvider.isLoggedIn) {
+      if (!widget.authProvider.isLoggedIn) {
         setState(() {
           _errorMessage = '请先登录后再查看收藏';
           _isLoading = false;
@@ -90,7 +91,8 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           status = widget.collectionType; // Should not normally happen
       }
 
-      final games = await _gameCollectionService.getUserGamesByStatus(status);
+      final games =
+          await widget.gameCollectionService.getUserGamesByStatus(status);
       setState(() {
         _games = games;
         _isLoading = false;
@@ -150,7 +152,7 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       itemBuilder: (context, index) {
         final item = _games[index];
         return BaseGameCard(
-          currentUser: _authProvider.currentUser,
+          currentUser: widget.authProvider.currentUser,
           game: item.game,
         );
       },
@@ -190,8 +192,9 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
           Text(message),
           SizedBox(height: 24),
           FunctionalButton(
-            onPressed: () =>
-                NavigationUtils.navigateToHome(context, tabIndex: 1),
+            onPressed: () => NavigationUtils.navigateToHome(
+                widget.sidebarProvider, context,
+                tabIndex: 1),
             label: '发现游戏',
             icon: Icons.find_in_page_outlined,
           ),

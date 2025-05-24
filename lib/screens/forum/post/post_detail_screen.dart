@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -35,6 +36,8 @@ class PostDetailScreen extends StatefulWidget {
   final ForumService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
+  final SidebarProvider sidebarProvider;
   const PostDetailScreen({
     super.key,
     required this.postId,
@@ -42,6 +45,8 @@ class PostDetailScreen extends StatefulWidget {
     required this.forumService,
     required this.followService,
     required this.infoProvider,
+    required this.inputStateService,
+    required this.sidebarProvider,
     this.needHistory = true,
   });
   @override
@@ -57,10 +62,6 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   bool _isLoading = true;
   bool _hasInteraction = false; // 标记页面是否有过交互
   bool _isTogglingLock = false; // 标记是否正在切换锁定状态
-  late final ForumService _forumService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
-  late final InputStateService _inputStateService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -72,12 +73,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -89,13 +85,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   void didUpdateWidget(covariant PostDetailScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_hasInitializedDependencies &&
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       setState(() {
         _isLoading = true;
         _post = null;
+        _currentUserId = widget.authProvider.currentUserId;
       });
       _loadPostDetails();
-      _currentUserId = _authProvider.currentUserId;
     }
   }
 
@@ -134,7 +130,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     try {
       // 调用 Service 获取聚合数据
       final details =
-          await _forumService.getPostDetailsWithActions(widget.postId);
+          await widget.forumService.getPostDetailsWithActions(widget.postId);
 
       if (!mounted) return;
 
@@ -142,7 +138,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         // 成功获取数据
         if (widget.needHistory && _post?.status != PostStatus.locked) {
           try {
-            _forumService.incrementPostView(widget.postId);
+            widget.forumService.incrementPostView(widget.postId);
           } catch (viewError) {
             //
           }
@@ -213,7 +209,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     if (mounted) {
       try {
         _hasInteraction = true;
-        NavigationUtils.navigateToHome(context);
+        NavigationUtils.navigateToHome(widget.sidebarProvider, context);
       } catch (e) {
         // catch 仍然需要，万一 navigateToHome 内部炸了（虽然不太可能）
       }
@@ -241,7 +237,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理删除帖子
   Future<void> _handleDeletePost(BuildContext context) async {
     if (_post == null) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -264,7 +260,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         });
         try {
           if (_post != null) {
-            await _forumService.deletePost(_post!);
+            await widget.forumService.deletePost(_post!);
           }
           if (!mounted) return;
           _hasInteraction = true;
@@ -275,7 +271,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           } else {
             // NavigationUtils.navigateToHome 内部也应该使用一个安全的 context
             // 如果 NavigationUtils.navigateToHome 接受 context 参数，也传递 this.context
-            NavigationUtils.navigateToHome(this.context); // 使用 this.context
+            NavigationUtils.navigateToHome(
+                widget.sidebarProvider, this.context); // 使用 this.context
           }
         } catch (e) {
           if (!mounted) return;
@@ -293,7 +290,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理编辑帖子
   Future<void> _handleEditPost(BuildContext context) async {
     if (_post == null) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -316,7 +313,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 处理切换帖子锁定状态
   Future<void> _handleToggleLock(BuildContext context) async {
     if (_post == null || _isTogglingLock) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -328,7 +325,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       _isTogglingLock = true;
     });
     try {
-      await _forumService.togglePostLock(widget.postId);
+      await widget.forumService.togglePostLock(widget.postId);
       if (!mounted) return;
       showSnackbar(message: '帖子状态已切换', type: SnackbarType.success);
       _hasInteraction = true;
@@ -348,13 +345,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   }
 
   bool _checkCanLockPost() {
-    return _authProvider.isAdmin;
+    return widget.authProvider.isAdmin;
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == post.authorId;
+        : widget.authProvider.currentUserId == post.authorId;
   }
 
   // *** 构建界面 ***
@@ -397,7 +394,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     // **此时 _post 保证非 null, _userActions 也应该由 _loadPostDetails 保证非 null (即使是默认值)**
     final currentUserActions = _userActions ??
         UserPostActions.defaultActions(
-            widget.postId, _authProvider.currentUserId ?? "guest");
+            widget.postId, widget.authProvider.currentUserId ?? "guest");
 
     return Scaffold(
       appBar: const CustomAppBar(
@@ -407,24 +404,24 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         onRefresh: _refreshPost,
         child: isDesktop
             ? PostDetailDesktopLayout(
-                authProvider: _authProvider,
-                inputStateService: _inputStateService,
+                authProvider: widget.authProvider,
+                inputStateService: widget.inputStateService,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
-                forumService: _forumService,
+                forumService: widget.forumService,
                 infoProvider: widget.infoProvider,
-                followService: _followService,
+                followService: widget.followService,
               )
             : PostDetailMobileLayout(
-                authProvider: _authProvider,
-                inputStateService: _inputStateService,
+                authProvider: widget.authProvider,
+                inputStateService: widget.inputStateService,
                 post: _post!, // 传递 Post
                 userActions: currentUserActions,
                 postId: widget.postId,
-                followService: _followService,
-                forumService: _forumService,
+                followService: widget.followService,
+                forumService: widget.forumService,
                 infoProvider: widget.infoProvider,
                 onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
               ),
@@ -438,8 +435,8 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // 构建浮动操作按钮组 (完整)
   Widget _buildPostActionButtonsGroup(BuildContext context, Post post) {
     return StreamBuilder<User?>(
-      stream: _authProvider.currentUserStream,
-      initialData: _authProvider.currentUser,
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
       builder: (context, authSnapshot) {
         final currentUser = authSnapshot.data;
         if (currentUser == null) return const SizedBox.shrink();

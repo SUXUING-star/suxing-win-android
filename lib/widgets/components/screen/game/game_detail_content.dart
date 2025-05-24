@@ -5,11 +5,14 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 引入 GameCollectionStatus
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart'; // 确认路径
 import 'package:suxingchahui/widgets/components/screen/game/comment/game_comments_section.dart';
@@ -27,9 +30,6 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart';
 
 class GameDetailContent extends StatelessWidget {
-  final GameService gameService;
-  final GameCollectionService gameCollectionService;
-  final AuthProvider authProvider;
   final Game game;
   final bool isDesktop;
   final User? currentUser;
@@ -38,14 +38,21 @@ class GameDetailContent extends StatelessWidget {
   final Function(CollectionChangeResult)? onCollectionChanged; // 直接是回调函数
   final Map<String, dynamic>? navigationInfo;
   final bool isPreviewMode;
+  final SidebarProvider sidebarProvider;
   final UserInfoProvider infoProvider;
+  final GameService gameService;
+  final GameCollectionService gameCollectionService;
+  final AuthProvider authProvider;
   final UserFollowService followService;
   final InputStateService inputStateService;
+  final GameListFilterProvider gameListFilterProvider;
 
   const GameDetailContent({
     super.key, // 可以保留 super.key
     required this.gameService,
+    required this.sidebarProvider,
     required this.gameCollectionService,
+    required this.gameListFilterProvider,
     required this.authProvider,
     required this.infoProvider,
     required this.followService,
@@ -81,9 +88,6 @@ class GameDetailContent extends StatelessWidget {
     );
   }
 
-  // --- Section 构建方法移到 StatelessWidget 内部 ---
-  // 注意：方法签名中的 widget.game 变为 game，widget.currentUser 变为 currentUser 等
-
   Widget _buildHeaderSection(
       Duration duration, Duration delay, double slideOffset, Key key) {
     return FadeInSlideUpItem(
@@ -96,8 +100,21 @@ class GameDetailContent extends StatelessWidget {
         currentUser: currentUser,
         followService: followService,
         infoProvider: infoProvider,
+        onClickFilterGameTag: (context, tag) => _filterTag(context, tag),
+        onClickFilterGameCategory: (context, category) =>
+            _filterCategory(context, category),
       ), //直接使用成员变量
     );
+  }
+
+  void _filterCategory(BuildContext context, String category) {
+    gameListFilterProvider.setCategory(category);
+    NavigationUtils.navigateToHome(sidebarProvider, context, tabIndex: 1);
+  }
+
+  void _filterTag(BuildContext context, String tag) {
+    gameListFilterProvider.setTag(tag);
+    NavigationUtils.navigateToHome(sidebarProvider, context, tabIndex: 1);
   }
 
   Widget _buildDescriptionSection(Duration duration, Duration delay, Key key) {
@@ -227,7 +244,7 @@ class GameDetailContent extends StatelessWidget {
               gameService: gameService,
             ), //直接使用成员变量
           )
-        :  const SizedBox.shrink();
+        : const SizedBox.shrink();
   }
 
   Widget _buildNavigationSection(

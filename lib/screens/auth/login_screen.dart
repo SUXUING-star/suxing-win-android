@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/account.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/auth/widgets/account_bubble_menu.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -22,10 +23,12 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 class LoginScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final InputStateService inputStateService;
+  final SidebarProvider sidebarProvider;
   const LoginScreen({
     super.key,
     required this.authProvider,
     required this.inputStateService,
+    required this.sidebarProvider,
   });
 
   @override
@@ -157,7 +160,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (mounted) {
         const String successMessage = "登录成功~🎉";
-        NavigationUtils.navigateToHome(context, tabIndex: 0);
+        NavigationUtils.navigateToHome(widget.sidebarProvider, context,
+            tabIndex: 0);
         AppSnackBar.showSuccess(context, successMessage);
       }
     } catch (e) {

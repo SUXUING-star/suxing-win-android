@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_data_status.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../models/post/post.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import 'post_card.dart'; // 确保导入 PostCard
 
 class PostGridView extends StatelessWidget {

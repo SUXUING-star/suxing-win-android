@@ -8,7 +8,6 @@ import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 用于导航
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章
 
 import 'post_statistics_row.dart'; // 帖子统计行
@@ -81,7 +80,7 @@ class PostCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         // --- 点击卡片导航到详情页 ---
         onTap: () async {
-          final result = await NavigationUtils.pushNamed(
+          final result = await Navigator.pushNamed(
             context,
             AppRoutes.postDetail,
             arguments: post.id, // 传递帖子 ID

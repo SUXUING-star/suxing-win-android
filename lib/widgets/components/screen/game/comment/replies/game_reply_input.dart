@@ -13,7 +13,7 @@ class GameReplyInput extends StatelessWidget {
   final InputStateService inputStateService;
   final String slotName; // 直接使用 slotName
 
-  GameReplyInput({
+  const GameReplyInput({
     super.key,
     required this.currentUser,
     required this.onSubmitReply,

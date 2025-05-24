@@ -4,8 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-import '../../app.dart'; // For mainNavigatorKey
-import '../../routes/app_routes.dart'; // For route constants
+import 'package:suxingchahui/app.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 
 /// 全局安全导航器
 class NavigationUtils {
@@ -73,14 +73,14 @@ class NavigationUtils {
         redirectIndex: redirectIndex,
       );
     }
-    // 2. 检查是否是主 Tab 页
-    else if (_mainTabRoutes.containsKey(routeName)) {
-      final int tabIndex = _mainTabRoutes[routeName]!;
-      // 直接调用 navigateToHome 切换 Tab，不推送新路由
-      navigateToHome(context, tabIndex: tabIndex);
-      // 返回 null Future 以匹配签名
-      return Future.value(null as T?);
-    }
+    // // 2. 检查是否是主 Tab 页
+    // else if (_mainTabRoutes.containsKey(routeName)) {
+    //   final int tabIndex = _mainTabRoutes[routeName]!;
+    //   // 直接调用 navigateToHome 切换 Tab，不推送新路由
+    //   navigateToHome(context, tabIndex: tabIndex);
+    //   // 返回 null Future 以匹配签名
+    //   return Future.value(null as T?);
+    // }
     // 3. 其他路由正常推送
     else {
       return _safeCall(() =>
@@ -112,14 +112,14 @@ class NavigationUtils {
         redirectIndex: redirectIndex,
       );
     }
-    // 2. 检查是否是主 Tab 页
-    else if (_mainTabRoutes.containsKey(routeName)) {
-      final int tabIndex = _mainTabRoutes[routeName]!;
-      // 替换为主 Tab 页，本质上也是切换 Tab
-      navigateToHome(context, tabIndex: tabIndex);
-      // 返回 null Future
-      return Future.value(null as T?);
-    }
+    // // 2. 检查是否是主 Tab 页
+    // else if (_mainTabRoutes.containsKey(routeName)) {
+    //   final int tabIndex = _mainTabRoutes[routeName]!;
+    //   // 替换为主 Tab 页，本质上也是切换 Tab
+    //   navigateToHome(context, tabIndex: tabIndex);
+    //   // 返回 null Future
+    //   return Future.value(null as T?);
+    // }
     // 3. 其他路由正常替换
     else {
       return _safeCall(() => _getRootNavigator().pushReplacementNamed(routeName,
@@ -164,7 +164,7 @@ class NavigationUtils {
     _safeCallSync(() => _getRootNavigator().popUntil((route) => route.isFirst));
   }
 
-  static void navigateToHome(BuildContext context, {int tabIndex = 0}) {
+  static void navigateToHome(SidebarProvider sidebarProvider,BuildContext context, {int tabIndex = 0}) {
     // 简单的范围检查 (基于 _mainTabRoutes 的大小)
     if (tabIndex < 0 || tabIndex >= _mainTabRoutes.length) {
       tabIndex = 0; // 索引无效则重置为 0
@@ -186,12 +186,12 @@ class NavigationUtils {
           Provider.of<SidebarProvider>(providerContext, listen: false)
               .setCurrentIndex(tabIndex);
         } catch (e) {
-          print(
-              "NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");
+          //print(
+          //    "NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");
         }
       } else {
-        print(
-            "NavigationUtils Error: mainNavigatorKey.currentContext is null in navigateToHome.");
+        // print(
+        //     "NavigationUtils Error: mainNavigatorKey.currentContext is null in navigateToHome.");
       }
     });
   }
@@ -238,8 +238,8 @@ class NavigationUtils {
     // 返回值是 Future<bool>
     final rootContext = mainNavigatorKey.currentContext;
     if (rootContext == null) {
-      print(
-          "NavigationUtils Error: Cannot show login dialog, root context is null.");
+      // print(
+      //     "NavigationUtils Error: Cannot show login dialog, root context is null.");
       return false; // 无法显示对话框，返回 false
     }
 
@@ -323,8 +323,8 @@ class NavigationUtils {
         // 确保 Navigator 存在
         _getRootNavigator();
         navigateFunction();
-      } catch (e, s) {
-        print("NavigationUtils _safeCallSync Error: $e\n$s");
+      } catch (e) {
+        // print("NavigationUtils _safeCallSync Error: $e\n$s");
       }
     });
   }

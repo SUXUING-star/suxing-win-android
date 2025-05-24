@@ -40,7 +40,6 @@ class CalendarView extends StatelessWidget {
         calculatedMissedDays = missedDays; // 数据加载中或失败时，使用传入值
       }
     }
-    // --- 漏签天数计算结束 ---
 
     return Card(
       elevation: 2,
@@ -489,8 +488,8 @@ class CalendarView extends StatelessWidget {
           // if (date.year != selectedYear || date.month != selectedMonth) return null;
         } catch (e) {
           // 如果 'yyyy-MM-dd' 失败，尝试提取最后的数字部分 (兼容 'MM-dd' 或 'dd')
-          print(
-              'Warning: Parsing date string "$dayValue" failed, attempting fallback: $e');
+          //print(
+          //   'Warning: Parsing date string "$dayValue" failed, attempting fallback: $e');
           final parts = dayValue.split('-');
           if (parts.isNotEmpty) {
             dayOfMonth = int.tryParse(parts.last);
@@ -503,8 +502,8 @@ class CalendarView extends StatelessWidget {
     if (dayOfMonth != null && dayOfMonth > 0 && dayOfMonth <= daysInMonth) {
       return dayOfMonth;
     }
-    print(
-        'Warning: Invalid day value parsed or out of range: $dayValue -> $dayOfMonth');
+    // print(
+    //     'Warning: Invalid day value parsed or out of range: $dayValue -> $dayOfMonth');
     return null; // 返回 null 表示无效
   }
 
@@ -542,4 +541,4 @@ class CalendarView extends StatelessWidget {
     }
     return missedDays;
   }
-} // End of CalendarView class
+}

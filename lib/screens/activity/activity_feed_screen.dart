@@ -2,9 +2,8 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // For HapticFeedback
-import 'package:hive/hive.dart'; // For cache watching (optional but kept)
-import 'package:provider/provider.dart';
+import 'package:flutter/services.dart';
+import 'package:hive/hive.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -871,7 +870,6 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Builds the CollapsibleActivityFeed widget.
   Widget _buildMainFeedContent() {
     return CollapsibleActivityFeed(
-      // Use a key that changes only when necessary (e.g., collapse mode)
       key: ValueKey('public_feed_${_collapseMode.index}'),
       currentUser: _authProvider.currentUser,
       followService: _followService,

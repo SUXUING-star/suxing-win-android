@@ -106,95 +106,85 @@ class _GameCommentItemState extends State<GameCommentItem>
     final bool isDisabled = isLocallyDeleting ||
         isLocallyUpdating ||
         (isReply ? false : (widget.isDeleting || widget.isUpdating));
-    return StreamBuilder<User?>(
-      stream: widget.authProvider.currentUserStream,
-      initialData: widget.authProvider.currentUser,
-      builder: (context, authSnapshot) {
-        final currentUser = authSnapshot.data;
-        if (currentUser == null) return const SizedBox.shrink();
-        final isAdmin = currentUser.isAdmin;
-        final isAuthor = currentUser.id == item.userId;
-        final bool canDelete = isAdmin ? true : isAuthor;
-        if (!canDelete) return const SizedBox.shrink();
-        return StylishPopupMenuButton<String>(
-          icon: Icons.more_vert,
-          iconSize: isReply ? 18 : 20,
-          iconColor: Colors.grey[600],
-          triggerPadding: const EdgeInsets.all(0),
-          tooltip: isReply ? '回复选项' : '评论选项',
-          menuColor: theme.canvasColor,
-          elevation: 2.0,
-          itemHeight: 40,
-          // 按钮整体是否可用
-          isEnabled: !isDisabled,
-          // 如果正在进行任何相关操作，则禁用
-          items: [
-            if (isAuthor)
-              StylishMenuItemData(
-                value: 'edit',
-                // 编辑按钮本身不显示 loading，依赖 isEnabled
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined,
-                        size: isReply ? 16 : 18,
-                        color: theme.colorScheme.primary),
+    if (widget.currentUser == null) return const SizedBox.shrink();
+    final bool isAdmin = widget.currentUser?.isAdmin ?? false;
+    final bool isAuthor = widget.currentUser?.id == item.userId;
+    final bool canDelete = isAdmin ? true : isAuthor;
+    if (!canDelete) return const SizedBox.shrink();
+    return StylishPopupMenuButton<String>(
+      icon: Icons.more_vert,
+      iconSize: isReply ? 18 : 20,
+      iconColor: Colors.grey[600],
+      triggerPadding: const EdgeInsets.all(0),
+      tooltip: isReply ? '回复选项' : '评论选项',
+      menuColor: theme.canvasColor,
+      elevation: 2.0,
+      itemHeight: 40,
+      // 按钮整体是否可用
+      isEnabled: !isDisabled,
+      // 如果正在进行任何相关操作，则禁用
+      items: [
+        if (isAuthor)
+          StylishMenuItemData(
+            value: 'edit',
+            // 编辑按钮本身不显示 loading，依赖 isEnabled
+            child: Row(
+              children: [
+                Icon(Icons.edit_outlined,
+                    size: isReply ? 16 : 18, color: theme.colorScheme.primary),
+                SizedBox(width: isReply ? 8 : 10),
+                const Text('编辑'),
+              ],
+            ),
+            // 编辑项是否可用 (如果正在删除中，则不可编辑)
+            enabled:
+                !isLocallyDeleting && !(isReply ? false : widget.isDeleting),
+          ),
+        if (canDelete)
+          StylishMenuItemData(
+            value: 'delete',
+            child: isLocallyDeleting
+                ? Row(children: [
+                    SizedBox(
+                        width: isReply ? 16 : 18,
+                        height: isReply ? 16 : 18,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: theme.disabledColor)),
                     SizedBox(width: isReply ? 8 : 10),
-                    const Text('编辑'),
-                  ],
-                ),
-                // 编辑项是否可用 (如果正在删除中，则不可编辑)
-                enabled: !isLocallyDeleting &&
-                    !(isReply ? false : widget.isDeleting),
-              ),
-            if (canDelete)
-              StylishMenuItemData(
-                value: 'delete',
-                child: isLocallyDeleting
-                    ? Row(children: [
-                        SizedBox(
-                            width: isReply ? 16 : 18,
-                            height: isReply ? 16 : 18,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: theme.disabledColor)),
-                        SizedBox(width: isReply ? 8 : 10),
-                        Text('删除中...',
-                            style: TextStyle(color: theme.disabledColor)),
-                      ])
-                    : Row(children: [
-                        Icon(Icons.delete_outline,
-                            size: isReply ? 16 : 18,
-                            color: theme.colorScheme.error),
-                        SizedBox(width: isReply ? 8 : 10),
-                        Text('删除',
-                            style: TextStyle(color: theme.colorScheme.error)),
-                      ]),
-                // 删除项是否可用 (如果正在删除中，则不可用)
-                enabled: !isLocallyDeleting &&
-                    !(isReply ? false : widget.isDeleting),
-              ),
-          ],
-          onSelected: (value) {
-            // 防止在 loading 状态下触发
-            if (isDisabled) return;
+                    Text('删除中...',
+                        style: TextStyle(color: theme.disabledColor)),
+                  ])
+                : Row(children: [
+                    Icon(Icons.delete_outline,
+                        size: isReply ? 16 : 18,
+                        color: theme.colorScheme.error),
+                    SizedBox(width: isReply ? 8 : 10),
+                    Text('删除',
+                        style: TextStyle(color: theme.colorScheme.error)),
+                  ]),
+            // 删除项是否可用 (如果正在删除中，则不可用)
+            enabled:
+                !isLocallyDeleting && !(isReply ? false : widget.isDeleting),
+          ),
+      ],
+      onSelected: (value) {
+        // 防止在 loading 状态下触发
+        if (isDisabled) return;
 
-            switch (value) {
-              case 'edit':
-                // 再次检查是否可编辑（虽然按钮已禁用，双重保险）
-                if (!isLocallyDeleting &&
-                    !(isReply ? false : widget.isDeleting)) {
-                  _showEditDialog(context, item);
-                }
-                break;
-              case 'delete':
-                // 再次检查是否可删除
-                if (!isLocallyDeleting &&
-                    !(isReply ? false : widget.isDeleting)) {
-                  _showDeleteDialog(context, item);
-                }
-                break;
+        switch (value) {
+          case 'edit':
+            // 再次检查是否可编辑（虽然按钮已禁用，双重保险）
+            if (!isLocallyDeleting && !(isReply ? false : widget.isDeleting)) {
+              _showEditDialog(context, item);
             }
-          },
-        );
+            break;
+          case 'delete':
+            // 再次检查是否可删除
+            if (!isLocallyDeleting && !(isReply ? false : widget.isDeleting)) {
+              _showDeleteDialog(context, item);
+            }
+            break;
+        }
       },
     );
   }

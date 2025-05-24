@@ -363,7 +363,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                             // _showWebView = false; // 先隐藏
                             // Future.delayed(Duration(milliseconds: 50), () => setState(()=> _showWebView = true));
                             _embedUrl =
-                                _embedUrl! + ""; // 技巧：稍微改变URL（如加个空串）或改变Key来强制刷新
+                                _embedUrl!; // 技巧：稍微改变URL（如加个空串）或改变Key来强制刷新
                           });
                         },
                         child: const Text("重试"),

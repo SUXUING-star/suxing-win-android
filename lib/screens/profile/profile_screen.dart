@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -34,11 +35,13 @@ class ProfileScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final UserService userService;
   final InputStateService inputStateService;
+  final SidebarProvider sidebarProvider;
   const ProfileScreen({
     super.key,
     required this.authProvider,
     required this.userService,
     required this.inputStateService,
+    required this.sidebarProvider,
   });
 
   @override
@@ -55,8 +58,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
   static const Duration _minRefreshInterval = Duration(minutes: 1);
-  late final AuthProvider _authProvider;
-  late final UserService _userService;
   late final RateLimitedFileUpload _fileUploadService;
   String? _currentUserId;
 
@@ -75,13 +76,11 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _authProvider = widget.authProvider;
-      _userService = widget.userService;
       _fileUploadService = context.read<RateLimitedFileUpload>();
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
     }
   }
 
@@ -91,10 +90,10 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (!mounted) return;
 
     if (state == AppLifecycleState.resumed) {
-      if (_currentUserId != _authProvider.currentUserId) {
+      if (_currentUserId != widget.authProvider.currentUserId) {
         if (mounted) {
           setState(() {
-            _currentUserId = _authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId;
           });
         }
       }
@@ -107,10 +106,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didUpdateWidget(covariant ProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -125,10 +124,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _handleVisibilityChange(VisibilityInfo info) {
     final bool currentlyVisible = info.visibleFraction > 0;
 
-    if (_currentUserId != _authProvider.currentUserId) {
+    if (_currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -141,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (_isVisible) {
             _triggerInitialLoad(); // 这个会检查是否需要加载主用户信息
             // 如果可见，已登录，且经验数据从未加载过 (或上次加载失败)
-            if (_authProvider.isLoggedIn &&
+            if (widget.authProvider.isLoggedIn &&
                 (!_expDataLoadedOnce || _expDataError != null)) {
               _loadDailyExperienceProgress();
             }
@@ -155,7 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
   // 加载每日经验进度数据的方法
   Future<void> _loadDailyExperienceProgress({bool forceRefresh = false}) async {
-    if (!mounted || !_authProvider.isLoggedIn) {
+    if (!mounted || !widget.authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           // 如果未登录，清空数据
@@ -186,7 +185,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     try {
-      final data = await _userService.getDailyExperienceProgress();
+      final data = await widget.userService.getDailyExperienceProgress();
       if (mounted) {
         setState(() {
           _dailyProgressData = data;
@@ -212,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           setState(() {
             _isInitialized = true;
           });
-          if (_authProvider.isLoggedIn && !_expDataLoadedOnce) {
+          if (widget.authProvider.isLoggedIn && !_expDataLoadedOnce) {
             // 如果已登录且经验数据从未加载过
             _loadDailyExperienceProgress();
           }
@@ -239,7 +238,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
 
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           _error = null;
@@ -260,8 +259,8 @@ class _ProfileScreenState extends State<ProfileScreen>
     });
 
     try {
-      await _authProvider.refreshUserState();
-      if (mounted && _authProvider.isLoggedIn) {
+      await widget.authProvider.refreshUserState();
+      if (mounted && widget.authProvider.isLoggedIn) {
         await _loadDailyExperienceProgress(forceRefresh: true);
       }
     } catch (e) {
@@ -281,7 +280,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showEditProfileDialog(User currentUser, BuildContext context) {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -301,8 +300,9 @@ class _ProfileScreenState extends State<ProfileScreen>
         if (newUsername.trim() == currentUser.username) return;
 
         try {
-          await _userService.updateUserProfile(username: newUsername.trim());
-          await _authProvider.refreshUserState();
+          await widget.userService
+              .updateUserProfile(username: newUsername.trim());
+          await widget.authProvider.refreshUserState();
 
           if (!mounted) return;
           AppSnackBar.showSuccess(this.context, '用户名更新成功');
@@ -315,7 +315,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   void _showLogoutDialog(BuildContext context) {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showWarning(context, "你没登录你登出干什么");
       return;
     }
@@ -330,7 +330,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       iconColor: Colors.orange,
       onConfirm: () async {
         try {
-          await _authProvider.signOut();
+          await widget.authProvider.signOut();
           if (mounted) {
             setState(() {
               _error = null;
@@ -342,7 +342,8 @@ class _ProfileScreenState extends State<ProfileScreen>
               _expDataError = null;
               _expDataLoadedOnce = false;
             });
-            NavigationUtils.navigateToHome(this.context, tabIndex: 0);
+            NavigationUtils.navigateToHome(widget.sidebarProvider, this.context,
+                tabIndex: 0);
           }
         } catch (e) {
           if (!mounted) return;
@@ -352,10 +353,9 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  List<ProfileMenuItem> _getMenuItems(
-      AuthProvider authProvider, User? currentUser) {
+  List<ProfileMenuItem> _getMenuItems(bool isAdmin, User? currentUser) {
     return [
-      if (authProvider.isAdmin)
+      if (isAdmin)
         ProfileMenuItem(
             icon: Icons.admin_panel_settings,
             title: '管理员面板',
@@ -439,10 +439,10 @@ class _ProfileScreenState extends State<ProfileScreen>
       BuildContext context, String? avatarUrl) async {
     if (!mounted) return;
     try {
-      await _userService.updateUserProfile(avatar: avatarUrl);
+      await widget.userService.updateUserProfile(avatar: avatarUrl);
 
-      await _authProvider.refreshUserState();
-      if (mounted && _authProvider.isLoggedIn) {
+      await widget.authProvider.refreshUserState();
+      if (mounted && widget.authProvider.isLoggedIn) {
         await _loadDailyExperienceProgress(forceRefresh: true);
       }
       if (!mounted) return;
@@ -464,7 +464,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        appBar: const CustomAppBar(title: '个人中心', actions: const []),
+        appBar: const CustomAppBar(title: '个人中心', actions: []),
         body: RefreshIndicator(
           onRefresh: () => _refreshProfile(),
           child: _buildProfileContent(useDesktopLayout),
@@ -494,140 +494,141 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Widget _buildProfileContent(bool useDesktopLayout) {
-    if (!_authProvider.isLoggedIn) {
-      if (_isInitialized ||
-          _error != null ||
-          _isRefreshing ||
-          _dailyProgressData != null) {
-        Future.microtask(() {
-          if (mounted) {
-            setState(() {
-              _error = null;
-              _isInitialized = false; // 可以重置初始化状态，以便下次可见时重新触发
-              _isRefreshing = false;
-              _lastRefreshTime = null;
-              _dailyProgressData = null;
-              _isLoadingExpData = false;
-              _expDataError = null;
-              _expDataLoadedOnce = false;
-            });
+    return StreamBuilder<User?>(
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
+        builder: (context, authSnapshot) {
+          final User? currentUser = authSnapshot.data;
+          if (currentUser == null) {
+            if (_isInitialized ||
+                _error != null ||
+                _isRefreshing ||
+                _dailyProgressData != null) {
+              Future.microtask(() {
+                if (mounted) {
+                  setState(() {
+                    _error = null;
+                    _isInitialized = false; // 可以重置初始化状态，以便下次可见时重新触发
+                    _isRefreshing = false;
+                    _lastRefreshTime = null;
+                    _dailyProgressData = null;
+                    _isLoadingExpData = false;
+                    _expDataError = null;
+                    _expDataLoadedOnce = false;
+                  });
+                }
+              });
+            }
+            return FadeInSlideUpItem(
+                duration: const Duration(milliseconds: 300),
+                child: const LoginPromptWidget());
           }
-        });
-      }
-      return FadeInSlideUpItem(
-          duration: const Duration(milliseconds: 300),
-          child: const LoginPromptWidget());
-    }
 
-    // 已登录状态
-    final User? currentUser = _authProvider.currentUser;
-
-    // 加载状态处理
-    if (_isRefreshing && currentUser == null && _error == null) {
-      return LoadingWidget.fullScreen(message: "正在刷新...");
-    } else if (!_isInitialized && currentUser == null && _error == null) {
-      return LoadingWidget.fullScreen(message: "正在加载个人资料");
-    } else if (_error != null) {
-      return Center(
-          child: CustomErrorWidget(
-              errorMessage: _error!, onRetry: () => _refreshProfile()));
-    } else if (currentUser == null) {
-      // 理论上，如果 isLoggedIn 为 true，currentUser 不应该为 null
-      // 但为了健壮性，保留这个检查
-      return Center(
-          child: CustomErrorWidget(
-              errorMessage: "无法获取用户信息，请尝试刷新。",
-              onRetry: () => _refreshProfile()));
-    }
-
-    // 获取菜单项，现在直接传递 _authProvider
-    final menuItems = _getMenuItems(_authProvider, currentUser);
-
-    return Stack(
-      children: [
-        if (useDesktopLayout)
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  flex: 1,
-                  child: FadeInSlideLRItem(
-                    slideDirection: SlideDirection.left,
-                    duration: const Duration(milliseconds: 500),
-                    delay: const Duration(milliseconds: 100),
-                    child: DesktopProfileCard(
-                      user: currentUser,
-                      onEditProfile: () => _showEditProfileDialog(
-                          currentUser, context), // context 来自 State
-                      onLogout: () =>
-                          _showLogoutDialog(context), // context 来自 State
-                      onUploadStateChanged: _handleUploadStateChanged,
-                      fileUpload: _fileUploadService,
-                      onUploadSuccess: (avatarUrl) => _handleUploadSuccess(
-                          context, avatarUrl), // context 来自 State
-                      dailyProgressData: _dailyProgressData,
-                      isLoadingExpData: _isLoadingExpData,
-                      expDataError: _expDataError,
-                      onRefreshExpData: () =>
-                          _loadDailyExperienceProgress(forceRefresh: true),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 24),
-                Expanded(
-                  flex: 2,
-                  child: FadeInSlideLRItem(
-                    slideDirection: SlideDirection.right,
-                    duration: const Duration(milliseconds: 500),
-                    delay: const Duration(milliseconds: 250),
-                    child: DesktopMenuGrid(menuItems: menuItems),
-                  ),
-                ),
-              ],
-            ),
-          )
-        else
-          ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
+          // 加载状态处理
+          if (_isRefreshing && _error == null) {
+            return LoadingWidget.fullScreen(message: "正在刷新...");
+          } else if (!_isInitialized && _error == null) {
+            return LoadingWidget.fullScreen(message: "正在加载个人资料");
+          } else if (_error != null) {
+            return Center(
+                child: CustomErrorWidget(
+                    errorMessage: _error!, onRetry: () => _refreshProfile()));
+          }
+          final bool isAdmin = currentUser.isAdmin;
+          // 获取菜单项，现在直接传递 _authProvider
+          final menuItems = _getMenuItems(isAdmin, currentUser);
+          return Stack(
             children: [
-              FadeInSlideUpItem(
-                duration: const Duration(milliseconds: 400),
-                delay: const Duration(milliseconds: 100),
-                child: MobileProfileHeader(
-                  user: currentUser,
-                  onEditProfile: () => _showEditProfileDialog(
-                      currentUser, context), // context 来自 State
-                  onLogout: () =>
-                      _showLogoutDialog(context), // context 来自 State
-                  fileUpload: _fileUploadService,
-                  onUploadStateChanged: _handleUploadStateChanged,
-                  onUploadSuccess: (avatarUrl) => _handleUploadSuccess(
-                      context, avatarUrl), // context 来自 State
-                  dailyProgressData: _dailyProgressData,
-                  isLoadingExpData: _isLoadingExpData,
-                  expDataError: _expDataError,
-                  onRefreshExpData: () =>
-                      _loadDailyExperienceProgress(forceRefresh: true),
+              if (useDesktopLayout)
+                Padding(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: FadeInSlideLRItem(
+                          slideDirection: SlideDirection.left,
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 100),
+                          child: DesktopProfileCard(
+                            user: currentUser,
+                            onEditProfile: () =>
+                                _showEditProfileDialog(currentUser, context),
+                            // context 来自 State
+                            onLogout: () => _showLogoutDialog(context),
+                            // context 来自 State
+                            onUploadStateChanged: _handleUploadStateChanged,
+                            fileUpload: _fileUploadService,
+                            onUploadSuccess: (avatarUrl) =>
+                                _handleUploadSuccess(context, avatarUrl),
+                            // context 来自 State
+                            dailyProgressData: _dailyProgressData,
+                            isLoadingExpData: _isLoadingExpData,
+                            expDataError: _expDataError,
+                            onRefreshExpData: () =>
+                                _loadDailyExperienceProgress(
+                                    forceRefresh: true),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 24),
+                      Expanded(
+                        flex: 2,
+                        child: FadeInSlideLRItem(
+                          slideDirection: SlideDirection.right,
+                          duration: const Duration(milliseconds: 500),
+                          delay: const Duration(milliseconds: 250),
+                          child: DesktopMenuGrid(menuItems: menuItems),
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              else
+                ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  children: [
+                    FadeInSlideUpItem(
+                      duration: const Duration(milliseconds: 400),
+                      delay: const Duration(milliseconds: 100),
+                      child: MobileProfileHeader(
+                        user: currentUser,
+                        onEditProfile: () =>
+                            _showEditProfileDialog(currentUser, context),
+                        // context 来自 State
+                        onLogout: () => _showLogoutDialog(context),
+                        // context 来自 State
+                        fileUpload: _fileUploadService,
+                        onUploadStateChanged: _handleUploadStateChanged,
+                        onUploadSuccess: (avatarUrl) =>
+                            _handleUploadSuccess(context, avatarUrl),
+                        // context 来自 State
+                        dailyProgressData: _dailyProgressData,
+                        isLoadingExpData: _isLoadingExpData,
+                        expDataError: _expDataError,
+                        onRefreshExpData: () =>
+                            _loadDailyExperienceProgress(forceRefresh: true),
+                      ),
+                    ),
+                    FadeInSlideUpItem(
+                      duration: const Duration(milliseconds: 450),
+                      delay: const Duration(milliseconds: 200),
+                      child: MobileProfileMenuList(menuItems: menuItems),
+                    ),
+                    const SizedBox(height: 80),
+                  ],
                 ),
-              ),
-              FadeInSlideUpItem(
-                duration: const Duration(milliseconds: 450),
-                delay: const Duration(milliseconds: 200),
-                child: MobileProfileMenuList(menuItems: menuItems),
-              ),
-              const SizedBox(height: 80),
+              if (_isRefreshing)
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black.withSafeOpacity(0.1),
+                    child: Center(
+                        child: CircularProgressIndicator(strokeWidth: 2)),
+                  ),
+                ),
             ],
-          ),
-        if (_isRefreshing)
-          Positioned.fill(
-            child: Container(
-              color: Colors.black.withSafeOpacity(0.1),
-              child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
-            ),
-          ),
-      ],
-    );
+          );
+        });
   }
 }

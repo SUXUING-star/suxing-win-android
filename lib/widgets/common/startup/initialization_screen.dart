@@ -40,7 +40,6 @@ class _InitializationScreenState extends State<InitializationScreen> {
       : 'assets/images/cappo1.gif';
 
   Widget _buildWindowsControlsSection() {
-
     return Positioned(
       // 顶层放置一个 Positioned Widget 作为标题栏区域
       top: 0, // 紧贴顶部

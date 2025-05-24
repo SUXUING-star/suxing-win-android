@@ -4,8 +4,8 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/components/screen/game/category/game_category_tag.dart';
 import 'package:suxingchahui/widgets/components/screen/game/tag/game_tags.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -16,6 +16,9 @@ class GameHeader extends StatelessWidget {
   final User? currentUser;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
+  final Function(BuildContext context, String category)?
+      onClickFilterGameCategory;
+  final Function(BuildContext context, String tag)? onClickFilterGameTag;
 
   const GameHeader({
     super.key,
@@ -23,6 +26,8 @@ class GameHeader extends StatelessWidget {
     required this.currentUser,
     required this.infoProvider,
     required this.followService,
+    this.onClickFilterGameTag,
+    this.onClickFilterGameCategory,
   });
 
   @override
@@ -50,6 +55,8 @@ class GameHeader extends StatelessWidget {
             Row(
               children: [
                 GameCategoryTag(
+                  needOnClick: true,
+                  onClickFilterGameCategory: onClickFilterGameCategory,
                   category: game.category,
                   isMini: false,
                 ),
@@ -96,10 +103,11 @@ class GameHeader extends StatelessWidget {
             if (game.tags.isNotEmpty) ...[
               SizedBox(height: 12),
               GameTags(
+                onClickFilterGameTag: onClickFilterGameTag,
                 game: game,
                 wrap: false,
                 maxTags: 5,
-                navigateToGameListOnClick: true,
+                needOnClick: true,
               ),
             ],
             SizedBox(height: 12),
@@ -118,9 +126,6 @@ class GameHeader extends StatelessWidget {
       color: Colors.grey[600],
       height: 1.4,
     );
-    final userId = game.authorId;
-
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

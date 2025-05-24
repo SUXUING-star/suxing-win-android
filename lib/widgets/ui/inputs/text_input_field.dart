@@ -1,7 +1,6 @@
 // lib/widgets/ui/inputs/text_input_field.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 使用 AppText
 import '../menus/context_menu_bubble.dart'; // 使用 ContextMenuBubble
@@ -94,14 +93,9 @@ class _TextInputFieldState extends State<TextInputField> {
     _controller.addListener(_handleControllerChanged);
     _focusNode.addListener(_handleFocusChange);
 
-    // 如果这个 TextInputField 被 FormTextInputField 使用 (widget.onChanged 就是 field.didChange),
-    // 并且 controller 初始化后有文本 (可能来自 InputStateService 或外部 controller)，
-    // 需要在下一帧通知 FormFieldState 更新其内部 value。
     if (widget.onChanged != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        // 再次检查 widget 是否仍然 mounted 且 onChanged 仍然有效
         if (mounted && widget.onChanged != null) {
-          // FormFieldState.didChange() 内部会检查值是否真的改变了
           widget.onChanged!(_controller.text);
         }
       });
@@ -109,27 +103,15 @@ class _TextInputFieldState extends State<TextInputField> {
   }
 
   void _initializeController() {
-    // 优先使用 slotName
     if (widget.slotName != null && widget.slotName!.isNotEmpty) {
-      try {
-        _controller = widget.inputStateService.getController(widget.slotName!);
-        _usesStateService = true;
-        _isInternalController = false;
-      } catch (e) {
-        // 如果 Service 没找到，降级为内部 Controller，并打印警告
-        _controller = TextEditingController();
-        _usesStateService = false;
-        _isInternalController = true;
-      }
-    }
-    // 其次使用外部 controller
-    else if (widget.controller != null) {
+      _controller = widget.inputStateService.getController(widget.slotName!);
+      _usesStateService = true;
+      _isInternalController = false;
+    } else if (widget.controller != null) {
       _controller = widget.controller!;
       _usesStateService = false;
       _isInternalController = false;
-    }
-    // 最后创建内部 controller
-    else {
+    } else {
       _controller = TextEditingController();
       _usesStateService = false;
       _isInternalController = true;
@@ -152,59 +134,42 @@ class _TextInputFieldState extends State<TextInputField> {
 
     bool needsControllerUpdate = false;
 
-    // 判断 Controller 来源是否改变
-    bool oldWasStateService = oldSlotName != null && oldSlotName.isNotEmpty;
-    bool newIsStateService = newSlotName != null && newSlotName.isNotEmpty;
-    bool oldWasExternal = oldExternalController != null;
-    bool newIsExternal = newExternalController != null;
-    // 之前是否是因 Service 找不到而 fallback 的内部 Controller
-    bool oldWasFallbackInternal =
-        _isInternalController && oldWasStateService && !_usesStateService;
-    // 当前是否是因 Service 找不到而 fallback 的内部 Controller
-    // (需要重新检查 service 是否存在，因为可能在父级动态添加了 Provider)
-    bool newIsFallbackInternal = false;
-    if (newIsStateService) {
-      try {
-        Provider.of<InputStateService>(context, listen: false);
-      } catch (e) {
-        newIsFallbackInternal = true; // Service 应该存在但找不到，说明是 fallback
-      }
-    }
+    bool oldHadSlot = oldSlotName != null && oldSlotName.isNotEmpty;
+    bool newHasSlot = newSlotName != null && newSlotName.isNotEmpty;
+    bool oldHadExternalController = oldExternalController != null;
+    bool newHasExternalController = newExternalController != null;
 
-    if (oldWasStateService != newIsStateService || // Service 状态切换
-            (oldWasStateService &&
-                newIsStateService &&
-                oldSlotName != newSlotName) || // SlotName 改变
-            (!oldWasStateService &&
-                !newIsStateService &&
-                oldWasExternal != newIsExternal) || // 内部/外部切换
-            (!oldWasStateService &&
-                !newIsStateService &&
-                oldWasExternal &&
-                newIsExternal &&
-                oldExternalController !=
-                    newExternalController) || // 外部 Controller 实例改变
-            (oldWasFallbackInternal != newIsFallbackInternal) // Fallback 状态切换
-        ) {
+    if (oldHadSlot != newHasSlot) {
       needsControllerUpdate = true;
+    } else if (oldHadSlot && newHasSlot && oldSlotName != newSlotName) {
+      needsControllerUpdate = true;
+    } else if (!oldHadSlot && !newHasSlot) {
+      if (oldHadExternalController != newHasExternalController) {
+        needsControllerUpdate = true;
+      } else if (oldHadExternalController &&
+          newHasExternalController &&
+          oldExternalController != newExternalController) {
+        needsControllerUpdate = true;
+      }
     }
 
     if (needsControllerUpdate) {
-      // 移除旧监听器
       _controller.removeListener(_handleControllerChanged);
-      // 仅释放真正由本组件创建的内部控制器
-      if (_isInternalController &&
-          oldWidget.controller == null &&
-          (oldWidget.slotName == null || oldWasFallbackInternal)) {
+      if (_isInternalController) {
         _controller.dispose();
       }
-      // 重新初始化
       _initializeController();
-      // 添加新监听器
       _controller.addListener(_handleControllerChanged);
+
+      if (widget.onChanged != null) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && widget.onChanged != null) {
+            widget.onChanged!(_controller.text);
+          }
+        });
+      }
     }
 
-    // FocusNode 更新
     if (widget.focusNode != oldWidget.focusNode) {
       _focusNode.removeListener(_handleFocusChange);
       if (_isInternalFocusNode) {
@@ -220,15 +185,8 @@ class _TextInputFieldState extends State<TextInputField> {
     _controller.removeListener(_handleControllerChanged);
     _focusNode.removeListener(_handleFocusChange);
     _hideContextMenu();
-    // 仅释放真正由本组件创建的内部控制器（非外部传入，非Service管理，非Service fallback）
-    if (_isInternalController &&
-        widget.controller == null &&
-        widget.slotName == null) {
-      _controller.dispose();
-    } else if (_isInternalController &&
-        widget.slotName != null &&
-        !_usesStateService) {
-      // 如果是 Service fallback 产生的内部 Controller，也需要释放
+
+    if (_isInternalController) {
       _controller.dispose();
     }
     if (_isInternalFocusNode) {
@@ -238,16 +196,13 @@ class _TextInputFieldState extends State<TextInputField> {
   }
 
   void _handleControllerChanged() {
-    // 只调用外部回调
     widget.onChanged?.call(_controller.text);
-    // --- 不再调用 setState({}) ---
   }
 
   void _handleFocusChange() {
     if (!_focusNode.hasFocus) {
       _hideContextMenu();
     }
-    // 焦点变化可能影响外观，需要重绘
     if (mounted) setState(() {});
   }
 
@@ -382,19 +337,12 @@ class _TextInputFieldState extends State<TextInputField> {
     if (!widget.enabled || widget.isSubmitting) return;
 
     final text = _controller.text.trim();
-    if (text.isEmpty && widget.onSubmitted == null) return; // 如果没回调且为空，不处理
-
-    widget.onSubmitted?.call(text); // 可能提交空字符串，由外部处理
+    widget.onSubmitted?.call(text);
 
     if (widget.clearOnSubmit) {
-      // 如果使用 Service 且 Service 存在
-      if (_usesStateService &&
-          widget.slotName != null &&
-          widget.slotName!.isNotEmpty) {
+      if (_usesStateService) {
         widget.inputStateService.clearText(widget.slotName!);
-      }
-      // 否则，直接清空当前 Controller (外部或内部)
-      else {
+      } else {
         _controller.clear();
       }
     }
@@ -504,7 +452,7 @@ class _TextInputFieldState extends State<TextInputField> {
                 style: TextButton.styleFrom(
                   padding:
                       const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  minimumSize: Size(60, 44),
+                  minimumSize: const Size(60, 44),
                 ),
                 child: AppText(widget.submitButtonText), // 使用 AppText
               ),
@@ -515,22 +463,19 @@ class _TextInputFieldState extends State<TextInputField> {
   }
 }
 
-// --- ContextMenuLayoutDelegate (无修改) ---
 class _ContextMenuLayoutDelegate extends SingleChildLayoutDelegate {
   final Offset anchor;
   final Size screenSize;
   final Offset textFieldOrigin;
   final Size textFieldSize;
-  final double verticalMargin;
-  final double horizontalMargin;
+  static const verticalMargin = 10.0;
+  static const horizontalMargin = 10.0;
 
   _ContextMenuLayoutDelegate({
     required this.anchor,
     required this.screenSize,
     required this.textFieldOrigin,
     required this.textFieldSize,
-    this.verticalMargin = 10.0,
-    this.horizontalMargin = 10.0,
   });
 
   @override

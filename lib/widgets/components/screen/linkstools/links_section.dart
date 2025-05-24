@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import '../../../../models/linkstools/link.dart';
-import '../../../../services/main/linktool/link_tool_service.dart';
-import '../../form/linkform/link_form_dialog.dart';
-// --- 引入动画组件 ---
-import '../../../ui/animation/fade_in_slide_up_item.dart';
-// --- 结束引入 ---
+import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 
 class LinksSection extends StatelessWidget {
   final List<Link> links;
@@ -14,6 +13,7 @@ class LinksSection extends StatelessWidget {
   final Function() onRefresh;
   final Function(String) onLaunchURL;
   final LinkToolService linkToolService;
+  final InputStateService inputStateService;
 
   const LinksSection({
     super.key,
@@ -22,6 +22,7 @@ class LinksSection extends StatelessWidget {
     required this.onRefresh,
     required this.onLaunchURL,
     required this.linkToolService,
+    required this.inputStateService,
   });
 
   @override
@@ -99,8 +100,11 @@ class LinksSection extends StatelessWidget {
   // _showEditDialog 保持不变
   void _showEditDialog(BuildContext context, Link link) {
     showDialog(
-            context: context, builder: (context) => LinkFormDialog(link: link))
-        .then((linkData) async {
+        context: context,
+        builder: (context) => LinkFormDialog(
+              link: link,
+              inputStateService: inputStateService,
+            )).then((linkData) async {
       if (linkData != null) {
         try {
           await linkToolService.updateLink(Link.fromJson(linkData));
