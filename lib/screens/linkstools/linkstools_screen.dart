@@ -10,7 +10,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
 // --- 确保引入正确的 Service ---
-import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
@@ -40,7 +40,7 @@ class LinksToolsScreen extends StatefulWidget {
 class _LinksToolsScreenState extends State<LinksToolsScreen>
     with WidgetsBindingObserver {
   // --- 数据状态 (保持不变) ---
-  List<Link>? _links;
+  List<SiteLink>? _links;
   List<Tool>? _tools;
   String? _errorMessage;
 
@@ -136,7 +136,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
       setState(() {
         // 状态更新逻辑不变
         // Future.wait 返回的是 List<dynamic>
-        _links = List<Link>.from(results[0] as List? ?? []);
+        _links = List<SiteLink>.from(results[0] as List? ?? []);
         _tools = List<Tool>.from(results[1] as List? ?? []);
         _isLoadingData = false;
       });
@@ -180,7 +180,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
             )).then((linkData) async {
       if (linkData != null) {
         try {
-          await _linkToolService.addLink(Link.fromJson(linkData));
+          await _linkToolService.addLink(SiteLink.fromJson(linkData));
           await _loadData();
           if (!mounted) return;
           AppSnackBar.showSuccess(this.context, '添加链接成功');

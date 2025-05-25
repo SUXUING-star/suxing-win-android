@@ -1,5 +1,6 @@
 // lib/screens/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_list.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -87,7 +88,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     });
 
     try {
-      final result = await _gameService.getMyGamesWithInfo(
+      final GameList result = await _gameService.getMyGamesWithInfo(
         page: 1, // Always load page 1 initially
         pageSize: 10, // Or your preferred page size
         // sortBy: 'updateTime', // Example sorting, adjust as needed
@@ -97,8 +98,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       if (!mounted) return;
 
       setState(() {
-        _myGames = result['games'];
-        _totalPages = result['pagination']?['totalPages'] ?? 1;
+        _myGames = result.games;
+        _totalPages = result.pagination.pages;
         _isLoading = false;
       });
     } catch (e) {
@@ -138,9 +139,9 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       if (!mounted) return;
 
       setState(() {
-        _myGames.addAll(result['games']);
+        _myGames.addAll(result.games);
         _currentPage = nextPage;
-        _totalPages = result['pagination']?['totalPages'] ??
+        _totalPages = result.pagination.pages ??
             _totalPages; // Update total pages if needed
         _isFetchingMore = false;
       });
@@ -254,6 +255,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return LoadingWidget.fullScreen(
+        message: "拼命加载中",
+      );
+    }
     return StreamBuilder<User?>(
         stream: _authProvider.currentUserStream,
         initialData: _authProvider.currentUser,
@@ -281,9 +287,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     //    根据是否有面板，调用不同的 DeviceUtils 方法
     final cardRatio = DeviceUtils.calculateSimpleCardRatio(
         context); // 使用 widget 的 showTagSelection
-    if (_isLoading) {
-      return LoadingWidget.inline();
-    }
+
     // 2. 计算每行卡片数
     final cardsPerRow = DeviceUtils.calculateCardsPerRow(context);
     if (cardsPerRow <= 0) return const CustomErrorWidget(errorMessage: "渲染错误");

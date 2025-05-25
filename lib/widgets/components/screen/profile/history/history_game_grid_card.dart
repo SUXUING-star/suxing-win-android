@@ -4,8 +4,8 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import '../../../../../routes/app_routes.dart';
-import '../../../../../utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 
 /// 为游戏浏览历史屏幕的网格视图设计的卡片组件
 class HistoryGameGridCard extends StatelessWidget {
@@ -62,9 +62,12 @@ class HistoryGameGridCard extends StatelessWidget {
                       top: 8,
                       left: 8,
                       child: Container(
-                        padding: EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor.withSafeOpacity(0.8),
+                          color: Theme.of(context)
+                              .primaryColor
+                              .withSafeOpacity(0.8),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Text(
@@ -113,7 +116,9 @@ class HistoryGameGridCard extends StatelessWidget {
                           SizedBox(width: 4),
                           Text(
                             DateTimeFormatter.formatRelative(
-                              DateTime.parse(historyItem['lastViewTime']?.toString() ?? DateTime.now().toIso8601String()),
+                              DateTime.parse(
+                                  historyItem['lastViewTime']?.toString() ??
+                                      DateTime.now().toIso8601String()),
                             ),
                             style: TextStyle(
                               fontSize: 10,
@@ -165,7 +170,8 @@ class HistoryGameGridCard extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.visibility, size: 14, color: Colors.blue),
+                            Icon(Icons.visibility,
+                                size: 14, color: Colors.blue),
                             SizedBox(width: 4),
                             Text(
                               '${historyItem['viewCount'] ?? 0}次',
@@ -178,7 +184,9 @@ class HistoryGameGridCard extends StatelessWidget {
                         ),
                         Text(
                           DateTimeFormatter.formatShort(
-                            DateTime.parse(historyItem['lastViewTime']?.toString() ?? DateTime.now().toIso8601String()),
+                            DateTime.parse(
+                                historyItem['lastViewTime']?.toString() ??
+                                    DateTime.now().toIso8601String()),
                           ),
                           style: TextStyle(
                             fontSize: 10,

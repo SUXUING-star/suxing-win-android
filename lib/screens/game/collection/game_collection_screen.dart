@@ -1,8 +1,10 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/game_collection_list_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
@@ -12,8 +14,6 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/mobile_collection_layout.dart';
-import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/desktop_collection_layout.dart';
 
 class GameCollectionScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -47,7 +47,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     GameCollectionStatus.playing: 0,
     GameCollectionStatus.played: 0,
   };
-  bool _isDesktopLayout = false;
 
   User? _currentUser;
 
@@ -254,19 +253,18 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
-    final bool isDesktop = DeviceUtils.isDesktop;
-    _isDesktopLayout = isDesktop && screenSize.width > 900;
-
+    final bool isDesktopLayout =
+        DeviceUtils.isDesktop && screenSize.width > 900;
     return Scaffold(
       appBar: const CustomAppBar(
         title: '我的收藏',
       ),
-      body: _buildBody(), // 传递当前获取的登录状态
+      body: _buildBody(isDesktopLayout: isDesktopLayout), // 传递当前获取的登录状态
     );
   }
 
   // 构建 Body (逻辑基本不变，依赖状态变量)
-  Widget _buildBody() {
+  Widget _buildBody({required bool isDesktopLayout}) {
     // 1. 未登录
     if (!widget.authProvider.isLoggedIn && _error == '请先登录后再查看收藏') {
       // 明确检查错误信息
@@ -294,12 +292,41 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
     // 4. 显示正常内容 (即使 _isLoading 为 true，只要有旧数据也显示，并允许刷新)
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: _isDesktopLayout ? _buildDesktopLayout() : _buildMobileLayout(),
+      child: isDesktopLayout
+          ? _buildDesktopLayout(isActuallyDesktop: isDesktopLayout)
+          : _buildMobileLayout(isActuallyDesktop: isDesktopLayout),
+    );
+  }
+
+  Widget _buildLayoutForTab(GameCollectionTabConfig tabConfig,
+      {required bool isDesktop}) {
+    final gamesForStatus = _gameCollections[tabConfig.status] ?? [];
+    final keyPrefix = isDesktop ? 'desktop' : 'mobile';
+    final valueKey =
+        ValueKey('${keyPrefix}_${tabConfig.status}_${gamesForStatus.length}');
+
+    String? finalDesktopTitle; // 声明为可空
+    IconData? finalDesktopIcon; // 声明为可空
+
+    if (isDesktop) {
+      final count = _tabCounts[tabConfig.status] ?? 0;
+      finalDesktopTitle =
+          '${tabConfig.titleBuilder(0).replaceAllMapped(RegExp(r'(\w+)'), (match) => match.group(1)!)} (${count})';
+      finalDesktopIcon = tabConfig.icon;
+    }
+
+    return GameCollectionListLayout(
+      key: valueKey,
+      sidebarProvider: widget.sidebarProvider,
+      games: gamesForStatus,
+      collectionType: tabConfig.status,
+      desktopTitle: finalDesktopTitle,
+      desktopIcon: finalDesktopIcon,
     );
   }
 
   // 构建 Mobile 布局
-  Widget _buildMobileLayout() {
+  Widget _buildMobileLayout({required bool isActuallyDesktop}) {
     return Column(
       children: [
         TabBar(
@@ -307,47 +334,21 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
           labelColor: Theme.of(context).primaryColor,
           unselectedLabelColor: Colors.grey,
           indicatorColor: Theme.of(context).primaryColor,
-          tabs: [
-            Tab(
-              icon: const Icon(Icons.star_border),
-              // *** 使用常量作为 key 访问计数 ***
-              text:
-                  '想玩${_tabCounts[GameCollectionStatus.wantToPlay]! > 0 ? ' ${_tabCounts[GameCollectionStatus.wantToPlay]}' : ''}',
-            ),
-            Tab(
-              icon: const Icon(Icons.videogame_asset),
-              text:
-                  '在玩${_tabCounts[GameCollectionStatus.playing]! > 0 ? ' ${_tabCounts[GameCollectionStatus.playing]}' : ''}',
-            ),
-            Tab(
-              icon: const Icon(Icons.check_circle),
-              text:
-                  '玩过${_tabCounts[GameCollectionStatus.played]! > 0 ? ' ${_tabCounts[GameCollectionStatus.played]}' : ''}',
-            ),
-          ],
+          tabs: GameConstants.collectionTabs.map((tabConfig) {
+            final count = _tabCounts[tabConfig.status] ?? 0;
+            return Tab(
+              icon: Icon(tabConfig.icon),
+              text: tabConfig.titleBuilder(count),
+            );
+          }).toList(),
         ),
         Expanded(
-          // TabBarView 本身不支持直接下拉刷新，需要 RefreshIndicator 包裹在外面
           child: TabBarView(
             controller: _tabController,
-            children: [
-              // *** 调用简化的 MobileCollectionLayout，不再传递 onRefresh ***
-              MobileCollectionLayout(
-                sidebarProvider: widget.sidebarProvider,
-                games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
-                collectionType: GameCollectionStatus.wantToPlay,
-              ),
-              MobileCollectionLayout(
-                sidebarProvider: widget.sidebarProvider,
-                games: _gameCollections[GameCollectionStatus.playing] ?? [],
-                collectionType: GameCollectionStatus.playing,
-              ),
-              MobileCollectionLayout(
-                sidebarProvider: widget.sidebarProvider,
-                games: _gameCollections[GameCollectionStatus.played] ?? [],
-                collectionType: GameCollectionStatus.played,
-              ),
-            ],
+            children: GameConstants.collectionTabs.map((tabConfig) {
+              return _buildLayoutForTab(tabConfig,
+                  isDesktop: isActuallyDesktop);
+            }).toList(),
           ),
         ),
       ],
@@ -355,43 +356,23 @@ class _GameCollectionScreenState extends State<GameCollectionScreen>
   }
 
   // 构建 Desktop 布局
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout({required bool isActuallyDesktop}) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            // *** 调用简化的 DesktopCollectionLayout，不再传递 onRefresh ***
-            child: DesktopCollectionLayout(
-              sidebarProvider: widget.sidebarProvider,
-              games: _gameCollections[GameCollectionStatus.wantToPlay] ?? [],
-              collectionType: GameCollectionStatus.wantToPlay,
-              title:
-                  '想玩的游戏 (${_tabCounts[GameCollectionStatus.wantToPlay]})', // 标题中直接显示数量
-              icon: Icons.star_border,
+          for (int i = 0; i < GameConstants.collectionTabs.length; i++) ...[
+            Expanded(
+              child: Builder(builder: (context) {
+                final tabConfig = GameConstants.collectionTabs[i];
+                return _buildLayoutForTab(tabConfig,
+                    isDesktop: isActuallyDesktop);
+              }),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: DesktopCollectionLayout(
-              sidebarProvider: widget.sidebarProvider,
-              games: _gameCollections[GameCollectionStatus.playing] ?? [],
-              collectionType: GameCollectionStatus.playing,
-              title: '在玩的游戏 (${_tabCounts[GameCollectionStatus.playing]})',
-              icon: Icons.videogame_asset,
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: DesktopCollectionLayout(
-              sidebarProvider: widget.sidebarProvider,
-              games: _gameCollections[GameCollectionStatus.played] ?? [],
-              collectionType: GameCollectionStatus.played,
-              title: '玩过的游戏 (${_tabCounts[GameCollectionStatus.played]})',
-              icon: Icons.check_circle,
-            ),
-          ),
+            if (i < GameConstants.collectionTabs.length - 1)
+              const SizedBox(width: 16),
+          ],
         ],
       ),
     );

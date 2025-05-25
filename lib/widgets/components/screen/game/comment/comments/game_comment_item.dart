@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import 'package:suxingchahui/models/comment/comment.dart';
+import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
@@ -21,10 +21,10 @@ class GameCommentItem extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
   final UserFollowService followService;
-  final Comment comment;
-  final Future<void> Function(Comment comment, String newContent)
+  final GameComment comment;
+  final Future<void> Function(GameComment comment, String newContent)
       onUpdateComment;
-  final Future<void> Function(Comment comment) onDeleteComment;
+  final Future<void> Function(GameComment comment) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
   final bool isDeleting;
   final bool isUpdating;
@@ -88,7 +88,7 @@ class _GameCommentItemState extends State<GameCommentItem>
   }
 
   // --- 通用的 Action Button 构建方法 ---
-  Widget _buildActionsMenu(BuildContext context, Comment item) {
+  Widget _buildActionsMenu(BuildContext context, GameComment item) {
     final theme = Theme.of(context);
     final bool isReply = item.parentId != null;
 
@@ -190,7 +190,7 @@ class _GameCommentItemState extends State<GameCommentItem>
   }
 
   // --- 通用的 Dialog 方法 ---
-  void _showEditDialog(BuildContext context, Comment item) {
+  void _showEditDialog(BuildContext context, GameComment item) {
     EditDialog.show(
       inputStateService: widget.inputStateService,
       context: context,
@@ -248,7 +248,7 @@ class _GameCommentItemState extends State<GameCommentItem>
     );
   }
 
-  void _showDeleteDialog(BuildContext context, Comment item) {
+  void _showDeleteDialog(BuildContext context, GameComment item) {
     CustomConfirmDialog.show(
       context: context,
       title: item.parentId == null ? '删除评论' : '删除回复',
@@ -317,7 +317,7 @@ class _GameCommentItemState extends State<GameCommentItem>
   }
 
   // --- 构建单个回复项的 Widget ---
-  Widget _buildReplyWidget(BuildContext context, Comment reply) {
+  Widget _buildReplyWidget(BuildContext context, GameComment reply) {
     final theme = Theme.of(context);
     // 直接使用本地状态来驱动UI
     return Container(

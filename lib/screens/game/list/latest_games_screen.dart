@@ -3,7 +3,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'common_game_list_screen.dart'; // 引入纯净版
+import 'common_game_list_screen.dart';
 
 class LatestGamesScreen extends StatefulWidget {
   final GameService gameService;

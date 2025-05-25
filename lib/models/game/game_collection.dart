@@ -1,6 +1,6 @@
-import '../game/game.dart';
-
 // 游戏收藏状态常量
+import 'package:suxingchahui/models/game/game.dart';
+
 class GameCollectionStatus {
   static const String wantToPlay = 'want_to_play'; // 修改为与后端一致
   static const String playing = 'playing';

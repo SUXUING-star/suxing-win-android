@@ -1,6 +1,7 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
+import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -19,11 +20,11 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection.dart'; // 引入收藏项模型
+import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 引入认证 Provider
-import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart'; // 引入内容组件
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 引入桌面 AppBar
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -61,7 +62,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   Game? _game;
   GameCollectionItem? _collectionStatus;
-  Map<String, dynamic>? _navigationInfo;
+  GameNavigationInfo? _navigationInfo;
   bool? _isLiked; // 父组件持有状态
   String? _error;
   bool _isLoading = false;
@@ -158,7 +159,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         widget.gameId != null &&
         _game!.approvalStatus == GameStatus.approved &&
         widget.isNeedHistory) {
-      await widget.gameService.incrementGameView(widget.gameId!);
+      try {
+        widget.gameService.incrementGameView(widget.gameId!);
+      } catch (e) {
+        // 啥也不做
+      }
+
+      // 不要等待，异步进行
     }
   }
 

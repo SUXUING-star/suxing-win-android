@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -12,7 +11,7 @@ import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/models/user/user_checkin.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/layout/checkin_content.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/effects/particle_effect.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/effects/checkin_particle_effect.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
@@ -360,7 +359,7 @@ class _CheckInScreenState extends State<CheckInScreen>
       return Positioned.fill(
         child: IgnorePointer(
           // 让粒子效果不响应触摸事件
-          child: CheckinParticleEffect(
+          child: CheckInParticleEffect(
             controller: _particleController, // 控制动画播放
             color: Theme.of(context).primaryColor, // 粒子颜色
           ),

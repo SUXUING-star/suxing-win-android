@@ -50,10 +50,6 @@ class UserInfoBadge extends StatelessWidget {
           return _buildErrorPlaceholder(context, mini, userDataStatus.error);
         }
 
-        // 对于 initial, loading, loaded 状态:
-        // 直接使用 userDataStatus.user (可能为 null 或包含旧/新数据)
-        // _buildLoadedContent 内部会处理 user 为 null 的情况，显示加载文本或默认值
-        // SafeUserAvatar 会自己处理图片加载
         return _buildLoadedContent(context, userDataStatus.user);
       },
     );

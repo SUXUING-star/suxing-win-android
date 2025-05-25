@@ -7,10 +7,10 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/models/game/game.dart'; // 你的数据模型
+import 'package:suxingchahui/models/game/game.dart';
 
 class GameDownloadLinks extends StatelessWidget {
-  final List<DownloadLink> downloadLinks;
+  final List<GameDownloadLink> downloadLinks;
   final User? currentUser;
 
   const GameDownloadLinks({

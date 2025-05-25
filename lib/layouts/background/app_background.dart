@@ -4,9 +4,9 @@ import 'dart:ui'; // For ImageFilter
 import 'dart:async';
 import 'dart:io'; // For Platform
 import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:suxingchahui/layouts/effects/particle_effect.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart'; // 必须导入
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../effects/particle_effect.dart';
 
 // 背景图片列表
 const List<String> backgroundImages = [

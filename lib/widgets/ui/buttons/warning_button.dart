@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../../../utils/font/font_config.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class WarningButton extends StatelessWidget {
   final VoidCallback onPressed;
@@ -53,11 +53,9 @@ class WarningButton extends StatelessWidget {
               color:
                   isEnabled ? buttonForegroundColor : disabledForegroundColor,
             ),
-      label: Text(
+      label: AppText(
         label,
         style: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily,
-          fontFamilyFallback: FontConfig.fontFallback,
           fontSize: fontSize,
           color: isEnabled ? buttonForegroundColor : disabledForegroundColor,
           fontWeight: FontWeight.w600,

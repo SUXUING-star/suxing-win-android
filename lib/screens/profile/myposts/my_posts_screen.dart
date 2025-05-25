@@ -5,7 +5,7 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
@@ -23,7 +23,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 
 class MyPostsScreen extends StatefulWidget {
   final UserFollowService followService;
-  final ForumService forumService;
+  final PostService forumService;
   final UserInfoProvider infoProvider;
   final AuthProvider authProvider;
   const MyPostsScreen({
@@ -49,7 +49,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
   final ScrollController _scrollController = ScrollController();
 
-  late final ForumService _forumService;
+  late final PostService _forumService;
   late final AuthProvider _authProvider;
   bool _hasInitializedDependencies = false;
   User? _currentUser;
@@ -287,6 +287,13 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
   @override
   Widget build(BuildContext context) {
+    // --- 优先处理加载状态 (仅在首次加载且无数据时显示全屏 Loading) ---
+    if (_isLoading && _posts.isEmpty && _error == null) {
+      return LoadingWidget.fullScreen(
+        message: "拼命加载中",
+      );
+    }
+
     return StreamBuilder<User?>(
         stream: _authProvider.currentUserStream,
         initialData: _authProvider.currentUser,
@@ -310,17 +317,6 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
   Widget _buildContent(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop;
-
-    // --- 优先处理加载状态 (仅在首次加载且无数据时显示全屏 Loading) ---
-    if (_isLoading && _posts.isEmpty && _error == null) {
-      return ListView(
-        // 使用 ListView 包装
-        children: [
-          SizedBox(height: MediaQuery.of(context).size.height * 0.3),
-          LoadingWidget.inline(),
-        ],
-      );
-    }
 
     // --- 处理未登录状态 ---
     if (_userId == null && !_isLoading) {

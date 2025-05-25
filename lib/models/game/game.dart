@@ -24,7 +24,7 @@ class Game {
   final int viewCount;
   final int likeCount;
   final List<String> likedBy;
-  final List<DownloadLink> downloadLinks;
+  final List<GameDownloadLink> downloadLinks;
   final String? musicUrl;
   final String? bvid;
   final DateTime? lastViewedAt;
@@ -83,14 +83,14 @@ class Game {
       return idValue is ObjectId ? idValue.oid: idValue.toString();
     }
 
-    List<DownloadLink> parseDownloadLinks(dynamic links) {
+    List<GameDownloadLink> parseDownloadLinks(dynamic links) {
       if (links == null || links is! List) return [];
       try {
         return links
             .map((link) => link is Map<String, dynamic>
-                ? DownloadLink.fromJson(link)
+                ? GameDownloadLink.fromJson(link)
                 : null) // Handle non-map items
-            .whereType<DownloadLink>() // Filter out nulls
+            .whereType<GameDownloadLink>() // Filter out nulls
             .toList();
       } catch (e) {
         // print('Error parsing download links: $e');
@@ -258,7 +258,7 @@ class Game {
     int? viewCount,
     int? likeCount,
     List<String>? likedBy,
-    List<DownloadLink>? downloadLinks,
+    List<GameDownloadLink>? downloadLinks,
     String? musicUrl,
     ValueGetter<String?>? bvid,
     DateTime? lastViewedAt,
@@ -310,22 +310,22 @@ class Game {
   }
 }
 
-class DownloadLink {
+class GameDownloadLink {
   final String id;
   final String title;
   final String description;
   final String url; // Using lowercase 'url' to match backend
 
-  DownloadLink({
+  GameDownloadLink({
     required this.id,
     required this.title,
     required this.description,
     required this.url,
   });
 
-  factory DownloadLink.fromJson(Map<String, dynamic> json) {
+  factory GameDownloadLink.fromJson(Map<String, dynamic> json) {
     // Safely handle different possible key names and null values
-    return DownloadLink(
+    return GameDownloadLink(
       id: json['id']?.toString() ?? '',
       title: json['title']?.toString() ?? '',
       description: json['description']?.toString() ?? '',

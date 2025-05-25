@@ -1,10 +1,11 @@
 // lib/widgets/components/screen/game/favorite/favorite_game_grid_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../routes/app_routes.dart';
-import '../../../../ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
+
 
 /// 为游戏收藏屏幕的网格视图设计的卡片组件
 class FavoriteGameGridCard extends StatelessWidget {

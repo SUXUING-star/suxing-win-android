@@ -6,13 +6,13 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/widgets/components/form/postform/post_form.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final AuthProvider authProvider;
-  final ForumService forumService;
+  final PostService forumService;
   final InputStateService inputStateService;
   const CreatePostScreen({
     super.key,

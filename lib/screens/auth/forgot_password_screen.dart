@@ -1,5 +1,6 @@
 // lib/screens/auth/forgot_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'dart:async';
@@ -22,11 +23,13 @@ class ForgotPasswordScreen extends StatefulWidget {
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
   final EmailService emailService;
+  final AuthProvider authProvider;
   const ForgotPasswordScreen({
     super.key,
     required this.inputStateService,
     required this.emailService,
     required this.infoProvider,
+    required this.authProvider,
   });
 
   @override
@@ -226,6 +229,15 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     // --- 定义动画延迟和间隔 ---
     const Duration initialDelay = Duration(milliseconds: 200);
     const Duration stagger = Duration(milliseconds: 80);
+
+    if (widget.authProvider.isLoggedIn) {
+      return CustomErrorWidget(
+        title: "停停停",
+        errorMessage: "好像你已经登录了啊？？",
+        onRetry: () => NavigationUtils.of(context),
+        retryText: "返回上一页",
+      );
+    }
 
     return Scaffold(
       appBar: const CustomAppBar(title: '找回密码'),

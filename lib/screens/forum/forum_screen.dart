@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/post/post_list.dart';
 import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -18,14 +20,14 @@ import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/tag_filter.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/panel/forum_right_panel.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/panel/forum_left_panel.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/panel/post_right_panel.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/panel/post_left_panel.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'refresh_controller.dart';
@@ -33,7 +35,7 @@ import 'refresh_controller.dart';
 class ForumScreen extends StatefulWidget {
   final String? tag;
   final AuthProvider authProvider;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final PostListFilterProvider postListFilterProvider;
@@ -60,7 +62,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
   int _currentPage = 1;
   int _totalPages = 1;
-  final int _postListLimit = ForumService.postListLimit;
+  final int _postListLimit = PostService.postListLimit;
 
   String? _currentUserId;
 
@@ -293,7 +295,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // --- 调用 Service 获取数据 ---
     try {
       final String? tagParam = _selectedTag?.displayText;
-      final result = await widget.forumService.getPostsPage(
+      final PostList result = await widget.forumService.getPostsPage(
         tag: tagParam,
         page: page,
         limit: _postListLimit,
@@ -303,10 +305,10 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       if (!mounted) return; // 获取数据后检查组件是否还在
 
       // --- *** 处理结果并强制 setState *** ---
-      final List<Post> fetchedPosts = result['posts'] ?? [];
-      final Map<String, dynamic> pagination = result['pagination'] ?? {};
-      final int serverPage = pagination['page'] ?? page;
-      final int serverTotalPages = pagination['pages'] ?? 1;
+      final List<Post> fetchedPosts = result.posts;
+      final PaginationData pagination = result.pagination;
+      final int serverPage = pagination.page;
+      final int serverTotalPages = pagination.pages;
 
       // *** 无论如何，获取到数据后就调用 setState 更新状态 ***
       setState(() {
@@ -912,7 +914,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
             slideDirection: SlideDirection.left,
             duration: panelAnimationDuration,
             delay: leftPanelDelay,
-            child: ForumLeftPanel(
+            child: PostLeftPanel(
               tags: _tags,
               selectedTag: _selectedTag,
               onTagSelected: _onTagSelected,
@@ -934,7 +936,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
                   slideDirection: SlideDirection.right,
                   duration: panelAnimationDuration,
                   delay: rightPanelDelay,
-                  child: ForumRightPanel(
+                  child: PostRightPanel(
                     currentPosts: _posts!,
                     selectedTag: _selectedTag,
                     onTagSelected: _onTagSelected,

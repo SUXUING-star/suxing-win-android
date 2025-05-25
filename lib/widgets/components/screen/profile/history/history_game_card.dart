@@ -1,11 +1,11 @@
 // lib/widgets/components/screen/game/history/history_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../../utils/datetime/date_time_formatter.dart';
-import '../../../../../routes/app_routes.dart';
 
 /// 为游戏浏览历史屏幕专门设计的列表卡片组件
 class HistoryGameCard extends StatelessWidget {
@@ -21,7 +21,7 @@ class HistoryGameCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 判断是否为桌面布局
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final bool isDesktop = DeviceUtils.isLargeScreen(context);
 
     return Card(
       elevation: 2,
@@ -33,10 +33,12 @@ class HistoryGameCard extends StatelessWidget {
         onTap: () {
           final gameId = historyItem['gameId']?.toString() ?? '';
           if (gameId.isNotEmpty) {
-            NavigationUtils.pushNamed(context, AppRoutes.gameDetail, arguments: gameId);
+            NavigationUtils.pushNamed(context, AppRoutes.gameDetail,
+                arguments: gameId);
           }
         },
-        child: IntrinsicHeight( // 确保左右两侧高度一致
+        child: IntrinsicHeight(
+          // 确保左右两侧高度一致
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
@@ -144,7 +146,8 @@ class HistoryGameCard extends StatelessWidget {
             SizedBox(width: 4),
             Text(
               DateTimeFormatter.formatStandard(
-                DateTime.parse(historyItem['lastViewTime']?.toString() ?? DateTime.now().toIso8601String()),
+                DateTime.parse(historyItem['lastViewTime']?.toString() ??
+                    DateTime.now().toIso8601String()),
               ),
               style: TextStyle(
                 fontSize: 12,

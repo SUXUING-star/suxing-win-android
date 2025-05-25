@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/checkin/checkin_button.dart
 import 'package:flutter/material.dart';
-import './effects/particle_effect.dart';
+import './effects/checkin_particle_effect.dart';
 
 class CheckInButton extends StatelessWidget {
   final bool hasCheckedToday;
@@ -28,7 +28,7 @@ class CheckInButton extends StatelessWidget {
       children: [
         // 粒子效果动画
         if (!hasCheckedToday)
-          CheckinParticleEffect(
+          CheckInParticleEffect(
             controller: animationController,
           ),
 

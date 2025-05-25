@@ -2,14 +2,12 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-// --- 确保引入所有需要的工具类和常量 ---
-import '../../../../../constants/game/game_constants.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../models/stats/category_stat.dart';
-import '../../../../../models/stats/tag_stat.dart';
-import '../../../../../services/main/game/stats/game_stats_service.dart';
-import '../../../../../utils/device/device_utils.dart';
-
+import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/stats/category_stat.dart';
+import 'package:suxingchahui/models/stats/tag_stat.dart';
+import 'package:suxingchahui/services/main/game/stats/game_stats_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameRightPanel extends StatelessWidget {
   final List<Game> currentPageGames;
@@ -20,10 +18,7 @@ class GameRightPanel extends StatelessWidget {
   final Function(String?)? onCategorySelected;
   final List<String> availableCategories; // 所有可用分类列表
 
-  // 服务实例
-  final GameStatsService _statsService = GameStatsService();
-
-  GameRightPanel({
+  const GameRightPanel({
     super.key,
     required this.currentPageGames,
     required this.totalGamesCount,
@@ -38,13 +33,13 @@ class GameRightPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     // 获取当前页的统计数据
     final List<CategoryStat> categoryStats =
-        _statsService.getCategoryStatistics(currentPageGames);
+        GameStatsService.getCategoryStatistics(currentPageGames);
     final List<TagStat> tagStats =
-        _statsService.getTagStatistics(currentPageGames);
+        GameStatsService.getTagStatistics(currentPageGames);
     final int uniqueCategoriesCount =
-        _statsService.getUniqueCategoriesCount(currentPageGames);
+        GameStatsService.getUniqueCategoriesCount(currentPageGames);
     final int uniqueTagsCount =
-        _statsService.getUniqueTagsCount(currentPageGames);
+        GameStatsService.getUniqueTagsCount(currentPageGames);
 
     // 面板宽度
     final panelWidth = DeviceUtils.getSidePanelWidth(context);
@@ -270,12 +265,11 @@ class GameRightPanel extends StatelessWidget {
 
     // --- 获取当前页该分类的计数 (可选显示) ---
     // 注意：这个计数是基于 currentPageGames 的，仅用于显示，不影响筛选逻辑
-    final categoryStat = _statsService
-        .getCategoryStatistics(currentPageGames)
-        .firstWhere(
-          (stat) => stat.name == value, // 如果 value 是 null 会怎样？需要处理
-          orElse: () => CategoryStat(name: value ?? '', count: 0), // 找不到则计数为 0
-        );
+    final categoryStat =
+        GameStatsService.getCategoryStatistics(currentPageGames).firstWhere(
+      (stat) => stat.name == value, // 如果 value 是 null 会怎样？需要处理
+      orElse: () => CategoryStat(name: value ?? '', count: 0), // 找不到则计数为 0
+    );
     final displayCount = (value == null) // 如果是"全部"，显示总数或不显示？这里先不显示"全部"的计数
         ? 0
         : categoryStat.count;
@@ -315,7 +309,8 @@ class GameRightPanel extends StatelessWidget {
                 padding: EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
                   // 计数的背景：用文字颜色的更淡透明度
-                  color: finalTextColor.withSafeOpacity(isSelected ? 0.2 : 0.15),
+                  color:
+                      finalTextColor.withSafeOpacity(isSelected ? 0.2 : 0.15),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -557,7 +552,7 @@ class GameRightPanel extends StatelessWidget {
                     borderRadius: BorderRadius.circular(tagTapBorderRadius),
                     splashColor: tagColor.withSafeOpacity(0.2), // 使用标签颜色
                     highlightColor: tagColor.withSafeOpacity(0.1), // 使用标签颜色
-                    child: GameTag(
+                    child: GameTagItem(
                       tag: stat.name,
                       count: stat.count,
                       isSelected: isSelected,

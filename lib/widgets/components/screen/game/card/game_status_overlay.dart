@@ -1,7 +1,8 @@
 // 新建一个组件文件，例如：lib/widgets/components/screen/game/card/game_status_overlay.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
+
 
 class GameStatusOverlay extends StatelessWidget {
   final Game game;

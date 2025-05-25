@@ -58,8 +58,6 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   Timer? _timer;
   int _countDown = 0;
-  late final AuthProvider _authProvider;
-  late final UserService _userService;
 
   bool _hasInitializedDependencies = false;
 
@@ -67,8 +65,6 @@ class _RegisterScreenState extends State<RegisterScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _authProvider = widget.authProvider;
-      _userService = widget.userService;
       _hasInitializedDependencies = true;
     }
   }
@@ -175,7 +171,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
       SavedAccount? savedAccount;
       if (_rememberMe) {
-        final user = _authProvider.currentUser;
+        final user = widget.authProvider.currentUser;
         savedAccount = SavedAccount(
           email: email,
           password: password, // 注意：这里保存的是用户输入的密码
@@ -188,7 +184,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         );
       }
 
-      await _userService.signUp(email, password, username, savedAccount);
+      await widget.userService.signUp(email, password, username, savedAccount);
       if (!mounted) return;
 
       // 注册成功后，清除所有相关的输入状态
@@ -386,6 +382,15 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     const Duration initialDelay = Duration(milliseconds: 200);
     const Duration stagger = Duration(milliseconds: 70);
+
+    if (widget.authProvider.isLoggedIn) {
+      return CustomErrorWidget(
+        title: "停停停",
+        errorMessage: "好像你已经登录了啊？？",
+        onRetry: () => NavigationUtils.of(context),
+        retryText: "返回上一页",
+      );
+    }
 
     return Scaffold(
       appBar: const CustomAppBar(title: '注册'),

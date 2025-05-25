@@ -2,20 +2,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/models/user/user.dart'; // **** 导入 User 模型 ****
+import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'exp_badge_widget.dart';
 import 'dialog/exp_dialog_content.dart';
 
-class ExpProgressBadge extends StatelessWidget { // 改成 StatelessWidget，因为它不再管理自己的状态了
+class ExpProgressBadge extends StatelessWidget {
+  // 改成 StatelessWidget，因为它不再管理自己的状态了
   final User currentUser;
   final double size;
   final Color? backgroundColor;
   final Color? textColor;
   final bool isDesktop;
 
-  // **** 新增：从父组件接收的数据和回调 ****
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
@@ -35,8 +35,6 @@ class ExpProgressBadge extends StatelessWidget { // 改成 StatelessWidget，因
     required this.onRefreshExpData,
   });
 
-  // _showProgressDialog 方法现在是静态的或者移到父组件，或者作为普通方法但使用传入的参数
-  // 这里我们把它变成一个普通方法，因为它还是与 ExpProgressBadge 的 UI 相关
   void _showProgressDialog(BuildContext context) {
     // 确保进度数据已加载 (从 widget 属性获取)
     if (dailyProgressData == null) return;

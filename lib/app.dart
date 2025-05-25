@@ -16,7 +16,7 @@ import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dar
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/email/email_service.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
@@ -80,7 +80,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final GameService _gameService;
   late final GameCollectionService _gameCollectionService;
   late final UserService _userService;
-  late final ForumService _forumService;
+  late final PostService _forumService;
   late final UserFollowService _followService;
   late final UserActivityService _activityService;
   late final LinkToolService _linkToolService;
@@ -119,7 +119,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _messageService = context.read<MessageService>();
       _announcementService = context.read<AnnouncementService>();
       _maintenanceService = context.read<MaintenanceService>();
-      _forumService = context.read<ForumService>();
+      _forumService = context.read<PostService>();
       _userService = context.read<UserService>();
       _gameService = context.read<GameService>();
       _gameCollectionService = context.read<GameCollectionService>();

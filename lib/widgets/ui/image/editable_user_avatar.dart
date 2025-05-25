@@ -15,7 +15,7 @@ class EditableUserAvatar extends StatelessWidget {
   final double radius;
   final RateLimitedFileUpload fileUpload;
   final Function(bool isLoading) onUploadStateChanged;
-  final Function(String?) onUploadSuccess; // 这个回调应该只关心最终的URL
+  final Function(String? avatarUrl) onUploadSuccess; // 这个回调应该只关心最终的URL
   final double iconSizeRatio;
   final Color iconColor;
   final Color iconBackgroundColor;

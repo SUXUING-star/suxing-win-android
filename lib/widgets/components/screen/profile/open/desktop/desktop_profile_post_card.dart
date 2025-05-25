@@ -1,15 +1,19 @@
 // lib/widgets/components/screen/profile/open/desktop_profile_post_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../../models/post/post.dart';
+
 
 class DesktopProfilePostCard extends StatelessWidget {
   final Post post;
 
-  const DesktopProfilePostCard({super.key, required this.post});
+  const DesktopProfilePostCard({
+    super.key,
+    required this.post,
+  });
 
   @override
   Widget build(BuildContext context) {

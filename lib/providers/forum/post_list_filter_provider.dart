@@ -18,11 +18,7 @@ class PostListFilterProvider with ChangeNotifier {
       _tagHasBeenSet = true; // 标记 Tag 已设置
       notifyListeners(); // 通知监听者
     } else if (newTagString != null && !_tagHasBeenSet) {
-      // 如果标签相同，但之前未被主动设置过，也标记为已设置
-      // 这确保了即使值没变，如果外部设置了，我们也能知道
-      _tagHasBeenSet = true;
-      // 这里通常不需要 notifyListeners，因为值没变，但标记变了。
-      // 如果UI依赖这个标记本身，可能需要。但通常是screen用这个标记一次。
+       _tagHasBeenSet = true;
     }
   }
 
@@ -35,7 +31,6 @@ class PostListFilterProvider with ChangeNotifier {
   // --- 重置标记 ---
   /// 重置 Tag 的 "已设置" 标记。当 UI 处理完 Tag 变化后调用。
   void resetTagFlag() {
-    // print("PostListFilterProvider: Resetting tag flag.");
     _tagHasBeenSet = false;
     // 注意：这里不调用 notifyListeners，因为它只是重置内部状态，不应触发 UI 重建
   }

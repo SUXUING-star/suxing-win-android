@@ -101,10 +101,6 @@ class _EditGameScreenState extends State<EditGameScreen>
   }
 
   Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
-    // 这个方法由 GameForm 的 onSubmit 回调触发
-    // GameForm 内部的 _isProcessing 会处理按钮的加载状态
-    // _EditGameScreenState 可以在这里处理 API 调用后的导航和对话框
-
     if (!mounted) return;
 
     try {
@@ -162,8 +158,6 @@ class _EditGameScreenState extends State<EditGameScreen>
       },
     );
   }
-
-
 
   Widget _buildNeedToPending() {
     return Container(

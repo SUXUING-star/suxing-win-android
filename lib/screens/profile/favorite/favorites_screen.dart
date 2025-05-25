@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -16,7 +16,7 @@ import 'tabs/post_favorites_tab.dart';
 class FavoritesScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   const FavoritesScreen({

@@ -153,8 +153,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
       if (!mounted) return;
 
-      final List<UserActivity> fetchedActivities = result['activities'] ?? [];
-      final PaginationData? fetchedPagination = result['pagination'];
+      final List<UserActivity> fetchedActivities = result.activities;
+      final PaginationData fetchedPagination = result.pagination;
 
       setState(() {
         if (isRefresh || isInitialLoad) {
@@ -208,8 +208,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
       if (!mounted) return;
 
-      final List<UserActivity> newActivities = result['activities'] ?? [];
-      final PaginationData? newPagination = result['pagination'];
+      final List<UserActivity> newActivities = result.activities;
+      final PaginationData newPagination = result.pagination;
 
       setState(() {
         _activities.addAll(newActivities); // Append new activities

@@ -1,9 +1,9 @@
 // lib/widgets/ui/buttons/login_prompt.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-// 确保 FunctionalButton 的导入路径正确
-import 'functional_button.dart'; // 或者更具体的路径，例如 '../functional_button.dart' 或 '../../path/to/functional_button.dart'
+
 
 class LoginPrompt extends StatelessWidget {
   final String message;

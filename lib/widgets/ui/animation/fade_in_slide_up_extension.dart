@@ -76,9 +76,9 @@ class _FadeInSlideUpItemCanPlayState extends State<FadeInSlideUpItemCanPlay>
       _startAnimation();
     }
     // 如果 play 状态从 true 变为 false，可以选择暂停或重置动画
-    // else if (!widget.play && oldWidget.play) {
-    //   _controller.stop(); // 或者 _controller.reset();
-    // }
+    else if (!widget.play && oldWidget.play) {
+      _controller.stop(); // 或者 _controller.reset();
+    }
   }
 
   @override

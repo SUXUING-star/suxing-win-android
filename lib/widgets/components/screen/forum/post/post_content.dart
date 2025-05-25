@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/post_interaction_buttons.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/tag/post_tags.dart';
@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class PostContent extends StatelessWidget {
   final Post post;
-  final ForumService forumService;
+  final PostService forumService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   final User? currentUser;

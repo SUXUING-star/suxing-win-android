@@ -217,12 +217,11 @@ class _MouseTrailEffectState extends State<MouseTrailEffect>
           Positioned.fill(
             child: IgnorePointer(
               child: CustomPaint(
-                // --- 修正 CustomPaint 的 repaint 方式 ---
                 // 将 AnimationController 传递给 Painter
                 painter: _MouseTrailPainter(
                   particles: _activeParticles,
                   animation:
-                  _animationController, // <--- 将 animationController 传递给 painter
+                  _animationController,
                 ),
                 size: Size.infinite,
               ),

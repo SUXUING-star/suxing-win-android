@@ -33,6 +33,6 @@ class GameTagList extends StatelessWidget {
   }
 
   Widget _buildTagItem(String tag) {
-    return GameTag(tag: tag);
+    return GameTagItem(tag: tag);
   }
 }

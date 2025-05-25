@@ -1,11 +1,11 @@
 // lib/widgets/ui/appbar/custom_app_bar.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'dart:io' show Platform;
 import 'dart:ui' as ui;
-import '../../../utils/device/device_utils.dart'; // 确认这个路径是正确的
 
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
@@ -129,7 +129,9 @@ class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
     // 在桌面端不显示否则就是摆设
     final needShowTile = !(showTitleInDesktop == false && isDesktop);
 
-    if (leading == null && isDesktop && hasNoActions) return const SizedBox.shrink();
+    if (leading == null && isDesktop && hasNoActions) {
+      return const SizedBox.shrink();
+    }
 
     return AppBar(
       title: AppText(

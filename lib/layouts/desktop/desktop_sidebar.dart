@@ -8,7 +8,7 @@ import 'package:suxingchahui/wrapper/platform_wrapper.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'desktop_sidebar_nav_item.dart';
 import 'desktop_sidebar_user_profile.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart'; // 假设 DeviceUtils.isDesktop 仍然需要
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class DesktopSidebar extends StatelessWidget {
   final Widget child;

@@ -1,11 +1,7 @@
 // lib/models/post.dart
 import 'package:mongo_dart/mongo_dart.dart';
 
-enum PostStatus {
-  active,
-  locked,
-  deleted
-}
+enum PostStatus { active, locked, deleted }
 
 class Post {
   final String id;
@@ -16,13 +12,12 @@ class Post {
   final DateTime updateTime;
   final int viewCount;
   final int replyCount;
-  final int likeCount;       // 点赞总数
-  final int agreeCount;      // 赞成总数
-  final int favoriteCount;   // 收藏总数
+  final int likeCount; // 点赞总数
+  final int agreeCount; // 赞成总数
+  final int favoriteCount; // 收藏总数
   final List<String> tags;
   final PostStatus status;
 
-  // 移除了 isLiked, isAgreed, isFavorited
 
   Post({
     required this.id,
@@ -62,7 +57,7 @@ class Post {
       favoriteCount: json['favoriteCount']?.toInt() ?? 0,
       tags: List<String>.from(json['tags'] ?? []),
       status: PostStatus.values.firstWhere(
-            (e) => e.toString().split('.').last == json['status'],
+        (e) => e.toString().split('.').last == json['status'],
         orElse: () => PostStatus.active,
       ),
       // 不再设置 isLiked 等
@@ -88,7 +83,8 @@ class Post {
     };
   }
 
-  Post copyWith({ // 移除 isLiked 等参数
+  Post copyWith({
+    // 移除 isLiked 等参数
     String? id,
     String? title,
     String? content,
@@ -122,14 +118,11 @@ class Post {
 }
 
 // Reply 模型保持不变...
-enum ReplyStatus {
-  active,
-  deleted
-}
+enum PostReplyStatus { active, deleted }
 
 // In post.dart
 
-class Reply {
+class PostReply {
   final String id;
   final String postId;
   final String content;
@@ -137,9 +130,9 @@ class Reply {
   final String? parentId;
   final DateTime createTime;
   final DateTime updateTime;
-  final ReplyStatus status;
+  final PostReplyStatus status;
 
-  Reply({
+  PostReply({
     required this.id,
     required this.postId,
     required this.content,
@@ -147,13 +140,13 @@ class Reply {
     this.parentId,
     required this.createTime,
     required this.updateTime,
-    this.status = ReplyStatus.active,
+    this.status = PostReplyStatus.active,
   });
 
-  factory Reply.fromJson(Map<String, dynamic> json) {
+  factory PostReply.fromJson(Map<String, dynamic> json) {
     String replyId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
 
-    return Reply(
+    return PostReply(
       id: replyId,
       postId: json['postId']?.toString() ?? '',
       content: json['content'] ?? '',
@@ -165,9 +158,9 @@ class Reply {
       updateTime: json['updateTime'] is DateTime
           ? json['updateTime']
           : DateTime.parse(json['updateTime']),
-      status: ReplyStatus.values.firstWhere(
-            (e) => e.toString().split('.').last == json['status'],
-        orElse: () => ReplyStatus.active,
+      status: PostReplyStatus.values.firstWhere(
+        (e) => e.toString().split('.').last == json['status'],
+        orElse: () => PostReplyStatus.active,
       ),
     );
   }
@@ -203,6 +196,7 @@ class Reply {
       rethrow;
     }
   }
+
   // UI 判断是否编辑过
   bool get hasBeenEdited {
     const Duration tolerance = Duration(seconds: 1);

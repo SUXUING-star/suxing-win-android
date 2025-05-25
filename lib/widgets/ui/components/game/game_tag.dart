@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-class GameTag extends StatelessWidget {
+class GameTagItem extends StatelessWidget {
   final String tag;
   final int? count;
   final bool isSelected;
@@ -15,7 +15,7 @@ class GameTag extends StatelessWidget {
   static const double tagFontSize = 11.0;
   static const double tagCountFontSize = 9.0;
 
-  const GameTag({
+  const GameTagItem({
     super.key,
     required this.tag,
     this.count,

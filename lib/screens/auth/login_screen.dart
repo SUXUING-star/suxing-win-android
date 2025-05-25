@@ -9,6 +9,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -49,8 +50,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   // 账号缓存服务
   late final AccountCacheService _accountCache;
-  late final AuthProvider _authProvider;
-  late final InputStateService _inputStateService;
 
   bool _hasInitializedDependencies = false;
 
@@ -65,8 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
     if (!_hasInitializedDependencies) {
       // 避免重复获取和调用
       _accountCache = Provider.of<AccountCacheService>(context, listen: false);
-      _authProvider = widget.authProvider;
-      _inputStateService = widget.inputStateService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -118,8 +115,9 @@ class _LoginScreenState extends State<LoginScreen> {
   void _autoLoginWithAccount(SavedAccount account) {
     // 获取 InputStateService 并更新状态
     try {
-      _inputStateService.getController(emailSlotName).text = account.email;
-      _inputStateService.getController(passwordSlotName).text =
+      widget.inputStateService.getController(emailSlotName).text =
+          account.email;
+      widget.inputStateService.getController(passwordSlotName).text =
           account.password;
 
       // 更新记住我状态（如果需要的话，或者保持当前选择）
@@ -144,17 +142,17 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     // 从 Service 获取值
-    final email = _inputStateService.getText(emailSlotName).trim();
+    final email = widget.inputStateService.getText(emailSlotName).trim();
 
-    final password = _inputStateService.getText(passwordSlotName).trim();
+    final password = widget.inputStateService.getText(passwordSlotName).trim();
 
     try {
       // 委托authProvider传递
       // ui组件不需要管理添加和删除缓存
-      await _authProvider.signIn(email, password, _rememberMe);
+      await widget.authProvider.signIn(email, password, _rememberMe);
       // 登录成功后，清除输入状态
-      _inputStateService.clearText(emailSlotName);
-      _inputStateService.clearText(passwordSlotName);
+      widget.inputStateService.clearText(emailSlotName);
+      widget.inputStateService.clearText(passwordSlotName);
 
       await Future.delayed(Duration(milliseconds: 500)); // 稍微减少延迟
 
@@ -200,10 +198,9 @@ class _LoginScreenState extends State<LoginScreen> {
         : const SizedBox.shrink();
   }
 
-  // --- 修改：使用 slotName ---
   Widget _buildEmailFormField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       key: _emailFieldKey, // GlobalKey 保持
       slotName: emailSlotName, // <-- 使用 slotName
       isEnabled: !_isLoading,
@@ -229,10 +226,9 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  // --- 修改：使用 slotName ---
   Widget _buildPassWordFormField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       slotName: passwordSlotName, // <-- 使用 slotName
       isEnabled: !_isLoading,
       obscureText: _obscurePassword,
@@ -263,6 +259,15 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     const Duration initialDelay = Duration(milliseconds: 200);
     const Duration stagger = Duration(milliseconds: 80);
+
+    if (widget.authProvider.isLoggedIn) {
+      return CustomErrorWidget(
+        title: "停停停",
+        errorMessage: "好像你已经登录了啊？？",
+        onRetry: () => NavigationUtils.of(context),
+        retryText: "返回上一页",
+      );
+    }
 
     return Scaffold(
       appBar: const CustomAppBar(title: '登录'),

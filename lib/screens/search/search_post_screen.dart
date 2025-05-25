@@ -5,10 +5,11 @@ import 'dart:async';
 
 // Models
 import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/post/post_list.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 
 // Services
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 
@@ -31,7 +32,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
   final UserService userService;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
@@ -64,7 +65,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   bool _isSearching = false;
   late final UserService _userService;
-  late final ForumService _forumService;
+  late final PostService _forumService;
   late final AuthProvider _authProvider;
   bool _hasInitializedDependencies = false;
 
@@ -221,16 +222,16 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        final resultsData = await _forumService.searchPosts(
+        final PostList resultsData = await _forumService.searchPosts(
           keyword: trimmedQuery,
           page: _currentPage,
           limit: _limit,
         );
         if (!mounted) return;
 
-        final List<Post> newPosts = resultsData['posts'];
-        final pagination = resultsData['pagination'];
-        final int serverTotalPages = pagination['pages'] ?? 1;
+        final List<Post> newPosts = resultsData.posts;
+        final pagination = resultsData.pagination;
+        final int serverTotalPages = pagination.pages;
 
         setState(() {
           if (isNewSearch) {
@@ -556,7 +557,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 定义卡片动画参数
     const Duration cardAnimationDuration = Duration(milliseconds: 350);
     const Duration cardDelayIncrement = Duration(milliseconds: 40);
-
 
     // 结果列表 + 加载更多指示器
     return ListView.builder(

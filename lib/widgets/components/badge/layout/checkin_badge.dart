@@ -1,8 +1,9 @@
 // lib/widgets/components/badge/layout/checkin_badge.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../services/main/user/user_checkin_service.dart';
+
 
 class CheckInBadge extends StatelessWidget {
   final UserCheckInService checkInService;

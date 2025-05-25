@@ -362,8 +362,6 @@ class ResponsiveFollowsLayout extends StatelessWidget {
             ),
           ),
         );
-
-        // --- 结束列表项修改 ---
       },
     );
   }

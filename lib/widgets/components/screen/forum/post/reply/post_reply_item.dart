@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 使用已修改的 CommentInputField
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -19,14 +19,14 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 class PostReplyItem extends StatelessWidget {
   final User? currentUser;
   final AuthProvider authProvider;
-  final Reply reply;
+  final PostReply reply;
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
   final UserFollowService followService;
   final String postId;
   final int floor;
   final VoidCallback onActionSuccess;
-  final ForumService forumService;
+  final PostService forumService;
 
   const PostReplyItem({
     super.key,
@@ -72,7 +72,7 @@ class PostReplyItem extends StatelessWidget {
 
   Future<void> _handleEditReply(
     BuildContext context,
-    Reply reply,
+    PostReply reply,
   ) async {
     EditDialog.show(
       inputStateService: inputStateService,
@@ -99,7 +99,7 @@ class PostReplyItem extends StatelessWidget {
 
   Future<void> _handleDeleteReply(
     BuildContext context,
-    Reply reply,
+    PostReply reply,
   ) async {
     CustomConfirmDialog.show(
       context: context,
@@ -126,7 +126,7 @@ class PostReplyItem extends StatelessWidget {
   // --- 修改: 显示回复输入框，并传递 slotName ---
   void _showReplyBottomSheet(
     BuildContext context,
-    ForumService forumService,
+    PostService forumService,
   ) {
     final slotName = 'post_reply_${postId}_${reply.id}';
     bool isSubmitting = false; // 状态用于控制 CommentInputField 的 loading
@@ -302,7 +302,7 @@ class PostReplyItem extends StatelessWidget {
 
   Widget _buildReplyActions(
     BuildContext context,
-    Reply reply,
+    PostReply reply,
   ) {
     final currentUserId = currentUser?.id;
     if (currentUser == null || currentUserId == null) {

@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../../../../utils/font/font_config.dart';
 
 class LevelProgressBar extends StatelessWidget {
   final User user;
@@ -51,24 +50,20 @@ class LevelProgressBar extends StatelessWidget {
                   /* 等级显示 */
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    AppText(
                       'Lv.$level',
                       style: TextStyle(
                         color: theme.primaryColor,
                         fontWeight: FontWeight.bold,
                         fontSize: fontSize,
-                        fontFamily: FontConfig.defaultFontFamily,
-                        fontFamilyFallback: FontConfig.fontFallback,
                       ),
                     ),
                     if (!isMaxLevel)
-                      Text(
+                      AppText(
                         ' → Lv.$nextLevel',
                         style: TextStyle(
                           color: Colors.grey[700],
                           fontSize: fontSize,
-                          fontFamily: FontConfig.defaultFontFamily,
-                          fontFamilyFallback: FontConfig.fontFallback,
                         ),
                       ),
                   ],
@@ -77,15 +72,13 @@ class LevelProgressBar extends StatelessWidget {
                   /* 经验值显示 */
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
+                    AppText(
                       isMaxLevel
                           ? '$currentExp XP (已满级)'
                           : '$currentExp / $requiredExp XP',
                       style: TextStyle(
                         color: Colors.grey[700],
                         fontSize: infoFontSize,
-                        fontFamily: FontConfig.defaultFontFamily,
-                        fontFamilyFallback: FontConfig.fontFallback,
                       ),
                       overflow: TextOverflow.ellipsis,
                     ),
@@ -144,8 +137,6 @@ class LevelProgressBar extends StatelessWidget {
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: infoFontSize - 1,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                 ),
                 textAlign: TextAlign.center,
               ),

@@ -1,7 +1,6 @@
 // import 'dart:io'; // 这个文件不再需要 dart:io 或 XFile
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
-import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

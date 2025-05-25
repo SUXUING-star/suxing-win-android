@@ -1,11 +1,11 @@
 // lib/widgets/components/screen/forum/global_replies/recent_global_replies.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/post/global_reply_item.dart';
+import 'package:suxingchahui/models/post/global_post_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -19,7 +19,7 @@ class RecentGlobalReplies extends StatefulWidget {
   final int limit;
   final Post post;
   final User? currentUser;
-  final ForumService forumService;
+  final PostService forumService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
 
@@ -39,7 +39,7 @@ class RecentGlobalReplies extends StatefulWidget {
 
 class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // 把 Stream 换成 Future
-  Future<List<GlobalReplyItem>>? _repliesFuture;
+  Future<List<GlobalPostReplyItem>>? _repliesFuture;
   User? _currentUser;
   bool _isRefreshing = false; // 标记是否正在执行刷新操作
   DateTime? _lastRefreshTime; // 上次刷新的时间戳
@@ -47,7 +47,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   static const Duration _minRefreshInterval = Duration(seconds: 15);
 
   bool _hasInit = false;
-  late final ForumService _forumService;
+  late final PostService _forumService;
 
   @override
   void initState() {
@@ -180,7 +180,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
           ),
           const Divider(height: 1),
           // 把 StreamBuilder 换成 FutureBuilder
-          FutureBuilder<List<GlobalReplyItem>>(
+          FutureBuilder<List<GlobalPostReplyItem>>(
             future: _repliesFuture, // 绑定 Future
             builder: (context, snapshot) {
               // 1. 处理加载状态
@@ -240,7 +240,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   // _buildReplyItem 方法保持不变
   Widget _buildReplyItem(
     BuildContext context,
-    GlobalReplyItem reply,
+    GlobalPostReplyItem reply,
   ) {
     final userId = reply.authorId;
 

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../../../utils/font/font_config.dart'; // 确认路径正确
 
 class FunctionalTextButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -12,9 +11,9 @@ class FunctionalTextButton extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final bool isLoading;
   final bool isEnabled;
-  final Color? foregroundColor; // <-- 重命名 customColor 为 foregroundColor
-  final Color? backgroundColor; // <-- 新增: 背景色 (TextButton 通常透明)
-  final double? minWidth; // <-- 新增: 最小宽度，方便布局
+  final Color? foregroundColor;
+  final Color? backgroundColor;
+  final double? minWidth;
 
   const FunctionalTextButton({
     super.key,
@@ -77,8 +76,6 @@ class FunctionalTextButton extends StatelessWidget {
     final Widget labelWidget = AppText(
       label,
       style: TextStyle(
-        fontFamily: FontConfig.defaultFontFamily,
-        fontFamilyFallback: FontConfig.fontFallback,
         fontSize: fontSize,
         color: currentForegroundColor, // 显式使用计算出的当前前景色
         fontWeight: FontWeight.w600,

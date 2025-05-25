@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class SettingsScreen extends StatefulWidget {
   final GameService gameService;
-  final ForumService forumService;
+  final PostService forumService;
   final AuthProvider authProvider;
   const SettingsScreen({
     super.key,
@@ -32,7 +32,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = false;
   String? _loadingMessage;
   bool _hasInitializedDependencies = false;
-  late final ForumService _forumService;
+  late final PostService _forumService;
   late final GameService _gameService;
   late final AuthProvider _authProvider;
 

@@ -4,12 +4,12 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class PostInteractionButtons extends StatefulWidget {
   final Post post;
-  final ForumService forumService;
+  final PostService forumService;
   final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
@@ -38,7 +38,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   late int _favoriteCount;
 
   bool _hasInitializedDependencies = false;
-  late final ForumService _forumService;
+  late final PostService _forumService;
   late User? _currentUser;
 
   @override

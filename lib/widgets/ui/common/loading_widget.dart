@@ -1,6 +1,6 @@
 // lib/widgets/ui/common/loading_widget.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/animation/modern_loading_animation.dart';
+import 'package:suxingchahui/widgets/ui/animation/app_loading_animation.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
@@ -29,7 +29,8 @@ class LoadingWidget extends StatefulWidget {
     this.overlayOpacity = 0.4,
     this.overlayCardColor,
     this.overlayTextColor,
-    this.overlayCardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+    this.overlayCardPadding =
+        const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
     this.overlayCardBorderRadius = 12.0,
     this.overlayCardWidth = 130.0,
   });
@@ -55,7 +56,8 @@ class LoadingWidget extends StatefulWidget {
     double size = 36.0,
     Color? cardColor,
     Color? textColor,
-    EdgeInsets cardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+    EdgeInsets cardPadding =
+        const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
     double cardBorderRadius = 12.0,
     double cardWidth = 130.0,
   }) {
@@ -83,7 +85,8 @@ class LoadingWidget extends StatefulWidget {
     double size = 32.0,
     Color? cardColor,
     Color? textColor,
-    EdgeInsets cardPadding = const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+    EdgeInsets cardPadding =
+        const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
     double cardBorderRadius = 12.0,
     double cardWidth = 130.0,
   }) {
@@ -103,20 +106,20 @@ class LoadingWidget extends StatefulWidget {
     );
   }
 
-  // --- 👇👇👇 这里是修改的地方 👇👇👇 ---
   /// 一个预设的、简单的内联加载指示器 (无消息)
   static final Widget simpleInline = LoadingWidget.inline();
 
   /// 一个预设的、带默认消息的内联加载指示器
-  static final Widget inlineWithMessage = LoadingWidget.inline(message: "努力加载中...");
+  static final Widget inlineWithMessage =
+      LoadingWidget.inline(message: "努力加载中...");
 
   /// 一个预设的、简单的全屏加载指示器
   static final Widget simpleFullScreen = LoadingWidget.fullScreen();
 
   /// 一个预设的、带自定义消息的全屏加载指示器
-  static Widget fullScreenWithMessage(String message) => LoadingWidget.fullScreen(message: message);
+  static Widget fullScreenWithMessage(String message) =>
+      LoadingWidget.fullScreen(message: message);
   // --- 👆👆👆 修改结束 👆👆👆 ---
-
 
   @override
   State<LoadingWidget> createState() => _LoadingWidgetState();
@@ -124,7 +127,6 @@ class LoadingWidget extends StatefulWidget {
 
 // ... (State 类代码保持不变) ...
 class _LoadingWidgetState extends State<LoadingWidget> {
-
   @override
   Widget build(BuildContext context) {
     final Color loadingColor = widget.color ?? Theme.of(context).primaryColor;
@@ -135,12 +137,14 @@ class _LoadingWidgetState extends State<LoadingWidget> {
   }
 
   Widget _buildInlineLoading(Color loadingColor) {
-    final Color textColor = Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey[600]!;
+    final Color textColor =
+        Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey[600]!;
+    print("LoadingWidget._buildLoadingCard: widget.size = ${widget.size}");
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ModernLoadingAnimation(
+          AppLoadingAnimation(
             size: widget.size,
             color: loadingColor,
           ),
@@ -168,11 +172,13 @@ class _LoadingWidgetState extends State<LoadingWidget> {
         color: Colors.black.withSafeOpacity(widget.overlayOpacity),
         child: Center(
           child: GestureDetector(
-            onTap: widget.isDismissible ? () {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-            } : null,
+            onTap: widget.isDismissible
+                ? () {
+                    if (Navigator.canPop(context)) {
+                      Navigator.pop(context);
+                    }
+                  }
+                : null,
             behavior: HitTestBehavior.opaque,
             child: TweenAnimationBuilder<double>(
               tween: Tween(begin: 0.0, end: 1.0),
@@ -205,7 +211,8 @@ class _LoadingWidgetState extends State<LoadingWidget> {
   }
 
   Widget _buildLoadingCard(Color loadingColor) {
-    final Color cardBgColor = widget.overlayCardColor ?? Theme.of(context).cardColor;
+    final Color cardBgColor =
+        widget.overlayCardColor ?? Theme.of(context).cardColor;
     final Color textColor = widget.overlayTextColor ??
         (ThemeData.estimateBrightnessForColor(cardBgColor) == Brightness.dark
             ? Colors.white.withSafeOpacity(0.85)
@@ -227,13 +234,14 @@ class _LoadingWidgetState extends State<LoadingWidget> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          ModernLoadingAnimation(
+          AppLoadingAnimation(
             size: widget.size,
             color: loadingColor,
           ),
           if (widget.message != null && widget.message!.isNotEmpty) ...[
             const SizedBox(height: 12),
-            AppText( // 确保 AppText 导入正确且可用
+            AppText(
+              // 确保 AppText 导入正确且可用
               widget.message!,
               style: TextStyle(
                 color: textColor,

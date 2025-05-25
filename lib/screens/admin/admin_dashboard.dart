@@ -203,7 +203,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
 
         final isAdmin = currentUser?.isAdmin ?? false;
 
-        if (isAdmin) {
+        if (!isAdmin) {
           return CustomErrorWidget(
             title: "权限错误",
             errorMessage: "你不是管理员无法查看此页面",

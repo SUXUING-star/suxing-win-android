@@ -5,7 +5,7 @@ import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 引入 Button
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 引入 Button
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
 
 class LinkManagement extends StatefulWidget {
@@ -24,7 +24,7 @@ class LinkManagement extends StatefulWidget {
 class _LinkManagementState extends State<LinkManagement>
     with SnackBarNotifierMixin {
   // --- 修改: 使用 Future 状态 ---
-  late Future<List<Link>> _linksFuture;
+  late Future<List<SiteLink>> _linksFuture;
   bool _isProcessing = false; // 用于防止重复点击按钮
   // --- 结束修改 ---
 
@@ -71,7 +71,7 @@ class _LinkManagementState extends State<LinkManagement>
     buildSnackBar(context);
     return Scaffold(
       // --- 修改: 使用 FutureBuilder ---
-      body: FutureBuilder<List<Link>>(
+      body: FutureBuilder<List<SiteLink>>(
         future: _linksFuture, // 绑定 Future 状态
         builder: (context, snapshot) {
           // 处理加载状态
@@ -208,7 +208,7 @@ class _LinkManagementState extends State<LinkManagement>
 
       if (result != null && mounted) {
         try {
-          await _linkToolService.addLink(Link.fromJson(result));
+          await _linkToolService.addLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接添加成功', type: SnackbarType.success);
         } catch (e) {
@@ -220,7 +220,7 @@ class _LinkManagementState extends State<LinkManagement>
     }
   }
 
-  Future<void> _showEditLinkDialog(Link link) async {
+  Future<void> _showEditLinkDialog(SiteLink link) async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {
@@ -236,7 +236,7 @@ class _LinkManagementState extends State<LinkManagement>
       if (result != null && mounted) {
         try {
           // 使用 Link.fromJson 将 Map 转换为 Link 对象
-          await _linkToolService.updateLink(Link.fromJson(result));
+          await _linkToolService.updateLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接更新成功', type: SnackbarType.success);
         } catch (e) {
@@ -248,7 +248,7 @@ class _LinkManagementState extends State<LinkManagement>
     }
   }
 
-  Future<void> _showDeleteConfirmation(Link link) async {
+  Future<void> _showDeleteConfirmation(SiteLink link) async {
     if (_isProcessing) return;
     setState(() => _isProcessing = true);
     try {

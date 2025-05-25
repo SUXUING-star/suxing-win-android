@@ -14,7 +14,7 @@ import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dar
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/email/email_service.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
@@ -107,7 +107,7 @@ class AppRoutes {
     RouteSettings settings,
     AuthProvider authProvider,
     UserService userService,
-    ForumService forumService,
+    PostService forumService,
     GameService gameService,
     UserFollowService followService,
     UserActivityService activityService,
@@ -185,6 +185,7 @@ class AppRoutes {
       case forgotPassword:
         return MaterialPageRoute(
             builder: (_) => ForgotPasswordScreen(
+                  authProvider: authProvider,
                   inputStateService: inputStateService,
                   infoProvider: infoProvider,
                   emailService: emailService,
@@ -204,6 +205,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => ResetPasswordScreen(
                   email: email,
+                  authProvider: authProvider,
                   inputStateService: inputStateService,
                   userService: userService,
                 ));
@@ -369,6 +371,8 @@ class AppRoutes {
       case history:
         return MaterialPageRoute(
             builder: (_) => HistoryScreen(
+                  followService: followService,
+                  infoProvider: infoProvider,
                   authProvider: authProvider,
                   gameService: gameService,
                   forumService: forumService,

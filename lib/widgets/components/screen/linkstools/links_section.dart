@@ -4,11 +4,11 @@ import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.d
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 
 class LinksSection extends StatelessWidget {
-  final List<Link> links;
+  final List<SiteLink> links;
   final bool isAdmin;
   final Function() onRefresh;
   final Function(String) onLaunchURL;
@@ -98,7 +98,7 @@ class LinksSection extends StatelessWidget {
   }
 
   // _showEditDialog 保持不变
-  void _showEditDialog(BuildContext context, Link link) {
+  void _showEditDialog(BuildContext context, SiteLink link) {
     showDialog(
         context: context,
         builder: (context) => LinkFormDialog(
@@ -107,7 +107,7 @@ class LinksSection extends StatelessWidget {
             )).then((linkData) async {
       if (linkData != null) {
         try {
-          await linkToolService.updateLink(Link.fromJson(linkData));
+          await linkToolService.updateLink(SiteLink.fromJson(linkData));
           if (context.mounted) {
             AppSnackBar.showSuccess(context, '更新链接成功'); // 检查 mounted
           }

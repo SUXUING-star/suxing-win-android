@@ -1,10 +1,10 @@
 // lib/widgets/ui/common/error_widget.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 假设你这个动画组件存在
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 假设你的 AppBar 存在
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 假设你的按钮存在
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 /// 一个可定制的错误提示 Widget。
 /// 可以选择是否包裹在 Scaffold 中。

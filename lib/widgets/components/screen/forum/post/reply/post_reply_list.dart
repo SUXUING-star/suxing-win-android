@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 评
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // Snackbar 提示
 import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart'; // 登录提示
 import 'package:suxingchahui/models/post/post.dart'; // Reply, ReplyStatus 模型
-import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 核心服务
+import 'package:suxingchahui/services/main/forum/post_service.dart'; // 核心服务
 import 'post_reply_item.dart'; // 评论项组件
 
 /// PostReplyList - 显示帖子评论列表，并管理自身的加载、刷新和顶层评论提交。
@@ -29,7 +29,7 @@ class PostReplyList extends StatefulWidget {
 
   final UserFollowService followService;
 
-  final ForumService forumService;
+  final PostService forumService;
 
   /// 帖子 ID
   final String postId;
@@ -55,7 +55,7 @@ class PostReplyList extends StatefulWidget {
 
 class _PostReplyListState extends State<PostReplyList> {
   // 内部状态
-  late Future<List<Reply>> _repliesFuture; // 用于 FutureBuilder 的数据源
+  late Future<List<PostReply>> _repliesFuture; // 用于 FutureBuilder 的数据源
   bool _isSubmittingTopLevelReply = false; // 标记顶层评论是否正在提交
   late final String _topLevelReplySlotName; // 顶层评论输入框的唯一标识符
   ScrollController? _scrollController; // 滚动控制器（仅在需要内部滚动时创建）
@@ -230,7 +230,7 @@ class _PostReplyListState extends State<PostReplyList> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<Reply>>(
+    return FutureBuilder<List<PostReply>>(
       future: _repliesFuture,
       builder: (context, snapshot) {
         Widget buildLayout(Widget contentChild) {
@@ -307,7 +307,7 @@ class _PostReplyListState extends State<PostReplyList> {
         // 3. 成功获取数据
         final allReplies = snapshot.data ?? [];
         final activeReplies =
-            allReplies.where((r) => r.status == ReplyStatus.active).toList();
+            allReplies.where((r) => r.status == PostReplyStatus.active).toList();
 
         final topLevelReplies = activeReplies
             .where((r) => r.parentId == null || r.parentId!.isEmpty)
@@ -315,7 +315,7 @@ class _PostReplyListState extends State<PostReplyList> {
         final nestedRepliesMap = groupBy(
           activeReplies
               .where((r) => r.parentId != null && r.parentId!.isNotEmpty),
-          (Reply r) => r.parentId!,
+          (PostReply r) => r.parentId!,
         );
 
         topLevelReplies.sort((a, b) => b.createTime.compareTo(a.createTime));

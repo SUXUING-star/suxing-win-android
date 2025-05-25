@@ -34,7 +34,7 @@ class GamePreviewButton extends StatelessWidget {
   final String? selectedCategory;
   final List<String> selectedTags;
   final double rating;
-  final List<DownloadLink> downloadLinks;
+  final List<GameDownloadLink> downloadLinks;
   final TextEditingController? musicUrlController;
   final TextEditingController? bvidController;
   final Game? existingGame;

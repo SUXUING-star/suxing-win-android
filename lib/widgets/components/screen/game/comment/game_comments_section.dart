@@ -6,7 +6,7 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'dart:async';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/models/comment/comment.dart';
+import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/limiter/rate_limit_dialog.dart'; // 速率限制对话框
 import 'package:suxingchahui/widgets/components/screen/game/comment/comments/game_comment_input.dart';
@@ -41,7 +41,7 @@ class GameCommentsSection extends StatefulWidget {
 }
 
 class _GameCommentsSectionState extends State<GameCommentsSection> {
-  late Future<List<Comment>> _commentsFuture;
+  late Future<List<GameComment>> _commentsFuture;
 
   // Loading 状态 (用于 UI 反馈，例如按钮禁用、显示菊花等)
   bool _isAddingComment = false; // 正在提交顶级评论
@@ -71,6 +71,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   @override
   void dispose() {
     super.dispose();
+    _currentUser = null;
   }
 
   // 加载/重新加载评论数据的方法
@@ -109,7 +110,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     }
   }
 
-  bool _checkCanUpdateOrDeleteComment(Comment comment) {
+  bool _checkCanUpdateOrDeleteComment(GameComment comment) {
     return _currentUser?.isAdmin ?? false
         ? true
         : _currentUser?.id == comment.userId;
@@ -154,7 +155,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   }
 
   /// 处理更新评论
-  Future<void> _handleUpdateComment(Comment comment, String newContent) async {
+  Future<void> _handleUpdateComment(GameComment comment, String newContent) async {
     if (!mounted) return;
     if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -181,7 +182,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   }
 
   /// 处理删除评论
-  Future<void> _handleDeleteComment(Comment comment) async {
+  Future<void> _handleDeleteComment(GameComment comment) async {
     if (!mounted) return;
     if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -340,7 +341,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
 
   // --- 构建评论列表区域的方法 (使用 FutureBuilder) ---
   Widget _buildCommentListSection() {
-    return FutureBuilder<List<Comment>>(
+    return FutureBuilder<List<GameComment>>(
       future: _commentsFuture, //
       builder: (context, snapshot) {
         // 1. 处理加载状态

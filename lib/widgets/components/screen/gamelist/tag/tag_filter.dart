@@ -1,11 +1,11 @@
 // lib/widgets/components/screen/gamelist/tag/tag_filter.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/tag/tag.dart';
+import '../../../../../models/game/game_tag.dart';
 import '../../../../../utils/font/font_config.dart';
 
 class TagFilter extends StatefulWidget {
-  final List<Tag> tags;
+  final List<GameTag> tags;
   final String? selectedTag;
   final Function(String) onTagSelected;
   final VoidCallback onClearSelection;

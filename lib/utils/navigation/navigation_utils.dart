@@ -1,7 +1,6 @@
 // lib/utils/navigation/navigation_utils.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/app.dart';
@@ -164,7 +163,9 @@ class NavigationUtils {
     _safeCallSync(() => _getRootNavigator().popUntil((route) => route.isFirst));
   }
 
-  static void navigateToHome(SidebarProvider sidebarProvider,BuildContext context, {int tabIndex = 0}) {
+  static void navigateToHome(
+      SidebarProvider sidebarProvider, BuildContext context,
+      {int tabIndex = 0}) {
     // 简单的范围检查 (基于 _mainTabRoutes 的大小)
     if (tabIndex < 0 || tabIndex >= _mainTabRoutes.length) {
       tabIndex = 0; // 索引无效则重置为 0
@@ -183,8 +184,7 @@ class NavigationUtils {
       final providerContext = mainNavigatorKey.currentContext;
       if (providerContext != null) {
         try {
-          Provider.of<SidebarProvider>(providerContext, listen: false)
-              .setCurrentIndex(tabIndex);
+          sidebarProvider.setCurrentIndex(tabIndex);
         } catch (e) {
           //print(
           //    "NavigationUtils Error: Failed to update SidebarProvider in navigateToHome: $e");

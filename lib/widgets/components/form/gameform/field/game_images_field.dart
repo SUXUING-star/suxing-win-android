@@ -3,15 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'dart:io';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/image/safe_cached_image.dart'; // 确认路径
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class GameImagesField extends StatelessWidget {
-  // --- 属性修改 ---
-  final List<dynamic> gameImagesSources; // List<String or XFile>
-  final ValueChanged<List<dynamic>> onChanged; // 回调传递更新后的完整列表
-  final bool isLoading; // 从父组件接收的加载状态
-  // 移除了内部 onLoadingChanged 和 initialGameImages
+  final List<dynamic> gameImagesSources;
+  final ValueChanged<List<dynamic>> onChanged;
+  final bool isLoading;
 
   const GameImagesField({
     super.key,
@@ -131,8 +129,6 @@ class GameImagesField extends StatelessWidget {
                     fit: BoxFit.cover,
                   );
                 } else {
-                  // print(
-                  //     "Game Image Preview [$index]: Unknown source type: ${source.runtimeType}");
                   imageWidget = Container(
                       width: imageWidth,
                       height: imageHeight,

@@ -68,8 +68,6 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
             initialScale: PhotoViewComputedScale.contained,
             minScale: PhotoViewComputedScale.contained,
             maxScale: PhotoViewComputedScale.covered * 2,
-            // 可选：如果你想在 PhotoView 层面处理英雄动画 tag
-            // heroAttributes: PhotoViewHeroAttributes(tag: safeUrl + index.toString()), // 确保 tag 唯一
           );
         },
         itemCount: widget.images.length,

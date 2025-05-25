@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/tag/tag.dart';
+import 'package:suxingchahui/models/game/game_list.dart';
+import 'package:suxingchahui/models/game/game_tag.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -71,7 +72,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   String? _currentCategory;
   // 直接上升为生命周期管控内部状态变量，不要写为可空的变量！！！！！！！！
 
-  List<Tag> _availableTags = [];
+  List<GameTag> _availableTags = [];
   final List<String> _availableCategories = GameConstants.defaultGameCategory;
   StreamSubscription<BoxEvent>? _cacheSubscription;
   String _currentWatchIdentifier = '';
@@ -290,7 +291,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     });
 
     try {
-      Map<String, dynamic> result;
+      GameList result;
       if (_currentCategory != null) {
         // *** 优先检查分类 ***
         result = await widget.gameService.getGamesByCategoryWithInfo(
@@ -311,7 +312,6 @@ class _GamesListScreenState extends State<GamesListScreen>
           forceRefresh: forceRefresh,
         );
       } else {
-        // *** 最后是默认分页 ***
         result = await widget.gameService.getGamesPaginatedWithInfo(
           page: targetPage,
           pageSize: _pageSize,
@@ -323,10 +323,10 @@ class _GamesListScreenState extends State<GamesListScreen>
 
       if (!mounted) return;
 
-      final games = result['games'] as List<Game>? ?? [];
-      final pagination = result['pagination'] as Map<String, dynamic>? ?? {};
-      final int serverPage = pagination['page'] ?? targetPage;
-      final int serverTotalPages = pagination['totalPages'] ?? 1;
+      final games = result.games;
+      final pagination = result.pagination;
+      final int serverPage = pagination.page;
+      final int serverTotalPages = pagination.pages;
 
       setState(() {
         _gamesList = games;

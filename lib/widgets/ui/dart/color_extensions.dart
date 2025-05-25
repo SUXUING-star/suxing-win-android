@@ -1,4 +1,4 @@
-// 放在一个公共的 utils 文件里，比如 utils/color_extensions.dart
+// lib/widgets/ui/dart/color_extensions.dart
 import 'package:flutter/material.dart';
 
 extension ColorOpacityExtension on Color {

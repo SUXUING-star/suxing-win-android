@@ -1,11 +1,10 @@
 // lib/widgets/ui/dialogs/base_input_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/animation/animated_dialog.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/animation/animated_dialog.dart';
 import 'dart:async';
-// 假设这些按钮和工具类路径正确
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
-import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 // --- 底层通用输入/确认对话框 (支持拖拽和缩放，带边界限制) ---
 class BaseInputDialog<T> extends StatefulWidget {

@@ -3,7 +3,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'common_game_list_screen.dart'; // 引入纯净版
+import 'common_game_list_screen.dart';
 
 class HotGamesScreen extends StatefulWidget {
   final GameService gameService;
@@ -52,12 +52,10 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
     setState(() {
       _isLoading = true; // 开始加载，显示 Loading
       _error = null; // 清除旧错误
-      // 刷新时不清除旧数据，让 Loading 覆盖
-      // if (_hotGames.isNotEmpty) _hotGames = [];
     });
 
     try {
-      final games = await widget.gameService.getHotGames(); // 直接 await 获取数据
+      final games = await widget.gameService.getHotGames();
       if (!mounted) return; // 异步操作后再次检查
       setState(() {
         _hotGames = games; // 更新数据

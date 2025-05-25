@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
-// 移除 navigation_utils，如果只用 Navigator.push
-// import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import '../../../../../models/announcement/announcement.dart';
 import 'announcement_preview_screen.dart'; // 保持导入
 
 class AnnouncementPreviewButton extends StatelessWidget {

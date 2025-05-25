@@ -7,7 +7,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart';
@@ -24,7 +24,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 class HomeScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   const HomeScreen({

@@ -1,15 +1,18 @@
 // lib/widgets/components/screen/profile/open/mobile/profile_post_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/post/post.dart';
 
 class ProfilePostCard extends StatelessWidget {
   final Post post;
 
-  const ProfilePostCard({super.key, required this.post});
+  const ProfilePostCard({
+    super.key,
+    required this.post,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,7 +24,8 @@ class ProfilePostCard extends StatelessWidget {
       ),
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => NavigationUtils.pushNamed(context, AppRoutes.postDetail, arguments: post.id),
+        onTap: () => NavigationUtils.pushNamed(context, AppRoutes.postDetail,
+            arguments: post.id),
         child: Padding(
           padding: EdgeInsets.all(12),
           child: Column(
@@ -34,7 +38,8 @@ class ProfilePostCard extends StatelessWidget {
                   Container(
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withSafeOpacity(0.1),
+                      color:
+                          Theme.of(context).primaryColor.withSafeOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                     ),
                     child: Text(
@@ -117,7 +122,8 @@ class ProfilePostCard extends StatelessWidget {
               // 底部统计行
               Row(
                 children: [
-                  Icon(Icons.remove_red_eye_outlined, size: 14, color: Colors.lightBlueAccent),
+                  Icon(Icons.remove_red_eye_outlined,
+                      size: 14, color: Colors.lightBlueAccent),
                   SizedBox(width: 4),
                   Text(
                     post.viewCount.toString(),
@@ -126,10 +132,9 @@ class ProfilePostCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
-
                   SizedBox(width: 16),
-
-                  Icon(Icons.chat_bubble_outline, size: 14, color: Colors.green),
+                  Icon(Icons.chat_bubble_outline,
+                      size: 14, color: Colors.green),
                   SizedBox(width: 4),
                   Text(
                     post.replyCount.toString(),
@@ -138,7 +143,6 @@ class ProfilePostCard extends StatelessWidget {
                       color: Colors.grey[600],
                     ),
                   ),
-
                 ],
               ),
             ],

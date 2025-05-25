@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class AnimatedDialog {
   // --- 通用动画显示函数 (保持或移到工具类) ---
 // 这个函数保持不变，它负责初始的进入动画和定位
- static Future<T?> showAppAnimatedDialog<T>({
+  static Future<T?> showAppAnimatedDialog<T>({
     required BuildContext context,
     required Widget Function(BuildContext context) pageBuilder, // 构建对话框内容的函数
     bool barrierDismissible = true,
@@ -30,7 +30,7 @@ class AnimatedDialog {
           Animation<double> animation,
           Animation<double> secondaryAnimation,
           Widget child) {
-// 动画效果 (缩放 + 淡入) - 应用于 BaseInputDialog 实例
+        // 动画效果 (缩放 + 淡入) - 应用于 BaseInputDialog 实例
         return ScaleTransition(
           scale: CurvedAnimation(
             parent: animation,
@@ -41,7 +41,7 @@ class AnimatedDialog {
               parent: animation,
               curve: Curves.easeIn,
             ),
-// 使用 Center 和 ConstrainedBox 约束对话框 *初始* 的大小和位置
+            // 使用 Center 和 ConstrainedBox 约束对话框 *初始* 的大小和位置
             child: Center(
               child: ConstrainedBox(
                 constraints: BoxConstraints(maxWidth: maxWidth),

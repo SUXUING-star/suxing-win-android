@@ -33,11 +33,11 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:uuid/uuid.dart';
-import 'field/category_field.dart';
-import 'field/cover_image_field.dart';
-import 'field/download_links_field.dart';
+import 'field/game_category_field.dart';
+import 'field/game_cover_image_field.dart';
+import 'field/game_download_links_field.dart';
 import 'field/game_images_field.dart';
-import 'field/tags_field.dart';
+import 'field/game_tags_field.dart';
 import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
@@ -93,7 +93,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   List<dynamic> _gameImagesSources = []; // List 元素可以是 String, XFile, 或 null
 
   // --- 其他表单状态 ---
-  List<DownloadLink> _downloadLinks = [];
+  List<GameDownloadLink> _downloadLinks = [];
   String? _selectedCategory;
   List<String> _selectedTags = [];
 
@@ -276,8 +276,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       _gameImagesSources = List<dynamic>.from(game.images); // 表单状态初始化为 URL 列表
 
       // 下载链接：需要深拷贝，避免引用同一个列表
-      _downloadLinks = List<DownloadLink>.from(game.downloadLinks
-          .map((link) => DownloadLink.fromJson(link.toJson())));
+      _downloadLinks = List<GameDownloadLink>.from(game.downloadLinks
+          .map((link) => GameDownloadLink.fromJson(link.toJson())));
       final categoriesList = game.category // <--- 新的
           .split(',')
           .map((e) => e.trim())
@@ -395,7 +395,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _selectedCategory = draft.selectedCategory;
         _selectedTags = List<String>.from(draft.selectedTags);
         _downloadLinks = draft.downloadLinks
-            .map((map) => DownloadLink.fromJson(map))
+            .map((map) => GameDownloadLink.fromJson(map))
             .toList();
 
         // --- Restore Cover Image ---
@@ -918,9 +918,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             playedCount: widget.game?.playedCount ?? 0,
             totalCollections: widget.game?.totalCollections ?? 0,
             // 下载链接
-            downloadLinks: List<DownloadLink>.from(// 确保是副本
+            downloadLinks: List<GameDownloadLink>.from(// 确保是副本
                 _downloadLinks
-                    .map((link) => DownloadLink.fromJson(link.toJson()))),
+                    .map((link) => GameDownloadLink.fromJson(link.toJson()))),
             // 可选字段
             musicUrl: _musicUrlController.text.trim().isEmpty
                 ? null
@@ -1049,7 +1049,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           },
           child: Form(
             key: _formKey,
-            // autovalidateMode: AutovalidateMode.onUserInteraction,
             child: useDesktopLayout
                 ? _buildDesktopLayout(context, currentUserId)
                 : _buildMobileLayout(context, currentUserId),
@@ -1071,12 +1070,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Future<void> _handleBlockedPopAttempt() async {
     // First, check if it was blocked due to processing
     if (_isProcessing) {
-      if (mounted) AppSnackBar.showInfo(context, '正在处理中，请稍候...');
+      if (mounted) {
+        AppSnackBar.showInfo(context, '正在处理中，请稍候...');
+      }
       return; // Do nothing more, pop remains blocked
     }
 
-    // If not processing, it was blocked due to unsaved changes/content.
-    // Re-check the condition just in case state changed rapidly.
     bool hasUnsavedChanges = widget.game != null && _hasChanges();
     bool isAddModeWithContent = widget.game == null && !_isFormEmpty();
 
@@ -1126,17 +1125,14 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // --- 桌面布局构建 ---
   Widget _buildDesktopLayout(BuildContext context, String userId) {
-    // 稍微调整高度限制
     final desktopCardMaxHeight =
         MediaQuery.of(context).size.height - 120; // 留出更多边距
     return SingleChildScrollView(
-      // 允许外部滚动
       child: Padding(
         padding: const EdgeInsets.all(24.0), // 增大桌面边距
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 左侧卡片：图片和链接
             Expanded(
               flex: 4, // 可以调整比例
               child: Card(
@@ -1320,7 +1316,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // CoverImageField 应该能处理 String, XFile, null
-        CoverImageField(
+        GameCoverImageField(
           coverImageSource: _coverImageSource,
           onChanged: _handleCoverImageChange,
           isLoading: _isProcessing,
@@ -1476,7 +1472,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        CategoryField(
+        GameCategoryField(
           selectedCategory: _selectedCategory,
           onChanged: (String? newValue) {
             setState(() {
@@ -1502,7 +1498,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // 标签字段
   Widget _buildTagsField() {
-    return TagsField(
+    return GameTagsField(
       tags: _selectedTags,
       onChanged: (tags) => setState(() => _selectedTags = tags),
     );
@@ -1510,7 +1506,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // 下载链接字段
   Widget _buildDownloadLinksField() {
-    return DownloadLinksField(
+    return GameDownloadLinksField(
       downloadLinks: _downloadLinks,
       onChanged: (links) => setState(() => _downloadLinks = links),
     );

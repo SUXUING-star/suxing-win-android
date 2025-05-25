@@ -8,7 +8,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
@@ -34,7 +34,7 @@ class MainLayout extends StatefulWidget {
   final AuthProvider authProvider;
   final UserService userService;
   final GameService gameService;
-  final ForumService forumService;
+  final PostService forumService;
   final UserActivityService activityService;
   final LinkToolService linkToolService;
   final UserFollowService followService;

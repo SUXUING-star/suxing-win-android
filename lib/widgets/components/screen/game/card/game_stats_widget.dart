@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
-import 'stat_item_widget.dart';
+import 'game_stat_item_widget.dart';
 
 class GameStatsWidget extends StatelessWidget {
   final Game game;

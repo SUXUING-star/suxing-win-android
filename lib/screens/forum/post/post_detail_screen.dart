@@ -1,6 +1,5 @@
 // lib/screens/forum/post_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -8,6 +7,7 @@ import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_layout.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -16,15 +16,12 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/post/user_post_actions.dart'; // 引入 UserPostActions
-import 'package:suxingchahui/services/main/forum/forum_service.dart'; // 引入 ForumService 和 PostDetailsWithActions
+import 'package:suxingchahui/models/post/user_post_actions.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-// 导入布局文件
-import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_desktop_layout.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_mobile_layout.dart';
 // 导入 UI 组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -34,7 +31,7 @@ class PostDetailScreen extends StatefulWidget {
   final String postId;
   final bool needHistory;
   final AuthProvider authProvider;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
@@ -367,7 +364,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   @override
   Widget build(BuildContext context) {
     buildSnackBar(context);
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final isDesktop = MediaQuery.of(context).size.width >= 1024;
 
     // --- 加载状态 ---
     if (_isLoading && _post == null) {
@@ -399,49 +396,37 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       );
     }
 
-    // --- 正常显示 ---
-    // **此时 _post 保证非 null, _userActions 也应该由 _loadPostDetails 保证非 null (即使是默认值)**
-    final currentUserActions = _userActions ??
-        UserPostActions.defaultActions(
-            widget.postId, widget.authProvider.currentUserId ?? "guest");
-
     return Scaffold(
       appBar: const CustomAppBar(
         title: '帖子详情',
       ),
       body: RefreshIndicator(
         onRefresh: _refreshPost,
-        child: isDesktop
-            ? PostDetailDesktopLayout(
-                authProvider: widget.authProvider,
-                inputStateService: widget.inputStateService,
-                post: _post!, // 传递 Post
-                userActions: currentUserActions,
-                postId: widget.postId,
-                onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
-                forumService: widget.forumService,
-                infoProvider: widget.infoProvider,
-                followService: widget.followService,
-                onTagTap: (context, newTagString) =>
-                    _handleFilterTagSelect(context, newTagString),
-              )
-            : PostDetailMobileLayout(
-                authProvider: widget.authProvider,
-                inputStateService: widget.inputStateService,
-                post: _post!, // 传递 Post
-                userActions: currentUserActions,
-                postId: widget.postId,
-                followService: widget.followService,
-                forumService: widget.forumService,
-                infoProvider: widget.infoProvider,
-                onTagTap: (context, newTagString) =>
-                    _handleFilterTagSelect(context, newTagString),
-                onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
-              ),
+        child: _buildPostDetailLayout(isDesktop),
       ),
       floatingActionButton:
           _buildPostActionButtonsGroup(context, _post!), // FAB 依赖 _post 状态
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
+    );
+  }
+
+  Widget _buildPostDetailLayout(bool isDesktop) {
+    final currentUserActions = _userActions ??
+        UserPostActions.defaultActions(
+            widget.postId, widget.authProvider.currentUserId ?? "");
+    return PostDetailLayout(
+      isDesktop: isDesktop,
+      authProvider: widget.authProvider,
+      inputStateService: widget.inputStateService,
+      post: _post!, // 传递 Post
+      userActions: currentUserActions,
+      postId: widget.postId,
+      onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
+      forumService: widget.forumService,
+      infoProvider: widget.infoProvider,
+      followService: widget.followService,
+      onTagTap: (context, newTagString) =>
+          _handleFilterTagSelect(context, newTagString),
     );
   }
 

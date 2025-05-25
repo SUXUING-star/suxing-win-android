@@ -1,6 +1,20 @@
 // lib/constants/game/game_constants.dart
 import 'package:flutter/material.dart';
 
+import '../../models/game/game_collection.dart';
+
+// 定义一个简单的类或 Map 来存储每个 Tab 的配置信息
+class GameCollectionTabConfig {
+  final String status;
+  final String Function(int count) titleBuilder; // 用于动态构建 Tab 标题
+  final IconData icon;
+
+  const GameCollectionTabConfig({
+    required this.status,
+    required this.titleBuilder,
+    required this.icon,
+  });
+}
 
 class GameConstants {
   static const List<String> defaultGameCategory = [
@@ -8,15 +22,47 @@ class GameConstants {
     categoryTranslated
   ];
 
-  static const Map<String,String> defaultFilter = {
-  'createTime': '最新发布',
-  'viewCount': '最多浏览',
-  'rating': '最高评分'
+  static const Map<String, String> defaultFilter = {
+    'createTime': '最新发布',
+    'viewCount': '最多浏览',
+    'rating': '最高评分'
   };
 
   static const String categoryTranslated = '汉化';
   static const String categoryOriginal = '生肉';
 
+  // 新增：定义 Tab 的配置列表
+  static final List<GameCollectionTabConfig> collectionTabs = [
+    GameCollectionTabConfig(
+      status: GameCollectionStatus.wantToPlay,
+      titleBuilder: (count) => '想玩${count > 0 ? ' $count' : ''}',
+      icon: Icons.star_border,
+    ),
+    GameCollectionTabConfig(
+      status: GameCollectionStatus.playing,
+      titleBuilder: (count) => '在玩${count > 0 ? ' $count' : ''}',
+      icon: Icons.videogame_asset,
+    ),
+    GameCollectionTabConfig(
+      status: GameCollectionStatus.played,
+      titleBuilder: (count) => '玩过${count > 0 ? ' $count' : ''}',
+      icon: Icons.check_circle,
+    ),
+  ];
+
+  // 根据收藏类型获取对应颜色 (保持不变)
+  static Color getGameCollectionStatusColor(collectionType) {
+    switch (collectionType) {
+      case GameCollectionStatus.wantToPlay:
+        return Colors.blue;
+      case GameCollectionStatus.playing:
+        return Colors.green;
+      case GameCollectionStatus.played:
+        return Colors.purple;
+      default:
+        return Colors.grey;
+    }
+  }
 }
 
 class GameCategoryUtils {
@@ -58,13 +104,13 @@ class GameTagUtils {
     Color(0xFF78909C), // blueGrey[400]
   ];
 
-
-
   /// 根据标签字符串的哈希值获取一个稳定的颜色 (静态方法)
   static Color getTagColor(String tag) {
     final colorIndex = tag.hashCode.abs() % _defaultTagColors.length;
     return _defaultTagColors[colorIndex];
   }
+
+
 
   /// 根据背景颜色计算合适的文本颜色 (静态方法)
   static Color getTextColorForBackground(Color backgroundColor) {

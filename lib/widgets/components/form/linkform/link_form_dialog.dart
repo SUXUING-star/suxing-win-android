@@ -4,10 +4,10 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/models/linkstools/link.dart';
+import 'package:suxingchahui/models/linkstools/site_link.dart';
 
 class LinkFormDialog extends StatefulWidget {
-  final Link? link;
+  final SiteLink? link;
   final InputStateService inputStateService;
   const LinkFormDialog({
     super.key,

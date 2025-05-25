@@ -3,7 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
+
 
 class SafeUserAvatar extends StatelessWidget {
   final String? userId;

@@ -11,12 +11,12 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import '../../../models/post/post.dart';
-import '../../../services/main/forum/forum_service.dart';
+import '../../../services/main/forum/post_service.dart';
 import '../../../widgets/components/form/postform/post_form.dart';
 
 class EditPostScreen extends StatefulWidget {
   final String postId;
-  final ForumService forumService;
+  final PostService forumService;
   final AuthProvider authProvider;
   final InputStateService inputStateService;
 
@@ -60,7 +60,7 @@ class _EditPostScreenState extends State<EditPostScreen>
     try {
       setState(() => _isLoading = true);
 
-      final post = await widget.forumService.getPost(widget.postId);
+      final post = await widget.forumService.getPostById(widget.postId);
       setState(() {
         _post = post;
         _isLoading = false;

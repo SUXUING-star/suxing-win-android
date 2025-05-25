@@ -315,8 +315,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       if (!mounted) return; // Check mount status after async operation
 
       // Process the result
-      final List<UserActivity> fetchedActivities = result['activities'] ?? [];
-      final PaginationData? fetchedPagination = result['pagination'];
+      final List<UserActivity> fetchedActivities = result.activities;
+      final PaginationData? fetchedPagination = result.pagination;
 
       // Check if the response structure is valid (e.g., pagination exists)
       if (fetchedPagination != null) {
@@ -434,8 +434,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       if (!mounted) return;
 
       // Process results
-      final List<UserActivity> newActivities = result['activities'] ?? [];
-      final PaginationData? newPagination = result['pagination'];
+      final List<UserActivity> newActivities = result.activities;
+      final PaginationData newPagination = result.pagination;
 
       setState(() {
         _activities.addAll(newActivities); // Append new data

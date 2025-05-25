@@ -1,11 +1,11 @@
 // lib/widgets/components/screen/gamelist/tag/tag_cloud.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/tag/tag.dart';
+import '../../../../../models/game/game_tag.dart';
 import '../../../../../models/stats/tag_stat.dart';
 
 class TagCloud extends StatelessWidget {
-  final List<Tag> tags;
+  final List<GameTag> tags;
   final Function(String) onTagSelected;
   final String? selectedTag;
   final int? maxTags;

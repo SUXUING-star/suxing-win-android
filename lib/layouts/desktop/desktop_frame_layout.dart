@@ -1,6 +1,7 @@
 // lib/widgets/layouts/desktop/desktop_frame_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_sidebar.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
@@ -11,7 +12,6 @@ import 'package:suxingchahui/widgets/components/badge/layout/message_badge.dart'
 import 'package:suxingchahui/widgets/components/badge/layout/update_button.dart';
 import 'package:suxingchahui/widgets/components/indicators/announcement_indicator.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'desktop_sidebar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'package:suxingchahui/windows/ui/windows_controls.dart';

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import '../../../../../models/game/game.dart';
 import '../../../../../utils/device/device_utils.dart';
-import 'collection_stat_row.dart';
+import 'game_collection_stat_row.dart';
 
 class GameCollectionDialog extends StatelessWidget {
   final Game game;
@@ -140,7 +140,7 @@ class GameCollectionDialog extends StatelessWidget {
     required Color color,
     required IconData icon,
   }) {
-    return CollectionStatRow(
+    return GameCollectionStatRow(
       label: label,
       count: count,
       percent: percent,

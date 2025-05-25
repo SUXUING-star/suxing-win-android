@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class GameNavigationSection extends StatelessWidget {
-  // <--- 改为 StatelessWidget
-  final String currentGameId; // 仍然需要知道当前 ID 以避免导航到自身（虽然不太可能）
-  final Map<String, dynamic>? navigationInfo; // <--- 新增：接收导航信息
+  final String currentGameId;
+  final GameNavigationInfo? navigationInfo;
   final Function(String gameId)? onNavigate;
 
   const GameNavigationSection({
     super.key,
     required this.currentGameId,
-    this.navigationInfo, // <--- 接收导航信息
+    this.navigationInfo,
     this.onNavigate,
   });
 
@@ -33,15 +33,20 @@ class GameNavigationSection extends StatelessWidget {
     BuildContext context, {
     required bool isPrevious,
   }) {
-    // 从 navigationInfo 中安全地获取 ID 和 Title
-    final gameId =
-        navigationInfo?[isPrevious ? 'previousId' : 'nextId'] as String?;
-    final gameTitle =
-        navigationInfo?[isPrevious ? 'previousTitle' : 'nextTitle'] as String?;
-
-    // 如果没有对应的导航游戏 ID，则返回占位
+    String? gameId;
+    String? gameTitle;
+    if (isPrevious) {
+      gameId = navigationInfo?.previousId;
+      gameTitle = navigationInfo?.previousTitle;
+    } else {
+      gameId = navigationInfo?.nextId;
+      gameTitle = navigationInfo?.nextTitle;
+    }
+    String finalGameId;
     if (gameId == null || gameId.isEmpty) {
       return const Expanded(child: SizedBox.shrink());
+    } else {
+      finalGameId = gameId;
     }
 
     final icon = isPrevious
@@ -64,7 +69,7 @@ class GameNavigationSection extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: InkWell(
-          onTap: () => _navigateToGame(context, gameId),
+          onTap: () => _navigateToGame(context, finalGameId),
           child: Padding(
             // 在 InkWell 内部添加 Padding
             padding:
@@ -131,10 +136,10 @@ class GameNavigationSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 修改: 检查 navigationInfo 是否有效
-    final bool hasPrevious = navigationInfo?['previousId'] != null &&
-        (navigationInfo!['previousId'] as String? ?? '').isNotEmpty;
-    final bool hasNext = navigationInfo?['nextId'] != null &&
-        (navigationInfo!['nextId'] as String? ?? '').isNotEmpty;
+    final bool hasPrevious = navigationInfo?.previousId != null &&
+        (navigationInfo?.previousId ?? '').isNotEmpty;
+    final bool hasNext = navigationInfo?.nextId != null &&
+        (navigationInfo?.nextId ?? '').isNotEmpty;
 
     // 如果没有导航信息，则不显示
     if (navigationInfo == null || (!hasPrevious && !hasNext)) {

@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
-import 'package:suxingchahui/models/game/game_review.dart';
+import 'package:suxingchahui/models/game/game_collection_review.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
@@ -36,11 +36,11 @@ class GameReviewSection extends StatefulWidget {
 }
 
 class GameReviewSectionState extends State<GameReviewSection> {
-  List<GameReview> _entries = [];
+  List<GameCollectionReview> _reviews = [];
   bool _isLoading = true;
   String? _error;
   int _page = 1;
-  final int _pageSize = 15;
+  final int _pageSize = GameCollectionService.gameCollectionReviews;
   bool _hasMoreEntries = true;
   bool _isProcessingPageOne = false;
   // int _loadReviewsCallCount = 0;
@@ -69,6 +69,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
   @override
   void dispose() {
     super.dispose();
+    _reviews = [];
   }
 
   @override
@@ -95,7 +96,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (_isProcessingPageOne || !mounted) return;
     setState(() {
       _page = 1;
-      _entries = [];
+      _reviews = [];
       _isLoading = true;
       _error = null;
       _hasMoreEntries = true;
@@ -131,18 +132,18 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
 
     try {
-      final List<GameReview> fetchedEntries = await _collectionService
-          .getGameReviews(widget.game.id, page: _page, limit: _pageSize);
+      final List<GameCollectionReview> fetchedReviews = await _collectionService
+          .getGameCollectionReviews(widget.game.id, page: _page, limit: _pageSize);
 
       if (!mounted) return;
 
       setState(() {
         if (_page == 1) {
-          _entries = fetchedEntries;
+          _reviews = fetchedReviews;
         } else {
-          _entries.addAll(fetchedEntries);
+          _reviews.addAll(fetchedReviews);
         }
-        _hasMoreEntries = fetchedEntries.length >= _pageSize;
+        _hasMoreEntries = fetchedReviews.length >= _pageSize;
         _error = null;
       });
     } catch (e) {
@@ -150,7 +151,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
       setState(() {
         if (_page == 1) {
           _error = '加载条目失败: ${e.toString().split(':').last.trim()}';
-          _entries = [];
+          _reviews = [];
         } else {
           if (context.mounted) AppSnackBar.showError(context, '加载更多条目失败');
           _hasMoreEntries = false;
@@ -226,7 +227,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
   Widget _buildAverageRatingDisplay() {
     final game = widget.game;
     final bool hasRating = game.ratingCount > 0;
-    final int currentLoadedEntries = _entries.length; // *** 修改变量名 ***
+    final int currentLoadedEntries = _reviews.length;
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -295,7 +296,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
       );
     }
     // *** 修改空状态文本和条件 ***
-    if (_entries.isEmpty && !_isLoading) {
+    if (_reviews.isEmpty && !_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32.0),
         child: EmptyStateWidget(message: '暂无玩家动态'),
@@ -304,17 +305,16 @@ class GameReviewSectionState extends State<GameReviewSection> {
     return ListView.separated(
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        itemCount: _entries.length, // *** 修改变量名 ***
+        itemCount: _reviews.length,
         separatorBuilder: (context, index) =>
             Divider(color: Colors.grey[200], height: 1),
         itemBuilder: (context, index) {
-          return _buildCollectionEntryItem(
-              _entries[index]); // *** 修改方法名和变量名 ***
+          return _buildCollectionEntryItem(_reviews[index]);
         });
   }
 
   // *** 方法重命名 ***
-  Widget _buildCollectionEntryItem(GameReview entry) {
+  Widget _buildCollectionEntryItem(GameCollectionReview entry) {
     final String userId = entry.userId;
     final DateTime updateTime = entry.updateTime;
     final double? rating = entry.rating;
@@ -434,7 +434,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
           padding: const EdgeInsets.only(top: 16.0),
           child: LoadingWidget.inline(size: 20, message: "加载中..."));
     }
-    if (!_isLoading && _hasMoreEntries && _entries.isNotEmpty) {
+    if (!_isLoading && _hasMoreEntries && _reviews.isNotEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.only(top: 16.0),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart'; // 需要 Provider
 import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
@@ -74,7 +73,6 @@ class _PostFormState extends State<PostForm> {
   late List<PostTag> _selectedTags;
   final _formKey = GlobalKey<FormState>();
   bool _hasInitializedDependencies = false;
-  late final InputStateService _inputStateService;
   User? _currentUser;
 
   // State 变量存储最终传递给 FormTextInputField 的初始值
@@ -95,7 +93,7 @@ class _PostFormState extends State<PostForm> {
   @override
   void initState() {
     super.initState();
-    _currentUser = widget.currentUser;
+
     _selectedTags = List.from(widget.initialTags);
   }
 
@@ -103,22 +101,22 @@ class _PostFormState extends State<PostForm> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       initText();
+      _currentUser = widget.currentUser;
       _hasInitializedDependencies = true;
     }
   }
 
   void initText() {
     // 决定标题初始值：优先使用 Service 中的草稿
-    final titleFromService = _inputStateService.getText(_titleSlotName);
+    final titleFromService = widget.inputStateService.getText(_titleSlotName);
     _effectiveInitialTitle = (titleFromService.isNotEmpty)
         ? titleFromService // 使用草稿
         : (widget.initialTitle ?? ''); // 否则使用外部传入值（或空）
 
     // 决定内容初始值：优先使用 Service 中的草稿
-    final contentFromService = _inputStateService.getText(_contentSlotName);
+    final contentFromService =
+        widget.inputStateService.getText(_contentSlotName);
     _effectiveInitialContent = (contentFromService.isNotEmpty)
         ? contentFromService // 使用草稿
         : (widget.initialContent ?? ''); // 否则使用外部传入值（或空）
@@ -279,7 +277,7 @@ class _PostFormState extends State<PostForm> {
   // 私有函数，构建标题填写区域
   Widget _buildTitleField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       slotName: _titleSlotName,
       initialValue: _effectiveInitialTitle, // 使用 State 中决定的初始值
       decoration: const InputDecoration(
@@ -370,7 +368,7 @@ class _PostFormState extends State<PostForm> {
   // 构建内容输入区域
   Widget _buildContentField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       slotName: _contentSlotName,
       initialValue: _effectiveInitialContent, // 使用 State 中决定的初始值
       decoration: const InputDecoration(

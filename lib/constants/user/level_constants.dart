@@ -56,9 +56,9 @@ class LevelUtils {
       // 可以用一个色系的不同亮度，或者一组相近的高级颜色
       // 例如：从深蓝到浅蓝的过渡，或者金属质感
       // 这里我们用一组明亮的进阶色
-      int R = 50 + (level - 11) * 20;  // 50 -> 130
-      int G = 150 - (level - 11) * 15; // 150 -> 90
-      int B = 200 + (level - 11) * 5;  // 200 -> 220
+      // int R = 50 + (level - 11) * 20;  // 50 -> 130
+      // int G = 150 - (level - 11) * 15; // 150 -> 90
+      // int B = 200 + (level - 11) * 5;  // 200 -> 220
       // return Color.fromRGBO(R.clamp(0,255), G.clamp(0,255), B.clamp(0,255), 1);
       // 或者简单点：
       if (level <= 12) return Colors.cyan[600]!;       // 11, 12

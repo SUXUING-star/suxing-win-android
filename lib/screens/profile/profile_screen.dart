@@ -20,10 +20,10 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/mobile/mobile_profile_header.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/mobile/mobile_profile_menu_list.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/desktop/desktop_profile_card.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/desktop/desktop_menu_grid.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/layout/mobile/profile_mobile_header.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/layout/mobile/profile_mobile_menu_list.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/layout/desktop/profile_desktop_account_card.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/layout/desktop/profile_desktop_menu_grid.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -492,6 +492,84 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
+  Widget _buildDesktopContent(
+      User currentUser, List<ProfileMenuItem> menuItems) {
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            flex: 1,
+            child: FadeInSlideLRItem(
+              slideDirection: SlideDirection.left,
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 100),
+              child: ProfileDesktopAccount(
+                user: currentUser,
+                onEditProfile: () =>
+                    _showEditProfileDialog(currentUser, context),
+                onLogout: () => _showLogoutDialog(context),
+                onUploadStateChanged: _handleUploadStateChanged,
+                fileUpload: widget.fileUpload,
+                onUploadSuccess: (avatarUrl) =>
+                    _handleUploadSuccess(context, avatarUrl),
+                dailyProgressData: _dailyProgressData,
+                isLoadingExpData: _isLoadingExpData,
+                expDataError: _expDataError,
+                onRefreshExpData: () =>
+                    _loadDailyExperienceProgress(forceRefresh: true),
+              ),
+            ),
+          ),
+          const SizedBox(width: 24),
+          Expanded(
+            flex: 2,
+            child: FadeInSlideLRItem(
+              slideDirection: SlideDirection.right,
+              duration: const Duration(milliseconds: 500),
+              delay: const Duration(milliseconds: 250),
+              child: ProfileDesktopMenuGrid(menuItems: menuItems),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileContent(
+      User currentUser, List<ProfileMenuItem> menuItems) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      children: [
+        FadeInSlideUpItem(
+          duration: const Duration(milliseconds: 400),
+          delay: const Duration(milliseconds: 100),
+          child: ProfileMobileHeader(
+            user: currentUser,
+            onEditProfile: () => _showEditProfileDialog(currentUser, context),
+            onLogout: () => _showLogoutDialog(context),
+            fileUpload: widget.fileUpload,
+            onUploadStateChanged: _handleUploadStateChanged,
+            onUploadSuccess: (avatarUrl) =>
+                _handleUploadSuccess(context, avatarUrl),
+            dailyProgressData: _dailyProgressData,
+            isLoadingExpData: _isLoadingExpData,
+            expDataError: _expDataError,
+            onRefreshExpData: () =>
+                _loadDailyExperienceProgress(forceRefresh: true),
+          ),
+        ),
+        FadeInSlideUpItem(
+          duration: const Duration(milliseconds: 450),
+          delay: const Duration(milliseconds: 200),
+          child: ProfileMobileMenuList(menuItems: menuItems),
+        ),
+        const SizedBox(height: 80),
+      ],
+    );
+  }
+
   Widget _buildProfileContent(bool useDesktopLayout) {
     return StreamBuilder<User?>(
         stream: widget.authProvider.currentUserStream,
@@ -539,85 +617,9 @@ class _ProfileScreenState extends State<ProfileScreen>
           return Stack(
             children: [
               if (useDesktopLayout)
-                Padding(
-                  padding: const EdgeInsets.all(24.0),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Expanded(
-                        flex: 1,
-                        child: FadeInSlideLRItem(
-                          slideDirection: SlideDirection.left,
-                          duration: const Duration(milliseconds: 500),
-                          delay: const Duration(milliseconds: 100),
-                          child: DesktopProfileCard(
-                            user: currentUser,
-                            onEditProfile: () =>
-                                _showEditProfileDialog(currentUser, context),
-                            // context 来自 State
-                            onLogout: () => _showLogoutDialog(context),
-                            // context 来自 State
-                            onUploadStateChanged: _handleUploadStateChanged,
-                            fileUpload: widget.fileUpload,
-                            onUploadSuccess: (avatarUrl) =>
-                                _handleUploadSuccess(context, avatarUrl),
-                            // context 来自 State
-                            dailyProgressData: _dailyProgressData,
-                            isLoadingExpData: _isLoadingExpData,
-                            expDataError: _expDataError,
-                            onRefreshExpData: () =>
-                                _loadDailyExperienceProgress(
-                                    forceRefresh: true),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 24),
-                      Expanded(
-                        flex: 2,
-                        child: FadeInSlideLRItem(
-                          slideDirection: SlideDirection.right,
-                          duration: const Duration(milliseconds: 500),
-                          delay: const Duration(milliseconds: 250),
-                          child: DesktopMenuGrid(menuItems: menuItems),
-                        ),
-                      ),
-                    ],
-                  ),
-                )
+                _buildDesktopContent(currentUser, menuItems)
               else
-                ListView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    FadeInSlideUpItem(
-                      duration: const Duration(milliseconds: 400),
-                      delay: const Duration(milliseconds: 100),
-                      child: MobileProfileHeader(
-                        user: currentUser,
-                        onEditProfile: () =>
-                            _showEditProfileDialog(currentUser, context),
-                        // context 来自 State
-                        onLogout: () => _showLogoutDialog(context),
-                        // context 来自 State
-                        fileUpload: widget.fileUpload,
-                        onUploadStateChanged: _handleUploadStateChanged,
-                        onUploadSuccess: (avatarUrl) =>
-                            _handleUploadSuccess(context, avatarUrl),
-                        // context 来自 State
-                        dailyProgressData: _dailyProgressData,
-                        isLoadingExpData: _isLoadingExpData,
-                        expDataError: _expDataError,
-                        onRefreshExpData: () =>
-                            _loadDailyExperienceProgress(forceRefresh: true),
-                      ),
-                    ),
-                    FadeInSlideUpItem(
-                      duration: const Duration(milliseconds: 450),
-                      delay: const Duration(milliseconds: 200),
-                      child: MobileProfileMenuList(menuItems: menuItems),
-                    ),
-                    const SizedBox(height: 80),
-                  ],
-                ),
+                _buildMobileContent(currentUser, menuItems),
               if (_isRefreshing)
                 Positioned.fill(
                   child: Container(

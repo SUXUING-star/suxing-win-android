@@ -1,9 +1,11 @@
 // lib/screens/profile/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/post/post_list.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -20,7 +22,7 @@ class PostFavoritesTab extends StatefulWidget {
   static final GlobalKey<_PostFavoritesTabState> _postTabKey =
       GlobalKey<_PostFavoritesTabState>();
   final User? currentUser;
-  final ForumService forumService;
+  final PostService forumService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   PostFavoritesTab(
@@ -101,16 +103,15 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final result = await widget.forumService
+      final PostList result = await widget.forumService
           .getUserFavoritePostsPage(page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---
-      final List<Post> fetchedPosts = result['posts'] as List<Post>? ?? [];
-      final Map<String, dynamic> pagination =
-          result['pagination'] as Map<String, dynamic>? ?? {};
+      final List<Post> fetchedPosts = result.posts;
+      final PaginationData pagination = result.pagination;
 
-      final int serverPage = pagination['page'] ?? _currentPage;
-      final int serverTotalPages = pagination['pages'] ?? 1;
+      final int serverPage = pagination.page;
+      final int serverTotalPages = pagination.pages;
 
       if (mounted) {
         setState(() {

@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/form/collection/collection_form.dart';
+import 'package:suxingchahui/widgets/components/form/game_collection/collection_form.dart';
 
-class CollectionDialog extends StatelessWidget {
+class GameCollectionDialog extends StatelessWidget {
   final String gameId;
   final InputStateService inputStateService;
   final User? currentUser;
@@ -14,7 +14,7 @@ class CollectionDialog extends StatelessWidget {
   final String? currentReview; // Add this field
   final double? currentRating;
 
-  const CollectionDialog({
+  const GameCollectionDialog({
     super.key,
     required this.gameId,
     required this.inputStateService,
@@ -77,7 +77,7 @@ class CollectionDialog extends StatelessWidget {
                             ),
                           ),
                         ),
-                        CollectionForm(
+                        GameCollectionForm(
                           inputStateService: inputStateService,
                           currentUser: currentUser,
                           gameId: gameId,

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../utils/navigation/navigation_utils.dart';
 
 class OpenWebUrlUtils {
   /// 显示打开方式选项

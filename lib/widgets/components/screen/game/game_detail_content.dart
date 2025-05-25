@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart'; // 引入 GameCollectionStatus
+import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
@@ -36,7 +37,7 @@ class GameDetailContent extends StatelessWidget {
   final Function(String)? onNavigate;
   final GameCollectionItem? initialCollectionStatus;
   final Function(CollectionChangeResult)? onCollectionChanged; // 直接是回调函数
-  final Map<String, dynamic>? navigationInfo;
+  final GameNavigationInfo? navigationInfo;
   final bool isPreviewMode;
   final SidebarProvider sidebarProvider;
   final UserInfoProvider infoProvider;

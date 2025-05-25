@@ -1,15 +1,14 @@
 // lib/widgets/components/badge/layout/update_button.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:suxingchahui/services/main/update/update_service.dart';
+import 'package:suxingchahui/widgets/components/dialogs/update/force_update_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/config/app_config.dart';
-
-import '../../../../services/main/update/update_service.dart';
-import '../../dialogs/update/force_update_dialog.dart';
 
 class UpdateButton extends StatelessWidget {
   const UpdateButton({super.key});

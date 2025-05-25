@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:provider/provider.dart';
-import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'dart:io';
-import '../../../../../utils/device/device_utils.dart';
-import '../../../../ui/image/safe_cached_image.dart';
-import '../../../../ui/snackbar/app_snackbar.dart'; // 使用 AppSnackBar
+
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+
 
 class AnnouncementImageField extends StatelessWidget {
   final dynamic imageSource;

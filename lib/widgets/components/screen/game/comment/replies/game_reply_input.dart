@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 使用修改后的输入框
+import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 
 class GameReplyInput extends StatelessWidget {
   final User? currentUser;
@@ -11,7 +11,7 @@ class GameReplyInput extends StatelessWidget {
   final VoidCallback? onCancel;
   final bool isSubmitting;
   final InputStateService inputStateService;
-  final String slotName; // 直接使用 slotName
+  final String slotName;
 
   const GameReplyInput({
     super.key,

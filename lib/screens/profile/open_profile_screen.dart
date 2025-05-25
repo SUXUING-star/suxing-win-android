@@ -10,7 +10,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -27,7 +27,7 @@ class OpenProfileScreen extends StatefulWidget {
   final UserService userService;
   final AuthProvider authProvider;
   final UserFollowService followService;
-  final ForumService forumService;
+  final PostService forumService;
   final GameService gameService;
 
   const OpenProfileScreen({
@@ -119,7 +119,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
       // *** forumService开始了它的使命 *** //
       // 加载用户帖子
-      final userPosts = await widget.forumService.getRecentUserPosts(widget.userId);
+      final userPosts =
+          await widget.forumService.getRecentUserPosts(widget.userId);
       // *** forumService结束了它的使命 *** //
 
       // *** gameService开始了它的使命 *** //
@@ -364,6 +365,12 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
                 followService: widget.followService,
                 targetUserId: widget.userId,
                 showIcon: true,
+                onFollowChanged: () {
+                  if (mounted) {
+                    // 确保组件还在树上
+                    _loadUserProfile(); // 这个方法会setState并刷新页面
+                  }
+                },
               ),
           ],
         ),

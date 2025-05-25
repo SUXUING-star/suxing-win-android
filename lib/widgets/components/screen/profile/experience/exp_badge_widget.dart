@@ -2,7 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class ExpBadgeWidget extends StatelessWidget {
   final double size;
@@ -56,14 +56,12 @@ class ExpBadgeWidget extends StatelessWidget {
                 ),
               ),
               // 经验值文本
-              Text(
+              AppText(
                 '$earnedToday',
                 style: TextStyle(
                   color: textColor,
                   fontSize: size * 0.35,
                   fontWeight: FontWeight.bold,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                 ),
               ),
             ],

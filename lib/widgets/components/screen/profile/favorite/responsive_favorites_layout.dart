@@ -1,10 +1,10 @@
 // lib/widgets/components/screen/game/favorite/responsive_favorites_layout.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../utils/device/device_utils.dart';
 import 'favorite_game_card.dart';
 import 'favorite_game_grid_card.dart';
 

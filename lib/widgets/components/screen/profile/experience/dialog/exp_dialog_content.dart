@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 // **** 导入 UI 组件 ****
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
-import '../card/exp_task_card.dart'; // 导入 ExpTaskCard
+import 'exp_task_card.dart'; // 导入 ExpTaskCard
 
 class ExpDialogContent extends StatelessWidget {
   final TodayProgressSummary todayProgress;

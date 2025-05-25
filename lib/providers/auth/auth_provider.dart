@@ -39,7 +39,8 @@ class AuthProvider with ChangeNotifier {
   User? get currentUser => _currentUser;
   bool get isInitializing => _isInitializing;
   bool get isRefreshing => _isRefreshing;
-  bool get isLoading => _isInitializing || _isRefreshing; // 这个 getter 仍然可以保留，用于内部逻辑或初始值
+  bool get isLoading =>
+      _isInitializing || _isRefreshing; // 这个 getter 仍然可以保留，用于内部逻辑或初始值
   bool get isLoggedIn => _currentUser != null;
   bool get isAdmin => _currentUser?.isAdmin ?? false;
   bool get isSuperAdmin => _currentUser?.isSuperAdmin ?? false;
@@ -58,10 +59,10 @@ class AuthProvider with ChangeNotifier {
     if (_unauthorizedSubscription != null) return;
     _unauthorizedSubscription =
         appEventBus.on<UnauthorizedAccessEvent>().listen((event) {
-          if (_currentUser != null) {
-            _updateCurrentUser(null);
-          }
-        });
+      if (_currentUser != null) {
+        _updateCurrentUser(null);
+      }
+    });
   }
 
   // --- Helper method to update user and notify streams ---
@@ -101,9 +102,9 @@ class AuthProvider with ChangeNotifier {
   }
 
   void _updateLoadingState() {
-    _isLoadingController.add(isLoading); // isLoading getter 计算 _isInitializing || _isRefreshing
+    _isLoadingController
+        .add(isLoading); // isLoading getter 计算 _isInitializing || _isRefreshing
   }
-
 
   Future<void> initialize() async {
     if (_initialized || _isInitializing) return; // 防止重入
@@ -111,7 +112,7 @@ class AuthProvider with ChangeNotifier {
     await _initializationLock.synchronized(() async {
       if (_initialized || _isInitializing) return; // 再次检查锁内
 
-      _setIsInitializing(true); // ⭐ 更新 isInitializing 状态和 Stream
+      _setIsInitializing(true);
 
       User? determinedUser;
       try {
@@ -154,7 +155,6 @@ class AuthProvider with ChangeNotifier {
     });
   }
 
-
   Future<void> signIn(String email, String password, bool rememberMe) async {
     // UI 可以通过 isLoadingStream 显示加载状态，这里不需要管理局部加载状态
     try {
@@ -168,7 +168,6 @@ class AuthProvider with ChangeNotifier {
       rethrow; // 将异常抛给 UI 处理
     }
   }
-
 
   Future<void> signOut() async {
     // UI 可以通过 isLoadingStream (如果适用) 或其他方式显示加载状态
@@ -186,10 +185,10 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-
   Future<void> refreshUserState() async {
     if (_isInitializing || _isRefreshing) return; // 防止重入
-    if (!_initialized) { // 如果还未初始化，则执行初始化流程
+    if (!_initialized) {
+      // 如果还未初始化，则执行初始化流程
       await initialize();
       return;
     }
@@ -226,7 +225,8 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  Future<String?> getAuthToken() { // 返回 String? 更准确
+  Future<String?> getAuthToken() {
+    // 返回 String? 更准确
     return _userService.getToken();
   }
 

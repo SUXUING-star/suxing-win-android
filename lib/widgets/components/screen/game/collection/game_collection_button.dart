@@ -118,7 +118,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
       pageBuilder: (BuildContext buildContext, Animation<double> animation,
           Animation<double> secondaryAnimation) {
         // 返回 CollectionDialog 实例
-        return CollectionDialog(
+        return GameCollectionDialog(
           inputStateService: widget.inputStateService,
           currentUser: widget.currentUser,
           gameId: widget.game.id,

@@ -2,8 +2,10 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/services/main/forum/forum_service.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -13,12 +15,16 @@ import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final ForumService forumService;
+  final PostService forumService;
+  final UserInfoProvider infoProvider;
+  final UserFollowService followService;
   const HistoryScreen({
     super.key,
     required this.gameService,
     required this.authProvider,
     required this.forumService,
+    required this.infoProvider,
+    required this.followService,
   });
 
   @override
@@ -228,6 +234,8 @@ class _HistoryScreenState extends State<HistoryScreen>
           ),
           // 帖子历史标签页 - 使用组件拆分提高性能
           PostHistoryTab(
+            userInfoProvider: widget.infoProvider,
+            userFollowService: widget.followService,
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
             currentUser: currentUser,

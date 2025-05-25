@@ -79,7 +79,6 @@ class _CommentInputFieldState extends State<CommentInputField> {
     super.didChangeDependencies();
   }
 
-
   void _initializeFocusNode() {
     // 假设 CommentInputField 创建并向下传递 FocusNode
     _focusNode = FocusNode();
@@ -167,8 +166,8 @@ class _CommentInputFieldState extends State<CommentInputField> {
           message: widget.isReply ? '登录后回复' : '登录后发表评论',
           buttonText: '登录',
           onLoginPressed: widget.onLoginRequired ??
-              () => NavigationUtils.pushNamed(
-                  context, AppRoutes.login), // 直接使用 NavigationUtils
+              () => NavigationUtils.navigateToLogin(
+                  context),
         ),
       );
     }

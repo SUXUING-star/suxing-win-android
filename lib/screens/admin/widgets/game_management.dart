@@ -1,7 +1,6 @@
 // 文件路径: lib/screens/admin/game/management/game_management.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -148,11 +147,11 @@ class _GameManagementState extends State<GameManagement>
         pageSize: 15,
       );
       if (mounted) {
-        final List<Game> newGames = result['games'] as List<Game>;
-        final pagination = result['pagination'] as Map<String, dynamic>;
-        final int currentPage = pagination['page'] ?? page;
-        final int totalItems = pagination['total'] ?? 0;
-        final int pageSize = pagination['pageSize'] ?? 15;
+        final List<Game> newGames = result.games;
+        final pagination = result.pagination;
+        final int currentPage = pagination.page;
+        final int totalItems = pagination.total;
+        final int pageSize = pagination.limit;
         setState(() {
           if (page == 1) {
             _reviewQueueGames = newGames;
@@ -204,7 +203,7 @@ class _GameManagementState extends State<GameManagement>
         sortBy: 'createTime',
         descending: true,
       );
-      return result['games'] as List<Game>;
+      return result.games;
     } catch (e) {
       throw Exception('加载游戏管理列表失败: $e');
     }

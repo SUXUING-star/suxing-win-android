@@ -1,10 +1,10 @@
 // lib/widgets/components/screen/gamelist/tag/tag_bar.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/tag/tag.dart';
+import '../../../../../models/game/game_tag.dart';
 
 class TagBar extends StatelessWidget implements PreferredSizeWidget {
-  final List<Tag> tags;
+  final List<GameTag> tags;
   final String? selectedTag;
   final Function(String) onTagSelected;
 

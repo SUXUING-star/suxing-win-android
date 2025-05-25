@@ -75,7 +75,7 @@ class GameTags extends StatelessWidget {
 
   Widget _buildClickableTag(BuildContext context, String tag) {
     if (!needOnClick || onClickFilterGameTag == null) {
-      return GameTag(
+      return GameTagItem(
         tag: tag,
         isSelected: true,
       );
@@ -83,8 +83,8 @@ class GameTags extends StatelessWidget {
 
     return InkWell(
       onTap: () => onClickFilterGameTag!(context, tag),
-      borderRadius: BorderRadius.circular(GameTag.tagBorderRadius),
-      child: GameTag(
+      borderRadius: BorderRadius.circular(GameTagItem.tagBorderRadius),
+      child: GameTagItem(
         tag: tag,
         isSelected: true,
       ),
