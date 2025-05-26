@@ -24,7 +24,7 @@ import 'package:visibility_detector/visibility_detector.dart';
 
 class ActivityFeedScreen extends StatefulWidget {
   final AuthProvider authProvider;
-  final UserActivityService activityService;
+  final ActivityService activityService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
@@ -80,14 +80,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   // UI Refresh Control
   DateTime? _lastRefreshTime;
-  final Duration _minUiRefreshInterval = const Duration(seconds: 15);
+  final Duration _minUiRefreshInterval = const Duration(seconds: 10);
+  final Duration _refreshDebounceTime = const Duration(milliseconds: 800);
 
   bool _hasInitializedDependencies = false;
-  late final UserActivityService _activityService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
-  late final UserInfoProvider _infoProvider;
-  late final InputStateService _inputStateService;
   String? _currentUserId;
 
   @override
@@ -107,16 +103,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = widget.activityService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
-      _infoProvider = widget.infoProvider;
-      _inputStateService = widget.inputStateService;
-
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
     }
   }
 
@@ -136,10 +126,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   void didUpdateWidget(covariant ActivityFeedScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
+        _currentUserId != widget.authProvider.currentUserId) {
       if (mounted) {
         setState(() {
-          _currentUserId = _authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId;
         });
       }
     }
@@ -150,12 +140,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // Handle app lifecycle changes (e.g., refresh on resume)
 
     if (state == AppLifecycleState.resumed) {
-      if (_currentUserId != _authProvider.currentUserId) {
+      if (_currentUserId != widget.authProvider.currentUserId) {
         _needsRefresh = true;
 
         if (mounted) {
           setState(() {
-            _currentUserId = _authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId;
           });
         }
       }
@@ -188,7 +178,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     _currentWatchIdentifier = newWatchIdentifier; // Update identifier
 
     try {
-      _cacheSubscription = _activityService
+      _cacheSubscription = widget.activityService
           .watchActivityFeedChanges(
         feedType: feedTypeStr, // Always 'public'
         page: _currentPage,
@@ -245,7 +235,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     // Debounce the actual refresh call
     _refreshDebounceTimer?.cancel();
-    _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+    _refreshDebounceTimer = Timer(_refreshDebounceTime, () {
       // Check again if still mounted and not loading before refreshing
       if (mounted && !_isLoadingData && !_isLoadingMore) {
         // Load the *current* page again, marking it as a refresh
@@ -309,42 +299,32 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       const int limit = 20; // Define page size
 
       // Always fetch the public activity feed
-      final result = await _activityService.getPublicActivities(
+      final result = await widget.activityService.getPublicActivities(
           page: pageToLoad, limit: limit, forceRefresh: forceRefresh);
 
       if (!mounted) return; // Check mount status after async operation
 
       // Process the result
       final List<UserActivity> fetchedActivities = result.activities;
-      final PaginationData? fetchedPagination = result.pagination;
+      final PaginationData fetchedPagination = result.pagination;
 
-      // Check if the response structure is valid (e.g., pagination exists)
-      if (fetchedPagination != null) {
-        setState(() {
-          // Replace data if refreshing, initial load, or loading a different page than current
-          if (isRefresh || isInitialLoad || pageToLoad != _currentPage) {
-            _activities = fetchedActivities;
-          }
-          _pagination = fetchedPagination;
-          _currentPage = pageToLoad; // Update current page
-          _isLoadingData = false; // Reset loading state
-          _error = ''; // Clear error
-          _lastRefreshTime = DateTime.now(); // Record success time
-        });
-        _startOrUpdateWatchingCache(); // Start/update cache watcher
-      } else {
-        // Handle cases where the response format is unexpected
-        throw Exception("Invalid response format from server");
-      }
+      setState(() {
+        if (isRefresh || isInitialLoad || pageToLoad != _currentPage) {
+          _activities = fetchedActivities;
+        }
+        _pagination = fetchedPagination;
+        _currentPage = pageToLoad; // Update current page
+        _isLoadingData = false; // Reset loading state
+        _error = ''; // Clear error
+        _lastRefreshTime = DateTime.now(); // Record success time
+      });
+      _startOrUpdateWatchingCache(); // Start/update cache watcher
     } catch (e) {
       if (!mounted) return;
-      // Handle errors
       setState(() {
-        // Show full screen error only if there's no data to display
         if (_activities.isEmpty) {
           _error = '加载动态失败: $e';
         } else {
-          // Otherwise, show a snackbar for refresh errors
           AppSnackBar.showError(context, '刷新动态失败: $e');
         }
         _isLoadingData = false; // Reset loading state
@@ -400,7 +380,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     // Debounce the refresh action
     _refreshDebounceTimer?.cancel();
-    _refreshDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+    _refreshDebounceTimer = Timer(_refreshDebounceTime, () {
       if (mounted && !_isLoadingData && !_isLoadingMore) {
         _refreshData(forceRefresh: true); // Call the main refresh logic
       }
@@ -428,8 +408,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       const int limit = 20;
 
       // Always fetch the public activity feed for the next page
-      final result = await _activityService.getPublicActivities(
-          page: nextPage, limit: limit);
+      final result = await widget.activityService
+          .getPublicActivities(page: nextPage, limit: limit);
 
       if (!mounted) return;
 
@@ -536,8 +516,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   bool _checkCanEditOrCanDelete(UserActivity activity) {
-    final bool isAuthor = activity.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = activity.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     final canEditOrDelete = isAdmin ? true : isAuthor;
     return canEditOrDelete;
   }
@@ -545,7 +525,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Handles deleting an activity after user confirmation.
   Future<void> _handleDeleteActivity(UserActivity activity) async {
     final activityId = activity.id;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -565,7 +545,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final success = await _activityService.deleteActivity(activity);
+          final success = await widget.activityService.deleteActivity(activity);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove the item from the UI
@@ -595,13 +575,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles liking an activity.
   Future<void> _handleLikeActivity(String activityId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
 
     try {
-      await _activityService.likeActivity(activityId);
+      await widget.activityService.likeActivity(activityId);
       // Success: If optimistic update wasn't perfect, could force refresh item here.
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞失败: $e');
@@ -611,13 +591,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles unliking an activity.
   Future<void> _handleUnlikeActivity(String activityId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
 
     try {
-      await _activityService.unlikeActivity(activityId);
+      await widget.activityService.unlikeActivity(activityId);
       // Success: Potentially update state if needed.
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
@@ -628,7 +608,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Handles adding a comment to an activity.
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -636,13 +616,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     }
     try {
       final comment =
-          await _activityService.commentOnActivity(activityId, content);
+          await widget.activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         return comment;
       } else if (mounted) {
-        // Handle cases where comment object is unexpectedly null
-        throw Exception("服务器未能返回评论数据");
+        //
       }
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '评论失败: $e');
@@ -651,15 +630,15 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   bool _checkCanDeleteComment(ActivityComment comment) {
-    final bool isAuthor = comment.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = comment.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     return isAdmin ? true : isAuthor;
   }
 
   /// Handles deleting a comment after user confirmation.
   Future<void> _handleDeleteComment(
       String activityId, ActivityComment comment) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -683,7 +662,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         try {
           final success =
-              await _activityService.deleteComment(activityId, comment);
+              await widget.activityService.deleteComment(activityId, comment);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
           } else if (mounted) {
@@ -699,31 +678,29 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
     try {
-      await _activityService.likeComment(activityId, commentId);
-      // Success
+      await widget.activityService.likeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
-      // Failure: Trigger rollback in Comment widget.
     }
   }
 
   /// Handles unliking a comment.
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
     try {
-      await _activityService.unlikeComment(activityId, commentId);
+      await widget.activityService.unlikeComment(activityId, commentId);
       // Success
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
@@ -735,8 +712,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     final bool currentlyVisible =
         info.visibleFraction > 0.8; // Consider visible if mostly on screen
     if (currentlyVisible != _isVisible) {
-      if (_currentUserId != _authProvider.currentUserId) {
-        _currentUserId = _authProvider.currentUserId;
+      if (_currentUserId != widget.authProvider.currentUserId) {
+        _currentUserId = widget.authProvider.currentUserId;
         _needsRefresh = true;
         if (mounted) {
           setState(() {});
@@ -838,10 +815,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                           padding: const EdgeInsets.only(
                               top: 8.0, right: 8.0, bottom: 8.0),
                           child: HotActivitiesPanel(
-                            activityService: _activityService,
-                            userInfoProvider: _infoProvider,
-                            followService: _followService,
-                            currentUser: _authProvider.currentUser,
+                            activityService: widget.activityService,
+                            userInfoProvider: widget.infoProvider,
+                            followService: widget.followService,
+                            currentUser: widget.authProvider.currentUser,
                           ), // The hot activities widget
                         ),
                       ),
@@ -871,10 +848,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Widget _buildMainFeedContent() {
     return CollapsibleActivityFeed(
       key: ValueKey('public_feed_${_collapseMode.index}'),
-      currentUser: _authProvider.currentUser,
-      followService: _followService,
-      inputStateService: _inputStateService,
-      infoProvider: _infoProvider,
+      currentUser: widget.authProvider.currentUser,
+      followService: widget.followService,
+      inputStateService: widget.inputStateService,
+      infoProvider: widget.infoProvider,
       activities: _activities,
       isLoading: _isLoadingData && _activities.isEmpty,
       isLoadingMore: _isLoadingMore,

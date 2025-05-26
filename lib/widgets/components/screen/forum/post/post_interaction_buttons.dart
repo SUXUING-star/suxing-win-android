@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class PostInteractionButtons extends StatefulWidget {
   final Post post;
-  final PostService forumService;
+  final PostService postService;
   final User? currentUser;
   final UserPostActions userActions;
   final Function(Post, UserPostActions) onPostUpdated;
@@ -18,7 +18,7 @@ class PostInteractionButtons extends StatefulWidget {
     super.key,
     required this.post,
     required this.currentUser,
-    required this.forumService,
+    required this.postService,
     required this.userActions,
     required this.onPostUpdated,
   });
@@ -38,7 +38,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   late int _favoriteCount;
 
   bool _hasInitializedDependencies = false;
-  late final PostService _forumService;
   late User? _currentUser;
 
   @override
@@ -55,7 +54,6 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = widget.forumService;
       _hasInitializedDependencies = true;
     }
   }
@@ -186,7 +184,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         );
 
         // --- 调用 Service 写入缓存 ---
-        await widget.forumService.cacheNewPostData(newPost, newActions);
+        await widget.postService.cacheNewPostData(newPost, newActions);
 
         // --- 更新本地 UI 计数为最终确认的值 ---
         // （如果 API 返回的状态与乐观更新不符，这里会修正计数的显示）
@@ -225,7 +223,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
   // 各个按钮的 onTap 调用 _handleInteraction 的方式不变
   Future<void> _toggleLike() async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostLike(widget.post.id),
+      apiCall: () => widget.postService.togglePostLike(widget.post.id),
       getLoadingState: () => _isLiking,
       setLoadingState: (isLoading) => _isLiking = isLoading,
       actionName: 'like',
@@ -234,7 +232,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
 
   Future<void> _toggleAgree() async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostAgree(widget.post.id),
+      apiCall: () => widget.postService.togglePostAgree(widget.post.id),
       getLoadingState: () => _isAgreeing,
       setLoadingState: (isLoading) => _isAgreeing = isLoading,
       actionName: 'agree',
@@ -243,7 +241,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
 
   Future<void> _toggleFavorite() async {
     await _handleInteraction(
-      apiCall: () => _forumService.togglePostFavorite(widget.post.id),
+      apiCall: () => widget.postService.togglePostFavorite(widget.post.id),
       getLoadingState: () => _isFavoriting,
       setLoadingState: (isLoading) => _isFavoriting = isLoading,
       actionName: 'favorite',

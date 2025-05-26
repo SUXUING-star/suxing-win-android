@@ -1,6 +1,5 @@
 // lib/screens/search/search_post_screen.dart
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'dart:async';
 
 // Models
@@ -32,13 +31,13 @@ import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
   final UserService userService;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
   const SearchPostScreen({
     super.key,
-    required this.forumService,
+    required this.postService,
     required this.userService,
     required this.followService,
     required this.authProvider,
@@ -64,9 +63,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   final ScrollController _scrollController = ScrollController();
 
   bool _isSearching = false;
-  late final UserService _userService;
-  late final PostService _forumService;
-  late final AuthProvider _authProvider;
   bool _hasInitializedDependencies = false;
 
   // --- 生命周期方法 ---
@@ -79,9 +75,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _userService = widget.userService;
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -124,7 +117,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 这个搜索记录不需要登录！！！！！！！！
     // 完全本地共享
     try {
-      final history = await _userService.loadLocalSearchHistory();
+      final history = await widget.userService.loadLocalSearchHistory();
       if (!mounted) return;
       setState(() {
         _searchHistory = history;
@@ -147,7 +140,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 这个搜索记录不需要登录！！！！！！！！
     // 完全本地共享
     try {
-      await _userService.saveLocalSearchHistory(_searchHistory);
+      await widget.userService.saveLocalSearchHistory(_searchHistory);
     } catch (e) {
       // print("SearchPostScreen: Error saving search history: $e");
     }
@@ -222,8 +215,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        final PostList resultsData = await _forumService.searchPosts(
-          keyword: trimmedQuery,
+        final PostList resultsData = await widget.postService.searchPosts(
+          query: trimmedQuery,
           page: _currentPage,
           limit: _limit,
         );
@@ -287,16 +280,16 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == post.authorId;
+        : widget.authProvider.currentUserId == post.authorId;
   }
 
   // --- PostCard 回调处理方法 (删除 Observer 相关代码) ---
   Future<void> _handleDeletePostAction(Post post) async {
     final postId = post.id;
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -316,7 +309,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         onConfirm: () async {
           // *** 这里可以考虑加一个临时的按钮加载状态，但不影响全局 ***
           try {
-            await _forumService.deletePost(post);
+            await widget.postService.deletePost(post);
             if (!mounted) return;
             setState(() {
               _searchResults.removeWhere((p) => p.id == postId);
@@ -336,7 +329,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   void _handleEditPostAction(Post postToEdit) {
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -361,12 +354,12 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   Future<void> _handleToggleLockAction(String postId) async {
     if (!mounted) return;
-    if (!_authProvider.isAdmin) {
+    if (!widget.authProvider.isAdmin) {
       AppSnackBar.showPermissionDenySnackBar(context);
       return;
     }
     try {
-      await _forumService.togglePostLock(postId);
+      await widget.postService.togglePostLock(postId);
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '帖子状态已切换');
       // 更新列表中的状态
@@ -587,14 +580,13 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               // 保持原有的 Padding
               padding: const EdgeInsets.only(bottom: 8.0),
               child: PostCard(
-                currentUser: _authProvider.currentUser,
+                currentUser: widget.authProvider.currentUser,
                 post: post,
                 followService: widget.followService,
                 infoProvider: widget.infoProvider,
                 onDeleteAction: _handleDeletePostAction,
                 onEditAction: _handleEditPostAction,
                 onToggleLockAction: _handleToggleLockAction,
-                // 确保 PostCard 正确显示，没有多余的外部 Key
               ),
             ),
           );

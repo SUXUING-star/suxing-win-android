@@ -26,7 +26,7 @@ class PostReplyItem extends StatelessWidget {
   final String postId;
   final int floor;
   final VoidCallback onActionSuccess;
-  final PostService forumService;
+  final PostService postService;
 
   const PostReplyItem({
     super.key,
@@ -35,7 +35,7 @@ class PostReplyItem extends StatelessWidget {
     required this.infoProvider,
     required this.inputStateService,
     required this.followService,
-    required this.forumService,
+    required this.postService,
     required this.postId,
     required this.reply,
     required this.floor,
@@ -55,7 +55,7 @@ class PostReplyItem extends StatelessWidget {
     }
 
     try {
-      await forumService.addReply(postId, text, parentId: parentReplyId);
+      await postService.addReply(postId, text, parentId: parentReplyId);
 
       inputStateService.clearText(slotName);
 
@@ -83,7 +83,7 @@ class PostReplyItem extends StatelessWidget {
       maxLines: 4,
       onSave: (newContent) async {
         try {
-          await forumService.updateReply(postId, reply, newContent);
+          await postService.updateReply(postId, reply, newContent);
           if (context.mounted) {
             AppSnackBar.showSuccess(context, '回复编辑成功');
           }
@@ -109,7 +109,7 @@ class PostReplyItem extends StatelessWidget {
       confirmButtonColor: Colors.red,
       onConfirm: () async {
         try {
-          await forumService.deleteReply(postId, reply);
+          await postService.deleteReply(postId, reply);
           if (context.mounted) {
             AppSnackBar.showSuccess(context, '回复删除成功');
           }
@@ -126,7 +126,7 @@ class PostReplyItem extends StatelessWidget {
   // --- 修改: 显示回复输入框，并传递 slotName ---
   void _showReplyBottomSheet(
     BuildContext context,
-    PostService forumService,
+    PostService postService,
   ) {
     final slotName = 'post_reply_${postId}_${reply.id}';
     bool isSubmitting = false; // 状态用于控制 CommentInputField 的 loading
@@ -217,7 +217,7 @@ class PostReplyItem extends StatelessWidget {
               minimumSize: Size.zero,
               tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             ),
-            onPressed: () => _showReplyBottomSheet(context, forumService),
+            onPressed: () => _showReplyBottomSheet(context, postService),
           );
   }
 

@@ -1,11 +1,8 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_list.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'dart:async';
-
-// Models
-import 'package:suxingchahui/models/game/game.dart';
 
 // Services
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -33,36 +30,32 @@ class SearchGameScreen extends StatefulWidget {
 class _SearchGameScreenState extends State<SearchGameScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<String> _searchHistory = [];
-  List<Game> _searchResults = [];
+  GameList? _searchResults; // 改为 GameList?
   String? _error;
   Timer? _debounceTimer;
 
-  // 用于控制搜索的加载状态
-  bool _isSearching = false;
-  // 这个页面没有分页，所以不需要 _isLoadingMore
+  bool _isSearching = false; // 首次搜索或刷新时
+  bool _isLoadingMore = false; // 加载更多时
 
   bool _hasInitializedDependencies = false;
-  late final UserService _userService;
-  late final GameService _gameService;
 
-  // --- 生命周期方法 ---
+  int _currentPage = 1;
+  final int _pageSize = 15; // 每页加载数量
+
   @override
   void initState() {
     super.initState();
+    // didChangeDependencies 中加载历史
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _userService = widget.userService;
-      _gameService = widget.gameService;
       _hasInitializedDependencies = true;
-    }
-    if (_hasInitializedDependencies) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_searchHistory.isEmpty && mounted) {
-          _loadSearchHistory(); // 历史加载不需要 LoadingWidget
+          _loadSearchHistory();
         }
       });
     }
@@ -74,27 +67,21 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     _debounceTimer?.cancel();
     super.dispose();
   }
-  // --- 生命周期方法结束 ---
 
-  // --- 搜索历史管理 (无加载状态控制) ---
   Future<void> _loadSearchHistory() async {
-    if (!mounted) {
-      return;
-    }
+    if (!mounted) return;
     try {
-      final history = await _userService.loadLocalSearchHistory();
+      final history = await widget.userService.loadLocalSearchHistory();
       if (!mounted) return;
       setState(() {
         _searchHistory = history;
         _error = null;
       });
     } catch (e) {
-      //print("SearchGameScreen: Error loading search history: $e");
       if (!mounted) return;
-      // 仅在搜索框为空时显示历史错误
       if (_searchController.text.isEmpty) {
         setState(() {
-          _error = '加载搜索历史失败: $e';
+          _error = '加载搜索历史失败'; // 简化错误信息
         });
       }
     }
@@ -102,12 +89,10 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   Future<void> _saveSearchHistory() async {
     if (!mounted) return;
-    // 这个搜索记录不需要登录！！！！！！！！
-    // 完全本地共享
     try {
-      await _userService.saveLocalSearchHistory(_searchHistory);
+      await widget.userService.saveLocalSearchHistory(_searchHistory);
     } catch (e) {
-      //print("SearchGameScreen: Error saving search history: $e");
+      // Local save error, usually minor
     }
   }
 
@@ -140,75 +125,128 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     _saveSearchHistory();
   }
 
-  // --- 核心搜索逻辑 ---
-  Future<void> _performSearch(String query) async {
+  Future<void> _performSearch(String query, {bool isRefresh = false}) async {
     _debounceTimer?.cancel();
+    final trimmedQuery = query.trim();
+
+    if (trimmedQuery.isEmpty) {
+      setState(() {
+        _searchResults = null; // 清空结果
+        _error = null;
+        _isSearching = false;
+        _isLoadingMore = false;
+        _currentPage = 1;
+      });
+      return;
+    }
+
+    // 防抖
     _debounceTimer = Timer(Duration(milliseconds: 500), () async {
-      final trimmedQuery = query.trim();
       if (!mounted) return;
 
-      // 如果搜索词为空，清空结果并重置状态
-      if (trimmedQuery.isEmpty) {
-        setState(() {
-          _searchResults.clear();
-          _error = null;
-          _isSearching = false; // 确保搜索状态关闭
-        });
-        return;
-      }
-
-      // *** 开始搜索，设置 _isSearching 为 true ***
       setState(() {
-        _error = null; // 清除旧错误
-        _isSearching = true; // 显示加载
+        _error = null;
+        if (isRefresh || _currentPage == 1) {
+          _isSearching = true; // 首次搜索或刷新时显示主加载
+          _searchResults = null; // 刷新时清空旧数据
+        } else {
+          // 这种情况理论上不会发生，因为这是首次搜索的逻辑
+        }
+        _isLoadingMore = false; // 重置加载更多状态
+        _currentPage = 1; // 总是从第一页开始新的搜索
       });
 
-      // LoadingRouteObserver 相关代码已删除
-
       try {
-        final results = await _gameService.searchGames(trimmedQuery);
+        final results = await widget.gameService.searchGames(
+          query: trimmedQuery,
+          page: _currentPage,
+          pageSize: _pageSize,
+        );
         if (!mounted) return;
 
         setState(() {
           _searchResults = results;
-          _error = null; // 清除错误
-          // 加载成功后，isSearching 会在 finally 中重置
+          // _isSearching 会在 finally 中处理
         });
 
-        // 搜索成功且有结果时添加到历史
-        if (results.isNotEmpty) {
+        if (results.games.isNotEmpty) {
           _addToHistory(trimmedQuery);
         }
       } catch (e) {
-        // print("SearchGameScreen: Search failed: $e\n$s");
         if (!mounted) return;
         setState(() {
-          _error = '搜索失败：$e'; // 设置错误信息
-          _searchResults.clear(); // 出错清空结果
-          // isSearching 会在 finally 中重置
+          _error = '搜索失败，请稍后重试';
+          _searchResults = null;
         });
       } finally {
-        // *** 无论成功失败，最后都重置 isSearching 状态 ***
         if (mounted) {
-          if (_isSearching) setState(() => _isSearching = false); // 重置搜索状态
+          setState(() => _isSearching = false);
         }
       }
     });
   }
 
-  // --- 构建 UI ---
+  Future<void> _loadMoreResults() async {
+    if (_isLoadingMore || !_hasMoreResults() || !mounted) return;
+
+    setState(() {
+      _isLoadingMore = true;
+      _error = null;
+    });
+
+    _currentPage++;
+
+    try {
+      final results = await widget.gameService.searchGames(
+        query: _searchController.text.trim(),
+        page: _currentPage,
+        pageSize: _pageSize,
+      );
+      if (!mounted) return;
+
+      setState(() {
+        if (_searchResults != null) {
+          _searchResults = _searchResults!.copyWith(
+            games: [..._searchResults!.games, ...results.games],
+            pagination: results.pagination, // 更新分页信息
+          );
+        } else {
+          // 这种情况不应该发生，因为加载更多前 _searchResults 应该有值
+          _searchResults = results;
+        }
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _currentPage--; // 失败时回滚页码
+      setState(() {
+        _error = '加载更多失败';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoadingMore = false);
+      }
+    }
+  }
+
+  bool _hasMoreResults() {
+    return _searchResults?.pagination.hasNextPage() ?? false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: Colors.transparent, // AppBar 已内联
         elevation: 0,
         flexibleSpace: Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
-              colors: [...CustomAppBar.appBarColors],
+              colors: [
+                Theme.of(context).primaryColor,
+                Theme.of(context).primaryColorDark
+              ], // 示例颜色
             ),
           ),
         ),
@@ -221,12 +259,10 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
             border: InputBorder.none,
           ),
           style: TextStyle(color: Colors.white),
-          // 每次输入变化都触发搜索
-          onChanged: _performSearch,
+          onChanged: (query) => _performSearch(query), // 每次输入都触发，但有防抖
           onSubmitted: (query) {
-            // 提交时也触发搜索
-            _performSearch(query.trim());
-            // 添加历史在 performSearch 成功后处理
+            _debounceTimer?.cancel(); // 立即执行搜索，取消防抖
+            _performSearch(query.trim(), isRefresh: true);
           },
         ),
         actions: [
@@ -235,69 +271,58 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
               icon: Icon(Icons.clear, color: Colors.white),
               onPressed: () {
                 _searchController.clear();
-                // 清空时也触发 performSearch('') 来重置状态并显示历史
-                _performSearch('');
+                _performSearch(''); // 清空搜索，显示历史
               },
             ),
         ],
       ),
-      // --- Body ---
       body: _buildBody(),
     );
   }
 
-  // --- _buildBody ---
   Widget _buildBody() {
-    // *** 1. 检查是否正在搜索 ***
     if (_isSearching) {
-      // 直接显示加载，因为游戏搜索结果通常是替换式的
-      return LoadingWidget.fullScreen(
-          message: '正在搜索游戏...'); // 或者 LoadingWidget.inline()
+      // 首次加载或刷新时
+      return LoadingWidget.fullScreen(message: '正在搜索游戏...');
     }
 
-    // *** 2. 检查是否有错误信息 ***
-    if (_error != null) {
-      // 根据搜索框是否为空判断是哪个错误
-      if (_searchController.text.isNotEmpty) {
-        return InlineErrorWidget(
-          errorMessage: _error!,
-          onRetry: () {
-            setState(() {
-              _error = null;
-            }); // 清除错误
-            _performSearch(_searchController.text.trim()); // 重试搜索
-          },
-        );
-      } else {
-        return InlineErrorWidget(
-          errorMessage: _error!,
-          onRetry: () {
-            setState(() {
-              _error = null;
-            }); // 清除错误
-            _loadSearchHistory(); // 重试加载历史
-          },
-        );
-      }
+    if (_error != null &&
+        (_searchResults == null || _searchResults!.games.isEmpty)) {
+      // 只有在没有结果时才显示全屏错误
+      return CustomErrorWidget(
+        // 使用 CustomErrorWidget 以便有重试按钮
+        errorMessage: _error!,
+        onRetry: () {
+          setState(() {
+            _error = null;
+          });
+          if (_searchController.text.isEmpty) {
+            _loadSearchHistory();
+          } else {
+            _performSearch(_searchController.text.trim(), isRefresh: true);
+          }
+        },
+      );
     }
 
-    // *** 3. 如果搜索框为空，显示历史记录 ***
+    // 如果有部分结果但加载更多失败，错误会在列表底部显示（如果实现的话）
+
     if (_searchController.text.isEmpty) {
       return _buildSearchHistory();
     }
 
-    // *** 4. 显示搜索结果列表 (包括空状态) ***
     return _buildSearchResults();
   }
 
-  // --- _buildSearchHistory (保持不变) ---
   Widget _buildSearchHistory() {
-    if (_searchHistory.isEmpty) {
+    if (_searchHistory.isEmpty && _error == null) {
+      // 只有在历史为空且无错误时显示空状态
       return const EmptyStateWidget(
         message: '暂无搜索历史',
         iconData: Icons.history,
       );
     }
+    // 如果有加载历史的错误，_buildBody 已经处理了
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -333,7 +358,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
                   _searchController.text = query;
                   _searchController.selection = TextSelection.fromPosition(
                       TextPosition(offset: _searchController.text.length));
-                  _performSearch(query);
+                  _performSearch(query, isRefresh: true);
                 },
               );
             },
@@ -343,45 +368,77 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
     );
   }
 
-  // --- 构建搜索结果 UI ---
   Widget _buildSearchResults() {
-    // 空状态处理 (保持不变)
-    if (!_isSearching && _searchResults.isEmpty && _error == null) {
-      return const EmptyStateWidget(
-        message: '未找到相关游戏',
-        iconData: Icons.search_off,
-      );
+    if (_searchResults == null || _searchResults!.games.isEmpty) {
+      // 如果搜索词不为空但没有结果 (且不是在加载中)
+      if (_searchController.text.isNotEmpty &&
+          !_isSearching &&
+          _error == null) {
+        return const EmptyStateWidget(
+          message: '未找到相关游戏',
+          iconData: Icons.search_off,
+        );
+      }
+      return const SizedBox.shrink(); // 其他情况（如初始状态）不显示任何东西
     }
 
-    // 定义卡片动画参数
     const Duration cardAnimationDuration = Duration(milliseconds: 350);
     const Duration cardDelayIncrement = Duration(milliseconds: 40);
 
-    // 结果列表
-    return ListView.builder(
-      padding: const EdgeInsets.all(8.0),
-      itemCount: _searchResults.length,
-      itemBuilder: (context, index) {
-        final game = _searchResults[index];
-        // --- 使用 FadeInSlideUpItem 包裹卡片 ---
-        return FadeInSlideUpItem(
-          key: ValueKey(game.id), // 使用 game.id 作为 Key
-          duration: cardAnimationDuration,
-          delay: cardDelayIncrement * index, // 交错延迟
-          child: Padding(
-            // 保持原有的 Padding
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: CommonGameCard(
-              game: game,
-              isGridItem: false, // 列表样式
-              showTags: true,
-              maxTags: 3,
-              // CommonGameCard 通常内部处理点击导航
-            ),
-          ),
-        );
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification scrollInfo) {
+        if (scrollInfo.metrics.pixels >=
+                scrollInfo.metrics.maxScrollExtent * 0.9 && // 接近底部
+            !_isLoadingMore && // 不在加载中
+            _hasMoreResults()) {
+          // 还有更多数据
+          _loadMoreResults();
+        }
+        return true;
       },
+      child: ListView.builder(
+        padding: const EdgeInsets.all(8.0),
+        itemCount: _searchResults!.games.length +
+            (_hasMoreResults() || _isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (index < _searchResults!.games.length) {
+            final game = _searchResults!.games[index];
+            return FadeInSlideUpItem(
+              key: ValueKey(game.id),
+              duration: cardAnimationDuration,
+              delay: cardDelayIncrement * index,
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: CommonGameCard(
+                  game: game,
+                  isGridItem: false,
+                  showTags: true,
+                  maxTags: 3,
+                ),
+              ),
+            );
+          } else if (_isLoadingMore) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16.0),
+              child: LoadingWidget.inline(message: "加载中..."),
+            );
+          } else if (_hasMoreResults()) {
+            // 可以选择显示 "点击加载更多" 或自动加载
+            // 这里为了简化，如果还有更多但不在加载中，不显示特殊按钮
+            // 也可以像之前一样用 FunctionalTextButton
+            return const SizedBox.shrink();
+          } else if (_error != null && _searchResults!.games.isNotEmpty) {
+            // 如果列表有数据，但加载更多时出错了，可以在底部显示一个小的错误提示
+            return Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Text(_error!,
+                  style: TextStyle(color: Colors.red),
+                  textAlign: TextAlign.center),
+            );
+          }
+          return const SizedBox.shrink();
+        },
+      ),
     );
   }
-// --- 构建 UI 结束 ---
 }

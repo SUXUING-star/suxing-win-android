@@ -182,8 +182,9 @@ class AnnouncementDialog extends StatelessWidget {
 
   bool _shouldShowImage() {
     if (imageSource is XFile) return true;
-    if (imageSource is String && (imageSource as String).isNotEmpty)
+    if (imageSource is String && (imageSource as String).isNotEmpty) {
       return true;
+    }
     return announcement.imageUrl != null && announcement.imageUrl!.isNotEmpty;
   }
 

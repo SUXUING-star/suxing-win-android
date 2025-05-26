@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart';
-import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class GamePreviewScreen extends StatelessWidget {
   final GameService gameService;
@@ -88,10 +88,9 @@ class GamePreviewScreen extends StatelessWidget {
             color: Colors.amber.withSafeOpacity(0.2),
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Center(
-              child: Text(
+              child: AppText(
                 '预览模式 - 这是您保存后的游戏详情页效果预览',
                 style: TextStyle(
-                  fontFamily: FontConfig.defaultFontFamily,
                   fontWeight: FontWeight.bold,
                   fontSize: 16,
                 ),
@@ -196,11 +195,10 @@ class GamePreviewScreen extends StatelessWidget {
                 color: Colors.amber.withSafeOpacity(0.2),
                 padding: EdgeInsets.symmetric(vertical: 12),
                 child: Center(
-                  child: Text(
+                  child: AppText(
                     '预览模式 - 实时预览效果',
                     style: TextStyle(
-                      fontFamily: FontConfig.defaultFontFamily,
-                      fontWeight: FontWeight.bold,
+                       fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),

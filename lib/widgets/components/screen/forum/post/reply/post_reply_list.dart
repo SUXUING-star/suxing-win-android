@@ -29,7 +29,7 @@ class PostReplyList extends StatefulWidget {
 
   final UserFollowService followService;
 
-  final PostService forumService;
+  final PostService postService;
 
   /// 帖子 ID
   final String postId;
@@ -44,7 +44,7 @@ class PostReplyList extends StatefulWidget {
     required this.infoProvider,
     required this.inputStateService,
     required this.followService,
-    required this.forumService,
+    required this.postService,
     required this.postId,
     this.isScrollableInternally = false, // 默认为 false，依赖外部滚动
   });
@@ -114,7 +114,7 @@ class _PostReplyListState extends State<PostReplyList> {
   /// 核心加载/刷新逻辑
   void _loadReplies() {
     setState(() {
-      _repliesFuture = widget.forumService.fetchReplies(widget.postId);
+      _repliesFuture = widget.postService.fetchReplies(widget.postId);
     });
   }
 
@@ -135,7 +135,7 @@ class _PostReplyListState extends State<PostReplyList> {
     }
 
     try {
-      await widget.forumService
+      await widget.postService
           .addReply(widget.postId, content, parentId: null);
       if (mounted) {
         widget.inputStateService.clearText(_topLevelReplySlotName);
@@ -368,7 +368,7 @@ class _PostReplyListState extends State<PostReplyList> {
                             followService: widget.followService,
                             infoProvider: widget.infoProvider,
                             currentUser: authSnapshot.data,
-                            forumService: widget.forumService,
+                            postService: widget.postService,
                             reply: topReply,
                             floor: topLevelReplies.length - index,
                             postId: widget.postId,
@@ -389,7 +389,7 @@ class _PostReplyListState extends State<PostReplyList> {
                                           widget.inputStateService,
                                       authProvider: widget.authProvider,
                                       currentUser: authSnapshot.data,
-                                      forumService: widget.forumService,
+                                      postService: widget.postService,
                                       reply: nestedReply,
                                       followService: widget.followService,
                                       infoProvider: widget.infoProvider,

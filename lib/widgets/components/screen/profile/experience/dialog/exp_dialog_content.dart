@@ -1,14 +1,12 @@
 // lib/widgets/components/screen/profile/experience/dialog/exp_dialog_content.dart
 
 import 'package:flutter/material.dart';
-// **** 导入模型 ****
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 导入 User 模型
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-// **** 导入 UI 组件 ****
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
-import 'exp_task_card.dart'; // 导入 ExpTaskCard
+import 'exp_task_card.dart';
 
 class ExpDialogContent extends StatelessWidget {
   final TodayProgressSummary todayProgress;
@@ -20,25 +18,18 @@ class ExpDialogContent extends StatelessWidget {
     super.key,
     required this.todayProgress,
     required this.tasks,
-    required this.currentUser, // **** 接收 User 对象 ****
+    required this.currentUser,
     required this.isDesktop,
   });
 
   @override
   Widget build(BuildContext context) {
-    // final theme = Theme.of(context);
-
-    // **** 不再需要前端计算等级，直接使用 User 对象里的数据 ****
-    // final UserLevelDetails levelInfo = getUserLevelInfo(totalExperience); // 删除！
-
     return SingleChildScrollView(
-      // **** 增加内边距，让内容不贴边 ****
       padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
       child: Column(
         mainAxisSize: MainAxisSize.min, // 高度自适应
         crossAxisAlignment: CrossAxisAlignment.stretch, // 子项宽度撑满
         children: [
-          // **** 显示等级信息，直接从 currentUser 获取 ****
           _buildLevelInfo(context, currentUser),
           const SizedBox(height: 16), // 增加模块间距
 
@@ -69,13 +60,14 @@ class ExpDialogContent extends StatelessWidget {
               ),
             )
           else
-          // 用 Column 渲染任务卡片
+            // 用 Column 渲染任务卡片
             Column(
               // ExpTaskCard 内部已确保使用 AppText
-              children: tasks.map((task) => Padding(
-                  padding: const EdgeInsets.only(bottom: 6.0), // 给卡片之间加点间距
-                  child: ExpTaskCard(task: task)
-              )).toList(),
+              children: tasks
+                  .map((task) => Padding(
+                      padding: const EdgeInsets.only(bottom: 6.0), // 给卡片之间加点间距
+                      child: ExpTaskCard(task: task)))
+                  .toList(),
             ),
         ],
       ),
@@ -100,7 +92,8 @@ class ExpDialogContent extends StatelessWidget {
             // textBaseline: TextBaseline.alphabetic,
             children: [
               // 等级和总经验
-              Column( // 用 Column 组合等级和经验
+              Column(
+                // 用 Column 组合等级和经验
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   AppText(
@@ -138,14 +131,17 @@ class ExpDialogContent extends StatelessWidget {
           ),
           const SizedBox(height: 10), // 增加间距
           // 等级进度条
-          Tooltip( // 给进度条加上 Tooltip
+          Tooltip(
+            // 给进度条加上 Tooltip
             message: '当前等级进度: ${user.levelProgress.toStringAsFixed(1)}%',
             child: ClipRRect(
               borderRadius: BorderRadius.circular(5), // 进度条圆角
               child: LinearProgressIndicator(
                 value: user.levelProgress / 100.0, // 使用 user.levelProgress
-                backgroundColor: Colors.deepPurple.shade100.withSafeOpacity(0.5), // 背景更淡
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.deepPurple.shade400), // 进度条颜色
+                backgroundColor:
+                    Colors.deepPurple.shade100.withSafeOpacity(0.5), // 背景更淡
+                valueColor: AlwaysStoppedAnimation<Color>(
+                    Colors.deepPurple.shade400), // 进度条颜色
                 minHeight: 8, // 进度条加高一点
               ),
             ),
@@ -155,10 +151,10 @@ class ExpDialogContent extends StatelessWidget {
     );
   }
 
-
   // 构建汇总信息的小部件
   Widget _buildSummary(BuildContext context) {
-    final progressPercent = todayProgress.completionPercentage.toStringAsFixed(1);
+    final progressPercent =
+        todayProgress.completionPercentage.toStringAsFixed(1);
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8), // 调整内边距
       decoration: BoxDecoration(
@@ -169,8 +165,10 @@ class ExpDialogContent extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround, // 保持均分
         children: [
-          _buildSummaryItem('今日已获', '${todayProgress.earnedToday} EXP', Colors.lightBlue.shade800),
-          _buildSummaryItem('今日上限', '${todayProgress.possibleToday} EXP', Colors.grey.shade700), // 上限用灰色
+          _buildSummaryItem('今日已获', '${todayProgress.earnedToday} EXP',
+              Colors.lightBlue.shade800),
+          _buildSummaryItem('今日上限', '${todayProgress.possibleToday} EXP',
+              Colors.grey.shade700), // 上限用灰色
           _buildSummaryItem('完成度', '$progressPercent%', Colors.green.shade700),
         ],
       ),

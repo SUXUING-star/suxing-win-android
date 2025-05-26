@@ -1,8 +1,9 @@
 // lib/widgets/components/screen/gamelist/tag/tag_filter.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_tag.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game_tag.dart';
-import '../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+
 
 class TagFilter extends StatefulWidget {
   final List<GameTag> tags;
@@ -49,10 +50,9 @@ class _TagFilterState extends State<TagFilter> {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // 热门标签标题
-          Text(
+          AppText(
             '热门标签',
             style: TextStyle(
-              fontFamily: FontConfig.defaultFontFamily,
               fontWeight: FontWeight.bold,
               fontSize: 14.0,
               color: Colors.white,
@@ -110,11 +110,10 @@ class _TagFilterState extends State<TagFilter> {
             return Padding(
               padding: EdgeInsets.symmetric(horizontal: 4),
               child: FilterChip(
-                label: Text(
+                label: AppText(
                   '${tag.name} (${tag.count})',
                   style: TextStyle(
                     fontSize: 12,
-                    fontFamily: FontConfig.defaultFontFamily,
                     color: isSelected ? Colors.white : Colors.black87,
                   ),
                 ),

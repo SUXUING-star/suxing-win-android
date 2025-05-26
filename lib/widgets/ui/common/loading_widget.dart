@@ -119,7 +119,6 @@ class LoadingWidget extends StatefulWidget {
   /// 一个预设的、带自定义消息的全屏加载指示器
   static Widget fullScreenWithMessage(String message) =>
       LoadingWidget.fullScreen(message: message);
-  // --- 👆👆👆 修改结束 👆👆👆 ---
 
   @override
   State<LoadingWidget> createState() => _LoadingWidgetState();
@@ -139,7 +138,6 @@ class _LoadingWidgetState extends State<LoadingWidget> {
   Widget _buildInlineLoading(Color loadingColor) {
     final Color textColor =
         Theme.of(context).textTheme.bodyMedium?.color ?? Colors.grey[600]!;
-    print("LoadingWidget._buildLoadingCard: widget.size = ${widget.size}");
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,

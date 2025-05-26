@@ -79,7 +79,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   Timer? _refreshDebounceTimer;
   Timer? _checkProviderDebounceTimer;
   static const int _pageSize = GameService.gamesLimit;
-  static const Duration _cacheDebounceDuration = Duration(milliseconds: 800);
+  static const Duration _cacheDebounceDuration = Duration(seconds: 10);
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 500);
   final Map<String, String> _sortOptions = GameConstants.defaultFilter;

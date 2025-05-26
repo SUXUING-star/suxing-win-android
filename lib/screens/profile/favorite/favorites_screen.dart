@@ -16,14 +16,14 @@ import 'tabs/post_favorites_tab.dart';
 class FavoritesScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   const FavoritesScreen({
     super.key,
     required this.authProvider,
     required this.gameService,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.infoProvider,
   });
@@ -132,7 +132,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                       ),
                       PostFavoritesTab(
                         widget.authProvider.currentUser,
-                        widget.forumService,
+                        widget.postService,
                         widget.followService,
                         widget.infoProvider,
                       ),

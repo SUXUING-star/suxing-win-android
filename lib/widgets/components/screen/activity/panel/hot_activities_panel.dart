@@ -11,7 +11,7 @@ import 'layout/desktop/hot_activities_full_panel.dart';
 class HotActivitiesPanel extends StatefulWidget {
   final User? currentUser;
   final UserInfoProvider userInfoProvider;
-  final UserActivityService activityService;
+  final ActivityService activityService;
   final UserFollowService followService;
   const HotActivitiesPanel({
     required this.currentUser,

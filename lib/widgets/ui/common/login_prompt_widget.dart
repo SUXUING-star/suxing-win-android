@@ -1,9 +1,9 @@
 // lib/widgets/ui/common/login_prompt_widget.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import '../../../utils/font/font_config.dart';
-import '../../../routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class LoginPromptWidget extends StatelessWidget {
   const LoginPromptWidget({
@@ -34,23 +34,19 @@ class LoginPromptWidget extends StatelessWidget {
                 color: Theme.of(context).colorScheme.secondary,
               ),
               const SizedBox(height: 24),
-              Text(
+              AppText(
                 '还未登录',
                 style: TextStyle(
                   fontSize: 18,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                   color: Theme.of(context).textTheme.bodyLarge?.color,
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
+              AppText(
                 '登录后可以体验更多功能',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                   color: Colors.grey,
                 ),
               ),
@@ -89,24 +85,20 @@ class LoginPromptWidget extends StatelessWidget {
                   color: Theme.of(context).colorScheme.secondary,
                 ),
                 const SizedBox(height: 32),
-                Text(
+                AppText(
                   '您尚未登录',
                   style: TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontFamilyFallback: FontConfig.fontFallback,
                     color: Theme.of(context).textTheme.bodyLarge?.color,
                   ),
                 ),
                 const SizedBox(height: 16),
-                Text(
+                AppText(
                   '登录后即可访问个人资料和更多功能',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 16,
-                    fontFamily: FontConfig.defaultFontFamily,
-                    fontFamilyFallback: FontConfig.fontFallback,
                     color: Colors.grey.shade700,
                   ),
                 ),
@@ -133,12 +125,10 @@ class LoginPromptWidget extends StatelessWidget {
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text(
+                      child: AppText(
                         '注册账号',
                         style: TextStyle(
                           fontSize: 16,
-                          fontFamily: FontConfig.defaultFontFamily,
-                          fontFamilyFallback: FontConfig.fontFallback,
                         ),
                       ),
                     ),

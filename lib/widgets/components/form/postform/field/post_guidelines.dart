@@ -1,7 +1,7 @@
 // lib/widgets/forum/post_guidelines.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class PostGuidelines extends StatelessWidget {
   final List<String> guidelines;
@@ -18,10 +18,9 @@ class PostGuidelines extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           title,
           style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -61,11 +60,10 @@ class PostGuidelines extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
+            child: AppText(
               text,
               style: TextStyle(
-                fontFamily: FontConfig.defaultFontFamily,
-                fontSize: 14,
+                 fontSize: 14,
               ),
             ),
           ),

@@ -1,29 +1,29 @@
 // lib/screens/forum/edit_post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
+import 'package:suxingchahui/widgets/components/form/postform/post_form.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
-import '../../../models/post/post.dart';
-import '../../../services/main/forum/post_service.dart';
-import '../../../widgets/components/form/postform/post_form.dart';
 
 class EditPostScreen extends StatefulWidget {
   final String postId;
-  final PostService forumService;
+  final PostService postService;
   final AuthProvider authProvider;
   final InputStateService inputStateService;
 
   const EditPostScreen({
     super.key,
     required this.postId,
-    required this.forumService,
+    required this.postService,
     required this.authProvider,
     required this.inputStateService,
   });
@@ -60,7 +60,7 @@ class _EditPostScreenState extends State<EditPostScreen>
     try {
       setState(() => _isLoading = true);
 
-      final post = await widget.forumService.getPostById(widget.postId);
+      final post = await widget.postService.getPostById(widget.postId);
       setState(() {
         _post = post;
         _isLoading = false;
@@ -76,7 +76,7 @@ class _EditPostScreenState extends State<EditPostScreen>
     try {
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
-      await widget.forumService
+      await widget.postService
           .updatePost(_post!, data.title, data.content, postTags);
       showSnackbar(message: "编辑成功", type: SnackbarType.success);
       if (!mounted) return;

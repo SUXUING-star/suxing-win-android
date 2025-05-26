@@ -1,4 +1,4 @@
-// lib/screens/forum/forum_screen.dart
+// lib/screens/forum/post_list_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
@@ -32,29 +32,30 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'refresh_controller.dart';
 
-class ForumScreen extends StatefulWidget {
+class PostListScreen extends StatefulWidget {
   final String? tag;
   final AuthProvider authProvider;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final PostListFilterProvider postListFilterProvider;
 
-  const ForumScreen({
+  const PostListScreen({
     super.key,
     this.tag,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.infoProvider,
     required this.postListFilterProvider,
   });
 
   @override
-  _ForumScreenState createState() => _ForumScreenState();
+  _PostListScreenState createState() => _PostListScreenState();
 }
 
-class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
+class _PostListScreenState extends State<PostListScreen>
+    with WidgetsBindingObserver {
   final List<PostTag> _tags = PostConstants.availablePostTags;
   PostTag? _selectedTag;
   List<Post>? _posts;
@@ -95,9 +96,9 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   DateTime? _lastForumRefreshAttemptTime; // 上次尝试论坛下拉刷新的时间戳
   // 定义最小刷新间隔 (40 秒)
   static const Duration _minForumRefreshInterval = Duration(seconds: 40);
-  static const Duration _cacheDebounceDuration = Duration(milliseconds: 800);
+  static const Duration _cacheDebounceDuration = Duration(seconds: 10);
   static const Duration _checkProviderDebounceDuration =
-      Duration(milliseconds: 300);
+      Duration(milliseconds: 800);
 
   @override
   void initState() {
@@ -153,7 +154,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
   }
 
   @override
-  void didUpdateWidget(covariant ForumScreen oldWidget) {
+  void didUpdateWidget(covariant PostListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
@@ -252,7 +253,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     }
     try {
       // 调用 ForumService
-      await widget.forumService.togglePostLock(postId);
+      await widget.postService.togglePostLock(postId);
       if (!mounted) return; // 检查组件是否还在
       AppSnackBar.showSuccess(context, '帖子状态已切换');
       await _loadPosts(page: _currentPage, isRefresh: true);
@@ -295,7 +296,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
     // --- 调用 Service 获取数据 ---
     try {
       final String? tagParam = _selectedTag?.displayText;
-      final PostList result = await widget.forumService.getPostsPage(
+      final PostList result = await widget.postService.getPostsPage(
         tag: tagParam,
         page: page,
         limit: _postListLimit,
@@ -304,7 +305,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
       if (!mounted) return; // 获取数据后检查组件是否还在
 
-      // --- *** 处理结果并强制 setState *** ---
       final List<Post> fetchedPosts = result.posts;
       final PaginationData pagination = result.pagination;
       final int serverPage = pagination.page;
@@ -322,7 +322,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       _startOrUpdateWatchingCache();
     } catch (e) {
       if (!mounted) return;
-      // *** 出错也要 setState 更新错误信息 ***
       setState(() {
         _errorMessage = '加载帖子失败: $e';
         // 如果是首次加载或刷新出错，清空帖子列表
@@ -449,7 +448,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
 
     try {
       final String? tagParam = _selectedTag?.displayText;
-      _cacheSubscription = widget.forumService
+      _cacheSubscription = widget.postService
           .watchForumPageChanges(
         tag: tagParam,
         page: _currentPage,
@@ -457,7 +456,6 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       )
           .listen(
         (dynamic event) {
-          // --- *** 监听到变化后的核心处理 *** ---
           if (_isVisible) {
             // 使用 Debounce 避免短时间内多次无效的刷新
             _refreshDataIfNeeded(reason: "Cache Changed");
@@ -627,7 +625,7 @@ class _ForumScreenState extends State<ForumScreen> with WidgetsBindingObserver {
       onConfirm: () async {
         try {
           // 调用 Service 删除
-          await widget.forumService.deletePost(post);
+          await widget.postService.deletePost(post);
           if (!mounted) return;
           AppSnackBar.showSuccess(context, '帖子已删除');
           // 删除成功后，刷新列表（通常回到第一页）

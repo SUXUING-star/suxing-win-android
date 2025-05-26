@@ -15,14 +15,14 @@ import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final PostService forumService;
+  final PostService postService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   const HistoryScreen({
     super.key,
     required this.gameService,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.infoProvider,
     required this.followService,
   });
@@ -35,7 +35,6 @@ class _HistoryScreenState extends State<HistoryScreen>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
   String? _error;
-  late final AuthProvider _authProvider;
   bool _hasInitializedProviders = false;
 
   // 标记是否已经加载过数据
@@ -62,7 +61,6 @@ class _HistoryScreenState extends State<HistoryScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedProviders) {
-      _authProvider = widget.authProvider;
       _hasInitializedProviders = true;
     }
 
@@ -174,8 +172,8 @@ class _HistoryScreenState extends State<HistoryScreen>
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
           final currentUser = authSnapshot.data;
           if (currentUser == null) {
@@ -185,7 +183,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             appBar: const CustomAppBar(title: '浏览历史'),
             body: RefreshIndicator(
               onRefresh: _refreshCurrentHistory,
-              child: _buildContent(_authProvider.currentUser),
+              child: _buildContent(widget.authProvider.currentUser),
             ),
           );
         });
@@ -205,8 +203,9 @@ class _HistoryScreenState extends State<HistoryScreen>
   }
 
   Widget _buildErrorContent() {
-    return InlineErrorWidget(
+    return CustomErrorWidget(
       onRetry: _loadInitialTab,
+      retryText: "尝试重试",
     );
   }
 
@@ -239,7 +238,7 @@ class _HistoryScreenState extends State<HistoryScreen>
             isLoaded: _postHistoryLoaded,
             onLoad: _loadPostHistory,
             currentUser: currentUser,
-            forumService: widget.forumService,
+            postService: widget.postService,
           ),
         ],
       ),

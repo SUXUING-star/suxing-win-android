@@ -26,7 +26,7 @@ class MyActivityFeedScreen extends StatefulWidget {
   final String userId; // 必须提供用户ID
   final String title; // 屏幕标题
   final AuthProvider authProvider;
-  final UserActivityService activityService;
+  final ActivityService activityService;
   final UserFollowService followService;
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
@@ -75,7 +75,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   bool _hasInitializedDependencies = false;
   bool _isInitialized = false;
   String? _currentUserId;
-  late final UserActivityService _activityService;
+  late final ActivityService _activityService;
   late final AuthProvider _authProvider;
   late final UserFollowService _followService;
 

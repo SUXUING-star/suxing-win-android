@@ -89,7 +89,7 @@ class GameDescription extends StatelessWidget {
               ),
               SizedBox(height: 16),
               GameDownloadLinks(
-                  downloadLinks: game.downloadLinks,
+                downloadLinks: game.downloadLinks,
                 currentUser: currentUser,
               ),
             ],

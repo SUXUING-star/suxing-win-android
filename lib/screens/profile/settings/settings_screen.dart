@@ -13,12 +13,12 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class SettingsScreen extends StatefulWidget {
   final GameService gameService;
-  final PostService forumService;
+  final PostService postService;
   final AuthProvider authProvider;
   const SettingsScreen({
     super.key,
     required this.gameService,
-    required this.forumService,
+    required this.postService,
     required this.authProvider,
   });
 
@@ -32,9 +32,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   bool _isLoading = false;
   String? _loadingMessage;
   bool _hasInitializedDependencies = false;
-  late final PostService _forumService;
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
 
   @override
   void initState() {
@@ -45,9 +42,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = widget.gameService;
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
       _hasInitializedDependencies = true;
     }
   }
@@ -58,11 +52,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
       _isLoading = true;
       _loadingMessage = '正在清除浏览历史...';
     });
+    if (!widget.authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
 
     try {
       // 调用清除历史的方法 (确保它们返回 Future 或可以 await)
-      await _gameService.clearGameHistory();
-      await _forumService.clearPostHistory(); // 确认方法名正确
+      await widget.gameService.clearGameHistory();
+      await widget.postService.clearPostHistory(); // 确认方法名正确
 
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '浏览历史已清除');
@@ -104,8 +102,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const Divider(height: 1),
               StreamBuilder<User?>(
-                stream: _authProvider.currentUserStream,
-                initialData: _authProvider.currentUser,
+                stream: widget.authProvider.currentUserStream,
+                initialData: widget.authProvider.currentUser,
                 builder: (context, authSnapshot) {
                   final currentUser = authSnapshot.data;
                   if (currentUser == null) {

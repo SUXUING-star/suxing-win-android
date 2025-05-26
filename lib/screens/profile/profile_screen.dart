@@ -58,7 +58,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isRefreshing = false;
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
-  static const Duration _minRefreshInterval = Duration(minutes: 1);
+  static const Duration _minRefreshInterval = Duration(seconds: 15);
   String? _currentUserId;
 
   DailyProgressData? _dailyProgressData;

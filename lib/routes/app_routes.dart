@@ -43,7 +43,7 @@ import 'package:suxingchahui/screens/profile/profile_screen.dart';
 import 'package:suxingchahui/screens/profile/open_profile_screen.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/screens/forum/forum_screen.dart';
+import 'package:suxingchahui/screens/forum/post_list_screen.dart';
 import 'package:suxingchahui/screens/forum/post/post_detail_screen.dart';
 import 'package:suxingchahui/screens/forum/post/create_post_screen.dart';
 import 'package:suxingchahui/screens/forum/post/edit_post_screen.dart';
@@ -107,10 +107,10 @@ class AppRoutes {
     RouteSettings settings,
     AuthProvider authProvider,
     UserService userService,
-    PostService forumService,
+    PostService postService,
     GameService gameService,
     UserFollowService followService,
-    UserActivityService activityService,
+    ActivityService activityService,
     LinkToolService linkToolService,
     MessageService messageService,
     GameCollectionService gameCollectionService,
@@ -150,7 +150,7 @@ class AppRoutes {
                 authProvider: authProvider,
                 followService: followService,
                 gameService: gameService,
-                forumService: forumService,
+                postService: postService,
               );
             });
           }
@@ -163,7 +163,7 @@ class AppRoutes {
                   authProvider: authProvider,
                   followService: followService,
                   gameService: gameService,
-                  forumService: forumService,
+                  postService: postService,
                 ));
       case about:
         return MaterialPageRoute(builder: (_) => AboutScreen());
@@ -310,7 +310,7 @@ class AppRoutes {
                   userService: userService,
                   authProvider: authProvider,
                   gameService: gameService,
-                  forumService: forumService,
+                  postService: postService,
                   followService: followService,
                 ));
 
@@ -366,7 +366,7 @@ class AppRoutes {
                   infoProvider: infoProvider,
                   gameService: gameService,
                   followService: followService,
-                  forumService: forumService,
+                  postService: postService,
                 ));
       case history:
         return MaterialPageRoute(
@@ -375,21 +375,21 @@ class AppRoutes {
                   infoProvider: infoProvider,
                   authProvider: authProvider,
                   gameService: gameService,
-                  forumService: forumService,
+                  postService: postService,
                 ));
       case myPosts:
         return MaterialPageRoute(
             builder: (_) => MyPostsScreen(
                   infoProvider: infoProvider,
                   authProvider: authProvider,
-                  forumService: forumService,
+                  postService: postService,
                   followService: followService,
                 ));
       case settingPage:
         return MaterialPageRoute(
             builder: (_) => SettingsScreen(
                   gameService: gameService,
-                  forumService: forumService,
+                  postService: postService,
                   authProvider: authProvider,
                 ));
       case myCollections:
@@ -535,17 +535,17 @@ class AppRoutes {
                   infoProvider: infoProvider,
                   authProvider: authProvider,
                   followService: followService,
-                  forumService: forumService,
+                  postService: postService,
                   userService: userService,
                 ));
       case forum:
         final String? tag = settings.arguments as String?;
         return MaterialPageRoute(
-            builder: (_) => ForumScreen(
+            builder: (_) => PostListScreen(
                   tag: tag,
                   postListFilterProvider: postListFilterProvider,
                   infoProvider: infoProvider,
-                  forumService: forumService,
+                  postService: postService,
                   authProvider: authProvider,
                   followService: followService,
                 ));
@@ -569,14 +569,14 @@ class AppRoutes {
                   inputStateService: inputStateService,
                   infoProvider: infoProvider,
                   authProvider: authProvider,
-                  forumService: forumService,
+                  postService: postService,
                   followService: followService,
                 ));
       case createPost:
         return MaterialPageRoute(
             builder: (_) => CreatePostScreen(
                   inputStateService: inputStateService,
-                  forumService: forumService,
+                  postService: postService,
                   authProvider: authProvider,
                 ));
       case editPost:
@@ -595,7 +595,7 @@ class AppRoutes {
             builder: (_) => EditPostScreen(
                   postId: postId,
                   inputStateService: inputStateService,
-                  forumService: forumService,
+                  postService: postService,
                   authProvider: authProvider,
                 ));
       case adminDashboard:

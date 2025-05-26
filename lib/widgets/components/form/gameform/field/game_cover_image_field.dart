@@ -7,7 +7,6 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
-
 class GameCoverImageField extends StatelessWidget {
   final dynamic coverImageSource;
   final ValueChanged<dynamic> onChanged;
@@ -114,7 +113,6 @@ class GameCoverImageField extends StatelessWidget {
     } else if (source is String) {
       // print("Cover Preview: Rendering String URL: $source");
       final imageUrl = source;
-      // 不需要再拼接 baseUrl，因为存的时候已经是完整路径或 URL
       final String displayUrl = imageUrl;
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,

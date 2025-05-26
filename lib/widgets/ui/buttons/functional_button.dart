@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import '../../../../utils/font/font_config.dart'; // 确认路径正确
 
 class FunctionalButton extends StatelessWidget {
   final VoidCallback? onPressed;
@@ -97,8 +96,6 @@ class FunctionalButton extends StatelessWidget {
     final Widget labelWidget = AppText(
       label,
       style: TextStyle(
-        fontFamily: FontConfig.defaultFontFamily,
-        fontFamilyFallback: FontConfig.fontFallback,
         fontSize: fontSize,
         color: currentForegroundColor, // 显式使用当前前景色
       ),

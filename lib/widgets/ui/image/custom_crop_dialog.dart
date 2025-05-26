@@ -7,12 +7,12 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:image/image.dart' as img;
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:vector_math/vector_math_64.dart' show Vector3;
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:path/path.dart' as p;
 
 class _CropOverlayPainter extends CustomPainter {
@@ -383,8 +383,6 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
 
   @override
   Widget build(BuildContext context) {
-    final Color secondaryColor = Theme.of(context).colorScheme.secondary;
-    final Color disabledColor = Colors.grey.shade400;
     final double buttonIconSize = 18.0;
     final double buttonFontSize = 15.0;
     final EdgeInsets buttonPadding =
@@ -571,24 +569,11 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                TextButton(
-                  style: TextButton.styleFrom(
-                      foregroundColor: secondaryColor,
-                      disabledForegroundColor:
-                          disabledColor.withSafeOpacity(0.7),
-                      padding: buttonPadding,
-                      textStyle: TextStyle(
-                        fontSize: buttonFontSize,
-                        fontWeight: FontWeight.w600,
-                        fontFamily: FontConfig.defaultFontFamily,
-                        fontFamilyFallback: FontConfig.fontFallback,
-                      ),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12))),
+                FunctionalTextButton(
                   onPressed: _isProcessingConfirm
                       ? null
                       : () => Navigator.of(context).pop(null),
-                  child: const Text('取消'),
+                  label: '取消',
                 ),
                 const SizedBox(width: 12),
                 FunctionalButton(

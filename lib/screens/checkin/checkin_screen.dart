@@ -64,7 +64,6 @@ class _CheckInScreenState extends State<CheckInScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      ;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {

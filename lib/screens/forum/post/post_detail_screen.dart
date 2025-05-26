@@ -31,7 +31,7 @@ class PostDetailScreen extends StatefulWidget {
   final String postId;
   final bool needHistory;
   final AuthProvider authProvider;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final InputStateService inputStateService;
@@ -41,7 +41,7 @@ class PostDetailScreen extends StatefulWidget {
     super.key,
     required this.postId,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.infoProvider,
     required this.inputStateService,
@@ -130,7 +130,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     try {
       // 调用 Service 获取聚合数据
       final details =
-          await widget.forumService.getPostDetailsWithActions(widget.postId);
+          await widget.postService.getPostDetailsWithActions(widget.postId);
 
       if (!mounted) return;
 
@@ -138,7 +138,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         // 成功获取数据
         if (widget.needHistory && _post?.status != PostStatus.locked) {
           try {
-            widget.forumService.incrementPostView(widget.postId);
+            widget.postService.incrementPostView(widget.postId);
           } catch (viewError) {
             //
           }
@@ -260,7 +260,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         });
         try {
           if (_post != null) {
-            await widget.forumService.deletePost(_post!);
+            await widget.postService.deletePost(_post!);
           }
           if (!mounted) return;
           _hasInteraction = true;
@@ -325,7 +325,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       _isTogglingLock = true;
     });
     try {
-      await widget.forumService.togglePostLock(widget.postId);
+      await widget.postService.togglePostLock(widget.postId);
       if (!mounted) return;
       showSnackbar(message: '帖子状态已切换', type: SnackbarType.success);
       _hasInteraction = true;
@@ -422,7 +422,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       userActions: currentUserActions,
       postId: widget.postId,
       onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
-      forumService: widget.forumService,
+      postService: widget.postService,
       infoProvider: widget.infoProvider,
       followService: widget.followService,
       onTagTap: (context, newTagString) =>

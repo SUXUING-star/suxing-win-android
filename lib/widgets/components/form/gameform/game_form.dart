@@ -31,7 +31,7 @@ import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:uuid/uuid.dart';
 import 'field/game_category_field.dart';
 import 'field/game_cover_image_field.dart';
@@ -1291,10 +1291,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           title,
           style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
             fontSize: DeviceUtils.isDesktop ? 18 : 16, // 桌面端字号稍大
             fontWeight: FontWeight.bold,
             color: Theme.of(context)

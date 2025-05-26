@@ -19,7 +19,7 @@ class RecentGlobalReplies extends StatefulWidget {
   final int limit;
   final Post post;
   final User? currentUser;
-  final PostService forumService;
+  final PostService postService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
 
@@ -29,7 +29,7 @@ class RecentGlobalReplies extends StatefulWidget {
     required this.post,
     required this.infoProvider,
     required this.followService,
-    required this.forumService,
+    required this.postService,
     required this.currentUser,
   });
 
@@ -47,7 +47,6 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   static const Duration _minRefreshInterval = Duration(seconds: 15);
 
   bool _hasInit = false;
-  late final PostService _forumService;
 
   @override
   void initState() {
@@ -70,7 +69,6 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInit) {
-      _forumService = widget.forumService;
       _hasInit = true;
     }
     if (_hasInit) {
@@ -82,7 +80,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   void _loadReplies() {
     // 注意这里直接赋值给 Future 变量，不需要 setState
     _repliesFuture =
-        _forumService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
+        widget.postService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
   }
 
   @override
@@ -116,8 +114,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
         _lastRefreshTime = now; // 更新上次刷新的时间
 
         // 调用实际的刷新方法
-        _repliesFuture =
-            _forumService.forceRefreshRecentGlobalReplies(limit: widget.limit);
+        _repliesFuture = widget.postService
+            .forceRefreshRecentGlobalReplies(limit: widget.limit);
       });
     }
 

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../../utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class TagSelection extends StatelessWidget {
   final List<String> availableTags;
@@ -19,10 +19,9 @@ class TagSelection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           '标签 (最多选择3个)',
           style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -34,11 +33,8 @@ class TagSelection extends StatelessWidget {
           children: availableTags.map((tag) {
             final isSelected = selectedTags.contains(tag);
             return FilterChip(
-              label: Text(
+              label: AppText(
                 tag,
-                style: TextStyle(
-                  fontFamily: FontConfig.defaultFontFamily,
-                ),
               ),
               selected: isSelected,
               selectedColor: Colors.blue.withSafeOpacity(0.25),

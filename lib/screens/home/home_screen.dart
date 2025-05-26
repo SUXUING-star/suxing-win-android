@@ -24,14 +24,14 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 class HomeScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   const HomeScreen({
     super.key,
     required this.authProvider,
     required this.gameService,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.infoProvider,
   });
@@ -341,7 +341,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           if (mounted) setState(() => _latestGamesData = data);
           break;
         case HomeDataType.hotPosts:
-          data = await widget.forumService.getHotPosts();
+          data = await widget.postService.getHotPosts();
           if (mounted) setState(() => _hotPostsData = data);
           break;
       }
@@ -436,7 +436,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           .debounceTime(_cacheDebounceDuration)
           .listen(
               (event) => _handleCacheChange(HomeDataType.latestGames, event));
-      _hotPostsWatchSub = widget.forumService.hotPostsCacheChangeNotifier
+      _hotPostsWatchSub = widget.postService.hotPostsCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(HomeDataType.hotPosts, event));
     } catch (e) {

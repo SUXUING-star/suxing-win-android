@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 不修改这个文件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/font/font_config.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 // --- PostFormData 保持不变 ---
 class PostFormData {
@@ -261,10 +261,9 @@ class _PostFormState extends State<PostForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           text,
           style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
@@ -307,10 +306,9 @@ class _PostFormState extends State<PostForm> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        AppText(
           '标签 (最多选择3个)',
           style: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
             fontSize: 16,
             fontWeight: FontWeight.bold,
           ),
@@ -322,10 +320,9 @@ class _PostFormState extends State<PostForm> {
           children: widget.availableTags.map((tag) {
             final isSelected = _selectedTags.contains(tag);
             return FilterChip(
-              label: Text(
+              label: AppText(
                 tag.displayText,
                 style: TextStyle(
-                  fontFamily: FontConfig.defaultFontFamily,
                   fontSize: 14,
                 ),
               ),
@@ -417,10 +414,9 @@ class _PostFormState extends State<PostForm> {
         children: [
           Icon(Icons.update, size: 16, color: Colors.grey[600]),
           const SizedBox(width: 4),
-          Text(
+          AppText(
             '更新于: ${widget.updatetimeInfo}',
             style: TextStyle(
-              fontFamily: FontConfig.defaultFontFamily,
               color: Colors.grey[600],
               fontSize: 14,
             ),

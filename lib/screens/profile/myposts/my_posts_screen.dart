@@ -23,13 +23,13 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 
 class MyPostsScreen extends StatefulWidget {
   final UserFollowService followService;
-  final PostService forumService;
+  final PostService postService;
   final UserInfoProvider infoProvider;
   final AuthProvider authProvider;
   const MyPostsScreen({
     super.key,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.infoProvider,
   });
@@ -49,8 +49,6 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
   final ScrollController _scrollController = ScrollController();
 
-  late final PostService _forumService;
-  late final AuthProvider _authProvider;
   bool _hasInitializedDependencies = false;
   User? _currentUser;
 
@@ -64,9 +62,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _forumService = widget.forumService;
-      _authProvider = widget.authProvider;
-      _currentUser = _authProvider.currentUser;
+      _currentUser = widget.authProvider.currentUser;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -80,9 +76,9 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     if (!mounted) return;
     if (state == AppLifecycleState.resumed) {
       if (mounted) {
-        if (_currentUser != _authProvider.currentUser) {
+        if (_currentUser != widget.authProvider.currentUser) {
           setState(() {
-            _currentUser = _authProvider.currentUser;
+            _currentUser = widget.authProvider.currentUser;
           });
         }
       }
@@ -116,7 +112,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     });
 
     try {
-      final currentUserId = _authProvider.currentUserId;
+      final currentUserId = widget.authProvider.currentUserId;
 
       if (currentUserId == null || currentUserId.isEmpty) {
         if (_isMounted) {
@@ -132,7 +128,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
       // 调用修改后的 Future 方法
 
-      final fetchedPosts = await _forumService.getUserPosts(currentUserId);
+      final fetchedPosts = await widget.postService.getUserPosts(currentUserId);
 
       if (_isMounted) {
         setState(() {
@@ -160,14 +156,14 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
-    return _authProvider.isAdmin
+    return widget.authProvider.isAdmin
         ? true
-        : _authProvider.currentUserId == post.authorId;
+        : widget.authProvider.currentUserId == post.authorId;
   }
 
   // --- 处理删除帖子 ---
   Future<void> _handleDeletePost(Post post) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -196,7 +192,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
             if (!_isMounted) return;
             try {
               // 调用 Service 执行实际删除
-              await _forumService.deletePost(post);
+              await widget.postService.deletePost(post);
               if (!mounted) return;
               AppSnackBar.showPostDeleteSuccessfullySnackBar(context);
             } catch (e) {
@@ -232,7 +228,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
 
   // --- 处理编辑帖子 ---
   void _handleEditPost(Post post) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -252,7 +248,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   }
 
   void _handleAddPost() async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -295,8 +291,8 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     }
 
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
           final currentUser = authSnapshot.data;
           if (currentUser == null) {
@@ -368,7 +364,7 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     return PostGridView(
       followService: widget.followService,
       infoProvider: widget.infoProvider,
-      currentUser: _authProvider.currentUser,
+      currentUser: widget.authProvider.currentUser,
       posts: _posts,
       scrollController: _scrollController,
       isLoading: false, // 不再需要内部 loading

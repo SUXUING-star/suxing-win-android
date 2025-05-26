@@ -22,12 +22,12 @@ class PostFavoritesTab extends StatefulWidget {
   static final GlobalKey<_PostFavoritesTabState> _postTabKey =
       GlobalKey<_PostFavoritesTabState>();
   final User? currentUser;
-  final PostService forumService;
+  final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   PostFavoritesTab(
     this.currentUser,
-    this.forumService,
+    this.postService,
     this.followService,
     this.infoProvider,
   ) : super(key: _postTabKey);
@@ -103,7 +103,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final PostList result = await widget.forumService
+      final PostList result = await widget.postService
           .getUserFavoritePostsPage(page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---

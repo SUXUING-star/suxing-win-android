@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class PostContent extends StatelessWidget {
   final Post post;
-  final PostService forumService;
+  final PostService postService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   final User? currentUser;
@@ -25,7 +25,7 @@ class PostContent extends StatelessWidget {
   const PostContent({
     super.key,
     required this.currentUser,
-    required this.forumService,
+    required this.postService,
     required this.infoProvider,
     required this.followService,
     required this.userActions,
@@ -34,7 +34,6 @@ class PostContent extends StatelessWidget {
     required this.onTagTap,
   });
 
-  // 移除了 _PostContentState 和相关生命周期方法
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +122,7 @@ class PostContent extends StatelessWidget {
             // 添加交互按钮
             const SizedBox(height: 16),
             PostInteractionButtons(
-              forumService: forumService,
+              postService: postService,
               userActions: userActions, // 使用 userActions
               post: post, // 使用 post
               currentUser: currentUser,

@@ -1,4 +1,4 @@
-// lib/models/game/game_list_data.dart (或者你指定的其他路径)
+// lib/models/game/game_list_data.dart
 
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
@@ -6,24 +6,25 @@ import 'package:suxingchahui/models/common/pagination.dart';
 class GameList {
   final List<Game> games;
   final PaginationData pagination;
-  final String? categoryName;
-  final String? tag;
+  final String? categoryName; // 已有
+  final String? tag; // 已有
+  final String? query; // 新增：用于搜索结果的查询关键词
 
   GameList({
     required this.games,
     required this.pagination,
     this.categoryName,
     this.tag,
+    this.query, // 构造函数中设为可选
   });
 
-  // --- 新增：静态工厂方法，用于创建一个空的 GameList 实例 ---
   static GameList empty() {
     return GameList(
       games: [],
-      pagination: PaginationData(
-          page: 1, limit: 0, total: 0, pages: 0), // 使用 PaginationData 的默认或空状态
+      pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
       categoryName: null,
       tag: null,
+      query: null, // 空状态时 query 也为 null
     );
   }
 
@@ -50,7 +51,7 @@ class GameList {
           Map<String, dynamic>.from(json['pagination']));
     } else {
       int totalItems = gamesList.length;
-      int defaultLimit = 20;
+      int defaultLimit = 15; // 与 GameService 中的 gamesLimit 或其他默认值保持一致
       paginationData = PaginationData(
         page: 1,
         limit: defaultLimit,
@@ -66,6 +67,7 @@ class GameList {
       pagination: paginationData,
       categoryName: json['categoryName'] as String?,
       tag: json['tag'] as String?,
+      query: json['query'] as String?, // 解析可选的 query
     );
   }
 
@@ -80,6 +82,10 @@ class GameList {
     if (tag != null) {
       data['tag'] = tag;
     }
+    if (query != null) {
+      // 如果 query 不为 null，则加入到 JSON
+      data['query'] = query;
+    }
     return data;
   }
 
@@ -88,8 +94,10 @@ class GameList {
     PaginationData? pagination,
     String? categoryName,
     String? tag,
+    String? query, // copyWith 中添加 query
     bool clearCategoryName = false,
     bool clearTag = false,
+    bool clearQuery = false, // 用于显式清除 query
   }) {
     return GameList(
       games: games ?? this.games,
@@ -97,6 +105,7 @@ class GameList {
       categoryName:
           clearCategoryName ? null : (categoryName ?? this.categoryName),
       tag: clearTag ? null : (tag ?? this.tag),
+      query: clearQuery ? null : (query ?? this.query),
     );
   }
 
@@ -104,12 +113,9 @@ class GameList {
   String toString() {
     String result =
         'GameList(games: ${games.length} games, pagination: $pagination';
-    if (categoryName != null) {
-      result += ', categoryName: $categoryName';
-    }
-    if (tag != null) {
-      result += ', tag: $tag';
-    }
+    if (categoryName != null) result += ', categoryName: $categoryName';
+    if (tag != null) result += ', tag: $tag';
+    if (query != null) result += ', query: "$query"'; // query 加上引号以便区分
     result += ')';
     return result;
   }

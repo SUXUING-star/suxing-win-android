@@ -20,7 +20,7 @@ import 'package:suxingchahui/screens/home/home_screen.dart';
 import 'package:suxingchahui/screens/game/list/games_list_screen.dart';
 import 'package:suxingchahui/screens/linkstools/linkstools_screen.dart';
 import 'package:suxingchahui/screens/activity/activity_feed_screen.dart';
-import 'package:suxingchahui/screens/forum/forum_screen.dart';
+import 'package:suxingchahui/screens/forum/post_list_screen.dart';
 import 'package:suxingchahui/screens/profile/profile_screen.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -34,8 +34,8 @@ class MainLayout extends StatefulWidget {
   final AuthProvider authProvider;
   final UserService userService;
   final GameService gameService;
-  final PostService forumService;
-  final UserActivityService activityService;
+  final PostService postService;
+  final ActivityService activityService;
   final LinkToolService linkToolService;
   final UserFollowService followService;
   final AnnouncementService announcementService;
@@ -52,7 +52,7 @@ class MainLayout extends StatefulWidget {
     required this.authProvider,
     required this.activityService,
     required this.linkToolService,
-    required this.forumService,
+    required this.postService,
     required this.gameService,
     required this.userService,
     required this.followService,
@@ -138,7 +138,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
       HomeScreen(
         authProvider: widget.authProvider,
         gameService: widget.gameService,
-        forumService: widget.forumService,
+        postService: widget.postService,
         followService: widget.followService,
         infoProvider: widget.infoProvider,
       ),
@@ -147,9 +147,9 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         gameService: widget.gameService,
         gameListFilterProvider: widget.gameListFilterProvider,
       ),
-      ForumScreen(
+      PostListScreen(
         authProvider: widget.authProvider,
-        forumService: widget.forumService,
+        postService: widget.postService,
         followService: widget.followService,
         infoProvider: widget.infoProvider,
         postListFilterProvider: widget.postListFilterProvider,

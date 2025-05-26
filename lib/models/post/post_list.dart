@@ -1,49 +1,45 @@
-// ---------------------------------------------------------------------------
-// 文件路径: lib/models/post/post_list_data.dart (示例路径)
-// ---------------------------------------------------------------------------
+// lib/models/post/post_list_data.dart
 
-import 'package:suxingchahui/models/post/post.dart'; // 确保 Post 模型的路径正确
-import 'package:suxingchahui/models/common/pagination.dart'; // 导入你的 PaginationData 模型
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
+
+import '../../services/main/forum/post_service.dart';
 
 class PostList {
   final List<Post> posts;
   final PaginationData pagination;
-  final String? tag; // 可选的标签名称，因为 getPostsPage 和 searchPosts 可能返回
+  final String? tag; // 已有
+  final String? query; // 新增：用于搜索结果的查询关键词
 
   PostList({
     required this.posts,
     required this.pagination,
     this.tag,
+    this.query, // 构造函数中设为可选
   });
 
-  // 静态工厂方法，用于创建一个空的 PostList 实例
   static PostList empty() {
     return PostList(
       posts: [],
-      pagination: PaginationData(
-          page: 1, limit: 0, total: 0, pages: 0), // 使用 PaginationData 的空状态
+      pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
       tag: null,
+      query: null, // 空状态时 query 也为 null
     );
   }
 
   factory PostList.fromJson(Map<String, dynamic> json) {
     List<Post> postsList = [];
-    // 优先检查 'posts' 键
     if (json['posts'] != null && json['posts'] is List) {
       postsList = (json['posts'] as List)
           .map((postJson) => Post.fromJson(Map<String, dynamic>.from(postJson)))
           .toList();
-    }
-    // 为 getPostHistoryWithDetails 的 'history' 键做兼容
-    else if (json['history'] != null && json['history'] is List) {
+    } else if (json['history'] != null && json['history'] is List) {
       try {
-        // 假设 history 列表中的每个 item 也是一个 Post 或可以解析为 Post
-        // 注意：如果 history item 的结构与 Post 不同，这里需要更复杂的逻辑或一个专用的 HistoryItem 模型
         postsList = (json['history'] as List)
             .map((itemJson) =>
                 Post.fromJson(Map<String, dynamic>.from(itemJson)))
             .toList();
-      } catch (e) {
+      } catch (_) {
         // 解析失败，postsList 保持为空
       }
     }
@@ -53,9 +49,9 @@ class PostList {
       paginationData = PaginationData.fromJson(
           Map<String, dynamic>.from(json['pagination']));
     } else {
-      // 如果API响应中没有 'pagination' 对象，创建一个默认的
       int totalItems = postsList.length;
-      int defaultLimit = 20; // 默认每页数量
+      int defaultLimit =
+          PostService.postListLimit; // 使用 PostService 中的常量或一个合理的默认值
       paginationData = PaginationData(
         page: 1,
         limit: defaultLimit,
@@ -69,7 +65,8 @@ class PostList {
     return PostList(
       posts: postsList,
       pagination: paginationData,
-      tag: json['tag'] as String?, // 解析可选的 tag
+      tag: json['tag'] as String?,
+      query: json['query'] as String?, // 解析可选的 query
     );
   }
 
@@ -81,6 +78,10 @@ class PostList {
     if (tag != null) {
       data['tag'] = tag;
     }
+    if (query != null) {
+      // 如果 query 不为 null，则加入到 JSON
+      data['query'] = query;
+    }
     return data;
   }
 
@@ -88,12 +89,15 @@ class PostList {
     List<Post>? posts,
     PaginationData? pagination,
     String? tag,
+    String? query, // copyWith 中添加 query
     bool clearTag = false,
+    bool clearQuery = false, // 用于显式清除 query
   }) {
     return PostList(
       posts: posts ?? this.posts,
       pagination: pagination ?? this.pagination,
       tag: clearTag ? null : (tag ?? this.tag),
+      query: clearQuery ? null : (query ?? this.query),
     );
   }
 
@@ -101,9 +105,8 @@ class PostList {
   String toString() {
     String result =
         'PostList(posts: ${posts.length} posts, pagination: $pagination';
-    if (tag != null) {
-      result += ', tag: $tag';
-    }
+    if (tag != null) result += ', tag: $tag';
+    if (query != null) result += ', query: "$query"';
     result += ')';
     return result;
   }

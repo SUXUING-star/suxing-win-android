@@ -18,7 +18,7 @@ class PostHistoryTab extends StatefulWidget {
   final bool isLoaded;
   final VoidCallback onLoad;
   final User? currentUser;
-  final PostService forumService;
+  final PostService postService;
   final UserInfoProvider userInfoProvider;
   final UserFollowService userFollowService;
 
@@ -27,7 +27,7 @@ class PostHistoryTab extends StatefulWidget {
     required this.isLoaded,
     required this.onLoad,
     required this.currentUser,
-    required this.forumService,
+    required this.postService,
     required this.userInfoProvider,
     required this.userFollowService,
   });
@@ -94,7 +94,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
 
     try {
       final PostList postListResult =
-          await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
+          await widget.postService.getPostHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
       final List<Post> newItems = postListResult.posts;
@@ -129,7 +129,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
 
     try {
       final PostList postListResult =
-          await widget.forumService.getPostHistoryWithDetails(_page, _pageSize);
+          await widget.postService.getPostHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
       final List<Post> newItems = postListResult.posts;

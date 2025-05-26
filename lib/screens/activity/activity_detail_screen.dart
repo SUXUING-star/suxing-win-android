@@ -21,7 +21,7 @@ class ActivityDetailScreen extends StatefulWidget {
   final String activityId;
   final UserActivity? activity;
   final AuthProvider authProvider;
-  final UserActivityService activityService;
+  final ActivityService activityService;
   final UserFollowService followService;
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
@@ -50,7 +50,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   int _refreshCounter = 0;
 
   bool _hasInitializedDependencies = false;
-  late final UserActivityService _activityService;
+  late final ActivityService _activityService;
   late final AuthProvider _authProvider;
   late final UserFollowService _followService;
 

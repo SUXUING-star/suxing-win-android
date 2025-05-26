@@ -80,9 +80,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   late final GameService _gameService;
   late final GameCollectionService _gameCollectionService;
   late final UserService _userService;
-  late final PostService _forumService;
+  late final PostService _postService;
   late final UserFollowService _followService;
-  late final UserActivityService _activityService;
+  late final ActivityService _activityService;
   late final LinkToolService _linkToolService;
   late final AnnouncementService _announcementService;
   late final UserInfoProvider _infoProvider;
@@ -119,12 +119,12 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _messageService = context.read<MessageService>();
       _announcementService = context.read<AnnouncementService>();
       _maintenanceService = context.read<MaintenanceService>();
-      _forumService = context.read<PostService>();
+      _postService = context.read<PostService>();
       _userService = context.read<UserService>();
       _gameService = context.read<GameService>();
       _gameCollectionService = context.read<GameCollectionService>();
       _followService = context.read<UserFollowService>();
-      _activityService = context.read<UserActivityService>();
+      _activityService = context.read<ActivityService>();
       _linkToolService = context.read<LinkToolService>();
       _emailService = context.read<EmailService>();
       _checkInService = context.read<UserCheckInService>();
@@ -166,7 +166,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       routeSettings,
       _authProvider,
       _userService,
-      _forumService,
+      _postService,
       _gameService,
       _followService,
       _activityService,
@@ -197,7 +197,7 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       authProvider: _authProvider,
       userService: _userService,
       gameService: _gameService,
-      forumService: _forumService,
+      postService: _postService,
       linkToolService: _linkToolService,
       activityService: _activityService,
       followService: _followService,

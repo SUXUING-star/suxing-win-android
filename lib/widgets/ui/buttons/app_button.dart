@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/font/font_config.dart'; // 引入字体配置
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class AppButton extends StatelessWidget {
   final String text;
@@ -101,12 +101,10 @@ class AppButton extends StatelessWidget {
             child: icon!, // 直接使用传入的 Widget
           ),
           SizedBox(width: effectiveIconSpacing),
-          Text(
+          AppText(
             text,
             style: TextStyle(
-              fontFamily: FontConfig.defaultFontFamily, // 应用字体
-              fontFamilyFallback: FontConfig.fontFallback,
-              fontSize: fontSize,
+                 fontSize: fontSize,
               fontWeight: fontWeight,
               color: currentFgColor,
             ),
@@ -117,12 +115,10 @@ class AppButton extends StatelessWidget {
       );
     } else {
       // 纯文本状态
-      buttonChild = Text(
+      buttonChild = AppText(
         text,
         style: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily, // 应用字体
-          fontFamilyFallback: FontConfig.fontFallback,
-          fontSize: fontSize,
+            fontSize: fontSize,
           fontWeight: fontWeight,
           color: currentFgColor,
         ),

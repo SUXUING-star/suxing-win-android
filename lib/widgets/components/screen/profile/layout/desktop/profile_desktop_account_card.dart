@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
-import 'package:suxingchahui/utils/font/font_config.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径正确
-import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart'; // 确认路径正确
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/warning_button.dart';
-import 'package:suxingchahui/widgets/ui/image/editable_user_avatar.dart'; // 确认路径正确
+import 'package:suxingchahui/widgets/ui/image/editable_user_avatar.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 
 class ProfileDesktopAccount extends StatelessWidget {
@@ -99,25 +99,21 @@ class ProfileDesktopAccount extends StatelessWidget {
               SizedBox(height: isSmallScreen ? 16 : 24), // 头像下方间距
 
               // --- 用户信息区域 ---
-              Text(
+              AppText(
                 user.username,
                 style: TextStyle(
                   fontSize: isSmallScreen ? 20 : 24,
                   fontWeight: FontWeight.bold,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis, // 超长时显示省略号
               ),
               SizedBox(height: 8),
-              Text(
+              AppText(
                 user.email, // 注意：邮箱可能涉及隐私，考虑是否显示或部分显示
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: isSmallScreen ? 14 : 16,
-                  fontFamily: FontConfig.defaultFontFamily,
-                  fontFamilyFallback: FontConfig.fontFallback,
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,

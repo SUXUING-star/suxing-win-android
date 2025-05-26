@@ -12,12 +12,12 @@ import 'package:suxingchahui/widgets/components/form/postform/field/post_guideli
 
 class CreatePostScreen extends StatefulWidget {
   final AuthProvider authProvider;
-  final PostService forumService;
+  final PostService postService;
   final InputStateService inputStateService;
   const CreatePostScreen({
     super.key,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.inputStateService,
   });
 
@@ -43,7 +43,7 @@ class _CreatePostScreenState extends State<CreatePostScreen>
     try {
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
-      await widget.forumService.createPost(data.title, data.content, postTags);
+      await widget.postService.createPost(data.title, data.content, postTags);
       showSnackbar(message: "编辑成功", type: SnackbarType.success);
       if (!mounted) return;
       Navigator.pop(context);

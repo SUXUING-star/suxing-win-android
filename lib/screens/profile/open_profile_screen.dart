@@ -27,7 +27,7 @@ class OpenProfileScreen extends StatefulWidget {
   final UserService userService;
   final AuthProvider authProvider;
   final UserFollowService followService;
-  final PostService forumService;
+  final PostService postService;
   final GameService gameService;
 
   const OpenProfileScreen({
@@ -35,7 +35,7 @@ class OpenProfileScreen extends StatefulWidget {
     required this.userService,
     required this.gameService,
     required this.authProvider,
-    required this.forumService,
+    required this.postService,
     required this.followService,
     required this.userId,
   });
@@ -120,7 +120,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       // *** forumService开始了它的使命 *** //
       // 加载用户帖子
       final userPosts =
-          await widget.forumService.getRecentUserPosts(widget.userId);
+          await widget.postService.getRecentUserPosts(widget.userId);
       // *** forumService结束了它的使命 *** //
 
       // *** gameService开始了它的使命 *** //

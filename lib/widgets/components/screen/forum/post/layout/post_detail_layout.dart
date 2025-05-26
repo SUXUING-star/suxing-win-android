@@ -21,7 +21,7 @@ class PostDetailLayout extends StatelessWidget {
   final UserInfoProvider infoProvider;
   final Function(BuildContext context, String tagString)? onTagTap;
   final InputStateService inputStateService;
-  final PostService forumService;
+  final PostService postService;
   final AuthProvider authProvider;
   final UserPostActions userActions;
   final String postId;
@@ -35,7 +35,7 @@ class PostDetailLayout extends StatelessWidget {
     required this.infoProvider,
     this.onTagTap,
     required this.inputStateService,
-    required this.forumService,
+    required this.postService,
     required this.authProvider,
     required this.userActions,
     required this.postId,
@@ -51,7 +51,7 @@ class PostDetailLayout extends StatelessWidget {
       delay: delay,
       child: PostContent(
         onTagTap: onTagTap,
-        forumService: forumService,
+        postService: postService,
         infoProvider: infoProvider,
         followService: followService,
         currentUser: authProvider.currentUser,
@@ -84,7 +84,7 @@ class PostDetailLayout extends StatelessWidget {
         limit: 5,
         post: post,
         currentUser: authProvider.currentUser,
-        forumService: forumService,
+        postService: postService,
       ),
     );
   }
@@ -100,7 +100,7 @@ class PostDetailLayout extends StatelessWidget {
         currentUser: authProvider.currentUser,
         followService: followService,
         infoProvider: infoProvider,
-        forumService: forumService,
+        postService: postService,
         authProvider: authProvider,
         postId: postId,
         isScrollableInternally: isScrollableInternally, // For desktop layout
