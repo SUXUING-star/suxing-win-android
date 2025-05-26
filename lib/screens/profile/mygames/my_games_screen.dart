@@ -47,8 +47,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   bool _hasError = false;
   String _errorMessage = '';
   bool _hasInitializedDependencies = false;
-  late final GameService _gameService;
-  late final AuthProvider _authProvider;
   User? _currentUser;
 
   @override
@@ -61,9 +59,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = widget.gameService;
-      _authProvider = widget.authProvider;
-      _currentUser = _authProvider.currentUser;
+      _currentUser = widget.authProvider.currentUser;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -88,11 +84,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     });
 
     try {
-      final GameList result = await _gameService.getMyGamesWithInfo(
-        page: 1, // Always load page 1 initially
-        pageSize: 10, // Or your preferred page size
-        // sortBy: 'updateTime', // Example sorting, adjust as needed
-        // descending: true,
+      final GameList result = await widget.gameService.getMyGamesWithInfo(
+        page: 1,
       );
 
       if (!mounted) return;
@@ -129,11 +122,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     try {
       final nextPage = _currentPage + 1;
-      final result = await _gameService.getMyGamesWithInfo(
+      final result = await widget.gameService.getMyGamesWithInfo(
         page: nextPage,
-        pageSize: 10,
-        // sortBy: 'updateTime', // Consistent sorting
-        // descending: true,
       );
 
       if (!mounted) return;
@@ -141,13 +131,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       setState(() {
         _myGames.addAll(result.games);
         _currentPage = nextPage;
-        _totalPages = result.pagination.pages ??
-            _totalPages; // Update total pages if needed
+        _totalPages = result.pagination.pages;
         _isFetchingMore = false;
       });
     } catch (e) {
       if (!mounted) return;
-      // Optionally show a snackbar or allow retry
       setState(() {
         _isFetchingMore = false;
         AppSnackBar.showWarning(context, '加载更多失败');
@@ -165,11 +153,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
   Future<void> _handleResubmit(Game game) async {
     if (!mounted) return;
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
-    if (game.authorId != _authProvider.currentUserId) {
+    if (game.authorId != widget.authProvider.currentUserId) {
       AppSnackBar.showPermissionDenySnackBar(context);
       return;
     }
@@ -197,7 +185,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
     // 这里可以加一个 Loading 状态，但确认对话框自带了，所以可能不需要
     try {
-      await _gameService.resubmitGame(game);
+      await widget.gameService.resubmitGame(game);
       if (!mounted) return; // 检查 context 是否有效
 
       // 使用 AppSnackBar 显示成功信息
@@ -229,12 +217,12 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   }
 
   void _handleAddGame() {
-    if (_currentUser != _authProvider.currentUser) {
+    if (_currentUser != widget.authProvider.currentUser) {
       setState(() {
-        _currentUser = _authProvider.currentUser;
+        _currentUser = widget.authProvider.currentUser;
       });
     }
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -261,8 +249,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       );
     }
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
           final currentUser = authSnapshot.data;
           if (currentUser == null) {
@@ -359,7 +347,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
       children: [
         // 基础卡片内容
         BaseGameCard(
-          currentUser: _authProvider.currentUser,
+          currentUser: widget.authProvider.currentUser,
           game: game,
           showTags: true,
           maxTags: 1,

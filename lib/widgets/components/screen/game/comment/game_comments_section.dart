@@ -64,7 +64,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      _commentsFuture = widget.gameService.fetchGameComments(widget.gameId);
+      _commentsFuture = widget.gameService.getGameComments(widget.gameId);
     }
   }
 
@@ -76,7 +76,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
 
   // 加载/重新加载评论数据的方法
   void _loadComments() {
-    _commentsFuture = widget.gameService.fetchGameComments(widget.gameId);
+    _commentsFuture = widget.gameService.getGameComments(widget.gameId);
   }
 
   // --- 刷新回调函数 ---

@@ -40,7 +40,11 @@ class HomeScreen extends StatefulWidget {
   _HomeScreenState createState() => _HomeScreenState();
 }
 
-enum HomeDataType { hotGames, latestGames, hotPosts }
+enum HomeDataType {
+  hotGames,
+  latestGames,
+  hotPosts,
+}
 
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _isOverallInitialized = false; // 标记整体页面是否已“首次加载”过所有必要数据

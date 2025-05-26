@@ -173,7 +173,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
 
           // 调用 Service
           final (item, returnedStatus) = await widget.gameCollectionService
-              .setGameCollection(widget.game.id, status,
+              .setGameCollection(widget.game.id, status,oldStatus?.status,
                   notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {

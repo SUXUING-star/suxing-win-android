@@ -1,9 +1,11 @@
 // lib/widgets/components/screen/game/collection/game_reviews_section.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
+import 'package:suxingchahui/models/game/game_collection_review_list.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
@@ -37,13 +39,12 @@ class GameReviewSection extends StatefulWidget {
 
 class GameReviewSectionState extends State<GameReviewSection> {
   List<GameCollectionReview> _reviews = [];
+  PaginationData? _paginationData;
   bool _isLoading = true;
   String? _error;
   int _page = 1;
-  final int _pageSize = GameCollectionService.gameCollectionReviews;
-  bool _hasMoreEntries = true;
+  final int _pageSize = GameCollectionService.gameCollectionReviewsLimit;
   bool _isProcessingPageOne = false;
-  // int _loadReviewsCallCount = 0;
   bool _hasInitializedDependencies = false;
   late final GameCollectionService _collectionService;
   User? _currentUser;
@@ -62,50 +63,53 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
     if (_hasInitializedDependencies) {
       _currentUser = widget.currentUser;
-      _loadReviews(isInitialLoad: true);
+      if (_reviews.isEmpty && mounted) {
+        _loadReviews(isInitialLoad: true);
+      }
     }
   }
 
   @override
   void dispose() {
-    super.dispose();
     _reviews = [];
+    _paginationData = null;
+    super.dispose();
   }
 
   @override
   void didUpdateWidget(GameReviewSection oldWidget) {
     super.didUpdateWidget(oldWidget);
     bool gameIdChanged = oldWidget.game.id != widget.game.id;
-    bool ratingDataChanged = widget.game.rating != oldWidget.game.rating ||
-        widget.game.ratingCount != oldWidget.game.ratingCount;
 
     if (gameIdChanged) {
       refresh();
-    } else if (ratingDataChanged && mounted) {
-      setState(() {});
     }
-    if (widget.currentUser != oldWidget.currentUser ||
-        _currentUser != widget.currentUser) {
-      setState(() {
-        _currentUser = widget.currentUser;
-      });
+
+    if (_currentUser != widget.currentUser ||
+        widget.currentUser != oldWidget.currentUser) {
+      if (mounted) {
+        setState(() {
+          _currentUser = widget.currentUser;
+        });
+      }
     }
   }
 
   void refresh() {
     if (_isProcessingPageOne || !mounted) return;
-    setState(() {
-      _page = 1;
-      _reviews = [];
-      _isLoading = true;
-      _error = null;
-      _hasMoreEntries = true;
-    });
+    if (mounted) {
+      setState(() {
+        _page = 1;
+        _reviews = [];
+        _paginationData = null;
+        _isLoading = true;
+        _error = null;
+      });
+    }
     _loadReviews(isInitialLoad: true);
   }
 
   Future<void> _loadReviews({bool isInitialLoad = false}) async {
-    // _loadReviewsCallCount++;
     final bool forPageOne = isInitialLoad || _page == 1;
 
     if (forPageOne) {
@@ -118,7 +122,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
         return;
       }
     } else {
-      if (_isLoading || !_hasMoreEntries) return;
+      if (_isLoading || !(_paginationData?.hasNextPage() ?? false)) return;
       if (mounted) {
         setState(() => _isLoading = true);
       } else {
@@ -132,29 +136,31 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
 
     try {
-      final List<GameCollectionReview> fetchedReviews = await _collectionService
-          .getGameCollectionReviews(widget.game.id, page: _page, limit: _pageSize);
+      final GameCollectionReviewList reviewListResult =
+          await _collectionService.getGameCollectionReviews(widget.game.id,
+              page: _page, limit: _pageSize);
 
       if (!mounted) return;
 
       setState(() {
         if (_page == 1) {
-          _reviews = fetchedReviews;
+          _reviews = reviewListResult.entries;
         } else {
-          _reviews.addAll(fetchedReviews);
+          _reviews.addAll(reviewListResult.entries);
         }
-        _hasMoreEntries = fetchedReviews.length >= _pageSize;
+        _paginationData = reviewListResult.pagination;
         _error = null;
       });
     } catch (e) {
       if (!mounted) return;
       setState(() {
         if (_page == 1) {
-          _error = '加载条目失败: ${e.toString().split(':').last.trim()}';
+          _error = '加载动态失败: ${e.toString().split(':').last.trim()}';
           _reviews = [];
+          _paginationData =
+              PaginationData(page: _page, limit: _pageSize, total: 0, pages: 0);
         } else {
-          if (context.mounted) AppSnackBar.showError(context, '加载更多条目失败');
-          _hasMoreEntries = false;
+          if (context.mounted) AppSnackBar.showError(context, '加载更多动态失败');
         }
       });
     } finally {
@@ -172,8 +178,10 @@ class GameReviewSectionState extends State<GameReviewSection> {
   }
 
   void _loadMoreReviews() {
-    if (!_isLoading && _hasMoreEntries) {
-      setState(() => _page++);
+    if (!_isLoading && (_paginationData?.hasNextPage() ?? false)) {
+      if (mounted) {
+        setState(() => _page++);
+      }
       _loadReviews();
     }
   }
@@ -219,15 +227,18 @@ class GameReviewSectionState extends State<GameReviewSection> {
             style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey[850])), // *** 修改标题 ***
+                color: Colors.grey[850])),
       ],
     );
   }
 
   Widget _buildAverageRatingDisplay() {
     final game = widget.game;
-    final bool hasRating = game.ratingCount > 0;
-    final int currentLoadedEntries = _reviews.length;
+    final bool hasGameRating = game.ratingCount > 0;
+    // 使用 _paginationData?.total 来获取API返回的评论总数
+    final int totalReviewCount = _paginationData?.total ?? 0;
+    final bool hasReviewsToShow = totalReviewCount > 0 ||
+        (_reviews.isNotEmpty && _paginationData == null);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -238,7 +249,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
           children: [
             Icon(Icons.star_rate_rounded, color: Colors.amber, size: 22),
             const SizedBox(width: 6),
-            if (hasRating)
+            if (hasGameRating)
               Text.rich(
                 TextSpan(
                   children: [
@@ -266,14 +277,16 @@ class GameReviewSectionState extends State<GameReviewSection> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            if (hasRating)
+            if (hasGameRating)
               Text('共有 ${game.ratingCount} 份评分',
                   style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-            // *** 修改条件和文本 ***
-            if (currentLoadedEntries > 0 && !(_isLoading && _page == 1))
+            if (hasReviewsToShow &&
+                !(_isLoading && _page == 1 && _reviews.isEmpty))
               Padding(
-                padding: EdgeInsets.only(top: hasRating ? 4.0 : 0),
-                child: Text('$currentLoadedEntries 条动态',
+                padding: EdgeInsets.only(top: hasGameRating ? 4.0 : 0),
+                // 如果 paginationData 可用，显示 total，否则显示当前已加载的 reviews 数量
+                child: Text(
+                    '${_paginationData != null ? _paginationData!.total : _reviews.length} 条动态',
                     style: TextStyle(fontSize: 12, color: Colors.grey[600])),
               ),
           ],
@@ -283,10 +296,10 @@ class GameReviewSectionState extends State<GameReviewSection> {
   }
 
   Widget _buildContent() {
-    if (_isLoading && _page == 1) {
+    if (_isLoading && _page == 1 && _reviews.isEmpty) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 32.0),
-        child: LoadingWidget.inline(message: '正在加载动态...'), // *** 修改文本 ***
+        child: LoadingWidget.inline(message: '正在加载动态...'),
       );
     }
     if (_error != null && _page == 1) {
@@ -295,7 +308,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
         child: InlineErrorWidget(errorMessage: _error!, onRetry: refresh),
       );
     }
-    // *** 修改空状态文本和条件 ***
     if (_reviews.isEmpty && !_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32.0),
@@ -313,7 +325,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
         });
   }
 
-  // *** 方法重命名 ***
   Widget _buildCollectionEntryItem(GameCollectionReview entry) {
     final String userId = entry.userId;
     final DateTime updateTime = entry.updateTime;
@@ -369,7 +380,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
                 avatar: Icon(statusIcon, size: 16, color: statusColor),
                 label: Text(statusLabel,
                     style: TextStyle(fontSize: 11, color: statusColor)),
-                padding: EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                 backgroundColor: statusColor.withSafeOpacity(0.1),
                 visualDensity: VisualDensity.compact,
                 materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -383,7 +394,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
                   style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             ],
           ),
-          if (status == 'played' && rating != null)
+          if (status == GameCollectionStatus.played && rating != null)
             Padding(
               padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
               child: Row(
@@ -416,7 +427,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
               child: Text(
                 userId == widget.currentUser?.id
                     ? "我做的笔记: $notesText"
-                    : "笔记: $notesText", // 区分本人笔记
+                    : "笔记: $notesText",
                 style: TextStyle(
                     fontSize: 13,
                     color: Colors.grey[600],
@@ -434,7 +445,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
           padding: const EdgeInsets.only(top: 16.0),
           child: LoadingWidget.inline(size: 20, message: "加载中..."));
     }
-    if (!_isLoading && _hasMoreEntries && _reviews.isNotEmpty) {
+    if (!_isLoading &&
+        (_paginationData?.hasNextPage() ?? false) &&
+        _reviews.isNotEmpty) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.only(top: 16.0),

@@ -1,8 +1,9 @@
 // lib/screens/profile/my_posts_screen.dart
-import 'dart:async'; // 需要 Future 和 async
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
@@ -19,7 +20,7 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 确保导入 FunctionalTextButton
+import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
 class MyPostsScreen extends StatefulWidget {
   final UserFollowService followService;
@@ -40,193 +41,246 @@ class MyPostsScreen extends StatefulWidget {
 
 class _MyPostsScreenState extends State<MyPostsScreen>
     with WidgetsBindingObserver {
-  // --- 状态变量 ---
   List<Post> _posts = [];
-  bool _isLoading = false; // 初始设为 true
+  PaginationData? _paginationData;
+  bool _isLoading = false;
+  bool _isLoadingMore = false;
   String? _error;
   String? _userId;
-  bool _isMounted = false; // 跟踪 widget 是否挂载
+  bool _isMounted = false;
 
   final ScrollController _scrollController = ScrollController();
 
-  bool _hasInitializedDependencies = false;
-  User? _currentUser;
+  int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _isMounted = true;
-  }
+    _userId = widget.authProvider.currentUserId;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasInitializedDependencies) {
-      _currentUser = widget.authProvider.currentUser;
-      _hasInitializedDependencies = true;
-    }
-    if (_hasInitializedDependencies) {
-      _fetchPosts(); // 初始化时加载数据
+    _scrollController.addListener(() {
+      if (_isMounted &&
+          _scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent * 0.9 &&
+          !_isLoadingMore &&
+          (_paginationData?.hasNextPage() ?? false)) {
+        _loadMorePosts();
+      }
+    });
+
+    if (_userId != null) {
+      _fetchPosts(isRefresh: true);
     }
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (!mounted) return;
+    if (!_isMounted) return;
     if (state == AppLifecycleState.resumed) {
-      if (mounted) {
-        if (_currentUser != widget.authProvider.currentUser) {
-          setState(() {
-            _currentUser = widget.authProvider.currentUser;
-          });
+      final newUserId = widget.authProvider.currentUserId;
+      if (_userId != newUserId) {
+        _userId = newUserId;
+        if (_userId != null) {
+          _fetchPosts(isRefresh: true);
+        } else {
+          if (_isMounted) {
+            setState(() {
+              _posts = [];
+              _paginationData = null;
+              _isLoading = false;
+              _isLoadingMore = false;
+              _error = null;
+              _currentPage = 1;
+            });
+          }
         }
       }
-    } else if (state == AppLifecycleState.paused) {
-      //
     }
   }
 
   @override
   void dispose() {
-    _isMounted = false; // 标记为已卸载
+    _isMounted = false;
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
   }
 
-  // --- 数据加载/刷新逻辑 ---
-  Future<void> _fetchPosts() async {
-    if (!_isMounted) {
-      return; // 如果 Widget 已经被移除了，就不继续了
-    }
+  Future<void> _fetchPosts({bool isRefresh = false}) async {
+    if (!_isMounted || (_isLoading && !isRefresh)) return;
 
-    // 增加这个检查来防止并发请求
-    if (_isLoading) {
-      return; // 如果当前已经在加载中了，就不要开始新的加载
+    if (isRefresh) {
+      _currentPage = 1;
     }
-
-    // 在异步操作开始前，设置状态为加载中
+    if (!_isMounted) return;
     setState(() {
       _isLoading = true;
-      _error = null; // 清除之前的错误信息
+      _isLoadingMore = false;
+      _error = null;
+      if (isRefresh) {
+        _posts = [];
+        _paginationData = null;
+      }
     });
 
-    try {
-      final currentUserId = widget.authProvider.currentUserId;
-
-      if (currentUserId == null || currentUserId.isEmpty) {
-        if (_isMounted) {
-          setState(() {
-            _isLoading = false; // 加载结束（虽然是未登录状态）
-            _posts = [];
-            _userId = null;
-            _error = null; // 未登录不是错误
-          });
-        }
-        return; // 未登录，直接返回
+    final currentUserId = widget.authProvider.currentUserId;
+    if (currentUserId == null || currentUserId.isEmpty) {
+      if (_isMounted) {
+        setState(() {
+          _isLoading = false;
+          _posts = [];
+          _paginationData = null;
+        });
       }
+      return;
+    }
 
-      // 调用修改后的 Future 方法
-
-      final fetchedPosts = await widget.postService.getUserPosts(currentUserId);
+    try {
+      final postListResult = await widget.postService
+          .getUserPosts(currentUserId, page: _currentPage);
 
       if (_isMounted) {
         setState(() {
-          _isLoading = false; // 加载完成
-          _posts = fetchedPosts;
-          _userId = currentUserId; // 保存用户ID
+          _posts = postListResult.posts;
+          _paginationData = postListResult.pagination;
+          _isLoading = false;
         });
       }
     } catch (e) {
       if (_isMounted) {
         setState(() {
-          _isLoading = false; // 加载失败，也要结束加载状态
-          _error = '加载我的帖子失败: $e';
-          // 考虑是否要清空 _posts 列表，取决于你的需求
-          // _posts = [];
+          _isLoading = false;
+          _error = '加载我的帖子失败';
         });
       }
     }
   }
 
-  // --- 下拉刷新 ---
+  Future<void> _loadMorePosts() async {
+    if (!_isMounted ||
+        _isLoadingMore ||
+        !(_paginationData?.hasNextPage() ?? false)) {
+      return;
+    }
+    if (!_isMounted) return;
+    setState(() {
+      _isLoadingMore = true;
+      _error = null;
+    });
+
+    _currentPage++;
+    final currentUserId = widget.authProvider.currentUserId;
+    if (currentUserId == null) {
+      if (_isMounted) setState(() => _isLoadingMore = false);
+      return;
+    }
+
+    try {
+      final postListResult = await widget.postService
+          .getUserPosts(currentUserId, page: _currentPage);
+
+      if (_isMounted) {
+        setState(() {
+          _posts.addAll(postListResult.posts);
+          _paginationData = postListResult.pagination;
+          _isLoadingMore = false;
+        });
+      }
+    } catch (e) {
+      if (_isMounted) {
+        _currentPage--;
+        setState(() {
+          _isLoadingMore = false;
+          _error = '加载更多失败';
+        });
+      }
+    }
+  }
+
   Future<void> _refreshPosts() async {
-    // 重新调用加载逻辑
-    await _fetchPosts();
+    await _fetchPosts(isRefresh: true);
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
-    return widget.authProvider.isAdmin
-        ? true
-        : widget.authProvider.currentUserId == post.authorId;
+    return widget.authProvider.isAdmin ||
+        widget.authProvider.currentUserId == post.authorId;
   }
 
-  // --- 处理删除帖子 ---
   Future<void> _handleDeletePost(Post post) async {
     if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
-
     if (!_checkCanEditOrDeletePost(post)) {
       AppSnackBar.showPermissionDenySnackBar(context);
       return;
     }
-    final postId = post.id;
-    // 乐观更新 UI
-    final List<Post> originalPosts = List.from(_posts);
-    setState(() {
-      _posts.removeWhere((post) => post.id == postId);
-      _error = null; // 清除可能存在的旧错误
-    });
 
-    try {
-      // 显示确认对话框
-      await CustomConfirmDialog.show(
-          context: context,
-          title: '确认删除',
-          message: '确定要删除这篇帖子吗？此操作无法撤销。',
-          confirmButtonText: '删除',
-          confirmButtonColor: Colors.red,
-          onConfirm: () async {
-            if (!_isMounted) return;
-            try {
-              // 调用 Service 执行实际删除
-              await widget.postService.deletePost(post);
-              if (!mounted) return;
-              AppSnackBar.showPostDeleteSuccessfullySnackBar(context);
-            } catch (e) {
-              if (_isMounted) {
-                // 删除失败，恢复之前的帖子列表，并显示错误
-                setState(() {
-                  _posts = originalPosts; // 恢复列表
-                  _error = '删除帖子失败: $e';
-                });
-                if (!mounted) return;
-                AppSnackBar.showError(context, '删除帖子失败: $e');
-              }
-            }
-          },
-          // 添加 onCancel 回调来恢复 UI (如果用户取消)
-          onCancel: () {
-            if (_isMounted) {
-              setState(() {
-                _posts = originalPosts; // 恢复列表
-              });
-            }
-          });
-    } catch (e) {
-      // 处理 CustomConfirmDialog.show 本身可能抛出的异常（虽然不太可能）
-      if (_isMounted) {
-        setState(() {
-          _posts = originalPosts; // 恢复列表
-          _error = '操作失败';
-        });
-      }
+    final postId = post.id;
+    final int originalIndex = _posts.indexWhere((p) => p.id == postId);
+    Post? originalPostData;
+    if (originalIndex != -1) {
+      originalPostData = _posts[originalIndex];
     }
+
+    await CustomConfirmDialog.show(
+        context: context,
+        title: '确认删除',
+        message: '确定要删除这篇帖子吗？此操作无法撤销。',
+        confirmButtonText: '删除',
+        confirmButtonColor: Colors.red,
+        onConfirm: () async {
+          if (!_isMounted) return;
+
+          if (originalIndex != -1) {
+            if (!_isMounted) return;
+            setState(() {
+              _posts.removeAt(originalIndex);
+              if (_paginationData != null) {
+                _paginationData = _paginationData!.copyWith(
+                  total: _paginationData!.total - 1,
+                );
+              }
+            });
+          }
+
+          try {
+            await widget.postService.deletePost(post);
+            if (!_isMounted) return;
+            if (mounted) {
+              AppSnackBar.showPostDeleteSuccessfullySnackBar(context);
+            }
+
+            if (_posts.isEmpty && _currentPage > 1) {
+              _currentPage--;
+              _fetchPosts(isRefresh: true);
+            } else if (_posts.isEmpty && _paginationData?.total == 0) {
+              if (_isMounted) setState(() {});
+            }
+          } catch (e) {
+            if (_isMounted && originalPostData != null && originalIndex != -1) {
+              setState(() {
+                _posts.insert(originalIndex, originalPostData!);
+                if (_paginationData != null) {
+                  _paginationData = _paginationData!.copyWith(
+                    total: _paginationData!.total + 1,
+                  );
+                }
+                _error = '删除帖子失败';
+              });
+              if (!mounted) return;
+              AppSnackBar.showError(context, '删除帖子失败');
+            }
+          }
+        },
+        onCancel: () {
+          // 用户取消，不需要额外操作，因为乐观更新在 onConfirm 内部
+        });
   }
 
-  // --- 处理编辑帖子 ---
   void _handleEditPost(Post post) async {
     if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -241,9 +295,8 @@ class _MyPostsScreenState extends State<MyPostsScreen>
       AppRoutes.editPost,
       arguments: post.id,
     );
-    // 如果编辑成功返回，触发刷新
     if (result == true && _isMounted) {
-      _fetchPosts(); // 刷新列表
+      _fetchPosts(isRefresh: true);
     }
   }
 
@@ -254,8 +307,8 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     }
     final result =
         await NavigationUtils.pushNamed(context, AppRoutes.createPost);
-    if (result == true && mounted) {
-      _fetchPosts();
+    if (result == true && _isMounted) {
+      _fetchPosts(isRefresh: true);
     }
   }
 
@@ -263,30 +316,25 @@ class _MyPostsScreenState extends State<MyPostsScreen>
     return FloatingActionButtonGroup(children: [
       GenericFloatingActionButton(
         icon: Icons.refresh,
-        onPressed: _isLoading ? null : _refreshPosts, // 加载中禁用刷新
+        onPressed: _isLoading || _isLoadingMore ? null : _refreshPosts,
         tooltip: '刷新',
         heroTag: "刷新我的帖子",
       ),
       GenericFloatingActionButton(
-        onPressed: () async {
-          final result =
-              await NavigationUtils.pushNamed(context, AppRoutes.createPost);
-          if (result == true && _isMounted) {
-            _fetchPosts(); // 发帖成功后刷新
-          }
-        },
+        onPressed: _handleAddPost,
         icon: Icons.add,
         tooltip: '发布新帖',
+        heroTag: "发布新帖我的帖子",
       ),
     ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    // --- 优先处理加载状态 (仅在首次加载且无数据时显示全屏 Loading) ---
     if (_isLoading && _posts.isEmpty && _error == null) {
-      return LoadingWidget.fullScreen(
-        message: "拼命加载中",
+      return Scaffold(
+        appBar: const CustomAppBar(title: '我的帖子'),
+        body: LoadingWidget.fullScreen(message: "拼命加载中"),
       );
     }
 
@@ -294,64 +342,57 @@ class _MyPostsScreenState extends State<MyPostsScreen>
         stream: widget.authProvider.currentUserStream,
         initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
-          if (currentUser == null) {
-            return const LoginPromptWidget();
+          final authUser = authSnapshot.data;
+          if (authUser == null && !_isLoading) {
+            return const Scaffold(
+                appBar: CustomAppBar(title: '我的帖子'), body: LoginPromptWidget());
           }
           return Scaffold(
               appBar: const CustomAppBar(
                 title: '我的帖子',
               ),
               body: RefreshIndicator(
-                onRefresh: _isLoading ? () async {} : _refreshPosts,
-                // 加载中禁用下拉刷新
-                child: _buildContent(context), // 调用构建内容的方法
+                onRefresh:
+                    _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
+                child: _buildContent(context, authUser),
               ),
-              floatingActionButton: _buildFab(context));
+              floatingActionButton:
+                  (authUser != null) ? _buildFab(context) : null);
         });
   }
 
-  Widget _buildContent(BuildContext context) {
+  Widget _buildContent(BuildContext context, User? authUser) {
     final bool isDesktop = DeviceUtils.isDesktop;
 
-    // --- 处理未登录状态 ---
-    if (_userId == null && !_isLoading) {
-      return ListView(// 使用 ListView 包装
-          children: const [LoginPromptWidget()]);
-    }
-
-    // --- 处理错误状态 ---
-    if (_error != null && !_isLoading) {
+    if (_error != null && _posts.isEmpty && !_isLoading) {
       return ListView(
-        // 使用 ListView 包装，允许下拉刷新错误页面
-        physics: const AlwaysScrollableScrollPhysics(), // 必须可以滚动才能触发刷新
+        physics: const AlwaysScrollableScrollPhysics(),
         children: [
           Container(
-            // 让内容占满屏幕以便刷新
-            height: MediaQuery.of(context).size.height -
-                (Scaffold.of(context).appBarMaxHeight ?? kToolbarHeight) -
-                MediaQuery.of(context).padding.top -
-                MediaQuery.of(context).padding.bottom,
-            alignment: Alignment.center,
-            child: Text('加载失败: $_error'), // 显示错误信息
-          )
+              height: MediaQuery.of(context).size.height -
+                  (Scaffold.of(context).appBarMaxHeight ?? kToolbarHeight) -
+                  MediaQuery.of(context).padding.top -
+                  MediaQuery.of(context).padding.bottom,
+              alignment: Alignment.center,
+              child: FunctionalTextButton(
+                label: '加载失败: $_error. 点我重试',
+                onPressed: () => _fetchPosts(isRefresh: true),
+              ))
         ],
       );
     }
 
-    // --- 处理空状态 (加载完成，无错误，但帖子列表为空) ---
     if (_posts.isEmpty && !_isLoading && _error == null) {
-      return LayoutBuilder(// 使用 LayoutBuilder 确保内容足够高以触发刷新
-          builder: (context, constraints) {
+      return LayoutBuilder(builder: (context, constraints) {
         return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(), // 即使内容不足也要能滚动
+          physics: const AlwaysScrollableScrollPhysics(),
           child: ConstrainedBox(
             constraints: BoxConstraints(minHeight: constraints.maxHeight),
             child: EmptyStateWidget(
               message: '你还没有发布过帖子哦',
               iconData: Icons.dynamic_feed_outlined,
               action: FunctionalTextButton(
-                onPressed: () => _handleAddPost(),
+                onPressed: _handleAddPost,
                 label: '去发第一篇帖子',
               ),
             ),
@@ -360,19 +401,17 @@ class _MyPostsScreenState extends State<MyPostsScreen>
       });
     }
 
-    // --- 显示帖子列表 ---
     return PostGridView(
-      followService: widget.followService,
-      infoProvider: widget.infoProvider,
-      currentUser: widget.authProvider.currentUser,
       posts: _posts,
+      currentUser: authUser,
+      infoProvider: widget.infoProvider,
+      followService: widget.followService,
       scrollController: _scrollController,
-      isLoading: false, // 不再需要内部 loading
-      hasMoreData: false, // 不分页
+      isLoading: _isLoadingMore, // PostGridView 的 isLoading 应该对应加载更多的状态
+      hasMoreData: _paginationData?.hasNextPage() ?? false,
       isDesktopLayout: isDesktop,
       onDeleteAction: _handleDeletePost,
       onEditAction: _handleEditPost,
-      onToggleLockAction: null,
     );
   }
 }

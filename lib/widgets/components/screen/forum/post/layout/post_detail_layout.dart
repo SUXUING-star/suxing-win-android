@@ -10,7 +10,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/community_guidelines.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/post_content.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/recent_global_replies.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/reply/post_reply_list.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/reply/post_replies_list_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 
@@ -95,7 +95,7 @@ class PostDetailLayout extends StatelessWidget {
       key: key,
       duration: duration,
       delay: delay,
-      child: PostReplyList(
+      child: PostRepliesListItem(
         inputStateService: inputStateService,
         currentUser: authProvider.currentUser,
         followService: followService,
