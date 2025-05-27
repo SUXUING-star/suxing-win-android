@@ -6,7 +6,7 @@ import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/stats/category_stat.dart';
 import 'package:suxingchahui/models/stats/tag_stat.dart';
-import 'package:suxingchahui/services/main/game/stats/game_stats_service.dart';
+import 'package:suxingchahui/services/main/game/game_stats_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameRightPanel extends StatelessWidget {

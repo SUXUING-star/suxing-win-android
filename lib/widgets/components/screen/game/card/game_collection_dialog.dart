@@ -1,13 +1,17 @@
+// lib/widgets/components/screen/game/card/game_collection_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/components/screen/game/card/game_collection_stat_row.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
-import '../../../../../utils/device/device_utils.dart';
-import 'game_collection_stat_row.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameCollectionDialog extends StatelessWidget {
   final Game game;
 
-  const GameCollectionDialog({super.key, required this.game});
+  const GameCollectionDialog({
+    super.key,
+    required this.game,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -15,9 +19,12 @@ class GameCollectionDialog extends StatelessWidget {
     final int total = game.totalCollections;
 
     // 计算百分比值（避免除零错误）
-    final double wantToPlayPercent = total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
-    final double playingPercent = total > 0 ? (game.playingCount / total) * 100 : 0;
-    final double playedPercent = total > 0 ? (game.playedCount / total) * 100 : 0;
+    final double wantToPlayPercent =
+        total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
+    final double playingPercent =
+        total > 0 ? (game.playingCount / total) * 100 : 0;
+    final double playedPercent =
+        total > 0 ? (game.playedCount / total) * 100 : 0;
 
     // 检查是否是桌面端
     final bool isDesktop = DeviceUtils.isDesktop;

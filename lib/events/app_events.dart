@@ -1,3 +1,5 @@
+// lib/events/app_events.dart
+
 import 'dart:async';
 
 import 'package:suxingchahui/models/error/idempotency_error_code.dart';
@@ -7,6 +9,7 @@ class UserSignedOutEvent {
   final String? userId; // 可以选择传递登出的用户 ID
   UserSignedOutEvent({this.userId});
 }
+
 class IdempotencyApiErrorEvent {
   final IdempotencyExceptionCode code;
   final String message;
@@ -32,7 +35,6 @@ class NetworkEnvironmentChangedEvent {
   NetworkEnvironmentChangedEvent({this.newIpAddress, this.newConnectionType});
 }
 
-
 // 全局事件流控制器
 class AppEventBus {
   static final AppEventBus _instance = AppEventBus._internal();
@@ -40,7 +42,8 @@ class AppEventBus {
   AppEventBus._internal();
 
   // 使用 broadcast 允许多个监听者
-  final StreamController<dynamic> _controller = StreamController<dynamic>.broadcast();
+  final StreamController<dynamic> _controller =
+      StreamController<dynamic>.broadcast();
 
   /// 获取事件流
   Stream<T> on<T>() {

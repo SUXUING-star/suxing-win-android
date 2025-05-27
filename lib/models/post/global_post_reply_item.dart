@@ -1,3 +1,4 @@
+// lib/models/post/global_post_reply_item.dart
 class GlobalPostReplyItem {
   final String id;
   final String postId;

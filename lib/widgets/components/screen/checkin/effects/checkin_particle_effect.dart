@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/effects/checkin_particle_effect.dart
+// lib/widgets/components/screen/checkin/effects/checkin_particle_effect.dart
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

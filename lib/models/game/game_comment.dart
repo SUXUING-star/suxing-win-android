@@ -1,4 +1,4 @@
-// lib/models/comment/game_comment.dart (或类似路径)
+// lib/models/game/game_comment.dart
 
 class GameComment {
   final String id;
@@ -62,6 +62,20 @@ class GameComment {
       'parentId': parentId,
       'replies': replies.map((r) => r.toJson()).toList(), // 递归转换
     };
+  }
+
+  static GameComment empty() {
+    return GameComment(
+      id: '',
+      gameId: '',
+      userId: '',
+      content: '',
+      createTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      updateTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      username: '', // 或者 '未知用户'
+      parentId: null,
+      replies: [],
+    );
   }
 
   // UI 判断是否编辑过

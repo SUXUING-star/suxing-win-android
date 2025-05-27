@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/gamelist/common_game_list_screen.dart
+// lib/screens/game/list/common_game_list_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:collection/collection.dart';
 import 'package:suxingchahui/models/post/post_reply.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/post/post_reply_list.dart';
+import 'package:suxingchahui/models/post/post_reply_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'post_reply_item.dart';
 
@@ -130,7 +130,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
     }
 
     try {
-      final PostReplyList result = await widget.postService.getPostReplies(
+      final PostReplyPagination result = await widget.postService.getPostReplies(
           postId: _postId, page: page, limit: _replyLimit);
       if (!mounted) return;
 
@@ -440,7 +440,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
                     onPressed: () => _showTopLevelReplyModal(context),
                   )
                 else
-                  const LoginPrompt()
+                  const LoginPromptButton()
               ],
             ),
           ),

@@ -1,4 +1,4 @@
-// lib/screens/profile/favorites_screen.dart
+// lib/screens/profile/favorite/favorites_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';

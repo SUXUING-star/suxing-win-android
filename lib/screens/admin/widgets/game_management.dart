@@ -1,4 +1,4 @@
-// 文件路径: lib/screens/admin/game/management/game_management.dart
+// lib/screens/admin/widgets/game_management.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';

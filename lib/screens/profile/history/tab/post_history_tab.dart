@@ -1,7 +1,7 @@
-// lib/screens/profile/tab/post_history_tab.dart
+// lib/screens/profile/history/tab/post_history_tab.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/post/post_list.dart';
+import 'package:suxingchahui/models/post/post_list_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 
 class PostHistoryTab extends StatefulWidget {
   final bool isLoaded;
@@ -93,7 +93,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
     });
 
     try {
-      final PostList postListResult =
+      final PostListPagination postListResult =
           await widget.postService.getPostHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
@@ -128,7 +128,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
     _page++;
 
     try {
-      final PostList postListResult =
+      final PostListPagination postListResult =
           await widget.postService.getPostHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
@@ -253,7 +253,7 @@ class _PostHistoryTabState extends State<PostHistoryTab>
               duration: const Duration(milliseconds: 350),
               child: Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
-                child: PostCard(
+                child: BasePostCard(
                   post: postItem,
                   currentUser: _currentUser,
                   infoProvider: widget.userInfoProvider, // 使用 widget.

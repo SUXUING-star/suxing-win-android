@@ -1,4 +1,4 @@
-// 文件: lib/widgets/components/screen/message/message_list.dart
+// lib/widgets/components/screen/message/message_list.dart
 import 'package:flutter/material.dart';
 import '../../../../models/message/message.dart';
 import 'message_list_item.dart';

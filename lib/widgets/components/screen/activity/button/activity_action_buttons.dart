@@ -1,5 +1,4 @@
-// lib/widgets/components/screen/activity/activity_action_buttons.dart
-
+// lib/widgets/components/screen/activity/button/activity_action_buttons.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'dart:math' as math;

@@ -1,4 +1,4 @@
-// lib/screens/forum/edit_post_screen.dart
+// lib/screens/forum/post/edit_post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/models/post/post.dart';

@@ -18,7 +18,6 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-// --- ---
 
 class RegisterScreen extends StatefulWidget {
   final AuthProvider authProvider;

@@ -1,10 +1,11 @@
+// lib/widgets/components/screen/game/collection/game_collection_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

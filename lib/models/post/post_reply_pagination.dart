@@ -1,29 +1,25 @@
-// ---------------------------------------------------------------------------
-// 文件路径: lib/models/post/post_reply_list_data.dart (示例路径)
-// ---------------------------------------------------------------------------
+// lib/models/post/post_reply_pagination.dart
+import 'package:suxingchahui/models/post/post_reply.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
 
-import 'package:suxingchahui/models/post/post_reply.dart'; // 确保 PostReply 模型的路径正确
-import 'package:suxingchahui/models/common/pagination.dart'; // 导入你的 PaginationData 模型
-
-class PostReplyList {
+class PostReplyPagination {
   final List<PostReply> replies;
   final PaginationData pagination;
 
-  PostReplyList({
+  PostReplyPagination({
     required this.replies,
     required this.pagination,
   });
 
   // 静态工厂方法，用于创建一个空的 PostReplyList 实例
-  static PostReplyList empty() {
-    return PostReplyList(
+  static PostReplyPagination empty() {
+    return PostReplyPagination(
       replies: [],
-      pagination: PaginationData(
-          page: 1, limit: 0, total: 0, pages: 0), // 使用 PaginationData 的空状态
+      pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
     );
   }
 
-  factory PostReplyList.fromJson(Map<String, dynamic> json) {
+  factory PostReplyPagination.fromJson(Map<String, dynamic> json) {
     List<PostReply> repliesList = [];
     if (json['replies'] != null && json['replies'] is List) {
       repliesList = (json['replies'] as List)
@@ -49,7 +45,7 @@ class PostReplyList {
       );
     }
 
-    return PostReplyList(
+    return PostReplyPagination(
       replies: repliesList,
       pagination: paginationData,
     );
@@ -62,11 +58,11 @@ class PostReplyList {
     };
   }
 
-  PostReplyList copyWith({
+  PostReplyPagination copyWith({
     List<PostReply>? replies,
     PaginationData? pagination,
   }) {
-    return PostReplyList(
+    return PostReplyPagination(
       replies: replies ?? this.replies,
       pagination: pagination ?? this.pagination,
     );

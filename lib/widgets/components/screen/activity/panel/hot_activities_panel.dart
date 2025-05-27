@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/hot_activities_panel.dart
+// lib/widgets/components/screen/activity/panel/hot_activities_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'layout/desktop/hot_activities_full_panel.dart';
+import 'hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
   final User? currentUser;

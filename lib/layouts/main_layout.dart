@@ -1,9 +1,9 @@
 // lib/layouts/main_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/app.dart';
-import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';

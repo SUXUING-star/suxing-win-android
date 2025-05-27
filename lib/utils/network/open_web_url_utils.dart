@@ -1,3 +1,4 @@
+// lib/utils/network/open_web_url_utils.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';

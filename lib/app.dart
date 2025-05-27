@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/listeners/global_api_error_listener.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
+import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
@@ -17,7 +17,7 @@ import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/email/email_service.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
@@ -25,7 +25,7 @@ import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
-import 'package:suxingchahui/widgets/common/startup/initialization_screen.dart';
+import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
@@ -64,7 +64,9 @@ class App extends StatelessWidget {
 }
 
 class MainApp extends StatefulWidget {
-  const MainApp({super.key});
+  const MainApp({
+    super.key,
+  });
   @override
   State<MainApp> createState() => _MainAppState();
 }

@@ -50,9 +50,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   int _refreshCounter = 0;
 
   bool _hasInitializedDependencies = false;
-  late final ActivityService _activityService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
 
   @override
   void initState() {
@@ -64,9 +61,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = widget.activityService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -116,7 +110,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     });
     try {
       final activity =
-          await _activityService.getActivityDetail(widget.activityId);
+          await widget.activityService.getActivityDetail(widget.activityId);
       if (activity == null) {
         _error = '未能加载活动详情';
       } else {
@@ -138,7 +132,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Future<void> _handleLike() async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -152,8 +146,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     });
     try {
       bool success = currentlyLiked
-          ? await _activityService.unlikeActivity(_activity.id)
-          : await _activityService.likeActivity(_activity.id);
+          ? await widget.activityService.unlikeActivity(_activity.id)
+          : await widget.activityService.likeActivity(_activity.id);
       if (!success) {
         throw Exception('API call failed'); // 抛出异常以便 catch 处理回滚
       }
@@ -170,14 +164,14 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   Future<void> _addComment(String content) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     if (content.trim().isEmpty) return;
     try {
       final comment =
-          await _activityService.commentOnActivity(_activity.id, content);
+          await widget.activityService.commentOnActivity(_activity.id, content);
       if (comment != null) {
         setStateIfMounted(() {
           _activity.comments.insert(0, comment);
@@ -198,13 +192,13 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   bool _checkCanDeleteComment(ActivityComment comment) {
-    final bool isAuthor = comment.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = comment.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     return isAdmin ? true : isAuthor;
   }
 
   void _handleCommentDeleted(ActivityComment comment) {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -223,8 +217,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         iconColor: Colors.red,
         onConfirm: () async {
           try {
-            final success =
-                await _activityService.deleteComment(_activity.id, comment);
+            final success = await widget.activityService
+                .deleteComment(_activity.id, comment);
             if (success && mounted) {
               // --- 从本地列表移除评论并更新计数 ---
               setStateIfMounted(() {
@@ -244,7 +238,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   void _handleCommentLikeToggled(ActivityComment updatedComment) {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
@@ -262,7 +256,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
   // --- 编辑活动处理 ---
   Future<void> _handleEditActivity() async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -291,8 +285,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
           try {
             // 调用服务更新活动
-            final success = await _activityService.updateActivity(
-                _activity, newText, _activity.metadata);
+            final success = await widget.activityService
+                .updateActivity(_activity, newText, _activity.metadata);
 
             if (success) {
               // 更新本地状态
@@ -342,15 +336,15 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   }
 
   bool _checkCanEditOrCanDelete(UserActivity activity) {
-    final bool isAuthor = activity.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = activity.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     final canEditOrDelete = isAdmin ? true : isAuthor;
     return canEditOrDelete;
   }
 
   // --- 删除活动处理 ---
   Future<void> _handleDeleteActivity() async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -377,7 +371,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           // onConfirm 是异步的
           try {
-            final success = await _activityService.deleteActivity(_activity);
+            final success =
+                await widget.activityService.deleteActivity(_activity);
             if (success) {
               if (mounted) {
                 // 删除成功后，关闭当前页面
@@ -425,9 +420,9 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         child: ActivityDetailContent(
           inputStateService: widget.inputStateService,
           key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
-          currentUser: _authProvider.currentUser,
+          currentUser: widget.authProvider.currentUser,
           userInfoProvider: widget.infoProvider,
-          userFollowService: _followService,
+          userFollowService: widget.followService,
           activity: _activity,
           comments: _activity.comments,
           isLoadingComments: _isLoadingComments,

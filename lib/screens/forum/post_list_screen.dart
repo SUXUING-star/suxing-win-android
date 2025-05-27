@@ -5,8 +5,8 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/post/post_list.dart';
-import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
+import 'package:suxingchahui/models/post/post_list_pagination.dart';
+import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -24,7 +24,7 @@ import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/tag_filter.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/panel/post_right_panel.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/panel/post_left_panel.dart';
@@ -95,8 +95,8 @@ class _PostListScreenState extends State<PostListScreen>
   bool _isPerformingForumRefresh = false; // 标记是否正在执行论坛下拉刷新操作 (加个 Forum 区分)
   DateTime? _lastForumRefreshAttemptTime; // 上次尝试论坛下拉刷新的时间戳
   // 定义最小刷新间隔 (40 秒)
-  static const Duration _minForumRefreshInterval = Duration(seconds: 40);
-  static const Duration _cacheDebounceDuration = Duration(seconds: 10);
+  static const Duration _minForumRefreshInterval = Duration(seconds: 30);
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2);
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 800);
 
@@ -296,7 +296,7 @@ class _PostListScreenState extends State<PostListScreen>
     // --- 调用 Service 获取数据 ---
     try {
       final String? tagParam = _selectedTag?.displayText;
-      final PostList result = await widget.postService.getPostsPage(
+      final PostListPagination result = await widget.postService.getPostsPage(
         tag: tagParam,
         page: page,
         limit: _postListLimit,
@@ -1007,7 +1007,7 @@ class _PostListScreenState extends State<PostListScreen>
             onTap: () => _navigateToPostDetail(post),
             child: Padding(
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: PostCard(
+              child: BasePostCard(
                 currentUser: widget.authProvider.currentUser,
                 post: post,
                 infoProvider: widget.infoProvider,
@@ -1056,7 +1056,7 @@ class _PostListScreenState extends State<PostListScreen>
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
           delay: cardDelayIncrement * index, // 交错延迟
-          child: PostCard(
+          child: BasePostCard(
             currentUser: widget.authProvider.currentUser,
             post: post,
             followService: widget.followService,

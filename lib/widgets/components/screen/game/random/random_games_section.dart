@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/random/random_games_section.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';

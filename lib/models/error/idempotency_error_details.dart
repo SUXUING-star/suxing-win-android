@@ -1,4 +1,4 @@
-// lib/models/idempotency_error_details.dart
+// lib/models/error/idempotency_error_details.dart
 
 // 用于携带错误信息的简单数据类
 import 'package:suxingchahui/models/error/idempotency_error_code.dart';

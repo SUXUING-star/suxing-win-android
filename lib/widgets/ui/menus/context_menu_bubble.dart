@@ -1,8 +1,9 @@
 // lib/widgets/ui/menus/context_menu_bubble.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../text/app_text.dart';     // 导入你的 AppText
-import '../text/app_text_type.dart'; // 导入你的 AppTextType
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
+
 
 class ContextMenuBubble extends StatelessWidget {
   // 接收 标签 -> 回调 的 Map

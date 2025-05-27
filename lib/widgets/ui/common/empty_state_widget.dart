@@ -1,3 +1,4 @@
+// lib/widgets/ui/common/empty_state_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 

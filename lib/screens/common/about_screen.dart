@@ -1,3 +1,4 @@
+// lib/screens/common/about_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/constants/global_constants.dart';

@@ -1,8 +1,9 @@
+// lib/widgets/components/form/announcementform/field/announcement_display_settings_field.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'image_field.dart';
+import 'announcement_image_field.dart';
 
-class DisplaySettingsField extends StatelessWidget {
+class AnnouncementDisplaySettingsField extends StatelessWidget {
   final DateTime startDate;
   final DateTime endDate;
   final bool isActive;
@@ -14,7 +15,7 @@ class DisplaySettingsField extends StatelessWidget {
   final Function(int) onPriorityChanged;
   final ValueChanged<dynamic> onImageSourceChanged;
 
-  const DisplaySettingsField({
+  const AnnouncementDisplaySettingsField({
     super.key,
     required this.startDate,
     required this.endDate,

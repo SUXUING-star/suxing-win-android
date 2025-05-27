@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/checkin/level_progress_bar.dart
+// lib/widgets/components/screen/checkin/progress/level_progress_bar.dart
 import 'package:flutter/material.dart';
 
 import 'package:suxingchahui/constants/user/level_constants.dart';

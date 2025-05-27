@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/image/game_images.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

@@ -5,7 +5,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'post_card.dart'; // 确保导入 PostCard
+import 'base_post_card.dart'; // 确保导入 PostCard
 
 class PostGridView extends StatelessWidget {
   final List<Post> posts;
@@ -68,7 +68,7 @@ class PostGridView extends StatelessWidget {
       itemBuilder: (context, index) {
         if (index < posts.length) {
           final post = posts[index];
-          return PostCard(
+          return BasePostCard(
             currentUser: currentUser,
             infoProvider: infoProvider,
             followService: followService,

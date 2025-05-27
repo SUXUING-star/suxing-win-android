@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/forum/card/post_statistic_item.dart
 import 'package:flutter/material.dart';
 class StatisticItem extends StatelessWidget {
   final IconData icon;

@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/activity/activity_detail_content.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保 ActivityComment 也在此或单独导入

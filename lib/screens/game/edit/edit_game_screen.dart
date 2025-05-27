@@ -7,7 +7,7 @@ import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';

@@ -1,3 +1,4 @@
+// lib/layouts/effects/particle_effect.dart
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

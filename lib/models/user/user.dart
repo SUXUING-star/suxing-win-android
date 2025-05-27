@@ -8,6 +8,8 @@ class User {
   final String? salt; // 仅在认证过程中使用
   final String? avatar;
   final DateTime createTime;
+  final DateTime? updateTime;
+  final String? signature;
   final bool isAdmin;
   final bool isSuperAdmin;
   final int experience; // 总经验值
@@ -31,10 +33,12 @@ class User {
     this.salt,
     this.avatar,
     required this.createTime,
+    this.signature,
+    this.updateTime,
     this.isAdmin = false,
     this.isSuperAdmin = false,
     this.experience = 0,
-    this.level = 0, // 或者根据后端实际返回调整默认值
+    this.level = 1,
     this.consecutiveCheckIn,
     this.totalCheckIn,
     this.lastCheckInDate,
@@ -42,7 +46,7 @@ class User {
     this.followers = const [],
     // 新增字段的默认值
     this.currentLevelExp = 0,
-    this.nextLevelExp = 1000, // 假设 L1 默认需要 1000
+    this.nextLevelExp = 1000,
     this.expToNextLevel = 1000,
     this.levelProgress = 0.0,
     this.isMaxLevel = false,
@@ -171,6 +175,16 @@ class User {
       } catch (_) {}
     }
 
+    DateTime? parseDateTime(dynamic dateValue) {
+      if (dateValue is String) {
+        return DateTime.tryParse(dateValue);
+      } else if (dateValue is Map && dateValue['\$date'] is String) {
+        // MongoDB BSON Date
+        return DateTime.tryParse(dateValue['\$date']);
+      }
+      return null;
+    }
+
     return User(
       id: idFromJson,
       username: json['username'] ?? '',
@@ -179,6 +193,8 @@ class User {
       salt: json['salt'], // 通常为 null
       avatar: json['avatar'],
       createTime: createTimeFromJson,
+      updateTime: parseDateTime(json['updateTime']),
+      signature: json['signature'] as String?,
       isAdmin: json['isAdmin'] ?? false,
       isSuperAdmin: json['isSuperAdmin'] ?? false,
       experience: experienceFromJson,
@@ -216,6 +232,8 @@ class User {
       // 'salt': salt,
       'avatar': avatar,
       'createTime': createTime.toIso8601String(), // 序列化为 ISO 字符串
+      'signature': signature,
+      'updateTime': updateTime?.toIso8601String(),
       'isAdmin': isAdmin,
       'isSuperAdmin': isSuperAdmin,
       'experience': experience,
@@ -225,13 +243,11 @@ class User {
       'lastCheckInDate': lastCheckInDate?.toIso8601String(), // 序列化为 ISO 字符串
       'following': following, // 直接序列化列表
       'followers': followers, // 直接序列化列表
-      // --- 添加新字段的序列化 ---
       'currentLevelExp': currentLevelExp,
       'nextLevelExp': nextLevelExp,
       'expToNextLevel': expToNextLevel,
       'levelProgress': levelProgress,
       'isMaxLevel': isMaxLevel,
-      // --- 结束添加 ---
     };
   }
 
@@ -243,7 +259,9 @@ class User {
       'username': username,
       // 'email': email, // SafeJson 通常也不包含 email，除非特定场景需要
       'avatar': avatar,
+      'signature': signature,
       'createTime': createTime.toIso8601String(),
+      'updateTime': updateTime?.toIso8601String(),
       'isAdmin': isAdmin,
       'isSuperAdmin': isSuperAdmin,
       'experience': experience,
@@ -273,6 +291,8 @@ class User {
     String? hash,
     String? salt,
     String? avatar,
+    String? signature,
+    DateTime? updateTime,
     DateTime? createTime,
     bool? isAdmin,
     bool? isSuperAdmin,
@@ -299,6 +319,8 @@ class User {
       hash: hash ?? this.hash,
       salt: salt ?? this.salt,
       avatar: avatar ?? this.avatar,
+      signature: signature ?? this.signature,
+      updateTime: updateTime ?? this.updateTime,
       createTime: createTime ?? this.createTime,
       isAdmin: isAdmin ?? this.isAdmin,
       isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
@@ -347,7 +369,9 @@ class User {
           username == other.username &&
           email == other.email &&
           avatar == other.avatar &&
+          other.signature == signature &&
           createTime == other.createTime &&
+          other.updateTime == updateTime &&
           isAdmin == other.isAdmin &&
           isSuperAdmin == other.isSuperAdmin &&
           experience == other.experience &&
@@ -370,6 +394,8 @@ class User {
       email.hashCode ^
       avatar.hashCode ^
       createTime.hashCode ^
+      signature.hashCode ^
+      updateTime.hashCode ^
       isAdmin.hashCode ^
       isSuperAdmin.hashCode ^
       experience.hashCode ^
@@ -404,7 +430,9 @@ class User {
       hash: null,
       salt: null,
       avatar: null, // 通常没有头像
+      signature: null,
       createTime: DateTime(1970), // 或者一个明确表示无效的默认时间
+      updateTime: null,
       isAdmin: false,
       isSuperAdmin: false,
       experience: 0,

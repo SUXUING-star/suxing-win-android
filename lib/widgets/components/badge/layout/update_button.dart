@@ -121,7 +121,7 @@ class UpdateButton extends StatelessWidget {
       if (context.mounted) {
         ForceUpdateDialog.show(
           context: context,
-          currentVersion: updateService.currentVersion ?? 'N/A',
+          currentVersion: UpdateService.currentVersion,
           latestVersion: updateService.latestVersion ?? 'N/A',
           updateMessage: updateService.updateMessage,
           changelog: updateService.changelog,

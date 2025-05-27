@@ -1,3 +1,4 @@
+// lib/widgets/ui/animation/animated_dialog.dart
 import 'package:flutter/material.dart';
 
 class AnimatedDialog {

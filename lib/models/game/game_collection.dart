@@ -1,3 +1,5 @@
+// lib/models\game\game_collection.dart
+
 // 游戏收藏状态常量
 import 'package:suxingchahui/models/game/game.dart';
 

@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/activity/sections/activity_info_section.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';

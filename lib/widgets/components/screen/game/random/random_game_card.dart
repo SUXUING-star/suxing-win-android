@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/random/random_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';

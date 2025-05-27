@@ -1,4 +1,4 @@
-// providers/window_state_provider.dart
+// lib/providers/windows/window_state_provider.dart
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
@@ -32,19 +32,18 @@ class WindowStateProvider with ChangeNotifier, WindowListener {
   void _updateIsResizingWindowState(bool newValue) {
     if (_isResizingWindow == newValue) return; // 状态未改变，则不通知
     _isResizingWindow = newValue;
-    _isResizingWindowController.add(_isResizingWindow); // ⭐ 通知 Stream
-    // notifyListeners(); // 保留以防万一，如果完全迁移到 Stream 则可移除
+    _isResizingWindowController.add(_isResizingWindow);
   }
 
   void _startResizingOrTitleBarDragging() {
-    _updateIsResizingWindowState(true); // ⭐ 使用辅助方法更新状态和 Stream
+    _updateIsResizingWindowState(true);
     _resizeEndTimer?.cancel();
   }
 
   void _endResizingOrTitleBarDragging() {
     _resizeEndTimer = Timer(_resizeDebounceDuration, () {
       if (_isResizingWindow && !_isDraggingTitleBar) {
-        _updateIsResizingWindowState(false); // ⭐ 使用辅助方法更新状态和 Stream
+        _updateIsResizingWindowState(false);
       }
     });
   }

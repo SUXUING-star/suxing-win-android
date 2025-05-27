@@ -1,4 +1,4 @@
-// lib/screens/image_preview_screen.dart
+// lib/screens/game/detail/image_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';

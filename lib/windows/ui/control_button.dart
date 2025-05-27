@@ -1,3 +1,4 @@
+// lib/windows/ui/control_button.dart
 import 'package:flutter/material.dart';
 // ControlButton 保持不变，它会接收上面计算好的颜色
 class ControlButton extends StatelessWidget {

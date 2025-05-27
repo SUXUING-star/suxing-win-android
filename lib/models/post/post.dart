@@ -1,5 +1,4 @@
-// lib/models/post.dart
-import 'package:mongo_dart/mongo_dart.dart';
+// lib/models/post/post.dart
 
 enum PostStatus { active, locked, deleted }
 
@@ -81,6 +80,24 @@ class Post {
       'status': status.toString().split('.').last,
       // 不再包含 isLiked 等
     };
+  }
+
+  static Post empty() {
+    return Post(
+      id: '',
+      title: '',
+      content: '',
+      authorId: '',
+      createTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      updateTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      viewCount: 0,
+      replyCount: 0,
+      likeCount: 0,
+      agreeCount: 0,
+      favoriteCount: 0,
+      tags: [],
+      status: PostStatus.active, // 默认状态
+    );
   }
 
   Post copyWith({

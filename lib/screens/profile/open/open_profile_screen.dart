@@ -1,4 +1,4 @@
-// lib/screens/profile/open_profile_screen.dart
+// lib/screens/profile/open/open_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -21,6 +21,7 @@ import 'package:suxingchahui/widgets/components/screen/profile/open/profile_game
 import 'package:suxingchahui/widgets/components/screen/profile/open/profile_post_card.dart';
 import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -56,7 +57,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   late TabController _tabController;
   bool _hasInitializedDependencies = false;
-  User? _currentUser;
+  String? _currentUserId;
 
   @override
   void initState() {
@@ -69,7 +70,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _currentUser = widget.authProvider.currentUser;
+      _currentUserId = widget.authProvider.currentUserId;
     }
     if (_hasInitializedDependencies) {
       _loadUserProfile();
@@ -79,10 +80,11 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   @override
   void didUpdateWidget(covariant OpenProfileScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUser != widget.authProvider.currentUser ||
-        oldWidget.authProvider.currentUser != widget.authProvider.currentUser) {
+    if (_currentUserId != widget.authProvider.currentUserId ||
+        oldWidget.authProvider.currentUserId !=
+            widget.authProvider.currentUserId) {
       setState(() {
-        _currentUser = widget.authProvider.currentUser;
+        _currentUserId = widget.authProvider.currentUserId;
       });
     }
     if (oldWidget.userId != widget.userId) {
@@ -111,19 +113,14 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       if (_isCurrentUser && currentUser != null) {
         _user = currentUser;
       } else {
-        // *** userService开始了它的使命 *** //
         // 这个用户不是你
         _user = await widget.userService.getUserInfoById(widget.userId);
-        // *** userService结束了它的使命 *** //
       }
 
-      // *** forumService开始了它的使命 *** //
       // 加载用户帖子
       final userPosts =
           await widget.postService.getRecentUserPosts(widget.userId);
-      // *** forumService结束了它的使命 *** //
 
-      // *** gameService开始了它的使命 *** //
       // 加载用户发布的游戏
       final userGames = await widget.gameService.getGamesPaginated(
         page: 1,
@@ -149,8 +146,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktop ||
-        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context));
+    final isDesktop = DeviceUtils.isDesktopScreen(context);
 
     return Scaffold(
       appBar: CustomAppBar(
@@ -277,6 +273,9 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
     final int calculatedMemCacheSize =
         (avatarRadiusInProfile * 2 * devicePixelRatio).round();
 
+    final String signature = _user?.signature?.trim() ?? '';
+    final bool hasSignature = signature.isNotEmpty;
+
     return Card(
       margin: EdgeInsets.all(12),
       elevation: 4,
@@ -349,6 +348,43 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
                 _buildFollowInfo('粉丝', _user?.followers.length ?? 0),
               ],
             ),
+
+            if (hasSignature) ...[
+              const SizedBox(height: 12),
+              Padding(
+                // 使用 Padding 控制左右边距，确保居中时不会太靠边
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Row(
+                  mainAxisAlignment:
+                      MainAxisAlignment.center, // <-- 让 Row 内容水平居中
+                  crossAxisAlignment:
+                      CrossAxisAlignment.center, // <-- 交叉轴也居中，让图标和文本垂直对齐
+                  children: [
+                    Icon(
+                      Icons.format_quote_rounded, // 保留引号图标
+                      size: 18, // 图标大小
+                      color: Colors.grey.shade500, // 图标颜色
+                    ),
+                    const SizedBox(width: 6), // 图标和文本之间的间距
+                    Flexible(
+                      // 使用 Flexible 而不是 Expanded，当内容不足时不会撑满
+                      child: AppText(
+                        signature,
+                        textAlign: TextAlign.center, // <-- 文本本身也居中对齐
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.black.withSafeOpacity(0.75),
+                          height: 1.35,
+                        ),
+                        maxLines: 3, // 移动端行数
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // 如果需要对称的右引号，可以在这里再加一个 Icon，但通常单引号效果也不错
+                  ],
+                ),
+              ),
+            ],
 
             SizedBox(height: 12),
             Text(

@@ -241,6 +241,41 @@ class Game {
     };
   }
 
+  static Game empty() {
+    return Game(
+      id: '', // 或者 ObjectId().oid 如果你需要一个唯一的空ID
+      authorId: '',
+      title: '',
+      summary: '',
+      description: '',
+      coverImage: '',
+      images: [],
+      category: '',
+      tags: [],
+      rating: 0.0,
+      createTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      updateTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      viewCount: 0,
+      likeCount: 0,
+      likedBy: [],
+      downloadLinks: [], // 可以是 [GameDownloadLink.empty()] 如果你需要一个空的链接项
+      musicUrl: null,
+      bvid: null,
+      lastViewedAt: null,
+      wantToPlayCount: 0,
+      playingCount: 0,
+      playedCount: 0,
+      totalCollections: 0,
+      totalRatingSum: 0.0,
+      ratingCount: 0,
+      ratingUpdateTime: null,
+      approvalStatus: null, // 或者 GameStatus.pending 如果有默认状态
+      reviewComment: null,
+      reviewedAt: null,
+      reviewedBy: null,
+    );
+  }
+
   // copyWith 方法也要加上新字段
   Game copyWith({
     String? id,
@@ -340,5 +375,14 @@ class GameDownloadLink {
       'description': description,
       'url': url, // Ensure we're using lowercase 'url' to match backend
     };
+  }
+
+  static GameDownloadLink empty() {
+    return GameDownloadLink(
+      id: '',
+      title: '',
+      description: '',
+      url: '',
+    );
   }
 }

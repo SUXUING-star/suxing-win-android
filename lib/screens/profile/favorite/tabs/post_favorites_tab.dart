@@ -1,7 +1,7 @@
-// lib/screens/profile/tabs/post_favorites_tab.dart
+// lib/screens/profile/favorite/tabs/post_favorites_tab.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/post/post_list.dart';
+import 'package:suxingchahui/models/post/post_list_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -103,7 +103,7 @@ class _PostFavoritesTabState extends State<PostFavoritesTab>
 
     try {
       // --- 调用返回 Map 的 Service 方法 ---
-      final PostList result = await widget.postService
+      final PostListPagination result = await widget.postService
           .getUserFavoritePostsPage(page: _currentPage, limit: _limit);
 
       // --- 从 Map 中提取数据 ---

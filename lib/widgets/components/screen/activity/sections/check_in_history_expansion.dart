@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/section/check_in_history_expansion.dart
+// lib/widgets/components/screen/activity/sections/check_in_history_expansion.dart
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';

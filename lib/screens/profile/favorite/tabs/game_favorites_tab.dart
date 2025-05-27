@@ -1,4 +1,4 @@
-// lib/screens/profile/tabs/game_favorites_tab.dart
+// lib/screens/profile/favorite/tabs/game_favorites_tab.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -104,7 +104,7 @@ class _GameFavoritesTabState extends State<GameFavoritesTab>
 
   Future<void> _toggleGameFavorite(String gameId) async {
     try {
-      await _gameService.toggleLike(gameId);
+      await _gameService.toggleLike(gameId, false);
       await _loadFavoriteGames();
     } catch (e) {
       if (mounted) {

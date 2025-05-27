@@ -1,4 +1,4 @@
-// lib/providers/forum/post_list_filter_provider.dart
+// lib/providers/post/post_list_filter_provider.dart
 import 'package:flutter/foundation.dart';
 
 class PostListFilterProvider with ChangeNotifier {
@@ -18,7 +18,7 @@ class PostListFilterProvider with ChangeNotifier {
       _tagHasBeenSet = true; // 标记 Tag 已设置
       notifyListeners(); // 通知监听者
     } else if (newTagString != null && !_tagHasBeenSet) {
-       _tagHasBeenSet = true;
+      _tagHasBeenSet = true;
     }
   }
 

@@ -1,4 +1,4 @@
-// widgets/form/gameform/field/game_tags_field.dart
+// lib/widgets/components/form/gameform/field/game_tags_field.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

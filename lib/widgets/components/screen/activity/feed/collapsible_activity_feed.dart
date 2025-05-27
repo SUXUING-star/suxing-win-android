@@ -1,5 +1,5 @@
+// lib/widgets/components/screen/activity/feed/collapsible_activity_feed.dart
 import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';

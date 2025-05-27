@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/profile/layout/models/profile_menu_item.dart
 import 'package:flutter/material.dart';
 
 class ProfileMenuItem {

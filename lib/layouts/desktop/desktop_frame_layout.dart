@@ -159,7 +159,6 @@ class DesktopFrameLayout extends StatelessWidget {
 
                 // --- b) 动作按钮区域 (条件显示) ---
                 if (showTitleBarActions)
-                  // ⭐ 使用 StreamBuilder 代替 Consumer
                   StreamBuilder<bool>(
                     stream: authProvider.isLoggedInStream,
                     initialData: authProvider.isLoggedIn, // 使用 getter 获取初始值
@@ -211,7 +210,7 @@ class DesktopFrameLayout extends StatelessWidget {
     );
   }
 
-  // --- 辅助方法：构建标题栏按钮 (保持不变) ---
+  // --- 建标题栏按钮 ---
   Widget _buildTitleBarButtonWrapper(
       Widget buttonChild, String tooltipMessage) {
     return Tooltip(

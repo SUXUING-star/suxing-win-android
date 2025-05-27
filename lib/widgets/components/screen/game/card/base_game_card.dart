@@ -301,7 +301,7 @@ class BaseGameCard extends StatelessWidget {
         if (hasEditAction)
           StylishMenuItemData(
             value: 'edit',
-            child: AppText('编辑', type: AppTextType.error), // 使用主题颜色
+            child: AppText('编辑', type: AppTextType.button), // 使用主题颜色
           ),
         // 注意：编辑功能已注释掉，如果需要加回来，也用 StylishMenuItemData
       ],

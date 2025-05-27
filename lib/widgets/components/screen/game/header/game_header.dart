@@ -1,4 +1,4 @@
-// lib/widgets/game/game_header.dart
+// lib/widgets/components/screen/game/header/game_header.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';

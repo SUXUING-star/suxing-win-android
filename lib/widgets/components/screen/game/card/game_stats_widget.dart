@@ -1,7 +1,7 @@
-// 3. game_stats_widget.dart
+// lib/widgets/components/screen/game/card/game_stats_widget.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../../models/game/game.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'game_stat_item_widget.dart';
 
 class GameStatsWidget extends StatelessWidget {

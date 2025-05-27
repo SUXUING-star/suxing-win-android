@@ -4,7 +4,7 @@ import 'dart:async';
 
 // Models
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/post/post_list.dart';
+import 'package:suxingchahui/models/post/post_list_pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 
 // Services
@@ -21,7 +21,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/card/post_card.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
@@ -215,7 +215,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        final PostList resultsData = await widget.postService.searchPosts(
+        final PostListPagination resultsData = await widget.postService.searchPosts(
           query: trimmedQuery,
           page: _currentPage,
           limit: _limit,
@@ -579,7 +579,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
             child: Padding(
               // 保持原有的 Padding
               padding: const EdgeInsets.only(bottom: 8.0),
-              child: PostCard(
+              child: BasePostCard(
                 currentUser: widget.authProvider.currentUser,
                 post: post,
                 followService: widget.followService,

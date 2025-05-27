@@ -1,3 +1,4 @@
+// lib/windows/ui/windows_controls.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 假设这个是你自定义的扩展
 import 'package:suxingchahui/windows/ui/control_button.dart';

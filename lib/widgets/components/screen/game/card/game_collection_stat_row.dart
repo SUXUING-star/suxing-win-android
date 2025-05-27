@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/card/game_collection_stat_row.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 

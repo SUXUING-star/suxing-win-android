@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/hot_activities_list.dart
+// lib/widgets/components/screen/activity/panel/stats/hot_activities_list.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';

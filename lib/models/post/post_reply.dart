@@ -81,6 +81,19 @@ class PostReply {
     }
   }
 
+  static PostReply empty() {
+    return PostReply(
+      id: '',
+      postId: '',
+      content: '',
+      authorId: '',
+      parentId: null,
+      createTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      updateTime: DateTime.fromMillisecondsSinceEpoch(0), // 或者 DateTime.now()
+      status: PostReplyStatus.active, // 默认状态
+    );
+  }
+
   // UI 判断是否编辑过
   bool get hasBeenEdited {
     const Duration tolerance = Duration(seconds: 1);

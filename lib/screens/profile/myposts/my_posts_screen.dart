@@ -1,4 +1,4 @@
-// lib/screens/profile/my_posts_screen.dart
+// lib/screens/profile/myposts/my_posts_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
@@ -39,8 +39,7 @@ class MyPostsScreen extends StatefulWidget {
   _MyPostsScreenState createState() => _MyPostsScreenState();
 }
 
-class _MyPostsScreenState extends State<MyPostsScreen>
-    with WidgetsBindingObserver {
+class _MyPostsScreenState extends State<MyPostsScreen> {
   List<Post> _posts = [];
   PaginationData? _paginationData;
   bool _isLoading = false;
@@ -56,7 +55,6 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
     _isMounted = true;
     _userId = widget.authProvider.currentUserId;
 
@@ -76,35 +74,8 @@ class _MyPostsScreenState extends State<MyPostsScreen>
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    if (!_isMounted) return;
-    if (state == AppLifecycleState.resumed) {
-      final newUserId = widget.authProvider.currentUserId;
-      if (_userId != newUserId) {
-        _userId = newUserId;
-        if (_userId != null) {
-          _fetchPosts(isRefresh: true);
-        } else {
-          if (_isMounted) {
-            setState(() {
-              _posts = [];
-              _paginationData = null;
-              _isLoading = false;
-              _isLoadingMore = false;
-              _error = null;
-              _currentPage = 1;
-            });
-          }
-        }
-      }
-    }
-  }
-
-  @override
   void dispose() {
     _isMounted = false;
-    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
   }

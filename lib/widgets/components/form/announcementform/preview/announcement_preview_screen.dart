@@ -1,4 +1,4 @@
-// import 'dart:io'; // 这个文件不再需要 dart:io 或 XFile
+// lib/widgets/components/form/announcementform/preview/announcement_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';

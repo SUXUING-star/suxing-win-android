@@ -1,3 +1,4 @@
+// lib/models/game/collection_change_result.dart
 import 'package:suxingchahui/models/game/game_collection.dart';
 
 /// 用于在收藏状态改变时，封装新状态和计数变化的回调结果。

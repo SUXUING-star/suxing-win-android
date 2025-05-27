@@ -1,4 +1,4 @@
-// editable_user_avatar.dart
+// lib/widgets/ui/image/editable_user_avatar.dart
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';

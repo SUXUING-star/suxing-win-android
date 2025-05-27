@@ -1,4 +1,4 @@
-// lib/screens/profile/history_screen.dart
+// lib/screens/profile/history/history_screen.darts
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -9,8 +9,8 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'tab/game/game_history_tab.dart'; // 导入游戏历史标签页组件
-import 'tab/post/post_history_tab.dart'; // 导入帖子历史标签页组件
+import 'tab/game_history_tab.dart'; // 导入游戏历史标签页组件
+import 'tab/post_history_tab.dart'; // 导入帖子历史标签页组件
 
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;

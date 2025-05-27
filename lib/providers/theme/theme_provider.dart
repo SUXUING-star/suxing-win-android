@@ -1,4 +1,4 @@
-// lib/providers/theme_provider.dart
+// lib/providers/theme/theme_provider.dart
 import 'package:flutter/material.dart';
 import '../../utils/font/font_config.dart'; // 引入 FontConfig
 

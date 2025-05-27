@@ -1,9 +1,14 @@
+// lib/widgets/components/screen/home/section/home_banner.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class HomeBanner extends StatelessWidget {
-  const HomeBanner({super.key});
+  const HomeBanner({
+    super.key,
+  });
+  static const _defaultBannerImage = GlobalConstants.defaultBannerImage;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +49,7 @@ class HomeBanner extends StatelessWidget {
                       ),
                     ),
                     child: Image.asset(
-                      'assets/images/kaev.jpg',
+                      _defaultBannerImage,
                       fit: BoxFit.cover,
                       width: double.infinity,
                     ),

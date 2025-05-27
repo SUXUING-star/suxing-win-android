@@ -1,3 +1,4 @@
+// lib/providers/initialize/initialization_status.dart
 /// 定义应用初始化过程的几种状态
 enum InitializationStatus {
   /// 初始状态或空闲状态

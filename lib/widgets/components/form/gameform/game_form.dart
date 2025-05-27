@@ -1,3 +1,4 @@
+// lib/widgets/components/form/gameform/game_form.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
@@ -17,7 +18,7 @@ import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
@@ -654,7 +655,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     // 检查图片是否都为空 (null 且没有 XFile)
     bool coverEmpty = _coverImageSource == null;
     // 检查游戏截图列表是否为空（只包含 null）
-    bool gameImagesEmpty = _gameImagesSources.nonNulls as bool;
+    bool gameImagesEmpty = _gameImagesSources.nonNulls.isEmpty;
 
     // 检查列表是否为空
     bool listsEmpty = _downloadLinks.isEmpty &&

@@ -1,4 +1,4 @@
-// lib/models/activity/user_activity_list_data.dart
+// lib/models/activity/activity_list.dart
 
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';

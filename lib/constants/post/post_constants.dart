@@ -1,4 +1,4 @@
-// lib/constants/post_constants.dart
+// lib/constants/post/post_constants.dart
 import 'package:flutter/material.dart';
 
 // --- 1. 定义 PostTag 枚举 ---

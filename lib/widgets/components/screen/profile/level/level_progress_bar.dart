@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/profile/level_progress_bar.dart
+// lib/widgets/components/screen/profile/level/level_progress_bar.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';

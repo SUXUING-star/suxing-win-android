@@ -1,7 +1,7 @@
-// lib/screens/profile/tab/game_history_tab.dart
+// lib/screens/profile/history/tab/game_history_tab.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_list.dart';
+import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -100,7 +100,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
     });
 
     try {
-      final GameList gameListResult =
+      final GameListPagination gameListResult =
           await _gameService.getGameHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 
@@ -136,7 +136,7 @@ class _GameHistoryTabState extends State<GameHistoryTab>
     _page++;
 
     try {
-      final GameList gameListResult =
+      final GameListPagination gameListResult =
           await _gameService.getGameHistoryWithDetails(_page, _pageSize);
       if (!mounted) return;
 

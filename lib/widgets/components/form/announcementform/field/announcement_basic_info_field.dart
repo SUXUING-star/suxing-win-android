@@ -1,9 +1,9 @@
-// lib/widgets/components/form/announcementform/field/basic_info_field.dart
+// lib/widgets/components/form/announcementform/field/announcement_basic_info_field.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
-class BasicInfoField extends StatelessWidget {
+class AnnouncementBasicInfoField extends StatelessWidget {
   final InputStateService inputStateService;
   final String title;
   final String content;
@@ -12,7 +12,7 @@ class BasicInfoField extends StatelessWidget {
   final Function(String) onContentChanged;
   final Function(String) onTypeChanged;
 
-  const BasicInfoField({
+  const AnnouncementBasicInfoField({
     super.key,
     required this.inputStateService,
     required this.title,

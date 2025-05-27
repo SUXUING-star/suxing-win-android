@@ -1,4 +1,4 @@
-// lib/screens/game/add/add_game_screen.dart
+// lib/screens/game/edit/add_game_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
@@ -6,7 +6,7 @@ import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';

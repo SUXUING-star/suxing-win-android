@@ -1,25 +1,24 @@
-// lib/models/post/post_list_data.dart
+// lib/models/post/post_list_pagination.dart
 
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/services/main/forum/post_service.dart';
 
-import '../../services/main/forum/post_service.dart';
-
-class PostList {
+class PostListPagination {
   final List<Post> posts;
   final PaginationData pagination;
   final String? tag; // 已有
   final String? query; // 新增：用于搜索结果的查询关键词
 
-  PostList({
+  PostListPagination({
     required this.posts,
     required this.pagination,
     this.tag,
     this.query, // 构造函数中设为可选
   });
 
-  static PostList empty() {
-    return PostList(
+  static PostListPagination empty() {
+    return PostListPagination(
       posts: [],
       pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
       tag: null,
@@ -27,7 +26,7 @@ class PostList {
     );
   }
 
-  factory PostList.fromJson(Map<String, dynamic> json) {
+  factory PostListPagination.fromJson(Map<String, dynamic> json) {
     List<Post> postsList = [];
     if (json['posts'] != null && json['posts'] is List) {
       postsList = (json['posts'] as List)
@@ -62,7 +61,7 @@ class PostList {
       );
     }
 
-    return PostList(
+    return PostListPagination(
       posts: postsList,
       pagination: paginationData,
       tag: json['tag'] as String?,
@@ -85,7 +84,7 @@ class PostList {
     return data;
   }
 
-  PostList copyWith({
+  PostListPagination copyWith({
     List<Post>? posts,
     PaginationData? pagination,
     String? tag,
@@ -93,7 +92,7 @@ class PostList {
     bool clearTag = false,
     bool clearQuery = false, // 用于显式清除 query
   }) {
-    return PostList(
+    return PostListPagination(
       posts: posts ?? this.posts,
       pagination: pagination ?? this.pagination,
       tag: clearTag ? null : (tag ?? this.tag),

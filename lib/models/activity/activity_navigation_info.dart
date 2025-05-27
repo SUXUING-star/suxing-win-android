@@ -1,4 +1,5 @@
-// lib/models/game/game_navigation_info.dart
+// lib/models/activity/activity_navigation_info.dart
+
 import 'package:flutter/foundation.dart';
 
 @immutable

@@ -1,6 +1,6 @@
-// lib/screens/mygames/my_games_screen.dart
+// lib/screens/profile/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_list.dart';
+import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -84,7 +84,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     });
 
     try {
-      final GameList result = await widget.gameService.getMyGamesWithInfo(
+      final GameListPagination result =
+          await widget.gameService.getMyGamesWithInfo(
         page: 1,
       );
 

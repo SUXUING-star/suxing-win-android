@@ -5,10 +5,10 @@ import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
-import 'package:suxingchahui/models/game/game_collection_review_list.dart';
+import 'package:suxingchahui/models/game/game_collection_review_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -136,7 +136,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
 
     try {
-      final GameCollectionReviewList reviewListResult =
+      final GameCollectionReviewPagination reviewListResult =
           await _collectionService.getGameCollectionReviews(widget.game.id,
               page: _page, limit: _pageSize);
 

@@ -1,8 +1,8 @@
 // lib/widgets/components/indicators/network_status_indicator.dart
-
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../../../services/main/network/network_manager.dart';
+import 'package:suxingchahui/services/main/network/network_manager.dart';
+
 
 class NetworkStatusIndicator extends StatefulWidget {
   final VoidCallback? onReconnect;

@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/activity/sections/activity_comments_section.dart
 import 'dart:async';
 
 import 'package:flutter/material.dart';

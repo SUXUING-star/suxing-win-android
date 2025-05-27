@@ -1,12 +1,16 @@
 // lib/screens/profile/profile_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
+import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -27,7 +31,6 @@ import 'package:suxingchahui/widgets/components/screen/profile/layout/desktop/pr
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -58,13 +61,16 @@ class _ProfileScreenState extends State<ProfileScreen>
   bool _isRefreshing = false;
   final visibilityKey = const Key('profile_screen_visibility_detector');
   DateTime? _lastRefreshTime;
-  static const Duration _minRefreshInterval = Duration(seconds: 15);
+  static const Duration _minRefreshInterval = Duration(seconds: 30);
   String? _currentUserId;
 
   DailyProgressData? _dailyProgressData;
   bool _isLoadingExpData = false;
   String? _expDataError;
   bool _expDataLoadedOnce = false;
+
+  static const String _editUsernameSlot = 'profile_edit_username';
+  static const String _editSignatureSlot = 'profile_edit_signature';
 
   @override
   void initState() {
@@ -283,34 +289,124 @@ class _ProfileScreenState extends State<ProfileScreen>
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
-    EditDialog.show(
-      inputStateService: widget.inputStateService,
+
+    widget.inputStateService.getController(_editUsernameSlot).text =
+        currentUser.username;
+    widget.inputStateService.getController(_editSignatureSlot).text =
+        currentUser.signature ?? '';
+
+    BaseInputDialog.show<bool>(
       context: context,
-      title: '修改用户名',
-      initialText: currentUser.username,
-      hintText: '请输入新的用户名',
-      maxLines: 1,
-      iconData: Icons.person_outline,
-      onSave: (newUsername) async {
-        if (newUsername.trim().isEmpty) {
-          AppSnackBar.showWarning(context, '用户名不能为空');
-          return;
-        }
-        if (newUsername.trim() == currentUser.username) return;
-
-        try {
-          await widget.userService
-              .updateUserProfile(username: newUsername.trim());
-          await widget.authProvider.refreshUserState();
-
-          if (!mounted) return;
-          AppSnackBar.showSuccess(this.context, '用户名更新成功');
-        } catch (e) {
-          if (!mounted) return;
-          AppSnackBar.showError(this.context, '更新失败：$e');
-        }
+      title: '编辑个人资料',
+      iconData: Icons.edit_note_outlined,
+      confirmButtonText: '保存更改',
+      isDraggable: true,
+      isScalable: false,
+      contentBuilder: (dialogContext) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: AppText(
+                  "用户名 (3-25位)",
+                  style: Theme.of(dialogContext).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                ),
+              ),
+              TextInputField(
+                inputStateService: widget.inputStateService,
+                slotName: _editUsernameSlot,
+                hintText: '请输入新的用户名',
+                maxLines: 1,
+                maxLength: 25,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                showSubmitButton: false,
+                textInputAction: TextInputAction.next,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding: EdgeInsets.zero,
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0),
+                child: AppText(
+                  "个性签名 (最多100位)",
+                  style: Theme.of(dialogContext).textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black54,
+                      ),
+                ),
+              ),
+              TextInputField(
+                inputStateService: widget.inputStateService,
+                slotName: _editSignatureSlot,
+                hintText: '请输入您的个性签名',
+                maxLines: 3,
+                minLines: 1,
+                maxLength: 100,
+                maxLengthEnforcement: MaxLengthEnforcement.enforced,
+                showSubmitButton: false,
+                textInputAction: TextInputAction.done,
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                padding: EdgeInsets.zero,
+              ),
+            ],
+          ),
+        );
       },
-    );
+      onConfirm: () async {
+        final newUsername =
+            widget.inputStateService.getText(_editUsernameSlot).trim();
+        final newSignature =
+            widget.inputStateService.getText(_editSignatureSlot).trim();
+
+        if (newUsername.isEmpty) {
+          throw Exception('用户名不能为空');
+        }
+        if (newUsername.length < 3 || newUsername.length > 25) {
+          throw Exception('用户名长度必须为 3 到 25 位');
+        }
+        if (newSignature.length > 100) {
+          throw Exception('个性签名不能超过 100 位');
+        }
+
+        final bool usernameChanged = newUsername != currentUser.username;
+        final bool signatureChanged =
+            newSignature != (currentUser.signature ?? '');
+
+        if (!usernameChanged && !signatureChanged) {
+          return false;
+        }
+
+        await widget.userService.updateUserProfile(
+          username: usernameChanged ? newUsername : null,
+          signature: signatureChanged ? newSignature : null,
+        );
+
+        await widget.authProvider.refreshUserState();
+        return true;
+      },
+    ).then((updatePerformed) {
+      if (updatePerformed == true) {
+        if (mounted) {
+          AppSnackBar.showSuccess(this.context, '个人资料更新成功！');
+        }
+      }
+    }).catchError((error) {
+      if (mounted) {
+        AppSnackBar.showError(this.context, '操作失败: $error');
+      }
+    }).whenComplete(() {
+      widget.inputStateService.clearText(_editUsernameSlot);
+      widget.inputStateService.clearText(_editSignatureSlot);
+    });
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -505,7 +601,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               slideDirection: SlideDirection.left,
               duration: const Duration(milliseconds: 500),
               delay: const Duration(milliseconds: 100),
-              child: ProfileDesktopAccount(
+              child: ProfileDesktopAccountCard(
                 user: currentUser,
                 onEditProfile: () =>
                     _showEditProfileDialog(currentUser, context),

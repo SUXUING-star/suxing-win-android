@@ -1,4 +1,4 @@
-// lib/path/to/your/dialogs/tool_form_dialog.dart
+// lib/widgets/components/form/toolform/tool_form_dialog.dart
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';

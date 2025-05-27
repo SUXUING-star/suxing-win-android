@@ -1,3 +1,4 @@
+// lib/models/message/message_type.dart
 import 'package:flutter/material.dart';
 
 /// 消息类型枚举

@@ -504,8 +504,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// Navigates to the detail screen for a specific activity.
   void _navigateToActivityDetail(UserActivity activity) {
     _stopWatchingCache(); // Pause watching while navigating away
-    NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
-        arguments: {'activityId': activity.id, 'activity': activity}).then((_) {
+    NavigationUtils.pushNamed(context, AppRoutes.activityDetail, arguments: {
+      'activityId': activity.id,
+      'activity': activity,
+    }).then((_) {
       // When returning from the detail screen
       if (mounted) {
         _startOrUpdateWatchingCache(); // Resume watching

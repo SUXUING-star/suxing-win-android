@@ -1,4 +1,4 @@
-// lib/screens/common/robust_image_preview_screen.dart
+// lib/widgets/ui/image/robust_image_preview_screen.dart
 import 'package:flutter/material.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';

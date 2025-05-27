@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'text_input_field.dart';
 
 class CommentInputField extends StatefulWidget {
@@ -161,7 +161,7 @@ class _CommentInputFieldState extends State<CommentInputField> {
       // 使用你的 LoginPrompt 组件
       return Padding(
         padding: widget.padding,
-        child: LoginPrompt(
+        child: LoginPromptButton(
           message: widget.isReply ? '登录后回复' : '登录后发表评论',
           buttonText: '登录',
           onLoginPressed: widget.onLoginRequired ??

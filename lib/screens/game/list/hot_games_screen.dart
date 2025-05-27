@@ -1,3 +1,4 @@
+// lib/screens/game/list/hot_games_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';

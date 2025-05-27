@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/activity/activity_stats_card.dart
+// lib/widgets/components/screen/activity/panel/stats/activity_stats_card.dart
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 

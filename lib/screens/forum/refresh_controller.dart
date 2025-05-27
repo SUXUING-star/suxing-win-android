@@ -1,3 +1,4 @@
+// lib/screens/forum/refresh_controller.dart
 import 'package:flutter/material.dart';
 // --- RefreshController 类 (保持不变) ---
 class RefreshController {

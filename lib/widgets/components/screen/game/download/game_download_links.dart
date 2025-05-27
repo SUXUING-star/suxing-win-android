@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/game/game_download_links.dart
+// lib/widgets/components/screen/game/download/game_download_links.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/models/user/user.dart';

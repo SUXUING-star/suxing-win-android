@@ -1,9 +1,10 @@
+// lib/screens/game/list/games_list_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:suxingchahui/constants/common/app_bar_actions.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_list.dart';
+import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/models/game/game_tag.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
@@ -14,6 +15,7 @@ import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -79,7 +81,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   Timer? _refreshDebounceTimer;
   Timer? _checkProviderDebounceTimer;
   static const int _pageSize = GameService.gamesLimit;
-  static const Duration _cacheDebounceDuration = Duration(seconds: 10);
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2);
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 500);
   final Map<String, String> _sortOptions = GameConstants.defaultFilter;
@@ -291,7 +293,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     });
 
     try {
-      GameList result;
+      GameListPagination result;
       if (_currentCategory != null) {
         // *** 优先检查分类 ***
         result = await widget.gameService.getGamesByCategoryWithInfo(
@@ -395,7 +397,8 @@ class _GamesListScreenState extends State<GamesListScreen>
       )
           .listen((BoxEvent event) {
         if (_isVisible) {
-          _refreshDataIfNeeded(reason: "Cache Change on page $_currentPage");
+          _refreshDataIfNeeded(
+              reason: "Cache Change on page $_currentPage,event$event");
         } else {
           _needsRefresh = true;
         }
@@ -882,7 +885,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         onVisibilityChanged: _handleVisibilityChange,
         child: _buildBodyContent(),
       ),
-      floatingActionButton: _buildFab(),
+      floatingActionButton: _buildFabGroup(),
       bottomNavigationBar:
           _buildFloatingPaginationControlsIfNeeded(), // <--- 构建悬浮分页控件
     );
@@ -1328,29 +1331,42 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// Builds the Floating Action Button.
-  Widget? _buildFab() {
+  Widget? _buildFabGroup() {
     if (_isLoadingData) return null; // 加载时不显示
 
-    return widget.authProvider.isLoggedIn ? _addGameFab() : _toLoginFab();
+    return FloatingActionButtonGroup(
+        children:
+            widget.authProvider.isLoggedIn ? _addGameFab() : _toLoginFab());
   }
 
-  Widget _addGameFab() {
-    return GenericFloatingActionButton(
-      onPressed: _handleAddGame, // onPressed 是 VoidCallback?
-      icon: Icons.add,
-      tooltip: '添加游戏',
-      heroTag: 'games_list_fab',
-    );
+  List<Widget> _addGameFab() {
+    return [
+      GenericFloatingActionButton(
+        onPressed: _handleAddGame, // onPressed 是 VoidCallback?
+        icon: AppBarAction.addGame.icon,
+        tooltip: '添加游戏',
+        heroTag: 'games_list_fab',
+      ),
+      GenericFloatingActionButton(
+        onPressed: () => NavigationUtils.pushNamed(
+            context, AppRoutes.myGames), // onPressed 是 VoidCallback?
+        icon: AppBarAction.myGames.icon,
+        tooltip: '我的游戏',
+        heroTag: 'games_list_fab',
+      ),
+    ];
   }
 
-  Widget _toLoginFab() {
-    return GenericFloatingActionButton(
-      onPressed: () =>
-          NavigationUtils.navigateToLogin(context), // onPressed 是 VoidCallback?
-      icon: Icons.login,
-      tooltip: '登录后可以添加游戏',
-      heroTag: 'login_frm_games_list_fab',
-    );
+  List<Widget> _toLoginFab() {
+    return [
+      GenericFloatingActionButton(
+        onPressed: () => NavigationUtils.navigateToLogin(
+            context), // onPressed 是 VoidCallback?
+        icon: Icons.login,
+        tooltip: '登录后可以添加游戏',
+        heroTag: 'login_frm_games_list_fab',
+      )
+    ];
   }
 
   /// Builds the floating pagination controls if needed.

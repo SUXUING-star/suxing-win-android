@@ -1,4 +1,4 @@
-// lib/models/site_link.dart
+// lib/models/linkstools/site_link.dart
 import 'package:mongo_dart/mongo_dart.dart';
 
 class SiteLink {

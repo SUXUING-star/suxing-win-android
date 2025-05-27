@@ -1,4 +1,4 @@
-// lib/widgets/forum/post_guidelines.dart
+// lib/widgets/components/form/postform/field/post_guidelines.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';

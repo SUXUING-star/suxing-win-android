@@ -1,16 +1,16 @@
-// lib/models/game/game_list_data.dart
+// lib/models/game/game_list_pagination.dart
 
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 
-class GameList {
+class GameListPagination {
   final List<Game> games;
   final PaginationData pagination;
   final String? categoryName; // 已有
   final String? tag; // 已有
   final String? query; // 新增：用于搜索结果的查询关键词
 
-  GameList({
+  GameListPagination({
     required this.games,
     required this.pagination,
     this.categoryName,
@@ -18,8 +18,8 @@ class GameList {
     this.query, // 构造函数中设为可选
   });
 
-  static GameList empty() {
-    return GameList(
+  static GameListPagination empty() {
+    return GameListPagination(
       games: [],
       pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
       categoryName: null,
@@ -28,7 +28,7 @@ class GameList {
     );
   }
 
-  factory GameList.fromJson(Map<String, dynamic> json) {
+  factory GameListPagination.fromJson(Map<String, dynamic> json) {
     List<Game> gamesList = [];
     if (json['games'] != null && json['games'] is List) {
       gamesList = (json['games'] as List)
@@ -62,7 +62,7 @@ class GameList {
       );
     }
 
-    return GameList(
+    return GameListPagination(
       games: gamesList,
       pagination: paginationData,
       categoryName: json['categoryName'] as String?,
@@ -89,7 +89,7 @@ class GameList {
     return data;
   }
 
-  GameList copyWith({
+  GameListPagination copyWith({
     List<Game>? games,
     PaginationData? pagination,
     String? categoryName,
@@ -99,7 +99,7 @@ class GameList {
     bool clearTag = false,
     bool clearQuery = false, // 用于显式清除 query
   }) {
-    return GameList(
+    return GameListPagination(
       games: games ?? this.games,
       pagination: pagination ?? this.pagination,
       categoryName:

@@ -1,4 +1,4 @@
-// lib/widgets/components/screnn/game/category/game_category_tag.dart
+// lib/widgets/components/screen/game/category/game_category_tag.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 

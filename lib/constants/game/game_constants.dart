@@ -1,7 +1,8 @@
 // lib/constants/game/game_constants.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_collection.dart';
 
-import '../../models/game/game_collection.dart';
+
 
 // 定义一个简单的类或 Map 来存储每个 Tab 的配置信息
 class GameCollectionTabConfig {

@@ -1,3 +1,4 @@
+// lib/windows/effects/mouse_trail_effect.dart
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:io' show Platform;

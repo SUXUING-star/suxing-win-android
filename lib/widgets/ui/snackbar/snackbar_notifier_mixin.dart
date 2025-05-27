@@ -1,5 +1,6 @@
+// lib/widgets/ui/snackbar/snackbar_notifier_mixin.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 确保路径正确
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 // 定义 SnackBar 信息类和类型 (如果还没定义的话)
 enum SnackbarType { success, error, warning, info }

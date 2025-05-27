@@ -1,13 +1,18 @@
-import 'package:flutter/foundation.dart'; // For kDebugMode
-import 'package:suxingchahui/routes/app_routes.dart'; // 引入 AppRoutes 定义的常量
-import 'message_type.dart'; // 引入 MessageType 和扩展
+// lib/models/message/message.dart
+
+import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/routes/app_routes.dart';
+import 'message_type.dart';
 
 /// 封装导航所需的信息
-class NavigationInfo {
-  final String routeName; // 目标路由名称 (来自 AppRoutes)
-  final Object? arguments; // 传递给目标路由的参数
+class MessageNavigationInfo {
+  final String routeName;
+  final Object? arguments;
 
-  NavigationInfo({required this.routeName, this.arguments});
+  MessageNavigationInfo({
+    required this.routeName,
+    this.arguments,
+  });
 }
 
 /// 消息数据模型
@@ -20,9 +25,9 @@ class Message {
   final bool isRead;
   final DateTime createTime;
   final DateTime? readTime;
-  final String? gameId;    // 关联的游戏ID
-  final String? postId;    // 关联的帖子ID
-  final int? groupCount;   // 分组消息数量 (如果 > 1)
+  final String? gameId; // 关联的游戏ID
+  final String? postId; // 关联的帖子ID
+  final int? groupCount; // 分组消息数量 (如果 > 1)
   final List<String>? references; // 相关引用ID或摘要
   final String? lastContent; // 分组消息的最新内容摘要
   final DateTime? updateTime; // 消息更新时间 (例如分组消息更新)
@@ -64,8 +69,10 @@ class Message {
       try {
         if (value.toString().contains('ObjectId')) {
           final idStr = value.toString();
-          final matches = RegExp(r'ObjectId\("([a-f0-9]{24})"\)').firstMatch(idStr);
-          if (matches != null && matches.groupCount >= 1) return matches.group(1) ?? '';
+          final matches =
+              RegExp(r'ObjectId\("([a-f0-9]{24})"\)').firstMatch(idStr);
+          if (matches != null && matches.groupCount >= 1)
+            return matches.group(1) ?? '';
         }
         return value.toHexString();
       } catch (e) {
@@ -78,15 +85,20 @@ class Message {
       if (value == null) return DateTime.now(); // 或者抛出错误？取决于业务
       if (value is DateTime) return value;
       if (value is String) {
-        try { return DateTime.parse(value); } catch (e) {
+        try {
+          return DateTime.parse(value);
+        } catch (e) {
           if (kDebugMode) print('Error parsing datetime string ($value): $e');
           return DateTime.now(); // 备用值
         }
       }
       try {
         final timestamp = int.tryParse(value.toString());
-        if (timestamp != null) return DateTime.fromMillisecondsSinceEpoch(timestamp);
-      } catch (e) { if (kDebugMode) print('Error parsing timestamp ($value): $e'); }
+        if (timestamp != null)
+          return DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } catch (e) {
+        if (kDebugMode) print('Error parsing timestamp ($value): $e');
+      }
       return DateTime.now(); // 最终备用值
     }
 
@@ -107,13 +119,18 @@ class Message {
       type: rawType, // 存储原始字符串
       isRead: json['isRead'] ?? false,
       createTime: safeParseDateTime(json['createTime']),
-      readTime: json['readTime'] != null ? safeParseDateTime(json['readTime']) : null,
+      readTime:
+          json['readTime'] != null ? safeParseDateTime(json['readTime']) : null,
       gameId: json['gameId'] != null ? safeParseId(json['gameId']) : null,
       postId: json['postId'] != null ? safeParseId(json['postId']) : null,
-      groupCount: json['groupCount'] is int ? json['groupCount'] : (int.tryParse(json['groupCount']?.toString() ?? '')), // 尝试转换
+      groupCount: json['groupCount'] is int
+          ? json['groupCount']
+          : (int.tryParse(json['groupCount']?.toString() ?? '')), // 尝试转换
       references: safeParseReferences(json['references']),
       lastContent: json['lastContent'],
-      updateTime: json['updateTime'] != null ? safeParseDateTime(json['updateTime']) : null,
+      updateTime: json['updateTime'] != null
+          ? safeParseDateTime(json['updateTime'])
+          : null,
     );
   }
 
@@ -143,7 +160,8 @@ class Message {
     if (source.isEmpty) return "(无内容)"; // 处理空内容
 
     // 简单的截断逻辑
-    if (source.length > maxLength + 3) { // +3 为 "..." 的长度
+    if (source.length > maxLength + 3) {
+      // +3 为 "..." 的长度
       return '${source.substring(0, maxLength)}...';
     }
     return source;
@@ -157,21 +175,24 @@ class Message {
 
   /// 获取此消息的导航信息 (如果可导航)
   /// 返回 null 表示此消息类型或状态下没有关联页面可跳转
-  NavigationInfo? get navigationDetails {
+  MessageNavigationInfo? get navigationDetails {
     switch (messageType) {
       case MessageType.postReply:
         if (postId != null && postId!.isNotEmpty) {
-          return NavigationInfo(routeName: AppRoutes.postDetail, arguments: postId);
+          return MessageNavigationInfo(
+              routeName: AppRoutes.postDetail, arguments: postId);
         }
         break; // 如果 postId 无效，则不导航
 
       case MessageType.commentReply:
-      // 评论回复可能关联帖子或游戏，优先判断 postId
+        // 评论回复可能关联帖子或游戏，优先判断 postId
         if (postId != null && postId!.isNotEmpty) {
-          return NavigationInfo(routeName: AppRoutes.postDetail, arguments: postId);
+          return MessageNavigationInfo(
+              routeName: AppRoutes.postDetail, arguments: postId);
         } else if (gameId != null && gameId!.isNotEmpty) {
           // 假设评论回复也可以跳转到游戏详情 (需要确认业务逻辑)
-          return NavigationInfo(routeName: AppRoutes.gameDetail, arguments: gameId);
+          return MessageNavigationInfo(
+              routeName: AppRoutes.gameDetail, arguments: gameId);
         }
         break; // 如果 postId 和 gameId 都无效，则不导航
 
@@ -179,7 +200,8 @@ class Message {
         if (senderId.isNotEmpty) {
           // 确保 senderId 不是接收者自己 (如果业务需要)
           // if (senderId != recipientId) {
-          return NavigationInfo(routeName: AppRoutes.openProfile, arguments: senderId);
+          return MessageNavigationInfo(
+              routeName: AppRoutes.openProfile, arguments: senderId);
           // }
         }
         break; // 如果 senderId 无效，则不导航
@@ -188,20 +210,21 @@ class Message {
       case MessageType.game_rejected:
       case MessageType.game_review_pending:
         if (gameId != null && gameId!.isNotEmpty) {
-          return NavigationInfo(routeName: AppRoutes.gameDetail, arguments: gameId);
+          return MessageNavigationInfo(
+              routeName: AppRoutes.gameDetail, arguments: gameId);
         }
         break; // 如果 gameId 无效，则不导航
 
       case MessageType.unknown:
-      // 未知类型通常不可导航
+        // 未知类型通常不可导航
         return null;
 
-    // 为其他需要导航的 MessageType 添加 case
-    // case MessageType.someOtherType:
-    //   if (/* 满足导航条件 */) {
-    //     return NavigationInfo(routeName: AppRoutes.someRoute, arguments: /* 参数 */);
-    //   }
-    //   break;
+      // 为其他需要导航的 MessageType 添加 case
+      // case MessageType.someOtherType:
+      //   if (/* 满足导航条件 */) {
+      //     return NavigationInfo(routeName: AppRoutes.someRoute, arguments: /* 参数 */);
+      //   }
+      //   break;
     }
 
     // 如果没有任何 case 返回 NavigationInfo，则返回 null
@@ -240,7 +263,8 @@ class Message {
       createTime: createTime ?? this.createTime,
       // 注意 readTime 的处理: 如果 isRead 变为 true，应该设置 readTime；如果 isRead 变 false，应该清除 readTime
       readTime: (isRead ?? this.isRead)
-          ? (readTime ?? (this.isRead ? this.readTime : DateTime.now())) // 如果已读，保留或设置新时间
+          ? (readTime ??
+              (this.isRead ? this.readTime : DateTime.now())) // 如果已读，保留或设置新时间
           : null, // 如果未读，强制为 null
       gameId: gameId ?? this.gameId,
       postId: postId ?? this.postId,
@@ -255,7 +279,7 @@ class Message {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-          other is Message && runtimeType == other.runtimeType && id == other.id;
+      other is Message && runtimeType == other.runtimeType && id == other.id;
 
   @override
   int get hashCode => id.hashCode;

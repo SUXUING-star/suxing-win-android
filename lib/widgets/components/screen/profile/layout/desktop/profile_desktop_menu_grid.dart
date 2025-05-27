@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/profile/profile_desktop_menu_grid.dart
+// lib/widgets/components/screen/profile/layout/desktop/profile_desktop_menu_grid.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/layout/models/profile_menu_item.dart';

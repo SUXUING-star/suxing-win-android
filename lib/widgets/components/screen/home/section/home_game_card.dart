@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/home/section/home_game_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_stats_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';

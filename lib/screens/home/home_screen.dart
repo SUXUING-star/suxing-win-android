@@ -90,7 +90,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription? _hotGamesWatchSub;
   StreamSubscription? _latestGamesWatchSub;
   StreamSubscription? _hotPostsWatchSub;
-  static const Duration _cacheDebounceDuration = Duration(milliseconds: 1000);
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2);
 
   bool _hasInitializedDependencies = false;
   String? _currentUserId;
@@ -435,14 +435,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     try {
       _hotGamesWatchSub = widget.gameService.hotGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
-          .listen((event) => _handleCacheChange(HomeDataType.hotGames, event));
+          .listen((event) => _handleCacheChange(
+                HomeDataType.hotGames,
+                event,
+              ));
       _latestGamesWatchSub = widget.gameService.latestGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
-          .listen(
-              (event) => _handleCacheChange(HomeDataType.latestGames, event));
+          .listen((event) => _handleCacheChange(
+                HomeDataType.latestGames,
+                event,
+              ));
       _hotPostsWatchSub = widget.postService.hotPostsCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
-          .listen((event) => _handleCacheChange(HomeDataType.hotPosts, event));
+          .listen((event) => _handleCacheChange(
+                HomeDataType.hotPosts,
+                event,
+              ));
     } catch (e) {
       //if (kDebugMode) print("Error subscribing to cache changes: $e");
     }

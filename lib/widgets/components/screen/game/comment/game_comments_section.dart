@@ -11,7 +11,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/limiter/rate_limit_dialog.dart'; // 速率限制对话框
 import 'package:suxingchahui/widgets/components/screen/game/comment/comments/game_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/comments/game_comment_list.dart';
-import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误提示 Widget
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载 Widget
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -328,7 +328,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
                       _buildCommentListSection(), // 调用下面封装的方法
                     ],
                   )
-                : LoginPrompt(
+                : LoginPromptButton(
                     // 未登录：显示登录提示
                     message: '登录后查看和发表评论',
                     buttonText: '去登录', // 修改按钮文字

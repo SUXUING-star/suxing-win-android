@@ -1,11 +1,10 @@
-// lib/widgets/ui/buttons/login_prompt.dart
+// lib/widgets/ui/buttons/login_prompt_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-
-class LoginPrompt extends StatelessWidget {
+class LoginPromptButton extends StatelessWidget {
   final String message;
   final String buttonText;
   final VoidCallback? onLoginPressed;
@@ -14,7 +13,7 @@ class LoginPrompt extends StatelessWidget {
   final double opacity;
   final BorderRadius? borderRadius;
 
-  const LoginPrompt({
+  const LoginPromptButton({
     super.key,
     this.message = '登录后继续操作',
     this.buttonText = '登录',

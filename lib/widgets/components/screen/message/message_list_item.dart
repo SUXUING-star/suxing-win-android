@@ -1,8 +1,9 @@
+// lib/widgets/components/screen/message/message_list_item.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart'; // 用于时间格式化
 import 'package:suxingchahui/models/message/message_type.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../../models/message/message.dart';
+import 'package:suxingchahui/models/message/message.dart';
 
 /// 消息列表中的单个项目 Widget
 class MessageListItem extends StatelessWidget {

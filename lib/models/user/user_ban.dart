@@ -1,4 +1,4 @@
-// lib/models/user_ban.dart
+// lib/models/user/user_ban.dart
 
 class UserBan {
   final String id;

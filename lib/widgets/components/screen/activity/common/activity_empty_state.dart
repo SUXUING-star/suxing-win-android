@@ -1,5 +1,4 @@
-// lib/widgets/components/screen/activity/activity_empty_state.dart
-
+// lib/widgets/components/screen/activity/common/activity_empty_state.dart
 import 'package:flutter/material.dart';
 
 class ActivityEmptyState extends StatelessWidget {

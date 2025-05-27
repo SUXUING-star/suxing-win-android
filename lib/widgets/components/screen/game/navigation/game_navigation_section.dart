@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/navigation/game_navigation_section.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/routes/app_routes.dart';

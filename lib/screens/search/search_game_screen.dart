@@ -1,6 +1,6 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_list.dart';
+import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'dart:async';
 
@@ -30,7 +30,7 @@ class SearchGameScreen extends StatefulWidget {
 class _SearchGameScreenState extends State<SearchGameScreen> {
   final TextEditingController _searchController = TextEditingController();
   List<String> _searchHistory = [];
-  GameList? _searchResults; // 改为 GameList?
+  GameListPagination? _searchResults; // 改为 GameList?
   String? _error;
   Timer? _debounceTimer;
 

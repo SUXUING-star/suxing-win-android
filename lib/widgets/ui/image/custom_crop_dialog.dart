@@ -1,4 +1,4 @@
-// custom_crop_dialog.dart
+// lib/widgets/ui/image/custom_crop_dialog.dart
 
 import 'dart:async';
 import 'dart:typed_data';

@@ -1,4 +1,4 @@
-// 文件路径: lib/widgets/components/screen/forum/card/post_card.dart
+// lib/widgets/components/screen/forum/card/base_post_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -16,7 +16,7 @@ import 'post_tag_row.dart'; // 帖子标签行
 /// 论坛帖子卡片 Widget
 ///
 /// 负责展示单个帖子的预览信息，并提供导航到详情页、编辑和删除的操作入口（通过回调）。
-class PostCard extends StatelessWidget {
+class BasePostCard extends StatelessWidget {
   /// 要展示的帖子数据模型。
   final Post post;
 
@@ -44,7 +44,7 @@ class PostCard extends StatelessWidget {
   /// 参数为要操作的帖子的 ID。
   final Future<void> Function(String postId)? onToggleLockAction;
 
-  const PostCard({
+  const BasePostCard({
     super.key,
     required this.currentUser,
     required this.post,

@@ -1,7 +1,7 @@
-// lib/screens/forum/post_detail_screen.dart
+// lib/screens/forum/post/post_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/forum/post_list_filter_provider.dart';
+import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';

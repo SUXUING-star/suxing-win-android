@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/activity/card/activity_card.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';

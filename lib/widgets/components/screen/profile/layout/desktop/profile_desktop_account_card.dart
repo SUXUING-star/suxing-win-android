@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/profile/layout/desktop/profile_desktop_account_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -6,11 +7,11 @@ import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_pr
 import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/warning_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/editable_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
-
-class ProfileDesktopAccount extends StatelessWidget {
+class ProfileDesktopAccountCard extends StatelessWidget {
   final User user;
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
@@ -22,14 +23,14 @@ class ProfileDesktopAccount extends StatelessWidget {
   final String? expDataError;
   final VoidCallback onRefreshExpData;
 
-  const ProfileDesktopAccount({
+  const ProfileDesktopAccountCard({
     super.key,
     required this.user,
     required this.onEditProfile,
     required this.onLogout,
     required this.fileUpload,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
-    required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
+    required this.onUploadSuccess, // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
     required this.isLoadingExpData,
     this.expDataError,
@@ -38,24 +39,24 @@ class ProfileDesktopAccount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- 响应式布局变量 ---
     final screenWidth = MediaQuery.of(context).size.width;
     final bool isSmallScreen = screenWidth < 1000; // 调整阈值以适应你的设计
 
     final double avatarRadius = isSmallScreen ? 50.0 : 60.0; // 头像半径
-    final double badgeSize = isSmallScreen ? 32.0 : 38.0;    // 经验徽章大小
+    final double badgeSize = isSmallScreen ? 32.0 : 38.0; // 经验徽章大小
 
     final double buttonIconSize = isSmallScreen ? 18 : 20;
     final double buttonFontSize = isSmallScreen ? 14 : 16;
     final EdgeInsets buttonPadding = EdgeInsets.symmetric(
-        horizontal: isSmallScreen ? 16 : 24,
-        vertical: isSmallScreen ? 8 : 12);
-    // --- 结束 响应式布局变量 ---
+        horizontal: isSmallScreen ? 16 : 24, vertical: isSmallScreen ? 8 : 12);
+    final String signature = user.signature?.trim() ?? '';
+    final bool hasSignature = signature.isNotEmpty;
 
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: SingleChildScrollView( // 允许内容在极端情况下滚动
+      child: SingleChildScrollView(
+        // 允许内容在极端情况下滚动
         child: Padding(
           padding: EdgeInsets.all(isSmallScreen ? 16.0 : 24.0),
           child: Column(
@@ -73,8 +74,9 @@ class ProfileDesktopAccount extends StatelessWidget {
                     radius: avatarRadius, // 控制头像大小
                     fileUpload: fileUpload,
                     onUploadStateChanged: onUploadStateChanged, // 将回调传递下去
-                    onUploadSuccess: onUploadSuccess,         // 将回调传递下去
-                    iconBackgroundColor: Theme.of(context).primaryColor, // 编辑图标背景色
+                    onUploadSuccess: onUploadSuccess, // 将回调传递下去
+                    iconBackgroundColor:
+                        Theme.of(context).primaryColor, // 编辑图标背景色
                     // 可以根据需要定制其他颜色或图标
                   ),
 
@@ -110,7 +112,7 @@ class ProfileDesktopAccount extends StatelessWidget {
               ),
               SizedBox(height: 8),
               AppText(
-                user.email, // 注意：邮箱可能涉及隐私，考虑是否显示或部分显示
+                user.email,
                 style: TextStyle(
                   color: Colors.grey.shade700,
                   fontSize: isSmallScreen ? 14 : 16,
@@ -118,6 +120,50 @@ class ProfileDesktopAccount extends StatelessWidget {
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis,
               ),
+
+              if (hasSignature) ...[
+                const SizedBox(height: 14),
+                Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 20.0), // 控制左右边距
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center, // <-- 水平居中
+                    crossAxisAlignment:
+                        CrossAxisAlignment.center, // <-- 垂直居中对齐图标和文本
+                    children: [
+                      Icon(
+                        Icons.format_quote_rounded,
+                        size: isSmallScreen ? 18 : 20,
+                        color: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.color
+                            ?.withSafeOpacity(0.6),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        // 文本内容不足时，Flexible 不会强制撑开 Row
+                        child: AppText(
+                          signature,
+                          textAlign: TextAlign.center, // <-- 文本居中
+                          style: TextStyle(
+                            fontSize: isSmallScreen ? 12 : 13,
+                            color: Theme.of(context)
+                                .textTheme
+                                .bodyMedium
+                                ?.color
+                                ?.withSafeOpacity(0.9),
+                            height: 1.4,
+                          ),
+                          maxLines: 4, // 桌面端可以多显示一行
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               SizedBox(height: 16),
 
               // --- 等级进度条 ---

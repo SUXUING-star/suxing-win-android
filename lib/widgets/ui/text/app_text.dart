@@ -1,3 +1,4 @@
+// lib/widgets/ui/text/app_text.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/font/font_config.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

@@ -1,3 +1,4 @@
+// lib/layouts/mobile/bottom_navigation_bar.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';

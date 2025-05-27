@@ -1,9 +1,8 @@
-// lib/widgets/components/screen/activity/comment/activity_comment_input_updated.dart
-
+// lib/widgets/components/screen/activity/comment/activity_comment_input.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/widgets/ui/buttons/login_prompt.dart';
+import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
 
 class ActivityCommentInput extends StatefulWidget {
@@ -80,7 +79,7 @@ class _ActivityCommentInputState extends State<ActivityCommentInput> {
       maxLines: 3,
       maxLength: 50,
       // --- 2. Replace the custom Card with LoginPrompt ---
-      loginPrompt: const LoginPrompt(
+      loginPrompt: const LoginPromptButton(
         message: '登录后发表评论', // 自定义提示信息
         buttonText: '立即登录', // 自定义按钮文字
       ),

@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/checkin/checkin_rules_card.dart
+// lib/widgets/components/screen/checkin/widget/checkin_rules_card.dart
 import 'package:flutter/material.dart';
 
 class CheckInRulesCard extends StatelessWidget {

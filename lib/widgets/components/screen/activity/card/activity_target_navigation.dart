@@ -1,5 +1,4 @@
 // lib/widgets/components/screen/activity/card/activity_target_navigation.dart
-
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';

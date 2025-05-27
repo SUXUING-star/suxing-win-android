@@ -1,6 +1,6 @@
+// lib/widgets/ui/buttons/popup/custom_popup_menu_button.dart
 import 'package:flutter/material.dart';
 
-/// 一个可定制外观的 PopupMenuButton 封装 (已修正，正确处理 menuBackgroundColor)
 class CustomPopupMenuButton<T> extends StatelessWidget {
   final PopupMenuItemBuilder<T> itemBuilder;
   final PopupMenuItemSelected<T>? onSelected;

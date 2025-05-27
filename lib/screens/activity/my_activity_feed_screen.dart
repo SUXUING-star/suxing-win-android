@@ -75,9 +75,6 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   bool _hasInitializedDependencies = false;
   bool _isInitialized = false;
   String? _currentUserId;
-  late final ActivityService _activityService;
-  late final AuthProvider _authProvider;
-  late final UserFollowService _followService;
 
   // === Lifecycle Methods ===
   @override
@@ -93,9 +90,6 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _activityService = widget.activityService;
-      _authProvider = widget.authProvider;
-      _followService = widget.followService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies && !_isInitialized) {
@@ -145,7 +139,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
     try {
       // Fetch activities for the specific user, without type filtering
-      final result = await _activityService.getUserActivities(
+      final result = await widget.activityService.getUserActivities(
         widget.userId,
         page: _currentPage,
         limit: 20, // Standard page size
@@ -200,7 +194,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
     try {
       // Fetch next page of activities for the specific user
-      final result = await _activityService.getUserActivities(
+      final result = await widget.activityService.getUserActivities(
         widget.userId,
         page: nextPage,
         limit: 20,
@@ -333,7 +327,10 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     NavigationUtils.pushNamed(
       context,
       AppRoutes.activityDetail,
-      arguments: {'activityId': activity.id, 'activity': activity},
+      arguments: {
+        'activityId': activity.id,
+        'activity': activity,
+      },
     ).then((result) {
       // Optional: Refresh if something might have changed on the detail screen
       if (mounted && result == true) {
@@ -344,8 +341,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   }
 
   bool _checkCanEditOrCanDelete(UserActivity activity) {
-    final bool isAuthor = activity.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = activity.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     final canEditOrDelete = isAdmin ? true : isAuthor;
     return canEditOrDelete;
   }
@@ -354,7 +351,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles deleting an activity after confirmation.
   Future<void> _handleDeleteActivity(UserActivity activity) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -379,7 +376,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       iconColor: Colors.red,
       onConfirm: () async {
         try {
-          final success = await _activityService.deleteActivity(activity);
+          final success = await widget.activityService.deleteActivity(activity);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '动态已删除');
             // Optimistically remove from list and update pagination
@@ -408,14 +405,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles liking an activity.
   Future<void> _handleLikeActivity(String activityId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
     try {
-      await _activityService.likeActivity(activityId);
+      await widget.activityService.likeActivity(activityId);
       // Optional: If service doesn't return updated activity, you might need
       // to manually update the state here or trigger a refresh for the specific item.
     } catch (e) {
@@ -426,7 +423,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles unliking an activity.
   Future<void> _handleUnlikeActivity(String activityId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -434,7 +431,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     }
 
     try {
-      await _activityService.unlikeActivity(activityId);
+      await widget.activityService.unlikeActivity(activityId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
       // Trigger UI rollback.
@@ -444,7 +441,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Handles adding a comment to an activity.
   Future<ActivityComment?> _handleAddComment(
       String activityId, String content) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -452,7 +449,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     }
     try {
       final comment =
-          await _activityService.commentOnActivity(activityId, content);
+          await widget.activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
         AppSnackBar.showSuccess(context, '评论成功');
         // The new comment object is returned. The ActivityCard should handle
@@ -468,15 +465,15 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   }
 
   bool _checkCanDeleteComment(ActivityComment comment) {
-    final bool isAuthor = comment.userId == _authProvider.currentUserId;
-    final bool isAdmin = _authProvider.isAdmin;
+    final bool isAuthor = comment.userId == widget.authProvider.currentUserId;
+    final bool isAdmin = widget.authProvider.isAdmin;
     return isAdmin ? true : isAuthor;
   }
 
   /// Handles deleting a comment after confirmation.
   Future<void> _handleDeleteComment(
       String activityId, ActivityComment comment) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
@@ -500,7 +497,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       onConfirm: () async {
         try {
           final success =
-              await _activityService.deleteComment(activityId, comment);
+              await widget.activityService.deleteComment(activityId, comment);
           if (success && mounted) {
             AppSnackBar.showSuccess(context, '评论已删除');
           } else if (mounted) {
@@ -516,14 +513,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
     try {
-      await _activityService.likeComment(activityId, commentId);
+      await widget.activityService.likeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
       // Trigger rollback in Comment widget.
@@ -532,14 +529,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Handles unliking a comment.
   Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
     try {
-      await _activityService.unlikeComment(activityId, commentId);
+      await widget.activityService.unlikeComment(activityId, commentId);
     } catch (e) {
       if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
       // Trigger rollback in Comment widget.
@@ -562,10 +559,10 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   /// Builds the main content of the screen.
   Widget _buildBody() {
-    if (!_authProvider.isLoggedIn) {
+    if (!widget.authProvider.isLoggedIn) {
       return const LoginPromptWidget();
     }
-    if (widget.userId != _authProvider.currentUserId) {
+    if (widget.userId != widget.authProvider.currentUserId) {
       return CustomErrorWidget(
         errorMessage: "不要偷窥其他人的动态啊？？",
         retryText: "返回上一页",
@@ -601,8 +598,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   Widget _buildCollapsibleActivities() {
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
         builder: (context, currentUserSnapshot) {
           final User? currentUser = currentUserSnapshot.data;
           if (_currentUserId != currentUser?.id) {
@@ -616,7 +613,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             activities: _activities,
             inputStateService: widget.inputStateService,
             infoProvider: widget.infoProvider,
-            followService: _followService,
+            followService: widget.followService,
             currentUser: currentUser,
             isLoading: _isLoading && _activities.isEmpty,
             isLoadingMore: _isLoadingMore,

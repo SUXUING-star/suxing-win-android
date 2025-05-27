@@ -1,4 +1,4 @@
-// lib/widgets/ui/web/embedded_web_view.dart
+// lib/widgets/ui/webview/embedded_web_view.dart
 import 'dart:async';
 import 'dart:io' show Platform;
 // 需要用到 jsonDecode

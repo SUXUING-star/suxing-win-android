@@ -1,3 +1,5 @@
+// lib/widgets/components/form/announcementform/announcement_form.dart
+
 import 'dart:io'; // 需要导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,9 +10,9 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'field/basic_info_field.dart';
-import 'field/display_settings_field.dart';
-import 'field/action_field.dart';
+import 'field/announcement_basic_info_field.dart';
+import 'field/announcement_display_settings_field.dart';
+import 'field/announcement_action_field.dart';
 import 'preview/announcement_preview_button.dart';
 
 class AnnouncementForm extends StatefulWidget {
@@ -192,7 +194,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- DisplaySettingsField ---
-                          DisplaySettingsField(
+                          AnnouncementDisplaySettingsField(
                             startDate: _formData.startDate,
                             endDate: _formData.endDate,
                             isActive: _formData.isActive,
@@ -226,7 +228,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- ActionField ---
-                          ActionField(
+                          AnnouncementActionField(
                             inputStateService: widget.inputStateService,
                             actionUrl: _formData.actionUrl,
                             actionText: _formData.actionText,
@@ -266,7 +268,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                           const Divider(),
                           const SizedBox(height: 16),
                           // --- BasicInfoField ---
-                          BasicInfoField(
+                          AnnouncementBasicInfoField(
                             inputStateService: widget.inputStateService,
                             title: _formData.title,
                             content: _formData.content,
@@ -305,7 +307,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: BasicInfoField(
+            child: AnnouncementBasicInfoField(
               inputStateService: widget.inputStateService,
               title: _formData.title,
               content: _formData.content,
@@ -324,7 +326,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: DisplaySettingsField(
+            child: AnnouncementDisplaySettingsField(
               startDate: _formData.startDate,
               endDate: _formData.endDate,
               isActive: _formData.isActive,
@@ -352,7 +354,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
           margin: const EdgeInsets.only(bottom: 16),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: ActionField(
+            child: AnnouncementActionField(
               inputStateService: widget.inputStateService,
               actionUrl: _formData.actionUrl,
               actionText: _formData.actionText,

@@ -1,12 +1,12 @@
-// lib/widgets/components/screen/activity/hot_activities_full_panel.dart
+// lib/widgets/components/screen/activity/panel/layout/desktop/hot_activities_full_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import '../../stats/activity_stats_card.dart';
-import '../../stats/hot_activities_list.dart';
+import 'stats/activity_stats_card.dart';
+import 'stats/hot_activities_list.dart';
 
 class HotActivitiesFullPanel extends StatelessWidget {
   final UserFollowService userFollowService;

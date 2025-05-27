@@ -7,7 +7,7 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/game/collection/game_collection_service.dart';
+import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -402,8 +402,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 调用返回 Future<bool> 的 service 方法
-      final newIsLikedStatus =
-          await widget.gameService.toggleLike(widget.gameId!);
+      final newIsLikedStatus = await widget.gameService.toggleLike(
+        widget.gameId!,
+        _isLiked,
+      );
 
       if (mounted) {
         // 异步操作后再次检查 mounted

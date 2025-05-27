@@ -1,5 +1,6 @@
+// lib/widgets/components/screen/activity/comment/activity_comment_item.dart
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // HapticFeedback
+import 'package:flutter/services.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';

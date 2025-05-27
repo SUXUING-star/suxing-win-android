@@ -1,4 +1,6 @@
-// --- 添加自定义异常和枚举 ---
+// lib/models/error/idempotency_error_code.dart
+
+
 class IdempotencyException implements Exception {
   final String message;
   final IdempotencyExceptionCode? code;

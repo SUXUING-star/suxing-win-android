@@ -1,17 +1,17 @@
-// lib/widgets/components/form/announcementform/field/action_field.dart
+// lib/widgets/components/form/announcementform/field/announcement_action_field.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 
-class ActionField extends StatelessWidget {
+class AnnouncementActionField extends StatelessWidget {
   final String? actionUrl;
   final String? actionText;
   final InputStateService inputStateService;
   final Function(String) onActionUrlChanged;
   final Function(String) onActionTextChanged;
 
-  const ActionField({
+  const AnnouncementActionField({
     super.key,
     required this.actionUrl,
     required this.actionText,

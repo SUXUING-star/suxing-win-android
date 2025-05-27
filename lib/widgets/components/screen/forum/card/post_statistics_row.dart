@@ -1,4 +1,4 @@
-// post_statistics_row.dart
+// lib/widgets/components/screen/forum/card/post_statistics_row.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_statistic_item.dart';
 

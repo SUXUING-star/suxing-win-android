@@ -1,4 +1,3 @@
-// --- 保持 GenericFloatingActionButton 不变 ---
 // lib/widgets/ui/buttons/generic_fab.dart
 import 'package:flutter/material.dart';
 

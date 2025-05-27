@@ -1,4 +1,4 @@
-// lib/widgets/form/gameform/field/game_images_field.dart
+// lib/widgets/components/form/gameform/field/game_images_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';

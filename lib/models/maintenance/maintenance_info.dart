@@ -1,3 +1,4 @@
+// lib/models/maintenance/maintenance_info.dart
 class MaintenanceInfo {
   final bool isActive;
   final DateTime startTime;

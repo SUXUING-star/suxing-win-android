@@ -1,7 +1,8 @@
+// lib/widgets/components/screen/message/message_detail.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/message/message_type.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import '../../../../models/message/message.dart';
+import 'package:suxingchahui/models/message/message.dart';
 
 /// 消息详情展示 Widget (通常用于桌面端的右侧面板)
 class MessageDetail extends StatelessWidget {

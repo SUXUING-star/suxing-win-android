@@ -1,11 +1,12 @@
 // lib/layouts/background/app_background.dart
 import 'package:flutter/material.dart';
-import 'dart:ui'; // For ImageFilter
+import 'dart:ui';
 import 'dart:async';
-import 'dart:io'; // For Platform
-import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:suxingchahui/layouts/effects/particle_effect.dart';
-import 'package:suxingchahui/providers/windows/window_state_provider.dart'; // 必须导入
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 // 背景图片列表
@@ -18,7 +19,6 @@ const List<String> backgroundImagesRotated = [
   'assets/images/bg-2rotate.jpg'
 ];
 
-// ⭐ 给 ParticleEffect 一个固定的 Key
 const Key _particleEffectKey = ValueKey('global_particle_effect');
 
 class AppBackground extends StatefulWidget {

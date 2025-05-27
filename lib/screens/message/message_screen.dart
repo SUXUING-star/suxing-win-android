@@ -1,3 +1,4 @@
+// lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具

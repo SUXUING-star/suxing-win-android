@@ -1,4 +1,4 @@
-// lib/widgets/common/startup/initialization_screen.dart
+// lib/widgets/ui/common/initialization_screen.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
@@ -36,8 +36,8 @@ class InitializationScreen extends StatefulWidget {
 class _InitializationScreenState extends State<InitializationScreen> {
   // 随机选择GIF文件
   final String _logoGifFile = Random().nextBool()
-      ? 'assets/images/cappo.gif'
-      : 'assets/images/cappo1.gif';
+      ? GlobalConstants.initScreenGifFirst
+      : GlobalConstants.initScreenGifSecond;
 
   Widget _buildWindowsControlsSection() {
     return Positioned(

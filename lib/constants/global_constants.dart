@@ -23,4 +23,9 @@ class GlobalConstants {
       ]
     }
   ];
+
+  static const String initScreenGifFirst = 'assets/images/cappo.gif';
+  static const String initScreenGifSecond = 'assets/images/cappo1.gif';
+
+  static const String defaultBannerImage = 'assets/images/kaev.jpg';
 }

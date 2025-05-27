@@ -1,7 +1,12 @@
-// lib/providers/user/user_data_status.dart (或者放在 user_info_provider.dart 里)
+// lib/providers/user/user_data_status.dart
 import 'package:suxingchahui/models/user/user.dart'; // 确保路径正确
 
-enum LoadStatus { initial, loading, loaded, error }
+enum LoadStatus {
+  initial,
+  loading,
+  loaded,
+  error,
+}
 
 class UserDataStatus {
   final LoadStatus status;
@@ -27,4 +32,3 @@ class UserDataStatus {
   bool get hasData => status == LoadStatus.loaded && user != null;
   bool get hasError => status == LoadStatus.error;
 }
-

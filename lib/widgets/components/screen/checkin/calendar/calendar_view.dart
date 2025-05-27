@@ -1,8 +1,8 @@
-// lib/widgets/components/screen/checkin/calendar_view.dart
+// lib/widgets/components/screen/checkin/calendar/calendar_view.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 确保已添加到 pubspec.yaml
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class CalendarView extends StatelessWidget {
   final int selectedYear;

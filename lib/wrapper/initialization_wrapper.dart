@@ -11,7 +11,7 @@ import 'package:suxingchahui/services/main/network/network_manager.dart'; // 网
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 用户认证 Provider
 
 // 初始化界面 Widget
-import 'package:suxingchahui/widgets/common/startup/initialization_screen.dart';
+import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart';
 
 class InitializationWrapper extends StatefulWidget {
   /// 初始化成功后调用的回调函数，传入创建好的 Provider 列表

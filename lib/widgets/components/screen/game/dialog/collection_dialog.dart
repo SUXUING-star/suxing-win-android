@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/game/dialog/collection_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';

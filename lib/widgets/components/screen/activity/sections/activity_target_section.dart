@@ -1,3 +1,4 @@
+// lib/widgets/components/screen/activity/sections/activity_target_section.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';

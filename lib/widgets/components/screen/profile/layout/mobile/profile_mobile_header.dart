@@ -1,14 +1,15 @@
+// lib/widgets/components/screen/profile/layout/mobile/profile_mobile_header.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart'; // 确认路径
-import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart';    // 确认路径
+import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart'; // 确认路径
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/warning_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/image/editable_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-
 
 class ProfileMobileHeader extends StatelessWidget {
   final User user;
@@ -29,7 +30,7 @@ class ProfileMobileHeader extends StatelessWidget {
     required this.onLogout,
     required this.fileUpload,
     required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
-    required this.onUploadSuccess,      // 父级需要知道上传成功以刷新用户数据
+    required this.onUploadSuccess, // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
     required this.isLoadingExpData,
     this.expDataError,
@@ -38,15 +39,17 @@ class ProfileMobileHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // --- 移动端固定样式变量 ---
     final double avatarRadius = 50.0; // 移动端头像半径固定为 50
-    final double badgeSize = 28.0;    // 移动端徽章大小固定为 28
+    final double badgeSize = 28.0; // 移动端徽章大小固定为 28
 
     final double buttonIconSize = 18;
     final double buttonFontSize = 14;
     final EdgeInsets buttonPadding =
-    EdgeInsets.symmetric(horizontal: 20, vertical: 10); // 按钮内边距
-    // --- 结束 移动端固定样式变量 ---
+        EdgeInsets.symmetric(horizontal: 20, vertical: 10); // 按钮内边距
+
+    // 获取签名并检查是否为空
+    final String signature = user.signature?.trim() ?? '';
+    final bool hasSignature = signature.isNotEmpty;
 
     return Container(
       padding: const EdgeInsets.all(16), // 整个 Header 的内边距
@@ -105,6 +108,42 @@ class ProfileMobileHeader extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+
+          if (hasSignature) ...[
+            const SizedBox(height: 12),
+            Padding(
+              // 使用 Padding 控制左右边距，确保居中时不会太靠边
+              padding: const EdgeInsets.symmetric(horizontal: 24.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center, // <-- 让 Row 内容水平居中
+                crossAxisAlignment:
+                    CrossAxisAlignment.center, // <-- 交叉轴也居中，让图标和文本垂直对齐
+                children: [
+                  Icon(
+                    Icons.format_quote_rounded, // 保留引号图标
+                    size: 18, // 图标大小
+                    color: Colors.grey.shade500, // 图标颜色
+                  ),
+                  const SizedBox(width: 6), // 图标和文本之间的间距
+                  Flexible(
+                    // 使用 Flexible 而不是 Expanded，当内容不足时不会撑满
+                    child: AppText(
+                      signature,
+                      textAlign: TextAlign.center, // <-- 文本本身也居中对齐
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.black.withSafeOpacity(0.75),
+                        height: 1.35,
+                      ),
+                      maxLines: 3, // 移动端行数
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  // 如果需要对称的右引号，可以在这里再加一个 Icon，但通常单引号效果也不错
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 16), // 用户信息和按钮间距
 
           // --- 功能按钮区域 ---
