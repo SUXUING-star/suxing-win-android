@@ -4,12 +4,12 @@ import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
 
 class GameCollectionReviewPagination {
-  final List<GameCollectionReview> entries;
+  final List<GameCollectionReview> reviews;
   final PaginationData pagination;
   final String gameId;
 
   GameCollectionReviewPagination({
-    required this.entries,
+    required this.reviews,
     required this.pagination,
     required this.gameId,
   });
@@ -17,7 +17,7 @@ class GameCollectionReviewPagination {
   // 静态工厂方法，用于创建一个空的实例
   static GameCollectionReviewPagination empty(String gameIdForEmpty) {
     return GameCollectionReviewPagination(
-      entries: [],
+      reviews: [],
       pagination: PaginationData(
           page: 1, limit: 0, total: 0, pages: 0), // 使用 PaginationData 的空状态
       gameId: gameIdForEmpty, // 即使是空列表，也知道是哪个游戏的
@@ -25,13 +25,13 @@ class GameCollectionReviewPagination {
   }
 
   factory GameCollectionReviewPagination.fromJson(Map<String, dynamic> json) {
-    List<GameCollectionReview> entriesList = [];
-    if (json['entries'] != null && json['entries'] is List) {
-      entriesList = (json['entries'] as List)
-          .map((entryJson) {
+    List<GameCollectionReview> reviewsList = [];
+    if (json['reviews'] != null && json['reviews'] is List) {
+      reviewsList = (json['reviews'] as List)
+          .map((r) {
             try {
               return GameCollectionReview.fromJson(
-                  Map<String, dynamic>.from(entryJson));
+                  Map<String, dynamic>.from(r));
             } catch (e) {
               // print('Error parsing GameCollectionReview from JSON: $entryJson, error: $e');
               return null; // 解析失败则返回 null
@@ -48,9 +48,9 @@ class GameCollectionReviewPagination {
     } else {
       // 如果 API 未返回 pagination，则根据当前 entries 数量构建一个默认的
       // 这在后端未完全实现分页时可能有用，但理想情况是后端总是返回 pagination
-      int totalItems = entriesList.length;
+      int totalItems = reviewsList.length;
       int limit = json['limit'] as int? ??
-          (entriesList.isNotEmpty ? entriesList.length : 10); // 尝试从json获取limit
+          (reviewsList.isNotEmpty ? reviewsList.length : 10); // 尝试从json获取limit
       int page = json['page'] as int? ?? 1; // 尝试从json获取page
 
       paginationData = PaginationData(
@@ -63,7 +63,7 @@ class GameCollectionReviewPagination {
     }
 
     return GameCollectionReviewPagination(
-      entries: entriesList,
+      reviews: reviewsList,
       pagination: paginationData,
       gameId: json['gameId'] as String? ?? '', // API也返回了 gameId
     );
@@ -71,7 +71,7 @@ class GameCollectionReviewPagination {
 
   Map<String, dynamic> toJson() {
     return {
-      'entries': entries.map((entry) => entry.toJson()).toList(),
+      'reviews': reviews.map((entry) => entry.toJson()).toList(),
       'pagination': pagination.toJson(),
       'gameId': gameId,
     };
@@ -83,7 +83,7 @@ class GameCollectionReviewPagination {
     String? gameId,
   }) {
     return GameCollectionReviewPagination(
-      entries: entries ?? this.entries,
+      reviews: entries ?? reviews,
       pagination: pagination ?? this.pagination,
       gameId: gameId ?? this.gameId,
     );
@@ -91,6 +91,6 @@ class GameCollectionReviewPagination {
 
   @override
   String toString() {
-    return 'GameCollectionReviewList(entries: ${entries.length}, pagination: $pagination, gameId: $gameId)';
+    return 'GameCollectionReviewList(entries: ${reviews.length}, pagination: $pagination, gameId: $gameId)';
   }
 }

@@ -24,6 +24,17 @@ class GlobalConstants {
     }
   ];
 
+  static const List<String> defaultBackgroundImages = [
+    'assets/images/bg-1.jpg',
+    'assets/images/bg-2.jpg',
+  ];
+  static const List<String> defaultBackgroundImagesRotated = [
+    'assets/images/bg-1rotate.jpg',
+    'assets/images/bg-2rotate.jpg',
+  ];
+
+  static const int defaultParticleCount = 30;
+
   static const String initScreenGifFirst = 'assets/images/cappo.gif';
   static const String initScreenGifSecond = 'assets/images/cappo1.gif';
 

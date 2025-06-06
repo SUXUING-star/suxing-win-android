@@ -1,6 +1,7 @@
 // lib/models/linkstools/site_link.dart
 import 'package:mongo_dart/mongo_dart.dart';
 
+// 为了避免不混淆第三方库的link包
 class SiteLink {
   final String id;
   final String title;

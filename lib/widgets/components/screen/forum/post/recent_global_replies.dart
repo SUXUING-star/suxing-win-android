@@ -80,7 +80,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   void _loadReplies() {
     // 注意这里直接赋值给 Future 变量，不需要 setState
     _repliesFuture =
-        widget.postService.fetchRecentGlobalRepliesOnce(limit: widget.limit);
+        widget.postService.getRecentGlobalReplies(limit: widget.limit);
   }
 
   @override
@@ -91,7 +91,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
   // 主动刷新的方法
   // --- 主动刷新的方法 (加入节流逻辑) ---
-  void _handleRefresh() {
+  void _handleRefresh({bool forceRefresh = false}) {
     // 1. 防止重复触发：如果已经在刷新中，直接返回
     if (_isRefreshing) {
       return;
@@ -114,8 +114,10 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
         _lastRefreshTime = now; // 更新上次刷新的时间
 
         // 调用实际的刷新方法
-        _repliesFuture = widget.postService
-            .forceRefreshRecentGlobalReplies(limit: widget.limit);
+        _repliesFuture = widget.postService.getRecentGlobalReplies(
+          limit: widget.limit,
+          forceRefresh: forceRefresh,
+        );
       });
     }
 
@@ -241,6 +243,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     GlobalPostReplyItem reply,
   ) {
     final userId = reply.authorId;
+    final postTitle = reply.postTitle;
 
     return Card(
       elevation: 0,
@@ -291,7 +294,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
               ),
               const SizedBox(height: 8),
               Text(
-                '回复了帖子 ${reply.postTitle}',
+                postTitle == null ? '回复了帖子' : '回复了帖子 $postTitle',
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 12,

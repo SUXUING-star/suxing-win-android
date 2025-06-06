@@ -1,14 +1,13 @@
 // lib/widgets/components/screen/checkin/progress/level_progress_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
-import 'package:suxingchahui/models/user/user.dart'; // **导入 User 模型**
-import '../../../../../models/user/user_checkin.dart'; // 导入修改后的 CheckInStats
-// import '../../../../../models/user/user_level.dart'; // <--- 删除 UserLevel 导入
-import '../checkin_button.dart'; // 导入签到按钮
-import 'level_progress_bar.dart'; // 导入进度条
+import 'package:suxingchahui/models/user/checkin_status.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import '../checkin_button.dart';
+import 'level_progress_bar.dart';
 
 class LevelProgressCard extends StatelessWidget {
-  final CheckInStats stats;
+  final CheckInStatus stats;
   final User currentUser;
   final bool isLoading; // 签到按钮的加载状态
   final bool hasCheckedToday;
@@ -80,17 +79,17 @@ class LevelProgressCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      '累计签到 ${stats.totalCheckIns} 天',
+                      '累计签到 ${stats.totalCheckIn} 天',
                       style: TextStyle(fontSize: 14, color: Colors.grey[700]),
                     ),
                     Text(
-                      '连续签到 ${stats.continuousDays} 天',
+                      '连续签到 ${stats.consecutiveCheckIn} 天',
                       style: TextStyle(
                         fontSize: 14,
-                        color: stats.continuousDays > 0
+                        color: stats.consecutiveCheckIn > 0
                             ? theme.primaryColor
                             : Colors.grey[700],
-                        fontWeight: stats.continuousDays > 0
+                        fontWeight: stats.consecutiveCheckIn > 0
                             ? FontWeight.bold
                             : FontWeight.normal,
                       ),
@@ -136,7 +135,7 @@ class LevelProgressCard extends StatelessWidget {
               hasCheckedToday: hasCheckedToday,
               isLoading: isLoading, // 这是签到按钮的 loading 状态
               animationController: animationController,
-              nextReward: stats.nextRewardExp, // **下次签到奖励来自 CheckInStats**
+              nextReward: stats.nextCheckInExp, // **下次签到奖励来自 CheckInStats**
               onPressed: onCheckIn,
             ),
             // --- 结束签到按钮 ---

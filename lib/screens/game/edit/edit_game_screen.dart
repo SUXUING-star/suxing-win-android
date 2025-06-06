@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -30,6 +31,7 @@ class EditGameScreen extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final GameListFilterProvider gameListFilterProvider;
   final SidebarProvider sidebarProvider;
+  final InputStateService inputStateService;
   const EditGameScreen({
     super.key,
     required this.gameId,
@@ -41,6 +43,7 @@ class EditGameScreen extends StatefulWidget {
     required this.infoProvider,
     required this.gameListFilterProvider,
     required this.sidebarProvider,
+    required this.inputStateService,
   });
 
   @override
@@ -51,20 +54,20 @@ class _EditGameScreenState extends State<EditGameScreen>
     with SnackBarNotifierMixin {
   bool _hasInitializedDependencies = false;
   bool _isLoading = false;
-  Game? _game;
+  Game? _game; // _game 可以在加载完成后保存游戏数据
 
   @override
   void initState() {
     super.initState();
+    // _loadGameData() 在 didChangeDependencies 中调用，确保 context 可用
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
+      // 首次进入时加载数据
       _hasInitializedDependencies = true;
-    }
-    if (_hasInitializedDependencies) {
       _loadGameData();
     }
   }
@@ -76,25 +79,20 @@ class _EditGameScreenState extends State<EditGameScreen>
 
   Future<void> _loadGameData() async {
     try {
+      if (!mounted) return; // 确保 widget 仍然在树中
       setState(() => _isLoading = true);
 
       final Game? game = await widget.gameService.getGameById(widget.gameId);
-      if (game != null) {
-        if (mounted) {
-          setState(() {
-            _game = game;
-            _isLoading = false;
-          });
-        }
-      } else {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-        }
+      if (mounted) {
+        setState(() {
+          _game = game;
+          _isLoading = false;
+        });
       }
     } catch (e) {
-      setState(() => _isLoading = false);
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
       showSnackbar(
           message: '加载帖子数据失败: ${e.toString()}', type: SnackbarType.error);
     }
@@ -104,7 +102,7 @@ class _EditGameScreenState extends State<EditGameScreen>
     if (!mounted) return;
 
     try {
-      await widget.gameService.updateGame(gameDataFromForm);
+      await widget.gameService.updateGame( gameDataFromForm);
 
       // API 调用成功
       if (!mounted) return;
@@ -183,20 +181,8 @@ class _EditGameScreenState extends State<EditGameScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    buildSnackBar(context); // SnackBarNotifierMixin 的方法
-
-    final String appBarTitle = '编辑游戏: ${_game?.title}';
-
-    if (_isLoading) {
-      return LoadingWidget.fullScreen(message: "正在加载数据");
-    }
-
-    if (_game == null) {
-      // 保持这个检查
-      return const CustomErrorWidget(title: '无法加载游戏数据');
-    }
+  // 私有方法：构建页面主体内容，包含 StreamBuilder
+  Widget _buildBody() {
     return StreamBuilder<User?>(
       stream: widget.authProvider.currentUserStream,
       initialData: widget.authProvider.currentUser,
@@ -204,48 +190,78 @@ class _EditGameScreenState extends State<EditGameScreen>
         final User? currentUser = currentUserSnapshot.data;
         final String? currentUserId = currentUser?.id;
         final bool isAdmin = currentUser?.isAdmin ?? false;
+
+        // 如果用户未登录，显示登录提示
         if (currentUser == null) {
           return const LoginPromptWidget();
         }
-        final canEdit = isAdmin ? true : currentUserId == _game?.authorId;
+
+        // 检查用户是否有权限编辑此游戏
+        // 因为在此处之前已经检查了 _game 是否为 null，所以 _game! 是安全的
+        final canEdit = isAdmin ? true : currentUserId == _game!.authorId;
         if (!canEdit) {
           return CustomErrorWidget(
-            errorMessage: "你没有权限编辑",
-            title: "错误",
+            errorMessage: "你没有权限编辑此游戏。",
+            title: "权限不足",
             retryText: "返回上一页",
             onRetry: () => NavigationUtils.pop(context),
           );
         }
 
-        return Scaffold(
-          appBar: CustomAppBar(
-            title: appBarTitle,
-            // 如果 GameForm 内部有 _isProcessing 状态来禁用返回，这里可能不需要特殊处理
-            // 否则，如果需要阻止返回，可以考虑 EditGameScreen 的状态
-          ),
-          body: Column(
-            children: [
-              if (!isAdmin) _buildNeedToPending(),
-              Expanded(
-                child: GameForm(
-                  fileUpload: widget.fileUpload,
-                  sidebarProvider: widget.sidebarProvider,
-                  gameListFilterProvider: widget.gameListFilterProvider,
-                  gameCollectionService: widget.gameCollectionService,
-                  authProvider: widget.authProvider,
-                  gameService: widget.gameService,
-                  followService: widget.followService,
-                  infoProvider: widget.infoProvider,
-                  currentUser: widget.authProvider.currentUser,
-                  game: _game,
-                  onSubmit: _handleGameFormSubmit, // 传递 State 的方法作为回调
-                  // isSubmitting 属性现在由 GameForm 内部的 _isProcessing 控制
-                ),
+        // 实际的游戏编辑表单
+        return Column(
+          children: [
+            // 非管理员用户显示审核提示
+            if (!isAdmin) _buildNeedToPending(),
+            Expanded(
+              child: GameForm(
+                inputStateService: widget.inputStateService,
+                fileUpload: widget.fileUpload,
+                sidebarProvider: widget.sidebarProvider,
+                gameListFilterProvider: widget.gameListFilterProvider,
+                gameCollectionService: widget.gameCollectionService,
+                authProvider: widget.authProvider,
+                gameService: widget.gameService,
+                followService: widget.followService,
+                infoProvider: widget.infoProvider,
+                currentUser: widget.authProvider.currentUser,
+                game: _game!, // _game 在这里保证非空
+                onSubmit: _handleGameFormSubmit,
               ),
-            ],
-          ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    buildSnackBar(context); // SnackBarNotifierMixin 的方法，放在这里确保 SnackBar 正常工作
+
+    // 如果正在加载数据，显示全屏加载动画
+    if (_isLoading) {
+      return LoadingWidget.fullScreen(message: "正在加载游戏数据...");
+    }
+
+    // 如果数据加载完成但 _game 为 null（例如，游戏ID不存在）
+    if (_game == null) {
+      return const CustomErrorWidget(
+          title: '无法加载游戏数据', errorMessage: '游戏ID无效或不存在。');
+    }
+
+    // 确定 AppBar 标题
+    // 因为 _game 在此处已经确保不为 null，所以可以直接使用 _game.title
+    final String appBarTitle = '编辑游戏: ${_game!.title}';
+
+    // 返回 Scaffold，appBar 和 body 分开处理
+    return Scaffold(
+      appBar: CustomAppBar(
+        title: appBarTitle,
+        // 如果需要，可以在这里根据 _isProcessing 状态禁用返回按钮
+        // automaticallyImplyLeading: !(_isProcessing ?? false), // 假设 GameForm 内部有处理
+      ),
+      body: _buildBody(), // 调用私有方法来构建 body
     );
   }
 }

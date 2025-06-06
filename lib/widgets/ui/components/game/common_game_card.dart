@@ -1,12 +1,12 @@
 // lib/widgets/ui/components/common_game_card.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
-import '../../../../models/game/game.dart';
-import '../../../../utils/device/device_utils.dart';
-import '../../image/safe_cached_image.dart';
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 ///
@@ -18,6 +18,7 @@ class CommonGameCard extends StatelessWidget {
   final bool showTags;
   final int maxTags;
   final bool forceCompact;
+  final VoidCallback? onTapOverride;
 
   const CommonGameCard({
     super.key,
@@ -27,6 +28,7 @@ class CommonGameCard extends StatelessWidget {
     this.showTags = false,
     this.maxTags = 2,
     this.forceCompact = false,
+    this.onTapOverride,
   });
 
   @override
@@ -51,7 +53,7 @@ class CommonGameCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
       ),
       child: InkWell(
-        onTap: () => _onCardTap(context),
+        onTap: onTapOverride ?? () => _onCardTap(context),
         child: IntrinsicHeight(
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -84,7 +86,7 @@ class CommonGameCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
-        onTap: () => _onCardTap(context),
+        onTap: onTapOverride ?? () => _onCardTap(context),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -150,8 +152,8 @@ class CommonGameCard extends StatelessWidget {
         DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
 
     // 计算每行卡片数量（用于动态调整布局）
-    final cardsPerRow =
-        DeviceUtils.calculateCardsPerRow(context, withPanels: adaptForPanels);
+    final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
+        withPanels: adaptForPanels);
 
     // 确定是否使用紧凑布局
     return forceCompact ||

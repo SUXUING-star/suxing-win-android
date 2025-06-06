@@ -1,5 +1,6 @@
 // lib/screens/collection/game_collection_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -143,16 +144,20 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       padding: EdgeInsets.all(8),
       gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
         maxCrossAxisExtent: 250,
-        childAspectRatio: DeviceUtils.calculateCardRatio(context),
+        childAspectRatio: DeviceUtils.calculateGameCardRatio(context),
         crossAxisSpacing: 8,
         mainAxisSpacing: 8,
       ),
       itemCount: _games.length,
       itemBuilder: (context, index) {
         final item = _games[index];
+        final game = item.game;
+        if (game == null) {
+          return const SizedBox.shrink();
+        }
         return BaseGameCard(
           currentUser: widget.authProvider.currentUser,
-          game: item.game,
+          game: game,
         );
       },
     );

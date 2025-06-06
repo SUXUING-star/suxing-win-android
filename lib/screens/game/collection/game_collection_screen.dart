@@ -1,19 +1,18 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/gamecollection/layout/game_collection_list_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/gamecollection/game_collection_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class GameCollectionScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -30,350 +29,317 @@ class GameCollectionScreen extends StatefulWidget {
   _GameCollectionScreenState createState() => _GameCollectionScreenState();
 }
 
-class _GameCollectionScreenState extends State<GameCollectionScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _GameCollectionScreenState extends State<GameCollectionScreen> {
+  List<GameWithCollection> _allCollections = [];
+  PaginationData? _globalPaginationData;
+  GameCollectionCounts? _collectionCounts;
 
-  // --- 状态管理 (不变) ---
-  Map<String, List<GameWithCollection>> _gameCollections = {
-    GameCollectionStatus.wantToPlay: [],
-    GameCollectionStatus.playing: [],
-    GameCollectionStatus.played: [],
-  };
   bool _isLoading = true;
   String? _error;
-  Map<String, int> _tabCounts = {
-    GameCollectionStatus.wantToPlay: 0,
-    GameCollectionStatus.playing: 0,
-    GameCollectionStatus.played: 0,
-  };
+  int _currentPage = 1;
 
   User? _currentUser;
-
-  // 用于跟踪上一次的登录状态
   bool? _previousIsLoggedIn;
-
   bool _hasInitializedDependencies = false;
-
-  // 节流相关状态
-  bool _isRefreshing = false; // 标记是否正在执行下拉刷新操作
-  DateTime? _lastForcedRefreshTime; // 上次强制刷新的时间戳
-  // 定义最小强制刷新间隔 (例如：3秒)
+  bool _isRefreshing = false;
+  DateTime? _lastForcedRefreshTime;
   static const Duration _minForcedRefreshInterval = Duration(seconds: 15);
+
+  final ScrollController _scrollController = ScrollController();
+
+  // 新增：用于在桌面端显示 Review 的状态
+  GameWithCollection? _selectedGameForReview;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _scrollController.addListener(_scrollListener);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-    }
-    // 确认初始化后才进行获取数据
-    if (_hasInitializedDependencies) {
       _currentUser = widget.authProvider.currentUser;
       _checkUserHasChanged();
+    } else {
+      final newCurrentUser = widget.authProvider.currentUser;
+      if (_currentUser != newCurrentUser) {
+        _currentUser = newCurrentUser;
+        _checkUserHasChanged();
+      }
     }
   }
 
   @override
   void didUpdateWidget(covariant GameCollectionScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUser != widget.authProvider.currentUser) {
-      setState(() {
-        _currentUser = widget.authProvider.currentUser;
-      });
+    if (widget.authProvider != oldWidget.authProvider ||
+        _currentUser != widget.authProvider.currentUser) {
+      if (mounted) {
+        setState(() {
+          _currentUser = widget.authProvider.currentUser;
+        });
+      }
+      _checkUserHasChanged();
     }
   }
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent * 0.9 &&
+        !_isLoading &&
+        (_globalPaginationData?.hasNextPage() ?? false)) {
+      _loadMoreData();
+    }
   }
 
   void _checkUserHasChanged() {
     final currentIsLoggedIn = widget.authProvider.isLoggedIn;
-    // --- 处理登录状态变化 ---
-    // 只有当 _previousIsLoggedIn 不是 null (表示不是第一次运行)
-    // 且当前登录状态与上次不同时，才处理变化
     if (_previousIsLoggedIn != null &&
         currentIsLoggedIn != _previousIsLoggedIn) {
       if (currentIsLoggedIn) {
-        // 刚登录，触发数据加载
-        _loadData(); // 重新加载数据
+        _refreshData(); // 登录后刷新数据
       } else {
-        // 刚登出，清空数据并显示提示
+        // 用户登出
         if (mounted) {
-          // 设置状态变量，build 会根据这些变量来渲染
-          _isLoading = false;
-          _error = '请先登录后再查看收藏';
-          _clearData();
-          // 调用 setState({}) 只是为了触发一次 build 来反映这些变化
-          if (mounted) setState(() {});
+          setState(() {
+            _isLoading = false;
+            _error = '请先登录后再查看收藏';
+            _clearDataOnLogout();
+            _selectedGameForReview = null; // 用户登出，清除选中的游戏
+          });
         }
       }
-    }
-    // --- 首次加载逻辑 ---
-    else if (_previousIsLoggedIn == null) {
-      if (currentIsLoggedIn) {
-        _loadData(); // 首次加载数据
-      } else {
-        _isLoading = false;
-        _error = '请先登录后再查看收藏';
-        _clearData();
-        // 调用 setState({}) 触发 build
-        if (mounted) setState(() {});
+    } else if (_previousIsLoggedIn == null && currentIsLoggedIn) {
+      // 首次加载且用户已登录
+      _loadData(isInitialLoad: true);
+    } else if (_previousIsLoggedIn == null && !currentIsLoggedIn) {
+      // 首次加载且用户未登录
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _error = '请先登录后再查看收藏';
+          _clearDataOnLogout();
+          _selectedGameForReview = null; // 用户未登录，清除选中的游戏
+        });
       }
     }
-
-    // *** 更新上一次的登录状态 ***
     _previousIsLoggedIn = currentIsLoggedIn;
   }
 
-  // --- 数据加载方法 (保持不变，但调用时机改变) ---
-  Future<void> _loadData({bool forceRefresh = false}) async {
+  Future<void> _loadData(
+      {bool forceRefresh = false, bool isInitialLoad = false}) async {
     if (!mounted) return;
+    if (_isLoading && !isInitialLoad && _currentPage > 1) return;
+
     if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         setState(() {
           _isLoading = false;
           _error = '请先登录后再查看收藏';
-          _clearData();
+          if (isInitialLoad) _clearDataOnLogout();
+          _selectedGameForReview = null; // 未登录，清除选中的游戏
         });
       }
       return;
     }
+
     if (mounted) {
       setState(() {
         _isLoading = true;
-        _error = null;
+        if (_currentPage == 1) {
+          _error = null;
+          if (isInitialLoad || forceRefresh) {
+            _allCollections.clear();
+            // _collectionCounts = null; // 会在下面被重新赋值
+            if (forceRefresh)
+              _selectedGameForReview = null; // 强制刷新时，清除选中的游戏Review
+          }
+        }
       });
     }
 
     try {
       final groupedData = await widget.gameCollectionService
-          .getAllUserGameCollectionsGrouped(forceRefresh: forceRefresh);
+          .getAllUserGameCollectionsGrouped(
+              page: _currentPage, forceRefresh: forceRefresh);
+
       if (mounted) {
         if (groupedData != null) {
+          List<GameWithCollection> newlyFetchedItems = [];
+          newlyFetchedItems.addAll(groupedData.wantToPlay);
+          newlyFetchedItems.addAll(groupedData.playing);
+          newlyFetchedItems.addAll(groupedData.played);
+
           setState(() {
-            _gameCollections[GameCollectionStatus.wantToPlay] =
-                groupedData.wantToPlay;
-            _gameCollections[GameCollectionStatus.playing] =
-                groupedData.playing;
-            _gameCollections[GameCollectionStatus.played] = groupedData.played;
-            _tabCounts[GameCollectionStatus.wantToPlay] =
-                groupedData.counts.wantToPlay;
-            _tabCounts[GameCollectionStatus.playing] =
-                groupedData.counts.playing;
-            _tabCounts[GameCollectionStatus.played] = groupedData.counts.played;
-            _isLoading = false;
+            if (_currentPage == 1) {
+              _allCollections = newlyFetchedItems;
+            } else {
+              final existingIds =
+                  _allCollections.map((e) => e.collection.gameId).toSet();
+              newlyFetchedItems.removeWhere(
+                  (newItem) => existingIds.contains(newItem.collection.gameId));
+              _allCollections.addAll(newlyFetchedItems);
+            }
+            _globalPaginationData = groupedData.pagination;
+            _collectionCounts = groupedData.counts;
             _error = null;
           });
         } else {
-          setState(() {
-            _isLoading = false;
-            _error = '加载收藏数据失败 (null response)';
-            _clearData();
-          });
-          // print("_loadData: 加载失败 (null response)");
+          if (_currentPage == 1) {
+            _error = '加载收藏数据失败';
+            _collectionCounts = null;
+            _allCollections.clear();
+            _selectedGameForReview = null; // 加载失败，清除选中的游戏
+          } else {
+            if (context.mounted) AppSnackBar.showError(context, '加载更多失败');
+          }
         }
       }
     } catch (e) {
       if (mounted) {
+        if (_currentPage == 1) {
+          _error = '加载收藏失败: ${e.toString().split(':').last.trim()}';
+          _allCollections.clear();
+          _collectionCounts = null;
+          _selectedGameForReview = null; // 异常，清除选中的游戏
+        } else {
+          if (context.mounted) AppSnackBar.showError(context, '加载更多失败');
+        }
+      }
+    } finally {
+      if (mounted) {
         setState(() {
           _isLoading = false;
-          _error = '加载收藏失败: $e';
-          _clearData();
+          if (_isRefreshing) _isRefreshing = false;
         });
       }
     }
   }
 
-  // 清空数据的辅助方法
-  void _clearData() {
-    _gameCollections = {
-      GameCollectionStatus.wantToPlay: [],
-      GameCollectionStatus.playing: [],
-      GameCollectionStatus.played: [],
-    };
-    _tabCounts = {
-      GameCollectionStatus.wantToPlay: 0,
-      GameCollectionStatus.playing: 0,
-      GameCollectionStatus.played: 0,
-    };
+  void _clearDataOnLogout() {
+    _allCollections.clear();
+    _globalPaginationData = null;
+    _collectionCounts = null;
+    _currentPage = 1;
+    // _selectedGameForReview 已在 _checkUserHasChanged 中处理
   }
 
-  // --- 下拉刷新 (加入节流逻辑) ---
-  Future<void> _handleRefresh() async {
-    // 1. 防止重复触发：如果已经在刷新中，直接返回
-    if (_isRefreshing) {
+  Future<void> _refreshData() async {
+    if (_isRefreshing || _isLoading && _currentPage == 1) return;
+    if (mounted) {
+      setState(() {
+        _isRefreshing = true;
+        _currentPage = 1;
+        // _selectedGameForReview = null; // 刷新时清除选中的 Review，由_loadData中的forceRefresh处理
+      });
+    }
+    await _loadData(forceRefresh: true, isInitialLoad: true);
+  }
+
+  Future<void> _handleRefreshFromIndicator() async {
+    final now = DateTime.now();
+    if (_isRefreshing) return;
+
+    if (_lastForcedRefreshTime != null &&
+        now.difference(_lastForcedRefreshTime!) < _minForcedRefreshInterval) {
+      if (context.mounted) AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
       return;
     }
 
-    // 2. 设置刷新状态标记
-    if (mounted) {
-      setState(() {
-        _isRefreshing = true; // 开始刷新
-      });
-    }
+    _lastForcedRefreshTime = now;
+    await _refreshData();
+  }
 
-    final now = DateTime.now();
-    bool didForceRefresh = false; // 标记本次是否执行了强制刷新
-
-    try {
-      // 3. 检查时间间隔：判断离上次强制刷新是否足够久
-      if (_lastForcedRefreshTime == null ||
-          now.difference(_lastForcedRefreshTime!) > _minForcedRefreshInterval) {
-        // 4. 时间足够长 或 首次刷新 -> 执行强制刷新
-        await _loadData(forceRefresh: true);
-        _lastForcedRefreshTime = now; // 更新上次强制刷新的时间
-        didForceRefresh = !didForceRefresh;
-      } else {
-        // 5. 时间间隔太短 -> 不执行强制刷新 (可以选择执行普通刷新或什么都不做)
-        AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
-      }
-    } catch (e) {
-      // 可以在这里显示 SnackBar 提示刷新失败
-    } finally {
-      // 6. 清除刷新状态标记 (无论成功失败)
+  void _loadMoreData() {
+    if (!_isLoading && (_globalPaginationData?.hasNextPage() ?? false)) {
       if (mounted) {
         setState(() {
-          _isRefreshing = false; // 结束刷新
+          _currentPage++;
+          _isLoading = true;
         });
       }
+      _loadData();
     }
+  }
+
+  // 新增：处理游戏卡片点击事件（用于桌面端显示Review）
+  void _handleGameTapForReview(GameWithCollection gameWithCollection) {
+    if (!mounted) return;
+    setState(() {
+      // 如果再次点击同一个游戏，则关闭 Review 面板，否则显示新的
+      if (_selectedGameForReview?.collection.gameId ==
+          gameWithCollection.collection.gameId) {
+        _selectedGameForReview = null;
+      } else {
+        _selectedGameForReview = gameWithCollection;
+      }
+    });
+  }
+
+  // 新增：关闭 Review 面板的方法
+  void _closeReviewPanel() {
+    if (!mounted) return;
+    setState(() {
+      _selectedGameForReview = null;
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final bool isDesktopLayout =
-        DeviceUtils.isDesktop && screenSize.width > 900;
     return Scaffold(
-      appBar: const CustomAppBar(
-        title: '我的收藏',
+      appBar: CustomAppBar(
+        title: '我的游戏收藏',
       ),
-      body: _buildBody(isDesktopLayout: isDesktopLayout), // 传递当前获取的登录状态
+      body: _buildBody(),
     );
   }
 
-  // 构建 Body (逻辑基本不变，依赖状态变量)
-  Widget _buildBody({required bool isDesktopLayout}) {
-    // 1. 未登录
-    if (!widget.authProvider.isLoggedIn && _error == '请先登录后再查看收藏') {
-      // 明确检查错误信息
-
+  Widget _buildBody() {
+    if (!widget.authProvider.isLoggedIn) {
       return const LoginPromptWidget();
     }
 
-    // 2. 初始加载
     if (_isLoading &&
-        _gameCollections.values.every((list) => list.isEmpty) &&
+        _currentPage == 1 &&
+        _allCollections.isEmpty &&
+        _collectionCounts == null &&
         _error == null) {
-      return LoadingWidget.fullScreen(message: "正在加载收藏数据");
+      return LoadingWidget.fullScreen(message: "正在加载收藏数据...");
     }
 
-    // 3. 加载出错
-    if (_error != null && _error != '请先登录后再查看收藏') {
+    if (_error != null && _allCollections.isEmpty) {
       return CustomErrorWidget(
         errorMessage: _error,
-        onRetry: () {
-          NavigationUtils.navigateToLogin(context);
-        },
+        onRetry: _refreshData,
       );
     }
 
-    // 4. 显示正常内容 (即使 _isLoading 为 true，只要有旧数据也显示，并允许刷新)
     return RefreshIndicator(
-      onRefresh: _handleRefresh,
-      child: isDesktopLayout
-          ? _buildDesktopLayout(isActuallyDesktop: isDesktopLayout)
-          : _buildMobileLayout(isActuallyDesktop: isDesktopLayout),
-    );
-  }
-
-  Widget _buildLayoutForTab(GameCollectionTabConfig tabConfig,
-      {required bool isDesktop}) {
-    final gamesForStatus = _gameCollections[tabConfig.status] ?? [];
-    final keyPrefix = isDesktop ? 'desktop' : 'mobile';
-    final valueKey =
-        ValueKey('${keyPrefix}_${tabConfig.status}_${gamesForStatus.length}');
-
-    String? finalDesktopTitle; // 声明为可空
-    IconData? finalDesktopIcon; // 声明为可空
-
-    if (isDesktop) {
-      final count = _tabCounts[tabConfig.status] ?? 0;
-      finalDesktopTitle =
-          '${tabConfig.titleBuilder(0).replaceAllMapped(RegExp(r'(\w+)'), (match) => match.group(1)!)} (${count})';
-      finalDesktopIcon = tabConfig.icon;
-    }
-
-    return GameCollectionListLayout(
-      key: valueKey,
-      sidebarProvider: widget.sidebarProvider,
-      games: gamesForStatus,
-      collectionType: tabConfig.status,
-      desktopTitle: finalDesktopTitle,
-      desktopIcon: finalDesktopIcon,
-    );
-  }
-
-  // 构建 Mobile 布局
-  Widget _buildMobileLayout({required bool isActuallyDesktop}) {
-    return Column(
-      children: [
-        TabBar(
-          controller: _tabController,
-          labelColor: Theme.of(context).primaryColor,
-          unselectedLabelColor: Colors.grey,
-          indicatorColor: Theme.of(context).primaryColor,
-          tabs: GameConstants.collectionTabs.map((tabConfig) {
-            final count = _tabCounts[tabConfig.status] ?? 0;
-            return Tab(
-              icon: Icon(tabConfig.icon),
-              text: tabConfig.titleBuilder(count),
-            );
-          }).toList(),
-        ),
-        Expanded(
-          child: TabBarView(
-            controller: _tabController,
-            children: GameConstants.collectionTabs.map((tabConfig) {
-              return _buildLayoutForTab(tabConfig,
-                  isDesktop: isActuallyDesktop);
-            }).toList(),
-          ),
-        ),
-      ],
-    );
-  }
-
-  // 构建 Desktop 布局
-  Widget _buildDesktopLayout({required bool isActuallyDesktop}) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (int i = 0; i < GameConstants.collectionTabs.length; i++) ...[
-            Expanded(
-              child: Builder(builder: (context) {
-                final tabConfig = GameConstants.collectionTabs[i];
-                return _buildLayoutForTab(tabConfig,
-                    isDesktop: isActuallyDesktop);
-              }),
-            ),
-            if (i < GameConstants.collectionTabs.length - 1)
-              const SizedBox(width: 16),
-          ],
-        ],
+      onRefresh: _handleRefreshFromIndicator,
+      child: GameCollectionLayout(
+        collectionCounts: _collectionCounts,
+        collectedGames: _allCollections,
+        isLoadingMore: _isLoading && _currentPage > 1,
+        hasMore: _globalPaginationData?.hasNextPage() ?? false,
+        scrollController: _scrollController,
+        onLoadMore: _loadMoreData,
+        onGoToDiscover: () => NavigationUtils.navigateToHome(
+            widget.sidebarProvider, context,
+            tabIndex: 1),
+        // 新增参数传递
+        selectedGameForReview: _selectedGameForReview,
+        onGameTapForReview: _handleGameTapForReview,
+        onCloseReviewPanel: _closeReviewPanel,
       ),
     );
   }

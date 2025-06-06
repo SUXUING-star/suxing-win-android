@@ -1,14 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/global_constants.dart';
+import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'dart:io';
 import 'app.dart';
+import 'constants/global_constants.dart'; // 引入 GlobalConstants
 
 void main() async {
-  // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 如果是桌面平台，初始化窗口管理器
+  const platform =
+      MethodChannel('com.example.suxingchahui/flutter_ready_signal');
+
+  WidgetsBinding.instance.addPostFrameCallback((_) async {
+    try {
+      if (Platform.isAndroid){
+        await platform.invokeMethod('flutterFirstFrameReady');
+      }
+
+    } catch (e) {
+      // debugPrint('Error sending flutterFirstFrameReady signal: $e');
+    }
+  });
+
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
 
@@ -26,6 +39,5 @@ void main() async {
     });
   }
 
-  // 在主线程中运行应用
   runApp(const App());
 }

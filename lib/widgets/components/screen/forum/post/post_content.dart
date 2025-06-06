@@ -35,133 +35,128 @@ class PostContent extends StatelessWidget {
     required this.onTagTap,
   });
 
-
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop ||
         DeviceUtils.isWeb ||
         DeviceUtils.isTablet(context);
 
-    return Opacity(
-      opacity: 0.9,
-      child: Container(
-        margin: isDesktop ? EdgeInsets.zero : const EdgeInsets.all(16),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isDesktop
-              ? [] // No shadow for desktop
-              : [
-                  BoxShadow(
-                    color: Colors.black.withSafeOpacity(0.05),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 标题栏
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 24, // Slightly larger for desktop
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Text(
-                    post.title, // 使用 post
-                    style: TextStyle(
-                      fontSize: isDesktop ? 22 : 18,
-                      fontWeight: FontWeight.bold,
-                      color: const Color(0xFF333333),
-                    ),
-                  ),
+    return Container(
+      margin: isDesktop ? EdgeInsets.zero : const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withSafeOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isDesktop
+            ? [] // No shadow for desktop
+            : [
+                BoxShadow(
+                  color: Colors.black.withSafeOpacity(0.05),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 ),
               ],
-            ),
-            const SizedBox(height: 20),
-
-            // 作者信息栏
-            _buildAuthorRow(context, isDesktop),
-            const SizedBox(height: 20),
-
-            // 标签栏
-            if (post.tags.isNotEmpty)
-              PostTags(
-                post: post,
-                isMini: !isDesktop,
-                onTagTap: onTagTap,
-              ),
-            if (post.tags.isNotEmpty) const SizedBox(height: 20),
-            // 内容栏
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: isDesktop ? Colors.grey[50] : Colors.white,
-                borderRadius: BorderRadius.circular(8),
-                border: isDesktop ? Border.all(color: Colors.grey[200]!) : null,
-              ),
-              child: Text(
-                post.content, // 使用 post
-                style: TextStyle(
-                  fontSize: isDesktop ? 16 : 15,
-                  height: 1.8,
-                  color: Colors.grey[800],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 标题栏
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 24, // Slightly larger for desktop
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
               ),
-            ),
-
-            // 添加交互按钮
-            const SizedBox(height: 16),
-            PostInteractionButtons(
-              postService: postService,
-              userActions: userActions, // 使用 userActions
-              post: post, // 使用 post
-              currentUser: currentUser,
-              onPostUpdated: onPostUpdated, // 使用 onPostUpdated
-            ),
-
-            // Post statistics
-            if (isDesktop)
-              Padding(
-                padding: const EdgeInsets.only(top: 16),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    Icon(Icons.remove_red_eye,
-                        size: 16, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.viewCount}', // 使用 post
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Icon(Icons.comment, size: 16, color: Colors.grey[500]),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${post.replyCount}', // 使用 post
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.grey[500],
-                      ),
-                    ),
-                  ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  post.title, // 使用 post
+                  style: TextStyle(
+                    fontSize: isDesktop ? 22 : 18,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF333333),
+                  ),
                 ),
               ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 20),
+
+          // 作者信息栏
+          _buildAuthorRow(context, isDesktop),
+          const SizedBox(height: 20),
+
+          // 标签栏
+          if (post.tags.isNotEmpty)
+            PostTags(
+              post: post,
+              isMini: !isDesktop,
+              onTagTap: onTagTap,
+            ),
+          if (post.tags.isNotEmpty) const SizedBox(height: 20),
+          // 内容栏
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: isDesktop ? Colors.grey[50] : Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              border: isDesktop ? Border.all(color: Colors.grey[200]!) : null,
+            ),
+            child: Text(
+              post.content, // 使用 post
+              style: TextStyle(
+                fontSize: isDesktop ? 16 : 15,
+                height: 1.8,
+                color: Colors.grey[800],
+              ),
+            ),
+          ),
+
+          // 添加交互按钮
+          const SizedBox(height: 16),
+          PostInteractionButtons(
+            postService: postService,
+            userActions: userActions, // 使用 userActions
+            post: post, // 使用 post
+            currentUser: currentUser,
+            onPostUpdated: onPostUpdated, // 使用 onPostUpdated
+          ),
+
+          // Post statistics
+          if (isDesktop)
+            Padding(
+              padding: const EdgeInsets.only(top: 16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  Icon(Icons.remove_red_eye, size: 16, color: Colors.grey[500]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.viewCount}', // 使用 post
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Icon(Icons.comment, size: 16, color: Colors.grey[500]),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${post.replyCount}', // 使用 post
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[500],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
       ),
     );
   }

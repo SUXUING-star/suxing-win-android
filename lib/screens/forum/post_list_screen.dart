@@ -489,18 +489,27 @@ class _PostListScreenState extends State<PostListScreen>
   }
 
   // --- Debounced 刷新 ---
-  void _refreshDataIfNeeded({required String reason}) {
+  void _refreshDataIfNeeded({
+    required String reason,
+    bool isCacheUpdated = false,
+  }) {
     if (!mounted) return;
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
-      // 稍微加长 debounce 时间
-      if (mounted && _isVisible && !_isLoadingData) {
-        // 确保执行时可见且不在加载
-        // --- *** Debounce 后强制刷新当前页 *** ---
-        _loadPosts(page: _currentPage, isRefresh: true);
-      } else if (mounted) {
-        if (!_isVisible) _needsRefresh = true; // 如果是因为不可见而跳过，还是要标记
+      if (!mounted) return;
+      if (!_isVisible) {
+        _needsRefresh = true;
+        return;
       }
+      if (_isLoadingData) {
+        if (isCacheUpdated) {
+          return;
+        } else {
+          _needsRefresh = true;
+          return;
+        }
+      }
+      _loadPosts(page: _currentPage, isRefresh: true);
     });
   }
 
@@ -559,7 +568,34 @@ class _PostListScreenState extends State<PostListScreen>
         _errorMessage = null;
       });
       // 加载新页，非强制刷新
-      _loadPosts(page: _currentPage, isInitialLoad: false, isRefresh: false);
+      _loadPosts(
+        page: _currentPage,
+        isInitialLoad: false,
+        isRefresh: false,
+      );
+    }
+  }
+
+  void _goToPage(int pageNumber) {
+    if (pageNumber > _totalPages ||
+        pageNumber < 1 ||
+        pageNumber == _currentPage) {
+      return;
+    }
+    if (_currentPage > 1 && !_isLoadingData) {
+      // 先停止当前页的监听
+      _stopWatchingCache();
+      setState(() {
+        _currentPage = pageNumber;
+        _posts = null; // 清空帖子以显示 Loading
+        _errorMessage = null;
+      });
+      // 加载新页，非强制刷新
+      _loadPosts(
+        page: pageNumber,
+        isInitialLoad: false,
+        isRefresh: false,
+      );
     }
   }
 
@@ -740,7 +776,6 @@ class _PostListScreenState extends State<PostListScreen>
         : (canShowRightPanelBasedOnWidth ? Colors.amber : Colors.white54);
 
     return VisibilityDetector(
-      // *** 使用 Tag 和 Page 作为 Key，确保切换时重建 VisibilityDetector 状态 ***
       key: Key('forum_screen_visibility_${_selectedTag}_$_currentPage'),
       onVisibilityChanged: _handleVisibilityChange,
       child: Scaffold(
@@ -849,9 +884,9 @@ class _PostListScreenState extends State<PostListScreen>
                 currentPage: _currentPage,
                 totalPages: _totalPages,
                 isLoading: false,
-                // 控件本身不显示加载状态了
                 onPreviousPage: _goToPreviousPage,
                 onNextPage: _goToNextPage,
+                onPageSelected: _goToPage,
               ),
           ],
         ),
@@ -868,6 +903,7 @@ class _PostListScreenState extends State<PostListScreen>
           child: CustomErrorWidget(
         errorMessage: _errorMessage!,
         onRetry: () => _loadPosts(page: _currentPage, isRefresh: true), // 重试当前页
+        useScaffold: false,
       ));
     }
 
@@ -885,18 +921,36 @@ class _PostListScreenState extends State<PostListScreen>
     // 4. 如果有帖子数据（无论是否正在后台加载刷新）
     if (_posts != null && _posts!.isNotEmpty) {
       // 构建主布局，列表构建函数内部会处理 _posts!
-      return isDesktop
-          ? _buildDesktopLayout(actuallyShowLeftPanel, actuallyShowRightPanel)
-          : _buildMobileLayout();
+      return _buildMainContent(
+        isDesktop,
+        actuallyShowLeftPanel: actuallyShowLeftPanel,
+        actuallyShowRightPanel: actuallyShowRightPanel,
+      );
     }
 
     // 可能是在初始化但还不可见，或者状态异常
     return LoadingWidget.fullScreen(message: "等待加载..."); // 或者 SizedBox.shrink()
   }
 
-  // --- 构建桌面布局 (Row + Panels + List) ---
+  Widget _buildMainContent(
+    bool isDesktop, {
+    bool actuallyShowLeftPanel = false,
+    bool actuallyShowRightPanel = false,
+  }) {
+    return isDesktop
+        ? _buildDesktopLayout(
+            isDesktop,
+            actuallyShowLeftPanel,
+            actuallyShowRightPanel,
+          )
+        : _buildMobileLayout(
+            isDesktop,
+          );
+  }
+
+  // --- 构建桌面布局  ---
   Widget _buildDesktopLayout(
-      bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
+      bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     // 定义面板动画参数
     const Duration panelAnimationDuration = Duration(milliseconds: 300);
     const Duration leftPanelDelay = Duration(milliseconds: 50);
@@ -920,117 +974,95 @@ class _PostListScreenState extends State<PostListScreen>
           ),
         // 中间帖子列表区域
         Expanded(
-          child: _buildPostsList(
-              true, actuallyShowLeftPanel, actuallyShowRightPanel), // 传递布局信息
+          child: _buildDesktopPostsGrid(
+            isDesktop,
+            actuallyShowLeftPanel,
+            actuallyShowRightPanel,
+          ), // 传递布局信息
         ),
         // 右侧统计面板
         // --- 右侧统计面板带动画 ---
         if (actuallyShowRightPanel)
-          // 仅当 _posts 非 null 且非空时才尝试构建右侧面板
-          (_posts != null && _posts!.isNotEmpty)
-              ? FadeInSlideLRItem(
-                  // <--- 包裹右面板
-                  key: const ValueKey('forum_right_panel'),
-                  slideDirection: SlideDirection.right,
-                  duration: panelAnimationDuration,
-                  delay: rightPanelDelay,
-                  child: PostRightPanel(
-                    currentPosts: _posts!,
-                    selectedTag: _selectedTag,
-                    onTagSelected: _onTagSelected,
-                  ),
-                )
-              : const SizedBox.shrink(),
+          FadeInSlideLRItem(
+            // <--- 包裹右面板
+            key: const ValueKey('forum_right_panel'),
+            slideDirection: SlideDirection.right,
+            duration: panelAnimationDuration,
+            delay: rightPanelDelay,
+            child: PostRightPanel(
+              currentPosts: _posts!,
+              selectedTag: _selectedTag,
+              onTagSelected: _onTagSelected,
+            ),
+          )
       ],
     );
   }
 
   // --- 构建移动端布局 (仅列表，由外部 Column 添加 Filter 和 Pagination) ---
-  Widget _buildMobileLayout() {
-    // 移动端布局只包含帖子列表，由 _buildPostsList 构建
-    // RefreshIndicator 包裹在 _buildPostsList 返回的 Widget 外部（如果需要）
-    // 或者在 _buildPostsList 内部返回 RefreshIndicator 包裹的列表
-    return _buildPostsList(false); // 调用列表构建器
-  }
-
-  // --- 构建帖子列表/网格 (处理空状态和 Null) ---
-  Widget _buildPostsList(bool isDesktop,
-      [bool actuallyShowLeftPanel = false,
-      bool actuallyShowRightPanel = false]) {
-    // 安全检查：如果 _posts 是 null (理论上在调用此方法前已被处理，但加一层保险)
-    if (_posts == null) {
-      return InlineErrorWidget(errorMessage: "无法构建帖子列表");
-    }
-
-    final listOrGridWidget = isDesktop
-        ? _buildDesktopPostsGrid(
-            actuallyShowLeftPanel,
-            actuallyShowRightPanel,
-            onDeleteAction: _handleDeletePostFromCard,
-            onEditAction: _handleEditPostFromCard,
-          )
-        : _buildMobilePostsList(
-            onDeleteAction: _handleDeletePostFromCard,
-            onEditAction: _handleEditPostFromCard);
-
-    return isDesktop
-        ? listOrGridWidget
-        : RefreshIndicator(
-            key: ValueKey(_selectedTag),
-            onRefresh: _refreshData,
-            child: listOrGridWidget,
-          );
+  Widget _buildMobileLayout(bool isDesktop) {
+    return _buildMobilePostsList(isDesktop);
   }
 
   // --- 构建移动端帖子列表 (ListView) ---
-  Widget _buildMobilePostsList({
-    required Future<void> Function(Post post) onDeleteAction,
-    required void Function(Post post) onEditAction,
-  }) {
+  Widget _buildMobilePostsList(
+    bool isDesktop,
+  ) {
     if (_posts == null) return const SizedBox.shrink();
 
     // 定义卡片动画参数
     const Duration cardAnimationDuration = Duration(milliseconds: 350);
     const Duration cardDelayIncrement = Duration(milliseconds: 40);
 
-    return ListView.builder(
-      padding: const EdgeInsets.all(8),
-      itemCount: _posts!.length,
-      itemBuilder: (context, index) {
-        final post = _posts![index];
+    return RefreshIndicator(
+      key: ValueKey(_selectedTag),
+      onRefresh: _refreshData,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(8),
+        itemCount: _posts!.length,
+        itemBuilder: (context, index) {
+          final post = _posts![index];
 
-        return FadeInSlideUpItem(
-          key: ValueKey(post.id), // 使用 post.id 作为 Key
-          duration: cardAnimationDuration,
-          delay: cardDelayIncrement * index, // 交错延迟
-          child: GestureDetector(
-            onTap: () => _navigateToPostDetail(post),
-            child: Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: BasePostCard(
-                currentUser: widget.authProvider.currentUser,
-                post: post,
-                infoProvider: widget.infoProvider,
-                followService: widget.followService,
-                isDesktopLayout: false,
-                onDeleteAction: onDeleteAction,
-                onEditAction: onEditAction,
-                onToggleLockAction: _handleToggleLockFromCard,
+          return FadeInSlideUpItem(
+            key: ValueKey(post.id), // 使用 post.id 作为 Key
+            duration: cardAnimationDuration,
+            delay: cardDelayIncrement * index, // 交错延迟
+            child: GestureDetector(
+              onTap: () => _navigateToPostDetail(post),
+              child: Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: _buildPostCard(
+                  isDesktop,
+                  post,
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPostCard(
+    bool isDesktop,
+    Post post,
+  ) {
+    return BasePostCard(
+      currentUser: widget.authProvider.currentUser,
+      post: post,
+      showPinnedStatus: true,
+      infoProvider: widget.infoProvider,
+      followService: widget.followService,
+      isDesktopLayout: isDesktop,
+      onDeleteAction: _handleDeletePostFromCard,
+      onEditAction: _handleEditPostFromCard,
+      onToggleLockAction: _handleToggleLockFromCard,
     );
   }
 
   // --- 构建桌面端帖子网格 (MasonryGridView) ---
   Widget _buildDesktopPostsGrid(
-    bool actuallyShowLeftPanel,
-    bool actuallyShowRightPanel, {
-    required Future<void> Function(Post post) onDeleteAction,
-    required void Function(Post post) onEditAction,
-  }) {
+      bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     if (_posts == null) return const SizedBox.shrink();
 
     // 定义卡片动画参数 (可以和移动端不同)
@@ -1056,15 +1088,9 @@ class _PostListScreenState extends State<PostListScreen>
           key: ValueKey(post.id), // 使用 post.id 作为 Key
           duration: cardAnimationDuration,
           delay: cardDelayIncrement * index, // 交错延迟
-          child: BasePostCard(
-            currentUser: widget.authProvider.currentUser,
-            post: post,
-            followService: widget.followService,
-            infoProvider: widget.infoProvider,
-            isDesktopLayout: true,
-            onDeleteAction: onDeleteAction,
-            onEditAction: onEditAction,
-            onToggleLockAction: _handleToggleLockFromCard,
+          child: _buildPostCard(
+            isDesktop,
+            post,
           ),
         );
       },

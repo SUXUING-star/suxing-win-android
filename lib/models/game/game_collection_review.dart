@@ -4,7 +4,7 @@ class GameCollectionReview {
   final String userId;
   final String gameId;
   final String status;
-  final String? review;
+  final String? reviewContent;
   final double? rating;
   final String? notes;
   final DateTime createTime;
@@ -14,7 +14,7 @@ class GameCollectionReview {
     required this.userId,
     required this.gameId,
     required this.status,
-    this.review,
+    this.reviewContent,
     this.rating,
     this.notes,
     required this.createTime,
@@ -56,7 +56,7 @@ class GameCollectionReview {
       userId: parsedUserId,
       gameId: parsedGameId,
       status: parsedStatus,
-      review: json['review'],
+      reviewContent: json['review'],
       rating: parsedRating,
       notes: json['notes'],
       createTime: parsedCreateTime,
@@ -68,7 +68,7 @@ class GameCollectionReview {
     'userId': userId,
     'gameId': gameId,
     'status': status,
-    'review': review,
+    'review': reviewContent,
     'rating': rating,
     'notes': notes,
     'createTime': createTime.toUtc().toIso8601String(),

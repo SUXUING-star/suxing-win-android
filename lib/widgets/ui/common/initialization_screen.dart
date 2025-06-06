@@ -2,16 +2,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
-import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 引入 DeviceUtils
 import 'package:suxingchahui/windows/ui/windows_controls.dart'; // 引入 WindowsControls
-import 'package:suxingchahui/wrapper/platform_wrapper.dart'; // 引入用于高度常量
 import 'package:window_manager/window_manager.dart'; // 引入 window_manager
-import 'dart:math'; // For Random
+import 'dart:math';
+
+import '../../../layouts/desktop/desktop_frame_layout.dart.dart'; // For Random
 
 class InitializationScreen extends StatefulWidget {
   final InitializationStatus status;
@@ -45,7 +45,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
       top: 0, // 紧贴顶部
       left: 0, // 紧贴左边
       right: 0, // 紧贴右边
-      height: PlatformWrapper.kDesktopTitleBarHeight, // 使用常量定义的高度
+      height: DesktopFrameLayout.kDesktopTitleBarHeight, // 使用常量定义的高度
       child: Material(
         // 使用 Material Widget 可以设置背景色（这里是透明）
         color: Colors.white,
@@ -137,7 +137,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
                   // --- 桌面端顶部留白 ---
                   if (isDesktop)
                     const SizedBox(
-                        height: PlatformWrapper.kDesktopTitleBarHeight +
+                        height: DesktopFrameLayout.kDesktopTitleBarHeight +
                             10), // 标题栏高度 + 间距
 
                   // --- Logo ---

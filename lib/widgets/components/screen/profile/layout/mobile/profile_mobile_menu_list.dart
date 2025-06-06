@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/layout/mobile/profile_mobile_menu_list.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/models/profile_menu_item.dart';
+import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 

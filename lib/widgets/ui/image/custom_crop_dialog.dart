@@ -60,16 +60,13 @@ class CustomCropDialog extends StatelessWidget {
     return showDialog<CropResult?>(
       context: context,
       builder: (BuildContext context) {
-        return Opacity(
-          opacity: 0.9,
-          child: Dialog(
-            backgroundColor: Colors.white,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.0),
-                side: BorderSide(color: Colors.grey.shade300, width: 1)),
-            insetPadding: const EdgeInsets.all(20),
-            child: const CustomCropDialogContent(),
-          ),
+        return Dialog(
+          backgroundColor: Colors.white.withSafeOpacity(0.9),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16.0),
+              side: BorderSide(color: Colors.grey.shade300, width: 1)),
+          insetPadding: const EdgeInsets.all(20),
+          child: const CustomCropDialogContent(),
         );
       },
     );

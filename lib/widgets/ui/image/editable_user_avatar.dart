@@ -15,7 +15,7 @@ class EditableUserAvatar extends StatelessWidget {
   final double radius;
   final RateLimitedFileUpload fileUpload;
   final Function(bool isLoading) onUploadStateChanged;
-  final Function(String? avatarUrl) onUploadSuccess; // 这个回调应该只关心最终的URL
+  final Function(String avatarUrl) onUploadSuccess; // 这个回调应该只关心最终的URL
   final double iconSizeRatio;
   final Color iconColor;
   final Color iconBackgroundColor;
@@ -84,10 +84,12 @@ class EditableUserAvatar extends StatelessWidget {
           AppSnackBar.showError(context, '上传头像失败: ${e.toString()}');
         }
       }
-    } finally {
+      // 因为此时 onUploadSuccess 不会触发，爹不知道这事
       if (context.mounted) {
-        onUploadStateChanged(false); // 结束上传，重置加载状态
+        onUploadStateChanged(false);
       }
+    } finally {
+
       // 清理临时文件
       if (tempFileToDelete != null) {
         try {
@@ -95,7 +97,7 @@ class EditableUserAvatar extends StatelessWidget {
             await tempFileToDelete.delete();
           }
         } catch (_) {
-          // Log deletion error if necessary
+          //
         }
       }
     }

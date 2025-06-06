@@ -9,18 +9,16 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/myposts/my_posts_layout.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 
 class MyPostsScreen extends StatefulWidget {
   final UserFollowService followService;
@@ -45,19 +43,15 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   bool _isLoading = false;
   bool _isLoadingMore = false;
   String? _error;
-  String? _userId;
   bool _isMounted = false;
 
   final ScrollController _scrollController = ScrollController();
-
   int _currentPage = 1;
 
   @override
   void initState() {
     super.initState();
     _isMounted = true;
-    _userId = widget.authProvider.currentUserId;
-
     _scrollController.addListener(() {
       if (_isMounted &&
           _scrollController.position.pixels >=
@@ -68,8 +62,10 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       }
     });
 
-    if (_userId != null) {
+    if (widget.authProvider.currentUserId != null) {
       _fetchPosts(isRefresh: true);
+    } else {
+      _isLoading = false;
     }
   }
 
@@ -81,20 +77,20 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   }
 
   Future<void> _fetchPosts({bool isRefresh = false}) async {
-    if (!_isMounted || (_isLoading && !isRefresh)) return;
+    if (!_isMounted || (_isLoading && !isRefresh && _posts.isEmpty)) return;
 
     if (isRefresh) {
       _currentPage = 1;
     }
     if (!_isMounted) return;
     setState(() {
-      _isLoading = true;
-      _isLoadingMore = false;
-      _error = null;
       if (isRefresh) {
         _posts = [];
         _paginationData = null;
+        _error = null;
+        _isLoading = true;
       }
+      _isLoadingMore = false;
     });
 
     final currentUserId = widget.authProvider.currentUserId;
@@ -104,6 +100,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           _isLoading = false;
           _posts = [];
           _paginationData = null;
+          _error = null;
         });
       }
       return;
@@ -115,16 +112,21 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
       if (_isMounted) {
         setState(() {
-          _posts = postListResult.posts;
+          if (isRefresh) {
+            _posts = postListResult.posts;
+          } else {
+            _posts.addAll(postListResult.posts);
+          }
           _paginationData = postListResult.pagination;
           _isLoading = false;
+          _error = null;
         });
       }
     } catch (e) {
       if (_isMounted) {
         setState(() {
           _isLoading = false;
-          _error = '加载我的帖子失败';
+          _error = '加载我的帖子失败: ${e.toString().split(':').last.trim()}';
         });
       }
     }
@@ -165,13 +167,20 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         _currentPage--;
         setState(() {
           _isLoadingMore = false;
-          _error = '加载更多失败';
+          _error = '加载更多失败: ${e.toString().split(':').last.trim()}';
+          AppSnackBar.showError(context, '加载更多帖子失败');
         });
       }
     }
   }
 
   Future<void> _refreshPosts() async {
+    if (!widget.authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
     await _fetchPosts(isRefresh: true);
   }
 
@@ -225,10 +234,9 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               AppSnackBar.showPostDeleteSuccessfullySnackBar(context);
             }
 
-            if (_posts.isEmpty && _currentPage > 1) {
-              _currentPage--;
+            if (_posts.isEmpty && (_paginationData?.total ?? 0) > 0) {
               _fetchPosts(isRefresh: true);
-            } else if (_posts.isEmpty && _paginationData?.total == 0) {
+            } else if (_posts.isEmpty && (_paginationData?.total ?? 0) == 0) {
               if (_isMounted) setState(() {});
             }
           } catch (e) {
@@ -246,9 +254,6 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
               AppSnackBar.showError(context, '删除帖子失败');
             }
           }
-        },
-        onCancel: () {
-          // 用户取消，不需要额外操作，因为乐观更新在 onConfirm 内部
         });
   }
 
@@ -283,106 +288,76 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
   }
 
-  Widget _buildFab(BuildContext context) {
-    return FloatingActionButtonGroup(children: [
-      GenericFloatingActionButton(
-        icon: Icons.refresh,
-        onPressed: _isLoading || _isLoadingMore ? null : _refreshPosts,
-        tooltip: '刷新',
-        heroTag: "刷新我的帖子",
-      ),
-      GenericFloatingActionButton(
-        onPressed: _handleAddPost,
-        icon: Icons.add,
-        tooltip: '发布新帖',
-        heroTag: "发布新帖我的帖子",
-      ),
-    ]);
+  Widget _buildFab() {
+    if (!widget.authProvider.isLoggedIn) {
+      return const SizedBox.shrink();
+    }
+    return FloatingActionButtonGroup(
+      children: [
+        GenericFloatingActionButton(
+          icon: Icons.refresh,
+          onPressed: _isLoading || _isLoadingMore ? null : _refreshPosts,
+          tooltip: '刷新',
+          heroTag: "刷新我的帖子",
+        ),
+        GenericFloatingActionButton(
+          onPressed: _handleAddPost,
+          icon: Icons.add,
+          tooltip: '发布新帖',
+          heroTag: "发布新帖我的帖子",
+        ),
+      ],
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading && _posts.isEmpty && _error == null) {
-      return Scaffold(
-        appBar: const CustomAppBar(title: '我的帖子'),
-        body: LoadingWidget.fullScreen(message: "拼命加载中"),
-      );
-    }
-
-    return StreamBuilder<User?>(
+    return Scaffold(
+      appBar: const CustomAppBar(title: '我的帖子'),
+      body: StreamBuilder<User?>(
         stream: widget.authProvider.currentUserStream,
         initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
-          final authUser = authSnapshot.data;
-          if (authUser == null && !_isLoading) {
-            return const Scaffold(
-                appBar: CustomAppBar(title: '我的帖子'), body: LoginPromptWidget());
+          final currentUser = authSnapshot.data;
+          final bool isLoggedIn = currentUser != null;
+
+          if (!isLoggedIn) {
+            return const LoginPromptWidget();
           }
-          return Scaffold(
-              appBar: const CustomAppBar(
-                title: '我的帖子',
-              ),
-              body: RefreshIndicator(
-                onRefresh:
-                    _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
-                child: _buildContent(context, authUser),
-              ),
-              floatingActionButton:
-                  (authUser != null) ? _buildFab(context) : null);
-        });
-  }
 
-  Widget _buildContent(BuildContext context, User? authUser) {
-    final bool isDesktop = DeviceUtils.isDesktop;
+          if (_isLoading && _posts.isEmpty && _error == null) {
+            return LoadingWidget.fullScreen(message: "拼命加载中");
+          }
 
-    if (_error != null && _posts.isEmpty && !_isLoading) {
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        children: [
-          Container(
-              height: MediaQuery.of(context).size.height -
-                  (Scaffold.of(context).appBarMaxHeight ?? kToolbarHeight) -
-                  MediaQuery.of(context).padding.top -
-                  MediaQuery.of(context).padding.bottom,
-              alignment: Alignment.center,
-              child: FunctionalTextButton(
-                label: '加载失败: $_error. 点我重试',
-                onPressed: () => _fetchPosts(isRefresh: true),
-              ))
-        ],
-      );
-    }
+          if (_error != null && _posts.isEmpty) {
+            return CustomErrorWidget(
+              onRetry: () => _fetchPosts(isRefresh: true),
+              errorMessage: _error,
+            );
+          }
 
-    if (_posts.isEmpty && !_isLoading && _error == null) {
-      return LayoutBuilder(builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: EmptyStateWidget(
-              message: '你还没有发布过帖子哦',
-              iconData: Icons.dynamic_feed_outlined,
-              action: FunctionalTextButton(
-                onPressed: _handleAddPost,
-                label: '去发第一篇帖子',
-              ),
+          return RefreshIndicator(
+            onRefresh:
+                _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
+            child: MyPostsLayout(
+              posts: _posts,
+              isLoadingMore: _isLoadingMore,
+              hasMore: _paginationData?.hasNextPage() ?? false,
+              scrollController: _scrollController,
+              onAddPost: _handleAddPost,
+              onDeletePost: _handleDeletePost,
+              onEditPost: _handleEditPost,
+              errorMessage: _error,
+              onRetry: () => _fetchPosts(isRefresh: true),
+              currentUser: currentUser,
+              infoProvider: widget.infoProvider,
+              followService: widget.followService,
+              totalPostCount: _paginationData?.total ?? _posts.length,
             ),
-          ),
-        );
-      });
-    }
-
-    return PostGridView(
-      posts: _posts,
-      currentUser: authUser,
-      infoProvider: widget.infoProvider,
-      followService: widget.followService,
-      scrollController: _scrollController,
-      isLoading: _isLoadingMore, // PostGridView 的 isLoading 应该对应加载更多的状态
-      hasMoreData: _paginationData?.hasNextPage() ?? false,
-      isDesktopLayout: isDesktop,
-      onDeleteAction: _handleDeletePost,
-      onEditAction: _handleEditPost,
+          );
+        },
+      ),
+      floatingActionButton: _buildFab(),
     );
   }
 }

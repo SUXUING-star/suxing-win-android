@@ -155,7 +155,8 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   }
 
   /// 处理更新评论
-  Future<void> _handleUpdateComment(GameComment comment, String newContent) async {
+  Future<void> _handleUpdateComment(
+      GameComment comment, String newContent) async {
     if (!mounted) return;
     if (_currentUser != null) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -266,75 +267,71 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   // --- Build Method ---
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      // 最外层容器和样式
-      opacity: 0.9,
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withSafeOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // --- 评论区标题 ---
-            Row(
-              children: [
-                Container(
-                  width: 4,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withSafeOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withSafeOpacity(0.05),
+            blurRadius: 10,
+            offset: Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // --- 评论区标题 ---
+          Row(
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                SizedBox(width: 8),
-                Text(
-                  '评论区',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
+              ),
+              SizedBox(width: 8),
+              Text(
+                '评论区',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
                 ),
-              ],
-            ),
-            SizedBox(height: 16),
+              ),
+            ],
+          ),
+          SizedBox(height: 16),
 
-            // --- 根据登录状态显示输入框或登录提示 ---
-            _currentUser != null
-                ? Column(
-                    // 已登录：显示输入框和评论列表
-                    children: [
-                      GameCommentInput(
-                        currentUser: widget.currentUser,
-                        gameId: widget.gameId,
-                        key: ValueKey(
-                            'comment_input_${widget.gameId}'), // 使用 ValueKey 保证状态保留
-                        onCommentAdded: _handleAddComment, // 传递添加评论的处理函数
-                        isSubmitting: _isAddingComment, // 传递顶级评论提交状态
-                        inputStateService: widget.inputStateService,
-                      ),
-                      SizedBox(height: 16),
-                      // --- 评论列表构建区域 ---
-                      _buildCommentListSection(), // 调用下面封装的方法
-                    ],
-                  )
-                : LoginPromptButton(
-                    // 未登录：显示登录提示
-                    message: '登录后查看和发表评论',
-                    buttonText: '去登录', // 修改按钮文字
-                  ),
-          ],
-        ),
+          // --- 根据登录状态显示输入框或登录提示 ---
+          _currentUser != null
+              ? Column(
+                  // 已登录：显示输入框和评论列表
+                  children: [
+                    GameCommentInput(
+                      currentUser: widget.currentUser,
+                      gameId: widget.gameId,
+                      key: ValueKey(
+                          'comment_input_${widget.gameId}'), // 使用 ValueKey 保证状态保留
+                      onCommentAdded: _handleAddComment, // 传递添加评论的处理函数
+                      isSubmitting: _isAddingComment, // 传递顶级评论提交状态
+                      inputStateService: widget.inputStateService,
+                    ),
+                    SizedBox(height: 16),
+                    // --- 评论列表构建区域 ---
+                    _buildCommentListSection(), // 调用下面封装的方法
+                  ],
+                )
+              : LoginPromptButton(
+                  // 未登录：显示登录提示
+                  message: '登录后查看和发表评论',
+                  buttonText: '去登录', // 修改按钮文字
+                ),
+        ],
       ),
     );
   }

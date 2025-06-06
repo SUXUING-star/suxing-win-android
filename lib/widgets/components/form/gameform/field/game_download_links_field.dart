@@ -3,26 +3,38 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
+import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 
 class GameDownloadLinksField extends StatelessWidget {
   final List<GameDownloadLink> downloadLinks;
   final ValueChanged<List<GameDownloadLink>> onChanged;
+  final InputStateService inputStateService;
 
   const GameDownloadLinksField({
     super.key,
     required this.downloadLinks,
     required this.onChanged,
+    required this.inputStateService,
   });
 
   Future<void> _quickAddFromClipboard(BuildContext context) async {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    if (clipboardData?.text == null) return;
+    if (!context.mounted) return;
 
-    final text = clipboardData!.text!;
-    final lines = text.split('\n');
+    final String? clipboardText = clipboardData?.text;
 
+    if (clipboardText == null || clipboardText.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('剪贴板内容为空')),
+      );
+      return;
+    }
+
+    final lines = clipboardText.split('\n');
     String? title;
     String? url;
     String? description;
@@ -31,8 +43,12 @@ class GameDownloadLinksField extends StatelessWidget {
       if (line.contains('链接：')) {
         url = line.replaceAll('链接：', '').trim();
       } else if (line.contains('提取码：')) {
-        description = '提取码：${line.replaceAll('提取码：', '').trim()}';
-      } else if (title == null && line.isNotEmpty) {
+        description =
+            '${description ?? ''}${description != null && description.isNotEmpty ? '; ' : ''}提取码：${line.replaceAll('提取码：', '').trim()}';
+      } else if (title == null &&
+          line.isNotEmpty &&
+          !line.contains('http') &&
+          !line.contains('https')) {
         title = line.trim();
       }
     }
@@ -46,15 +62,26 @@ class GameDownloadLinksField extends StatelessWidget {
         description: description ?? '',
       ));
       onChanged(newLinks);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('已从剪贴板添加: $title')),
+        );
+      }
+    } else {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('未能从剪贴板解析有效链接')),
+        );
+      }
     }
   }
 
   void _addDownloadLink(BuildContext context) {
     _showLinkDialog(
       context: context,
-      title: '添加下载链接',
+      dialogTitle: '添加下载链接',
       confirmButtonText: '添加',
-      onConfirm: (title, url, description) {
+      onConfirmAction: (title, url, description) {
         final newLinks = List<GameDownloadLink>.from(downloadLinks);
         newLinks.add(GameDownloadLink(
           id: mongo.ObjectId().oid,
@@ -69,15 +96,14 @@ class GameDownloadLinksField extends StatelessWidget {
 
   void _editDownloadLink(BuildContext context, int index) {
     final link = downloadLinks[index];
-
     _showLinkDialog(
       context: context,
-      title: '编辑下载链接',
+      dialogTitle: '编辑下载链接',
       initialTitle: link.title,
       initialUrl: link.url,
       initialDescription: link.description,
       confirmButtonText: '保存',
-      onConfirm: (title, url, description) {
+      onConfirmAction: (title, url, description) {
         final newLinks = List<GameDownloadLink>.from(downloadLinks);
         newLinks[index] = GameDownloadLink(
           id: link.id,
@@ -92,71 +118,76 @@ class GameDownloadLinksField extends StatelessWidget {
 
   void _showLinkDialog({
     required BuildContext context,
-    required String title,
+    required String dialogTitle,
     String initialTitle = '',
     String initialUrl = '',
     String initialDescription = '',
     required String confirmButtonText,
-    required Function(String title, String url, String description) onConfirm,
+    required void Function(String title, String url, String description)
+        onConfirmAction,
   }) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        final titleController = TextEditingController(text: initialTitle);
-        final urlController = TextEditingController(text: initialUrl);
-        final descriptionController =
-            TextEditingController(text: initialDescription);
+    final titleController = TextEditingController(text: initialTitle);
+    final urlController = TextEditingController(text: initialUrl);
+    final descriptionController =
+        TextEditingController(text: initialDescription);
 
-        return AlertDialog(
-          title: Text(title),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration: InputDecoration(
-                  labelText: '链接标题',
-                  hintText: '例如：网盘',
-                ),
+    BaseInputDialog.show<void>(
+      context: context,
+      title: dialogTitle,
+      contentBuilder: (BuildContext dialogContext) {
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextInputField(
+              inputStateService: inputStateService,
+              controller: titleController,
+              decoration: const InputDecoration(
+                labelText: '链接标题',
+                hintText: '例如：网盘',
               ),
-              SizedBox(height: 8),
-              TextField(
-                controller: urlController,
-                decoration: InputDecoration(
-                  labelText: '下载链接',
-                  hintText: 'https://',
-                ),
-              ),
-              SizedBox(height: 8),
-              TextField(
-                controller: descriptionController,
-                decoration: InputDecoration(
-                  labelText: '描述',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text('取消 - Cancel'),
             ),
-            TextButton(
-              onPressed: () {
-                if (titleController.text.isNotEmpty &&
-                    urlController.text.isNotEmpty) {
-                  onConfirm(
-                    titleController.text,
-                    urlController.text,
-                    descriptionController.text,
-                  );
-                  Navigator.pop(context);
-                }
-              },
-              child: Text(confirmButtonText),
+            const SizedBox(height: 12),
+            TextInputField(
+              inputStateService: inputStateService,
+              controller: urlController,
+              decoration: const InputDecoration(
+                labelText: '下载链接（最好只放网盘的链接）',
+                hintText: 'https://',
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextInputField(
+              inputStateService: inputStateService,
+              controller: descriptionController,
+              decoration: const InputDecoration(
+                labelText: '描述/提取码等',
+                hintText: '例如：提取码: abcd',
+              ),
+              maxLines: 2,
             ),
           ],
         );
+      },
+      confirmButtonText: confirmButtonText,
+      onConfirm: () async {
+        final title = titleController.text.trim();
+        final url = urlController.text.trim();
+        final description = descriptionController.text.trim();
+
+        if (title.isNotEmpty && url.isNotEmpty) {
+          onConfirmAction(title, url, description);
+          return;
+        } else {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('链接标题和链接地址不能为空！'),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
+          throw Exception('输入校验失败');
+        }
       },
     );
   }
@@ -166,48 +197,77 @@ class GameDownloadLinksField extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('下载链接'),
-            Row(
-              children: [
-                AppButton(
-                  onPressed: () => _quickAddFromClipboard(context),
-                  icon: Icon(Icons.paste),
-                  text: '快速添加',
-                  isMini: true,
-                  isPrimaryAction: true,
-                ),
-                AppButton(
-                  onPressed: () => _addDownloadLink(context),
-                  icon: Icon(Icons.add),
-                  text: '添加链接',
-                  isMini: true,
-                  isPrimaryAction: true,
-                ),
-              ],
-            ),
-          ],
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                '下载链接',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+              Wrap(
+                spacing: 8.0,
+                runSpacing: 4.0,
+                children: [
+                  FunctionalButton(
+                    onPressed: () => _quickAddFromClipboard(context),
+                    icon: Icons.paste,
+                    label: '快速添加',
+                  ),
+                  FunctionalButton(
+                    onPressed: () => _addDownloadLink(context),
+                    icon: Icons.add,
+                    label: '添加链接',
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
-        if (downloadLinks.isNotEmpty)
+        if (downloadLinks.isEmpty)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(
+              child: Text(
+                '暂无下载链接',
+                style: TextStyle(color: Colors.grey[600]),
+              ),
+            ),
+          )
+        else
           ListView.builder(
             shrinkWrap: true,
-            physics: NeverScrollableScrollPhysics(),
+            physics: const NeverScrollableScrollPhysics(),
             itemCount: downloadLinks.length,
             itemBuilder: (context, index) {
               final link = downloadLinks[index];
               return Card(
+                margin: const EdgeInsets.symmetric(vertical: 4.0),
+                elevation: 1.5,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
                 child: ListTile(
-                  title: Text(link.title),
+                  title: Text(link.title,
+                      style: const TextStyle(fontWeight: FontWeight.w500)),
                   subtitle: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(link.url),
+                      SelectableText(
+                        link.url,
+                        style: TextStyle(
+                            color: Theme.of(context).colorScheme.primary,
+                            fontSize: 13),
+                      ),
                       if (link.description.isNotEmpty)
-                        Text(
-                          link.description,
-                          style: TextStyle(color: Colors.grey[600]),
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4.0),
+                          child: SelectableText(
+                            link.description,
+                            style: TextStyle(
+                                color: Colors.grey[700], fontSize: 12),
+                          ),
                         ),
                     ],
                   ),
@@ -215,11 +275,15 @@ class GameDownloadLinksField extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       IconButton(
-                        icon: Icon(Icons.edit),
+                        icon: Icon(Icons.edit,
+                            color: Colors.blueGrey[600], size: 20),
+                        tooltip: '编辑',
                         onPressed: () => _editDownloadLink(context, index),
                       ),
                       IconButton(
-                        icon: Icon(Icons.delete),
+                        icon: Icon(Icons.delete_outline,
+                            color: Colors.red[400], size: 20),
+                        tooltip: '删除',
                         onPressed: () {
                           final newLinks =
                               List<GameDownloadLink>.from(downloadLinks);

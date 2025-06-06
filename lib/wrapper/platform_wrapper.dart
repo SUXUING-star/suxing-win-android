@@ -1,6 +1,6 @@
 // lib/wrapper/platform_wrapper.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
@@ -25,10 +25,6 @@ class PlatformWrapper extends StatelessWidget {
     required this.checkInService,
     required this.announcementService,
   });
-
-  // 标题栏高度常量可以移到 DesktopFrameLayout 或保留在这里供外部引用
-  static const double kDesktopTitleBarHeight = 35.0;
-
   @override
   Widget build(BuildContext context) {
     if (DeviceUtils.isDesktop) {

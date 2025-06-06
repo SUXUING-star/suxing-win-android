@@ -4,7 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class GameCoverImageField extends StatelessWidget {
@@ -43,13 +43,12 @@ class GameCoverImageField extends StatelessWidget {
           children: [
             Expanded(
               // 使用 Expanded 让按钮填充可用空间
-              child: AppButton(
-                icon: const Icon(Icons.upload_file), // 传入图标
-                text: '本地图片',
+              child: FunctionalButton(
+                icon: Icons.upload_file, // 传入图标
+                label: '本地图片',
                 // 注意 onPressed 需要一个无参数回调
                 onPressed: () => _pickCoverImage(context),
-                isDisabled: isLoading, // 根据父组件状态禁用
-                isPrimaryAction: true,
+                isEnabled: !isLoading,
               ),
             ),
           ],
@@ -78,7 +77,11 @@ class GameCoverImageField extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(Icons.image_outlined, size: 48, color: Colors.grey),
-            Text('请添加封面图片')
+            Text('请添加封面图片'),
+            SizedBox(
+              height: 8,
+            ),
+            Text('不要上传敏感图（你懂的）'),
           ],
         ),
       );

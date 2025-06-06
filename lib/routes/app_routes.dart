@@ -318,6 +318,7 @@ class AppRoutes {
       case addGame:
         return MaterialPageRoute(
             builder: (_) => AddGameScreen(
+                  inputStateService: inputStateService,
                   fileUpload: fileUploadService,
                   sidebarProvider: sidebarProvider,
                   infoProvider: infoProvider,
@@ -341,6 +342,7 @@ class AppRoutes {
         final String gameId = arguments;
         return MaterialPageRoute(
           builder: (_) => EditGameScreen(
+            inputStateService: inputStateService,
             gameId: gameId,
             fileUpload: fileUploadService,
             sidebarProvider: sidebarProvider,
@@ -643,6 +645,7 @@ class AppRoutes {
 
         return MaterialPageRoute(
           builder: (_) => UserFollowsScreen(
+            userService: userService,
             infoProvider: infoProvider,
             authProvider: authProvider,
             followService: followService,

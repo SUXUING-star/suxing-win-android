@@ -69,9 +69,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   bool _isInitialized = false;
 
   bool _isVisible = false;
-  bool _isLoadingData = false; // For initial load or full refresh
-  bool _isLoadingMore = false; // For pagination loading
-  bool _needsRefresh = false; // Flag to refresh when app resumes
+  bool _isLoadingData = false;
+  bool _isLoadingMore = false;
+  bool _needsRefresh = false;
 
   // Cache Watching State (Optional feature)
   StreamSubscription<BoxEvent>? _cacheSubscription;
@@ -190,7 +190,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
           if (event.deleted) {
             if (_isVisible) {
               // Refresh immediately if visible
-              _refreshCurrentPageData(reason: "Cache Deleted Event");
+              _refreshCurrentPageData(
+                reason: "Cache Deleted Event",
+                isCacheUpdated: true,
+              );
             } else {
               // Mark for refresh when it becomes visible again
               _needsRefresh = true;
@@ -222,7 +225,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   }
 
   /// Refreshes the data for the current page with debouncing/throttling.
-  void _refreshCurrentPageData({required String reason}) {
+  void _refreshCurrentPageData(
+      {required String reason, bool isCacheUpdated = false}) {
     // Avoid refreshing if already loading or not mounted
     if (_isLoadingData || _isLoadingMore || !mounted) return;
 
@@ -236,14 +240,22 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     // Debounce the actual refresh call
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(_refreshDebounceTime, () {
-      // Check again if still mounted and not loading before refreshing
-      if (mounted && !_isLoadingData && !_isLoadingMore) {
-        // Load the *current* page again, marking it as a refresh
-        _loadActivities(isRefresh: true, pageToLoad: _currentPage);
-      } else if (mounted) {
-        // If conditions changed during debounce, mark for later refresh
+      if (!mounted) return;
+      if (!_isVisible) {
         _needsRefresh = true;
+        return;
       }
+
+      if (_isLoadingData || _isLoadingMore) {
+        if (isCacheUpdated) {
+          return;
+        } else {
+          _needsRefresh = true;
+          return;
+        }
+      }
+
+      _loadActivities(isRefresh: true, pageToLoad: _currentPage);
     });
   }
 

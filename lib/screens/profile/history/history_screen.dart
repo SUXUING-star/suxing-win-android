@@ -1,16 +1,20 @@
-// lib/screens/profile/history/history_screen.darts
+// lib/screens/profile/history/history_screen.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
+import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'tab/game_history_tab.dart'; // 导入游戏历史标签页组件
-import 'tab/post_history_tab.dart'; // 导入帖子历史标签页组件
+import 'package:suxingchahui/widgets/components/screen/history/game_history_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/history/post_history_layout.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -34,213 +38,377 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen>
     with SingleTickerProviderStateMixin {
   TabController? _tabController;
-  String? _error;
-  bool _hasInitializedProviders = false;
 
-  // 标记是否已经加载过数据
-  bool _gameHistoryLoaded = false;
-  bool _postHistoryLoaded = false;
+  // 游戏历史数据
+  List<Game> _gameHistoryItems = [];
+  PaginationData? _gameHistoryPagination;
+  bool _isLoadingGameHistory = false;
+  bool _isLoadingMoreGameHistory = false;
+  String? _gameHistoryError;
+  int _gameHistoryPage = 1;
+
+  // 帖子历史数据
+  List<Post> _postHistoryItems = [];
+  PaginationData? _postHistoryPagination;
+  bool _isLoadingPostHistory = false;
+  bool _isLoadingMorePostHistory = false;
+  String? _postHistoryError;
+  int _postHistoryPage = 1;
+
+  final ScrollController _gameScrollController = ScrollController();
+  final ScrollController _postScrollController = ScrollController();
+
+  User? _currentUser;
+  String? _prevUserId;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-
-    // 监听标签页变化，实现懒加载
     _tabController!.addListener(_handleTabChange);
+
+    _gameScrollController
+        .addListener(() => _handleScroll(_gameScrollController, 0));
+    _postScrollController
+        .addListener(() => _handleScroll(_postScrollController, 1));
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
   }
 
   @override
   void dispose() {
     _tabController?.removeListener(_handleTabChange);
     _tabController?.dispose();
+    _gameScrollController.dispose();
+    _postScrollController.dispose();
     super.dispose();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasInitializedProviders) {
-      _hasInitializedProviders = true;
-    }
-
-    // 应用启动时只预加载当前选中的标签页数据
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialTab();
-    });
-  }
-
-  // 加载初始标签页数据
-  void _loadInitialTab() {
-    if (_tabController!.index == 0) {
-      _loadGameHistory();
-    } else {
-      _loadPostHistory();
-    }
-  }
-
-  // 处理标签页变化事件，实现懒加载
   void _handleTabChange() {
     if (_tabController!.indexIsChanging) {
       return;
     }
+    // 每次切换标签页时，尝试加载对应数据，如果数据未加载过且用户已登录
+    _loadHistoryForTab(_tabController!.index);
+  }
 
-    if (_tabController!.index == 0 && !_gameHistoryLoaded) {
-      _loadGameHistory();
-    } else if (_tabController!.index == 1 && !_postHistoryLoaded) {
-      _loadPostHistory();
+  void _handleScroll(ScrollController controller, int tabIndex) {
+    if (controller.position.pixels >=
+        controller.position.maxScrollExtent * 0.9) {
+      if (tabIndex == 0 &&
+          !_isLoadingMoreGameHistory &&
+          (_gameHistoryPagination?.hasNextPage() ?? false)) {
+        _loadMoreGameHistory();
+      } else if (tabIndex == 1 &&
+          !_isLoadingMorePostHistory &&
+          (_postHistoryPagination?.hasNextPage() ?? false)) {
+        _loadMorePostHistory();
+      }
     }
   }
 
-  // 只加载游戏历史
-  Future<void> _loadGameHistory() async {
-    if (_gameHistoryLoaded) return; // 如果已经加载过，直接返回
+  Future<void> _loadHistoryForTab(int tabIndex) async {
+    final currentUserId = widget.authProvider.currentUserId;
+    if (currentUserId == null || currentUserId.isEmpty) {
+      _resetDataForLoggedOutUser();
+      return;
+    }
 
-    setState(() {
-      _error = null; // 清除之前的错误，准备加载
-    });
-
-    // 这里仅仅是标记状态，实际加载在 Tab 组件内部触发
-    // 简单的状态标记不需要 try-catch，除非标记过程本身有异常风险（这里没有）
-    if (!mounted) return;
-    setState(() {
-      _gameHistoryLoaded = true; // <--- 修正这里！标记游戏历史已“触发”加载
-    });
-    // 注意：这里不再需要 try-catch 和 finally，因为没有执行实际的异步IO操作
-    // 错误处理应该在 GameHistoryTab 的 _loadHistory 方法中进行
+    if (tabIndex == 0 && !_isLoadingGameHistory && _gameHistoryItems.isEmpty) {
+      _fetchGameHistory(isRefresh: true);
+    } else if (tabIndex == 1 &&
+        !_isLoadingPostHistory &&
+        _postHistoryItems.isEmpty) {
+      _fetchPostHistory(isRefresh: true);
+    }
   }
 
-  // 只加载帖子历史
-  Future<void> _loadPostHistory() async {
-    if (_postHistoryLoaded) return;
+  void _resetDataForLoggedOutUser() {
+    if (mounted) {
+      setState(() {
+        _gameHistoryItems = [];
+        _gameHistoryPagination = null;
+        _isLoadingGameHistory = false;
+        _isLoadingMoreGameHistory = false;
+        _gameHistoryError = null;
+        _gameHistoryPage = 1;
+
+        _postHistoryItems = [];
+        _postHistoryPagination = null;
+        _isLoadingPostHistory = false;
+        _isLoadingMorePostHistory = false;
+        _postHistoryError = null;
+        _postHistoryPage = 1;
+      });
+    }
+  }
+
+  // --- 游戏历史相关方法 ---
+  Future<void> _fetchGameHistory({bool isRefresh = false}) async {
+    if (!mounted || (_isLoadingGameHistory && !isRefresh)) return;
+
+    if (isRefresh) _gameHistoryPage = 1;
 
     setState(() {
-      _error = null; // 清除之前的错误
+      _isLoadingGameHistory = true;
+      _gameHistoryError = null;
+      if (isRefresh) {
+        _gameHistoryItems = [];
+        _gameHistoryPagination = null;
+      }
     });
 
     try {
+      final currentUserId = widget.authProvider.currentUserId;
+      if (currentUserId == null || currentUserId.isEmpty) {
+        _resetDataForLoggedOutUser();
+        return;
+      }
+
+      final gameListResult = await widget.gameService
+          .getGameHistoryWithDetails(_gameHistoryPage, 15);
+
       if (!mounted) return;
       setState(() {
-        _postHistoryLoaded = true;
-        // _error = null; // 已在上面设置
+        if (isRefresh) {
+          _gameHistoryItems = gameListResult.games;
+        } else {
+          _gameHistoryItems.addAll(gameListResult.games);
+        }
+        _gameHistoryPagination = gameListResult.pagination;
+        _isLoadingGameHistory = false;
+        _gameHistoryError = null;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
-        _error = '触发加载帖子历史失败: $e'; // 错误信息可以更通用
-        _postHistoryLoaded = false; // 加载失败，允许重试
+        _isLoadingGameHistory = false;
+        _gameHistoryError = '加载游戏历史失败: ${e.toString().split(':').last.trim()}';
       });
-    } finally {
-      //
+      AppSnackBar.showError(context, '加载游戏历史失败');
     }
   }
 
-  // 刷新当前选中的历史
-  // 刷新当前选中的历史 (这里也要对应调整)
-  Future<void> _refreshCurrentHistory() async {
-    if (!mounted || _tabController == null) return;
-    int currentTab = _tabController!.index;
+  Future<void> _loadMoreGameHistory() async {
+    if (!mounted ||
+        _isLoadingMoreGameHistory ||
+        !(_gameHistoryPagination?.hasNextPage() ?? false)) {
+      return;
+    }
 
-    // 重置加载状态标记，让对应的 Tab 重新加载
+    _gameHistoryPage++;
+    setState(() {
+      _isLoadingMoreGameHistory = true;
+    });
+
+    try {
+      final currentUserId = widget.authProvider.currentUserId;
+      if (currentUserId == null || currentUserId.isEmpty) {
+        _gameHistoryPage--;
+        _resetDataForLoggedOutUser();
+        return;
+      }
+
+      final gameListResult = await widget.gameService
+          .getGameHistoryWithDetails(_gameHistoryPage, 15);
+
+      if (!mounted) return;
+      setState(() {
+        _gameHistoryItems.addAll(gameListResult.games);
+        _gameHistoryPagination = gameListResult.pagination;
+        _isLoadingMoreGameHistory = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _gameHistoryPage--;
+      setState(() {
+        _isLoadingMoreGameHistory = false;
+        _gameHistoryError =
+            '加载更多游戏历史失败: ${e.toString().split(':').last.trim()}';
+      });
+      AppSnackBar.showError(context, '加载更多游戏历史失败');
+    }
+  }
+
+  // --- 帖子历史相关方法 ---
+  Future<void> _fetchPostHistory({bool isRefresh = false}) async {
+    if (!mounted || (_isLoadingPostHistory && !isRefresh)) return;
+
+    if (isRefresh) _postHistoryPage = 1;
+
+    setState(() {
+      _isLoadingPostHistory = true;
+      _postHistoryError = null;
+      if (isRefresh) {
+        _postHistoryItems = [];
+        _postHistoryPagination = null;
+      }
+    });
+
+    try {
+      final currentUserId = widget.authProvider.currentUserId;
+      if (currentUserId == null || currentUserId.isEmpty) {
+        _resetDataForLoggedOutUser();
+        return;
+      }
+
+      final postListResult = await widget.postService
+          .getPostHistoryWithDetails(_postHistoryPage, 10);
+
+      if (!mounted) return;
+      setState(() {
+        if (isRefresh) {
+          _postHistoryItems = postListResult.posts;
+        } else {
+          _postHistoryItems.addAll(postListResult.posts);
+        }
+        _postHistoryPagination = postListResult.pagination;
+        _isLoadingPostHistory = false;
+        _postHistoryError = null;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingPostHistory = false;
+        _postHistoryError = '加载帖子历史失败: ${e.toString().split(':').last.trim()}';
+      });
+      AppSnackBar.showError(context, '加载帖子历史失败');
+    }
+  }
+
+  Future<void> _loadMorePostHistory() async {
+    if (!mounted ||
+        _isLoadingMorePostHistory ||
+        !(_postHistoryPagination?.hasNextPage() ?? false)) {
+      return;
+    }
+
+    _postHistoryPage++;
+    setState(() {
+      _isLoadingMorePostHistory = true;
+    });
+
+    try {
+      final currentUserId = widget.authProvider.currentUserId;
+      if (currentUserId == null || currentUserId.isEmpty) {
+        _postHistoryPage--;
+        _resetDataForLoggedOutUser();
+        return;
+      }
+
+      final postListResult = await widget.postService
+          .getPostHistoryWithDetails(_postHistoryPage, 10);
+
+      if (!mounted) return;
+      setState(() {
+        _postHistoryItems.addAll(postListResult.posts);
+        _postHistoryPagination = postListResult.pagination;
+        _isLoadingMorePostHistory = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      _postHistoryPage--;
+      setState(() {
+        _isLoadingMorePostHistory = false;
+        _postHistoryError =
+            '加载更多帖子历史失败: ${e.toString().split(':').last.trim()}';
+      });
+      AppSnackBar.showError(context, '加载更多帖子历史失败');
+    }
+  }
+
+  Future<void> _refreshCurrentHistory() async {
+    final currentTab = _tabController!.index;
+    if (!widget.authProvider.isLoggedIn) {
+      if (mounted) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+      }
+      return;
+    }
+
     if (currentTab == 0) {
-      setState(() {
-        _gameHistoryLoaded = false; // <--- 重置游戏历史加载状态
-        _error = null;
-      });
-      // 通过改变 isLoaded 状态，GameHistoryTab 的 didUpdateWidget 会被触发
-      // 或者如果 GameHistoryTab 暴露了刷新方法，可以调用它
-      // 重新触发加载（或者说，允许它下次被触发时加载）
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        // 确保是在下一帧触发状态更新，让 GameHistoryTab 有机会接收到 isLoaded=false
-        // 然后再触发一次加载，使其接收 isLoaded=true
-        if (mounted) {
-          _loadGameHistory(); // 再次调用，将 isLoaded 设置为 true，触发 GameHistoryTab 的加载逻辑
-        }
-      });
+      await _fetchGameHistory(isRefresh: true);
     } else {
-      setState(() {
-        _postHistoryLoaded = false; // <--- 重置帖子历史加载状态
-        _error = null;
-      });
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          _loadPostHistory();
-        }
-      });
+      await _fetchPostHistory(isRefresh: true);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
+    return Scaffold(
+      appBar: const CustomAppBar(title: '浏览历史'),
+      body: StreamBuilder<User?>(
         stream: widget.authProvider.currentUserStream,
         initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
-          if (currentUser == null) {
+          _currentUser = authSnapshot.data;
+          final String? newUserId = _currentUser?.id;
+
+          if (_prevUserId == null && newUserId != null) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (mounted) {
+                _loadHistoryForTab(_tabController?.index ?? 0);
+              }
+            });
+          }
+          _prevUserId = newUserId;
+
+          if (_currentUser == null) {
             return const LoginPromptWidget();
           }
-          return Scaffold(
-            appBar: const CustomAppBar(title: '浏览历史'),
-            body: RefreshIndicator(
-              onRefresh: _refreshCurrentHistory,
-              child: _buildContent(widget.authProvider.currentUser),
-            ),
+
+          return Column(
+            children: [
+              TabBar(
+                controller: _tabController,
+                tabs: const [
+                  Tab(text: '游戏浏览历史'),
+                  Tab(text: '帖子浏览历史'),
+                ],
+              ),
+              Expanded(
+                child: RefreshIndicator(
+                  onRefresh: _refreshCurrentHistory,
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      GameHistoryLayout(
+                        gameHistoryItems: _gameHistoryItems,
+                        paginationData: _gameHistoryPagination,
+                        isLoadingInitial:
+                            _isLoadingGameHistory && _gameHistoryItems.isEmpty,
+                        isLoadingMore: _isLoadingMoreGameHistory,
+                        onLoadMore: _loadMoreGameHistory,
+                        onRetryInitialLoad: () =>
+                            _fetchGameHistory(isRefresh: true),
+                        errorMessage: _gameHistoryError,
+                        scrollController: _gameScrollController,
+                      ),
+                      PostHistoryLayout(
+                        postHistoryItems: _postHistoryItems,
+                        paginationData: _postHistoryPagination,
+                        isLoadingInitial:
+                            _isLoadingPostHistory && _postHistoryItems.isEmpty,
+                        isLoadingMore: _isLoadingMorePostHistory,
+                        onLoadMore: _loadMorePostHistory,
+                        onRetryInitialLoad: () =>
+                            _fetchPostHistory(isRefresh: true),
+                        errorMessage: _postHistoryError,
+                        scrollController: _postScrollController,
+                        currentUser: _currentUser,
+                        userInfoProvider: widget.infoProvider,
+                        userFollowService: widget.followService,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           );
-        });
-  }
-
-  Widget _buildContent(User? currentUser) {
-    if (_error != null) {
-      return _buildErrorContent();
-    }
-
-    return Column(
-      children: [
-        _buildTabBar(),
-        _buildTabContent(currentUser),
-      ],
-    );
-  }
-
-  Widget _buildErrorContent() {
-    return CustomErrorWidget(
-      onRetry: _loadInitialTab,
-      retryText: "尝试重试",
-    );
-  }
-
-  Widget _buildTabBar() {
-    return TabBar(
-      controller: _tabController,
-      tabs: [
-        Tab(text: '游戏浏览历史'),
-        Tab(text: '帖子浏览历史'),
-      ],
-    );
-  }
-
-  Widget _buildTabContent(User? currentUser) {
-    return Expanded(
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          // 游戏历史标签页 - 使用组件拆分提高性能
-          GameHistoryTab(
-            isLoaded: _gameHistoryLoaded,
-            onLoad: _loadGameHistory,
-            currentUser: currentUser,
-            gameService: widget.gameService,
-          ),
-          // 帖子历史标签页 - 使用组件拆分提高性能
-          PostHistoryTab(
-            userInfoProvider: widget.infoProvider,
-            userFollowService: widget.followService,
-            isLoaded: _postHistoryLoaded,
-            onLoad: _loadPostHistory,
-            currentUser: currentUser,
-            postService: widget.postService,
-          ),
-        ],
+        },
       ),
     );
   }

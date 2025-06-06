@@ -668,7 +668,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // --- HomeBanner (保持不变，假设它自己管理或无复杂状态) ---
               FadeInSlideUpItemCanPlay(
                   play: currentPlaySectionEntryAnimation, // 确保动画只在首次加载后播放
                   delay: initialDelay,

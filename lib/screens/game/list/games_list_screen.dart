@@ -398,7 +398,8 @@ class _GamesListScreenState extends State<GamesListScreen>
           .listen((BoxEvent event) {
         if (_isVisible) {
           _refreshDataIfNeeded(
-              reason: "Cache Change on page $_currentPage,event$event");
+              reason: "Cache Change on page $_currentPage,event$event",
+              isCacheUpdated: true);
         } else {
           _needsRefresh = true;
         }
@@ -422,14 +423,30 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 防抖刷新
-  void _refreshDataIfNeeded({required String reason}) {
+  void _refreshDataIfNeeded(
+      {required String reason, bool isCacheUpdated = false}) {
     _refreshDebounceTimer?.cancel();
     _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
-      if (mounted && _isVisible && !_isLoadingData) {
-        _loadGames(pageToFetch: 1, isRefresh: true);
-      } else if (mounted && !_isVisible) {
+      // 1. 如果组件已经卸载了，直接返回。
+      if (!mounted) return;
+
+      if (!_isVisible) {
         _needsRefresh = true;
+        return;
       }
+
+      // 3.  _isLoadingData 已经为 true
+      if (_isLoadingData) {
+        if (isCacheUpdated) {
+          return;
+        } else {
+          _needsRefresh = true;
+          return;
+        }
+      }
+
+      // 4. 如果以上条件都不满足 (mounted, _isVisible, 并且 _isLoadingData 为 false)，
+      _loadGames(pageToFetch: _currentPage, isRefresh: true); // 触发新的加载
     });
   }
 
@@ -1129,20 +1146,18 @@ class _GamesListScreenState extends State<GamesListScreen>
   Widget _buildGameGridWithNavigation(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
     final bool withPanels = isDesktop && (showLeftPanel || showRightPanel);
-    final cardsPerRow = DeviceUtils.calculateCardsPerRow(context,
+    int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
         withPanels: withPanels,
         leftPanelVisible: showLeftPanel,
         rightPanelVisible: showRightPanel);
-    if (cardsPerRow <= 0) {
-      //print("错误：计算出的每行卡片数为 $cardsPerRow");
-      return CustomErrorWidget(errorMessage: "无法计算布局 (cardsPerRow <= 0)");
-    }
+    if (cardsPerRow <= 0) cardsPerRow = 1;
+
     final useCompactMode = cardsPerRow > 3 || (cardsPerRow == 3 && withPanels);
     final cardRatio = withPanels
         ? DeviceUtils.calculateGameListCardRatio(
             context, showLeftPanel, showRightPanel,
             showTags: true)
-        : DeviceUtils.calculateSimpleCardRatio(context, showTags: true);
+        : DeviceUtils.calculateSimpleGameCardRatio(context, showTags: true);
     if (cardRatio <= 0) {
       //print("错误：计算出的卡片宽高比为 $cardRatio");
       return const CustomErrorWidget(errorMessage: "发生异常错误");
@@ -1204,6 +1219,8 @@ class _GamesListScreenState extends State<GamesListScreen>
                 currentUser: widget.authProvider.currentUser,
                 game: game,
                 isGridItem: true,
+                showNewBadge: true,
+                showUpdatedBadge: true,
                 adaptForPanels: withPanels,
                 showTags: true,
                 showCollectionStats: true,
@@ -1371,7 +1388,6 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// Builds the floating pagination controls if needed.
   Widget? _buildFloatingPaginationControlsIfNeeded() {
-    // 关键逻辑：只有在初始化完成并且总页数大于1时才需要显示分页控件
     // PaginationControls 组件内部会处理 totalPages <= 1 的情况，所以这里主要判断是否初始化
     if (!_isInitialized) {
       return null; // 初始化完成前不显示任何东西

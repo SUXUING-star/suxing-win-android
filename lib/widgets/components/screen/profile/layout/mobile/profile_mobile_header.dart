@@ -17,7 +17,7 @@ class ProfileMobileHeader extends StatelessWidget {
   final VoidCallback onLogout;
   final RateLimitedFileUpload fileUpload;
   final Function(bool) onUploadStateChanged;
-  final Function(String? avatarUrl) onUploadSuccess;
+  final Function(String avatarUrl) onUploadSuccess;
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;

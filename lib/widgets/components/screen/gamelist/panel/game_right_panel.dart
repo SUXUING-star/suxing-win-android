@@ -49,69 +49,66 @@ class GameRightPanel extends StatelessWidget {
       margin: EdgeInsets.all(8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Opacity(
-          opacity: 0.8, // 透明度调整
-          child: Container(
-            color: Theme.of(context).cardColor, // 使用卡片颜色
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题栏
-                Container(
-                  padding: EdgeInsets.all(12),
-                  color: Theme.of(context).primaryColor, // 使用主题主色
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.analytics,
+        child: Container(
+          color: Theme.of(context).cardColor.withSafeOpacity(0.8), // 使用卡片颜色
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题栏
+              Container(
+                padding: EdgeInsets.all(12),
+                color: Theme.of(context).primaryColor, // 使用主题主色
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.analytics,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .onPrimary, // 使用 onPrimary 颜色
+                      size: 16,
+                    ),
+                    SizedBox(width: 8),
+                    Text(
+                      '统计信息',
+                      style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
                             .onPrimary, // 使用 onPrimary 颜色
-                        size: 16,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
-                      SizedBox(width: 8),
-                      Text(
-                        '统计信息',
-                        style: TextStyle(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .onPrimary, // 使用 onPrimary 颜色
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
+              ),
 
-                // 统计区
-                Expanded(
-                  child: ListView(
-                    padding: EdgeInsets.all(12),
-                    children: [
-                      _buildStatsCard(
-                        context,
-                        '页面摘要 (当前页)',
-                        [
-                          StatsItem('显示游戏数', '${currentPageGames.length}'),
-                          StatsItem('总游戏数', '$totalGamesCount'),
-                          StatsItem('分类数 (当前页)', '$uniqueCategoriesCount'),
-                          StatsItem('标签数 (当前页)', '$uniqueTagsCount'),
-                        ],
-                      ),
-                      SizedBox(height: 16),
-                      _buildCategoryFilter(
-                          context), // 分类筛选区域 (使用修改后的 _buildFilterChip)
-                      SizedBox(height: 16),
-                      _buildCategoriesStats(
-                          context, categoryStats), // 分类统计条形图 (样式不变)
-                      SizedBox(height: 16),
-                      _buildTagsStats(context, tagStats), // 标签统计 (使用 GameTag)
-                    ],
-                  ),
+              // 统计区
+              Expanded(
+                child: ListView(
+                  padding: EdgeInsets.all(12),
+                  children: [
+                    _buildStatsCard(
+                      context,
+                      '页面摘要 (当前页)',
+                      [
+                        StatsItem('显示游戏数', '${currentPageGames.length}'),
+                        StatsItem('总游戏数', '$totalGamesCount'),
+                        StatsItem('分类数 (当前页)', '$uniqueCategoriesCount'),
+                        StatsItem('标签数 (当前页)', '$uniqueTagsCount'),
+                      ],
+                    ),
+                    SizedBox(height: 16),
+                    _buildCategoryFilter(
+                        context), // 分类筛选区域 (使用修改后的 _buildFilterChip)
+                    SizedBox(height: 16),
+                    _buildCategoriesStats(
+                        context, categoryStats), // 分类统计条形图 (样式不变)
+                    SizedBox(height: 16),
+                    _buildTagsStats(context, tagStats), // 标签统计 (使用 GameTag)
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

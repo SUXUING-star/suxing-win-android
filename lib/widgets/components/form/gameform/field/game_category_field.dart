@@ -34,7 +34,6 @@ class GameCategoryField extends StatelessWidget {
               onSelected: (bool selected) {
                 onChanged(selected ? category : null);
               },
-              // 视觉优化：可以改变选中时的样式
               selectedColor: Theme.of(context).colorScheme.primaryContainer,
               checkmarkColor: Theme.of(context).colorScheme.onPrimaryContainer,
             );

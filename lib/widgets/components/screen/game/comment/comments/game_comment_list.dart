@@ -7,7 +7,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
-import 'game_comment_item.dart'; // 导入 CommentItem
+import 'game_comment_item.dart';
 
 class GameCommentList extends StatelessWidget {
   final User? currentUser;
@@ -16,7 +16,8 @@ class GameCommentList extends StatelessWidget {
   final UserFollowService followService;
   final InputStateService inputStateService;
   final List<GameComment> comments;
-  final Future<void> Function(GameComment comment, String content) onUpdateComment;
+  final Future<void> Function(GameComment comment, String content)
+      onUpdateComment;
   final Future<void> Function(GameComment comment) onDeleteComment;
   final Future<void> Function(String content, String parentId) onAddReply;
   final Set<String> deletingCommentIds;

@@ -3,20 +3,17 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
 import 'package:suxingchahui/models/game/game_collection_review_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/components/game/review/game_review_item.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class GameReviewSection extends StatefulWidget {
@@ -43,10 +40,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
   bool _isLoading = true;
   String? _error;
   int _page = 1;
-  final int _pageSize = GameCollectionService.gameCollectionReviewsLimit;
+  static const int _pageSize = GameCollectionService.gameCollectionReviewsLimit;
   bool _isProcessingPageOne = false;
   bool _hasInitializedDependencies = false;
-  late final GameCollectionService _collectionService;
   User? _currentUser;
 
   @override
@@ -58,7 +54,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _collectionService = widget.gameCollectionService;
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -136,17 +131,18 @@ class GameReviewSectionState extends State<GameReviewSection> {
     }
 
     try {
-      final GameCollectionReviewPagination reviewListResult =
-          await _collectionService.getGameCollectionReviews(widget.game.id,
+      final GameCollectionReviewPagination reviewListResult = await widget
+          .gameCollectionService
+          .getGameCollectionReviews(widget.game.id,
               page: _page, limit: _pageSize);
 
       if (!mounted) return;
 
       setState(() {
         if (_page == 1) {
-          _reviews = reviewListResult.entries;
+          _reviews = reviewListResult.reviews;
         } else {
-          _reviews.addAll(reviewListResult.entries);
+          _reviews.addAll(reviewListResult.reviews);
         }
         _paginationData = reviewListResult.pagination;
         _error = null;
@@ -235,7 +231,6 @@ class GameReviewSectionState extends State<GameReviewSection> {
   Widget _buildAverageRatingDisplay() {
     final game = widget.game;
     final bool hasGameRating = game.ratingCount > 0;
-    // 使用 _paginationData?.total 来获取API返回的评论总数
     final int totalReviewCount = _paginationData?.total ?? 0;
     final bool hasReviewsToShow = totalReviewCount > 0 ||
         (_reviews.isNotEmpty && _paginationData == null);
@@ -321,122 +316,13 @@ class GameReviewSectionState extends State<GameReviewSection> {
         separatorBuilder: (context, index) =>
             Divider(color: Colors.grey[200], height: 1),
         itemBuilder: (context, index) {
-          return _buildCollectionEntryItem(_reviews[index]);
+          return GameReviewItemWidget(
+            review: _reviews[index],
+            currentUser: widget.currentUser,
+            followService: widget.followService,
+            infoProvider: widget.infoProvider,
+          );
         });
-  }
-
-  Widget _buildCollectionEntryItem(GameCollectionReview entry) {
-    final String userId = entry.userId;
-    final DateTime updateTime = entry.updateTime;
-    final double? rating = entry.rating;
-    final String? reviewText = entry.review;
-    final String status = entry.status;
-    final String? notesText = entry.notes;
-
-    String statusLabel;
-    IconData statusIcon;
-    Color statusColor;
-    switch (status) {
-      case GameCollectionStatus.wantToPlay:
-        statusLabel = '想玩';
-        statusIcon = Icons.bookmark_add_outlined;
-        statusColor = Colors.blue;
-        break;
-      case GameCollectionStatus.playing:
-        statusLabel = '在玩';
-        statusIcon = Icons.gamepad_outlined;
-        statusColor = Colors.orange;
-        break;
-      case GameCollectionStatus.played:
-        statusLabel = '玩过';
-        statusIcon = Icons.check_circle_outline;
-        statusColor = Colors.green;
-        break;
-      default:
-        statusLabel = '未知';
-        statusIcon = Icons.help_outline;
-        statusColor = Colors.grey;
-    }
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                  child: UserInfoBadge(
-                      followService: widget.followService,
-                      infoProvider: widget.infoProvider,
-                      currentUser: widget.currentUser,
-                      targetUserId: userId,
-                      showFollowButton: false,
-                      mini: true)),
-              const SizedBox(width: 8),
-              Chip(
-                avatar: Icon(statusIcon, size: 16, color: statusColor),
-                label: Text(statusLabel,
-                    style: TextStyle(fontSize: 11, color: statusColor)),
-                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-                backgroundColor: statusColor.withSafeOpacity(0.1),
-                visualDensity: VisualDensity.compact,
-                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(20.0),
-                  side: BorderSide(color: statusColor.withSafeOpacity(0.3)),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(DateTimeFormatter.formatRelative(updateTime),
-                  style: TextStyle(color: Colors.grey[600], fontSize: 12)),
-            ],
-          ),
-          if (status == GameCollectionStatus.played && rating != null)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),
-              child: Row(
-                children: List.generate(5, (index) {
-                  double starValue = rating / 2.0;
-                  IconData starIcon;
-                  Color starColor = Colors.amber;
-                  if (index < starValue.floor()) {
-                    starIcon = Icons.star_rounded;
-                  } else if (index < starValue && (starValue - index) >= 0.25) {
-                    starIcon = Icons.star_half_rounded;
-                  } else {
-                    starIcon = Icons.star_border_rounded;
-                    starColor = Colors.grey[400]!;
-                  }
-                  return Icon(starIcon, size: 16, color: starColor);
-                }),
-              ),
-            ),
-          if (reviewText != null && reviewText.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(reviewText,
-                  style: TextStyle(
-                      fontSize: 14, color: Colors.grey[800], height: 1.5)),
-            ),
-          if (notesText != null && notesText.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 8.0),
-              child: Text(
-                userId == widget.currentUser?.id
-                    ? "我做的笔记: $notesText"
-                    : "笔记: $notesText",
-                style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey[600],
-                    fontStyle: FontStyle.italic),
-              ),
-            ),
-        ],
-      ),
-    );
   }
 
   Widget _buildLoadMoreSection() {

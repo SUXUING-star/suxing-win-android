@@ -7,7 +7,6 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class PostLeftPanel extends StatelessWidget {
-  // --- 参数类型保持不变 ---
   final List<PostTag> tags; // 接收枚举列表 (所有可用标签)
   final PostTag? selectedTag; // 接收可空的枚举 (当前选中项)
   final Function(PostTag?) onTagSelected; // 回调函数 (传递选中的枚举或 null)

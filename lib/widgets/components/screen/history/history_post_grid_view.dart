@@ -1,0 +1,100 @@
+// lib/widgets/components/screen/history/history_post_grid_view.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/models/post/post.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+
+class HistoryPostGridView extends StatelessWidget {
+  final List<Post> posts;
+  final User? currentUser;
+  final UserFollowService followService;
+  final ScrollController? scrollController;
+  final bool isLoading;
+  final bool hasMoreData;
+  final UserInfoProvider infoProvider;
+  final bool isDesktopLayout;
+
+  const HistoryPostGridView({
+    super.key,
+    required this.posts,
+    required this.currentUser,
+    required this.followService,
+    required this.infoProvider,
+    this.scrollController,
+    this.isLoading = false,
+    this.hasMoreData = false,
+    this.isDesktopLayout = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    int crossAxisCount = 1;
+    if (isDesktopLayout) {
+      crossAxisCount =
+          DeviceUtils.calculatePostCardsPerRow(context); // 妈的，这里修正了！
+    }
+
+    return MasonryGridView.count(
+      controller: scrollController,
+      crossAxisCount: crossAxisCount,
+      mainAxisSpacing: isDesktopLayout ? 16 : 8,
+      crossAxisSpacing: isDesktopLayout ? 16 : 8,
+      padding: EdgeInsets.all(isDesktopLayout ? 16 : 8),
+      itemCount: posts.length + (isLoading && hasMoreData ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index < posts.length) {
+          final post = posts[index];
+          final DateTime? lastViewTime =
+              post.currentUserLastViewTime ?? post.lastViewedAt;
+
+          return Stack(
+            children: [
+              BasePostCard(
+                currentUser: currentUser,
+                infoProvider: infoProvider,
+                followService: followService,
+                post: post,
+                isDesktopLayout: isDesktopLayout,
+                onDeleteAction: null,
+                onEditAction: null,
+                onToggleLockAction: null,
+              ),
+              if (lastViewTime != null)
+                Positioned(
+                  bottom: isDesktopLayout ? 8 : 4,
+                  right: isDesktopLayout ? 8 : 4,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                        horizontal: isDesktopLayout ? 8 : 6,
+                        vertical: isDesktopLayout ? 3 : 2),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withSafeOpacity(0.5),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      '上次浏览: ${DateTimeFormatter.formatShort(lastViewTime)}',
+                      style: TextStyle(
+                        fontSize: isDesktopLayout ? 9 : 10,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          );
+        } else {
+          return Center(
+            child: LoadingWidget.inline(message: "加载中..."),
+          );
+        }
+      },
+    );
+  }
+}

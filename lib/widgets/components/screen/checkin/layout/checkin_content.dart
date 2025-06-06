@@ -1,5 +1,7 @@
 // lib/widgets/components/screen/checkin/layout/checkin_content.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/user/checkin_status.dart';
+import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
@@ -9,16 +11,15 @@ import 'package:suxingchahui/widgets/components/screen/checkin/progress/level_pr
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/checkin_rules_card.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/today_checkin_list.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/models/user/user_checkin.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class CheckInContent extends StatelessWidget {
-  final CheckInStats checkInStats;
+  final CheckInStatus checkInStatus;
   final User currentUser;
   final UserInfoProvider infoProvider;
   final UserCheckInService checkInService;
   final UserFollowService followService;
-  final Map<String, dynamic>? monthlyData;
+  final MonthlyCheckInReport? monthlyData;
   final int selectedYear;
   final int selectedMonth;
   final bool isCheckInLoading;
@@ -31,7 +32,7 @@ class CheckInContent extends StatelessWidget {
 
   const CheckInContent({
     super.key,
-    required this.checkInStats,
+    required this.checkInStatus,
     required this.currentUser,
     required this.infoProvider,
     required this.checkInService,
@@ -69,7 +70,7 @@ class CheckInContent extends StatelessWidget {
       delay: delay,
       slideOffset: _slideOffset,
       child: LevelProgressCard(
-        stats: checkInStats,
+        stats: checkInStatus,
         currentUser: currentUser,
         isLoading: isCheckInLoading,
         hasCheckedToday: hasCheckedToday,
@@ -84,8 +85,8 @@ class CheckInContent extends StatelessWidget {
   Widget _buildStatsSummarySection(
       BuildContext context, Duration delay, Key key) {
     final theme = Theme.of(context);
-    final continuous = checkInStats.continuousDays;
-    final total = checkInStats.totalCheckIns;
+    final continuous = checkInStatus.consecutiveCheckIn;
+    final total = checkInStatus.totalCheckIn;
 
     // Local helper to build stat item, similar to GameDetailContent's pattern
     Widget buildStatItem({
@@ -244,7 +245,7 @@ class CheckInContent extends StatelessWidget {
         ValueKey('calendar_horiz_${selectedYear}_$selectedMonth');
     final levelProgressKey = ValueKey('level_horiz_${currentUser.id}');
     final statsSummaryKey =
-        ValueKey('stats_summary_horiz_${checkInStats.hashCode}');
+        ValueKey('stats_summary_horiz_${checkInStatus.hashCode}');
     final todayListKey = ValueKey('today_list_horiz_${currentUser.id}');
     final rulesKey = ValueKey('rules_horiz');
 
@@ -322,7 +323,7 @@ class CheckInContent extends StatelessWidget {
     // Keys for vertical layout
     final levelProgressKey = ValueKey('level_vert_${currentUser.id}');
     final statsSummaryKey =
-        ValueKey('stats_summary_vert_${checkInStats.hashCode}');
+        ValueKey('stats_summary_vert_${checkInStatus.hashCode}');
     final todayListKey = ValueKey('today_list_vert_${currentUser.id}');
     final calendarKey =
         ValueKey('calendar_vert_${selectedYear}_$selectedMonth');

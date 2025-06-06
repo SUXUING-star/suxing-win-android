@@ -45,130 +45,127 @@ class GameCollectionSection extends StatelessWidget {
         ? NumberFormat('0.0').format(rating)
         : (ratingCount > 0 ? '0.0' : '暂无');
 
-    return Opacity(
-      opacity: 0.95,
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 8),
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withSafeOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 4,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: theme.primaryColor,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withSafeOpacity(0.95),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withSafeOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: theme.primaryColor,
+                  borderRadius: BorderRadius.circular(2),
                 ),
-                const SizedBox(width: 8),
-                Text(
-                  '收藏与评分',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.grey[800],
-                  ),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                '收藏与评分',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
                 ),
-                const Spacer(),
-                if (!isPreviewMode)
-                  GameCollectionButton(
-                    gameCollectionService: gameCollectionService,
-                    inputStateService: inputStateService,
-                    game: game,
-                    currentUser: currentUser,
-                    initialCollectionStatus: initialCollectionStatus,
-                    onCollectionChanged: onCollectionChanged,
-                    compact: false,
-                    isPreview: isPreviewMode,
-                  ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: _buildStatContainer(
-                    context,
-                    Icons.star_border,
-                    '想玩',
-                    wantToPlayCount,
-                    const Color(0xFF3D8BFF),
-                    const Color(0xFFE6F0FF),
-                  ),
+              ),
+              const Spacer(),
+              if (!isPreviewMode)
+                GameCollectionButton(
+                  gameCollectionService: gameCollectionService,
+                  inputStateService: inputStateService,
+                  game: game,
+                  currentUser: currentUser,
+                  initialCollectionStatus: initialCollectionStatus,
+                  onCollectionChanged: onCollectionChanged,
+                  compact: false,
+                  isPreview: isPreviewMode,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatContainer(
-                    context,
-                    Icons.sports_esports,
-                    '在玩',
-                    playingCount,
-                    const Color(0xFF4CAF50),
-                    const Color(0xFFE8F5E9),
-                  ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: _buildStatContainer(
+                  context,
+                  Icons.star_border,
+                  '想玩',
+                  wantToPlayCount,
+                  const Color(0xFF3D8BFF),
+                  const Color(0xFFE6F0FF),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatContainer(
-                    context,
-                    Icons.check_circle_outline,
-                    '玩过',
-                    playedCount,
-                    const Color(0xFF9C27B0),
-                    const Color(0xFFF3E5F5),
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatContainer(
+                  context,
+                  Icons.sports_esports,
+                  '在玩',
+                  playingCount,
+                  const Color(0xFF4CAF50),
+                  const Color(0xFFE8F5E9),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatContainer(
-                    context,
-                    Icons.star,
-                    '评分',
-                    formattedRating,
-                    Colors.orange.shade700,
-                    Colors.orange.shade50,
-                  ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatContainer(
+                  context,
+                  Icons.check_circle_outline,
+                  '玩过',
+                  playedCount,
+                  const Color(0xFF9C27B0),
+                  const Color(0xFFF3E5F5),
                 ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            Divider(color: Colors.grey[200]),
-            const SizedBox(height: 12),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.people_alt_outlined,
-                    size: 18, color: theme.primaryColor.withSafeOpacity(0.7)),
-                const SizedBox(width: 8),
-                Text(
-                  '总收藏 $totalCollections 人${ratingCount > 0 ? ' / $ratingCount 人评分' : ''}',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: theme.primaryColor.withSafeOpacity(0.9),
-                  ),
-                  textAlign: TextAlign.center,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildStatContainer(
+                  context,
+                  Icons.star,
+                  '评分',
+                  formattedRating,
+                  Colors.orange.shade700,
+                  Colors.orange.shade50,
                 ),
-              ],
-            ),
-          ],
-        ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Divider(color: Colors.grey[200]),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.people_alt_outlined,
+                  size: 18, color: theme.primaryColor.withSafeOpacity(0.7)),
+              const SizedBox(width: 8),
+              Text(
+                '总收藏 $totalCollections 人${ratingCount > 0 ? ' / $ratingCount 人评分' : ''}',
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  color: theme.primaryColor.withSafeOpacity(0.9),
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

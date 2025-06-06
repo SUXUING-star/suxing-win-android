@@ -27,72 +27,67 @@ class GameLeftPanel extends StatelessWidget {
       margin: EdgeInsets.all(8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
-        child: Opacity(
-          opacity: 0.8, // 透明度可以按需调整
-          child: Container(
-            color: Colors.white, // 背景色可以按需调整
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 标题栏
-                Container(
-                  padding: EdgeInsets.all(12),
-                  color: Theme.of(context).primaryColor,
-                  child: Row(
-                    children: [
-                      Icon(Icons.label, color: Colors.white, size: 16),
-                      SizedBox(width: 8),
-                      Text(
-                        '热门标签',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
+        child: Container(
+          color: Colors.white.withSafeOpacity(0.8), // 背景色可以按需调整
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 标题栏
+              Container(
+                padding: EdgeInsets.all(12),
+                color: Theme.of(context).primaryColor,
+                child: Row(
+                  children: [
+                    Icon(Icons.label, color: Colors.white, size: 16),
+                    SizedBox(width: 8),
+                    Text(
+                      '热门标签',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
                       ),
-                      Spacer(), // <--- 使用 Spacer 把清除按钮推到最右边
-                      if (selectedTag != null)
-                        InkWell(
-                          // onTap: () => onTagSelected(selectedTag!), // 旧逻辑
-                          onTap: () =>
-                              onTagSelected(null), // <--- 点击清除按钮时传递 null
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 2),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withSafeOpacity(0.3),
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(Icons.close,
-                                    size: 12, color: Colors.white),
-                                SizedBox(width: 4),
-                                Text(
-                                  '清除',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.white,
-                                  ),
+                    ),
+                    Spacer(), // <--- 使用 Spacer 把清除按钮推到最右边
+                    if (selectedTag != null)
+                      InkWell(
+                        // onTap: () => onTagSelected(selectedTag!), // 旧逻辑
+                        onTap: () => onTagSelected(null), // <--- 点击清除按钮时传递 null
+                        child: Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withSafeOpacity(0.3),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.close, size: 12, color: Colors.white),
+                              SizedBox(width: 4),
+                              Text(
+                                '清除',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.white,
                                 ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
+                      ),
+                  ],
                 ),
+              ),
 
-                // 标签区域
-                Expanded(
-                  child: SingleChildScrollView(
-                    padding: EdgeInsets.all(12),
-                    child: _buildTagsGrid(context),
-                  ),
+              // 标签区域
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(12),
+                  child: _buildTagsGrid(context),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

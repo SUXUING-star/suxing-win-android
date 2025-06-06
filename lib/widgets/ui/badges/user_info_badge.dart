@@ -7,7 +7,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/buttons/follow_user_button.dart';
+import 'package:suxingchahui/widgets/ui/badges/follow_user_button.dart';
 import 'safe_user_avatar.dart';
 
 class UserInfoBadge extends StatelessWidget {

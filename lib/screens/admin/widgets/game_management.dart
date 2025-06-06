@@ -199,7 +199,6 @@ class _GameManagementState extends State<GameManagement>
     try {
       final result = await _gameService.getGamesPaginatedWithInfo(
         page: 1,
-        pageSize: 20,
         sortBy: 'createTime',
         descending: true,
       );
@@ -329,9 +328,9 @@ class _GameManagementState extends State<GameManagement>
       if (mounted) {
         AppSnackBar.showSuccess(
             context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');
-        _refreshReviewQueue(); // *** 只需要刷新审核队列 ***
+        _refreshReviewQueue();
         if (status == 'approved') {
-          _refreshAllGames(); // 如果批准了，需要刷新 All Games 列表
+          _refreshAllGames();
         }
       }
     } catch (e) {

@@ -1,3 +1,4 @@
+// lib/widgets/ui/components/pagination_controls.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_page_popup_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart';
@@ -9,7 +10,6 @@ class PaginationControls extends StatelessWidget {
   final bool isLoading;
   final VoidCallback? onPreviousPage;
   final VoidCallback? onNextPage;
-  // 回调不变：当用户通过菜单选择了新页码时调用
   final ValueChanged<int>? onPageSelected;
 
   const PaginationControls({
@@ -61,7 +61,7 @@ class PaginationControls extends StatelessWidget {
     );
   }
 
-  // 构建单个导航按钮 (不变)
+  // 构建单个导航按钮
   Widget _buildNavigationButton(
     BuildContext context, {
     required String label,
@@ -83,8 +83,11 @@ class PaginationControls extends StatelessWidget {
         if (isPrevious)
           Padding(
             padding: const EdgeInsets.only(right: 4.0),
-            child: Icon(icon,
-                size: 14, color: isEnabled ? enabledIconColor : disabledColor),
+            child: Icon(
+              icon,
+              size: 14,
+              color: isEnabled ? enabledIconColor : disabledColor,
+            ),
           ),
         Text(
           label,
@@ -99,8 +102,11 @@ class PaginationControls extends StatelessWidget {
         if (!isPrevious)
           Padding(
             padding: const EdgeInsets.only(left: 4.0),
-            child: Icon(icon,
-                size: 14, color: isEnabled ? enabledIconColor : disabledColor),
+            child: Icon(
+              icon,
+              size: 14,
+              color: isEnabled ? enabledIconColor : disabledColor,
+            ),
           ),
       ],
     );

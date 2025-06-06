@@ -95,11 +95,10 @@ class _GameTagsFieldState extends State<GameTagsField> {
         ),
         SizedBox(height: 8),
         Text(
-          '提示: 添加合适的标签可以帮助用户更好地发现您的游戏',
+          '提示: 尽量填会社名/画师/剧本家',
           style: TextStyle(
             fontSize: 12,
             color: Colors.grey,
-            fontStyle: FontStyle.italic,
           ),
         ),
       ],

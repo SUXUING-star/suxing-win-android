@@ -27,11 +27,11 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
-import 'package:suxingchahui/windows/effects/mouse_trail_effect.dart';
+import 'package:suxingchahui/layouts/background/mouse_trail_effect.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
 import './layouts/main_layout.dart';
-import 'layouts/background/app_background.dart';
+import 'layouts/background/app_background_effect.dart';
 import './routes/app_routes.dart';
 import 'wrapper/platform_wrapper.dart';
 import 'wrapper/maintenance_wrapper.dart';
@@ -209,33 +209,33 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildBaseContent(ThemeProvider themeProvider, Color particleColor,
-      Widget? materialAppGeneratedChild) {
+  Widget _buildBaseContent(
+    ThemeProvider themeProvider,
+    Color particleColor,
+    Widget? materialAppGeneratedChild,
+  ) {
     return NetworkErrorListenerWidget(
       child: GlobalApiErrorListener(
         child: MaintenanceWrapper(
           maintenanceService: _maintenanceService,
           authProvider: _authProvider,
-          child: AppBackground(
+          child: AppBackgroundEffect(
             isDark: themeProvider.themeMode == ThemeMode.dark,
             windowStateProvider: _windowStateProvider,
-            child: MouseTrailEffect(
-              particleColor: particleColor, // 来自 ThemeProvider
-              child: Navigator(
-                onGenerateRoute: (settings) {
-                  return MaterialPageRoute(
-                    settings: settings,
-                    builder: (_) => PlatformWrapper(
-                      checkInService: _checkInService,
-                      messageService: _messageService,
-                      sidebarProvider: _sidebarProvider,
-                      authProvider: _authProvider,
-                      announcementService: _announcementService,
-                      child: materialAppGeneratedChild ?? Container(),
-                    ),
-                  );
-                },
-              ),
+            child: Navigator(
+              onGenerateRoute: (settings) {
+                return MaterialPageRoute(
+                  settings: settings,
+                  builder: (_) => PlatformWrapper(
+                    checkInService: _checkInService,
+                    messageService: _messageService,
+                    sidebarProvider: _sidebarProvider,
+                    authProvider: _authProvider,
+                    announcementService: _announcementService,
+                    child: materialAppGeneratedChild ?? Container(),
+                  ),
+                );
+              },
             ),
           ),
         ),
@@ -266,33 +266,11 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
           onGenerateRoute: (routeSettings) => _buildAppRoutes(routeSettings),
           home: _mainLayout,
           builder: (builderContext, materialAppGeneratedChild) {
-            // 使用 StreamBuilder 来监听 isResizingWindowStream，控制 InitializationScreen
-            return StreamBuilder<bool>(
-              stream: _windowStateProvider.isResizingWindowStream,
-              initialData:
-                  _windowStateProvider.isResizingWindow, // 使用 getter 获取初始值
-              builder: (context, snapshot) {
-                final bool isResizing =
-                    snapshot.data ?? _windowStateProvider.isResizingWindow;
-
-                return Stack(
-                  children: [
-                    _buildBaseContent(themeProvider, particleColor,
-                        materialAppGeneratedChild), // 基础应用内容
-                    if (isResizing) // 根据 Stream 的结果来决定是否显示
-                      Positioned.fill(
-                        child: InitializationScreen(
-                          status: InitializationStatus.inProgress,
-                          message: "正在调整窗口大小...", // 或者 "正在调整窗口大小..."
-                          progress: 0.0, // 可以设为 null 如果不显示进度条
-                          onRetry: null,
-                          onExit: null,
-                        ),
-                      ),
-                  ],
-                );
-              },
-            );
+            return _buildBaseContent(
+              themeProvider,
+              particleColor,
+              materialAppGeneratedChild,
+            ); // 基础应用内容
           },
         );
       },

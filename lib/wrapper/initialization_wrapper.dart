@@ -107,23 +107,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
       if (_isMounted) {
         _services = initializedServices; // 保存初始化成功的服务实例
 
-        final networkManager = _services!['networkManager'] as NetworkManager?;
-        final authProvider = _services!['authProvider'] as AuthProvider?;
-
-        // *** 设置网络恢复回调 ***
-        if (networkManager != null && authProvider != null) {
-          //print("InitializationWrapper: Setting up onNetworkRestored callback.");
-          // 先清除可能存在的旧回调（例如在重试后）
-          networkManager.onNetworkRestored = null;
-          // 设置新的回调，指向 _handleNetworkRestored 方法
-          networkManager.onNetworkRestored =
-              () => _handleNetworkRestored(authProvider);
-        } else {
-          // 如果关键服务没找到，这是一个严重问题，记录日志
-          // print(
-          //     "InitializationWrapper: WARNING - NetworkManager or AuthProvider instance not found after successful initialization!");
-        }
-
         // 这会触发 _onProviderUpdate -> setState -> build，最终显示主应用界面
         _initProvider.setCompleted();
         //print("InitializationWrapper: Initialization status set to Completed.");
@@ -170,16 +153,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
     }
   }
 
-  // 网络恢复后的处理逻辑
-  void _handleNetworkRestored(AuthProvider authProvider) {
-    // 确保组件还在树中，并且服务已成功初始化
-    if (!_isMounted || _services == null) {
-      return;
-    }
-
-    authProvider.refreshUserState();
-  }
-
   // 处理“重试”按钮的点击事件
   void _handleRetry() {
     // 确保组件还在树中
@@ -215,19 +188,6 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
     // Dispose Provider 自身
     _initProvider.dispose();
 
-    // *** 清理可能设置的网络恢复回调 ***
-    try {
-      if (_services != null) {
-        final networkManager = _services!['networkManager'] as NetworkManager?;
-        if (networkManager?.onNetworkRestored != null) {
-          networkManager!.onNetworkRestored = null; // 解除引用
-        }
-      }
-    } catch (e) {
-      // 捕获清理过程中的任何异常
-      // print(
-      //     "InitializationWrapper: Error during cleanup of network callback: $e");
-    }
     super.dispose();
   }
 

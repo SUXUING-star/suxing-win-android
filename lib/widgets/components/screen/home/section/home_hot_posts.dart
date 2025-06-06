@@ -35,51 +35,47 @@ class HomeHotPosts extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: 0.9,
-      child: Container(
-        padding: EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-                color: Colors.black.withSafeOpacity(0.05),
-                blurRadius: 10,
-                offset: Offset(0, 2))
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(
-                  border: Border(
-                      bottom:
-                          BorderSide(color: Colors.grey.shade200, width: 1))),
-              child: Row(
-                children: [
-                  Container(
-                      width: 6,
-                      height: 22,
-                      decoration: BoxDecoration(
-                          color: Theme.of(context).primaryColor,
-                          borderRadius: BorderRadius.circular(3))),
-                  SizedBox(width: 12),
-                  Text('热门帖子',
-                      style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          color: Colors.grey[900])),
-                  Spacer(),
-                ],
-              ),
+    return Container(
+      padding: EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withSafeOpacity(0.9),
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+              color: Colors.black.withSafeOpacity(0.05),
+              blurRadius: 10,
+              offset: Offset(0, 2))
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 8),
+            decoration: BoxDecoration(
+                border: Border(
+                    bottom: BorderSide(color: Colors.grey.shade200, width: 1))),
+            child: Row(
+              children: [
+                Container(
+                    width: 6,
+                    height: 22,
+                    decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor,
+                        borderRadius: BorderRadius.circular(3))),
+                SizedBox(width: 12),
+                Text('热门帖子',
+                    style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.grey[900])),
+                Spacer(),
+              ],
             ),
-            SizedBox(height: 16),
-            _buildPostListArea(context), // 传递 context 和 providers
-          ],
-        ),
+          ),
+          SizedBox(height: 16),
+          _buildPostListArea(context), // 传递 context 和 providers
+        ],
       ),
     );
   }

@@ -25,6 +25,7 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
   String? _error;
   bool _hasInitializedDependencies = false;
 
+
   @override
   void initState() {
     super.initState();

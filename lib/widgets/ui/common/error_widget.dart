@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
@@ -11,22 +11,30 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 class CustomErrorWidget extends StatelessWidget {
   /// 详细的错误信息文本。
   final String? errorMessage;
+
   /// 点击重试按钮的回调。
   final VoidCallback? onRetry;
+
   /// 显示的图标。
   final IconData icon;
+
   /// 错误标题。
   /// 如果 useScaffold 为 true，显示在 AppBar 中。
   /// 如果 useScaffold 为 false，显示在内容区域图标下方。
   final String title;
+
   /// 重试按钮的文本。
   final String retryText;
+
   /// 图标大小。
   final double iconSize;
+
   /// 图标颜色。
   final Color? iconColor;
+
   /// 是否需要加载动画（FadeInItem）。
   final bool isNeedLoadingAnimation;
+
   /// 是否将此 Widget 包裹在一个 Scaffold 中。
   /// **默认为 `false`**，以避免嵌套 Scaffold 导致的问题。
   /// 只有当你需要这个错误组件作为独立页面显示（带 AppBar）时，才设置为 `true`。
@@ -81,7 +89,7 @@ class CustomErrorWidget extends StatelessWidget {
 
           if (onRetry != null) ...[
             const SizedBox(height: 24),
-            FunctionalTextButton(
+            FunctionalButton(
               onPressed: onRetry,
               label: retryText,
             ),
@@ -138,7 +146,8 @@ class InlineErrorWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Center(
-      child: Padding( // 使用 Padding 代替 Container+Color，更灵活
+      child: Padding(
+        // 使用 Padding 代替 Container+Color，更灵活
         padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 24.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -152,12 +161,13 @@ class InlineErrorWidget extends StatelessWidget {
                 errorMessage!,
                 textAlign: TextAlign.center,
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withSafeOpacity(0.7), // 柔和一点的文本色
+                  color: theme.colorScheme.onSurface
+                      .withSafeOpacity(0.7), // 柔和一点的文本色
                 ),
               ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
-              FunctionalTextButton( // 可以考虑换成更小的按钮样式，如果 FunctionalTextButton 支持的话
+              FunctionalButton(
                 onPressed: onRetry,
                 label: retryText,
               ),
@@ -175,6 +185,7 @@ class InlineErrorWidget extends StatelessWidget {
 class NetworkErrorWidget extends StatelessWidget {
   final VoidCallback? onRetry;
   final String message;
+
   /// 是否作为独立页面显示 (带 AppBar)。默认为 true。
   final bool useScaffold;
 
@@ -182,7 +193,7 @@ class NetworkErrorWidget extends StatelessWidget {
     super.key,
     this.onRetry,
     this.message = '网络连接错误\n请检查您的网络设置后重试', // 优化换行
-    this.useScaffold = true, // 网络错误通常是全屏，默认带 Scaffold
+    this.useScaffold = false,
   });
 
   @override
@@ -203,6 +214,7 @@ class NetworkErrorWidget extends StatelessWidget {
 class NotFoundErrorWidget extends StatelessWidget {
   final VoidCallback? onBack;
   final String message;
+
   /// 是否作为独立页面显示 (带 AppBar)。默认为 true。
   final bool useScaffold;
 
@@ -210,7 +222,7 @@ class NotFoundErrorWidget extends StatelessWidget {
     super.key,
     this.onBack,
     this.message = '抱歉，未找到您请求的内容',
-    this.useScaffold = true, // Not Found 通常也是全屏，默认带 Scaffold
+    this.useScaffold = false, // Not Found 通常也是全屏，默认带 Scaffold
   });
 
   @override
@@ -236,6 +248,7 @@ class LoginErrorWidget extends StatelessWidget {
   final VoidCallback? onLogin;
   final String message;
   final bool isUnauthorized;
+
   /// 是否作为独立页面显示 (带 AppBar)。默认为 true。
   final bool useScaffold;
 
@@ -244,7 +257,7 @@ class LoginErrorWidget extends StatelessWidget {
     this.onLogin,
     this.message = '您需要登录才能访问此内容',
     this.isUnauthorized = false,
-    this.useScaffold = true, // 登录提示通常也是全屏，默认带 Scaffold
+    this.useScaffold = false, // 登录提示通常也是全屏，默认带 Scaffold
   });
 
   @override
@@ -252,7 +265,9 @@ class LoginErrorWidget extends StatelessWidget {
     return CustomErrorWidget(
       errorMessage: isUnauthorized ? '登录状态已过期，请重新登录' : message,
       onRetry: onLogin,
-      icon: isUnauthorized ? Icons.lock_clock_rounded : Icons.lock_person_rounded, // 根据场景用不同图标
+      icon: isUnauthorized
+          ? Icons.lock_clock_rounded
+          : Icons.lock_person_rounded, // 根据场景用不同图标
       title: isUnauthorized ? '请重新登录' : '需要登录',
       retryText: '前往登录',
       iconColor: Colors.deepPurpleAccent, // 换个稍微亮点的颜色

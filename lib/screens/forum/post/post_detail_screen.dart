@@ -5,6 +5,8 @@ import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/error/api_error_definitions.dart';
+import 'package:suxingchahui/services/error/api_exception.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_layout.dart';
@@ -62,6 +64,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   bool _isLoading = true;
   bool _hasInteraction = false; // 标记页面是否有过交互
   bool _isTogglingLock = false; // 标记是否正在切换锁定状态
+  bool _isTogglingPin = false; // 标记是否正在切换置顶状态
   bool _hasInitializedDependencies = false;
 
   @override
@@ -161,42 +164,41 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         });
       }
     } catch (e) {
-      // 捕获异常
-      if (!mounted) return; // *** 异步操作后，必须检查 mounted 状态！ ***
+      if (!mounted) return;
 
-      final errorString = e.toString();
+      String errorCodeForState; // 用来存错误码给 build 方法判断
 
-      // 根据错误类型更新 UI
-      String errorMessage;
-      if (errorString.startsWith('access_denied:')) {
-        errorMessage = errorString.substring('access_denied:'.length).trim();
-        // 权限错误不需要弹窗
-      } else if (errorString.contains('not_found')) {
-        errorMessage = '帖子不存在或已被删除';
-        // 帖子不存在，显示对话框
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            CustomInfoDialog.show(
-              context: context,
-              title: '帖子找不到了',
-              message: '抱歉，您要查看的帖子可能已被删除或转移。\n(返回上一页或首页会自动刷新列表)',
-              iconData: Icons.search_off,
-              iconColor: Colors.orange,
-              closeButtonText: '知道了',
-              barrierDismissible: false,
-              onClose: () {
-                _handleNotFoundClose();
-              },
-            );
-          }
-        });
+      if (e is ApiException) {
+        errorCodeForState = e.apiErrorCode; // 直接获取后端标准错误码
+
+        // 如果是"未找到"，触发特殊弹窗逻辑
+        if (e.apiErrorCode == BackendApiErrorCodes.notFound) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              CustomInfoDialog.show(
+                context: context,
+                title: '帖子找不到了',
+                message: '抱歉，您要查看的帖子可能已被删除或转移。',
+                // message可以直接用 e.toString()
+                iconData: Icons.search_off,
+                iconColor: Colors.orange,
+                closeButtonText: '知道了',
+                barrierDismissible: false,
+                onClose: () {
+                  _handleNotFoundClose();
+                },
+              );
+            }
+          });
+        }
       } else {
-        errorMessage =
-            '加载帖子失败: ${e.toString().replaceFirst("Exception: ", "")}';
+        // 处理非 API 异常，给个通用码
+        errorCodeForState = 'UNKNOWN_ERROR';
       }
-      // 统一设置错误状态和结束加载
+
+      // 统一设置错误状态
       setState(() {
-        _error = errorMessage;
+        _error = errorCodeForState; // _error 状态现在存储的是错误码
         _isLoading = false;
         _post = null;
         _userActions = null;
@@ -276,9 +278,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           }
         } catch (e) {
           if (!mounted) return;
-          showSnackbar(
-              message: '删除失败：${e.toString().replaceFirst("Exception: ", "")}',
-              type: SnackbarType.error);
+          showSnackbar(message: e.toString(), type: SnackbarType.error);
           setState(() {
             _isLoading = false;
           });
@@ -332,13 +332,58 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       await _refreshPost(); // 刷新获取最新状态
     } catch (e) {
       if (!mounted) return;
-      showSnackbar(
-          message: '操作失败: ${e.toString().replaceFirst("Exception: ", "")}',
-          type: SnackbarType.error);
+      showSnackbar(message: e.toString(), type: SnackbarType.error);
     } finally {
       if (mounted) {
         setState(() {
           _isTogglingLock = false;
+        });
+      }
+    }
+  }
+
+  // 处理切换帖子置顶状态
+  Future<void> _handleTogglePin(BuildContext context) async {
+    if (_post == null || _isTogglingPin) return;
+    // 用户未登录
+    if (!widget.authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    // 检查是否有置顶权限
+    if (!widget.authProvider.isAdmin) {
+      AppSnackBar.showError(context, "你没有权限操作");
+      return;
+    }
+
+    // 更新加载状态
+    setState(() {
+      _isTogglingPin = true;
+    });
+
+    try {
+      // 调用 Service 方法
+      await widget.postService.togglePostPin(widget.postId);
+
+      if (!mounted) return;
+      // 更新本地状态
+      setState(() {
+        _post = _post!.copyWith(isPinned: !_post!.isPinned);
+      });
+
+      // 显示成功消息
+      showSnackbar(message: '帖子置顶状态已切换', type: SnackbarType.success);
+      // 标记页面有改动
+      _hasInteraction = true;
+    } catch (e) {
+      if (!mounted) return;
+      // 捕获 Service 层抛出的错误并显示
+      showSnackbar(message: e.toString(), type: SnackbarType.error);
+    } finally {
+      if (mounted) {
+        // 结束加载状态
+        setState(() {
+          _isTogglingPin = false;
         });
       }
     }
@@ -376,11 +421,48 @@ class _PostDetailScreenState extends State<PostDetailScreen>
 
     // --- 错误状态 ---
     if (_error != null && _post == null) {
+      Widget errorContent;
+      // 根据错误码显示不同的UI
+      switch (_error) {
+        case BackendApiErrorCodes.notFound:
+          // notFound 的情况因为有弹窗，这里可以显示一个基础的错误界面
+          // 或者直接返回一个空的 Scaffold，因为弹窗会覆盖整个屏幕
+          return Scaffold(
+              appBar: const CustomAppBar(title: '帖子详情'),
+              body: Container()); // 空白页，等待用户关闭弹窗
+
+        // 你可以为其他特定错误码添加 case，比如网络错误
+        case BackendApiErrorCodes.networkNoConnection:
+        case BackendApiErrorCodes.networkTimeout:
+        case BackendApiErrorCodes.networkHostLookupFailed:
+          errorContent = NetworkErrorWidget(onRetry: _loadPostDetails);
+          break;
+
+        case BackendApiErrorCodes.permissionDenied:
+        case BackendApiErrorCodes.postLock:
+          // 对于权限问题，可以显示一个特定的“无权限”组件
+          errorContent = CustomErrorWidget(
+            title: "无权访问",
+            // 从注册表获取友好的提示信息
+            errorMessage:
+                ApiErrorRegistry.getDescriptor(_error!).defaultUserMessage,
+            onRetry: _loadPostDetails,
+            icon: Icons.lock_person_outlined,
+          );
+          break;
+
+        default:
+          // 其他所有未特殊处理的错误，都走通用错误组件
+          errorContent = CustomErrorWidget(
+              // 同样，从注册表里拿标准提示
+              errorMessage:
+                  ApiErrorRegistry.getDescriptor(_error!).defaultUserMessage,
+              onRetry: _loadPostDetails);
+      }
+
       return Scaffold(
         appBar: const CustomAppBar(title: '帖子详情'),
-        body: FadeInItem(
-            child: CustomErrorWidget(
-                errorMessage: _error!, onRetry: _loadPostDetails)),
+        body: FadeInItem(child: errorContent),
       );
     }
 
@@ -442,10 +524,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         final bool canEdit =
             currentUser.isAdmin ? true : currentUser.id == post.authorId;
         final bool canLock = currentUser.isAdmin;
-        if (!canEdit && !canLock) return const SizedBox.shrink();
+        final bool canPin = currentUser.isAdmin;
+
+        if (!canEdit && !canLock && !canPin) return const SizedBox.shrink();
         final String editHeroTag = 'postEditFab_${post.id}';
         final String deleteHeroTag = 'postDeleteFab_${post.id}';
         final String lockHeroTag = 'postLockFab_${post.id}';
+        final String pinHeroTag = 'postPinFab_${post.id}';
         final double bottomPadding =
             DeviceUtils.isDesktop ? 16.0 : 80.0; // 调整移动端底部间距
         return Padding(
@@ -497,6 +582,26 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                   backgroundColor: post.status == PostStatus.locked
                       ? Colors.grey[600]
                       : Colors.orange[600],
+                  foregroundColor: Colors.white,
+                ),
+              if (canPin)
+                GenericFloatingActionButton(
+                  heroTag: pinHeroTag, // 使用新增的 Hero Tag
+                  mini: true,
+                  tooltip: post.isPinned ? '取消置顶' : '置顶帖子', // 根据当前状态显示不同文本
+                  icon: post.isPinned // 根据当前状态显示不同图标
+                      ? Icons.push_pin // 置顶图标
+                      : Icons.push_pin_outlined, // 未置顶图标
+                  isLoading: _isTogglingPin, // 关联置顶操作的加载状态
+                  // 任何操作进行中时都禁用
+                  onPressed: (_isLoading ||
+                          _isTogglingLock ||
+                          _isTogglingPin) // <-- 增加 _isTogglingPin
+                      ? null
+                      : () => _handleTogglePin(context), // 调用新的处理方法
+                  backgroundColor: post.isPinned // 根据状态显示不同颜色
+                      ? Colors.blue[600] // 置顶时的颜色
+                      : Colors.grey[600], // 未置顶时的颜色
                   foregroundColor: Colors.white,
                 ),
             ],

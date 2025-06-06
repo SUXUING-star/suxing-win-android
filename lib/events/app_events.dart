@@ -2,23 +2,10 @@
 
 import 'dart:async';
 
-import 'package:suxingchahui/models/error/idempotency_error_code.dart';
-
 // 定义事件类型
 class UserSignedOutEvent {
   final String? userId; // 可以选择传递登出的用户 ID
   UserSignedOutEvent({this.userId});
-}
-
-class IdempotencyApiErrorEvent {
-  final IdempotencyExceptionCode code;
-  final String message;
-  final DateTime timestamp;
-
-  IdempotencyApiErrorEvent({
-    required this.code,
-    required this.message,
-  }) : timestamp = DateTime.now();
 }
 
 /// 表示发生了未授权访问（通常是 JWT Token 失效/过期）

@@ -53,9 +53,7 @@ class ActivityList {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
-      // ***** 关键修改在这里 *****
       'activities': activities.map((activity) => activity.toJson()).toList(),
-      // ***** 结束修改 *****
       'pagination': pagination.toJson(),
     };
     return data;

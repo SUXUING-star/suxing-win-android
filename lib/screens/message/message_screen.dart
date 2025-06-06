@@ -10,6 +10,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/models/message/message.dart';
@@ -90,6 +91,11 @@ class _MessageScreenState extends State<MessageScreen>
 
   /// 加载并处理分组消息
   Future<void> _loadGroupedMessages() async {
+    if (!widget.authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
     if (!mounted) return; // 如果页面已销毁，则不执行
     setState(() {
       _isLoading = true;
@@ -216,7 +222,7 @@ class _MessageScreenState extends State<MessageScreen>
         if (targetKey != null && targetIndex != null) {
           // 使用 copyWith 创建新对象，标记为已读
           final updatedMessage =
-              message.copyWith(isRead: true, readTime: DateTime.now());
+              message.copyWith(isRead: true, readTime: () => DateTime.now());
           // 更新 groupedMessages 中的对象
           _groupedMessages[targetKey]![targetIndex] = updatedMessage;
           messageForUi = updatedMessage; // 后续使用更新后的对象
@@ -514,11 +520,15 @@ class _MessageScreenState extends State<MessageScreen>
   }
 
   Widget _iconRefresh() {
-    return IconButton(
-      icon: Icon(Icons.refresh),
-      tooltip: '刷新',
-      onPressed: _loadGroupedMessages, // 点击时重新加载数据
-    );
+    if (!widget.authProvider.isLoggedIn) {
+      return const SizedBox.shrink();
+    } else {
+      return IconButton(
+        icon: Icon(Icons.refresh),
+        tooltip: '刷新',
+        onPressed: _loadGroupedMessages, // 点击时重新加载数据
+      );
+    }
   }
 
   Widget? _buildRightPanel() {
@@ -546,62 +556,76 @@ class _MessageScreenState extends State<MessageScreen>
 
   /// 构建桌面端布局
   Widget _buildDesktopLayout() {
-    final sidePanelWidth = DeviceUtils.getSidePanelWidth(context);
-
     return Scaffold(
       appBar: CustomAppBar(
         title: '消息中心',
         actions: [if (!_allMessagesRead) _iconRead(), _iconRefresh()],
       ),
-      body: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Main content (左侧列表)
-          Expanded(
-            child: _buildMessageContent(),
-          ),
+      body: _buildDesktopBody(),
+    );
+  }
 
-          // AnimatedSwitcher for the right panel
-          AnimatedSwitcher(
-            duration: const Duration(milliseconds: 300),
-            transitionBuilder: (Widget child, Animation<double> animation) {
-              return FadeTransition(
-                opacity: animation,
-                child: SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(0.1, 0.0),
-                    end: Offset.zero,
-                  ).animate(animation),
-                  child: child,
-                ),
-              );
-            },
-            child: _showMessageDetails && _selectedMessage != null
-                ? Container(
-                    // Key is important for AnimatedSwitcher to detect changes
-                    key: ValueKey<String>(_selectedMessage!.id),
-                    width: sidePanelWidth,
-                    // --- 修改开始: 移除无限高度 ---
-                    // height: double.infinity, // REMOVE THIS LINE
-                    // --- 修改结束 ---
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withSafeOpacity(0.05),
-                          blurRadius: 5,
-                          offset: Offset(-2, 0),
-                        ),
-                      ],
-                    ),
-                    // Ensure the MessageDetail widget itself can handle height correctly
-                    child: _buildRightPanel(),
-                  )
-                // Use SizedBox.shrink() for the 'empty' state
-                : const SizedBox.shrink(key: ValueKey<String>('empty_panel')),
-          ),
-        ],
-      ),
+  Widget _buildDesktopBody() {
+    final sidePanelWidth = DeviceUtils.getSidePanelWidth(context);
+    return StreamBuilder<bool>(
+      stream: widget.authProvider.isLoggedInStream,
+      initialData: widget.authProvider.isLoggedIn,
+      builder: (context, authSnapshot) {
+        final bool isLoggedIn =
+            authSnapshot.data ?? widget.authProvider.isLoggedIn;
+        if (!isLoggedIn) {
+          return const LoginPromptWidget();
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Main content (左侧列表)
+            Expanded(
+              child: _buildMessageContent(),
+            ),
+
+            // AnimatedSwitcher for the right panel
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 300),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                return FadeTransition(
+                  opacity: animation,
+                  child: SlideTransition(
+                    position: Tween<Offset>(
+                      begin: const Offset(0.1, 0.0),
+                      end: Offset.zero,
+                    ).animate(animation),
+                    child: child,
+                  ),
+                );
+              },
+              child: _showMessageDetails && _selectedMessage != null
+                  ? Container(
+                      // Key is important for AnimatedSwitcher to detect changes
+                      key: ValueKey<String>(_selectedMessage!.id),
+                      width: sidePanelWidth,
+                      // --- 修改开始: 移除无限高度 ---
+                      // height: double.infinity, // REMOVE THIS LINE
+                      // --- 修改结束 ---
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withSafeOpacity(0.05),
+                            blurRadius: 5,
+                            offset: Offset(-2, 0),
+                          ),
+                        ],
+                      ),
+                      // Ensure the MessageDetail widget itself can handle height correctly
+                      child: _buildRightPanel(),
+                    )
+                  // Use SizedBox.shrink() for the 'empty' state
+                  : const SizedBox.shrink(key: ValueKey<String>('empty_panel')),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -620,7 +644,17 @@ class _MessageScreenState extends State<MessageScreen>
         // 移动端不需要 bottom TabBar 了
       ),
       // 主体内容
-      body: _buildMessageContent(),
+      body: StreamBuilder<bool>(
+          stream: widget.authProvider.isLoggedInStream,
+          initialData: widget.authProvider.isLoggedIn,
+          builder: (context, authSnapshot) {
+            final bool isLoggedIn =
+                authSnapshot.data ?? widget.authProvider.isLoggedIn;
+            if (!isLoggedIn) {
+              return const LoginPromptWidget();
+            }
+            return _buildMessageContent();
+          }),
     );
   }
 
@@ -629,22 +663,12 @@ class _MessageScreenState extends State<MessageScreen>
   Widget build(BuildContext context) {
     buildSnackBar(context);
     final isDesktop = DeviceUtils.isDesktop;
-    return StreamBuilder<bool>(
-      stream: widget.authProvider.isLoggedInStream,
-      initialData: widget.authProvider.isLoggedIn,
-      builder: (context, authSnapshot) {
-        final bool isLoggedIn =
-            authSnapshot.data ?? widget.authProvider.isLoggedIn;
-        if (!isLoggedIn) {
-          return const LoginPromptWidget();
-        }
-        // 根据设备类型选择不同的布局
-        if (isDesktop) {
-          return _buildDesktopLayout();
-        } else {
-          return _buildMobileLayout();
-        }
-      },
-    );
+
+    // 根据设备类型选择不同的布局
+    if (isDesktop) {
+      return _buildDesktopLayout();
+    } else {
+      return _buildMobileLayout();
+    }
   }
 }

@@ -1,9 +1,9 @@
 // lib/widgets/components/form/gameform/field/game_images_field.dart
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'dart:io';
 import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class GameImagesField extends StatelessWidget {
@@ -61,13 +61,12 @@ class GameImagesField extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Text('游戏截图', style: TextStyle(fontSize: fontSize)),
-            AppButton(
-              // 父组件加载时禁用按钮
+            FunctionalButton(
               onPressed: isLoading ? null : _pickGameImages,
-              icon: Icon(Icons.add, size: iconSize),
-              text: '添加截图',
-              isMini: true,
-              isPrimaryAction: true,
+              icon: Icons.add,
+              iconSize: iconSize,
+              label: '添加截图',
+              isEnabled: !isLoading,
             ),
           ],
         ),

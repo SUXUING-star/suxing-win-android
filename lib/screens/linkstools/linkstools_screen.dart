@@ -9,7 +9,6 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:url_launcher/url_launcher.dart';
-// --- 确保引入正确的 Service ---
 import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -128,8 +127,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     });
     try {
       final results = await Future.wait([
-        _linkToolService.getLinks(), // 直接调用，不传 forceRefresh
-        _linkToolService.getTools(), // 直接调用，不传 forceRefresh
+        _linkToolService.getLinks(),
+        _linkToolService.getTools(),
       ]);
 
       if (!mounted) return; // 逻辑不变
@@ -509,7 +508,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
               child: CustomErrorWidget(
                 errorMessage: _errorMessage ?? '暂无工具',
                 icon: Icons.build_circle_outlined,
-                onRetry: _loadData, // *** 调用恢复原样 ***
+                onRetry: _loadData,
               ),
             ),
           ),

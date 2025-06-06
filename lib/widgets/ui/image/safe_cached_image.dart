@@ -2,11 +2,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:suxingchahui/utils/network/url_utils.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:provider/provider.dart'; // <--- 导入 Provider
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import '../../../utils/network/url_utils.dart';
+
 
 class SafeCachedImage extends StatefulWidget {
   final String imageUrl;
@@ -22,7 +23,7 @@ class SafeCachedImage extends StatefulWidget {
   final Duration unloadDelay;
   final double visibleFractionThreshold;
   final Key? visibilityKey;
-  // 不再需要 cacheManager 参数，将从 Provider 获取
+  final Alignment alignment;
 
   const SafeCachedImage({
     super.key,
@@ -39,7 +40,7 @@ class SafeCachedImage extends StatefulWidget {
     this.unloadDelay = const Duration(seconds: 15),
     this.visibleFractionThreshold = 0.01,
     this.visibilityKey,
-    // cacheManager 参数移除
+    this.alignment = Alignment.center,
   });
 
   @override
@@ -190,6 +191,7 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
         width: widget.width,
         height: widget.height,
         fit: widget.fit,
+        alignment: widget.alignment,
         memCacheWidth: finalCacheWidth,
         memCacheHeight: finalCacheHeight,
         placeholder: (context, url) => _buildPlaceholder(context),

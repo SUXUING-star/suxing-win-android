@@ -121,10 +121,10 @@ class CommonGameListScreen extends StatelessWidget {
 
   Widget _buildContentList(
       {required BuildContext context, required bool isDesktop}) {
-    final cardsPerRow =
-        DeviceUtils.calculateCardsPerRow(context, withPanels: false);
-    if (cardsPerRow <= 0) return InlineErrorWidget(errorMessage: "渲染错误");
-    final cardRatio = DeviceUtils.calculateSimpleCardRatio(context);
+    int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
+        withPanels: false);
+    if (cardsPerRow <= 0) cardsPerRow = 1;
+    final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
     return GridView.builder(
         key: PageStorageKey('game_grid_$title'),

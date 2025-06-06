@@ -55,6 +55,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   void initState() {
     super.initState();
     _scrollController.addListener(_scrollListener);
+
+    if (widget.activity != null) {
+      _activity = widget.activity!;
+      _isLoading = false; // 标记为非加载状态
+    }
   }
 
   @override
@@ -149,7 +154,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           ? await widget.activityService.unlikeActivity(_activity.id)
           : await widget.activityService.likeActivity(_activity.id);
       if (!success) {
-        throw Exception('API call failed'); // 抛出异常以便 catch 处理回滚
+        throw Exception('发生异常报错'); // 抛出异常以便 catch 处理回滚
       }
     } catch (e) {
       setStateIfMounted(() {
@@ -392,7 +397,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         },
       );
     } catch (e) {
-      debugPrint("Error showing or confirming delete dialog: $e");
+      // debugPrint("Error showing or confirming delete dialog: $e");
     }
   }
 
@@ -403,19 +408,26 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+  Widget _buildLikeFab() {
+    return GenericFloatingActionButton(
+      onPressed: _handleLike,
+      backgroundColor: _activity.isLiked
+          ? Colors.red
+          : Theme.of(context).colorScheme.primary,
+      foregroundColor: Colors.white, // 确保图标颜色
+      icon: _activity.isLiked ? Icons.favorite : Icons.favorite_border,
+      tooltip: _activity.isLiked ? '取消点赞' : '点赞',
+    );
+  }
 
-    Widget body;
-
+  Widget _buildBody() {
     if (_isLoading) {
-      body = LoadingWidget();
+      return LoadingWidget();
     } else if (_error.isNotEmpty) {
-      body = CustomErrorWidget(errorMessage: _error);
+      return CustomErrorWidget(errorMessage: _error);
     } else {
       // 传递编辑和删除的回调给 ActivityDetailContent
-      body = RefreshIndicator(
+      return RefreshIndicator(
         onRefresh: _refreshActivity,
         child: ActivityDetailContent(
           inputStateService: widget.inputStateService,
@@ -436,38 +448,17 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         ),
       );
     }
+  }
+
+  @override
+  Widget build(BuildContext context) {
 
     return Scaffold(
-      appBar: isDesktop
-          ? CustomAppBar(
-              title: '动态详情',
-              actions: [
-                IconButton(
-                  icon: Icon(_activity.isLiked
-                      ? Icons.favorite
-                      : Icons.favorite_border),
-                  color: _activity.isLiked ? Colors.red : null,
-                  onPressed: _handleLike,
-                  tooltip: _activity.isLiked ? '取消点赞' : '点赞',
-                ),
-                const SizedBox(width: 16),
-              ],
-            )
-          : const CustomAppBar(
-              title: '动态详情',
-            ),
-      body: body,
-      floatingActionButton: (!isDesktop) // 移动端且活动已加载
-          ? GenericFloatingActionButton(
-              onPressed: _handleLike,
-              backgroundColor: _activity.isLiked
-                  ? Colors.red
-                  : Theme.of(context).colorScheme.primary,
-              foregroundColor: Colors.white, // 确保图标颜色
-              icon: _activity.isLiked ? Icons.favorite : Icons.favorite_border,
-              tooltip: _activity.isLiked ? '取消点赞' : '点赞',
-            )
-          : null,
+      appBar: CustomAppBar(
+        title: '动态详情',
+      ),
+      body: _buildBody(),
+      floatingActionButton: _buildLikeFab(),
     );
   }
 }

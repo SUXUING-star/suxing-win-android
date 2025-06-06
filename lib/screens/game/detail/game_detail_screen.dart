@@ -7,16 +7,18 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/error/api_error_definitions.dart';
+import 'package:suxingchahui/services/error/api_exception.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -189,53 +191,53 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           await widget.gameService.getGameDetailsWithStatus(widget.gameId!);
     } catch (e) {
       if (!mounted) return;
-      // 检查是否是 "not_found" 异常
-      if (e.toString().contains('not_found')) {
-        errorMsg = 'not_found';
-        gameWasRemoved = true; // *** 标记游戏已被移除 ***
+      if (e is ApiException) {
+        // 直接用后端返回的、定义好的错误码
+        errorMsg = e.apiErrorCode;
 
-        // *** 显示补偿/移除对话框 ***
-        // 使用 addPostFrameCallback 确保在当前帧渲染完成后执行
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            // 再次检查 mounted 状态
-            CustomInfoDialog.show(
-              context: context,
-              title: '游戏已移除',
-              message: '抱歉，您尝试访问的游戏已被移除或不存在。\n(这里可以放补偿说明，如果需要的话)',
-              iconData: Icons
-                  .delete_forever_outlined, // 或者 Icons.sentiment_very_dissatisfied
-              iconColor: Colors.redAccent,
-              closeButtonText: '知道了',
-              barrierDismissible: false, // 不允许点击外部关闭，强制用户确认
-              onClose: () {
-                // 用户点击“知道了”之后的操作
-                if (mounted) {
-                  // 安全地执行 Pop 操作
-                  // 使用 try-catch 增加健壮性，防止 pop 时 context 无效
-                  try {
-                    if (Navigator.canPop(context)) {
-                      Navigator.pop(context);
-                    } else {
+        // 判断是不是"未找到"
+        if (e.apiErrorCode == BackendApiErrorCodes.notFound) {
+          gameWasRemoved = true; // 标记游戏已被移除
+
+          // *** 显示补偿/移除对话框 ***
+          // 使用 addPostFrameCallback 确保在当前帧渲染完成后执行
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              // 再次检查 mounted 状态
+              CustomInfoDialog.show(
+                context: context,
+                title: '游戏已移除',
+                message: '抱歉，您尝试访问的游戏已被移除或不存在。\n(这里可以放补偿说明，如果需要的话)',
+                iconData: Icons.delete_forever_outlined,
+                // 或者 Icons.sentiment_very_dissatisfied
+                iconColor: Colors.redAccent,
+                closeButtonText: '知道了',
+                barrierDismissible: false,
+                // 不允许点击外部关闭，强制用户确认
+                onClose: () {
+                  // 用户点击“知道了”之后的操作
+                  if (mounted) {
+                    // 安全地执行 Pop 操作
+                    // 使用 try-catch 增加健壮性，防止 pop 时 context 无效
+                    try {
+                      if (Navigator.canPop(context)) {
+                        Navigator.pop(context);
+                      } else {
+                        NavigationUtils.navigateToHome(
+                            widget.sidebarProvider, context);
+                      }
+                    } catch (popError) {
+                      // 备用方案：导航到主页
                       NavigationUtils.navigateToHome(
                           widget.sidebarProvider, context);
                     }
-                  } catch (popError) {
-                    // 备用方案：导航到主页
-                    NavigationUtils.navigateToHome(
-                        widget.sidebarProvider, context);
                   }
-                }
-              },
-            );
-          }
-        });
+                },
+              );
+            }
+          });
+        }
         // 处理其他已知错误
-      } else if (e.toString().contains('game_pending_approval')) {
-        errorMsg = 'pending_approval';
-      } else if (e.toString().contains('Failed host lookup') ||
-          e.toString().contains('SocketException')) {
-        errorMsg = 'network_error';
       } else {
         errorMsg = '加载失败: ${e.toString()}';
       }
@@ -416,8 +418,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showError(
-            context, '操作失败: ${e.toString().split(':').last.trim()}');
+        AppSnackBar.showError(context, e.toString());
       }
     } finally {
       if (mounted) {
@@ -657,12 +658,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 expandedHeight: 300,
                 pinned: true,
                 flexibleSpaceBackground: flexibleSpaceBackground,
-                actions: [
-                  IconButton(
-                      icon: const Icon(Icons.share, color: Colors.white),
-                      onPressed: () {},
-                      tooltip: '分享'),
-                ],
               ),
               SliverPadding(
                 padding: const EdgeInsets.only(bottom: 80),
@@ -702,7 +697,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Widget _buildGameContent(Game game, bool isPending, bool isDesktop) {
-    final bool isPreview = isPending ? true : false;
+    final bool isPreview = isPending;
+    // 当审核状态就代表是预览状态
     return GameDetailContent(
       gameListFilterProvider: widget.gameListFilterProvider,
       authProvider: widget.authProvider,
@@ -753,7 +749,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
               SizedBox(height: 24),
-              FunctionalTextButton(
+              FunctionalButton(
                 // 或者 ElevatedButton
                 onPressed: () => NavigationUtils.pop(context),
                 label: '返回上一页',
@@ -772,7 +768,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (widget.gameId == null) {
       return const CustomErrorWidget(
         errorMessage: '无效的游戏 ID',
-        isNeedLoadingAnimation: true,
+        title: "发生错误",
+        useScaffold: true,
       );
     }
 
@@ -780,25 +777,42 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (_isLoading && _game == null) {
       // 首次加载时全屏 Loading
       return FadeInItem(
-          child: LoadingWidget.fullScreen(message: '正在加载游戏数据...'));
+        child: LoadingWidget.fullScreen(
+          message: '正在加载游戏数据...',
+        ),
+      );
     }
 
     if (_error != null && _game == null) {
-      if (_error == 'pending_approval') {
-        // --- 返回特定的“审核中/无权查看”UI ---
+      // --- 使用定义好的错误码常量进行判断 ---
+      if (_error == BackendApiErrorCodes.gamePendingApproval) {
         return _buildPendingContent();
       }
-      // 首次加载失败时全屏 Error
-      if (_error == 'not_found' && _game == null) {
-        return const NotFoundErrorWidget(message: "抱歉，该游戏不存在或已被移除。");
+
+      if (_error == BackendApiErrorCodes.notFound) {
+        return const NotFoundErrorWidget(
+          message: "抱歉，该游戏不存在或已被移除。",
+          useScaffold: true,
+        );
       }
-      if (_error == 'network_error') {
+      // --- 统一处理所有网络相关的错误 ---
+      const networkErrors = {
+        BackendApiErrorCodes.networkNoConnection,
+        BackendApiErrorCodes.networkTimeout,
+        BackendApiErrorCodes.networkHostLookupFailed,
+        BackendApiErrorCodes.networkGenericError,
+      };
+      if (networkErrors.contains(_error)) {
         return NetworkErrorWidget(
-            onRetry: () => _loadGameDetailsWithStatus(forceRefresh: true));
+          onRetry: () => _loadGameDetailsWithStatus(forceRefresh: true),
+          useScaffold: true,
+        );
       }
+
       return CustomErrorWidget(
           title: '无法加载游戏数据',
           errorMessage: _error,
+          useScaffold: true,
           onRetry: () => _loadGameDetailsWithStatus(forceRefresh: true));
     }
 
@@ -807,6 +821,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       return const CustomErrorWidget(
         title: "无法加载数据",
         errorMessage: '游戏数据不存在',
+        useScaffold: true,
       );
     }
 

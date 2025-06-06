@@ -150,6 +150,44 @@ class ThemeProvider extends ChangeNotifier {
           ),
         ),
       ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey[100], // 或者 Colors.black.withOpacity(0.04)
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide.none, // 如果用 fillColor，可以考虑无边框或极细边框
+        ),
+        // 错误文本样式
+        errorStyle: TextStyle(
+          color: Colors.red[700],
+          fontSize: 12.0,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey[400],     // 1. 颜色更浅，与标签和输入内容区分
+          fontSize: 14.0,            // 2. 字号可以比标签略小一点 (或相同)
+          fontWeight: FontWeight.w300, // 3. 字重更轻 (Light)
+        ),
+        floatingLabelStyle: TextStyle(
+          color: Colors.blue, // 比如用主题色
+          fontSize: 12.0, // 通常浮动上去后字号会小一些
+          // fontWeight: FontWeight.bold,
+        ),
+        labelStyle: TextStyle(
+          color: Colors.grey[700], // 比占位符颜色深一点
+          fontSize: 14.0,
+          // fontWeight: FontWeight.normal, // 默认即可
+        ),
+        enabledBorder: OutlineInputBorder(
+          // 或者只在 enabled 时给一个细边框
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
+        ),
+      ),
     );
   }
 
@@ -203,6 +241,43 @@ class ThemeProvider extends ChangeNotifier {
             fontFamily: FontConfig.defaultFontFamily,
             fontFamilyFallback: FontConfig.fontFallback,
           ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey[100], // 或者 Colors.black.withOpacity(0.04)
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide.none, // 如果用 fillColor，可以考虑无边框或极细边框
+        ),
+        labelStyle: TextStyle(
+          color: Colors.grey[700], // 比占位符颜色深一点
+          fontSize: 14.0,
+          // fontWeight: FontWeight.normal, // 默认即可
+        ),
+        // 错误文本样式
+        errorStyle: TextStyle(
+          color: Colors.red[700],
+          fontSize: 12.0,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey[400],     // 1. 颜色更浅，与标签和输入内容区分
+          fontSize: 14.0,            // 2. 字号可以比标签略小一点 (或相同)
+          fontWeight: FontWeight.w300, // 3. 字重更轻 (Light)
+        ),
+        floatingLabelStyle: TextStyle(
+          color: Colors.blue, // 比如用主题色
+          fontSize: 12.0, // 通常浮动上去后字号会小一些
+          // fontWeight: FontWeight.bold,
+        ),
+        enabledBorder: OutlineInputBorder(
+          // 或者只在 enabled 时给一个细边框
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
         ),
       ),
     );

@@ -24,6 +24,13 @@ class DateTimeFormatter {
         '${beijingTime.hour.toString().padLeft(2, '0')}:${beijingTime.minute.toString().padLeft(2, '0')}';
   }
 
+  /// 格式化为年月日： YYYY-MM-DD
+  static String formatNormal(DateTime dateTime) {
+    final DateTime beijingTime = toBeijingTime(dateTime);
+
+    return '${beijingTime.year}-${beijingTime.month.toString().padLeft(2, '0')}-${beijingTime.day.toString().padLeft(2, '0')}';
+  }
+
   /// 格式化为简短日期时间： MM-DD HH:MM
   static String formatShort(DateTime dateTime) {
     final DateTime beijingTime = toBeijingTime(dateTime);
@@ -38,8 +45,10 @@ class DateTimeFormatter {
     final DateTime now = toBeijingTime(DateTime.now());
 
     final DateTime todayStart = DateTime(now.year, now.month, now.day);
-    final DateTime yesterdayStart = todayStart.subtract(const Duration(days: 1));
-    final DateTime beforeYesterdayStart = todayStart.subtract(const Duration(days: 2));
+    final DateTime yesterdayStart =
+        todayStart.subtract(const Duration(days: 1));
+    final DateTime beforeYesterdayStart =
+        todayStart.subtract(const Duration(days: 2));
 
     if (beijingTime.isAfter(todayStart)) {
       return '今天 ${beijingTime.hour.toString().padLeft(2, '0')}:${beijingTime.minute.toString().padLeft(2, '0')}';
@@ -57,27 +66,39 @@ class DateTimeFormatter {
           '${beijingTime.hour.toString().padLeft(2, '0')}:${beijingTime.minute.toString().padLeft(2, '0')}';
     }
   }
+
+  /// 格式化友好格式，最近返回回D天前/M月前
+  /// 若超过40天则返回 YYYY-MM-DD
   static String formatTimeAgo(DateTime dateTime) {
     // 使用设备的当前本地时间
     final now = DateTime.now();
     // 计算本地时间差
     final difference = now.difference(dateTime);
 
-    if (difference.inSeconds < 60) { // 小于1分钟
+    if (difference.inSeconds < 60) {
+      // 小于1分钟
       return '刚刚';
-    } else if (difference.inMinutes < 60) { // 小于1小时
+    } else if (difference.inMinutes < 60) {
+      // 小于1小时
       return '${difference.inMinutes}分钟前';
-    } else if (difference.inHours < 24) { // 小于1天
+    } else if (difference.inHours < 24) {
+      // 小于1天
       return '${difference.inHours}小时前';
-    } else if (difference.inDays < 7) { // 小于7天
+    } else if (difference.inDays < 7) {
+      // 小于7天
       return '${difference.inDays}天前';
+    } else if (difference.inDays < 14) {
+      // 小于14天
+      return '一周前';
+    } else if (difference.inDays < 20) {
+      // 小于20天
+      return '两周前';
+    } else if (difference.inDays < 40) {
+      // 小于40天
+      return '一个月前';
     } else {
-      // 大于等于7天，显示具体日期 (YYYY-MM-DD)
-      // 注意：这里仍然使用传入的 dateTime 的年月日，未转换时区
-      // 如果希望这里也显示北京时间日期，可以使用：
-      // final DateTime beijingTime = toBeijingTime(dateTime);
-      // return '${beijingTime.year}-${beijingTime.month.toString().padLeft(2, '0')}-${beijingTime.day.toString().padLeft(2, '0')}';
-      return '${dateTime.year}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.day.toString().padLeft(2, '0')}';
+      // 超过40天返回年月日一般格式
+      return formatNormal(dateTime);
     }
   }
 

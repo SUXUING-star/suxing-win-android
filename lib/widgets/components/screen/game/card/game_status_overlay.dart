@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/card/game_status_overlay.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
@@ -15,23 +16,9 @@ class GameStatusOverlay extends StatelessWidget {
     required this.onShowReviewComment,
   });
 
-  // Helper function from MyGamesScreen, now moved here or accessed differently
-  Map<String, dynamic> _getStatusDisplay(String? status) {
-    switch (status?.toLowerCase()) {
-      case GameStatus.pending:
-        return {'text': '审核中', 'color': Colors.orange};
-      case GameStatus.approved:
-        return {'text': '已通过', 'color': Colors.green};
-      case GameStatus.rejected:
-        return {'text': '已拒绝', 'color': Colors.red};
-      default:
-        return {'text': '未知', 'color': Colors.grey};
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final statusInfo = _getStatusDisplay(game.approvalStatus);
+    final statusInfo = GameConstants.getStatusDisplay(game.approvalStatus);
     final bool isRejected =
         game.approvalStatus?.toLowerCase() == GameStatus.rejected;
     final bool showComment = isRejected &&

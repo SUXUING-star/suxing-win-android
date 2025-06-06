@@ -215,8 +215,7 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
         _dialogKey.currentContext?.findRenderObject() as RenderBox?;
     // 提供一个合理的 fallback 尺寸，以防 key 尚未准备好或获取失败
     // 这个 fallback 尺寸应该根据你的 maxWidth 和典型内容高度估算
-    final Size dialogOriginalSize =
-        renderBox?.size ?? const Size(300, 200); // TODO: 根据实际情况调整 fallback
+    final Size dialogOriginalSize = renderBox?.size ?? const Size(300, 200);
 
     if (dialogOriginalSize == Size.zero) return; // 如果尺寸无效 (例如 0x0)，则跳过本次更新
 
@@ -300,7 +299,7 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
     // --- 构建核心对话框内容 (添加 key) ---
     // 这部分是对话框的 UI 结构，我们给它加上了 GlobalKey
     Widget dialogContentCore = Material(
-      key: _dialogKey, // *** 将 GlobalKey 赋给 Material Widget ***
+      key: _dialogKey,
       type: MaterialType.card,
       color: Colors.white,
       elevation: 6.0,
@@ -407,14 +406,9 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
       );
     }
 
-    // --- 最后包裹 PopScope 用于处理系统返回事件 ---
     return PopScope<T>(
-      // *** 1. 明确指定泛型 <T> ***
       canPop: !_isProcessing && widget.dismissibleWhenNotProcessing,
-      // *** 2. 使用 onPopInvokedWithResult 并更新回调签名 ***
       onPopInvokedWithResult: (bool didPop, T? result) {
-        // *** 添加 result 参数 ***
-        // *** 3. 内部逻辑保持不变，忽略 result 参数 ***
         if (!didPop) {
           // 如果 pop 被阻止了
           if (_isProcessing) {

@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/profile/open/mobile/profile_game_card.dart
+// lib/widgets/components/screen/profile/open/profile_game_card.dart
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 
 class ProfileGameCard extends CommonGameCard {

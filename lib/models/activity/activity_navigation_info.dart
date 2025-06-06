@@ -2,7 +2,7 @@
 
 import 'package:flutter/foundation.dart';
 
-@immutable
+
 class ActivityNavigationInfo {
   final String? previousId;
   final String? previousTitle;

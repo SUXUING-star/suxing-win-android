@@ -1,16 +1,18 @@
 // lib/models/message/message_type.dart
 import 'package:flutter/material.dart';
 
-/// 消息类型枚举
+/// 消息类型枚举 (与后端字符串对应)
 enum MessageType {
-  commentReply, // 评论收到回复
-  postReply, // 帖子收到回复
-  follow_notification, // 关注通知 (保持与后端一致)
-  game_approved, // 游戏审核通过
-  game_rejected, // 游戏审核拒绝
-  game_review_pending, // 游戏待审核
+  commentToParentReply, // 后端: "comment_to_reply" - 父评论收到回复
+  commentToGame, // 后端: "comment_to_game" - 游戏收到评论/回复
+  postReplyToPost, // 后端: "post_reply_to_post" - 帖子收到回复
+  postReplyToParentReply, // 后端: "post_reply_reply" - (帖子的)父回复收到回复
+  followTargetUser, // 后端: "follow_target_user" - 关注消息
+  gameApprovedToAuthor, // 后端: "game_approved_to_author" - 游戏审核通过
+  gameRejectedToAuthor, // 后端: "game_rejected_to_author" - 游戏审核拒绝
+  gameResubmitToAdmin, // 后端: "game_resubmit_to_admin" - 游戏重新进入审核状态
+  gameLikedToAuthor, // 后端: "game_liked_to_author" - 游戏被点赞
   unknown, // 未知类型
-  // 在此添加其他消息类型枚举...
 }
 
 /// MessageType 扩展，提供显示信息、图标和辅助方法
@@ -18,107 +20,131 @@ extension MessageTypeInfo on MessageType {
   /// 获取用户友好的中文显示名称
   String get displayName {
     switch (this) {
-      case MessageType.commentReply:
-        return '评论回复';
-      case MessageType.postReply:
-        return '帖子回复';
-      case MessageType.follow_notification:
-        return '关注通知';
-      case MessageType.game_approved:
-        return '游戏审核通过';
-      case MessageType.game_rejected:
-        return '游戏审核不通过';
-      case MessageType.game_review_pending:
-        return '游戏待审核';
+      case MessageType.commentToParentReply:
+        return '评论有了新回复';
+      case MessageType.commentToGame:
+        return '游戏有了新评论'; // 或 '游戏收到回复'，根据实际业务
+      case MessageType.postReplyToPost:
+        return '帖子有了新回复';
+      case MessageType.postReplyToParentReply:
+        return '回复有了新回复';
+      case MessageType.followTargetUser:
+        return '新的关注';
+      case MessageType.gameApprovedToAuthor:
+        return '游戏已通过审核';
+      case MessageType.gameRejectedToAuthor:
+        return '游戏未通过审核';
+      case MessageType.gameResubmitToAdmin:
+        return '游戏已重新提交审核';
+      case MessageType.gameLikedToAuthor:
+        return '游戏被点赞';
       case MessageType.unknown:
-        return '未知消息';
-      // 为新增的枚举类型添加 case
-      // default: return '系统消息'; // 可以为没有明确匹配的类型提供默认值
+        // 确保总有一个返回值
+        return '系统消息';
     }
   }
 
   /// 获取对应的图标
   IconData get iconData {
     switch (this) {
-      case MessageType.commentReply:
+      case MessageType.commentToParentReply:
+      case MessageType.commentToGame:
+      case MessageType.postReplyToParentReply:
         return Icons.comment_outlined;
-      case MessageType.postReply:
+      case MessageType.postReplyToPost:
         return Icons.article_outlined;
-      case MessageType.follow_notification:
+      case MessageType.followTargetUser:
         return Icons.person_add_alt_1_outlined;
-      case MessageType.game_approved:
+      case MessageType.gameApprovedToAuthor:
         return Icons.check_circle_outline;
-      case MessageType.game_rejected:
+      case MessageType.gameRejectedToAuthor:
         return Icons.highlight_off_outlined;
-      case MessageType.game_review_pending:
-        return Icons.hourglass_top_outlined;
+      case MessageType.gameResubmitToAdmin:
+        return Icons.hourglass_top_outlined; // 之前是 game_review_pending
+      case MessageType.gameLikedToAuthor:
+        return Icons.favorite_border_outlined;
       case MessageType.unknown:
-        return Icons.help_outline;
-      // 为新增的枚举类型添加 case
-      // default: return Icons.notifications_outlined;
+        return Icons.notifications_outlined;
     }
   }
 
   /// 获取对应的背景颜色 (用于 MessageDetail 标签等)
   Color get labelBackgroundColor {
     switch (this) {
-      case MessageType.commentReply:
+      case MessageType.commentToParentReply:
+      case MessageType.commentToGame:
         return Colors.blue[100]!;
-      case MessageType.postReply:
-        return Colors.indigo[100]!; // 区分一下颜色
-      case MessageType.follow_notification:
+      case MessageType.postReplyToPost:
+      case MessageType.postReplyToParentReply:
+        return Colors.indigo[100]!;
+      case MessageType.followTargetUser:
         return Colors.orange[100]!;
-      case MessageType.game_approved:
+      case MessageType.gameApprovedToAuthor:
         return Colors.green[100]!;
-      case MessageType.game_rejected:
+      case MessageType.gameRejectedToAuthor:
         return Colors.red[100]!;
-      case MessageType.game_review_pending:
-        return Colors.yellow[200]!; // 调亮一点
+      case MessageType.gameResubmitToAdmin:
+        return Colors.yellow[200]!;
+      case MessageType.gameLikedToAuthor:
+        return Colors.pink[100]!;
       case MessageType.unknown:
-        return Colors.grey[300]!;
-      // 为新增的枚举类型添加 case
-      // default: return Colors.grey[200]!;
+        return Colors.grey[200]!;
     }
   }
 
   /// 获取对应的文字颜色 (用于 MessageDetail 标签等)
   Color get labelTextColor {
     switch (this) {
-      case MessageType.commentReply:
+      case MessageType.commentToParentReply:
+      case MessageType.commentToGame:
         return Colors.blue[700]!;
-      case MessageType.postReply:
+      case MessageType.postReplyToPost:
+      case MessageType.postReplyToParentReply:
         return Colors.indigo[700]!;
-      case MessageType.follow_notification:
-        return Colors.orange[800]!; // 加深一点
-      case MessageType.game_approved:
+      case MessageType.followTargetUser:
+        return Colors.orange[800]!;
+      case MessageType.gameApprovedToAuthor:
         return Colors.green[700]!;
-      case MessageType.game_rejected:
+      case MessageType.gameRejectedToAuthor:
         return Colors.red[700]!;
-      case MessageType.game_review_pending:
-        return Colors.yellow[900]!; // 再加深
+      case MessageType.gameResubmitToAdmin:
+        return Colors.yellow[900]!;
+      case MessageType.gameLikedToAuthor:
+        return Colors.pink[700]!;
       case MessageType.unknown:
         return Colors.grey[800]!;
-      // 为新增的枚举类型添加 case
-      // default: return Colors.grey[800]!;
     }
   }
 
   /// 将后端返回的字符串类型安全转换为 MessageType 枚举
-  /// **重要:** 此方法需要根据你后端实际存储和返回的 `type` 字符串进行调整。
   static MessageType fromString(String? typeString) {
     if (typeString == null || typeString.isEmpty) {
       return MessageType.unknown;
     }
-
-    // 示例：假设后端返回的是枚举的 .name (例如 "commentReply", "postReply")
-    for (MessageType type in MessageType.values) {
-      if (type.name == typeString) {
-        return type;
-      }
+    switch (typeString) {
+      case "comment_to_reply":
+        return MessageType.commentToParentReply;
+      case "comment_to_game":
+        return MessageType.commentToGame;
+      case "post_reply_to_post":
+        return MessageType.postReplyToPost;
+      case "post_reply_reply": // 后端: MessageTypePostReplyToParentReply
+        return MessageType.postReplyToParentReply;
+      case "follow_target_user":
+        return MessageType.followTargetUser;
+      case "game_approved_to_author":
+        return MessageType.gameApprovedToAuthor;
+      case "game_rejected_to_author":
+        return MessageType.gameRejectedToAuthor;
+      case "game_resubmit_to_admin":
+        return MessageType.gameResubmitToAdmin;
+      case "game_liked_to_author":
+        return MessageType.gameLikedToAuthor;
+      default:
+        // if (kDebugMode) { // 仅在调试模式下打印未知类型警告
+        //   print("警告: 未能将字符串 '$typeString' 匹配到任何 MessageType 枚举值, 返回 MessageType.unknown");
+        // }
+        return MessageType.unknown;
     }
-
-    // 如果以上都不匹配，作为未知类型处理
-    // print("警告: 未能将字符串 '$typeString' 匹配到任何 MessageType 枚举值, 返回 MessageType.unknown");
-    return MessageType.unknown;
   }
 }

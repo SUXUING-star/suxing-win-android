@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -25,6 +26,7 @@ class AddGameScreen extends StatefulWidget {
   final GameCollectionService gameCollectionService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
   const AddGameScreen({
     super.key,
     required this.gameCollectionService,
@@ -35,6 +37,7 @@ class AddGameScreen extends StatefulWidget {
     required this.authProvider,
     required this.followService,
     required this.infoProvider,
+    required this.inputStateService,
   });
 
   @override
@@ -43,7 +46,10 @@ class AddGameScreen extends StatefulWidget {
 
 class _AddGameScreenState extends State<AddGameScreen>
     with SnackBarNotifierMixin {
+  // _hasInitializedDependencies 在这里似乎没有实际用途，可以保留或移除，
+  // 因为没有像 EditGameScreen 那样在 didChangeDependencies 中进行数据加载。
   bool _hasInitializedDependencies = false;
+
   @override
   void initState() {
     super.initState();
@@ -54,6 +60,7 @@ class _AddGameScreenState extends State<AddGameScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
+      // 在这里添加初始化依赖的逻辑，如果需要的话
     }
   }
 
@@ -72,10 +79,10 @@ class _AddGameScreenState extends State<AddGameScreen>
       // 添加成功后，直接显示审核通知对话框
 
       if (!widget.authProvider.isAdmin) {
-        // 编辑模式且非管理员
+        // 非管理员提交，显示审核通知
         _showReviewNoticeDialogAfterApiSuccess();
       } else {
-        // 添加模式成功，或管理员编辑成功，直接返回上一页并传递成功标记
+        // 管理员提交，直接返回上一页并传递成功标记
         if (mounted) Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -120,35 +127,46 @@ class _AddGameScreenState extends State<AddGameScreen>
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    buildSnackBar(context);
+  // 私有方法：构建页面主体内容，包含 StreamBuilder
+  Widget _buildBody() {
     return StreamBuilder<String?>(
       stream: widget.authProvider.currentUserIdStream,
       initialData: widget.authProvider.currentUserId,
       builder: (context, currentUserIdSnapshot) {
         final String? currentUserId = currentUserIdSnapshot.data;
+
+        // 如果用户未登录，显示登录提示
         if (currentUserId == null) {
           return const LoginPromptWidget();
         }
-        return Scaffold(
-          appBar: const CustomAppBar(
-            title: '添加新游戏',
-          ),
-          body: GameForm(
-            fileUpload: widget.fileUpload,
-            sidebarProvider: widget.sidebarProvider,
-            gameListFilterProvider: widget.gameListFilterProvider,
-            gameCollectionService: widget.gameCollectionService,
-            authProvider: widget.authProvider,
-            followService: widget.followService,
-            infoProvider: widget.infoProvider,
-            gameService: widget.gameService,
-            currentUser: widget.authProvider.currentUser,
-            onSubmit: _handleGameFormSubmit, // 传递 State 的方法
-          ),
+
+        // 用户已登录，显示游戏表单
+        return GameForm(
+          inputStateService: widget.inputStateService,
+          fileUpload: widget.fileUpload,
+          sidebarProvider: widget.sidebarProvider,
+          gameListFilterProvider: widget.gameListFilterProvider,
+          gameCollectionService: widget.gameCollectionService,
+          authProvider: widget.authProvider,
+          followService: widget.followService,
+          infoProvider: widget.infoProvider,
+          gameService: widget.gameService,
+          currentUser: widget.authProvider.currentUser, // 确保 currentUser 传给表单
+          onSubmit: _handleGameFormSubmit, // 传递 State 的方法
         );
       },
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    buildSnackBar(context); // SnackBarNotifierMixin 的方法
+
+    return Scaffold(
+      appBar: const CustomAppBar(
+        title: '添加新游戏',
+      ),
+      body: _buildBody(), // 调用私有方法来构建 body
     );
   }
 }

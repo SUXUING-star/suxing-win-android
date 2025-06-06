@@ -6,6 +6,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -354,12 +355,10 @@ class ActivityDetailContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    final isDesktop = DeviceUtils.isDesktopScreen(context);
 
-    // --- 动画参数 (与 GameDetailContent 保持一致或微调) ---
     const Duration slideDuration = Duration(milliseconds: 400);
     const Duration fadeDuration = Duration(milliseconds: 350);
-    // const Duration scaleDuration = Duration(milliseconds: 450); // 如果需要
     const Duration baseDelay = Duration(milliseconds: 50);
     const Duration delayIncrement = Duration(milliseconds: 40);
     double slideOffset = 20.0;

@@ -12,13 +12,13 @@ class FunctionalButton extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final bool isLoading;
   final bool isEnabled;
-  final Color? foregroundColor; // <-- 新增: 前景色 (文字和图标)
-  final Color? backgroundColor; // <-- 新增: 背景色
+  final Color? foregroundColor;
+  final Color? backgroundColor;
   final bool hasBorder;
   final double? borderWidth;
   final Color? borderColor;
   final BorderStyle? borderStyle;
-  final double? minWidth; // <-- 新增: 最小宽度
+  final double? minWidth;
 
   const FunctionalButton({
     super.key,

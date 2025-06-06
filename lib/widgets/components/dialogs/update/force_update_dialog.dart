@@ -22,7 +22,6 @@ class ForceUpdateDialog {
     final Color fixedButtonColor = theme.colorScheme.error;
     final Color fixedIconColor = theme.colorScheme.error;
 
-    // ！！！确保调用 BaseInputDialog.show 时不带不必要的泛型（如果它没有定义）！！！
     return BaseInputDialog.show(
       context: context,
       title: fixedTitle,
@@ -83,14 +82,9 @@ class ForceUpdateDialog {
       },
       confirmButtonText: fixedConfirmButtonText,
       confirmButtonColor: fixedButtonColor,
-      // ！！！核心修改：onConfirm 的行为就是打开传入的 updateUrl (即 AppConfig.releasePage)！！！
       onConfirm: () async {
         // onConfirm 是 Future<void> Function()
         if (updateUrl.isEmpty) {
-          // if (kDebugMode) {
-          //   print(
-          //       'ForceUpdateDialog: Release Page URL (from updateUrl prop) is empty.');
-          // }
           if (context.mounted) {
             // 使用 AppSnackBar 显示错误
             AppSnackBar.showError(context, '未配置有效的更新页面链接。');
@@ -102,9 +96,6 @@ class ForceUpdateDialog {
         final Uri uri =
             Uri.parse(updateUrl); // updateUrl 就是 AppConfig.releasePage
         try {
-          // if (kDebugMode) {
-          //   print("ForceUpdateDialog: Launching release page URL: $uri");
-          // }
           if (await canLaunchUrl(uri)) {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } else {
@@ -114,9 +105,6 @@ class ForceUpdateDialog {
             }
           }
         } catch (e) {
-          // if (kDebugMode) {
-          //   print("ForceUpdateDialog: Error launching URL $uri: $e");
-          // }
           if (context.mounted) {
             AppSnackBar.showError(context,
                 '打开链接时发生错误: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');

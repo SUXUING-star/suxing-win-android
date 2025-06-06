@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/profile/open/mobile/profile_post_card.dart
+// lib/widgets/components/screen/profile/open/profile_post_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/routes/app_routes.dart';

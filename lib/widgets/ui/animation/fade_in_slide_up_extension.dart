@@ -1,18 +1,18 @@
+// lib/widgets/ui/animation/fade_in_slide_up_extension.dart
 import 'package:flutter/material.dart';
 
-// 扩展 FadeInSlideUpItem 以接收 play 参数
 class FadeInSlideUpItemCanPlay extends StatefulWidget {
   final Widget child;
   final Duration delay;
   final Duration duration;
-  final bool play; // 新增参数
+  final bool play;
 
   const FadeInSlideUpItemCanPlay({
     super.key,
     required this.child,
     this.delay = Duration.zero,
     this.duration = const Duration(milliseconds: 400),
-    this.play = true, // 默认为 true，保持原有行为
+    this.play = true,
   });
 
   @override
@@ -25,6 +25,7 @@ class _FadeInSlideUpItemCanPlayState extends State<FadeInSlideUpItemCanPlay>
   late AnimationController _controller;
   late Animation<Offset> _offsetAnimation;
   late Animation<double> _fadeAnimation;
+  bool _hasStartedPlaying = false; // 标记动画是否已因 play=true 而启动过
 
   @override
   void initState() {
@@ -35,7 +36,7 @@ class _FadeInSlideUpItemCanPlayState extends State<FadeInSlideUpItemCanPlay>
     );
 
     _offsetAnimation = Tween<Offset>(
-      begin: const Offset(0.0, 0.3), // 从下方0.3处开始
+      begin: const Offset(0.0, 0.3),
       end: Offset.zero,
     ).animate(CurvedAnimation(
       parent: _controller,
@@ -51,34 +52,40 @@ class _FadeInSlideUpItemCanPlayState extends State<FadeInSlideUpItemCanPlay>
     ));
 
     if (widget.play) {
-      // 根据 play 参数决定是否立即播放
       _startAnimation();
     }
   }
 
   void _startAnimation() {
     if (!mounted) return;
-    Future.delayed(widget.delay, () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
+    if (!_hasStartedPlaying ||
+        (_controller.status != AnimationStatus.forward &&
+            _controller.status != AnimationStatus.completed)) {
+      _hasStartedPlaying = true;
+      Future.delayed(widget.delay, () {
+        if (mounted) {
+          _controller.forward();
+        }
+      });
+    }
   }
 
   @override
   void didUpdateWidget(covariant FadeInSlideUpItemCanPlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 如果 play 状态从 false 变为 true，则启动动画
     if (widget.play && !oldWidget.play) {
-      // 可以选择重置动画并播放，或者如果动画已完成则不操作
-      // 这里假设如果之前没播放，现在要播放了就从头开始
-      _controller.reset();
-      _startAnimation();
+      // 如果 play 从 false 变为 true，且动画未因 play=true 启动过或已结束，则重置并播放
+      if (!_hasStartedPlaying ||
+          (_controller.status != AnimationStatus.forward &&
+              _controller.status != AnimationStatus.completed)) {
+        _controller.reset();
+        _startAnimation();
+      }
     }
-    // 如果 play 状态从 true 变为 false，可以选择暂停或重置动画
-    else if (!widget.play && oldWidget.play) {
-      _controller.stop(); // 或者 _controller.reset();
-    }
+    // 当 play 从 true 变为 false 时，不再停止动画，让其自然完成
+    // else if (!widget.play && oldWidget.play) {
+    //   // _controller.stop(); // 已移除此行
+    // }
   }
 
   @override
@@ -89,11 +96,14 @@ class _FadeInSlideUpItemCanPlayState extends State<FadeInSlideUpItemCanPlay>
 
   @override
   Widget build(BuildContext context) {
-    if (!widget.play && !_controller.isAnimating && _controller.value == 0.0) {
-      // 如果不播放，并且动画未开始或已重置，则直接显示子组件（无动画效果）
-      // 或者根据需要返回一个透明/占位的 widget
-      return Opacity(opacity: 0, child: widget.child); // 初始不可见
+    // 如果 play=false 且动画从未被 play=true 触发过，并且控制器处于初始状态，则初始不可见
+    if (!widget.play &&
+        !_hasStartedPlaying &&
+        _controller.value == 0.0 &&
+        !_controller.isAnimating) {
+      return Opacity(opacity: 0, child: widget.child);
     }
+
     return FadeTransition(
       opacity: _fadeAnimation,
       child: SlideTransition(

@@ -147,7 +147,7 @@ class _EditPostScreenState extends State<EditPostScreen>
           currentUser: currentUser,
           initialTitle: _post!.title,
           initialContent: _post!.content,
-          initialTags: List.from(_post!.tags),
+          initialTags: PostTagsUtils.stringsToTagList(List.from(_post!.tags)),
           availableTags: _availablePostTags,
           isSubmitting: _isSubmitting,
           onSubmit: _submitEdit,

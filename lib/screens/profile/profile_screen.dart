@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:suxingchahui/constants/profile/profile_constants.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -18,7 +19,7 @@ import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dar
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/layout/models/profile_menu_item.dart';
+import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -442,80 +443,13 @@ class _ProfileScreenState extends State<ProfileScreen>
           }
         } catch (e) {
           if (!mounted) return;
+          setState(() {
+            _isRefreshing = false;
+          });
           AppSnackBar.showError(this.context, '登录失败：$e');
         }
       },
     );
-  }
-
-  List<ProfileMenuItem> _getMenuItems(bool isAdmin, User? currentUser) {
-    return [
-      if (isAdmin)
-        ProfileMenuItem(
-            icon: Icons.admin_panel_settings,
-            title: '管理员面板',
-            route: AppRoutes.adminDashboard),
-      ProfileMenuItem(
-        icon: Icons.people_outline,
-        title: '我的关注',
-        route: '',
-        onTap: () {
-          if (currentUser != null) {
-            NavigationUtils.pushNamed(context, AppRoutes.userFollows,
-                arguments: {
-                  'userId': currentUser.id,
-                  'username': currentUser.username,
-                  'initialShowFollowing': true
-                });
-          }
-        },
-      ),
-      ProfileMenuItem(
-          icon: Icons.games_outlined, title: '我的游戏', route: AppRoutes.myGames),
-      ProfileMenuItem(
-          icon: Icons.forum_outlined, title: '我的帖子', route: AppRoutes.myPosts),
-      ProfileMenuItem(
-          icon: Icons.collections_bookmark_outlined,
-          title: '我的收藏',
-          route: AppRoutes.myCollections),
-      ProfileMenuItem(
-          icon: Icons.favorite_border,
-          title: '我的喜欢',
-          route: AppRoutes.favorites),
-      ProfileMenuItem(
-        icon: Icons.rocket_launch_outlined,
-        title: '我的动态',
-        route: '',
-        onTap: () {
-          if (currentUser != null) {
-            NavigationUtils.pushNamed(
-              context,
-              AppRoutes.userActivities,
-              arguments: currentUser.id,
-            );
-          } else {
-            if (mounted) AppSnackBar.showError(context, '无法加载用户数据');
-          }
-        },
-      ),
-      ProfileMenuItem(
-          icon: Icons.calendar_today_outlined,
-          title: '签到',
-          route: AppRoutes.checkin),
-      ProfileMenuItem(
-          icon: Icons.history, title: '浏览历史', route: AppRoutes.history),
-      ProfileMenuItem(
-          icon: Icons.share_outlined,
-          title: '分享应用',
-          route: '',
-          onTap: () {
-            if (mounted) AppSnackBar.showInfo(context, '分享功能开发中');
-          }),
-      ProfileMenuItem(
-          icon: Icons.info_outline, title: '支持我们', route: AppRoutes.about),
-      ProfileMenuItem(
-          icon: Icons.settings, title: '设置', route: AppRoutes.settingPage),
-    ];
   }
 
   void _handleUploadStateChanged(bool isLoading) {
@@ -531,20 +465,32 @@ class _ProfileScreenState extends State<ProfileScreen>
   }
 
   Future<void> _handleUploadSuccess(
-      BuildContext context, String? avatarUrl) async {
+      BuildContext context, String avatarUrl) async {
     if (!mounted) return;
     try {
-      await widget.userService.updateUserProfile(avatar: avatarUrl);
+      await widget.userService.updateUserProfile(
+        avatar: avatarUrl,
+      );
 
       await widget.authProvider.refreshUserState();
       if (mounted && widget.authProvider.isLoggedIn) {
         await _loadDailyExperienceProgress(forceRefresh: true);
       }
+
       if (!mounted) return;
       AppSnackBar.showSuccess(this.context, '用户信息已刷新');
     } catch (e) {
       if (!mounted) return;
+      // 补偿删除头像
+      widget.fileUpload.deleteUploadedImagesOnError([avatarUrl]);
       AppSnackBar.showError(this.context, '刷新用户信息失败：$e');
+    } finally {
+      // 无论 try 成功还是 catch 有异常，最后都必须把加载状态关掉！
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
     }
   }
 
@@ -707,9 +653,11 @@ class _ProfileScreenState extends State<ProfileScreen>
                 child: CustomErrorWidget(
                     errorMessage: _error!, onRetry: () => _refreshProfile()));
           }
-          final bool isAdmin = currentUser.isAdmin;
-          // 获取菜单项，现在直接传递 _authProvider
-          final menuItems = _getMenuItems(isAdmin, currentUser);
+          final menuItems = ProfileConstants.getProfileMenuItems(
+            context,
+            currentUser.isAdmin,
+            currentUser,
+          );
           return Stack(
             children: [
               if (useDesktopLayout)

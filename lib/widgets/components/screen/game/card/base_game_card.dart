@@ -5,6 +5,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 // 引入自定义菜单按钮
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -14,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 import 'game_stats_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
-import 'game_collection_dialog.dart'; // 保留，用于显示收藏统计
+import 'game_collection_dialog.dart';
 
 /// 基础游戏卡片组件，提供共享的UI结构和功能
 class BaseGameCard extends StatelessWidget {
@@ -26,8 +27,10 @@ class BaseGameCard extends StatelessWidget {
   final int maxTags;
   final bool forceCompact;
   final bool showCollectionStats;
-  final VoidCallback? onDeleteAction; // 删除按钮点击回调
+  final VoidCallback? onDeleteAction;
   final VoidCallback? onEditAction;
+  final bool showNewBadge; // 控制是否显示新游戏徽章
+  final bool showUpdatedBadge; // 控制是否显示更新游戏徽章
 
   const BaseGameCard({
     super.key,
@@ -41,11 +44,12 @@ class BaseGameCard extends StatelessWidget {
     this.showCollectionStats = true,
     this.onDeleteAction,
     this.onEditAction,
+    this.showNewBadge = false, // 默认不显示
+    this.showUpdatedBadge = false, // 默认不显示
   });
 
   @override
   Widget build(BuildContext context) {
-    // --- 新增加的保险判断 ---
     // 如果游戏状态是 'pending' (待审核)，则不显示此卡片
     if (game.approvalStatus == GameStatus.pending ||
         game.approvalStatus == GameStatus.rejected) {
@@ -53,6 +57,49 @@ class BaseGameCard extends StatelessWidget {
       return const SizedBox.shrink();
     }
     return isGridItem ? _buildGridCard(context) : _buildListCard(context);
+  }
+
+  // 判断游戏是否为创建时间一周内的新游戏
+  bool _isGameNew() {
+    final now = DateTime.now();
+    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    return game.createTime.isAfter(sevenDaysAgo) &&
+        game.createTime.isBefore(now);
+  }
+
+  // 判断游戏是否为更新时间一周内且非新游戏的更新游戏
+  bool _isGameRecentlyUpdated() {
+    final now = DateTime.now();
+    final sevenDaysAgo = now.subtract(const Duration(days: 7));
+    if (_isGameNew()) return false;
+    return game.updateTime.isAfter(sevenDaysAgo) &&
+        game.updateTime.isBefore(now);
+  }
+
+  // 构建统一的徽章UI
+  Widget _buildBadge(String text, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withSafeOpacity(0.2),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+        ),
+      ),
+    );
   }
 
   // --- 列表布局卡片 ---
@@ -105,12 +152,29 @@ class BaseGameCard extends StatelessWidget {
                     fit: BoxFit.cover,
                     memCacheWidth: DeviceUtils.isDesktop ? 480 : 280,
                   ), // 封面图
+                  // 左上角区域：新/更新徽章和类别标签
                   Positioned(
-                      top: 8,
-                      left: 8,
-                      child: GameCategoryTagView(
-                        category: game.category,
-                      )), // 类别
+                    top: 8,
+                    left: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // 根据条件添加徽章Widget
+                        if (showNewBadge && _isGameNew())
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: _buildBadge('新发布', Colors.red.shade700),
+                          )
+                        else if (showUpdatedBadge && _isGameRecentlyUpdated())
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 4.0),
+                            child: _buildBadge('最近更新', Colors.blue.shade700),
+                          ),
+                        // 类别标签
+                        GameCategoryTagView(category: game.category),
+                      ],
+                    ),
+                  ),
                   Positioned(top: 4, right: 4, child: _buildPopupMenu(context)),
                   Positioned(
                     bottom: 8,
@@ -161,12 +225,30 @@ class BaseGameCard extends StatelessWidget {
             memCacheWidth: isDesktop ? 240 : 200,
             backgroundColor: Colors.grey[200],
           ),
+          // 左上角区域：新/更新徽章和类别标签
+          // 左上角区域：新/更新徽章和类别标签
           Positioned(
-              top: 8,
-              left: 8,
-              child: GameCategoryTagView(
-                category: game.category,
-              )),
+            top: 8,
+            left: 8,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 根据条件添加徽章Widget
+                if (showNewBadge && _isGameNew())
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: _buildBadge('新', Colors.red.shade700),
+                  )
+                else if (showUpdatedBadge && _isGameRecentlyUpdated())
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4.0),
+                    child: _buildBadge('更新', Colors.blue.shade700),
+                  ),
+                // 类别标签
+                GameCategoryTagView(category: game.category),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -279,10 +361,9 @@ class BaseGameCard extends StatelessWidget {
     final hasEditAction = onEditAction != null;
 
     // 如果不能修改或者没有删除回调，不显示
-    if (!canModify || !hasDeleteAction) {
+    if (!canModify || (!hasDeleteAction && !hasEditAction)) {
       return const SizedBox.shrink();
     }
-
     return StylishPopupMenuButton<String>(
       icon: Icons.more_vert,
       iconSize: 20,

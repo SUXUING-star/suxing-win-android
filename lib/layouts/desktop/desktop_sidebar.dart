@@ -4,8 +4,8 @@ import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/wrapper/platform_wrapper.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
+import 'desktop_frame_layout.dart.dart';
 import 'desktop_sidebar_nav_item.dart';
 import 'desktop_sidebar_user_profile.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -23,6 +23,7 @@ class DesktopSidebar extends StatelessWidget {
     required this.child,
     required this.authProvider,
   });
+
 
   static const iconPath = GlobalConstants.appIcon;
   static const List<Color> sideBarColors = [
@@ -98,7 +99,7 @@ class DesktopSidebar extends StatelessWidget {
           child: SafeArea(
             child: Padding(
               padding: const EdgeInsets.only(
-                  top: PlatformWrapper.kDesktopTitleBarHeight),
+                  top: DesktopFrameLayout.kDesktopTitleBarHeight),
               child: Column(
                 children: [
                   StreamBuilder<bool>(

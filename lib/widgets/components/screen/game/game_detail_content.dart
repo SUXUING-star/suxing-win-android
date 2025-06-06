@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection.dart'; // 引入 GameCollectionStatus
+import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -15,7 +15,7 @@ import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_section.dart';
-import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart'; // 确认路径
+import 'package:suxingchahui/widgets/components/screen/game/collection/game_reviews_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/game_comments_section.dart';
 import 'package:suxingchahui/widgets/components/screen/game/coverImage/game_cover_image.dart';
 import 'package:suxingchahui/widgets/components/screen/game/description/game_description.dart';
@@ -275,7 +275,7 @@ class GameDetailContent extends StatelessWidget {
       Duration scaleDuration) {
     int delayIndex = 0;
     // --- 为每个 Section 定义唯一的 Key ---
-    final headerKey = ValueKey('header_mob_${game.id}'); // 直接使用 game
+    final headerKey = ValueKey('header_mob_${game.id}');
     final descriptionKey = ValueKey('desc_mob_${game.id}');
     final collectionKey = ValueKey('collection_mob_${game.id}');
     final reviewKey = ValueKey('reviews_mob_${game.id}');
@@ -362,7 +362,7 @@ class GameDetailContent extends StatelessWidget {
     int leftDelayIndex = 0;
     int rightDelayIndex = 0;
 
-    final coverKey = ValueKey('cover_desk_${game.id}'); // 直接使用 game
+    final coverKey = ValueKey('cover_desk_${game.id}');
     final imagesKey = ValueKey('images_desk_${game.id}');
     final collectionKey = ValueKey('collection_desk_${game.id}');
     final reviewsKey = ValueKey('reviews_desk_${game.id}');
@@ -382,11 +382,14 @@ class GameDetailContent extends StatelessWidget {
           duration: scaleDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
           child: AspectRatio(
-              aspectRatio: 16 / 9,
-              child: ClipRRect(
-                  borderRadius: BorderRadius.circular(12),
-                  child: GameCoverImage(imageUrl: game.coverImage) //直接使用成员变量
-                  )),
+            aspectRatio: 16 / 9,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: GameCoverImage(
+                imageUrl: game.coverImage,
+              ), //直接使用成员变量
+            ),
+          ),
         ),
         const SizedBox(height: 24),
         _buildImagesSection(scaleDuration,
@@ -401,11 +404,12 @@ class GameDetailContent extends StatelessWidget {
           // 使用 isPreviewMode
           const SizedBox(height: 24),
           _buildReviewSection(
-              isPreviewMode, // 使用 isPreviewMode
-              slideDuration,
-              baseDelay + (delayIncrement * leftDelayIndex++),
-              slideOffset,
-              reviewsKey),
+            isPreviewMode, // 使用 isPreviewMode
+            slideDuration,
+            baseDelay + (delayIncrement * leftDelayIndex++),
+            slideOffset,
+            reviewsKey,
+          ),
         ],
         const SizedBox(height: 24),
         _buildVideoSection(

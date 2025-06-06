@@ -27,7 +27,6 @@ class _ToolManagementState extends State<ToolManagement>
     with SnackBarNotifierMixin {
   late Future<List<Tool>> _toolsFuture;
   bool _isProcessing = false; // 防止重复点击
-  late final LinkToolService _linkToolService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -39,7 +38,6 @@ class _ToolManagementState extends State<ToolManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _linkToolService = widget.linkToolService;
       _hasInitializedDependencies = true;
     }
 
@@ -51,7 +49,7 @@ class _ToolManagementState extends State<ToolManagement>
   // --- 新增: 加载数据的方法 ---
   void _loadTools({bool forceRefresh = false}) {
     setState(() {
-      _toolsFuture = _linkToolService.getTools(forceRefresh: forceRefresh);
+      _toolsFuture = widget.linkToolService.getTools();
     });
   }
 
@@ -177,7 +175,7 @@ class _ToolManagementState extends State<ToolManagement>
       if (result != null && mounted) {
         try {
           final tool = Tool.fromJson(result); // 转换
-          await _linkToolService.addTool(tool);
+          await widget.linkToolService.addTool(tool);
           _loadTools(forceRefresh: true); // 强制刷新
           showSnackbar(message: '工具添加成功', type: SnackbarType.success);
         } catch (e) {
@@ -205,7 +203,7 @@ class _ToolManagementState extends State<ToolManagement>
       if (result != null && mounted) {
         try {
           final updatedTool = Tool.fromJson(result); // 转换
-          await _linkToolService.updateTool(updatedTool);
+          await widget.linkToolService.updateTool(updatedTool);
           _loadTools(forceRefresh: true); // 强制刷新
           showSnackbar(message: '工具更新成功', type: SnackbarType.success);
         } catch (e) {
@@ -239,7 +237,7 @@ class _ToolManagementState extends State<ToolManagement>
 
       if (confirmed == true && mounted) {
         try {
-          await _linkToolService.deleteTool(tool.id);
+          await widget.linkToolService.deleteTool(tool.id);
           _loadTools(forceRefresh: true); // 强制刷新
           showSnackbar(message: '工具删除成功', type: SnackbarType.success);
         } catch (e) {
@@ -250,5 +248,4 @@ class _ToolManagementState extends State<ToolManagement>
       if (mounted) setState(() => _isProcessing = false);
     }
   }
-// --- 结束修改 ---
 }

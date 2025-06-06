@@ -1,8 +1,7 @@
 // lib/constants/game/game_constants.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
-
-
 
 // 定义一个简单的类或 Map 来存储每个 Tab 的配置信息
 class GameCollectionTabConfig {
@@ -51,7 +50,7 @@ class GameConstants {
     ),
   ];
 
-  // 根据收藏类型获取对应颜色 (保持不变)
+  // 根据收藏类型获取对应颜色
   static Color getGameCollectionStatusColor(collectionType) {
     switch (collectionType) {
       case GameCollectionStatus.wantToPlay:
@@ -62,6 +61,19 @@ class GameConstants {
         return Colors.purple;
       default:
         return Colors.grey;
+    }
+  }
+
+  static Map<String, dynamic> getStatusDisplay(String? status) {
+    switch (status?.toLowerCase()) {
+      case GameStatus.pending:
+        return {'text': '审核中', 'color': Colors.orange};
+      case GameStatus.approved:
+        return {'text': '已通过', 'color': Colors.green};
+      case GameStatus.rejected:
+        return {'text': '已拒绝', 'color': Colors.red};
+      default:
+        return {'text': '未知', 'color': Colors.grey};
     }
   }
 }
@@ -110,8 +122,6 @@ class GameTagUtils {
     final colorIndex = tag.hashCode.abs() % _defaultTagColors.length;
     return _defaultTagColors[colorIndex];
   }
-
-
 
   /// 根据背景颜色计算合适的文本颜色 (静态方法)
   static Color getTextColorForBackground(Color backgroundColor) {

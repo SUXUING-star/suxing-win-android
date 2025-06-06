@@ -60,7 +60,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     try {
       // 调用清除历史的方法 (确保它们返回 Future 或可以 await)
       await widget.gameService.clearGameHistory();
-      await widget.postService.clearPostHistory(); // 确认方法名正确
+      await widget.postService.clearPostHistory();
 
       if (!mounted) return;
       AppSnackBar.showSuccess(context, '浏览历史已清除');

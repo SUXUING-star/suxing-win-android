@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/maintenance/maintenance_display.dart (新文件)
+// lib/widgets/ui/components/maintenance_display.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/maintenance/maintenance_info.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 确认引入

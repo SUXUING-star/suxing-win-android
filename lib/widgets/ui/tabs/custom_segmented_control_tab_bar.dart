@@ -86,12 +86,6 @@ class _CustomSegmentedControlTabBarState
                 if (_currentIndex != index) {
                   widget.controller.animateTo(index);
                   widget.onTap?.call(index);
-                  // 主动更新 _currentIndex，因为 controller 的 listener 可能会有延迟
-                  // 或者在 animateTo 完成后才触发。
-                  // setState(() {
-                  //  _currentIndex = index;
-                  // });
-                  // 注释掉上面是因为 controller.addListener 应该会处理
                 }
               },
               child: Container(

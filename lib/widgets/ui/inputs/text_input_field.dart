@@ -2,8 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/ui/menus/context_menu_bubble.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 使用 AppText
-import '../menus/context_menu_bubble.dart'; // 使用 ContextMenuBubble
 
 class TextInputField extends StatefulWidget {
   final InputStateService inputStateService;

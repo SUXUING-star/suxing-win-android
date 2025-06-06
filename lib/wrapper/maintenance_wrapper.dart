@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
-import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/components/maintenance_display.dart';
 import 'package:suxingchahui/services/main/maintenance/maintenance_checker_service.dart';
@@ -15,7 +15,6 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 import 'package:suxingchahui/windows/ui/windows_controls.dart';
-import 'package:suxingchahui/wrapper/platform_wrapper.dart';
 import 'package:window_manager/window_manager.dart';
 
 // LifecycleEventHandler 不变
@@ -69,7 +68,9 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
-      widget.maintenanceService.checkMaintenanceStatus(forceCheck: true).then((_) {
+      widget.maintenanceService
+          .checkMaintenanceStatus(forceCheck: true)
+          .then((_) {
         if (mounted) {
           setState(() {
             _hasInitializedMaintenance = true;
@@ -104,7 +105,7 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
       top: 0, // 紧贴顶部
       left: 0, // 紧贴左边
       right: 0, // 紧贴右边
-      height: PlatformWrapper.kDesktopTitleBarHeight, // 使用常量定义的高度
+      height: DesktopFrameLayout.kDesktopTitleBarHeight, // 使用常量定义的高度
       child: Material(
         // 使用 Material Widget 可以设置背景色（这里是透明）
         color: Colors.white,
@@ -161,7 +162,6 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
       ),
     );
   }
-
 
   @override
   Widget build(BuildContext context) {

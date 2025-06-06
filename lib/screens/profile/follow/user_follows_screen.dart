@@ -1,15 +1,16 @@
-// lib/screens/profile/follow/user_follows_screen.dart
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/follow/responsive_follows_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/profile/follow/follows_layout.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 
 class UserFollowsScreen extends StatefulWidget {
   final String userId;
@@ -18,6 +19,7 @@ class UserFollowsScreen extends StatefulWidget {
   final UserFollowService followService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
+  final UserService userService;
 
   const UserFollowsScreen({
     super.key,
@@ -26,6 +28,7 @@ class UserFollowsScreen extends StatefulWidget {
     required this.authProvider,
     required this.followService,
     required this.infoProvider,
+    required this.userService,
     this.initialShowFollowing = true,
   });
 
@@ -36,28 +39,8 @@ class UserFollowsScreen extends StatefulWidget {
 class _UserFollowsScreenState extends State<UserFollowsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-
-  List<Map<String, dynamic>> _followings = [];
-  List<Map<String, dynamic>> _followers = [];
-
-  // 跟踪加载状态
-  bool _followingsLoaded = false;
-  bool _followersLoaded = false;
-  bool _isLoadingFollowings = false;
-  bool _isLoadingFollowers = false;
-  String? _errorMessage;
-
-  // 控制刷新频率
-  DateTime? _lastFollowingsRefresh;
-  DateTime? _lastFollowersRefresh;
-  static const Duration _minRefreshInterval = Duration(minutes: 5);
-
-  StreamSubscription? _followStatusSubscription;
-  bool _mounted = true; // 防止setState调用在组件销毁后
-
-  bool _hasInitializedDependencies = false;
-  late final UserFollowService _followService;
-  late final AuthProvider _authProvider;
+  Future<User>? _targetUserFuture;
+  User? _lastSuccessfullyLoadedTargetUser;
 
   @override
   void initState() {
@@ -67,294 +50,132 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
       vsync: this,
       initialIndex: widget.initialShowFollowing ? 0 : 1,
     );
-
-    // 监听标签切换
-    _tabController.addListener(_onTabChanged);
+    _loadTargetUserData();
   }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    if (!_hasInitializedDependencies) {
-      _followService = widget.followService;
-      _authProvider = widget.authProvider;
-      _hasInitializedDependencies = true;
-    }
-    if (_hasInitializedDependencies) {
-      // 监听关注状态变化
-      _followStatusSubscription =
-          _followService.followStatusStream.listen((userId) {
-        if (_mounted) {
-          // 关注状态变化时重新加载数据
-          _refreshCurrentTab(forceRefresh: true);
-        }
+  void _loadTargetUserData({bool forceRefresh = false}) {
+    if (_targetUserFuture == null || forceRefresh) {
+      setState(() {
+        _targetUserFuture = widget.userService
+            .getUserInfoById(widget.userId, forceRefresh: forceRefresh);
       });
-      // 只加载当前选中标签页的数据
-      _loadInitialData();
     }
   }
 
   @override
   void dispose() {
-    _mounted = false;
-    _followStatusSubscription?.cancel();
-    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
 
-  // 标签切换监听器
-  void _onTabChanged() {
-    if (!_tabController.indexIsChanging) return;
-
-    final currentTab = _tabController.index;
-    if (currentTab == 0 && !_followingsLoaded && !_isLoadingFollowings) {
-      _loadFollowings();
-    } else if (currentTab == 1 && !_followersLoaded && !_isLoadingFollowers) {
-      _loadFollowers();
-    }
-  }
-
-  // 初始化加载当前选中标签的数据
-  Future<void> _loadInitialData() async {
-    // 在桌面模式下，同时加载关注和粉丝列表
-    if (DeviceUtils.isDesktop ||
-        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
-      await Future.wait([
-        _loadFollowings(),
-        _loadFollowers(),
-      ]);
-    } else {
-      // 移动端模式下，只加载当前选中标签页的数据
-      final currentTab = _tabController.index;
-      if (currentTab == 0) {
-        await _loadFollowings();
-      } else {
-        await _loadFollowers();
-      }
-    }
-  }
-
-  // 加载关注列表
-  Future<void> _loadFollowings() async {
-    if (_isLoadingFollowings || !_mounted) return;
-
-    setState(() {
-      _isLoadingFollowings = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // 使用普通加载方法，优先使用缓存
-      final data = await _followService.getFollowing(widget.userId);
-
-      if (_mounted) {
-        setState(() {
-          _followings = data;
-          _followingsLoaded = true;
-          _isLoadingFollowings = false;
-        });
-      }
-    } catch (e) {
-      // print('加载关注列表失败: $e');
-      if (_mounted) {
-        setState(() {
-          _isLoadingFollowings = false;
-          _errorMessage = '加载失败，请重试';
-        });
-      }
-    }
-  }
-
-  // 加载粉丝列表
-  Future<void> _loadFollowers() async {
-    if (_isLoadingFollowers || !_mounted) return;
-
-    setState(() {
-      _isLoadingFollowers = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // 使用普通加载方法，优先使用缓存
-      final data = await _followService.getFollowers(widget.userId);
-
-      if (_mounted) {
-        setState(() {
-          _followers = data;
-          _followersLoaded = true;
-          _isLoadingFollowers = false;
-        });
-      }
-    } catch (e) {
-      // print('加载粉丝列表失败: $e');
-      if (_mounted) {
-        setState(() {
-          _isLoadingFollowers = false;
-          _errorMessage = '加载失败，请重试';
-        });
-      }
-    }
-  }
-
-  // 刷新当前标签页
-  Future<void> _refreshCurrentTab({bool forceRefresh = false}) async {
-    final currentTab = _tabController.index;
-
-    // 桌面模式下，刷新两个列表
-    if (DeviceUtils.isDesktop ||
-        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context))) {
-      await Future.wait([
-        _refreshFollowings(forceRefresh: forceRefresh),
-        _refreshFollowers(forceRefresh: forceRefresh),
-      ]);
-    } else {
-      // 移动端模式下，只刷新当前标签页
-      if (currentTab == 0) {
-        await _refreshFollowings(forceRefresh: forceRefresh);
-      } else {
-        await _refreshFollowers(forceRefresh: forceRefresh);
-      }
-    }
-  }
-
-  // 强制刷新关注列表 (API请求)
-  Future<void> _refreshFollowings({bool forceRefresh = false}) async {
-    // 检查是否需要刷新
-    final now = DateTime.now();
-    if (!forceRefresh && _lastFollowingsRefresh != null) {
-      final timeSinceLastRefresh = now.difference(_lastFollowingsRefresh!);
-      if (timeSinceLastRefresh < _minRefreshInterval) {
-        // print('关注列表刷新太频繁，跳过');
-        return;
-      }
-    }
-
-    if (_isLoadingFollowings || !_mounted) return;
-
-    setState(() {
-      _isLoadingFollowings = true;
-      _errorMessage = null;
-    });
-
-    try {
-      final data = await _followService.refreshFollowing(widget.userId);
-      _lastFollowingsRefresh = now;
-
-      if (_mounted) {
-        setState(() {
-          _followings = data;
-          _followingsLoaded = true;
-          _isLoadingFollowings = false;
-        });
-      }
-    } catch (e) {
-      // print('刷新关注列表失败: $e');
-      if (_mounted) {
-        setState(() {
-          _isLoadingFollowings = false;
-          _errorMessage = '刷新失败，请重试';
-        });
-      }
-    }
-  }
-
-  // 强制刷新粉丝列表 (API请求)
-  Future<void> _refreshFollowers({bool forceRefresh = false}) async {
-    // 检查是否需要刷新
-    final now = DateTime.now();
-    if (!forceRefresh && _lastFollowersRefresh != null) {
-      final timeSinceLastRefresh = now.difference(_lastFollowersRefresh!);
-      if (timeSinceLastRefresh < _minRefreshInterval) {
-        return;
-      }
-    }
-
-    if (_isLoadingFollowers || !_mounted) return;
-
-    setState(() {
-      _isLoadingFollowers = true;
-      _errorMessage = null;
-    });
-
-    try {
-      // 使用强制刷新方法，从API获取最新数据
-      final data = await _followService.refreshFollowers(widget.userId);
-      _lastFollowersRefresh = now;
-
-      if (_mounted) {
-        setState(() {
-          _followers = data;
-          _followersLoaded = true;
-          _isLoadingFollowers = false;
-        });
-      }
-    } catch (e) {
-      if (_mounted) {
-        setState(() {
-          _isLoadingFollowers = false;
-          _errorMessage = '刷新失败，请重试';
-        });
-      }
-    }
-  }
-
-  // 处理下拉刷新
   Future<void> _handlePullToRefresh() async {
-    await _refreshCurrentTab(forceRefresh: true);
-    return Future.value();
+    _loadTargetUserData(forceRefresh: true);
+    widget.authProvider.refreshUserState(); // 使用正确的函数名
   }
 
   @override
   Widget build(BuildContext context) {
-    // 判断是否桌面布局
-    final isDesktop = DeviceUtils.isDesktop;
-    final isTablet = DeviceUtils.isTablet(context);
-    final isLandscape = DeviceUtils.isLandscape(context);
-    final isDesktopLayout = isDesktop || (isTablet && isLandscape);
+    final isDesktopLayout = DeviceUtils.isDesktop ||
+        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context));
+
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final User? currentUser = authSnapshot.data;
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final User? currentUser = authSnapshot.data;
 
-          if (currentUser == null) {
-            return const LoginPromptWidget();
-          }
+        if (currentUser == null) {
+          return const LoginPromptWidget();
+        }
 
-          return Scaffold(
-            appBar: CustomAppBar(
-              title: widget.username,
-              // 在桌面布局中不显示底部标签栏
-              bottom: isDesktopLayout
-                  ? null
-                  : TabBar(
-                      controller: _tabController,
-                      tabs: [
-                        Tab(text: '关注 ${_followings.length}'),
-                        Tab(text: '粉丝 ${_followers.length}'),
-                      ],
-                    ),
-            ),
-            body: ResponsiveFollowsLayout(
-              currentUser: currentUser,
-              tabController: _tabController,
-              followService: _followService,
-              infoProvider: widget.infoProvider,
-              followings: _followings,
-              followers: _followers,
-              isLoadingFollowings: _isLoadingFollowings,
-              isLoadingFollowers: _isLoadingFollowers,
-              followingsLoaded: _followingsLoaded,
-              followersLoaded: _followersLoaded,
-              errorMessage: _errorMessage,
-              currentUserId: widget.userId,
-              onRefresh: _handlePullToRefresh,
-              refreshFollowings: _refreshFollowings,
-              refreshFollowers: _refreshFollowers,
-            ),
-          );
-        });
+        return FutureBuilder<User>(
+          future: _targetUserFuture,
+          builder: (context, targetUserSnapshot) {
+            User? targetUserToDisplay = _lastSuccessfullyLoadedTargetUser;
+            String appBarTitle = widget.username;
+            Widget bodyContent;
+
+            List<String> followingIDsForLayout = [];
+            List<String> followerIDsForLayout = [];
+            int tabFollowingCount = 0;
+            int tabFollowerCount = 0;
+
+            if (targetUserSnapshot.connectionState == ConnectionState.waiting &&
+                targetUserToDisplay == null) {
+              bodyContent = LoadingWidget.fullScreen(
+                  message: "加载用户信息..."); // LoadingWidget 通常需要 message
+            } else if (targetUserSnapshot.hasError &&
+                targetUserToDisplay == null) {
+              bodyContent = CustomErrorWidget(
+                errorMessage: '加载失败: ${targetUserSnapshot.error}',
+                onRetry: _handlePullToRefresh,
+              );
+            } else {
+              if (targetUserSnapshot.hasData) {
+                _lastSuccessfullyLoadedTargetUser = targetUserSnapshot.data!;
+                targetUserToDisplay = targetUserSnapshot.data!;
+              }
+
+              if (targetUserToDisplay == null) {
+                bodyContent = CustomErrorWidget(
+                  errorMessage: targetUserSnapshot.hasError
+                      ? '加载失败: ${targetUserSnapshot.error}'
+                      : '无法获取用户信息',
+                  onRetry: _handlePullToRefresh,
+                );
+              } else {
+                if (targetUserToDisplay.username.isNotEmpty) {
+                  appBarTitle = targetUserToDisplay.username;
+                }
+                followingIDsForLayout = targetUserToDisplay.following;
+                followerIDsForLayout = targetUserToDisplay.followers;
+                tabFollowingCount = followingIDsForLayout.length;
+                tabFollowerCount = followerIDsForLayout.length;
+
+                bodyContent = FollowsLayout(
+                  currentUser: currentUser,
+                  viewingUserId: widget.userId,
+                  tabController: _tabController,
+                  followService: widget.followService,
+                  infoProvider: widget.infoProvider,
+                  followingsIDs: followingIDsForLayout,
+                  followersIDs: followerIDsForLayout,
+                  isLoadingTargetUser: targetUserSnapshot.connectionState ==
+                      ConnectionState.waiting,
+                  onRefreshTargetUser: _handlePullToRefresh,
+                );
+              }
+            }
+
+            if (targetUserToDisplay == null &&
+                _lastSuccessfullyLoadedTargetUser != null) {
+              tabFollowingCount =
+                  _lastSuccessfullyLoadedTargetUser!.following.length;
+              tabFollowerCount =
+                  _lastSuccessfullyLoadedTargetUser!.followers.length;
+              if (_lastSuccessfullyLoadedTargetUser!.username.isNotEmpty) {
+                appBarTitle = _lastSuccessfullyLoadedTargetUser!.username;
+              }
+            }
+
+            return Scaffold(
+              appBar: CustomAppBar(
+                title: appBarTitle,
+                bottom: isDesktopLayout
+                    ? null
+                    : TabBar(
+                        controller: _tabController,
+                        tabs: [
+                          Tab(text: '关注 $tabFollowingCount'),
+                          Tab(text: '粉丝 $tabFollowerCount'),
+                        ],
+                      ),
+              ),
+              body: bodyContent,
+            );
+          },
+        );
+      },
+    );
   }
 }

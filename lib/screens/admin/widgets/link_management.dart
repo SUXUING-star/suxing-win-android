@@ -28,7 +28,6 @@ class _LinkManagementState extends State<LinkManagement>
   bool _isProcessing = false; // 用于防止重复点击按钮
   // --- 结束修改 ---
 
-  late final LinkToolService _linkToolService;
   bool _hasInitializedDependencies = false;
 
   @override
@@ -40,7 +39,6 @@ class _LinkManagementState extends State<LinkManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _linkToolService = widget.linkToolService;
       _hasInitializedDependencies = true;
     }
 
@@ -52,7 +50,7 @@ class _LinkManagementState extends State<LinkManagement>
   // --- 新增: 加载数据的方法 ---
   void _loadLinks({bool forceRefresh = false}) {
     setState(() {
-      _linksFuture = _linkToolService.getLinks(forceRefresh: forceRefresh);
+      _linksFuture = widget.linkToolService.getLinks();
     });
   }
 
@@ -208,7 +206,7 @@ class _LinkManagementState extends State<LinkManagement>
 
       if (result != null && mounted) {
         try {
-          await _linkToolService.addLink(SiteLink.fromJson(result));
+          await widget.linkToolService.addLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接添加成功', type: SnackbarType.success);
         } catch (e) {
@@ -236,7 +234,7 @@ class _LinkManagementState extends State<LinkManagement>
       if (result != null && mounted) {
         try {
           // 使用 Link.fromJson 将 Map 转换为 Link 对象
-          await _linkToolService.updateLink(SiteLink.fromJson(result));
+          await widget.linkToolService.updateLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接更新成功', type: SnackbarType.success);
         } catch (e) {
@@ -274,7 +272,7 @@ class _LinkManagementState extends State<LinkManagement>
 
       if (confirmed == true && mounted) {
         try {
-          await _linkToolService.deleteLink(link.id);
+          await widget.linkToolService.deleteLink(link.id);
           _loadLinks(forceRefresh: true); // 成功后强制刷新
           showSnackbar(message: '链接删除成功', type: SnackbarType.success);
         } catch (e) {

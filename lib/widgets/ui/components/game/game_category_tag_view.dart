@@ -25,8 +25,7 @@ class GameCategoryTagView extends StatelessWidget {
     final double currentRadius = getRadius(isMini);
 
     return Container(
-      padding:
-      EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical),
+      padding: EdgeInsets.symmetric(horizontal: horizontal, vertical: vertical),
       decoration: BoxDecoration(
         color: GameCategoryUtils.getCategoryColor(category),
         borderRadius: BorderRadius.circular(currentRadius),
@@ -38,6 +37,8 @@ class GameCategoryTagView extends StatelessWidget {
           fontSize: fontSize,
           fontWeight: FontWeight.bold,
         ),
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
       ),
     );
   }

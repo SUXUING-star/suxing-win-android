@@ -50,6 +50,7 @@ class GameForm extends StatefulWidget {
   final AuthProvider authProvider;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final InputStateService inputStateService;
   final Game? game; // 编辑时传入的游戏对象
   final User? currentUser;
   final Function(Game) onSubmit; // 提交成功后的回调
@@ -60,6 +61,7 @@ class GameForm extends StatefulWidget {
     required this.sidebarProvider,
     required this.authProvider,
     required this.followService,
+    required this.inputStateService,
     required this.fileUpload,
     required this.infoProvider,
     required this.gameService,
@@ -119,7 +121,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   String? _initialCategory;
   bool _hasInitializedDependencies = false;
   late final GameFormCacheService _cacheService;
-  late final InputStateService _inputStateService;
   User? _currentUser;
 
   @override
@@ -133,8 +134,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _cacheService = context.read<GameFormCacheService>();
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
@@ -747,11 +746,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   bool _validateForm() {
     /// -------------------------------------------------------------------------------
     /// var req struct {
-    /// 		Title         string   `json:"title" binding:"required"`       // 标题必需
-    /// 		Summary       string   `json:"summary" binding:"required"`     // 摘要必需
-    /// 		Description   string   `json:"description" binding:"required"` // 详细描述必须
-    /// 		CoverImage    string   `json:"coverImage" binding:"required"`  // 封面必需
-    /// 		Category      string   `json:"category" binding:"required"`    // 分类必需
+    /// 		Title         string                `json:"title" binding:"required,min=2,max=100"`        // 标题必需，2-100字
+    /// 		Summary       string                `json:"summary" binding:"required,min=2,max=500"`      // 摘要必需，2-500字
+    /// 		Description   string                `json:"description" binding:"required,min=2,max=1000"` // 详细描述必须，2-1000字
+    /// 		CoverImage    string                `json:"coverImage" binding:"required,url"`             // 封面必需，且是 URL
+    /// 		Category      string                `json:"category" binding:"required,min=1,max=50"`      // 分类必需，1-50字
     ///  -------------------------------------------------------------------------------
     /// 参照后端的验证
     bool isTextValid = _formKey.currentState?.validate() ?? false;
@@ -762,18 +761,20 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     /// 封面必需
     /// 分类必需
     /// ↓ ↓ ↓ ↓ 二次验证
+    ///
 
-    // 再手动验证图片和分类
-    bool hasCover = _coverImageSource != null; // 必须有来源 (URL 或 XFile)
-    bool hasCategory = _selectedCategory != null;
+    bool isValid;
+    final isValidMes = _validateGameFieldsBeforeRequest();
+    if (isValidMes != null) {
+      isValid = false;
+      if (context.mounted) {
+        AppSnackBar.showWarning(context, isValidMes);
+      }
+    } else {
+      isValid = true;
+    }
 
-    // 更新错误提示状态，触发 UI 重绘
-    setState(() {
-      _coverImageError = hasCover ? null : '请添加封面图片';
-      _categoryError = hasCategory ? null : '请选择一个分类';
-    });
-
-    return isTextValid && hasCover && hasCategory;
+    return isTextValid && isValid;
   }
 
   // --- 图片处理回调 ---
@@ -798,11 +799,100 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     });
   }
 
+  // 校验函数：接收 Game 对象，如果校验通过返回 null，否则返回错误信息字符串
+  String? _validateGameFieldsBeforeRequest() {
+    // 校验标题：不能为空，长度需在2到100字之间
+    final title = _titleController.text.trim();
+    if (title.isEmpty || title.length < 2 || title.length > 100) {
+      return '标题不能为空，且长度需在2到100字之间。';
+    }
+
+    final summary = _titleController.text.trim();
+    // 校验摘要：不能为空，长度需在2到500字之间
+    if (summary.isEmpty || summary.length < 2 || summary.length > 500) {
+      return '摘要不能为空，且长度需在2到500字之间。';
+    }
+
+    final description = _descriptionController.text.trim();
+    // 校验详细描述：不能为空，长度需在2到1000字之间
+    if (description.isEmpty ||
+        description.length < 2 ||
+        description.length > 1000) {
+      return '详细描述不能为空，且长度需在2到1000字之间。';
+    }
+
+    final tags = _selectedTags;
+    // 校验标签数量：不能超过5个
+    if (tags.length > 5) {
+      return '标签数量不能超过5个。';
+    }
+
+    // 校验每个标签的长度：不能超过8个字
+    for (final tag in tags) {
+      if (tag.length > 8) {
+        return '每个标签的长度不能超过8个字，标签: $tag。';
+      }
+    }
+
+    final musicUrl = _musicUrlController.text.trim();
+    // 校验音乐URL：如果存在，必须是网易云音乐域名下的有效URL
+    if (musicUrl.isNotEmpty) {
+      final parsedUri = Uri.tryParse(musicUrl);
+      // 校验URL结构是否有效（是否有协议和主机）
+      if (parsedUri == null ||
+          !parsedUri.hasScheme ||
+          !parsedUri.hasAuthority) {
+        return '音乐URL格式非法，无法解析。';
+      }
+      // 校验域名是否为 "music.163.com"
+      if (parsedUri.host != 'music.163.com') {
+        return '音乐URL域名不正确，请提供网易云音乐域名下的链接。';
+      }
+    }
+    final bvid = _bvidController.text.trim();
+    // 校验B站BV号：如果存在，必须以"BV"开头且长度为12位字母数字
+    if (bvid.isNotEmpty) {
+      // BV号正则：BV开头，后接10位字母或数字
+      final bvidRegex = RegExp(r'^BV[0-9a-zA-Z]{10}$');
+      if (!bvidRegex.hasMatch(bvid)) {
+        return 'B站视频BV号格式不正确，应为"BV"开头加10位字母数字。';
+      }
+    }
+
+    // 再手动验证图片和分类
+    bool hasCover = _coverImageSource != null; // 必须有来源 (URL 或 XFile)
+    bool hasCategory = _selectedCategory != null;
+    int imagesLength = _gameImagesSources.length;
+
+    if (!hasCover) {
+      // 更新错误提示状态，触发 UI 重绘
+      setState(() {
+        _coverImageError = hasCover ? null : '请添加封面图片';
+      });
+      return '请添加封面图片';
+    }
+
+    if (imagesLength > 3) {
+      return '图片太多，最多3张';
+    }
+
+    if (!hasCategory) {
+      // 更新错误提示状态，触发 UI 重绘
+      setState(() {
+        _categoryError = hasCategory ? null : '请选择一个分类';
+      });
+      return '请选择一个分类';
+    }
+
+    // 所有校验通过，返回null
+    return null;
+  }
+
   // --- 核心提交逻辑 ---
   Future<void> _submitForm(String userId) async {
+    List<String> uploadedImageUrls = []; // 用于收集本次上传的所有图片URL
     // 1. 表单验证
     if (!_validateForm()) {
-      if (mounted) AppSnackBar.showError(context, '请检查表单中的错误并修正');
       return;
     }
 
@@ -835,11 +925,23 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             if (finalCoverImageUrl.isEmpty) {
               throw Exception("上传失败");
             }
+          } else if (currentCoverSource is File) {
+            // 这是从草稿恢复的 File 对象，也需要上传
+            finalCoverImageUrl = await widget.fileUpload.uploadImage(
+                currentCoverSource,
+                folder: 'games/covers'); // 直接传递 File 对象
+            if (finalCoverImageUrl.isEmpty) {
+              throw Exception("封面图上传失败 (草稿恢复)");
+            }
           } else if (currentCoverSource is String &&
               currentCoverSource.isNotEmpty) {
             finalCoverImageUrl = currentCoverSource; // 使用现有 URL
           } else {
-            // 理论上 _validateForm 已经阻止了这种情况，但加个保险
+            if (mounted) {
+              setState(() {
+                _isProcessing = false;
+              });
+            }
             throw Exception("图片不合法");
           }
 
@@ -857,6 +959,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             if (source is XFile) {
               filesToUpload.add(File(source.path));
               xFileIndices.add(i); // 记录索引
+            } else if (source is File) {
+              // <--- 新增对 File 类型的处理
+              filesToUpload.add(source); // 直接添加 File 对象
+              xFileIndices.add(i);
             } else if (source is String && source.isNotEmpty) {
               tempFinalUrls[i] = source; // 直接放入临时列表
             }
@@ -894,6 +1000,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           finalGameImagesUrls = tempFinalUrls.whereType<String>().toList();
 
           // 3c. 构建 Game 对象
+          if (finalCoverImageUrl.isNotEmpty) {
+            uploadedImageUrls.add(finalCoverImageUrl);
+          }
+          uploadedImageUrls.addAll(
+              finalGameImagesUrls); // finalGameImagesUrls 已经是 List<String>
+
           final game = Game(
             // ID: 编辑时用 widget.game.id，添加时生成新 ID
             id: widget.game?.id ?? mongo.ObjectId().oid,
@@ -918,10 +1030,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             playingCount: widget.game?.playingCount ?? 0,
             playedCount: widget.game?.playedCount ?? 0,
             totalCollections: widget.game?.totalCollections ?? 0,
+            collectionUpdateTime: DateTime.now(),
             // 下载链接
-            downloadLinks: List<GameDownloadLink>.from(// 确保是副本
-                _downloadLinks
-                    .map((link) => GameDownloadLink.fromJson(link.toJson()))),
+            downloadLinks: _downloadLinks,
             // 可选字段
             musicUrl: _musicUrlController.text.trim().isEmpty
                 ? null
@@ -973,10 +1084,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           // ================== 核心操作结束 ==================
         } catch (e) {
           // action 内部错误处理
-          //print('Error during submission action ($operationKey): $e');
-          // 确保在 mounted 状态下显示 SnackBar
           if (mounted) {
-            // 提取更友好的错误信息，避免显示整个堆栈
             String errorMessage = e.toString();
             if (e is Exception) {
               errorMessage = e
@@ -985,6 +1093,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             }
             AppSnackBar.showError(context, '提交处理失败: $errorMessage');
           }
+
+          // 新增：核心业务逻辑失败，触发异步删除已上传的图片
+          // 不等待删除完成，防止阻塞用户界面
+          widget.fileUpload.deleteUploadedImagesOnError(uploadedImageUrls);
           // 必须重新抛出，让 tryLockAsync 知道出错了
           rethrow;
         }
@@ -1045,7 +1157,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           canPop: allowImmediatePop,
           onPopInvokedWithResult: (bool didPop, Object? result) {
             if (!didPop) {
-              _handleBlockedPopAttempt(); // Call the handler logic
+              _handleBlockedPopAttempt();
             }
           },
           child: Form(
@@ -1098,11 +1210,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // --- Confirm Leave Callback ---
         onConfirm: () async {
           try {
-            // Try saving the draft
             await _saveDraftIfNecessary();
           } catch (e) {
-            // print("Error saving draft during PopScope confirmation: $e");
-            // Saving draft failed, but user chose to leave anyway.
+            //
           } finally {
             // IMPORTANT: Manually trigger the pop now!
             if (mounted && Navigator.canPop(context)) {
@@ -1111,17 +1221,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           }
         },
 
-        // --- Cancel Leave Callback ---
-        onCancel: () {
-          // User cancelled. Do nothing. The pop remains blocked.
-        },
-      ).catchError((error) {
-        // Handle potential errors showing the dialog itself
-        // Pop remains blocked if dialog fails.
-      });
+        onCancel: () {},
+      );
     }
-    // If, somehow, this method is called but there are no unsaved changes
-    // and not processing (e.g., state changed), do nothing, pop remains blocked.
   }
 
   // --- 桌面布局构建 ---
@@ -1135,7 +1237,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
-              flex: 4, // 可以调整比例
+              flex: 4,
               child: Card(
                 elevation: 3, // 稍微增加阴影
                 shape: RoundedRectangleBorder(
@@ -1224,63 +1326,60 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // --- 移动布局构建 ---
   Widget _buildMobileLayout(BuildContext context, String userId) {
-    return Opacity(
-      opacity: 0.9,
-      child: Container(
-        color: Colors.white,
-        foregroundDecoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: ListView(
-          padding: const EdgeInsets.all(16.0),
-          children: [
-            _buildSectionTitle('封面图 *'), // 标记必填
-            const SizedBox(height: 8),
-            _buildCoverImageSection(),
-            const SizedBox(height: 24),
+    return Container(
+      color: Colors.white.withSafeOpacity(0.9),
+      foregroundDecoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(16.0),
+        children: [
+          _buildSectionTitle('封面图 *'), // 标记必填
+          const SizedBox(height: 8),
+          _buildCoverImageSection(),
+          const SizedBox(height: 24),
 
-            _buildSectionTitle('基础信息 *'), // 标记必填
-            const SizedBox(height: 8),
-            _buildTitleField(),
-            const SizedBox(height: 16),
-            _buildSummaryField(),
-            const SizedBox(height: 16),
-            _buildDescriptionField(),
-            const SizedBox(height: 24),
+          _buildSectionTitle('基础信息 *'), // 标记必填
+          const SizedBox(height: 8),
+          _buildTitleField(),
+          const SizedBox(height: 16),
+          _buildSummaryField(),
+          const SizedBox(height: 16),
+          _buildDescriptionField(),
+          const SizedBox(height: 24),
 
-            _buildSectionTitle('媒体链接 (可选)'),
-            const SizedBox(height: 8),
-            _buildMusicUrlField(),
-            const SizedBox(height: 16),
-            _buildBvidField(),
-            const SizedBox(height: 24),
+          _buildSectionTitle('媒体链接 (可选)'),
+          const SizedBox(height: 8),
+          _buildMusicUrlField(),
+          const SizedBox(height: 16),
+          _buildBvidField(),
+          const SizedBox(height: 24),
 
-            _buildSectionTitle('分类 * 与标签 (可选)'),
-            const SizedBox(height: 8),
-            _buildCategorySection(),
-            const SizedBox(height: 16),
-            _buildTagsField(),
-            const SizedBox(height: 24),
+          _buildSectionTitle('分类 * 与标签 (可选)'),
+          const SizedBox(height: 8),
+          _buildCategorySection(),
+          const SizedBox(height: 16),
+          _buildTagsField(),
+          const SizedBox(height: 24),
 
-            _buildSectionTitle('下载链接 (可选)'),
-            const SizedBox(height: 8),
-            _buildDownloadLinksField(),
-            const SizedBox(height: 24),
+          _buildSectionTitle('下载链接 (可选)'),
+          const SizedBox(height: 8),
+          _buildDownloadLinksField(),
+          const SizedBox(height: 24),
 
-            _buildSectionTitle('游戏截图 (可选)'),
-            const SizedBox(height: 8),
-            _buildGameImagesSection(),
-            const SizedBox(height: 32), // 增大按钮前间距
+          _buildSectionTitle('游戏截图 (可选)'),
+          const SizedBox(height: 8),
+          _buildGameImagesSection(),
+          const SizedBox(height: 32), // 增大按钮前间距
 
-            // 操作按钮
-            _buildPreviewButton(), // 预览按钮放上面
-            const SizedBox(height: 16),
-            _buildExitAndSaveDraftButton(),
-            const SizedBox(height: 16),
-            _buildSubmitButton(userId), // 提交按钮放下面
-            const SizedBox(height: 24), // 底部额外留白
-          ],
-        ),
+          // 操作按钮
+          _buildPreviewButton(), // 预览按钮放上面
+          const SizedBox(height: 16),
+          _buildExitAndSaveDraftButton(),
+          const SizedBox(height: 16),
+          _buildSubmitButton(userId), // 提交按钮放下面
+          const SizedBox(height: 24), // 底部额外留白
+        ],
       ),
     );
   }
@@ -1339,11 +1438,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 标题字段
   Widget _buildTitleField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       controller: _titleController,
       focusNode: _titleFocusNode,
       decoration: const InputDecoration(
         labelText: '游戏标题 *',
+        hintText: '[会社名]游戏名',
         prefixIcon: Icon(Icons.title),
         border: OutlineInputBorder(), // 可以把基础样式放在这里
       ),
@@ -1359,7 +1459,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 简介字段
   Widget _buildSummaryField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       controller: _summaryController,
       focusNode: _summaryFocusNode,
       decoration: const InputDecoration(
@@ -1381,12 +1481,12 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 描述字段
   Widget _buildDescriptionField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       controller: _descriptionController,
       focusNode: _descriptionFocusNode,
       decoration: InputDecoration(
         labelText: '详细描述 *',
-        hintText: '详细介绍游戏背景、玩法、特色等...',
+        hintText: '详细介绍游戏背景等...',
         border: const OutlineInputBorder(),
         alignLabelWithHint: true,
         prefixIcon: const Padding(
@@ -1407,7 +1507,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 音乐链接字段
   Widget _buildMusicUrlField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       controller: _musicUrlController,
       focusNode: _musicUrlFocusNode,
       decoration: const InputDecoration(
@@ -1431,7 +1531,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // BVID 字段
   Widget _buildBvidField() {
     return FormTextInputField(
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       controller: _bvidController,
       focusNode: _bvidFocusNode,
       decoration: const InputDecoration(
@@ -1507,6 +1607,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 下载链接字段
   Widget _buildDownloadLinksField() {
     return GameDownloadLinksField(
+      inputStateService: widget.inputStateService,
       downloadLinks: _downloadLinks,
       onChanged: (links) => setState(() => _downloadLinks = links),
     );
@@ -1573,7 +1674,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       authProvider: widget.authProvider,
       gameService: widget.gameService,
       infoProvider: widget.infoProvider,
-      inputStateService: _inputStateService,
+      inputStateService: widget.inputStateService,
       followService: widget.followService,
       currentUser: widget.currentUser,
       titleController: _titleController,
@@ -1590,4 +1691,4 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       existingGame: widget.game, // 传递原始 game 对象，预览时可能有用
     );
   }
-} // _GameFormState 结束
+}

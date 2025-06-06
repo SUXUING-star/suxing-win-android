@@ -6,7 +6,6 @@ import 'package:suxingchahui/widgets/components/dialogs/update/force_update_dial
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:flutter/foundation.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/config/app_config.dart';
 
@@ -36,7 +35,7 @@ class UpdateButton extends StatelessWidget {
           );
         }
 
-        // ！！！更新可用时的 UI - 完整实现！！！
+        // 更新可用时的 UI - 完整实现
         if (updateService.updateAvailable) {
           return GestureDetector(
             onTap: () => _handleUpdateTap(context, updateService),
@@ -110,7 +109,6 @@ class UpdateButton extends StatelessWidget {
     final String releasePageUrl = AppConfig.releasePage;
 
     if (releasePageUrl.isEmpty) {
-      if (kDebugMode) print('UpdateButton: AppConfig.releasePage is empty!');
       if (context.mounted) AppSnackBar.showError(context, '未配置有效的发布页面链接。');
       return;
     }

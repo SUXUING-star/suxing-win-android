@@ -105,4 +105,21 @@ class PostTagsUtils {
     // 使用 map 遍历枚举列表，对每个枚举调用 displayText getter，最后转成 List<String>
     return tags.map((tag) => tag.displayText).toList();
   }
+
+  /// 将字符串列表转换为 PostTag 枚举列表。
+  ///
+  /// [tagStrings]: 包含标签显示文本的字符串列表。
+  /// returns: 对应的 PostTag 枚举列表。对于无法匹配的字符串，将忽略或转换为 PostTag.other。
+  static List<PostTag> stringsToTagList(List<String> tagStrings) { // <-- 添加这个方法
+    List<PostTag> result = [];
+    for (String tagString in tagStrings) {
+      // 尝试将每个字符串转换为 PostTag 枚举
+      PostTag tag = tagFromString(tagString); // 复用已有的 tagFromString 方法
+      // 如果 tagFromString 返回 PostTag.other，取决于你的需求是否要包含它
+      // 这里的实现是包含所有转换成功的，包括 PostTag.other
+      result.add(tag);
+    }
+    return result;
+  }
+
 }
