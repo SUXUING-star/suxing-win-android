@@ -1,118 +1,132 @@
 // lib/widgets/components/screen/game/card/game_status_overlay.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-class GameStatusOverlay extends StatelessWidget {
-  final Game game;
-  final VoidCallback onResubmit; // 用于处理重新提交的回调
-  final Function(String) onShowReviewComment; // 用于显示拒绝原因的回调
+/// 该文件定义了 GameApprovalStatusOverlay 组件，一个用于显示游戏审核状态的叠加层。
+/// GameApprovalStatusOverlay 展示游戏审核状态徽章、重新提交按钮和拒绝原因。
+library;
 
-  const GameStatusOverlay({
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/constants/game/game_constants.dart'; // 导入游戏常量
+import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+
+/// `GameApprovalStatusOverlay` 类：游戏审核状态叠加层组件。
+///
+/// 该组件在游戏卡片上叠加显示游戏的审核状态徽章、重新提交按钮（针对被拒绝状态）
+/// 和拒绝原因（如果存在）。
+class GameApprovalStatusOverlay extends StatelessWidget {
+  final Game game; // 游戏数据
+  final VoidCallback onResubmit; // 重新提交按钮点击回调
+  final Function(String) onShowReviewComment; // 显示拒绝原因回调
+
+  /// 构造函数。
+  ///
+  /// [game]：游戏数据。
+  /// [onResubmit]：重新提交回调。
+  /// [onShowReviewComment]：显示拒绝评论回调。
+  const GameApprovalStatusOverlay({
     super.key,
     required this.game,
     required this.onResubmit,
     required this.onShowReviewComment,
   });
 
+  /// 构建游戏审核状态叠加层。
   @override
   Widget build(BuildContext context) {
-    final statusInfo = GameConstants.getStatusDisplay(game.approvalStatus);
+    final statusInfo =
+        GameConstants.getGameStatusDisplay(game.approvalStatus); // 获取状态显示信息
     final bool isRejected =
-        game.approvalStatus?.toLowerCase() == GameStatus.rejected;
+        game.approvalStatus?.toLowerCase() == GameStatus.rejected; // 判断是否为被拒绝状态
     final bool showComment = isRejected &&
         game.reviewComment != null &&
-        game.reviewComment!.isNotEmpty;
+        game.reviewComment!.isNotEmpty; // 是否显示拒绝原因
 
-    // 使用 Stack 来叠加状态信息到卡片上
-    // 注意：这里不再包含 BaseGameCard，而是期望被用在 BaseGameCard 外层的 Stack 中
     return Stack(
       children: [
-        // Status Badge
         Positioned(
-          top: 6,
-          left: 6,
+          top: 6, // 顶部偏移
+          left: 6, // 左侧偏移
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 内边距
             decoration: BoxDecoration(
-                color: (statusInfo['color'] as Color).withSafeOpacity(0.85),
-                borderRadius: BorderRadius.circular(12),
+                color:
+                    (statusInfo['color'] as Color).withSafeOpacity(0.85), // 背景色
+                borderRadius: BorderRadius.circular(12), // 圆角
                 boxShadow: [
+                  // 阴影
                   BoxShadow(
-                    color: Colors.black.withSafeOpacity(0.2),
-                    blurRadius: 2,
-                    offset: Offset(0, 1),
+                    color: Colors.black.withSafeOpacity(0.2), // 阴影颜色
+                    blurRadius: 2, // 模糊半径
+                    offset: const Offset(0, 1), // 偏移量
                   )
                 ]),
             child: Text(
-              statusInfo['text'],
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 10,
+              statusInfo['text'], // 状态文本
+              style: const TextStyle(
+                color: Colors.white, // 颜色
+                fontWeight: FontWeight.bold, // 字重
+                fontSize: 10, // 字号
               ),
             ),
           ),
         ),
-
-        // Resubmit Button (Only for rejected)
-        if (isRejected)
+        if (isRejected) // 被拒绝状态时显示重新提交按钮
           Positioned(
-            bottom: 8,
-            right: 8,
+            bottom: 8, // 底部偏移
+            right: 8, // 右侧偏移
             child: Tooltip(
-              message: '重新提交审核',
+              message: '重新提交审核', // 提示
               child: FloatingActionButton.small(
-                heroTag: 'resubmit_overlay_${game.id}', // Ensure unique heroTag
-                // 调用传入的回调
-                onPressed: onResubmit,
-                backgroundColor: Colors.blue.shade600,
-                child: Icon(Icons.refresh, size: 18),
+                heroTag: 'resubmit_overlay_${game.id}', // 唯一 Hero 标签
+                onPressed: onResubmit, // 点击回调
+                backgroundColor: Colors.blue.shade600, // 背景色
+                child: const Icon(Icons.refresh, size: 18), // 图标
               ),
             ),
           ),
-
-        // Review Comment Overlay (Only for rejected with comment)
-        if (showComment)
+        if (showComment) // 显示拒绝原因叠加层
           Positioned(
-            bottom: isRejected ? 55 : 8, // Adjust based on resubmit button
-            left: 8,
-            right: 8,
+            bottom: isRejected ? 55 : 8, // 底部偏移，根据是否被拒绝调整
+            left: 8, // 左侧偏移
+            right: 8, // 右侧偏移
             child: GestureDetector(
-              // 调用传入的回调
-              onTap: () => onShowReviewComment(game.reviewComment!),
+              onTap: () => onShowReviewComment(game.reviewComment!), // 点击回调
               child: Container(
-                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 5), // 内边距
                 decoration: BoxDecoration(
-                    color: Colors.white.withSafeOpacity(0.95),
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: Colors.red.shade200, width: 0.5),
+                    color: Colors.white.withSafeOpacity(0.95), // 背景色
+                    borderRadius: BorderRadius.circular(6), // 圆角
+                    border: Border.all(
+                        color: Colors.red.shade200, width: 0.5), // 边框
                     boxShadow: [
+                      // 阴影
                       BoxShadow(
-                        color: Colors.black.withSafeOpacity(0.1),
-                        blurRadius: 3,
-                        offset: Offset(0, 1),
+                        color: Colors.black.withSafeOpacity(0.1), // 阴影颜色
+                        blurRadius: 3, // 模糊半径
+                        offset: const Offset(0, 1), // 偏移量
                       )
                     ]),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
+                  mainAxisSize: MainAxisSize.min, // 垂直方向适应内容
                   children: [
                     Text(
-                      '拒绝原因:',
+                      '拒绝原因:', // 文本
                       style: TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: Colors.red.shade800,
-                        fontSize: 11,
+                        fontWeight: FontWeight.bold, // 字重
+                        color: Colors.red.shade800, // 颜色
+                        fontSize: 11, // 字号
                       ),
                     ),
-                    SizedBox(height: 2),
+                    const SizedBox(height: 2), // 间距
                     Text(
-                      game.reviewComment!,
-                      style: TextStyle(fontSize: 10, color: Colors.black87),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
+                      game.reviewComment!, // 拒绝原因文本
+                      style: const TextStyle(
+                          fontSize: 10, color: Colors.black87), // 样式
+                      maxLines: 2, // 最大行数
+                      overflow: TextOverflow.ellipsis, // 溢出显示省略号
                     ),
                   ],
                 ),

@@ -208,9 +208,9 @@ class _LinkManagementState extends State<LinkManagement>
         try {
           await widget.linkToolService.addLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          showSnackbar(message: '链接添加成功', type: SnackbarType.success);
+          showSnackBar(message: '链接添加成功', type: SnackBarType.success);
         } catch (e) {
-          showSnackbar(message: '添加失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '添加失败：$e', type: SnackBarType.error);
         }
       }
     } finally {
@@ -236,9 +236,9 @@ class _LinkManagementState extends State<LinkManagement>
           // 使用 Link.fromJson 将 Map 转换为 Link 对象
           await widget.linkToolService.updateLink(SiteLink.fromJson(result));
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          showSnackbar(message: '链接更新成功', type: SnackbarType.success);
+          showSnackBar(message: '链接更新成功', type: SnackBarType.success);
         } catch (e) {
-          showSnackbar(message: '更新失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '更新失败：$e', type: SnackBarType.error);
         }
       }
     } finally {
@@ -274,9 +274,9 @@ class _LinkManagementState extends State<LinkManagement>
         try {
           await widget.linkToolService.deleteLink(link.id);
           _loadLinks(forceRefresh: true); // 成功后强制刷新
-          showSnackbar(message: '链接删除成功', type: SnackbarType.success);
+          showSnackBar(message: '链接删除成功', type: SnackBarType.success);
         } catch (e) {
-          showSnackbar(message: '删除失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '删除失败：$e', type: SnackBarType.error);
         }
       }
     } finally {

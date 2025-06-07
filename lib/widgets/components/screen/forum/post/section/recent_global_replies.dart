@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/forum/post/recent_global_replies.dart
+// lib/widgets/components/screen/forum/post/section/recent_global_replies.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/global_post_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';

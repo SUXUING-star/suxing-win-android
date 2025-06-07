@@ -3,37 +3,37 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 // 定义 SnackBar 信息类和类型 (如果还没定义的话)
-enum SnackbarType { success, error, warning, info }
+enum SnackBarType { success, error, warning, info }
 
-class SnackbarInfo {
+class SnackBarInfo {
   final String message;
-  final SnackbarType type;
+  final SnackBarType type;
   final String? actionLabel; // 可选的 Action
   final VoidCallback? onActionPressed; // 可选的 Action 回调
 
-  SnackbarInfo(
-      this.message,
-      this.type, {
-        this.actionLabel,
-        this.onActionPressed,
-      });
+  SnackBarInfo(
+    this.message,
+    this.type, {
+    this.actionLabel,
+    this.onActionPressed,
+  });
 }
 
 // ---- SnackBar 管理的 Mixin ----
 mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
-  SnackbarInfo? _snackbarInfoForMixin;
+  SnackBarInfo? _snackBarInfoForMixin;
 
   /// 触发一个 SnackBar 显示请求。
   /// 这会在下一次 build 循环的 post-frame 回调中显示 SnackBar。
-  void showSnackbar({
+  void showSnackBar({
     required String message,
-    required SnackbarType type,
+    required SnackBarType type,
     String? actionLabel,
     VoidCallback? onActionPressed,
   }) {
     if (mounted) {
       setState(() {
-        _snackbarInfoForMixin = SnackbarInfo(
+        _snackBarInfoForMixin = SnackBarInfo(
           message,
           type,
           actionLabel: actionLabel,
@@ -56,12 +56,12 @@ mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
   ///   return Scaffold(...);
   /// }
   void buildSnackBar(BuildContext context) {
-    if (_snackbarInfoForMixin != null) {
+    if (_snackBarInfoForMixin != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _snackbarInfoForMixin != null) {
-          final info = _snackbarInfoForMixin!;
+        if (mounted && _snackBarInfoForMixin != null) {
+          final info = _snackBarInfoForMixin!;
           switch (info.type) {
-            case SnackbarType.success:
+            case SnackBarType.success:
               AppSnackBar.showSuccess(
                 context, // 使用当前 build 的 context
                 info.message,
@@ -69,7 +69,7 @@ mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
                 onActionPressed: info.onActionPressed,
               );
               break;
-            case SnackbarType.error:
+            case SnackBarType.error:
               AppSnackBar.showError(
                 context,
                 info.message,
@@ -77,7 +77,7 @@ mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
                 onActionPressed: info.onActionPressed,
               );
               break;
-            case SnackbarType.warning:
+            case SnackBarType.warning:
               AppSnackBar.showWarning(
                 context,
                 info.message,
@@ -85,7 +85,7 @@ mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
                 onActionPressed: info.onActionPressed,
               );
               break;
-            case SnackbarType.info:
+            case SnackBarType.info:
               AppSnackBar.showInfo(
                 context,
                 info.message,
@@ -97,7 +97,7 @@ mixin SnackBarNotifierMixin<T extends StatefulWidget> on State<T> {
           // 清除，防止重复显示
           if (mounted) {
             setState(() {
-              _snackbarInfoForMixin = null;
+              _snackBarInfoForMixin = null;
             });
           }
         }

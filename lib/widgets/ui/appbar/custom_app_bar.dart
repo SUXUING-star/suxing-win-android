@@ -1,191 +1,193 @@
 // lib/widgets/ui/appbar/custom_app_bar.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/text/app_text.dart';
-import 'dart:io' show Platform;
-import 'dart:ui' as ui;
 
+/// 该文件定义了 CustomAppBar 组件，一个自定义的应用顶部栏。
+/// CustomAppBar 支持自定义标题、动作按钮和背景，并根据平台调整其高度和样式。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/constants/global_constants.dart'; // 导入全局常量
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
+import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
+import 'dart:io' show Platform; // 导入 Platform 类，用于获取平台信息
+import 'dart:ui' as ui; // 导入 dart:ui，用于获取屏幕物理尺寸
+
+/// `CustomAppBar` 类：自定义应用顶部栏组件。
+///
+/// 该组件实现 [PreferredSizeWidget]，提供标题、动作按钮、前导组件和底部组件，
+/// 并根据平台（桌面或移动端横屏）调整其高度和字体大小。
 class CustomAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final String title;
-  final List<Widget>? actions;
-  final Widget? leading;
-  final PreferredSizeWidget? bottom;
-  final bool showTitleInDesktop;
+  final String title; // 顶部栏标题
+  final List<Widget>? actions; // 右侧动作按钮列表
+  final Widget? leading; // 左侧前导组件
+  final PreferredSizeWidget? bottom; // 底部组件
+  final bool showTitleInDesktop; // 是否在桌面平台显示标题
 
-  // --- 可调参数 ---
-  // 你可以在这里调整桌面端的 AppBar 高度比例 (比如 0.75 就是原高度的 75%)
-  static const double _desktopToolbarHeightFactor = 0.75;
-  // 你可以在这里调整桌面端的底部线条高度
-  static const double _desktopBottomHeight = 2.0;
-  // 你可以在这里调整桌面端的标题字体大小 (如果你的逻辑会在桌面显示标题的话)
-  static const double _desktopFontSize = 14.0;
-  // ----------------
+  static const double _desktopToolbarHeightFactor =
+      GlobalConstants.appBarDesktopToolbarHeightFactor; // 桌面端工具栏高度因子
+  static const double _desktopBottomHeight =
+      GlobalConstants.defaultAppBarBottomHeight; // 桌面端底部线条高度
+  static const double _desktopFontSize =
+      GlobalConstants.appBarDesktopFontSize; // 桌面端标题字体大小
 
-  // --- Android 横屏的可调参数 ---
-  static const double _androidLandscapeToolbarHeightFactor = 0.8;
-  static const double _androidLandscapeBottomHeight = 2.0;
-  static const double _androidLandscapeFontSize = 14.0;
-  // --------------------------
+  static const double _androidLandscapeToolbarHeightFactor = GlobalConstants
+      .appBarAndroidLandscapeToolbarHeightFactor; // Android 横屏工具栏高度因子
+  static const double _androidLandscapeBottomHeight =
+      GlobalConstants.appBarAndroidLandscapeBottomHeight; // Android 横屏底部线条高度
+  static const double _androidLandscapeFontSize =
+      GlobalConstants.appBarAndroidLandscapeFontSize; // Android 横屏标题字体大小
 
-  // --- 默认参数 ---
-  static const double _defaultBottomHeight = 4.0;
-  static const double _defaultFontSize = 16.0;
-  // ---------------
+  static const double _defaultBottomHeight =
+      GlobalConstants.defaultAppBarBottomHeight; // 默认底部线条高度
+  static const double _defaultFontSize =
+      GlobalConstants.defaultAppBarFontSize; // 默认标题字体大小
 
-  // 统一的appbar的样式
-  //
-  static const List<Color> appBarColors = [
-    Color(0x000000FF),
-    //  不要改我这个牛逼的配色
-    // 0xFFFFFFFF和xFF000000都不对
-    Color(0xFFD8FFEF),
-    Color(0x000000FF),
-  ];
-
+  /// 构造函数。
+  ///
+  /// [title]：标题。
+  /// [showTitleInDesktop]：是否在桌面显示标题。
+  /// [actions]：动作按钮。
+  /// [leading]：前导组件。
+  /// [bottom]：底部组件。
   const CustomAppBar({
     super.key,
     required this.title,
     this.showTitleInDesktop = false,
-    // 桌面端我塞入了自定义的窗口控件，这里这个appbar再写标题真的巨丑，除了必要的就别显示
-    // 返回键不需要显式写出我desktopSidebar会自行判断出是否要加返回键
     this.actions,
     this.leading,
     this.bottom,
   });
 
+  /// 返回顶部栏的首选尺寸。
+  ///
+  /// 根据平台类型（桌面或 Android 横屏）和 `bottom` 组件的存在，
+  /// 计算并返回顶部栏的总高度。
   @override
   Size get preferredSize {
-    final bool isDesktop =
-        DeviceUtils.isDesktop; // 假设 DeviceUtils.isDesktop 不依赖 context
+    final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
 
-    // 使用 PlatformDispatcher 获取主视图信息来判断 Android 横屏
-    bool isAndroidLandscape = false;
+    bool isAndroidLandscape = false; // 是否为 Android 横屏
     if (!isDesktop && Platform.isAndroid) {
-      // Platform.isAndroid 也是静态的
-      final ui.FlutterView? view = ui.PlatformDispatcher.instance.implicitView;
+      final ui.FlutterView? view =
+          ui.PlatformDispatcher.instance.implicitView; // 获取主视图信息
       if (view != null) {
-        isAndroidLandscape = view.physicalSize.width > view.physicalSize.height;
+        isAndroidLandscape =
+            view.physicalSize.width > view.physicalSize.height; // 根据物理尺寸判断横屏
       }
-      // 如果 view 为 null (理论上不太可能在单视图应用中发生)，isAndroidLandscape 会保持 false
     }
 
-    double baseHeight;
+    double baseHeight; // 基础高度
     if (isDesktop) {
-      baseHeight = kToolbarHeight * _desktopToolbarHeightFactor;
+      baseHeight = kToolbarHeight * _desktopToolbarHeightFactor; // 桌面端高度
     } else if (isAndroidLandscape) {
-      baseHeight = kToolbarHeight * _androidLandscapeToolbarHeightFactor;
+      baseHeight =
+          kToolbarHeight * _androidLandscapeToolbarHeightFactor; // Android 横屏高度
     } else {
-      baseHeight = kToolbarHeight;
+      baseHeight = kToolbarHeight; // 默认高度
     }
 
     final double bottomHeight = bottom?.preferredSize.height ??
-        _calculateDefaultBottomHeight(isDesktop, isAndroidLandscape);
+        _calculateDefaultBottomHeight(isDesktop, isAndroidLandscape); // 底部组件高度
 
-    return Size.fromHeight(baseHeight + bottomHeight);
+    return Size.fromHeight(baseHeight + bottomHeight); // 返回总高度
   }
 
-  // 辅助方法：计算默认底部线条的高度
+  /// 计算默认底部线条的高度。
+  ///
+  /// [isDesktop]：是否为桌面平台。
+  /// [isAndroidLandscape]：是否为 Android 横屏。
+  /// 返回计算得到的底部线条高度。
   double _calculateDefaultBottomHeight(
       bool isDesktop, bool isAndroidLandscape) {
     if (isDesktop) {
-      return _desktopBottomHeight;
+      return _desktopBottomHeight; // 桌面端底部高度
     } else if (isAndroidLandscape) {
-      return _androidLandscapeBottomHeight;
+      return _androidLandscapeBottomHeight; // Android 横屏底部高度
     } else {
-      return _defaultBottomHeight;
+      return _defaultBottomHeight; // 默认底部高度
     }
   }
 
+  /// 构建自定义应用顶部栏。
+  ///
+  /// 该方法根据平台、是否显示标题和动作按钮等参数构建顶部栏。
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop;
-    final bool hasNoActions = actions == null || actions!.isEmpty;
+    final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
+    final bool hasNoActions = actions == null || actions!.isEmpty; // 判断是否没有动作按钮
     final bool isActualAndroidLandscape = !isDesktop &&
         Platform.isAndroid &&
-        MediaQuery.of(context).orientation == Orientation.landscape;
+        MediaQuery.of(context).orientation ==
+            Orientation.landscape; // 判断是否为实际的 Android 横屏
 
-    // *** 修改点 2: 根据平台调整字体大小 ***
     final double fontSize = isDesktop
         ? _desktopFontSize
         : (isActualAndroidLandscape
             ? _androidLandscapeFontSize
-            : _defaultFontSize);
+            : _defaultFontSize); // 根据平台调整字体大小
 
-    // *** 修改点 3: 计算 AppBar 实际的 toolbarHeight (不包含 bottom 的高度) ***
-    // 需要从 preferredSize 的总高度里减去 bottom 部分的高度
     final double actualBottomHeight = bottom?.preferredSize.height ??
-        _calculateDefaultBottomHeight(isDesktop, isActualAndroidLandscape);
+        _calculateDefaultBottomHeight(
+            isDesktop, isActualAndroidLandscape); // 实际底部组件高度
     final double toolbarHeight =
-        preferredSize.height - actualBottomHeight; // 这就是 AppBar 主要区域应有的高度
+        preferredSize.height - actualBottomHeight; // 工具栏高度
 
-    // --- 为桌面平台的 actions 添加右边距，避免与 WindowsControls 重叠 (保留原逻辑) ---
-    final double desktopActionsPadding =
-        isDesktop ? 140 : 0.0; // 这个值你可能需要根据实际情况微调
-    final canBack = NavigationUtils.canPop(context);
+    final double desktopActionsPadding = 140; // 桌面端动作按钮右边距
+    final canBack = NavigationUtils.canPop(context); // 是否可以返回
 
-    // 这个判断的意思是appbar不承担任何actions和leading时
-    // 在桌面端不显示否则就是摆设
-    final needShowTile = !(showTitleInDesktop == false && isDesktop);
+    final needShowTitle =
+        !(showTitleInDesktop == false && isDesktop); // 是否需要显示标题
 
     if (leading == null && isDesktop && hasNoActions) {
-      return const SizedBox.shrink();
+      return const SizedBox.shrink(); // 在特定条件下返回空组件
     }
 
     return AppBar(
       title: AppText(
-        needShowTile ? title : '',
-        color: Colors.black,
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize, // 使用根据平台调整后的字体大小
+        needShowTitle ? title : '', // 标题文本
+        color: Colors.black, // 文本颜色
+        fontWeight: FontWeight.bold, // 字体粗细
+        fontSize: fontSize, // 字体大小
       ),
-      // 我自己封装
-      leading: canBack && !isDesktop && leading == null
-          ? IconButton(
-              onPressed: () => NavigationUtils.pop(context),
-              icon: Icon(
-                Icons.arrow_back,
-                color: Colors.black,
-              ),
-              hoverColor: Colors.white,
-              tooltip: "返回上一页",
+      leading: canBack && !isDesktop && leading == null // 前导组件
+          ? FunctionalIconButton(
+              onPressed: () => NavigationUtils.pop(context), // 点击返回上一页
+              icon: Icons.arrow_back, // 返回图标
+              iconColor: Colors.black, // 图标颜色
+              hoverColor: Colors.white, // 悬停颜色
+              tooltip: "返回上一页", // 提示
             )
           : leading,
       actions: [
-        if (actions != null) ...actions!,
+        if (actions != null) ...actions!, // 动作按钮列表
 
-        // 在桌面平台添加间隔，保留原逻辑
-        if (isDesktop) SizedBox(width: desktopActionsPadding),
+        if (isDesktop) SizedBox(width: desktopActionsPadding), // 桌面平台动作按钮间隔
       ],
-      automaticallyImplyLeading: false,
-      backgroundColor: Colors.transparent, // 背景由 flexibleSpace 提供
-      elevation: 0,
-      // *** 修改点 4: 设置计算好的 toolbarHeight ***
-      toolbarHeight: toolbarHeight, // 明确设置 AppBar 的工具栏高度
+      automaticallyImplyLeading: false, // 自动推断前导组件
+      backgroundColor: Colors.transparent, // 背景色透明
+      elevation: 0, // 阴影高度
+      toolbarHeight: toolbarHeight, // 工具栏高度
       flexibleSpace: Container(
-        // 背景渐变保持不变
+        // 灵活空间，用于背景渐变
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.centerLeft,
             end: Alignment.centerRight,
-            colors: [...appBarColors],
+            colors: [...GlobalConstants.defaultSideBarColors],
           ),
         ),
       ),
-      // *** 修改点 5: 处理 bottom 部分 ***
-      // 如果外部传入了 bottom，就用它
-      // 否则，创建我们默认的底部线条，并使用计算好的高度
-      bottom: bottom ??
+      bottom: bottom ?? // 底部组件
           PreferredSize(
-            // 使用计算得到的底部高度
-            preferredSize: Size.fromHeight(actualBottomHeight),
+            preferredSize: Size.fromHeight(actualBottomHeight), // 底部组件首选尺寸
             child: Opacity(
-              opacity: 0.7,
+              opacity: 0.7, // 透明度
               child: Container(
-                color: Colors.white.withSafeOpacity(0.2),
-                // 让白色细线的高度也适应变化，比如总是底部总高度的 1/4
-                height: actualBottomHeight > 0 ? actualBottomHeight / 4 : 0,
+                color: Colors.white.withSafeOpacity(0.2), // 背景色
+                height:
+                    actualBottomHeight > 0 ? actualBottomHeight / 4 : 0, // 高度
               ),
             ),
           ),

@@ -8,8 +8,6 @@ class GameCollectionStatus {
   static const String played = 'played';
 }
 
-
-
 class GameCollectionItem {
   final String gameId;
   final String status;
@@ -113,8 +111,6 @@ class GameCollectionItem {
     return data;
   }
 }
-
-
 
 // 游戏收藏统计（单个游戏的收藏人数）
 class GameCollectionStats {
@@ -222,5 +218,3 @@ class GameCollectionStats {
     return 'GameCollectionStats{wantToPlayCount: $wantToPlayCount, playingCount: $playingCount, playedCount: $playedCount, totalCount: $totalCount}';
   }
 }
-
-

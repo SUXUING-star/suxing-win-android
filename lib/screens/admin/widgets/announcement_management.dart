@@ -121,13 +121,13 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
           // 创建新公告
           await widget.announcementService.createAnnouncement(result);
 
-          showSnackbar(message: '新公告已创建', type: SnackbarType.success);
+          showSnackBar(message: '新公告已创建', type: SnackBarType.success);
         } else {
           // 更新现有公告
           await widget.announcementService
               .updateAnnouncement(existingAnnouncement.id, result);
 
-          showSnackbar(message: '公告已更新', type: SnackbarType.success);
+          showSnackBar(message: '公告已更新', type: SnackBarType.success);
         }
 
         // 重新加载公告列表
@@ -137,7 +137,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
           _isLoading = false;
           _errorMessage = '保存公告失败: $e';
         });
-        showSnackbar(message: '操作失败: $e', type: SnackbarType.error);
+        showSnackBar(message: '操作失败: $e', type: SnackBarType.error);
       }
     }
   }
@@ -177,7 +177,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
     try {
       await widget.announcementService.deleteAnnouncement(id);
 
-      showSnackbar(message: '公告已删除', type: SnackbarType.success);
+      showSnackBar(message: '公告已删除', type: SnackBarType.success);
 
       // 重新加载公告列表
       await _loadAnnouncements();
@@ -187,7 +187,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
         _errorMessage = '删除公告失败: $e';
       });
 
-      showSnackbar(message: '删除失败: $e', type: SnackbarType.error);
+      showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
     }
   }
 

@@ -3,14 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class HomeHotPosts extends StatelessWidget {
@@ -80,9 +78,7 @@ class HomeHotPosts extends StatelessWidget {
     );
   }
 
-  Widget _buildPostListArea(
-    BuildContext context,
-  ) {
+  Widget _buildPostListArea(BuildContext context) {
     if (isLoading && posts == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
@@ -117,20 +113,26 @@ class HomeHotPosts extends StatelessWidget {
 
     return Stack(
       children: [
-        ListView.separated(
-          shrinkWrap: true,
-          physics: NeverScrollableScrollPhysics(),
-          itemCount: itemsToShow.length,
-          separatorBuilder: (_, __) => Divider(
-              height: 20,
-              thickness: 1,
-              indent: 16,
-              endIndent: 16,
-              color: Colors.grey.withSafeOpacity(0.15)),
-          itemBuilder: (ctx, index) {
-            // 使用 ctx
-            final post = itemsToShow[index];
-            return _buildPostListItem(ctx, post); // 传递 ctx 和 authProvider
+        // 使用封装好的 AnimatedListView
+        AnimatedListView<Post>(
+          listKey: const ValueKey('home_hot_posts_list'),
+          items: itemsToShow,
+          shrinkWrap: true, // 关键：使其在 Column 内正常工作
+          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          padding: EdgeInsets.zero, // 外部已有 padding
+          itemBuilder: (ctx, index, post) {
+            return Column(
+              children: [
+                _buildPostListItem(ctx, post),
+                if (index < itemsToShow.length - 1)
+                  Divider(
+                      height: 20,
+                      thickness: 1,
+                      indent: 16,
+                      endIndent: 16,
+                      color: Colors.grey.withSafeOpacity(0.15)),
+              ],
+            );
           },
         ),
         if (isLoading && displayPosts.isNotEmpty)
@@ -147,97 +149,12 @@ class HomeHotPosts extends StatelessWidget {
     BuildContext context, // 传入 context
     Post post,
   ) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () {
-        NavigationUtils.pushNamed(
-          context, // 使用这里的 context
-          AppRoutes.postDetail,
-          arguments: post.id,
-        );
-      },
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 10.0),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4.0),
-                    child: Text(post.title,
-                        style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            color: Colors.grey[850],
-                            fontSize: 15,
-                            height: 1.3),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis),
-                  ),
-                  SizedBox(height: 8),
-                  Row(
-                    children: [
-                      UserInfoBadge(
-                          followService: followService,
-                          infoProvider: infoProvider,
-                          currentUser: currentUser,
-                          targetUserId: post.authorId,
-                          mini: true,
-                          showLevel: false,
-                          showFollowButton: false,
-                          padding: EdgeInsets.zero),
-                      SizedBox(width: 8),
-                      Flexible(
-                          child: Text(
-                              '· ${DateTimeFormatter.formatTimeAgo(post.createTime)}',
-                              style: TextStyle(
-                                  color: Colors.grey[500], fontSize: 12),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis)),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            _buildPostStats(post),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPostStats(Post post) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        _buildStatItem(
-            Icons.mode_comment_outlined, post.replyCount, Colors.blueGrey[400]),
-        SizedBox(height: 8),
-        _buildStatItem(
-            Icons.thumb_up_alt_outlined, post.likeCount, Colors.pink[300]),
-        SizedBox(height: 8),
-        _buildStatItem(Icons.bookmark_border_outlined, post.favoriteCount,
-            Colors.teal[400]),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(IconData icon, int count, Color? iconColor) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(icon, color: iconColor ?? Colors.grey[500], size: 16),
-        SizedBox(width: 5),
-        Text('$count',
-            style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-                fontWeight: FontWeight.w500)),
-      ],
+    return BasePostCard(
+      followService: followService,
+      infoProvider: infoProvider,
+      post: post,
+      isDesktopLayout: false,
+      currentUser: currentUser,
     );
   }
 }

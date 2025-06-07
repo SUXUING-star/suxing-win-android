@@ -1,52 +1,65 @@
 // lib/widgets/ui/animation/animated_dialog.dart
-import 'package:flutter/material.dart';
 
+/// 该文件定义了 AnimatedDialog 类，提供通用动画显示对话框的功能。
+/// 该类用于以缩放和淡入动画效果显示对话框。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+
+/// `AnimatedDialog` 类：提供通用动画显示对话框的功能。
+///
+/// 该类用于以缩放和淡入动画效果显示对话框。
 class AnimatedDialog {
-  // --- 通用动画显示函数 (保持或移到工具类) ---
-// 这个函数保持不变，它负责初始的进入动画和定位
+  /// 显示带有动画效果的通用对话框。
+  ///
+  /// [context]：Build 上下文。
+  /// [pageBuilder]：构建对话框内容的函数。
+  /// [barrierDismissible]：是否可点击外部关闭对话框。
+  /// [barrierLabel]：语义标签。
+  /// [barrierColor]：背景颜色。
+  /// [transitionDuration]：过渡动画时长。
+  /// [transitionCurve]：过渡动画曲线。
+  /// [maxWidth]：对话框初始最大宽度。
+  /// 返回一个 Future，表示对话框关闭时的结果。
   static Future<T?> showAppAnimatedDialog<T>({
     required BuildContext context,
-    required Widget Function(BuildContext context) pageBuilder, // 构建对话框内容的函数
+    required Widget Function(BuildContext context) pageBuilder,
     bool barrierDismissible = true,
     String? barrierLabel,
     Color barrierColor = Colors.black54,
     Duration transitionDuration = const Duration(milliseconds: 350),
-    Curve transitionCurve = Curves.easeOutBack, // 动画曲线
-    double maxWidth = 300, // 对话框初始最大宽度
+    Curve transitionCurve = Curves.easeOutBack,
+    double maxWidth = 300,
   }) {
     return showGeneralDialog<T>(
       context: context,
-      barrierDismissible: barrierDismissible,
+      barrierDismissible: barrierDismissible, // 是否可点击外部关闭
       barrierLabel: barrierLabel ??
-          MaterialLocalizations.of(context).modalBarrierDismissLabel,
-      barrierColor: barrierColor,
-      transitionDuration: transitionDuration,
+          MaterialLocalizations.of(context).modalBarrierDismissLabel, // 语义标签
+      barrierColor: barrierColor, // 背景颜色
+      transitionDuration: transitionDuration, // 过渡动画时长
       pageBuilder: (BuildContext buildContext, Animation<double> animation,
           Animation<double> secondaryAnimation) {
-// 直接返回 pageBuilder 构建的 Widget (BaseInputDialog 实例)
-// 这个实例内部会处理 Transform 和 GestureDetector
-        return pageBuilder(buildContext);
+        return pageBuilder(buildContext); // 返回 pageBuilder 构建的 Widget
       },
       transitionBuilder: (BuildContext buildContext,
           Animation<double> animation,
           Animation<double> secondaryAnimation,
           Widget child) {
-        // 动画效果 (缩放 + 淡入) - 应用于 BaseInputDialog 实例
         return ScaleTransition(
           scale: CurvedAnimation(
-            parent: animation,
-            curve: transitionCurve,
+            parent: animation, // 父动画
+            curve: transitionCurve, // 动画曲线
           ),
           child: FadeTransition(
             opacity: CurvedAnimation(
-              parent: animation,
-              curve: Curves.easeIn,
+              parent: animation, // 父动画
+              curve: Curves.easeIn, // 动画曲线
             ),
-            // 使用 Center 和 ConstrainedBox 约束对话框 *初始* 的大小和位置
             child: Center(
               child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: child, // child 就是 pageBuilder 返回的 BaseInputDialog 实例
+                constraints: BoxConstraints(maxWidth: maxWidth), // 约束最大宽度
+                child: child, // 对话框内容
               ),
             ),
           ),

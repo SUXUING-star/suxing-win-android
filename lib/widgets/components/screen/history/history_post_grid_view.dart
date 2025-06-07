@@ -1,15 +1,19 @@
 // lib/widgets/components/screen/history/history_post_grid_view.dart
 import 'package:flutter/material.dart';
-import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+
+class _LoadingIndicatorPlaceholder {
+  const _LoadingIndicatorPlaceholder();
+}
 
 class HistoryPostGridView extends StatelessWidget {
   final List<Post> posts;
@@ -37,20 +41,28 @@ class HistoryPostGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     int crossAxisCount = 1;
     if (isDesktopLayout) {
-      crossAxisCount =
-          DeviceUtils.calculatePostCardsPerRow(context); // 妈的，这里修正了！
+      crossAxisCount = DeviceUtils.calculatePostCardsPerRow(context);
     }
 
-    return MasonryGridView.count(
-      controller: scrollController,
+    // 准备要显示的所有项目
+    final List<Object> displayItems = [...posts];
+    if (isLoading && hasMoreData) {
+      displayItems.add(const _LoadingIndicatorPlaceholder());
+    }
+
+    // 使用封装好的带动画的瀑布流组件
+    return AnimatedMasonryGridView<Object>(
+      gridKey: key, // 使用 widget 的 key
+      items: displayItems,
       crossAxisCount: crossAxisCount,
       mainAxisSpacing: isDesktopLayout ? 16 : 8,
       crossAxisSpacing: isDesktopLayout ? 16 : 8,
       padding: EdgeInsets.all(isDesktopLayout ? 16 : 8),
-      itemCount: posts.length + (isLoading && hasMoreData ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index < posts.length) {
-          final post = posts[index];
+      itemBuilder: (context, index, item) {
+
+        // 如果项目是帖子
+        if (item is Post) {
+          final post = item;
           final DateTime? lastViewTime =
               post.currentUserLastViewTime ?? post.lastViewedAt;
 
@@ -89,11 +101,16 @@ class HistoryPostGridView extends StatelessWidget {
                 ),
             ],
           );
-        } else {
+        }
+
+        // 如果项目是加载指示器
+        if (item is _LoadingIndicatorPlaceholder) {
           return Center(
             child: LoadingWidget.inline(message: "加载中..."),
           );
         }
+
+        return const SizedBox.shrink();
       },
     );
   }

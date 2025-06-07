@@ -308,6 +308,7 @@ class AppRoutes {
         return MaterialPageRoute(
             builder: (_) => OpenProfileScreen(
                   userId: userId,
+                  infoProvider: infoProvider,
                   userService: userService,
                   authProvider: authProvider,
                   gameService: gameService,

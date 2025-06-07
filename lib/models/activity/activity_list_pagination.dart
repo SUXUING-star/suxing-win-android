@@ -1,25 +1,25 @@
-// lib/models/activity/activity_list.dart
+// lib/models/activity/activity_list_pagination.dart
 
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 
-class ActivityList {
+class ActivityListPagination {
   final List<UserActivity> activities;
   final PaginationData pagination;
 
-  ActivityList({
+  ActivityListPagination({
     required this.activities,
     required this.pagination,
   });
 
-  static ActivityList empty() {
-    return ActivityList(
+  static ActivityListPagination empty() {
+    return ActivityListPagination(
       activities: [],
       pagination: PaginationData(page: 1, limit: 0, total: 0, pages: 0),
     );
   }
 
-  factory ActivityList.fromJson(Map<String, dynamic> json) {
+  factory ActivityListPagination.fromJson(Map<String, dynamic> json) {
     List<UserActivity> activitiesList = [];
     if (json['activities'] != null && json['activities'] is List) {
       activitiesList = (json['activities'] as List)
@@ -45,7 +45,7 @@ class ActivityList {
       );
     }
 
-    return ActivityList(
+    return ActivityListPagination(
       activities: activitiesList,
       pagination: paginationData,
     );
@@ -59,11 +59,11 @@ class ActivityList {
     return data;
   }
 
-  ActivityList copyWith({
+  ActivityListPagination copyWith({
     List<UserActivity>? activities,
     PaginationData? pagination,
   }) {
-    return ActivityList(
+    return ActivityListPagination(
       activities: activities ?? this.activities,
       pagination: pagination ?? this.pagination,
     );

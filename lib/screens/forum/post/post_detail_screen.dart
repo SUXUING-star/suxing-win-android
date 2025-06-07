@@ -266,7 +266,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           }
           if (!mounted) return;
           _hasInteraction = true;
-          showSnackbar(message: '帖子已删除', type: SnackbarType.success);
+          showSnackBar(message: '帖子已删除', type: SnackBarType.success);
           if (Navigator.canPop(this.context)) {
             // 使用 this.context
             Navigator.pop(this.context, _hasInteraction); // 使用 this.context
@@ -278,7 +278,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           }
         } catch (e) {
           if (!mounted) return;
-          showSnackbar(message: e.toString(), type: SnackbarType.error);
+          showSnackBar(message: e.toString(), type: SnackBarType.error);
           setState(() {
             _isLoading = false;
           });
@@ -327,12 +327,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     try {
       await widget.postService.togglePostLock(widget.postId);
       if (!mounted) return;
-      showSnackbar(message: '帖子状态已切换', type: SnackbarType.success);
+      showSnackBar(message: '帖子状态已切换', type: SnackBarType.success);
       _hasInteraction = true;
       await _refreshPost(); // 刷新获取最新状态
     } catch (e) {
       if (!mounted) return;
-      showSnackbar(message: e.toString(), type: SnackbarType.error);
+      showSnackBar(message: e.toString(), type: SnackBarType.error);
     } finally {
       if (mounted) {
         setState(() {
@@ -372,13 +372,13 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       });
 
       // 显示成功消息
-      showSnackbar(message: '帖子置顶状态已切换', type: SnackbarType.success);
+      showSnackBar(message: '帖子置顶状态已切换', type: SnackBarType.success);
       // 标记页面有改动
       _hasInteraction = true;
     } catch (e) {
       if (!mounted) return;
       // 捕获 Service 层抛出的错误并显示
-      showSnackbar(message: e.toString(), type: SnackbarType.error);
+      showSnackBar(message: e.toString(), type: SnackBarType.error);
     } finally {
       if (mounted) {
         // 结束加载状态

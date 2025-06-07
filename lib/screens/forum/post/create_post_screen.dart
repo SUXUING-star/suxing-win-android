@@ -44,11 +44,11 @@ class _CreatePostScreenState extends State<CreatePostScreen>
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
       await widget.postService.createPost(data.title, data.content, postTags);
-      showSnackbar(message: "编辑成功", type: SnackbarType.success);
+      showSnackBar(message: "编辑成功", type: SnackBarType.success);
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      showSnackbar(message: '编辑失败: ${e.toString()}', type: SnackbarType.error);
+      showSnackBar(message: '编辑失败: ${e.toString()}', type: SnackBarType.error);
     } finally {
       setState(() => _isSubmitting = false);
     }

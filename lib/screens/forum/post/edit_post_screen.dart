@@ -67,8 +67,8 @@ class _EditPostScreenState extends State<EditPostScreen>
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      showSnackbar(
-          message: '加载帖子数据失败: ${e.toString()}', type: SnackbarType.error);
+      showSnackBar(
+          message: '加载帖子数据失败: ${e.toString()}', type: SnackBarType.error);
     }
   }
 
@@ -78,11 +78,11 @@ class _EditPostScreenState extends State<EditPostScreen>
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
       await widget.postService
           .updatePost(_post!, data.title, data.content, postTags);
-      showSnackbar(message: "编辑成功", type: SnackbarType.success);
+      showSnackBar(message: "编辑成功", type: SnackBarType.success);
       if (!mounted) return;
       NavigationUtils.pop(context, true);
     } catch (e) {
-      showSnackbar(message: '编辑失败: ${e.toString()}', type: SnackbarType.error);
+      showSnackBar(message: '编辑失败: ${e.toString()}', type: SnackBarType.error);
     } finally {
       setState(() => _isSubmitting = false);
     }

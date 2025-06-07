@@ -1,13 +1,25 @@
 // lib/widgets/ui/buttons/popup/custom_page_popup_item.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-/// 自定义分页弹出菜单项 UI
+/// CustomPagePopupItem 组件，一个自定义的分页弹出菜单项。
+/// CustomPagePopupItem 用于在分页控件中显示单个页码及其选中状态。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+
+/// `CustomPagePopupItem` 类：自定义分页弹出菜单项 UI。
+///
+/// 该组件根据页码是否为当前选中页，显示不同的背景色、文本颜色和字体粗细。
 class CustomPagePopupItem extends StatelessWidget {
-  final int pageNumber;
-  final int totalPages;
-  final bool isCurrentPage;
+  final int pageNumber; // 页码
+  final int totalPages; // 总页数
+  final bool isCurrentPage; // 是否为当前页
 
+  /// 构造函数。
+  ///
+  /// [pageNumber]：页码。
+  /// [totalPages]：总页数。
+  /// [isCurrentPage]：是否当前页。
   const CustomPagePopupItem({
     super.key,
     required this.pageNumber,
@@ -15,53 +27,49 @@ class CustomPagePopupItem extends StatelessWidget {
     required this.isCurrentPage,
   });
 
+  /// 构建自定义分页弹出菜单项。
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final colorScheme = theme.colorScheme;
+    final theme = Theme.of(context); // 获取当前主题
+    final colorScheme = theme.colorScheme; // 获取颜色方案
     final textColor = isCurrentPage
-        ? colorScheme.onPrimary // 当前页用主色调上的文字颜色 (通常是白色)
-        : colorScheme.onSurface.withSafeOpacity(0.8); // 其他页用表面颜色上的文字 (深灰/黑色)
-    final backgroundColor = isCurrentPage
-        ? colorScheme.primary // 当前页用主色调背景
-        : Colors.white; // 其他页用白色背景
-    final fontWeight = isCurrentPage ? FontWeight.bold : FontWeight.normal;
+        ? colorScheme.onPrimary
+        : colorScheme.onSurface.withSafeOpacity(0.8); // 文本颜色
+    final backgroundColor =
+        isCurrentPage ? colorScheme.primary : Colors.white; // 背景色
+    final fontWeight =
+        isCurrentPage ? FontWeight.bold : FontWeight.normal; // 字体粗细
 
-    // 使用 Container 来完全控制背景、内边距和样式
     return Container(
-      // color: backgroundColor, // 直接设置 color 会覆盖 InkWell 的效果，下面用 decoration
       decoration: BoxDecoration(
-        color: backgroundColor,
-        // 可以给非当前页加个细微的边框？
-        border: !isCurrentPage
+        color: backgroundColor, // 背景色
+        border: !isCurrentPage // 边框
             ? Border.all(color: Colors.grey.shade200, width: 0.5)
             : null,
-        borderRadius: BorderRadius.circular(4), // 如果想要圆角效果
+        borderRadius: BorderRadius.circular(4), // 圆角
       ),
-      // 控制内边距，让文字离边缘有距离
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
+      padding:
+          const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0), // 内边距
       child: Row(
-        // 用 Row 来布局，可以加图标等
-        mainAxisAlignment: MainAxisAlignment.spaceBetween, // 让页码和总数分开点
+        mainAxisAlignment: MainAxisAlignment.spaceBetween, // 主轴两端对齐
         children: [
           Text(
-            '第 $pageNumber 页',
+            '第 $pageNumber 页', // 页码文本
             style: TextStyle(
-              color: textColor,
-              fontWeight: fontWeight,
-              fontSize: 13, // 稍微大一点的字号
+              color: textColor, // 字体颜色
+              fontWeight: fontWeight, // 字体粗细
+              fontSize: 13, // 字体大小
             ),
           ),
-          //如果需要，可以在右边显示总页数或其他信息
           Text(
-            '/ $totalPages',
+            '/ $totalPages', // 总页数文本
             style: TextStyle(
-              color: textColor.withSafeOpacity(0.7),
-              fontSize: 11,
+              color: textColor.withSafeOpacity(0.7), // 字体颜色
+              fontSize: 11, // 字体大小
             ),
           ),
-          // 或者给当前页加个小对勾图标？
-          if (isCurrentPage) Icon(Icons.check, size: 16, color: textColor)
+          if (isCurrentPage)
+            Icon(Icons.check, size: 16, color: textColor) // 选中页显示对勾图标
         ],
       ),
     );

@@ -112,14 +112,14 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
       );
 
       if (success) {
-        showSnackbar(
+        showSnackBar(
             message: _isActive ? '系统维护模式已开启' : '系统维护模式已关闭',
-            type: SnackbarType.success);
+            type: SnackBarType.success);
       } else {
-        showSnackbar(message: '设置维护模式失败', type: SnackbarType.error);
+        showSnackBar(message: '设置维护模式失败', type: SnackBarType.error);
       }
     } catch (e) {
-      showSnackbar(message: '发生错误: $e', type: SnackbarType.error);
+      showSnackBar(message: '发生错误: $e', type: SnackBarType.error);
     } finally {
       setState(() {
         _isLoading = false;
@@ -167,7 +167,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
             if (newDateTime.isAfter(_startTime)) {
               _endTime = newDateTime;
             } else {
-              showSnackbar(message: '结束时间必须晚于开始时间', type: SnackbarType.warning);
+              showSnackBar(message: '结束时间必须晚于开始时间', type: SnackBarType.warning);
             }
           }
         });

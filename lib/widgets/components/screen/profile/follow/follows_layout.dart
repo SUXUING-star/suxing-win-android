@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -46,65 +47,56 @@ class FollowsLayout extends StatelessWidget {
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
-    const Duration initialDelay = Duration(milliseconds: 100);
-    const Duration stagger = Duration(milliseconds: 150);
-
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            child: FadeInSlideUpItem(
-              delay: initialDelay,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Text(
-                      '关注 ${followingsIDs?.length ?? 0}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    '关注 ${followingsIDs?.length ?? 0}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Expanded(
-                    child: _buildListContainer(
-                      context,
-                      userIds: followingsIDs,
-                      isFollowingList: true,
-                    ),
+                ),
+                Expanded(
+                  child: _buildListContainer(
+                    context,
+                    userIds: followingsIDs,
+                    isFollowingList: true,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 20),
           Expanded(
-            child: FadeInSlideUpItem(
-              delay: initialDelay + stagger,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 16.0),
-                    child: Text(
-                      '粉丝 ${followersIDs?.length ?? 0}',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: Text(
+                    '粉丝 ${followersIDs?.length ?? 0}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Expanded(
-                    child: _buildListContainer(
-                      context,
-                      userIds: followersIDs,
-                      isFollowingList: false,
-                    ),
+                ),
+                Expanded(
+                  child: _buildListContainer(
+                    context,
+                    userIds: followersIDs,
+                    isFollowingList: false,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],
@@ -156,52 +148,45 @@ class FollowsLayout extends StatelessWidget {
     }
 
     if (userIds?.isEmpty ?? true) {
-      return FadeInSlideUpItem(
-        child: Container(
-          padding: const EdgeInsets.all(32),
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                isFollowingList
-                    ? Icons.person_search_outlined
-                    : Icons.no_accounts_outlined,
-                size: 64,
-                color: Colors.grey[400],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                isFollowingList ? '还没有关注任何人' : '还没有粉丝',
-                style: TextStyle(fontSize: 16, color: Colors.grey[600]),
-              ),
-              const SizedBox(height: 24),
-              FunctionalTextButton(
-                  onPressed: onRefreshTargetUser, label: '刷新看看'),
-            ],
-          ),
+      return Container(
+        padding: const EdgeInsets.all(32),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              isFollowingList
+                  ? Icons.person_search_outlined
+                  : Icons.no_accounts_outlined,
+              size: 64,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              isFollowingList ? '还没有关注任何人' : '还没有粉丝',
+              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 24),
+            FunctionalTextButton(
+                onPressed: onRefreshTargetUser, label: '刷新看看'),
+          ],
         ),
       );
     }
 
-    return ListView.builder(
+    // 使用封装好的 AnimatedListView
+    return AnimatedListView<String>(
+      items: userIds!,
       padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-      itemCount: userIds!.length,
-      itemBuilder: (context, index) {
-        final String targetUserIdInList = userIds[index];
-
-        return FadeInSlideUpItem(
-          delay: Duration(milliseconds: 50 * index),
-          duration: const Duration(milliseconds: 350),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
-            child: UserInfoBadge(
-              key: ValueKey(targetUserIdInList),
-              infoProvider: infoProvider,
-              followService: followService,
-              targetUserId: targetUserIdInList,
-              currentUser: currentUser,
-            ),
+      itemBuilder: (context, index, targetUserIdInList) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 4.0, horizontal: 8.0),
+          child: UserInfoBadge(
+            key: ValueKey(targetUserIdInList),
+            infoProvider: infoProvider,
+            followService: followService,
+            targetUserId: targetUserIdInList,
+            currentUser: currentUser,
           ),
         );
       },

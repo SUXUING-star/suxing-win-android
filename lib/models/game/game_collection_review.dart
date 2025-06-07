@@ -1,6 +1,6 @@
 // lib/models/game/game_collection_review.dart
 
-class GameCollectionReview {
+class GameCollectionReviewEntry {
   final String userId;
   final String gameId;
   final String status;
@@ -10,7 +10,7 @@ class GameCollectionReview {
   final DateTime createTime;
   final DateTime updateTime;
 
-  GameCollectionReview({
+  GameCollectionReviewEntry({
     required this.userId,
     required this.gameId,
     required this.status,
@@ -21,7 +21,7 @@ class GameCollectionReview {
     required this.updateTime,
   });
 
-  factory GameCollectionReview.fromJson(Map<String, dynamic> json) {
+  factory GameCollectionReviewEntry.fromJson(Map<String, dynamic> json) {
     String parsedUserId = json['userId']?.toString() ?? 'unknown_user_id';
     String parsedGameId = json['gameId']?.toString() ?? 'unknown_game_id';
     String parsedStatus = json['status'] ?? 'unknown';
@@ -52,7 +52,7 @@ class GameCollectionReview {
       }
     }
 
-    return GameCollectionReview(
+    return GameCollectionReviewEntry(
       userId: parsedUserId,
       gameId: parsedGameId,
       status: parsedStatus,

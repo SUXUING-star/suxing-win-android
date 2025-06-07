@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/open/open_profile_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -21,6 +22,7 @@ class OpenProfileScreen extends StatefulWidget {
   final UserFollowService followService;
   final PostService postService;
   final GameService gameService;
+  final UserInfoProvider infoProvider;
 
   const OpenProfileScreen({
     super.key,
@@ -29,6 +31,7 @@ class OpenProfileScreen extends StatefulWidget {
     required this.authProvider,
     required this.postService,
     required this.followService,
+    required this.infoProvider,
     required this.userId,
   });
 
@@ -38,7 +41,7 @@ class OpenProfileScreen extends StatefulWidget {
 
 class _OpenProfileScreenState extends State<OpenProfileScreen>
     with SingleTickerProviderStateMixin {
-  User? _user;
+  User? _targetUser;
   List<Post>? _recentPosts;
   List<Game>? _publishedGames;
   bool _isLoading = true;
@@ -108,10 +111,10 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       _isCurrentUser = currentUserId == widget.userId;
 
       if (_isCurrentUser && currentUser != null) {
-        _user = currentUser;
+        _targetUser = currentUser;
       } else {
         // 这个用户不是你
-        _user = await widget.userService.getUserInfoById(widget.userId);
+        _targetUser = await widget.userService.getUserInfoById(widget.userId);
       }
 
       // 加载用户帖子
@@ -144,7 +147,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: CustomAppBar(
-        title: _isLoading ? '加载中...' : (_user?.username ?? '用户资料'),
+        title: _isLoading ? '加载中...' : (_targetUser?.username ?? '用户资料'),
         actions: [
           // 只有在数据加载完毕且没有错误时才显示切换按钮
           if (!_isLoading && _error == null)
@@ -176,18 +179,22 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
         errorMessage: _error,
       );
     }
+    if (_targetUser == null) {
+      return CustomErrorWidget(
+        errorMessage: "目标用户不存在",
+      );
+    }
 
     return OpenProfileLayout(
-      user: _user,
+      targetUser: _targetUser!,
       recentPosts: _recentPosts,
       publishedGames: _publishedGames,
-      isCurrentUser: _isCurrentUser,
       isGridView: _isGridView,
       tabController: _tabController,
       authProvider: widget.authProvider, // 传入 AuthProvider
+      infoProvider: widget.infoProvider,
       followService: widget.followService, // 传入 UserFollowService
       onFollowChanged: _handleFollowChanged, // 传入关注变化的回调
-      targetUserId: widget.userId, // 传入目标用户ID
     );
   }
 }

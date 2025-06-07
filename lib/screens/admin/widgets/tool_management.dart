@@ -177,9 +177,9 @@ class _ToolManagementState extends State<ToolManagement>
           final tool = Tool.fromJson(result); // 转换
           await widget.linkToolService.addTool(tool);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackbar(message: '工具添加成功', type: SnackbarType.success);
+          showSnackBar(message: '工具添加成功', type: SnackBarType.success);
         } catch (e) {
-          showSnackbar(message: '添加失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '添加失败：$e', type: SnackBarType.error);
         }
       }
     } finally {
@@ -205,10 +205,10 @@ class _ToolManagementState extends State<ToolManagement>
           final updatedTool = Tool.fromJson(result); // 转换
           await widget.linkToolService.updateTool(updatedTool);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackbar(message: '工具更新成功', type: SnackbarType.success);
+          showSnackBar(message: '工具更新成功', type: SnackBarType.success);
         } catch (e) {
           // print('更新工具错误: $e');
-          showSnackbar(message: '更新失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '更新失败：$e', type: SnackBarType.error);
         }
       }
     } finally {
@@ -239,9 +239,9 @@ class _ToolManagementState extends State<ToolManagement>
         try {
           await widget.linkToolService.deleteTool(tool.id);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackbar(message: '工具删除成功', type: SnackbarType.success);
+          showSnackBar(message: '工具删除成功', type: SnackBarType.success);
         } catch (e) {
-          showSnackbar(message: '删除失败：$e', type: SnackbarType.error);
+          showSnackBar(message: '删除失败：$e', type: SnackBarType.error);
         }
       }
     } finally {

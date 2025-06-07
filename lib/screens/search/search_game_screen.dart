@@ -1,7 +1,8 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'dart:async';
 
 // Services
@@ -25,6 +26,10 @@ class SearchGameScreen extends StatefulWidget {
 
   @override
   _SearchGameScreenState createState() => _SearchGameScreenState();
+}
+
+class _LoadingIndicatorPlaceholder {
+  const _LoadingIndicatorPlaceholder();
 }
 
 class _SearchGameScreenState extends State<SearchGameScreen> {
@@ -370,7 +375,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
 
   Widget _buildSearchResults() {
     if (_searchResults == null || _searchResults!.games.isEmpty) {
-      // 如果搜索词不为空但没有结果 (且不是在加载中)
       if (_searchController.text.isNotEmpty &&
           !_isSearching &&
           _error == null) {
@@ -379,63 +383,61 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
           iconData: Icons.search_off,
         );
       }
-      return const SizedBox.shrink(); // 其他情况（如初始状态）不显示任何东西
+      return const SizedBox.shrink();
     }
 
-    const Duration cardAnimationDuration = Duration(milliseconds: 350);
-    const Duration cardDelayIncrement = Duration(milliseconds: 40);
+    // 准备要显示的所有项目，包括游戏和占位符
+    final List<Object> displayItems = [..._searchResults!.games];
+    if (_hasMoreResults() || _isLoadingMore) {
+      displayItems.add(const _LoadingIndicatorPlaceholder());
+    }
 
     return NotificationListener<ScrollNotification>(
       onNotification: (ScrollNotification scrollInfo) {
         if (scrollInfo.metrics.pixels >=
-                scrollInfo.metrics.maxScrollExtent * 0.9 && // 接近底部
-            !_isLoadingMore && // 不在加载中
+                scrollInfo.metrics.maxScrollExtent * 0.9 &&
+            !_isLoadingMore &&
             _hasMoreResults()) {
-          // 还有更多数据
           _loadMoreResults();
         }
         return true;
       },
-      child: ListView.builder(
+      // 使用封装好的 AnimatedListView
+      child: AnimatedListView<Object>(
+        items: displayItems,
         padding: const EdgeInsets.all(8.0),
-        itemCount: _searchResults!.games.length +
-            (_hasMoreResults() || _isLoadingMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index < _searchResults!.games.length) {
-            final game = _searchResults!.games[index];
-            return FadeInSlideUpItem(
-              key: ValueKey(game.id),
-              duration: cardAnimationDuration,
-              delay: cardDelayIncrement * index,
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12.0),
-                child: CommonGameCard(
-                  game: game,
-                  isGridItem: false,
-                  showTags: true,
-                  maxTags: 3,
-                ),
+        itemBuilder: (context, index, item) {
+          // 如果项目是游戏
+          if (item is Game) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 12.0),
+              child: CommonGameCard(
+                game: item,
+                isGridItem: false,
+                showTags: true,
+                maxTags: 3,
               ),
             );
-          } else if (_isLoadingMore) {
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16.0),
-              child: LoadingWidget.inline(message: "加载中..."),
-            );
-          } else if (_hasMoreResults()) {
-            // 可以选择显示 "点击加载更多" 或自动加载
-            // 这里为了简化，如果还有更多但不在加载中，不显示特殊按钮
-            // 也可以像之前一样用 FunctionalTextButton
-            return const SizedBox.shrink();
-          } else if (_error != null && _searchResults!.games.isNotEmpty) {
-            // 如果列表有数据，但加载更多时出错了，可以在底部显示一个小的错误提示
-            return Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Text(_error!,
-                  style: TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center),
-            );
           }
+
+          // 如果项目是加载指示器的占位符
+          if (item is _LoadingIndicatorPlaceholder) {
+            if (_isLoadingMore) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: LoadingWidget.inline(message: "加载中..."),
+              );
+            }
+            if (_error != null && _searchResults!.games.isNotEmpty) {
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text(_error!,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center),
+              );
+            }
+          }
+
           return const SizedBox.shrink();
         },
       ),

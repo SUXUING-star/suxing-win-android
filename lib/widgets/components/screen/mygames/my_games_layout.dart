@@ -4,6 +4,7 @@ import 'package:suxingchahui/models/game/game.dart'; // Ensure GameStatus enum i
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -344,29 +345,25 @@ class MyGamesLayout extends StatelessWidget {
       controller: scrollController,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: cardsPerRow,
-            childAspectRatio: cardRatio,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: isDesktop ? 16 : 8,
-          ),
-          itemCount: myGames.length,
-          itemBuilder: (context, index) {
-            final game = myGames[index];
-            return FadeInSlideUpItem(
-              delay: Duration(milliseconds: 50 * index),
-              duration: const Duration(milliseconds: 350),
-              child: _buildGameCardItem(game),
-            );
+        AnimatedContentGrid<Game>(
+          items: myGames,
+          crossAxisCount: cardsPerRow,
+          childAspectRatio: cardRatio,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: isDesktop ? 16 : 8,
+          padding: EdgeInsets.zero, // 外部 ListView 已有 padding
+          shrinkWrap: true, // 关键：使其在 ListView 内正常工作
+          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          itemBuilder: (context, index, game) {
+            return _buildGameCardItem(game);
           },
         ),
+
+        // 加载更多
         if (isLoadingMore)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: FadeInItem(child: LoadingWidget.inline(message: "加载更多...")),
+            child: LoadingWidget.inline(message: "加载更多..."),
           ),
         if (!isLoadingMore && hasMore && myGames.isNotEmpty)
           Padding(
@@ -391,7 +388,7 @@ class MyGamesLayout extends StatelessWidget {
           showTags: true,
           maxTags: 1,
         ),
-        GameStatusOverlay(
+        GameApprovalStatusOverlay(
           game: game,
           onResubmit: () => onResubmit(game),
           onShowReviewComment: onShowReviewComment,

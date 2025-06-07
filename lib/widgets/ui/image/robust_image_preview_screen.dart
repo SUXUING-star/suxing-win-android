@@ -186,7 +186,7 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen>
   /// 分享当前图片
   void _shareCurrentImage() {
     // 实现分享功能
-    showSnackbar(message: '分享功能将在后续版本实现', type: SnackbarType.info);
+    showSnackBar(message: '分享功能将在后续版本实现', type: SnackBarType.info);
   }
 
   /// 下载当前图片
@@ -202,9 +202,9 @@ class _RobustImagePreviewScreenState extends State<RobustImagePreviewScreen>
       // 模拟下载过程
       await Future.delayed(Duration(seconds: 2));
 
-      showSnackbar(message: '图片已保存到相册', type: SnackbarType.success);
+      showSnackBar(message: '图片已保存到相册', type: SnackBarType.success);
     } catch (e) {
-      showSnackbar(message: '下载失败: $e', type: SnackbarType.error);
+      showSnackBar(message: '下载失败: $e', type: SnackBarType.error);
     } finally {
       setState(() {
         _isLoading = false;

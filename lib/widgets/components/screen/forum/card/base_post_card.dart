@@ -1,53 +1,49 @@
 // lib/widgets/components/screen/forum/card/base_post_card.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 
-import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+/// 该文件定义了 BasePostCard 组件，一个用于展示论坛帖子预览的卡片。
+/// BasePostCard 展示帖子标题、标签、用户信息、统计数据，并提供操作菜单。
+library;
 
-import 'post_statistics_row.dart'; // 帖子统计行
-import 'post_tag_row.dart'; // 帖子标签行
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 导入自定义弹出菜单按钮
 
-/// 论坛帖子卡片 Widget
+import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
+import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 导入用户信息徽章
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+
+import 'post_statistics_row.dart'; // 导入帖子统计行组件
+import 'post_tag_row.dart'; // 导入帖子标签行组件
+
+/// `BasePostCard` 类：论坛帖子卡片组件。
 ///
-/// 负责展示单个帖子的预览信息，并提供导航到详情页、编辑和删除的操作入口（通过回调）。
+/// 该组件展示单个帖子的预览信息，并提供导航到详情页、编辑和删除等操作入口。
 class BasePostCard extends StatelessWidget {
-  /// 要展示的帖子数据模型。
-  final Post post;
+  final Post post; // 要展示的帖子数据模型
+  final User? currentUser; // 当前登录用户
+  final UserFollowService followService; // 用户关注服务实例
+  final UserInfoProvider infoProvider; // 用户信息提供者实例
+  final bool isDesktopLayout; // 是否采用桌面布局样式
+  final Future<void> Function(Post post)? onDeleteAction; // 删除操作回调
+  final void Function(Post post)? onEditAction; // 编辑操作回调
+  final Future<void> Function(String postId)? onToggleLockAction; // 切换锁定状态回调
+  final bool showPinnedStatus; // 是否显示帖子的置顶状态高亮
 
-  final User? currentUser;
-
-  final UserFollowService followService;
-
-  final UserInfoProvider infoProvider;
-
-  /// 是否采用桌面布局样式。
-  final bool isDesktopLayout;
-
-  /// 当用户触发删除操作时调用的回调函数 (可选)。
-  /// 父组件应在此回调中处理确认对话框和实际的删除逻辑。
-  /// 参数为要删除的帖子的 ID。
-  final Future<void> Function(Post post)? onDeleteAction;
-
-  /// 当用户触发编辑操作时调用的回调函数 (可选)。
-  /// 父组件应在此回调中处理导航到编辑页面等逻辑。
-  /// 参数为要编辑的帖子对象。
-  final void Function(Post post)? onEditAction;
-
-  /// 当用户触发锁定/解锁操作时调用的回调函数 (可选)。
-  /// 父组件应在此回调中处理实际的锁定/解锁逻辑。
-  /// 参数为要操作的帖子的 ID。
-  final Future<void> Function(String postId)? onToggleLockAction;
-
-  /// 是否显示帖子的置顶状态高亮。
-  final bool showPinnedStatus; // 添加这一行
-
+  /// 构造函数。
+  ///
+  /// [currentUser]：当前用户。
+  /// [post]：帖子数据。
+  /// [followService]：关注服务。
+  /// [infoProvider]：用户信息 Provider。
+  /// [isDesktopLayout]：是否桌面布局。
+  /// [onDeleteAction]：删除回调。
+  /// [onEditAction]：编辑回调。
+  /// [onToggleLockAction]：切换锁定回调。
+  /// [showPinnedStatus]：是否显示置顶状态。
   const BasePostCard({
     super.key,
     required this.currentUser,
@@ -58,171 +54,149 @@ class BasePostCard extends StatelessWidget {
     this.onDeleteAction,
     this.onEditAction,
     this.onToggleLockAction,
-    this.showPinnedStatus = false, // 添加这一行，设置默认值不显示
+    this.showPinnedStatus = false,
   });
 
+  /// 构建帖子卡片。
+  ///
+  /// 该方法根据帖子数据和用户权限构建卡片 UI。
   @override
   Widget build(BuildContext context) {
-    // 获取设备信息
-    final isAndroidPortrait =
-        DeviceUtils.isAndroid && DeviceUtils.isPortrait(context);
+    final bool isAndroidPortrait = DeviceUtils.isAndroid &&
+        DeviceUtils.isPortrait(context); // 判断是否为 Android 竖屏
 
-    // 获取权限信息
-    final currentUserId = currentUser?.id;
-    final isAdmin = currentUser?.isAdmin ?? false;
-    // 判断用户是否有权修改此帖子
-    final canPotentiallyModify =
-        (post.authorId.toString() == currentUserId) || isAdmin;
+    final String? currentUserId = currentUser?.id; // 当前用户ID
+    final bool isAdmin = currentUser?.isAdmin ?? false; // 是否管理员
+    final bool canPotentiallyModify =
+        (post.authorId.toString() == currentUserId) || isAdmin; // 判断用户是否有权修改此帖子
 
-    // 使用 Container 实现卡片样式和 Stack 叠加置顶图标
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4), // 卡片外部间距
       decoration: BoxDecoration(
-        // Card 的视觉效果
-        color: Theme.of(context).cardColor, // 使用主题卡片背景色
+        color: Theme.of(context).cardColor, // 卡片背景色
         borderRadius: BorderRadius.circular(12), // 圆角
         boxShadow: [
-          // 模拟 Card 阴影
+          // 阴影
           BoxShadow(
             color: Colors.grey.withSafeOpacity(0.2), // 阴影颜色
-            spreadRadius: 1,
-            blurRadius: 3,
+            spreadRadius: 1, // 扩散半径
+            blurRadius: 3, // 模糊半径
             offset: const Offset(0, 2), // 阴影偏移
           ),
         ],
       ),
-      // Stack 叠加卡片内容和置顶图标
       child: Stack(
         children: [
-          // 主要内容
           InkWell(
             borderRadius: BorderRadius.circular(12), // InkWell 圆角
-            // 点击卡片导航到详情页
             onTap: () async {
+              // 点击卡片导航到详情页
               await Navigator.pushNamed(
-                // 导航到详情页
                 context,
-                AppRoutes.postDetail,
+                AppRoutes.postDetail, // 导航到帖子详情路由
                 arguments: post.id, // 传递帖子 ID
               );
-
-              // 处理从详情页返回的结果
-              if (!context.mounted) return;
-              // Result is handled by the calling widget, not here
             },
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
               children: [
-                // 标题区域
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(40, 12, 12, 8),
+                  padding: const EdgeInsets.fromLTRB(40, 12, 12, 8), // 内边距
                   child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start, // 垂直顶部对齐
                     children: [
-                      // 帖子标题
                       Expanded(
                         child: Text(
-                          post.title,
+                          post.title, // 帖子标题
                           style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: isAndroidPortrait ? 14 : 16,
+                            fontWeight: FontWeight.w600, // 字体粗细
+                            fontSize: isAndroidPortrait ? 14 : 16, // 字体大小
                           ),
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2, // 最大行数
+                          overflow: TextOverflow.ellipsis, // 溢出显示省略号
                         ),
                       ),
-                      // 操作菜单
                       _buildPopupMenu(context, canPotentiallyModify, isAdmin,
-                          currentUserId),
+                          currentUserId), // 操作菜单
                     ],
                   ),
                 ),
-
-                // 标签行
-                if (post.tags.isNotEmpty)
+                if (post.tags.isNotEmpty) // 显示标签行
                   Padding(
-                    padding:
-                        const EdgeInsets.fromLTRB(12, 0, 12, 8), // 内部 padding
+                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), // 内边距
                     child: PostTagRow(
-                      tags: post.tags,
-                      isAndroidPortrait: isAndroidPortrait,
+                      tags: post.tags, // 标签列表
+                      isAndroidPortrait: isAndroidPortrait, // 是否为 Android 竖屏
                     ),
                   ),
-
-                // 底部信息栏
                 Container(
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8), // 内部 padding
+                      horizontal: 12, vertical: 8), // 内边距
                   decoration: BoxDecoration(
-                    // 底部区域背景和圆角
-                    color: Colors.grey[50],
+                    color: Colors.grey[50], // 背景色
                     borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
+                      bottom: Radius.circular(12), // 底部圆角
                     ),
                     border: Border(
-                      // 顶部分割线
                       top: BorderSide(
-                        color: Colors.grey[200]!,
-                        width: 1,
+                        color: Colors.grey[200]!, // 顶部边框颜色
+                        width: 1, // 顶部边框宽度
                       ),
                     ),
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      const double thresholdWidth = 280.0;
+                      const double thresholdWidth = 280.0; // 宽度阈值
 
                       if (constraints.maxWidth >= thresholdWidth) {
-                        // Row 布局
+                        // 宽度大于阈值时使用 Row 布局
                         return Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisAlignment:
+                              MainAxisAlignment.spaceBetween, // 主轴两端对齐
                           children: [
-                            // 用户信息徽章
                             Expanded(
                               child: UserInfoBadge(
-                                targetUserId:
-                                    post.authorId.toString(), // 传递字符串 ID
-                                infoProvider: infoProvider,
-                                followService: followService,
-                                showFollowButton: false,
-                                currentUser: currentUser,
-                                mini: true,
-                                showLevel: false,
+                                targetUserId: post.authorId.toString(), // 用户ID
+                                infoProvider: infoProvider, // 用户信息提供者
+                                followService: followService, // 关注服务
+                                showFollowButton: false, // 不显示关注按钮
+                                currentUser: currentUser, // 当前用户
+                                mini: true, // 迷你模式
+                                showLevel: false, // 不显示等级
                               ),
                             ),
                             const SizedBox(width: 8), // 间距
-                            // 帖子统计数据
                             PostStatisticsRow(
-                              replyCount: post.replyCount,
-                              likeCount: post.likeCount,
-                              favoriteCount: post.favoriteCount,
-                              isSmallScreen: constraints.maxWidth < 320,
+                              replyCount: post.replyCount, // 回复数量
+                              likeCount: post.likeCount, // 点赞数量
+                              favoriteCount: post.favoriteCount, // 收藏数量
+                              isSmallScreen:
+                                  constraints.maxWidth < 320, // 是否为小屏幕
                             ),
                           ],
                         );
                       } else {
-                        // Column 布局
+                        // 宽度小于阈值时使用 Column 布局
                         return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                          crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
                           children: [
-                            // 用户信息徽章
                             UserInfoBadge(
-                              targetUserId: post.authorId.toString(),
-                              followService: followService,
-                              infoProvider: infoProvider,
-                              showFollowButton: false,
-                              currentUser: currentUser,
-                              mini: true,
-                              showLevel: false,
+                              targetUserId: post.authorId.toString(), // 用户ID
+                              followService: followService, // 关注服务
+                              infoProvider: infoProvider, // 用户信息提供者
+                              showFollowButton: false, // 不显示关注按钮
+                              currentUser: currentUser, // 当前用户
+                              mini: true, // 迷你模式
+                              showLevel: false, // 不显示等级
                             ),
                             const SizedBox(height: 6), // 间距
-                            // 帖子统计数据
                             Align(
-                              alignment: Alignment.centerRight,
+                              alignment: Alignment.centerRight, // 居右对齐
                               child: PostStatisticsRow(
-                                replyCount: post.replyCount,
-                                likeCount: post.likeCount,
-                                favoriteCount: post.favoriteCount,
-                                isSmallScreen: true,
+                                replyCount: post.replyCount, // 回复数量
+                                likeCount: post.likeCount, // 点赞数量
+                                favoriteCount: post.favoriteCount, // 收藏数量
+                                isSmallScreen: true, // 是否为小屏幕
                               ),
                             ),
                           ],
@@ -234,33 +208,30 @@ class BasePostCard extends StatelessWidget {
               ],
             ),
           ),
-          // 条件性显示的置顶图标 overlay
-          if (showPinnedStatus && post.isPinned)
+          if (showPinnedStatus && post.isPinned) // 条件性显示置顶图标 overlay
             Positioned(
-              // 定位在右上角
-              top: 0,
-              left: 0,
+              top: 0, // 顶部对齐
+              left: 0, // 左侧对齐
               child: Container(
-                // 包裹图标，加背景圆角阴影
-                padding: const EdgeInsets.all(4),
+                padding: const EdgeInsets.all(4), // 内边距
                 decoration: BoxDecoration(
-                    color: Colors.blue.shade400, // 置顶图标背景色
+                    color: Colors.blue.shade400, // 背景色
                     borderRadius: const BorderRadius.only(
                       topRight: Radius.circular(12), // 右上角圆角
                       bottomLeft: Radius.circular(8), // 左下角圆角
                     ),
                     boxShadow: [
-                      // 图标阴影
+                      // 阴影
                       BoxShadow(
-                        color: Colors.black.withSafeOpacity(0.2),
-                        blurRadius: 3,
-                        offset: const Offset(-2, 2),
+                        color: Colors.black.withSafeOpacity(0.2), // 阴影颜色
+                        blurRadius: 3, // 模糊半径
+                        offset: const Offset(-2, 2), // 偏移
                       ),
                     ]),
                 child: const Icon(
                   Icons.push_pin, // 置顶图标
                   size: 18, // 图标大小
-                  color: Colors.white, // 图标颜色
+                  color: Colors.white, // 颜色
                 ),
               ),
             ),
@@ -270,64 +241,66 @@ class BasePostCard extends StatelessWidget {
   }
 
   /// 构建帖子操作弹出菜单。
-  /// 检查回调是否为 null。
+  ///
+  /// [context]：Build 上下文。
+  /// [canPotentiallyModify]：是否拥有潜在修改权限。
+  /// [isAdmin]：是否管理员。
+  /// [currentUserId]：当前用户ID。
+  /// 返回一个包含编辑、删除、锁定/解锁等操作的弹出菜单。
   Widget _buildPopupMenu(BuildContext context, bool canPotentiallyModify,
       bool isAdmin, String? currentUserId) {
-    // 权限细节
-    final bool canModifyContent = (post.authorId.toString() == currentUserId);
+    final bool canModifyContent =
+        (post.authorId.toString() == currentUserId); // 是否可修改内容
     final bool showEditDeletePermission =
-        canModifyContent || isAdmin; // 管理员也能删改
-    final bool showLockUnlockPermission = isAdmin; // 只有管理员能锁定
+        canModifyContent || isAdmin; // 是否显示编辑删除权限
+    final bool showLockUnlockPermission = isAdmin; // 是否显示锁定解锁权限
 
-    // 检查操作是否可用
-    final bool canShowEdit = showEditDeletePermission && onEditAction != null;
+    final bool canShowEdit =
+        showEditDeletePermission && onEditAction != null; // 是否可显示编辑
     final bool canShowDelete =
-        showEditDeletePermission && onDeleteAction != null;
+        showEditDeletePermission && onDeleteAction != null; // 是否可显示删除
     final bool canShowLock =
-        showLockUnlockPermission && onToggleLockAction != null;
+        showLockUnlockPermission && onToggleLockAction != null; // 是否可显示锁定
 
-    // 没有可用操作不显示菜单
     if (!canShowEdit && !canShowDelete && !canShowLock) {
+      // 无可用操作时返回空组件
       return const SizedBox.shrink();
     }
 
-    // 构建按钮
     return StylishPopupMenuButton<String>(
-      icon: Icons.more_horiz,
-      iconSize: 20,
-      iconColor: Colors.grey[600],
-      menuColor: Colors.white,
-      tooltip: '帖子选项',
-      onSelected: (value) => _handleMenuItemSelected(context, value),
+      icon: Icons.more_horiz, // 图标
+      iconSize: 20, // 大小
+      iconColor: Colors.grey[600], // 颜色
+      menuColor: Colors.white, // 菜单背景色
+      tooltip: '帖子选项', // 提示
+      onSelected: (value) => _handleMenuItemSelected(context, value), // 选中回调
       items: [
-        // 编辑选项
-        if (canShowEdit)
+        if (canShowEdit) // 显示编辑选项
           StylishMenuItemData(
             value: 'edit',
             child: Row(
               children: [
                 Icon(Icons.edit_outlined,
-                    size: 18, color: Theme.of(context).colorScheme.primary),
-                const SizedBox(width: 10),
-                const Text('编辑'),
+                    size: 18,
+                    color: Theme.of(context).colorScheme.primary), // 图标
+                const SizedBox(width: 10), // 间距
+                const Text('编辑'), // 文本
               ],
             ),
           ),
-        // 删除选项
-        if (canShowDelete)
+        if (canShowDelete) // 显示删除选项
           StylishMenuItemData(
             value: 'delete',
             child: Row(
               children: [
-                Icon(Icons.delete_outline, size: 18, color: Colors.red[700]),
-                const SizedBox(width: 10),
-                Text('删除', style: TextStyle(color: Colors.red[700])),
+                Icon(Icons.delete_outline,
+                    size: 18, color: Colors.red[700]), // 图标
+                const SizedBox(width: 10), // 间距
+                Text('删除', style: TextStyle(color: Colors.red[700])), // 文本
               ],
             ),
           ),
-
-        // 锁定/解锁选项
-        if (canShowLock)
+        if (canShowLock) // 显示锁定/解锁选项
           StylishMenuItemData(
             value: 'toggle_lock',
             child: Row(
@@ -335,14 +308,14 @@ class BasePostCard extends StatelessWidget {
                 Icon(
                   post.status == PostStatus.locked
                       ? Icons.lock_open_outlined
-                      : Icons.lock_outline,
-                  size: 18,
+                      : Icons.lock_outline, // 图标
+                  size: 18, // 大小
                   color: post.status == PostStatus.locked
                       ? Colors.green[700]
-                      : Colors.orange[800],
+                      : Colors.orange[800], // 颜色
                 ),
-                const SizedBox(width: 10),
-                Text(post.status == PostStatus.locked ? '解锁' : '锁定'),
+                const SizedBox(width: 10), // 间距
+                Text(post.status == PostStatus.locked ? '解锁' : '锁定'), // 文本
               ],
             ),
           ),
@@ -351,32 +324,31 @@ class BasePostCard extends StatelessWidget {
   }
 
   /// 处理菜单项选择。
-  /// 调用回调前检查 null。
+  ///
+  /// [context]：Build 上下文。
+  /// [value]：选中项的值。
+  /// 根据选中项的值调用相应的操作回调。
   void _handleMenuItemSelected(BuildContext context, String value) async {
     if (value == 'edit') {
       if (onEditAction != null) {
-        onEditAction!(post);
+        onEditAction!(post); // 执行编辑回调
       }
     } else if (value == 'delete') {
       final callback = onDeleteAction;
       if (callback != null) {
         try {
-          await callback(post);
+          await callback(post); // 执行删除回调
         } catch (e) {
-          // 处理错误
+          // 错误处理
         }
       }
     } else if (value == 'toggle_lock') {
       final callback = onToggleLockAction;
       if (callback != null) {
         try {
-          await callback(post.id.toString());
-          // 操作成功后，父组件需要刷新列表或更新状态
+          await callback(post.id.toString()); // 执行切换锁定回调
         } catch (e) {
-          // 处理错误
-          if (context.mounted) {
-            // 显示错误 Snackbar
-          }
+          // 错误处理
         }
       }
     }

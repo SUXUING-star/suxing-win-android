@@ -1,32 +1,53 @@
 // lib/widgets/components/screen/forum/post/layout/post_detail_layout.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/post/user_post_actions.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/post_service.dart';
-import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/community_guidelines.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/post_content.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/recent_global_replies.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/reply/post_replies_list_item.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 
+/// 该文件定义了 PostDetailLayout 组件，一个用于展示帖子详情的布局。
+/// PostDetailLayout 根据桌面或移动端布局，组织帖子内容、社区指南、最新回复和评论列表。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
+import 'package:suxingchahui/models/post/user_post_actions.dart'; // 导入用户帖子操作模型
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
+import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
+import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/widgets/components/screen/forum/post/section/community_guidelines.dart'; // 导入社区指南组件
+import 'package:suxingchahui/widgets/components/screen/forum/post/content/post_content.dart'; // 导入帖子内容组件
+import 'package:suxingchahui/widgets/components/screen/forum/post/section/recent_global_replies.dart'; // 导入最新全局回复组件
+import 'package:suxingchahui/widgets/components/screen/forum/post/reply/post_replies_list_item.dart'; // 导入帖子回复列表项组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
+
+/// `PostDetailLayout` 类：帖子详情布局组件。
+///
+/// 该组件根据桌面或移动端布局，组织帖子内容、社区指南、最新全局回复和帖子回复列表。
 class PostDetailLayout extends StatelessWidget {
-  final bool isDesktop;
-  final Post post;
-  final UserFollowService followService;
-  final UserInfoProvider infoProvider;
-  final Function(BuildContext context, String tagString)? onTagTap;
-  final InputStateService inputStateService;
-  final PostService postService;
-  final AuthProvider authProvider;
-  final UserPostActions userActions;
-  final String postId;
-  final Function(Post, UserPostActions) onPostUpdated;
+  final bool isDesktop; // 是否为桌面布局
+  final Post post; // 帖子数据
+  final UserFollowService followService; // 用户关注服务
+  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final Function(BuildContext context, String tagString)? onTagTap; // 标签点击回调
+  final InputStateService inputStateService; // 输入状态 Provider
+  final PostService postService; // 帖子服务
+  final AuthProvider authProvider; // 认证 Provider
+  final UserPostActions userActions; // 用户帖子操作
+  final String postId; // 帖子 ID
+  final Function(Post, UserPostActions) onPostUpdated; // 帖子更新回调
 
+  /// 构造函数。
+  ///
+  /// [isDesktop]：是否桌面。
+  /// [post]：帖子数据。
+  /// [followService]：关注服务。
+  /// [infoProvider]：用户信息 Provider。
+  /// [onTagTap]：标签点击回调。
+  /// [inputStateService]：输入状态 Provider。
+  /// [postService]：帖子服务。
+  /// [authProvider]：认证 Provider。
+  /// [userActions]：用户操作。
+  /// [postId]：帖子ID。
+  /// [onPostUpdated]：帖子更新回调。
   const PostDetailLayout({
     super.key,
     required this.isDesktop,
@@ -42,104 +63,132 @@ class PostDetailLayout extends StatelessWidget {
     required this.onPostUpdated,
   });
 
-  // --- Section Builder Methods ---
-
+  /// 构建帖子内容区域。
+  ///
+  /// [duration]：动画时长。
+  /// [delay]：动画延迟。
+  /// [key]：组件键。
   Widget _buildPostContentSection(Duration duration, Duration delay, Key key) {
     return FadeInSlideUpItem(
-      key: key,
-      duration: duration,
-      delay: delay,
+      key: key, // 组件键
+      duration: duration, // 动画时长
+      delay: delay, // 动画延迟
       child: PostContent(
-        onTagTap: onTagTap,
-        postService: postService,
-        infoProvider: infoProvider,
-        followService: followService,
-        currentUser: authProvider.currentUser,
-        userActions: userActions,
-        post: post,
-        onPostUpdated: onPostUpdated,
+        onTagTap: onTagTap, // 标签点击回调
+        postService: postService, // 帖子服务
+        infoProvider: infoProvider, // 用户信息 Provider
+        followService: followService, // 关注服务
+        currentUser: authProvider.currentUser, // 当前用户
+        userActions: userActions, // 用户操作
+        post: post, // 帖子数据
+        onPostUpdated: onPostUpdated, // 帖子更新回调
       ),
     );
   }
 
+  /// 构建社区指南区域。
+  ///
+  /// [duration]：动画时长。
+  /// [delay]：动画延迟。
+  /// [key]：组件键。
   Widget _buildCommunityGuidelinesSection(
       Duration duration, Duration delay, Key key) {
     return FadeInItem(
-      key: key,
-      duration: duration,
-      delay: delay,
-      child: const CommunityGuidelines(useSeparateCard: true),
+      key: key, // 组件键
+      duration: duration, // 动画时长
+      delay: delay, // 动画延迟
+      child: const CommunityGuidelines(useSeparateCard: true), // 社区指南组件
     );
   }
 
+  /// 构建最新全局回复区域。
+  ///
+  /// [duration]：动画时长。
+  /// [delay]：动画延迟。
+  /// [key]：组件键。
   Widget _buildRecentGlobalRepliesSection(
       Duration duration, Duration delay, Key key) {
     return FadeInItem(
-      key: key,
-      duration: duration,
-      delay: delay,
+      key: key, // 组件键
+      duration: duration, // 动画时长
+      delay: delay, // 动画延迟
       child: RecentGlobalReplies(
-        infoProvider: infoProvider,
-        followService: followService,
-        limit: 5,
-        post: post,
-        currentUser: authProvider.currentUser,
-        postService: postService,
+        infoProvider: infoProvider, // 用户信息 Provider
+        followService: followService, // 关注服务
+        limit: 5, // 限制数量
+        post: post, // 帖子数据
+        currentUser: authProvider.currentUser, // 当前用户
+        postService: postService, // 帖子服务
       ),
     );
   }
 
+  /// 构建帖子回复列表区域。
+  ///
+  /// [duration]：动画时长。
+  /// [delay]：动画延迟。
+  /// [key]：组件键。
+  /// [isScrollableInternally]：是否内部可滚动。
   Widget _buildPostReplyListSection(Duration duration, Duration delay, Key key,
       {bool isScrollableInternally = false}) {
     return FadeInItem(
-      key: key,
-      duration: duration,
-      delay: delay,
+      key: key, // 组件键
+      duration: duration, // 动画时长
+      delay: delay, // 动画延迟
       child: PostRepliesListItem(
-        inputStateService: inputStateService,
-        currentUser: authProvider.currentUser,
-        followService: followService,
-        infoProvider: infoProvider,
-        postService: postService,
-        authProvider: authProvider,
-        postId: postId,
-        isScrollableInternally: isScrollableInternally, // For desktop layout
+        inputStateService: inputStateService, // 输入状态 Provider
+        currentUser: authProvider.currentUser, // 当前用户
+        followService: followService, // 关注服务
+        infoProvider: infoProvider, // 用户信息 Provider
+        postService: postService, // 帖子服务
+        authProvider: authProvider, // 认证 Provider
+        postId: postId, // 帖子 ID
+        isScrollableInternally: isScrollableInternally, // 是否内部可滚动
       ),
     );
   }
 
+  /// 构建帖子详情布局。
+  ///
+  /// [context]：Build 上下文。
+  /// [keyPrefix]：键前缀。
+  /// 根据 [isDesktop] 参数选择构建桌面或移动端布局。
   @override
   Widget build(BuildContext context) {
-    // 统一 key 前缀，确保 game.id 变化时整个内容区重建，触发动画
-    final String keyPrefix = 'post_detail_layout_${post.id}';
+    final String keyPrefix = 'post_detail_layout_${post.id}'; // 统一键前缀
 
     if (isDesktop) {
-      return _buildDesktopLayout(context, keyPrefix);
+      return _buildDesktopLayout(context, keyPrefix); // 构建桌面布局
     } else {
-      return _buildMobileLayout(context, keyPrefix);
+      return _buildMobileLayout(context, keyPrefix); // 构建移动端布局
     }
   }
 
+  /// 构建桌面布局。
+  ///
+  /// [context]：Build 上下文。
+  /// [keyPrefix]：键前缀。
   Widget _buildDesktopLayout(BuildContext context, String keyPrefix) {
-    const Duration primaryDuration = Duration(milliseconds: 400);
-    const Duration secondaryDuration = Duration(milliseconds: 350);
-    const Duration baseDelay = Duration(milliseconds: 50);
-    const Duration incrementDelay = Duration(milliseconds: 75);
-    int leftDelayIndex = 0;
-    int rightDelayIndex = 0;
+    const Duration primaryDuration = Duration(milliseconds: 400); // 主要动画时长
+    const Duration secondaryDuration = Duration(milliseconds: 350); // 次要动画时长
+    const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
+    const Duration incrementDelay = Duration(milliseconds: 75); // 延迟增量
+    int leftDelayIndex = 0; // 左侧延迟索引
+    int rightDelayIndex = 0; // 右侧延迟索引
 
-    final postContentKey = ValueKey('${keyPrefix}_post_content_desk');
-    final guidelinesKey = ValueKey('${keyPrefix}_guidelines_desk');
-    final recentRepliesKey = ValueKey('${keyPrefix}_recent_replies_desk');
-    final replyListKey = ValueKey('${keyPrefix}_reply_list_desk');
+    final postContentKey = ValueKey('${keyPrefix}_post_content_desk'); // 帖子内容键
+    final guidelinesKey = ValueKey('${keyPrefix}_guidelines_desk'); // 指南键
+    final recentRepliesKey =
+        ValueKey('${keyPrefix}_recent_replies_desk'); // 最新回复键
+    final replyListKey = ValueKey('${keyPrefix}_reply_list_desk'); // 回复列表键
 
     return Padding(
-      padding: const EdgeInsets.all(16.0),
+      padding: const EdgeInsets.all(16.0), // 内边距
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
         children: [
           Expanded(
-            flex: 4,
+            flex: 4, // 比例
             child: SingleChildScrollView(
               child: Column(
                 children: [
@@ -148,13 +197,13 @@ class PostDetailLayout extends StatelessWidget {
                     baseDelay + (incrementDelay * leftDelayIndex++),
                     postContentKey,
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 24), // 间距
                   _buildCommunityGuidelinesSection(
                     secondaryDuration,
                     baseDelay + (incrementDelay * leftDelayIndex++),
                     guidelinesKey,
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 16), // 间距
                   _buildRecentGlobalRepliesSection(
                     secondaryDuration,
                     baseDelay + (incrementDelay * leftDelayIndex++),
@@ -164,14 +213,12 @@ class PostDetailLayout extends StatelessWidget {
               ),
             ),
           ),
-          const VerticalDivider(width: 1),
+          const VerticalDivider(width: 1), // 垂直分隔线
           Expanded(
-            flex: 6,
+            flex: 6, // 比例
             child: Column(
               children: [
-                const SizedBox(
-                    height:
-                        16), // Placeholder for potential reply input above list
+                const SizedBox(height: 16), // 占位符
                 Expanded(
                   child: _buildPostReplyListSection(
                     secondaryDuration,
@@ -179,7 +226,7 @@ class PostDetailLayout extends StatelessWidget {
                         (incrementDelay * rightDelayIndex++) +
                         incrementDelay,
                     replyListKey,
-                    isScrollableInternally: true,
+                    isScrollableInternally: true, // 内部可滚动
                   ),
                 ),
               ],
@@ -190,15 +237,18 @@ class PostDetailLayout extends StatelessWidget {
     );
   }
 
+  /// 构建移动端布局。
+  ///
+  /// [context]：Build 上下文。
+  /// [keyPrefix]：键前缀。
   Widget _buildMobileLayout(BuildContext context, String keyPrefix) {
-    const Duration contentDuration = Duration(milliseconds: 400);
-    const Duration replyListDuration = Duration(milliseconds: 350);
-    const Duration baseDelay = Duration(milliseconds: 50);
-    const Duration replyDelay =
-        Duration(milliseconds: 150); // Delay for reply list after content
+    const Duration contentDuration = Duration(milliseconds: 400); // 内容动画时长
+    const Duration replyListDuration = Duration(milliseconds: 350); // 回复列表动画时长
+    const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
+    const Duration replyDelay = Duration(milliseconds: 150); // 回复列表延迟
 
-    final postContentKey = ValueKey('${keyPrefix}_post_content_mob');
-    final replyListKey = ValueKey('${keyPrefix}_reply_list_mob');
+    final postContentKey = ValueKey('${keyPrefix}_post_content_mob'); // 帖子内容键
+    final replyListKey = ValueKey('${keyPrefix}_reply_list_mob'); // 回复列表键
 
     return ListView(
       children: [
@@ -207,12 +257,11 @@ class PostDetailLayout extends StatelessWidget {
           baseDelay,
           postContentKey,
         ),
-        const Divider(height: 1),
+        const Divider(height: 1), // 分隔线
         _buildPostReplyListSection(
           replyListDuration,
           baseDelay + replyDelay,
           replyListKey,
-          // isScrollableInternally for mobile PostReplyList is typically false, handled by outer ListView
         ),
       ],
     );

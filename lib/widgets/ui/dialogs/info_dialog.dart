@@ -1,16 +1,33 @@
 // lib/widgets/ui/dialogs/info_dialog.dart
-import 'package:flutter/material.dart';
-import 'dart:async';
-import 'base_input_dialog.dart'; // 导入基类
 
-/// 自定义信息对话框 Widget
-/// *** 现在继承自 BaseInputDialog ***
+/// 该文件定义了 CustomInfoDialog 类，用于显示自定义信息对话框。
+/// CustomInfoDialog 封装了 BaseInputDialog，提供了简洁的信息提示接口。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'dart:async'; // 异步操作所需
+import 'base_input_dialog.dart'; // 导入基础输入对话框
+
+/// `CustomInfoDialog` 类：自定义信息对话框组件。
+///
+/// 该类继承自 BaseInputDialog，用于显示信息提示，并支持关闭操作。
 class CustomInfoDialog extends BaseInputDialog<bool> {
-  final VoidCallback? onClose;
+  final VoidCallback? onClose; // 关闭对话框时的回调
 
-  // *** 构造函数调用 super，并传递交互参数 ***
-  // 注意：这个私有构造函数现在主要由内部或测试使用。
-  // 公共 API 是静态 show 方法。默认值应在 show 方法中设置。
+  /// 私有构造函数。
+  ///
+  /// [title]：标题。
+  /// [message]：消息。
+  /// [closeButtonText]：关闭按钮文本。
+  /// [onClose]：关闭回调。
+  /// [iconData]：图标。
+  /// [iconColor]：图标颜色。
+  /// [closeButtonColor]：关闭按钮颜色。
+  /// [dismissibleWhenNotProcessing]：非处理中时是否可关闭。
+  /// [isDraggable]：是否可拖拽。
+  /// [isScalable]：是否可缩放。
+  /// [minScale]：最小缩放比例。
+  /// [maxScale]：最大缩放比例。
   CustomInfoDialog._({
     required String title,
     required String message,
@@ -20,71 +37,78 @@ class CustomInfoDialog extends BaseInputDialog<bool> {
     Color iconColor = Colors.blue,
     Color? closeButtonColor,
     bool dismissibleWhenNotProcessing = true,
-    // --- 交互参数从 show 方法传入 ---
-    required bool isDraggable, // 改为 required，因为默认值在 show 设置
-    required bool isScalable, // 改为 required
+    required bool isDraggable,
+    required bool isScalable,
     double minScale = 0.7,
     double maxScale = 2.0,
-    // ---------------
     Key? key,
   }) : super(
-    key: key,
-    title: title,
-    contentBuilder: (context) {
-      final theme = Theme.of(context);
-      final bodyMedium = theme.textTheme.bodyMedium ?? const TextStyle();
-      return Text(
-        message,
-        textAlign: TextAlign.center,
-        style: bodyMedium.copyWith(
-          height: 1.5,
-          color: Colors.black54,
-        ),
-      );
-    },
-    onConfirm: () async {
-      onClose?.call();
-      return true;
-    },
-    confirmButtonText: closeButtonText,
-    confirmButtonColor: closeButtonColor,
-    showCancelButton: false,
-    iconData: iconData,
-    iconColor: iconColor,
-    dismissibleWhenNotProcessing: dismissibleWhenNotProcessing,
-    onCancel: () {
-      onClose?.call();
-    },
-    // --- 传递交互参数给 super ---
-    isDraggable: isDraggable,
-    isScalable: isScalable,
-    minScale: minScale,
-    maxScale: maxScale,
-    // -----------------------
-  );
+          key: key,
+          title: title,
+          contentBuilder: (context) {
+            final theme = Theme.of(context);
+            final bodyMedium = theme.textTheme.bodyMedium ?? const TextStyle();
+            return Text(
+              message, // 消息文本
+              textAlign: TextAlign.center, // 文本居中
+              style: bodyMedium.copyWith(
+                height: 1.5,
+                color: Colors.black54,
+              ),
+            );
+          },
+          onConfirm: () async {
+            onClose?.call(); // 调用关闭回调
+            return true; // 返回 true 关闭对话框
+          },
+          confirmButtonText: closeButtonText, // 确认按钮文本
+          confirmButtonColor: closeButtonColor, // 确认按钮颜色
+          showCancelButton: false, // 不显示取消按钮
+          iconData: iconData, // 图标
+          iconColor: iconColor, // 图标颜色
+          dismissibleWhenNotProcessing: dismissibleWhenNotProcessing, // 可点击外部关闭
+          onCancel: () {
+            onClose?.call(); // 调用关闭回调
+          },
+          isDraggable: isDraggable, // 传递拖拽参数
+          isScalable: isScalable, // 传递缩放参数
+          minScale: minScale, // 传递最小缩放比例
+          maxScale: maxScale, // 传递最大缩放比例
+        );
 
-  /// 显示自定义信息对话框的静态方法
-  /// *** 现在调用 BaseInputDialog.show ***
+  /// 显示自定义信息对话框。
+  ///
+  /// [context]：Build 上下文。
+  /// [title]：对话框标题。
+  /// [message]：对话框消息。
+  /// [isDraggable]：是否可拖拽。
+  /// [isScalable]：是否可缩放。
+  /// [minScale]：最小缩放比例。
+  /// [maxScale]：最大缩放比例。
+  /// [closeButtonText]：关闭按钮文本。
+  /// [onClose]：关闭操作回调。
+  /// [iconData]：对话框图标。
+  /// [iconColor]：图标颜色。
+  /// [closeButtonColor]：关闭按钮颜色。
+  /// [barrierDismissible]：是否可点击外部关闭。
+  /// [maxWidth]：对话框最大宽度。
+  /// 返回一个 Future，表示对话框关闭。
   static Future<void> show({
     required BuildContext context,
     required String title,
     required String message,
-    // --- 设置交互参数的默认值 ---
-    bool isDraggable = true, // <<--- 默认允许拖拽
-    bool isScalable = false, // <<--- 默认不允许缩放
-    double minScale = 0.7,   // 默认值
-    double maxScale = 2.0,   // 默认值
-    // ---------------------------
+    bool isDraggable = true,
+    bool isScalable = false,
+    double minScale = 0.7,
+    double maxScale = 2.0,
     String closeButtonText = '好的',
     VoidCallback? onClose,
     IconData iconData = Icons.info_outline,
     Color iconColor = Colors.blue,
     Color? closeButtonColor,
     bool barrierDismissible = true,
-    // 动画参数不再需要传递，由 BaseInputDialog.show 内部处理
     double maxWidth = 300,
   }) async {
-    // 调用基类的 show 方法，并传递所有参数
     await BaseInputDialog.show<bool>(
       context: context,
       title: title,
@@ -92,8 +116,8 @@ class CustomInfoDialog extends BaseInputDialog<bool> {
         final theme = Theme.of(context);
         final bodyMedium = theme.textTheme.bodyMedium ?? const TextStyle();
         return Text(
-          message,
-          textAlign: TextAlign.center,
+          message, // 消息文本
+          textAlign: TextAlign.center, // 文本居中
           style: bodyMedium.copyWith(
             height: 1.5,
             color: Colors.black54,
@@ -101,28 +125,24 @@ class CustomInfoDialog extends BaseInputDialog<bool> {
         );
       },
       onConfirm: () async {
-        onClose?.call();
-        return true; // 返回 true 让 BaseInputDialog 关闭
+        onClose?.call(); // 调用关闭回调
+        return true; // 返回 true 关闭对话框
       },
-      confirmButtonText: closeButtonText,
-      confirmButtonColor: closeButtonColor,
-      iconData: iconData,
-      iconColor: iconColor,
-      showCancelButton: false,
-      barrierDismissible: barrierDismissible,
+      confirmButtonText: closeButtonText, // 确认按钮文本
+      confirmButtonColor: closeButtonColor, // 确认按钮颜色
+      iconData: iconData, // 图标
+      iconColor: iconColor, // 图标颜色
+      showCancelButton: false, // 不显示取消按钮
+      barrierDismissible: barrierDismissible, // 可点击外部关闭
       allowDismissWhenNotProcessing: barrierDismissible, // 保持一致
-      maxWidth: maxWidth,
+      maxWidth: maxWidth, // 最大宽度
       onCancel: () {
-        onClose?.call();
-        // BaseInputDialog 的 show 方法会处理 completer，这里不需要再 complete
+        onClose?.call(); // 调用关闭回调
       },
-      // --- 传递交互参数给 BaseInputDialog.show ---
-      isDraggable: isDraggable, // 传递从 show 方法接收或默认的值
-      isScalable: isScalable, // 传递从 show 方法接收或默认的值
-      minScale: minScale,
-      maxScale: maxScale,
-      // -------------------------------------
+      isDraggable: isDraggable, // 传递拖拽参数
+      isScalable: isScalable, // 传递缩放参数
+      minScale: minScale, // 传递最小缩放比例
+      maxScale: maxScale, // 传递最大缩放比例
     );
-    // 不需要返回 BaseInputDialog.show 的结果 (true/null)，所以是 Future<void>
   }
 }

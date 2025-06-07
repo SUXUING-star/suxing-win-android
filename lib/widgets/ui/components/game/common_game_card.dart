@@ -8,8 +8,8 @@ import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.d
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
-/// 基础游戏卡片组件，提供共享的UI结构和功能
-///
+/// 常规游戏卡片组件，提供共享的UI结构和功能
+/// 注：对比BaseGameCard这个卡片更在于展示，调用方不需要考虑过多的东西
 /// 该类实现了横向和网格两种布局模式的游戏卡片，子类可以通过重写特定方法来定制行为
 class CommonGameCard extends StatelessWidget {
   final Game game;
@@ -112,13 +112,6 @@ class CommonGameCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: _buildCategoryTag(context),
-                  ),
-
-                  // 右上角操作区域（由子类实现）
-                  Positioned(
-                    top: 8,
-                    right: 8,
-                    child: _buildGridTopRightAction(context),
                   ),
 
                   // 统计信息
@@ -225,7 +218,6 @@ class CommonGameCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            _buildListTopRightAction(context),
           ],
         ),
 
@@ -403,15 +395,5 @@ class CommonGameCard extends StatelessWidget {
       AppRoutes.gameDetail,
       arguments: game,
     );
-  }
-
-  // 列表布局右上角操作区域 - 子类重写
-  Widget _buildListTopRightAction(BuildContext context) {
-    return const SizedBox.shrink(); // 默认不显示任何内容
-  }
-
-  // 网格布局右上角操作区域 - 子类重写
-  Widget _buildGridTopRightAction(BuildContext context) {
-    return const SizedBox.shrink(); // 默认不显示任何内容
   }
 }

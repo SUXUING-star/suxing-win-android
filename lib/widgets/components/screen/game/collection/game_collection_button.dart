@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/collection/game_collection_button.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
@@ -174,7 +175,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
 
           // 调用 Service
           final (item, returnedStatus) = await widget.gameCollectionService
-              .setGameCollection(widget.game.id, status,oldStatus?.status,
+              .setGameCollection(widget.game.id, status, oldStatus?.status,
                   notes: notes, review: review, rating: rating);
 
           if (item != null && returnedStatus == status) {
@@ -183,9 +184,9 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
             countDeltas =
                 _calculateCountDeltas(oldStatus?.status, finalNewStatus.status);
 
-            showSnackbar(message: '收藏状态已更新', type: SnackbarType.success);
+            showSnackBar(message: '收藏状态已更新', type: SnackBarType.success);
           } else {
-            showSnackbar(message: "更新失败", type: SnackbarType.error);
+            showSnackBar(message: "更新失败", type: SnackBarType.error);
             throw Exception("更新收藏失败");
           }
         } else if (action == 'remove') {
@@ -196,9 +197,9 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
             finalNewStatus = null; // API 调用成功，新状态为 null
             // *** 计算增量 ***
             countDeltas = _calculateCountDeltas(oldStatus?.status, null);
-            showSnackbar(message: '已从收藏中移除', type: SnackbarType.success);
+            showSnackBar(message: '已从收藏中移除', type: SnackBarType.success);
           } else {
-            showSnackbar(message: "移除收藏失败", type: SnackbarType.error);
+            showSnackBar(message: "移除收藏失败", type: SnackBarType.error);
             throw Exception("移除收藏失败");
           }
         }
@@ -219,9 +220,9 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         // 统一处理 Service 调用失败或解析失败的异常
         // print(
         //     'GameCollectionButton (${widget.game.id}): Operation error in dialog handler: $e');
-        showSnackbar(
+        showSnackBar(
             message: '操作失败: ${e.toString().split(':').last.trim()}',
-            type: SnackbarType.error);
+            type: SnackBarType.error);
       } finally {
         // *** 无论成功失败，结束加载状态 ***
         if (mounted) {
@@ -338,55 +339,28 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
 
   // 构建显示当前收藏状态的按钮 (_buildCollectionStatusButton) - 无变化
   Widget _buildCollectionStatusButton(String status, ThemeData theme) {
-    Color backgroundColor;
-    Color textColor;
-    IconData iconData;
-    String statusText;
-
-    switch (status) {
-      case GameCollectionStatus.wantToPlay:
-        backgroundColor = Color(0xFFE6F0FF);
-        textColor = Color(0xFF3D8BFF);
-        iconData = Icons.star_border;
-        statusText = '想玩';
-        break;
-      case GameCollectionStatus.playing:
-        backgroundColor = Color(0xFFE8F5E9);
-        textColor = Color(0xFF4CAF50);
-        iconData = Icons.sports_esports;
-        statusText = '在玩';
-        break;
-      case GameCollectionStatus.played:
-        backgroundColor = Color(0xFFF3E5F5);
-        textColor = Color(0xFF9C27B0);
-        iconData = Icons.check_circle_outline;
-        statusText = '玩过';
-        break;
-      default:
-        backgroundColor = Colors.grey[100]!;
-        textColor = Colors.grey[700]!;
-        iconData = Icons.bookmark_border;
-        statusText = '状态未知';
-    }
+    // 直接调用工具类，一行搞定
+    final statusTheme = GameCollectionStatusUtils.getTheme(status);
 
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
             ? LoadingWidget.inline(size: 12, message: "正在加载")
-            : Icon(iconData, color: textColor),
-        tooltip: _isLoading ? '处理中...' : statusText,
+            : Icon(statusTheme.icon, color: statusTheme.textColor),
+        tooltip: _isLoading ? '处理中...' : statusTheme.text,
         onPressed: _isLoading ? null : _showCollectionDialog,
       );
     } else {
       return OutlinedButton.icon(
         icon: _isLoading
             ? LoadingWidget.inline(size: 12, message: "正在加载")
-            : Icon(iconData, size: 18),
-        label: Text(_isLoading ? '处理中...' : statusText),
+            : Icon(statusTheme.icon, size: 18),
+        label: Text(_isLoading ? '处理中...' : statusTheme.text),
         style: OutlinedButton.styleFrom(
-          foregroundColor: textColor,
-          backgroundColor: backgroundColor,
-          side: BorderSide(color: textColor.withSafeOpacity(0.5), width: 1),
+          foregroundColor: statusTheme.textColor,
+          backgroundColor: statusTheme.backgroundColor,
+          side: BorderSide(
+              color: statusTheme.textColor.withSafeOpacity(0.5), width: 1),
           padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           shape:
               RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),

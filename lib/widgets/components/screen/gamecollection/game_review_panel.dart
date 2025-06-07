@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/gamecollection/game_review_panel.dart
 import 'package:flutter/material.dart';
-import 'dart:ui'; // For ImageFilter.blur
+import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'dart:ui';
 
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
@@ -119,30 +120,12 @@ class GameReviewPanel extends StatelessWidget {
   // 构建我的收藏状态及更新时间部分
   Widget _buildMyCollectionStatus(
       BuildContext context, GameCollectionItem collectionItem) {
-    String statusLabel;
-    IconData statusIcon;
-    Color statusColor;
-    switch (collectionItem.status) {
-      case GameCollectionStatus.wantToPlay:
-        statusLabel = '想玩';
-        statusIcon = Icons.bookmark_border_rounded;
-        statusColor = Colors.blueAccent.shade400;
-        break;
-      case GameCollectionStatus.playing:
-        statusLabel = '在玩';
-        statusIcon = Icons.sports_esports_outlined;
-        statusColor = Colors.orangeAccent.shade400;
-        break;
-      case GameCollectionStatus.played:
-        statusLabel = '玩过';
-        statusIcon = Icons.check_circle_outline_rounded;
-        statusColor = Colors.green.shade600;
-        break;
-      default:
-        statusLabel = '未知';
-        statusIcon = Icons.help_outline_rounded;
-        statusColor = Colors.grey.shade600;
-    }
+    // 从统一的工具类获取主题
+    final statusTheme =
+        GameCollectionStatusUtils.getTheme(collectionItem.status);
+    final statusLabel = statusTheme.text;
+    final statusIcon = statusTheme.icon;
+    final statusColor = statusTheme.textColor;
 
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;

@@ -1,5 +1,6 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_nav_item.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class DesktopSidebarNavItem extends StatelessWidget {
@@ -19,13 +20,7 @@ class DesktopSidebarNavItem extends StatelessWidget {
   });
 
   // Define icon background colors for each nav item
-  static final List<Color> _navItemColors = [
-    Color(0xFF4CAF50), // Home - Green
-    Color(0xFFE91E63), // Games - Pink
-    Color(0xFF9C27B0), // Forum - Purple
-    Color(0xFFFF9800), // Activity - Orange
-    Color(0xFF03A9F4), // External - Blue
-  ];
+  static final List<Color> _navItemColors = GlobalConstants.defaultNavPageColors;
 
   Color get _navItemColor =>
       index < _navItemColors.length ? _navItemColors[index] : Colors.grey;

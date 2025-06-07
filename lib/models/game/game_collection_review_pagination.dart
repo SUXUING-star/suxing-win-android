@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
 
 class GameCollectionReviewPagination {
-  final List<GameCollectionReview> reviews;
+  final List<GameCollectionReviewEntry> reviews;
   final PaginationData pagination;
   final String gameId;
 
@@ -25,19 +25,19 @@ class GameCollectionReviewPagination {
   }
 
   factory GameCollectionReviewPagination.fromJson(Map<String, dynamic> json) {
-    List<GameCollectionReview> reviewsList = [];
+    List<GameCollectionReviewEntry> reviewsList = [];
     if (json['reviews'] != null && json['reviews'] is List) {
       reviewsList = (json['reviews'] as List)
           .map((r) {
             try {
-              return GameCollectionReview.fromJson(
+              return GameCollectionReviewEntry.fromJson(
                   Map<String, dynamic>.from(r));
             } catch (e) {
               // print('Error parsing GameCollectionReview from JSON: $entryJson, error: $e');
               return null; // 解析失败则返回 null
             }
           })
-          .whereType<GameCollectionReview>() // 过滤掉解析失败的 null
+          .whereType<GameCollectionReviewEntry>() // 过滤掉解析失败的 null
           .toList();
     }
 
@@ -78,7 +78,7 @@ class GameCollectionReviewPagination {
   }
 
   GameCollectionReviewPagination copyWith({
-    List<GameCollectionReview>? entries,
+    List<GameCollectionReviewEntry>? entries,
     PaginationData? pagination,
     String? gameId,
   }) {

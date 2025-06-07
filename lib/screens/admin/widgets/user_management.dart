@@ -263,12 +263,12 @@ class _UserManagementState extends State<UserManagement>
                       if (mounted) {
                         _refreshUserList();
                       }
-                      showSnackbar(
+                      showSnackBar(
                           message: '已解除用户 ${user['username']} 的封禁',
-                          type: SnackbarType.success);
+                          type: SnackBarType.success);
                     } catch (e) {
-                      showSnackbar(
-                          message: '操作失败：$e', type: SnackbarType.error);
+                      showSnackBar(
+                          message: '操作失败：$e', type: SnackBarType.error);
                     } finally {
                       if (mounted) setState(() => _loading = false);
                     }
@@ -416,14 +416,14 @@ class _UserManagementState extends State<UserManagement>
                                             .updateUserAdminStatus(
                                                 userId, value); // 使用 userId
                                         _refreshUserList(); // 刷新整个列表
-                                        showSnackbar(
+                                        showSnackBar(
                                             message:
                                                 '用户 ${user['username']} 已${value ? '设置' : '取消'}管理员',
-                                            type: SnackbarType.success);
+                                            type: SnackBarType.success);
                                       } catch (e) {
-                                        showSnackbar(
+                                        showSnackBar(
                                             message: '操作失败: $e',
-                                            type: SnackbarType.error);
+                                            type: SnackBarType.error);
                                       } finally {
                                         if (mounted) {
                                           setState(() => _loading = false);

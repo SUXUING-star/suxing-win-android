@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:provider/provider.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
-import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/components/maintenance_display.dart';
 import 'package:suxingchahui/services/main/maintenance/maintenance_checker_service.dart';

@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/game/collection/game_collection_section.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
@@ -103,44 +104,32 @@ class GameCollectionSection extends StatelessWidget {
               Expanded(
                 child: _buildStatContainer(
                   context,
-                  Icons.star_border,
-                  '想玩',
+                  GameCollectionStatusUtils.wantToPlayTheme,
                   wantToPlayCount,
-                  const Color(0xFF3D8BFF),
-                  const Color(0xFFE6F0FF),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatContainer(
                   context,
-                  Icons.sports_esports,
-                  '在玩',
+                  GameCollectionStatusUtils.playingTheme,
                   playingCount,
-                  const Color(0xFF4CAF50),
-                  const Color(0xFFE8F5E9),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatContainer(
                   context,
-                  Icons.check_circle_outline,
-                  '玩过',
+                  GameCollectionStatusUtils.playedTheme,
                   playedCount,
-                  const Color(0xFF9C27B0),
-                  const Color(0xFFF3E5F5),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: _buildStatContainer(
                   context,
-                  Icons.star,
-                  '评分',
+                  GameCollectionStatusUtils.ratingDisplayTheme,
                   formattedRating,
-                  Colors.orange.shade700,
-                  Colors.orange.shade50,
                 ),
               ),
             ],
@@ -170,18 +159,16 @@ class GameCollectionSection extends StatelessWidget {
     );
   }
 
+  // 构建单个统计信息展示块，使用传入的主题和数值
   Widget _buildStatContainer(
     BuildContext context,
-    IconData icon,
-    String label,
+    GameCollectionStatusTheme theme,
     dynamic value,
-    Color iconColor,
-    Color backgroundColor,
   ) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 4),
       decoration: BoxDecoration(
-          color: backgroundColor, borderRadius: BorderRadius.circular(8)),
+          color: theme.backgroundColor, borderRadius: BorderRadius.circular(8)),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -192,16 +179,18 @@ class GameCollectionSection extends StatelessWidget {
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                      color: iconColor.withSafeOpacity(0.2),
+                      color: theme.textColor.withSafeOpacity(0.2),
                       blurRadius: 4,
                       offset: const Offset(0, 2))
                 ]),
-            child: Icon(icon, color: iconColor, size: 24),
+            child: Icon(theme.icon, color: theme.textColor, size: 24),
           ),
           const SizedBox(height: 8),
-          Text(label,
+          Text(theme.text,
               style: TextStyle(
-                  color: iconColor, fontWeight: FontWeight.bold, fontSize: 14),
+                  color: theme.textColor,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14),
               overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
           Text(value.toString(),

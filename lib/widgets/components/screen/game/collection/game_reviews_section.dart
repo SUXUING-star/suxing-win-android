@@ -35,7 +35,7 @@ class GameReviewSection extends StatefulWidget {
 }
 
 class GameReviewSectionState extends State<GameReviewSection> {
-  List<GameCollectionReview> _reviews = [];
+  List<GameCollectionReviewEntry> _reviews = [];
   PaginationData? _paginationData;
   bool _isLoading = true;
   String? _error;

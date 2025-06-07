@@ -93,8 +93,8 @@ class _EditGameScreenState extends State<EditGameScreen>
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      showSnackbar(
-          message: '加载帖子数据失败: ${e.toString()}', type: SnackbarType.error);
+      showSnackBar(
+          message: '加载帖子数据失败: ${e.toString()}', type: SnackBarType.error);
     }
   }
 
@@ -118,9 +118,9 @@ class _EditGameScreenState extends State<EditGameScreen>
       if (!mounted) return;
       // API 调用失败，GameForm 内部通常会显示一个即时的错误 SnackBar
       // _EditGameScreenState 可以在这里显示一个更具体的错误提示或执行其他错误处理
-      showSnackbar(
+      showSnackBar(
           message: '操作失败: ${e.toString().replaceFirst("Exception: ", "")}',
-          type: SnackbarType.error);
+          type: SnackBarType.error);
     }
   }
 

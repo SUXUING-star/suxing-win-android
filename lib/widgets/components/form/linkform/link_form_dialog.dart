@@ -1,7 +1,6 @@
 // lib/widgets/components/form/linkform/link_form_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/widgets/ui/buttons/app_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
 import 'package:suxingchahui/models/linkstools/site_link.dart';
@@ -154,9 +153,9 @@ class _LinkFormDialogState extends State<LinkFormDialog> {
         ),
       ),
       actions: [
-        AppButton(
+        FunctionalButton(
           onPressed: () => Navigator.pop(context),
-          text: '取消',
+          label: '取消',
         ),
         FunctionalButton(
           onPressed: () {

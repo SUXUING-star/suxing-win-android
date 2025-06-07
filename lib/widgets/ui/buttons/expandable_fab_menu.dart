@@ -2,8 +2,6 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 
-// 可以继续使用你的 GenericFloatingActionButton
-// import 'generic_fab.dart';
 
 const _fabDimension = 56.0; // Standard FAB size
 

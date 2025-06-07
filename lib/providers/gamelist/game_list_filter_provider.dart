@@ -1,97 +1,113 @@
 // lib/providers/gamelist/game_list_filter_provider.dart
-import 'package:flutter/foundation.dart';
 
+/// 该文件定义了 GameListFilterProvider，一个管理游戏列表筛选器状态的 ChangeNotifier。
+/// GameListFilterProvider 控制游戏列表的选中标签和选中分类。
+library;
+
+import 'package:flutter/foundation.dart'; // 导入 Flutter 基础工具，提供 ChangeNotifier 功能
+
+/// `GameListFilterProvider` 类：管理游戏列表筛选器状态的 Provider。
+///
+/// 该类提供游戏列表的标签和分类筛选状态。
 class GameListFilterProvider with ChangeNotifier {
-  String? _selectedTag;
-  bool _tagHasBeenSet = false;
+  String? _selectedTag; // 当前选中的标签字符串
+  bool _tagHasBeenSet = false; // 标签是否已被显式设置的标记
 
-  String? _selectedCategory;
-  bool _categoryHasBeenSet = false;
+  String? _selectedCategory; // 当前选中的分类字符串
+  bool _categoryHasBeenSet = false; // 分类是否已被显式设置的标记
 
-  // --- Getters ---
+  // --- 获取器 ---
+  /// 获取当前选中的标签字符串。
   String? get selectedTag => _selectedTag;
+
+  /// 获取标签是否已被设置的标记。
   bool get tagHasBeenSet => _tagHasBeenSet;
 
+  /// 获取当前选中的分类字符串。
   String? get selectedCategory => _selectedCategory;
+
+  /// 获取分类是否已被设置的标记。
   bool get categoryHasBeenSet => _categoryHasBeenSet;
 
-  // --- Setters (包含互斥逻辑) ---
+  // --- 设置器 (包含互斥逻辑) ---
 
-  /// 设置选中的标签。如果设置了非 null 的标签，会自动清除选中的分类。
+  /// 设置选中的标签。
+  ///
+  /// [newTag]：新的标签字符串。
+  /// 只有当新标签与当前标签不同时才更新。
+  /// 设置非空标签时，自动清除选中的分类。
   void setTag(String? newTag) {
-    // 只有当新标签与当前标签不同时才更新
     if (_selectedTag != newTag) {
-      // print('GameListFilterProvider: Setting tag to -> $newTag');
-      _selectedTag = newTag;
-      _tagHasBeenSet = true; // 标记 Tag 已设置
+      // 检查新标签是否与当前标签不同
+      _selectedTag = newTag; // 更新标签
+      _tagHasBeenSet = true; // 设置标签已设置标记
 
-      // *** 互斥逻辑: 设置 Tag 时清除 Category ***
       if (newTag != null && _selectedCategory != null) {
-        // print('GameListFilterProvider: Clearing category because tag was set.');
-        _selectedCategory = null;
-        _categoryHasBeenSet = false; // 分类被清除了，重置标记
+        // 设置非空标签时清除分类
+        _selectedCategory = null; // 清除分类
+        _categoryHasBeenSet = false; // 重置分类已设置标记
       }
-      notifyListeners(); // 通知监听者
+      notifyListeners(); // 通知监听者状态已更新
     } else if (newTag != null && !_tagHasBeenSet) {
-      // 如果标签相同，但之前未被主动设置过，也标记为已设置
-      _tagHasBeenSet = true;
-      // 这里可能不需要 notifyListeners，因为值没变
-      //print('GameListFilterProvider: Tag "$newTag" re-confirmed.');
+      // 标签相同时，如果未被主动设置过，也标记为已设置
+      _tagHasBeenSet = true; // 设置标签已设置标记
     }
   }
 
-  /// 设置选中的分类。如果设置了非 null 的分类，会自动清除选中的标签。
+  /// 设置选中的分类。
+  ///
+  /// [newCategory]：新的分类字符串。
+  /// 只有当新分类与当前分类不同时才更新。
+  /// 设置非空分类时，自动清除选中的标签。
   void setCategory(String? newCategory) {
-    // 只有当新分类与当前分类不同时才更新
     if (_selectedCategory != newCategory) {
-      _selectedCategory = newCategory;
-      _categoryHasBeenSet = true; // 标记 Category 已设置
+      // 检查新分类是否与当前分类不同
+      _selectedCategory = newCategory; // 更新分类
+      _categoryHasBeenSet = true; // 设置分类已设置标记
 
-      // *** 互斥逻辑: 设置 Category 时清除 Tag ***
       if (newCategory != null && _selectedTag != null) {
-        _selectedTag = null;
-        _tagHasBeenSet = false; // 标签被清除了，重置标记
+        // 设置非空分类时清除标签
+        _selectedTag = null; // 清除标签
+        _tagHasBeenSet = false; // 重置标签已设置标记
       }
-      notifyListeners(); // 通知监听者
+      notifyListeners(); // 通知监听者状态已更新
     } else if (newCategory != null && !_categoryHasBeenSet) {
-      // 如果分类相同，但之前未被主动设置过，也标记为已设置
-      _categoryHasBeenSet = true;
-      //print('GameListFilterProvider: Category "$newCategory" re-confirmed.');
+      // 分类相同时，如果未被主动设置过，也标记为已设置
+      _categoryHasBeenSet = true; // 设置分类已设置标记
     }
   }
 
   // --- 清除方法 ---
 
-  /// 清除选中的标签 (不影响分类)。
+  /// 清除选中的标签。
   void clearTag() {
-    setTag(null);
+    setTag(null); // 调用 setTag(null) 清除标签
   }
 
-  /// 清除选中的分类 (不影响标签)。
+  /// 清除选中的分类。
   void clearCategory() {
-    setCategory(null);
+    setCategory(null); // 调用 setCategory(null) 清除分类
   }
 
   // --- 重置标记 ---
 
-  /// 重置 Tag 的 "已设置" 标记。当 UI 处理完 Tag 变化后调用。
+  /// 重置标签的 "已设置" 标记。
+  ///
+  /// 该方法不触发监听者通知。
   void resetTagFlag() {
-    //print("GameListFilterProvider: Resetting tag flag.");
-    _tagHasBeenSet = false;
-    // 注意：这里不调用 notifyListeners，因为它只是重置内部状态，不应触发 UI 重建
+    _tagHasBeenSet = false; // 重置标签已设置标记
   }
 
-  /// 重置 Category 的 "已设置" 标记。当 UI 处理完 Category 变化后调用。
+  /// 重置分类的 "已设置" 标记。
+  ///
+  /// 该方法不触发监听者通知。
   void resetCategoryFlag() {
-    //print("GameListFilterProvider: Resetting category flag.");
-    _categoryHasBeenSet = false;
-    // 注意：同样不调用 notifyListeners
+    _categoryHasBeenSet = false; // 重置分类已设置标记
   }
 
   /// 重置所有 "已设置" 标记。
   void resetFlags() {
-    //bool changed = _tagHasBeenSet || _categoryHasBeenSet;
-    _tagHasBeenSet = false;
-    _categoryHasBeenSet = false;
+    _tagHasBeenSet = false; // 重置标签已设置标记
+    _categoryHasBeenSet = false; // 重置分类已设置标记
   }
 }

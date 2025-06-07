@@ -38,12 +38,12 @@ class LinksToolsScreen extends StatefulWidget {
 
 class _LinksToolsScreenState extends State<LinksToolsScreen>
     with WidgetsBindingObserver {
-  // --- 数据状态 (保持不变) ---
+  // --- 数据状态 ---
   List<SiteLink>? _links;
   List<Tool>? _tools;
   String? _errorMessage;
 
-  // --- 懒加载核心状态 (保持不变) ---
+  // --- 懒加载核心状态  ---
   bool _isInitialized = false;
   bool _hasInitializedDependencies = false;
   bool _isVisible = false;
@@ -108,7 +108,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     WidgetsBinding.instance.removeObserver(this);
   }
 
-  // --- 核心：触发首次数据加载 (保持不变) ---
+  // --- 核心：触发首次数据加载  ---
   void _triggerInitialLoad() {
     // 逻辑完全不变
     if (_isVisible && !_isInitialized && mounted) {
@@ -152,21 +152,8 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
   }
 
-  // --- _launchURL (保持不变) ---
-  Future<void> _launchURL(BuildContext context, String url) async {
-    try {
-      final uri = Uri.parse(url);
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      } else {
-        //throw '无法打开链接 $url';
-      }
-    } catch (e) {
-      //print("Error launching URL $url: $e");
-    }
-  }
 
-  // --- _showAddLinkDialog (保持不变, 调用 _loadData 时不传参数) ---
+  // --- _showAddLinkDialog ---
   void _showAddLinkDialog(BuildContext context) {
     if (!_checkCanEditOrDelete()) {
       AppSnackBar.showPermissionDenySnackBar(context);
@@ -196,7 +183,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     return _authProvider.isAdmin;
   }
 
-  // --- _showAddToolDialog (保持不变, 调用 _loadData 时不传参数) ---
+  // --- _showAddToolDialog  ---
   void _showAddToolDialog(BuildContext context) {
     if (!_checkCanEditOrDelete()) {
       AppSnackBar.showPermissionDenySnackBar(context);
@@ -249,7 +236,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
   }
 
-  // --- build 方法 (保持不变, RefreshIndicator 调用 _loadData 时不传参数) ---
+  // --- build 方法  ---
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
@@ -266,19 +253,19 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
             key: Key('linkstools_screen_visibility'),
             onVisibilityChanged: _handleVisibilityChange,
             child: Scaffold(
-              appBar: const CustomAppBar(title: '实用工具'), // actions 移除不变
+              appBar: const CustomAppBar(title: '实用工具'),
               body: RefreshIndicator(
                 onRefresh: _loadData,
-                child: _buildLinksToolsContent(isAdmin, isDesktop), // 内部逻辑不变
+                child: _buildLinksToolsContent(isAdmin, isDesktop),
               ),
               floatingActionButton:
-                  _buildFloatButtons(isAdmin, context), // 逻辑不变
+                  _buildFloatButtons(isAdmin, context),
             ),
           );
         });
   }
 
-  // --- _buildFloatButtons (保持不变) ---
+  // --- _buildFloatButtons  ---
   Widget _buildFloatButtons(bool isAdmin, BuildContext context) {
     if (!isAdmin) return const SizedBox.shrink();
     return Padding(
@@ -304,13 +291,12 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     );
   }
 
-  // --- _buildLinksToolsContent (保持不变, 重试调用 _loadData 时不传参数) ---
   Widget _buildLinksToolsContent(bool isAdmin, bool isDesktop) {
     // State 1: 未初始化 (逻辑不变)
     if (!_isInitialized && !_isLoadingData) {
       return LoadingWidget.fullScreen(message: "等待加载...");
     }
-    // State 2: 加载中 (逻辑微调以匹配原意)
+    // State 2: 加载中
     else if (_isLoadingData && (_links == null || _tools == null)) {
       // 仅在首次加载且数据为 null 时显示全屏 Loading
       return LoadingWidget.fullScreen(message: "正在加载工具和链接...");
@@ -486,8 +472,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     return LinksSection(
       links: _links!,
       isAdmin: isAdmin,
-      onRefresh: _loadData, // *** 调用恢复原样 ***
-      onLaunchURL: (url) => _launchURL(context, url),
+      onRefresh: _loadData,
       linkToolService: widget.linkToolService, // 传递 service 用于编辑删除
       inputStateService: widget.inputStateService,
     );
@@ -519,7 +504,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     return ToolsSection(
       tools: _tools!,
       isAdmin: isAdmin,
-      onLaunchURL: (url) => _launchURL(context, url),
       // linkToolService, // ToolsSection 不需要 service
     );
   }

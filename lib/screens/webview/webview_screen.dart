@@ -231,7 +231,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         await _controller.goBack(); // Android 和 Windows 都有 goBack
         // 状态更新现在依赖 historyChanged stream (Windows) 或 NavigationDelegate (Android)
       } catch (e) {
-        showSnackbar(message: "无法后退: $e", type: SnackbarType.error);
+        showSnackBar(message: "无法后退: $e", type: SnackBarType.error);
       }
     }
   }
@@ -241,7 +241,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       try {
         await _controller.goForward(); // Android 和 Windows 都有 goForward
       } catch (e) {
-        showSnackbar(message: "无法前进: $e", type: SnackbarType.error);
+        showSnackBar(message: "无法前进: $e", type: SnackBarType.error);
       }
     }
   }
@@ -251,7 +251,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       try {
         await _controller.reload(); // Android 和 Windows 都有 reload
       } catch (e) {
-        showSnackbar(message: "无法刷新: $e", type: SnackbarType.error);
+        showSnackBar(message: "无法刷新: $e", type: SnackBarType.error);
       }
     }
   }

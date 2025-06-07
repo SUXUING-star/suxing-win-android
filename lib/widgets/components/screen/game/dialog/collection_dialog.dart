@@ -12,7 +12,7 @@ class GameCollectionDialog extends StatelessWidget {
   final String gameName;
   final String? currentStatus;
   final String? currentNotes;
-  final String? currentReview; // Add this field
+  final String? currentReview;
   final double? currentRating;
 
   const GameCollectionDialog({

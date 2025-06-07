@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/card/game_collection_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_collection_stat_row.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
@@ -15,16 +16,21 @@ class GameCollectionDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 从统一的工具类获取主题
+    final wantTheme = GameCollectionStatusUtils.wantToPlayTheme;
+    final playingTheme = GameCollectionStatusUtils.playingTheme;
+    final playedTheme = GameCollectionStatusUtils.playedTheme;
+
     // 计算总收藏数
     final int total = game.totalCollections;
 
     // 计算百分比值（避免除零错误）
     final double wantToPlayPercent =
-        total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
+    total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
     final double playingPercent =
-        total > 0 ? (game.playingCount / total) * 100 : 0;
+    total > 0 ? (game.playingCount / total) * 100 : 0;
     final double playedPercent =
-        total > 0 ? (game.playedCount / total) * 100 : 0;
+    total > 0 ? (game.playedCount / total) * 100 : 0;
 
     // 检查是否是桌面端
     final bool isDesktop = DeviceUtils.isDesktop;
@@ -95,29 +101,29 @@ class GameCollectionDialog extends StatelessWidget {
 
             // 统计行
             _buildStatRow(
-              label: '想玩',
+              label: wantTheme.text,
               count: game.wantToPlayCount,
               percent: wantToPlayPercent,
-              color: Colors.amber.shade400,
-              icon: Icons.star_border,
+              color: wantTheme.textColor,
+              icon: wantTheme.icon,
             ),
             SizedBox(height: 12),
 
             _buildStatRow(
-              label: '在玩',
+              label: playingTheme.text,
               count: game.playingCount,
               percent: playingPercent,
-              color: Colors.lightBlue.shade400,
-              icon: Icons.videogame_asset,
+              color: playingTheme.textColor,
+              icon: playingTheme.icon,
             ),
             SizedBox(height: 12),
 
             _buildStatRow(
-              label: '已玩',
+              label: playedTheme.text,
               count: game.playedCount,
               percent: playedPercent,
-              color: Colors.lightGreen.shade500,
-              icon: Icons.check_circle,
+              color: playedTheme.textColor,
+              icon: playedTheme.icon,
             ),
 
             SizedBox(height: 16),

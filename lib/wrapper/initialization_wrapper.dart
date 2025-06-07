@@ -1,3 +1,4 @@
+// lib/wrapper/initialization_wrapper.dart
 import 'dart:io'; // 用于 Platform 和 exit
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // 用于 SystemNavigator
@@ -7,8 +8,6 @@ import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 // 相关的 Provider 和服务
 import 'package:suxingchahui/initialization/app_initializer.dart';
 import 'package:suxingchahui/providers/initialize/initialization_provider.dart'; // 初始化状态 Provider
-import 'package:suxingchahui/services/main/network/network_manager.dart'; // 网络管理器
-import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 用户认证 Provider
 
 // 初始化界面 Widget
 import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart';

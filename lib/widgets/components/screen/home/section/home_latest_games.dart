@@ -1,13 +1,14 @@
 // lib/widgets/components/screen/home/section/home_latest_games.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
 class HomeLatestGames extends StatelessWidget {
   final List<Game>? games;
@@ -131,141 +132,39 @@ class HomeLatestGames extends StatelessWidget {
   }
 
   Widget _buildVerticalGameList(List<Game> gameList, BuildContext context) {
-    // context 传入
     final itemsToShow = gameList.take(3).toList();
     if (itemsToShow.isEmpty) {
-      // 即使 !isLoading && displayGames.isEmpty 已经在 _buildGameListArea 处理了
-      // 这里再加一个防御，以防逻辑变动
       return SizedBox(
           height: 100,
           child: Center(
               child: Text("没有最新游戏可显示", style: TextStyle(color: Colors.grey))));
     }
-    return ListView.separated(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      itemCount: itemsToShow.length,
-      separatorBuilder: (_, __) => Divider(
-          height: 16,
-          indent: 88,
-          endIndent: 16,
-          color: Colors.grey.withSafeOpacity(0.1)),
-      itemBuilder: (ctx, index) {
-        // 使用 ctx 避免和外部 context 混淆
-        final game = itemsToShow[index];
-        return _buildGameListItem(game, ctx); // 使用 ctx
-      },
-    );
-  }
 
-  Widget _buildGameListItem(Game game, BuildContext context) {
-    // context 传入
-    return InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: () {
-        NavigationUtils.pushNamed(
-          context, // 使用这里的 context
-          AppRoutes.gameDetail,
-          arguments: game,
+    // 使用封装好的 AnimatedListView
+    return AnimatedListView<Game>(
+      listKey: const ValueKey('home_latest_games_list'),
+      items: itemsToShow,
+      shrinkWrap: true, // 关键：使其在 Column 内正常工作
+      physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+      padding: EdgeInsets.zero, // 外部已有 padding
+      itemBuilder: (ctx, index, game) {
+        // 为了在 item 之间显示分割线，我们可以在这里做个小处理
+        return Column(
+          children: [
+            CommonGameCard(
+              game: game,
+              isGridItem: false,
+            ),
+            if (index < itemsToShow.length - 1) // 不是最后一个 item 才显示分割线
+              Divider(
+                height: 16,
+                indent: 88,
+                endIndent: 16,
+                color: Colors.grey.withSafeOpacity(0.1),
+              ),
+          ],
         );
       },
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        child: Row(
-          children: [
-            Hero(
-              tag: 'game_image_${game.id}_latest_section', // 确保tag唯一
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: SafeCachedImage(
-                  imageUrl: game.coverImage,
-                  width: 70,
-                  height: 70,
-                  fit: BoxFit.cover,
-                  memCacheWidth: 140,
-                  borderRadius: BorderRadius.circular(8),
-                  backgroundColor: Colors.grey[300],
-                ),
-              ),
-            ),
-            SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    game.title,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey[800],
-                      fontSize: 16,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 6),
-                  Text(
-                    game.summary,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 13,
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 16),
-            _buildStatsColumn(game),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatsColumn(Game game) {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        _buildStatItem(Icons.remove_red_eye_outlined, game.viewCount,
-            Colors.blueGrey[300]),
-        SizedBox(height: 6),
-        _buildStatItem(
-            Icons.star_border_purple500_outlined,
-            game.ratingCount, // 假设是 ratingCount
-            Colors.orange[400]),
-        SizedBox(height: 6),
-        _buildStatItem(
-            Icons.thumb_up_off_alt_outlined,
-            game.likeCount, // 假设是 likeCount
-            Colors.redAccent[100]),
-      ],
-    );
-  }
-
-  Widget _buildStatItem(IconData icon, int count, Color? iconColor) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(
-          icon,
-          color: iconColor ?? Colors.grey[500],
-          size: 18,
-        ),
-        SizedBox(width: 4),
-        Text(
-          '$count',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
     );
   }
 }

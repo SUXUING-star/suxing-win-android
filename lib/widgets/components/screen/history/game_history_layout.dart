@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -286,44 +286,41 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
   }
 
   Widget _buildHistoryContent(BuildContext context, {required bool isDesktop}) {
-    final crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(context);
+    final crossAxisCount =
+        DeviceUtils.calculateGameCardsInGameListPerRow(context);
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
     return ListView(
       controller: widget.scrollController,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: cardRatio,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: isDesktop ? 16 : 8,
-          ),
-          itemCount: widget.gameHistoryItems.length,
-          itemBuilder: (context, index) {
-            final gameItem = widget.gameHistoryItems[index];
+        // 使用升级后的 AnimatedContentGrid
+        AnimatedContentGrid<Game>(
+          items: widget.gameHistoryItems,
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: cardRatio,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: isDesktop ? 16 : 8,
+          padding: EdgeInsets.zero, // 外部 ListView 已有 padding
+          shrinkWrap: true, // 关键：使其在 ListView 内正常工作
+          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          itemBuilder: (context, index, gameItem) {
             final DateTime? lastViewTime =
                 gameItem.currentUserLastViewTime ?? gameItem.lastViewedAt;
-
-            return FadeInSlideUpItem(
-              delay: Duration(milliseconds: 50 * index),
-              duration: const Duration(milliseconds: 350),
-              child: _buildGameCardWithViewTime(
-                context,
-                gameItem,
-                isDesktop,
-                lastViewTime,
-              ),
+            return _buildGameCardWithViewTime(
+              context,
+              gameItem,
+              isDesktop,
+              lastViewTime,
             );
           },
         ),
+
+        // 加载更多的逻辑保持不变
         if (widget.isLoadingMore)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: FadeInItem(child: LoadingWidget.inline(message: "正在加载记录")),
+            child: LoadingWidget.inline(message: "正在加载记录"),
           ),
         if (!widget.isLoadingMore &&
             (widget.paginationData?.hasNextPage() ?? false) &&

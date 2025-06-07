@@ -1,64 +1,51 @@
 // lib/widgets/ui/buttons/generic_fab.dart
-import 'package:flutter/material.dart';
 
-/// 一个通用的悬浮动作按钮 (FAB) 组件。
+/// 该文件定义了 GenericFloatingActionButton 组件，一个通用的悬浮动作按钮。
+/// 该组件支持自定义图标、颜色、工具提示和加载状态处理。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+
+/// `GenericFloatingActionButton` 类：一个通用的悬浮动作按钮组件。
 ///
-/// 支持自定义图标、颜色、工具提示，并包含加载状态处理。
+/// 该组件支持自定义图标或子组件、颜色、工具提示和加载状态。
 class GenericFloatingActionButton extends StatelessWidget {
-  /// 当按钮被按下时触发的回调。
-  /// 如果为 null 或 [isLoading] 为 true，按钮将被禁用。
-  final VoidCallback? onPressed;
+  final VoidCallback? onPressed; // 按钮按下时触发的回调。加载中或为空时按钮禁用。
+  final IconData? icon; // 按钮上显示的图标数据。
+  final Widget? child; // 按钮内部的子组件。如果提供，将覆盖图标。
+  final String? tooltip; // 悬浮提示文本。
+  final Object? heroTag; // Hero 动画标签。
+  final Color? backgroundColor; // 按钮的背景颜色。空值时使用主题默认背景色。
+  final Color? foregroundColor; // 图标和加载指示器的颜色。空值时使用主题计算的前景色。
+  final Color? loadingIndicatorColor; // 加载指示器的颜色。空值时使用前景颜色或主题默认指示器颜色。
+  final bool isLoading; // 按钮是否处于加载状态。为 true 时显示加载指示器且按钮不可点击。
+  final bool mini; // 是否使用迷你尺寸的悬浮动作按钮。
+  final ShapeBorder? shape; // 按钮形状。圆形为默认值。
+  final double? iconSize; // 图标大小。
+  final double loadingIndicatorSize; // 加载指示器的大小。
+  final double loadingIndicatorStrokeWidth; // 加载指示器的线条宽度。
 
-  /// 按钮上显示的图标数据。 (如果提供了 child，则忽略此项)
-  final IconData? icon;
-
-  /// 按钮内部的子 Widget。如果提供，将覆盖 [icon]。
-  final Widget? child;
-
-  /// 悬浮提示文本。
-  final String? tooltip;
-
-  /// Hero 动画标签，避免在页面转换中与相同标签的其他 FAB 冲突。
-  final Object? heroTag;
-
-  /// 按钮的背景颜色。
-  /// 如果为 null，将使用主题的默认 FAB 背景色。
-  final Color? backgroundColor;
-
-  /// 图标和加载指示器的颜色（前景）。
-  /// 如果为 null，将使用主题计算出的合适前景色（通常基于背景色）。
-  final Color? foregroundColor;
-
-  /// 加载指示器的颜色。
-  /// 如果为 null，将尝试使用 [foregroundColor]，如果 [foregroundColor] 也为 null，
-  /// 则使用主题的默认指示器颜色。
-  final Color? loadingIndicatorColor;
-
-  /// 指示按钮当前是否处于加载状态。
-  /// 如果为 true，将显示一个加载指示器代替图标，并且按钮不可点击。
-  final bool isLoading;
-
-  /// 是否使用迷你尺寸的 FAB。
-  final bool mini;
-
-  /// FAB 的形状。默认为圆形。
-  final ShapeBorder? shape;
-
-  /// 图标的大小。FAB 会尝试适应，但这可以提供指导。
-  /// 注意：FAB 的整体尺寸由 [mini] 和主题决定。
-  final double? iconSize; // FAB 图标大小通常由主题控制，但可以尝试影响
-
-  /// 加载指示器的大小。
-  final double loadingIndicatorSize;
-
-  /// 加载指示器的线条宽度。
-  final double loadingIndicatorStrokeWidth;
-
+  /// 构造函数。
+  ///
+  /// [onPressed]：点击回调。
+  /// [icon]：图标。
+  /// [child]：子组件。
+  /// [tooltip]：提示。
+  /// [heroTag]：Hero 标签。
+  /// [backgroundColor]：背景色。
+  /// [foregroundColor]：前景色。
+  /// [loadingIndicatorColor]：加载指示器颜色。
+  /// [isLoading]：是否加载中。
+  /// [mini]：是否迷你尺寸。
+  /// [shape]：形状。
+  /// [iconSize]：图标大小。
+  /// [loadingIndicatorSize]：加载指示器大小。
+  /// [loadingIndicatorStrokeWidth]：加载指示器线条宽度。
   const GenericFloatingActionButton({
     super.key,
     required this.onPressed,
-    this.icon, // 改为可选，因为可能用 child
-    this.child, // 添加 child 参数
+    this.icon,
+    this.child,
     this.tooltip,
     this.heroTag,
     this.backgroundColor = Colors.white,
@@ -70,17 +57,19 @@ class GenericFloatingActionButton extends StatelessWidget {
     this.iconSize,
     this.loadingIndicatorSize = 20.0,
     this.loadingIndicatorStrokeWidth = 2.5,
-  }) : assert(icon != null || child != null,
-            'Must provide either an icon or a child'); // 断言确保 icon 或 child 至少有一个
+  }) : assert(icon != null || child != null, '必须提供一个图标或一个子组件。');
 
+  /// 构建悬浮动作按钮。
+  ///
+  /// 该方法根据按钮状态和属性生成不同的按钮内容和样式。
   @override
   Widget build(BuildContext context) {
-    final VoidCallback? effectiveOnPressed = isLoading ? null : onPressed;
+    final VoidCallback? effectiveOnPressed =
+        isLoading ? null : onPressed; // 有效的点击回调
     final Color effectiveLoadingIndicatorColor = loadingIndicatorColor ??
         foregroundColor ??
-        Theme.of(context).colorScheme.onSecondaryContainer;
+        Theme.of(context).colorScheme.onSecondaryContainer; // 有效的加载指示器颜色
 
-    // 优先使用 child，然后是 icon，最后是加载指示器
     final Widget buttonContent = isLoading
         ? SizedBox(
             width: loadingIndicatorSize,
@@ -92,22 +81,20 @@ class GenericFloatingActionButton extends StatelessWidget {
           )
         : child ??
             Icon(
-              // 如果 child 不为 null 则用 child，否则用 icon
-              icon!, // 断言保证了此时 icon 不为 null
+              icon!,
               size: iconSize,
             );
 
     return FloatingActionButton(
-      onPressed: effectiveOnPressed,
-      tooltip: tooltip,
-      heroTag: heroTag,
-      backgroundColor: backgroundColor,
-      foregroundColor: foregroundColor,
-      mini: mini,
-      shape: shape,
-      elevation: isLoading ? 0 : null,
-      // 使用 Center 确保加载指示器或提供的 child 居中
-      child: Center(child: buttonContent),
+      onPressed: effectiveOnPressed, // 按钮点击回调
+      tooltip: tooltip, // 悬浮提示文本
+      heroTag: heroTag, // Hero 标签
+      backgroundColor: backgroundColor, // 背景色
+      foregroundColor: foregroundColor, // 前景色
+      mini: mini, // 迷你尺寸
+      shape: shape, // 形状
+      elevation: isLoading ? 0 : null, // 阴影高度
+      child: Center(child: buttonContent), // 按钮内容居中
     );
   }
 }

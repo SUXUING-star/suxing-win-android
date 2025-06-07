@@ -8,7 +8,6 @@ class CacheManagerProviderWidget extends StatefulWidget {
   final String cacheKey;
   final Duration stalePeriod;
   final int maxNrOfCacheObjects;
-  // 你还可以添加更多 Config 的可配置参数
 
   const CacheManagerProviderWidget({
     super.key,
@@ -42,9 +41,6 @@ class _CacheManagerProviderWidgetState
 
   @override
   void dispose() {
-    // CacheManager 的 dispose 通常由其自身管理或在应用级别统一处理
-    // 如果 CacheManager 实例确实需要手动调用 dispose，可以在这里调用
-    // _cacheManager.dispose(); // 取决于 CacheManager 的实现，DefaultCacheManager 和 CacheManager(Config(...)) 通常不需要手动 dispose
     super.dispose();
   }
 

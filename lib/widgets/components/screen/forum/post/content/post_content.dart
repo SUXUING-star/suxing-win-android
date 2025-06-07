@@ -1,11 +1,11 @@
-// lib/widgets/components/screen/forum/post/post_content.dart
+// lib/widgets/components/screen/forum/post/content/post_content.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/widgets/components/screen/forum/post/post_interaction_buttons.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/post/button/post_interaction_buttons.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/post/tag/post_tags.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/post/post.dart';

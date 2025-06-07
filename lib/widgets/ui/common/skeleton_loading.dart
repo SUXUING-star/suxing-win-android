@@ -1,3 +1,4 @@
+// lib/widgets/ui/common/skeleton_loading.dart
 import 'package:flutter/material.dart';
 // 骨架屏加载组件
 class SkeletonLoading extends StatefulWidget {

@@ -4,8 +4,6 @@ class User {
   final String id;
   final String username;
   final String email;
-  final String? hash; // 仅在认证过程中使用
-  final String? salt; // 仅在认证过程中使用
   final String? avatar;
   final DateTime createTime;
   final DateTime? updateTime;
@@ -29,8 +27,6 @@ class User {
     required this.id,
     required this.username,
     required this.email,
-    this.hash,
-    this.salt,
     this.avatar,
     required this.createTime,
     this.signature,
@@ -189,8 +185,6 @@ class User {
       id: idFromJson,
       username: json['username'] ?? '',
       email: emailFromJson,
-      hash: json['hash'], // 通常为 null
-      salt: json['salt'], // 通常为 null
       avatar: json['avatar'],
       createTime: createTimeFromJson,
       updateTime: parseDateTime(json['updateTime']),
@@ -316,8 +310,6 @@ class User {
       id: id ?? this.id,
       username: username ?? this.username,
       email: email ?? this.email,
-      hash: hash ?? this.hash,
-      salt: salt ?? this.salt,
       avatar: avatar ?? this.avatar,
       signature: signature ?? this.signature,
       updateTime: updateTime ?? this.updateTime,
@@ -427,8 +419,6 @@ class User {
       id: userId,
       username: message, // 使用传入的消息，默认为'加载失败'
       email: '', // 邮箱通常为空
-      hash: null,
-      salt: null,
       avatar: null, // 通常没有头像
       signature: null,
       createTime: DateTime(1970), // 或者一个明确表示无效的默认时间

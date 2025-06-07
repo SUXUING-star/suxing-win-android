@@ -87,9 +87,9 @@ class _AddGameScreenState extends State<AddGameScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      showSnackbar(
+      showSnackBar(
           message: '添加失败: ${e.toString().replaceFirst("Exception: ", "")}',
-          type: SnackbarType.error);
+          type: SnackBarType.error);
     }
   }
 

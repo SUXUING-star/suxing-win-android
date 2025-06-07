@@ -1,72 +1,88 @@
 // lib/widgets/layouts/desktop/desktop_sidebar_user_profile.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/user/level_constants.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/models/user/user.dart';
 
+/// 该文件定义了 DesktopSidebarUserProfile 组件，用于桌面侧边栏的用户资料显示。
+/// DesktopSidebarUserProfile 根据用户登录状态显示登录提示或已登录用户的信息。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/constants/user/level_constants.dart'; // 导入用户等级常量
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 导入安全用户头像组件
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
+import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+
+/// `DesktopSidebarUserProfile` 类：桌面侧边栏用户资料组件。
+///
+/// 该组件根据用户登录状态显示登录提示或已登录用户的信息。
 class DesktopSidebarUserProfile extends StatelessWidget {
-  final VoidCallback onProfileTap;
-  final AuthProvider authProvider;
+  final VoidCallback onProfileTap; // 点击用户资料时的回调
+  final AuthProvider authProvider; // 认证 Provider 实例
 
+  /// 构造函数。
+  ///
+  /// [onProfileTap]：点击用户资料回调。
+  /// [authProvider]：认证 Provider。
   const DesktopSidebarUserProfile({
     super.key,
     required this.onProfileTap,
     required this.authProvider,
   });
 
-  // 根据等级返回不同的颜色
+  /// 根据等级返回颜色。
+  ///
+  /// [level]：用户等级。
+  /// 返回等级颜色。
   Color _getLevelColor(int level) {
     return LevelUtils.getLevelColor(level);
   }
 
-  // 未登录状态的用户头像和登录入口
+  /// 构建未登录状态的用户头像和登录入口。
+  ///
+  /// [context]：Build 上下文。
+  /// 返回一个点击可导航到登录页面的组件。
   Widget _buildLoginPrompt(BuildContext context) {
     return Material(
-      color: Colors.transparent,
+      color: Colors.transparent, // 背景透明
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: SystemMouseCursors.click, // 鼠标悬停显示点击光标
         child: InkWell(
-          onTap: () => NavigationUtils.navigateToLogin(context),
-          hoverColor: Colors.white.withSafeOpacity(0.1),
-          borderRadius: BorderRadius.circular(20), // Keep consistent radius
+          onTap: () => NavigationUtils.navigateToLogin(context), // 点击导航到登录页
+          hoverColor: Colors.white.withSafeOpacity(0.1), // 悬停颜色
+          borderRadius: BorderRadius.circular(20), // 圆角
           child: Tooltip(
-            message: '登录',
+            message: '登录', // 提示文本
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center, // Center vertically
+              mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
               children: [
                 Container(
-                  width: 40, // Set fixed size for alignment
-                  height: 40, // Set fixed size for alignment
+                  width: 40, // 宽度
+                  height: 40, // 高度
                   decoration: BoxDecoration(
-                    shape: BoxShape.circle,
+                    shape: BoxShape.circle, // 形状为圆形
                     border: Border.all(
                       color: Colors.white,
                       width: 1.5,
                     ),
                   ),
                   child: CircleAvatar(
-                    radius: 20, // Inner radius matches image size
-                    backgroundColor: Colors.white.withSafeOpacity(0.2),
+                    radius: 20, // 半径
+                    backgroundColor: Colors.white.withSafeOpacity(0.2), // 背景色
                     child: Icon(
-                      Icons.person_rounded,
-                      size: 24,
-                      color: Colors.white,
+                      Icons.person_rounded, // 图标
+                      size: 24, // 大小
+                      color: Colors.white, // 颜色
                     ),
                   ),
                 ),
-                SizedBox(height: 4),
-                Text(
-                  '点击登录',
+                const SizedBox(height: 4), // 间距
+                const Text(
+                  '点击登录', // 文本
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 12,
                   ),
                 ),
-                // Add empty text widgets to roughly match logged-in height if needed
-                // SizedBox(height: 12), // Adjust spacing if alignment differs significantly
               ],
             ),
           ),
@@ -75,89 +91,95 @@ class DesktopSidebarUserProfile extends StatelessWidget {
     );
   }
 
-  // 已登录状态的用户信息
-  // 已登录状态的用户信息 (直接从 AuthProvider 获取 User 对象)
+  /// 构建已登录状态的用户信息。
+  ///
+  /// [context]：Build 上下文。
+  /// [user]：用户数据。
+  /// 返回一个包含用户头像、等级、用户名和经验值的组件。
   Widget _buildLoggedInProfile(BuildContext context, User user) {
-    final avatarRadiusInProfile = 50;
+    final avatarRadiusInProfile = 50; // 头像半径
 
-    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio; // 设备像素比
     final int calculatedMemCacheSize =
-        (avatarRadiusInProfile * 2 * devicePixelRatio).round();
+        (avatarRadiusInProfile * 2 * devicePixelRatio).round(); // 内存缓存大小
 
     return Material(
-      color: Colors.transparent,
+      color: Colors.transparent, // 背景透明
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor: SystemMouseCursors.click, // 鼠标悬停显示点击光标
         child: InkWell(
-          onTap: onProfileTap,
-          hoverColor: Colors.white.withSafeOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          onTap: onProfileTap, // 点击回调
+          hoverColor: Colors.white.withSafeOpacity(0.1), // 悬停颜色
+          borderRadius: BorderRadius.circular(20), // 圆角
           child: Tooltip(
-            message: '我的资料',
+            message: '我的资料', // 提示文本
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
               children: [
                 Stack(
-                  alignment: Alignment.center,
+                  alignment: Alignment.center, // 堆栈内容居中
                   children: [
                     Container(
-                      width: 40,
-                      height: 40,
+                      width: 40, // 宽度
+                      height: 40, // 高度
                       decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 1.5),
+                        shape: BoxShape.circle, // 形状为圆形
+                        border:
+                            Border.all(color: Colors.white, width: 1.5), // 边框
                       ),
-                      child: user.avatar != null
+                      child: user.avatar != null // 根据是否有头像 URL 显示不同内容
                           ? SafeUserAvatar(
-                              userId: user.id,
-                              avatarUrl: user.avatar,
-                              username: user.username,
-                              radius: 50,
-                              enableNavigation: false,
-                              memCacheWidth: calculatedMemCacheSize,
-                              memCacheHeight: calculatedMemCacheSize,
+                              userId: user.id, // 用户ID
+                              avatarUrl: user.avatar, // 头像 URL
+                              username: user.username, // 用户名
+                              radius: 50, // 半径
+                              enableNavigation: false, // 禁用导航
+                              memCacheWidth: calculatedMemCacheSize, // 内存缓存宽度
+                              memCacheHeight: calculatedMemCacheSize, // 内存缓存高度
                             )
-                          : _fallbackAvatar(user.username),
+                          : _fallbackAvatar(user.username), // 备用头像
                     ),
                     Positioned(
-                      right: 0,
-                      bottom: 0,
+                      right: 0, // 右侧对齐
+                      bottom: 0, // 底部对齐
                       child: Container(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4, vertical: 1), // 内边距
                         decoration: BoxDecoration(
-                          color: _getLevelColor(user.level),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: Colors.white, width: 1),
+                          color: _getLevelColor(user.level), // 背景色
+                          borderRadius: BorderRadius.circular(8), // 圆角
+                          border:
+                              Border.all(color: Colors.white, width: 1), // 边框
                         ),
                         child: Text(
-                          'Lv.${user.level}',
-                          style: TextStyle(
+                          'Lv.${user.level}', // 等级文本
+                          style: const TextStyle(
                               fontSize: 8,
                               color: Colors.white,
-                              fontWeight: FontWeight.bold),
+                              fontWeight: FontWeight.bold), // 字体样式
                         ),
                       ),
                     ),
                   ],
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4), // 间距
                 Padding(
-                  padding: const EdgeInsets.only(top: 2.0),
+                  padding: const EdgeInsets.only(top: 2.0), // 顶部填充
                   child: Text(
-                    user.username,
-                    style: TextStyle(
+                    user.username, // 用户名文本
+                    style: const TextStyle(
                         color: Colors.white,
                         fontSize: 12,
-                        fontWeight: FontWeight.bold),
-                    overflow: TextOverflow.ellipsis,
-                    maxLines: 1,
+                        fontWeight: FontWeight.bold), // 字体样式
+                    overflow: TextOverflow.ellipsis, // 文本溢出显示省略号
+                    maxLines: 1, // 最大行数
                   ),
                 ),
                 Text(
-                  '${user.experience} XP',
+                  '${user.experience} XP', // 经验值文本
                   style: TextStyle(
-                      fontSize: 10, color: Colors.white.withSafeOpacity(0.8)),
+                      fontSize: 10,
+                      color: Colors.white.withSafeOpacity(0.8)), // 字体样式
                 ),
               ],
             ),
@@ -167,25 +189,24 @@ class DesktopSidebarUserProfile extends StatelessWidget {
     );
   }
 
-  // 备用头像方法，当无法加载网络头像或用户没有设置头像时
+  /// 构建备用头像。
+  ///
+  /// [username]：用户名。
+  /// 当无法加载网络头像或用户没有设置头像时，显示默认头像。
   Widget _fallbackAvatar(String? username) {
-    // Ensure this fallback also fits within the 40x40 circular space
     return Container(
-      width: 40,
-      height: 40,
+      width: 40, // 宽度
+      height: 40, // 高度
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: Colors.white
-            .withSafeOpacity(0.2), // Background color for the circle
+        shape: BoxShape.circle, // 形状为圆形
+        color: Colors.white.withSafeOpacity(0.2), // 背景色
       ),
       child: Center(
-        // Center the text within the container
         child: Text(
-          // Ensure username is not null and not empty before accessing index 0
           (username != null && username.isNotEmpty)
-              ? username[0].toUpperCase()
-              : '?',
-          style: TextStyle(
+              ? username[0].toUpperCase() // 显示用户名首字母大写
+              : '?', // 无用户名时显示问号
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -195,22 +216,24 @@ class DesktopSidebarUserProfile extends StatelessWidget {
     );
   }
 
+  /// 构建桌面侧边栏用户资料组件。
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12.0, horizontal: 8.0),
+      padding: const EdgeInsets.symmetric(
+          vertical: 12.0, horizontal: 8.0), // 垂直和水平填充
       child: StreamBuilder<User?>(
-        stream: authProvider.currentUserStream,
-        initialData: authProvider.currentUser,
+        stream: authProvider.currentUserStream, // 监听当前用户流
+        initialData: authProvider.currentUser, // 初始当前用户数据
         builder: (context, currentUserSnapshot) {
-          final User? currentUser = currentUserSnapshot.data;
+          final User? currentUser = currentUserSnapshot.data; // 获取当前用户数据
 
           if (currentUser == null) {
-            return _buildLoginPrompt(
-                context); // 或者，如果初始化阶段不希望显示 loading，则暂时还是登录提示
+            // 未登录状态
+            return _buildLoginPrompt(context); // 显示登录提示
           }
 
-          return _buildLoggedInProfile(context, currentUser);
+          return _buildLoggedInProfile(context, currentUser); // 显示已登录用户资料
         },
       ),
     );

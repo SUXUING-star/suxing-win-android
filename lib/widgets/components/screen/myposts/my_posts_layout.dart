@@ -11,7 +11,13 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
 
-enum StatType { views, replies, likes, agrees, favorites }
+enum StatType {
+  views,
+  replies,
+  likes,
+  agrees,
+  favorites,
+}
 
 class MyPostsLayout extends StatelessWidget {
   final List<Post> posts;

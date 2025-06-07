@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class GameLikesLayout extends StatefulWidget {
   final List<Game> favoriteGames;
-  final PaginationData? paginationData; // 收藏列表如果有分页信息
+  final PaginationData? paginationData;
   final bool isLoadingInitial;
   final bool isLoadingMore;
   final String? errorMessage;
@@ -204,33 +204,31 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
     );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
+    // 保持外部的 ListView 结构
     return ListView(
       controller: widget.scrollController,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),
       children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: cardRatio,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: isDesktop ? 16 : 8,
-          ),
-          itemCount: widget.favoriteGames.length,
-          itemBuilder: (context, index) {
-            final gameItem = widget.favoriteGames[index];
-            return FadeInSlideUpItem(
-              delay: Duration(milliseconds: 50 * index),
-              duration: const Duration(milliseconds: 350),
-              child: _buildGameCard(gameItem, isDesktop),
-            );
+        // 使用升级后的 AnimatedContentGrid
+        AnimatedContentGrid<Game>(
+          items: widget.favoriteGames,
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: cardRatio,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: isDesktop ? 16 : 8,
+          padding: EdgeInsets.zero, // 外部 ListView 已有 padding
+          shrinkWrap: true, // 关键：使其在 ListView 内正常工作
+          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          itemBuilder: (context, index, gameItem) {
+            return _buildGameCard(gameItem, isDesktop);
           },
         ),
+
+        // 加载更多的逻辑保持不变
         if (widget.isLoadingMore)
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: FadeInItem(child: LoadingWidget.inline(message: "正在加载更多")),
+            child: LoadingWidget.inline(message: "正在加载更多"),
           ),
         if (!widget.isLoadingMore &&
             (widget.paginationData?.hasNextPage() ?? false) &&

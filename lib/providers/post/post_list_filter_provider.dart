@@ -1,37 +1,56 @@
 // lib/providers/post/post_list_filter_provider.dart
-import 'package:flutter/foundation.dart';
 
+/// 该文件定义了 PostListFilterProvider，一个管理帖子列表筛选器状态的 ChangeNotifier。
+/// PostListFilterProvider 控制帖子列表的选中标签。
+library;
+
+import 'package:flutter/foundation.dart'; // 导入 Flutter 基础工具，提供 ChangeNotifier 功能
+
+/// `PostListFilterProvider` 类：管理帖子列表筛选器状态的 Provider。
+///
+/// 该类提供帖子列表的标签筛选状态。
 class PostListFilterProvider with ChangeNotifier {
-  String? _selectedTagString; // 存储标签的字符串形式 (e.g., "技术分享", "Gaming")
-  bool _tagHasBeenSet = false;
+  String? _selectedTagString; // 当前选中的标签字符串
+  bool _tagHasBeenSet = false; // 标签是否已被显式设置的标记
 
-  // --- Getters ---
+  // --- 获取器 ---
+  /// 获取当前选中的标签字符串。
   String? get selectedTagString => _selectedTagString;
+
+  /// 获取标签是否已被设置的标记。
   bool get tagHasBeenSet => _tagHasBeenSet;
 
-  // --- Setter ---
-  /// 设置选中的标签 (字符串形式)。
+  // --- 设置器 ---
+  /// 设置选中的标签。
+  ///
+  /// [newTagString]：新的标签字符串。
+  /// 当新标签与当前标签不同时，更新标签并通知监听者。
+  /// 当新标签非空且 `_tagHasBeenSet` 为 false 时，设置 `_tagHasBeenSet` 为 true。
   void setTag(String? newTagString) {
-    // 只有当新标签与当前标签不同时才更新
     if (_selectedTagString != newTagString) {
-      _selectedTagString = newTagString;
-      _tagHasBeenSet = true; // 标记 Tag 已设置
-      notifyListeners(); // 通知监听者
+      // 检查新标签是否与当前标签不同
+      _selectedTagString = newTagString; // 更新标签
+      _tagHasBeenSet = true; // 设置标签已设置标记
+      notifyListeners(); // 通知监听者状态已更新
     } else if (newTagString != null && !_tagHasBeenSet) {
-      _tagHasBeenSet = true;
+      // 检查新标签非空且标记未设置
+      _tagHasBeenSet = true; // 设置标签已设置标记
     }
   }
 
   // --- 清除方法 ---
   /// 清除选中的标签。
+  ///
+  /// 调用 `setTag(null)` 来清除标签状态。
   void clearTag() {
-    setTag(null); // 调用 setTag(null) 会自动更新 _tagHasBeenSet 和 notifyListeners
+    setTag(null); // 清除标签
   }
 
   // --- 重置标记 ---
-  /// 重置 Tag 的 "已设置" 标记。当 UI 处理完 Tag 变化后调用。
+  /// 重置标签的 "已设置" 标记。
+  ///
+  /// 该方法不触发监听者通知。
   void resetTagFlag() {
-    _tagHasBeenSet = false;
-    // 注意：这里不调用 notifyListeners，因为它只是重置内部状态，不应触发 UI 重建
+    _tagHasBeenSet = false; // 重置标签已设置标记
   }
 }

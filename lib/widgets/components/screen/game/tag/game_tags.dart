@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class GameTags extends StatelessWidget {

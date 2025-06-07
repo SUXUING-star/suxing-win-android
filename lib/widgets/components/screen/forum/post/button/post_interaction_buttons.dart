@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/forum/post/post_interaction_buttons.dart
+// lib/widgets/components/screen/forum/post/button/post_interaction_buttons.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';

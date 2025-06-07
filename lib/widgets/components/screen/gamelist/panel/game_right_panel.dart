@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/gamelist/panel/game_right_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_tag.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game.dart';

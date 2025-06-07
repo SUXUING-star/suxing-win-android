@@ -4,51 +4,50 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/open/profile_game_card.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/open/profile_post_card.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/badges/follow_user_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
+import 'package:suxingchahui/widgets/ui/components/user/user_signature.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class OpenProfileLayout extends StatelessWidget {
-  final User? user;
+  final User targetUser;
   final List<Post>? recentPosts;
   final List<Game>? publishedGames;
-  final bool isCurrentUser;
   final bool isGridView;
   final TabController tabController;
   final AuthProvider authProvider; // 传递 authProvider 用于 FollowUserButton
   final UserFollowService followService; // 传递 followService
+  final UserInfoProvider infoProvider;
   final VoidCallback onFollowChanged; // 关注状态变化后的回调
-  final String targetUserId; // 目标用户ID，给 FollowUserButton
 
   const OpenProfileLayout({
     super.key,
-    required this.user,
+    required this.targetUser,
     required this.recentPosts,
     required this.publishedGames,
-    required this.isCurrentUser,
     required this.isGridView,
     required this.tabController,
     required this.authProvider,
     required this.followService,
+    required this.infoProvider,
     required this.onFollowChanged,
-    required this.targetUserId,
   });
 
   @override
   Widget build(BuildContext context) {
     final isDesktop = DeviceUtils.isDesktopScreen(context);
     // 使用传入的 user?.id 或 targetUserId 作为 ValueKey 的一部分，确保用户切换时动画能正确执行
-    final contentKey =
-        ValueKey<String>('profile_layout_${user?.id ?? targetUserId}');
+    final contentKey = ValueKey<String>('profile_layout_${targetUser.id}');
 
     if (isDesktop) {
       return _buildDesktopLayout(context, contentKey, isDesktop: isDesktop);
@@ -59,9 +58,6 @@ class OpenProfileLayout extends StatelessWidget {
 
   Widget _buildDesktopLayout(BuildContext context, Key animationKey,
       {required bool isDesktop}) {
-    const Duration initialDelay = Duration(milliseconds: 100);
-    const Duration stagger = Duration(milliseconds: 150);
-
     return Row(
       key: animationKey,
       children: [
@@ -73,15 +69,9 @@ class OpenProfileLayout extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  FadeInSlideUpItem(
-                    delay: initialDelay,
-                    child: _buildUserHeader(context, isDesktop: isDesktop),
-                  ),
+                  _buildUserHeader(context, isDesktop: isDesktop),
                   const SizedBox(height: 16),
-                  FadeInSlideUpItem(
-                    delay: initialDelay + stagger,
-                    child: _buildUserStatistics(context),
-                  ),
+                  _buildUserStatistics(context),
                 ],
               ),
             ),
@@ -89,9 +79,9 @@ class OpenProfileLayout extends StatelessWidget {
         ),
         Expanded(
           flex: 2,
-          child: FadeInSlideUpItem(
-            delay: initialDelay + stagger * 2,
-            child: _buildContentSection(context, isDesktop: isDesktop),
+          child: _buildContentSection(
+            context,
+            isDesktop: isDesktop,
           ),
         ),
       ],
@@ -100,20 +90,14 @@ class OpenProfileLayout extends StatelessWidget {
 
   Widget _buildMobileLayout(BuildContext context, Key animationKey,
       {required bool isDesktop}) {
-    const Duration initialDelay = Duration(milliseconds: 100);
-    const Duration stagger = Duration(milliseconds: 150);
-
     return Column(
       key: animationKey,
       children: [
-        FadeInSlideUpItem(
-          delay: initialDelay,
-          child: _buildUserHeader(context, isDesktop: isDesktop),
-        ),
+        _buildUserHeader(context, isDesktop: isDesktop),
         Expanded(
-          child: FadeInSlideUpItem(
-            delay: initialDelay + stagger,
-            child: _buildContentSection(context, isDesktop: isDesktop),
+          child: _buildContentSection(
+            context,
+            isDesktop: isDesktop,
           ),
         ),
       ],
@@ -121,8 +105,6 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildUserHeader(BuildContext context, {required bool isDesktop}) {
-    if (user == null) return const SizedBox.shrink();
-
     final double avatarRadius = isDesktop ? 50.0 : 38.0;
     final EdgeInsets cardMargin = isDesktop
         ? const EdgeInsets.all(12)
@@ -143,16 +125,7 @@ class OpenProfileLayout extends StatelessWidget {
     final TextStyle xpStyle = isDesktop
         ? TextStyle(fontSize: 14, color: Colors.grey[600])
         : TextStyle(fontSize: 12, color: Colors.grey[600]);
-    final TextStyle signatureStyle = isDesktop
-        ? TextStyle(
-            fontSize: 12,
-            color: Colors.black.withSafeOpacity(0.75),
-            height: 1.35)
-        : TextStyle(
-            fontSize: 11,
-            color: Colors.black.withSafeOpacity(0.70),
-            height: 1.3);
-    final int signatureMaxLines = isDesktop ? 3 : 2;
+
     final double levelFontSize = isDesktop ? 12 : 10;
     final double createTimeFontSize = isDesktop ? 12 : 10;
 
@@ -160,15 +133,17 @@ class OpenProfileLayout extends StatelessWidget {
     final int calculatedMemCacheSize =
         (avatarRadius * 2 * devicePixelRatio).round();
 
-    final String signatureText = user?.signature?.trim() ?? '';
+    final String signatureText = targetUser.signature?.trim() ?? '';
     final bool hasSignature = signatureText.isNotEmpty;
 
     final User? currentUser = authProvider.currentUser;
     bool iFollowTarget = false;
     String? currentUserId = currentUser?.id;
     if (currentUserId != null && currentUser != null) {
-      iFollowTarget = currentUser.following.contains(user?.id);
+      iFollowTarget = currentUser.following.contains(targetUser.id);
     }
+
+    final String targetUserId = targetUser.id;
 
     return Card(
       margin: cardMargin,
@@ -183,11 +158,11 @@ class OpenProfileLayout extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             SafeUserAvatar(
-              isAdmin: user?.isAdmin ?? false,
-              isSuperAdmin: user?.isSuperAdmin ?? false,
-              userId: user?.id,
-              avatarUrl: user?.avatar,
-              username: user?.username ?? '',
+              isAdmin: targetUser.isAdmin,
+              isSuperAdmin: targetUser.isSuperAdmin,
+              userId: targetUser.id,
+              avatarUrl: targetUser.avatar,
+              username: targetUser.username,
               radius: avatarRadius,
               enableNavigation: false,
               memCacheWidth: calculatedMemCacheSize,
@@ -199,7 +174,7 @@ class OpenProfileLayout extends StatelessWidget {
               children: [
                 Flexible(
                   child: Text(
-                    user?.username ?? '',
+                    targetUser.username,
                     style: usernameStyle,
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -210,11 +185,11 @@ class OpenProfileLayout extends StatelessWidget {
                       horizontal: isDesktop ? 8 : 6,
                       vertical: isDesktop ? 2 : 1.5),
                   decoration: BoxDecoration(
-                    color: _getLevelColor(user?.level ?? 1),
+                    color: _getLevelColor(targetUser.level),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
-                    'Lv.${user?.level ?? 1}',
+                    'Lv.${targetUser.level}',
                     style: TextStyle(
                       fontSize: levelFontSize,
                       color: Colors.white,
@@ -226,58 +201,37 @@ class OpenProfileLayout extends StatelessWidget {
             ),
             SizedBox(height: verticalSpacingSmall),
             Text(
-              '${user?.experience ?? 0} XP',
+              '${targetUser.experience} XP',
               style: xpStyle,
             ),
             SizedBox(height: verticalSpacingMedium),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                _buildFollowInfo(context, '关注', user?.following.length ?? 0,
+                _buildFollowInfo(context, '关注', targetUser.following.length,
                     isDesktop: isDesktop),
                 SizedBox(width: isDesktop ? 20 : 16),
-                _buildFollowInfo(context, '粉丝', user?.followers.length ?? 0,
+                _buildFollowInfo(context, '粉丝', targetUser.followers.length,
                     isDesktop: isDesktop),
               ],
             ),
             if (hasSignature) ...[
               SizedBox(height: verticalSpacingMedium),
-              Padding(
-                padding:
-                    EdgeInsets.symmetric(horizontal: isDesktop ? 24.0 : 16.0),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.format_quote_rounded,
-                      size: isDesktop ? 18 : 14,
-                      color: Colors.grey.shade500,
-                    ),
-                    SizedBox(width: isDesktop ? 6 : 4),
-                    Flexible(
-                      child: AppText(
-                        signatureText,
-                        textAlign: TextAlign.center,
-                        style: signatureStyle,
-                        maxLines: signatureMaxLines,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              UserSignature(
+                isDesktop: isDesktop,
+                signature: signatureText,
+              )
             ],
             SizedBox(height: verticalSpacingMedium),
             Text(
-              '创建于 ${_formatDate(user?.createTime)}',
+              '创建于 ${_formatDate(targetUser.createTime)}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                     fontSize: createTimeFontSize,
                   ),
             ),
             SizedBox(height: verticalSpacingMedium),
-            if (!isCurrentUser)
+            if (currentUserId != targetUserId)
               Transform.scale(
                 scale: isDesktop ? 1.0 : 0.95,
                 child: FollowUserButton(
@@ -390,19 +344,17 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildGamesList(BuildContext context) {
-    return ListView.builder(
+    return AnimatedListView<Game>(
+      items: publishedGames!,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: publishedGames!.length,
-      itemBuilder: (context, index) {
-        return FadeInSlideUpItem(
-          delay: Duration(milliseconds: 50 * index),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: ProfileGameCard(
-              game: publishedGames![index],
-              isGridItem: false,
-            ),
+      padding: EdgeInsets.zero,
+      itemBuilder: (context, index, game) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12.0),
+          child: CommonGameCard(
+            game: game,
+            isGridItem: false,
           ),
         );
       },
@@ -410,42 +362,42 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildGamesGrid(BuildContext context) {
-    final crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(context);
+    final crossAxisCount =
+        DeviceUtils.calculateGameCardsInGameListPerRow(context);
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
-    return GridView.builder(
+    return AnimatedContentGrid<Game>(
+      items: publishedGames!,
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: cardRatio,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: crossAxisCount,
-        childAspectRatio: cardRatio,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
-      ),
-      itemCount: publishedGames!.length,
-      itemBuilder: (context, index) {
-        return FadeInSlideUpItem(
-          delay: Duration(milliseconds: 50 * index),
-          child: ProfileGameCard(
-            game: publishedGames![index],
-            isGridItem: true,
-          ),
+      padding: EdgeInsets.zero,
+      itemBuilder: (context, index, game) {
+        return CommonGameCard(
+          game: game,
+          isGridItem: true,
         );
       },
     );
   }
 
   Widget _buildPostsList(BuildContext context) {
-    return ListView.builder(
+    return AnimatedListView<Post>(
+      items: recentPosts!,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
-      itemCount: recentPosts!.length,
-      itemBuilder: (context, index) {
-        return FadeInSlideUpItem(
-          delay: Duration(milliseconds: 50 * index),
-          child: Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: ProfilePostCard(post: recentPosts![index]),
+      padding: EdgeInsets.zero,
+      itemBuilder: (context, index, post) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 8.0),
+          child: BasePostCard(
+            post: post,
+            followService: followService,
+            currentUser: authProvider.currentUser,
+            infoProvider: infoProvider,
           ),
         );
       },
@@ -453,8 +405,6 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildUserStatistics(BuildContext context) {
-    if (user == null) return const SizedBox.shrink();
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(
@@ -493,7 +443,7 @@ class OpenProfileLayout extends StatelessWidget {
               context,
               icon: Icons.calendar_today,
               title: '连续签到',
-              value: '${user?.consecutiveCheckIn ?? 0} 天',
+              value: '${targetUser.consecutiveCheckIn ?? 0} 天',
               color: Colors.orange,
             ),
             const Divider(height: 24),
@@ -501,7 +451,7 @@ class OpenProfileLayout extends StatelessWidget {
               context,
               icon: Icons.check_circle_outline,
               title: '累计签到',
-              value: '${user?.totalCheckIn ?? 0} 天',
+              value: '${targetUser.totalCheckIn ?? 0} 天',
               color: Colors.purple,
             ),
           ],

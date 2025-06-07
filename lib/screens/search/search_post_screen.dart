@@ -1,5 +1,6 @@
 // lib/screens/search/search_post_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'dart:async';
 
 // Models
@@ -14,9 +15,7 @@ import 'package:suxingchahui/services/main/user/user_service.dart';
 
 // Providers
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-
+import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -46,6 +45,10 @@ class SearchPostScreen extends StatefulWidget {
 
   @override
   _SearchPostScreenState createState() => _SearchPostScreenState();
+}
+
+class _LoadingIndicatorPlaceholder {
+  const _LoadingIndicatorPlaceholder();
 }
 
 class _SearchPostScreenState extends State<SearchPostScreen> {
@@ -215,7 +218,8 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       // LoadingRouteObserver 相关代码已删除
 
       try {
-        final PostListPagination resultsData = await widget.postService.searchPosts(
+        final PostListPagination resultsData =
+            await widget.postService.searchPosts(
           query: trimmedQuery,
           page: _currentPage,
           limit: _limit,
@@ -393,7 +397,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               begin: Alignment.centerLeft,
               end: Alignment.centerRight,
               colors: [
-                ...CustomAppBar.appBarColors,
+                ...GlobalConstants.defaultAppBarColors,
               ],
             ),
           ),
@@ -536,7 +540,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
 
   // --- 构建搜索结果 UI ---
   Widget _buildSearchResults() {
-    // 空状态处理 (保持不变)
     if (!_isSearching &&
         _searchResults.isEmpty &&
         !_isLoadingMore &&
@@ -547,51 +550,45 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       );
     }
 
-    // 定义卡片动画参数
-    const Duration cardAnimationDuration = Duration(milliseconds: 350);
-    const Duration cardDelayIncrement = Duration(milliseconds: 40);
+    // 准备要显示的所有项目，包括帖子和加载指示器的占位符
+    final List<Object> displayItems = [..._searchResults];
+    if (_isLoadingMore) {
+      displayItems.add(const _LoadingIndicatorPlaceholder());
+    }
 
-    // 结果列表 + 加载更多指示器
-    return ListView.builder(
-      controller: _scrollController,
+    // 使用封装好的 AnimatedListView
+    return AnimatedListView<Object>(
+      listKey:
+          ValueKey('search_post_results_${_searchController.text}'), // 提供一个Key
+      items: displayItems,
+      physics: const AlwaysScrollableScrollPhysics(), // 确保可滚动
       padding: const EdgeInsets.all(8.0),
-      itemCount: _searchResults.length + (_isLoadingMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        // 加载更多指示器 (保持不变)
-        if (index == _searchResults.length) {
-          return _isLoadingMore
-              ? const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16.0),
-                  child: Center(child: CircularProgressIndicator()),
-                )
-              : const SizedBox.shrink();
-        }
-
-        // 帖子卡片 (确保 index 在范围内)
-        if (index < _searchResults.length) {
-          final post = _searchResults[index];
-          // --- 使用 FadeInSlideUpItem 包裹卡片 ---
-          return FadeInSlideUpItem(
-            key: ValueKey(post
-                .id), // PostCard 内部已经有 Key(ValueKey(post.id)) 了，这里可以省略，避免冲突或冗余
-            duration: cardAnimationDuration,
-            delay: cardDelayIncrement * index,
-            child: Padding(
-              // 保持原有的 Padding
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: BasePostCard(
-                currentUser: widget.authProvider.currentUser,
-                post: post,
-                followService: widget.followService,
-                infoProvider: widget.infoProvider,
-                onDeleteAction: _handleDeletePostAction,
-                onEditAction: _handleEditPostAction,
-                onToggleLockAction: _handleToggleLockAction,
-              ),
+      itemBuilder: (context, index, item) {
+        // 如果项目是帖子
+        if (item is Post) {
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: BasePostCard(
+              currentUser: widget.authProvider.currentUser,
+              post: item,
+              followService: widget.followService,
+              infoProvider: widget.infoProvider,
+              onDeleteAction: _handleDeletePostAction,
+              onEditAction: _handleEditPostAction,
+              onToggleLockAction: _handleToggleLockAction,
             ),
           );
         }
-        return Container(); // 安全返回
+
+        // 如果项目是加载指示器的占位符
+        if (item is _LoadingIndicatorPlaceholder) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }

@@ -1,24 +1,31 @@
 // lib/widgets/ui/common/empty_state_widget.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
+/// 该文件定义了 EmptyStateWidget 组件，用于显示空状态提示。
+/// 该组件支持消息文本、图标和操作按钮。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+
+/// `EmptyStateWidget` 类：显示空状态提示的组件。
+///
+/// 该组件提供消息文本、图标和操作按钮。
 class EmptyStateWidget extends StatelessWidget {
-  /// 要显示的提示信息 (必需)。
-  final String message;
-  /// 在消息上方显示的可选图标数据。
-  final IconData? iconData;
-  /// 在消息下方显示的可选操作小部件 (例如按钮)。
-  final Widget? action;
-  /// 可选的图标颜色。默认为主题的提示颜色 (`Theme.of(context).hintColor`) 并带有透明度。
-  final Color? iconColor;
-  /// 可选的文本样式。默认为主题的 `titleMedium` 样式，颜色为灰色。
-  final TextStyle? textStyle;
-  /// 可选的图标大小。默认为 60.0。
-  final double? iconSize;
+  final String message; // 要显示的提示信息
+  final IconData? iconData; // 消息上方显示的图标
+  final Widget? action; // 消息下方显示的操作组件
+  final Color? iconColor; // 图标颜色
+  final TextStyle? textStyle; // 文本样式
+  final double? iconSize; // 图标大小
 
-  /// 创建一个 EmptyStateWidget。
+  /// 构造函数。
   ///
-  /// [message] 是必须的。
+  /// [message]：提示信息。
+  /// [iconData]：图标。
+  /// [action]：操作组件。
+  /// [iconColor]：图标颜色。
+  /// [textStyle]：文本样式。
+  /// [iconSize]：图标大小。
   const EmptyStateWidget({
     super.key,
     required this.message,
@@ -29,48 +36,46 @@ class EmptyStateWidget extends StatelessWidget {
     this.iconSize,
   });
 
+  /// 构建 EmptyStateWidget。
   @override
   Widget build(BuildContext context) {
     final ThemeData theme = Theme.of(context);
-    final Color defaultIconColor = theme.hintColor.withSafeOpacity(0.7);
+    final Color defaultIconColor =
+        theme.hintColor.withSafeOpacity(0.7); // 默认图标颜色
     final TextStyle defaultTextStyle = theme.textTheme.titleMedium?.copyWith(
-      color: Colors.grey[600], // 使用稍深的灰色以提高对比度
-      height: 1.5, // 增加行高，改善可读性
-    ) ??
-        TextStyle(fontSize: 16, color: Colors.grey[600], height: 1.5); // 后备样式
+          color: Colors.grey[600],
+          height: 1.5,
+        ) ??
+        const TextStyle(
+            fontSize: 16, color: Colors.grey, height: 1.5); // 默认文本样式
 
-    return Center( // 将内容垂直和水平居中
+    return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24.0), // 在内容周围添加一些边距
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center, // 垂直居中 Column 内容
-          crossAxisAlignment: CrossAxisAlignment.center, // 水平居中 Column 内容
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            // 1. 显示图标 (如果提供了 iconData)
-            if (iconData != null)
+            if (iconData != null) // 显示图标
               Icon(
                 iconData,
-                size: iconSize ?? 60.0, // 使用提供的图标大小或默认值
-                color: iconColor ?? defaultIconColor, // 使用提供的颜色或默认颜色
+                size: iconSize ?? 60.0, // 使用指定或默认图标大小
+                color: iconColor ?? defaultIconColor, // 使用指定或默认图标颜色
               ),
 
-            // 2. 图标和文字之间的间距 (仅当图标存在时添加)
-            if (iconData != null)
+            if (iconData != null) // 图标与文本间距
               const SizedBox(height: 16.0),
 
-            // 3. 显示消息文本
             Text(
-              message,
-              textAlign: TextAlign.center, // 文本居中对齐
-              style: textStyle ?? defaultTextStyle, // 使用提供的样式或默认样式
+              message, // 消息文本
+              textAlign: TextAlign.center, // 文本居中
+              style: textStyle ?? defaultTextStyle, // 使用指定或默认文本样式
             ),
 
-            // 4. 文字和操作按钮之间的间距 (仅当操作存在时添加)
-            if (action != null)
+            if (action != null) // 文本与操作间距
               const SizedBox(height: 24.0),
 
-            // 5. 显示操作按钮 (如果提供了 action)
-            if (action != null) action!,
+            if (action != null) action!, // 显示操作组件
           ],
         ),
       ),

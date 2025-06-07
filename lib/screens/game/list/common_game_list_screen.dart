@@ -7,6 +7,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -119,44 +120,42 @@ class CommonGameListScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildContentList(
-      {required BuildContext context, required bool isDesktop}) {
-    int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
-        withPanels: false);
-    if (cardsPerRow <= 0) cardsPerRow = 1;
+  Widget _buildContentList({
+    required BuildContext context,
+    required bool isDesktop,
+  }) {
+    final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      withPanels: false,
+    );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
-    return GridView.builder(
-        key: PageStorageKey('game_grid_$title'),
-        physics: AlwaysScrollableScrollPhysics(),
-        padding: EdgeInsets.all(isDesktop ? 16 : 8),
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: cardsPerRow,
-          childAspectRatio: cardRatio,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: isDesktop ? 16 : 8,
-        ),
-        itemCount: games.length,
-        itemBuilder: (context, index) {
-          final game = games[index];
-          return FadeInItem(
-            child: customCardBuilder != null
-                ? customCardBuilder!(game)
-                : BaseGameCard(
-                    key: ValueKey(game.id),
-                    currentUser: currentUser,
-                    game: game,
-                    isGridItem: true,
-                    adaptForPanels: false,
-                    showCollectionStats: true,
-                    forceCompact: cardsPerRow > 3,
-                    maxTags: 1, // 简化，如果需要更复杂逻辑可在 BaseGameCard 内处理
-                    onDeleteAction: onDeleteGameAction != null
-                        ? () => onDeleteGameAction!(game)
-                        : null,
-                  ),
-          );
-        });
+    return AnimatedContentGrid<Game>(
+      gridKey: PageStorageKey('game_grid_$title'),
+      items: games,
+      crossAxisCount: cardsPerRow > 0 ? cardsPerRow : 1,
+      childAspectRatio: cardRatio,
+      padding: EdgeInsets.all(isDesktop ? 16 : 8),
+      mainAxisSpacing: isDesktop ? 16 : 8,
+      itemBuilder: (context, index, game) {
+        // itemBuilder 专注于构建业务卡片。
+        return customCardBuilder != null
+            ? customCardBuilder!(game)
+            : BaseGameCard(
+                key: ValueKey(game.id),
+                currentUser: currentUser,
+                game: game,
+                isGridItem: true,
+                adaptForPanels: false,
+                showCollectionStats: true,
+                forceCompact: cardsPerRow > 3,
+                maxTags: 1,
+                onDeleteAction: onDeleteGameAction != null
+                    ? () => onDeleteGameAction!(game)
+                    : null,
+              );
+      },
+    );
   }
 
   List<Widget> _buildAppBarActions(BuildContext context, bool isDesktop) {

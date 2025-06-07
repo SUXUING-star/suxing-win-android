@@ -1,50 +1,77 @@
 // lib/layouts/main_layout.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/app.dart';
-import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
-import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
-import 'package:suxingchahui/services/main/activity/activity_service.dart';
-import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
-import 'package:suxingchahui/services/main/forum/post_service.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
-import 'package:suxingchahui/services/main/message/message_service.dart';
-import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
-import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/screens/home/home_screen.dart';
-import 'package:suxingchahui/screens/game/list/games_list_screen.dart';
-import 'package:suxingchahui/screens/linkstools/linkstools_screen.dart';
-import 'package:suxingchahui/screens/activity/activity_feed_screen.dart';
-import 'package:suxingchahui/screens/forum/post_list_screen.dart';
-import 'package:suxingchahui/screens/profile/profile_screen.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/layouts/mobile/top_navigation_bar.dart';
-import 'package:suxingchahui/layouts/mobile/bottom_navigation_bar.dart';
 
+/// 该文件定义了 MainLayout 组件，它是应用的主体布局框架。
+/// MainLayout 负责集成底部导航栏、顶部导航栏和主要内容区域，并管理不同屏幕之间的切换。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/app.dart'; // 导入应用程序入口，用于访问路由观察者
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
+import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
+import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
+import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 导入活动服务
+import 'package:suxingchahui/services/main/announcement/announcement_service.dart'; // 导入公告服务
+import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
+import 'package:suxingchahui/services/main/game/game_service.dart'; // 导入游戏服务
+import 'package:suxingchahui/services/main/linktool/link_tool_service.dart'; // 导入链接工具服务
+import 'package:suxingchahui/services/main/message/message_service.dart'; // 导入消息服务
+import 'package:suxingchahui/services/main/user/user_checkin_service.dart'; // 导入用户签到服务
+import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/services/main/user/user_service.dart'; // 导入用户服务
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
+import 'package:suxingchahui/screens/home/home_screen.dart'; // 导入首页屏幕
+import 'package:suxingchahui/screens/game/list/games_list_screen.dart'; // 导入游戏列表屏幕
+import 'package:suxingchahui/screens/linkstools/linkstools_screen.dart'; // 导入链接工具屏幕
+import 'package:suxingchahui/screens/activity/activity_feed_screen.dart'; // 导入活动动态屏幕
+import 'package:suxingchahui/screens/forum/post_list_screen.dart'; // 导入帖子列表屏幕
+import 'package:suxingchahui/screens/profile/profile_screen.dart'; // 导入个人资料屏幕
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
+import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
+import 'package:suxingchahui/layouts/mobile/top_navigation_bar.dart'; // 导入移动端顶部导航栏
+import 'package:suxingchahui/layouts/mobile/bottom_navigation_bar.dart'; // 导入移动端底部导航栏
+
+/// `MainLayout` 类：应用的主体布局框架组件。
+///
+/// 该组件负责整合各种服务和 Provider，并根据导航状态显示不同的屏幕。
 class MainLayout extends StatefulWidget {
-  final SidebarProvider sidebarProvider;
-  final MessageService messageService;
-  final AuthProvider authProvider;
-  final UserService userService;
-  final GameService gameService;
-  final PostService postService;
-  final ActivityService activityService;
-  final LinkToolService linkToolService;
-  final UserFollowService followService;
-  final AnnouncementService announcementService;
-  final UserInfoProvider infoProvider;
-  final InputStateService inputStateService;
-  final UserCheckInService checkInService;
-  final GameListFilterProvider gameListFilterProvider;
-  final PostListFilterProvider postListFilterProvider;
-  final RateLimitedFileUpload fileUpload;
+  final SidebarProvider sidebarProvider; // 侧边栏 Provider
+  final MessageService messageService; // 消息服务
+  final AuthProvider authProvider; // 认证 Provider
+  final UserService userService; // 用户服务
+  final GameService gameService; // 游戏服务
+  final PostService postService; // 帖子服务
+  final ActivityService activityService; // 活动服务
+  final LinkToolService linkToolService; // 链接工具服务
+  final UserFollowService followService; // 用户关注服务
+  final AnnouncementService announcementService; // 公告服务
+  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final InputStateService inputStateService; // 输入状态 Provider
+  final UserCheckInService checkInService; // 用户签到服务
+  final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
+  final PostListFilterProvider postListFilterProvider; // 帖子列表筛选 Provider
+  final RateLimitedFileUpload fileUpload; // 限速文件上传服务
+
+  /// 构造函数。
+  ///
+  /// [sidebarProvider]：侧边栏 Provider。
+  /// [messageService]：消息服务。
+  /// [authProvider]：认证 Provider。
+  /// [activityService]：活动服务。
+  /// [linkToolService]：链接工具服务。
+  /// [postService]：帖子服务。
+  /// [gameService]：游戏服务。
+  /// [userService]：用户服务。
+  /// [followService]：关注服务。
+  /// [infoProvider]：用户信息 Provider。
+  /// [announcementService]：公告服务。
+  /// [inputStateService]：输入状态 Provider。
+  /// [checkInService]：签到服务。
+  /// [gameListFilterProvider]：游戏列表筛选 Provider。
+  /// [postListFilterProvider]：帖子列表筛选 Provider。
+  /// [fileUpload]：文件上传服务。
   const MainLayout({
     super.key,
     required this.sidebarProvider,
@@ -65,14 +92,18 @@ class MainLayout extends StatefulWidget {
     required this.fileUpload,
   });
 
+  /// 创建状态。
   @override
   _MainLayoutState createState() => _MainLayoutState();
 }
 
+/// `_MainLayoutState` 类：`MainLayout` 的状态管理。
+///
+/// 管理屏幕初始化、路由监听和子路由状态。
 class _MainLayoutState extends State<MainLayout> with RouteAware {
-  bool _hasInitializedProviders = false;
-  bool _hasInitializedScreens = false;
-  late List<Widget> _screens;
+  bool _hasInitializedProviders = false; // Provider 是否已初始化标记
+  bool _hasInitializedScreens = false; // 屏幕是否已初始化标记
+  late List<Widget> _screens; // 存储所有屏幕组件的列表
 
   @override
   void initState() {
@@ -82,57 +113,70 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    routeObserver.subscribe(this, ModalRoute.of(context)!); // 订阅路由变化
     if (!_hasInitializedProviders) {
-      _hasInitializedProviders = true;
+      _hasInitializedProviders = true; // 标记 Provider 已初始化
     }
     if (_hasInitializedProviders && !_hasInitializedScreens) {
-      _screens = _buildScreens();
-      _hasInitializedScreens = true;
+      _screens = _buildScreens(); // 构建屏幕列表
+      _hasInitializedScreens = true; // 标记屏幕已初始化
     }
   }
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this);
+    routeObserver.unsubscribe(this); // 取消路由订阅
     super.dispose();
   }
 
+  /// 路由被推入时调用。
   @override
   void didPush() {
-    _updateSubRouteStatus(false);
+    _updateSubRouteStatus(false); // 更新子路由状态为非激活
   }
 
+  /// 路由被弹出时调用。
   @override
   void didPop() {}
 
+  /// 新路由被推到当前路由之上时调用。
   @override
   void didPushNext() {
-    _updateSubRouteStatus(true);
+    _updateSubRouteStatus(true); // 更新子路由状态为激活
   }
 
+  /// 位于当前路由之上的路由被弹出时调用。
   @override
   void didPopNext() {
-    _updateSubRouteStatus(false);
+    _updateSubRouteStatus(false); // 更新子路由状态为非激活
   }
 
+  /// 更新侧边栏的子路由激活状态。
+  ///
+  /// [isActive]：子路由是否激活。
   void _updateSubRouteStatus(bool isActive) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        widget.sidebarProvider.setSubRouteActive(isActive);
+        widget.sidebarProvider.setSubRouteActive(isActive); // 设置子路由激活状态
       }
     });
   }
 
-  // _handleProfileTap 现在需要 isLoggedIn 参数
+  /// 处理个人资料点击。
+  ///
+  /// [isLoggedIn]：当前用户是否已登录。
+  /// 根据登录状态导航到个人资料屏幕或登录屏幕。
   void _handleProfileTap(bool isLoggedIn) {
     if (isLoggedIn) {
-      widget.sidebarProvider.setCurrentIndex(5); // 假设 5 是 ProfileScreen 的索引
+      widget.sidebarProvider.setCurrentIndex(5); // 导航到个人资料屏幕（索引 5）
     } else {
-      NavigationUtils.navigateToLogin(context);
+      NavigationUtils.navigateToLogin(context); // 导航到登录屏幕
     }
   }
 
+  /// 构建所有应用程序屏幕的列表。
+  ///
+  /// 返回一个包含所有屏幕组件的列表。
   List<Widget> _buildScreens() {
     return [
       HomeScreen(
@@ -176,54 +220,61 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
     ];
   }
 
+  /// 构建应用程序的主布局界面。
+  ///
+  /// 该方法根据设备类型（桌面或移动端）和导航状态，
+  /// 显示不同的顶部栏、底部导航栏和 IndexedStack 管理的屏幕内容。
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
 
     return StreamBuilder<int>(
-      // 最外层的 StreamBuilder 不变
-      stream: widget.sidebarProvider.indexStream,
-      initialData: widget.sidebarProvider.currentIndex,
+      stream: widget.sidebarProvider.indexStream, // 监听侧边栏索引流
+      initialData: widget.sidebarProvider.currentIndex, // 初始侧边栏索引
       builder: (context, sidebarSnapshot) {
-        final selectedIndex =
-            sidebarSnapshot.data ?? widget.sidebarProvider.currentIndex;
+        final selectedIndex = sidebarSnapshot.data ??
+            widget.sidebarProvider.currentIndex; // 获取当前选中索引
         final validIndex = selectedIndex >= 0 && selectedIndex < _screens.length
             ? selectedIndex
-            : 0;
+            : 0; // 确保索引有效
 
         final bottomBar = CustomBottomNavigationBar(
-          currentIndex: validIndex,
-          onTap: (index) => widget.sidebarProvider.setCurrentIndex(index),
+          currentIndex: validIndex, // 底部导航栏当前索引
+          onTap: (index) =>
+              widget.sidebarProvider.setCurrentIndex(index), // 底部导航栏点击回调
         );
         final indexedStack = IndexedStack(
-          index: validIndex,
-          children: _screens,
+          index: validIndex, // IndexedStack 当前索引
+          children: _screens, // IndexedStack 子组件列表
         );
 
         return StreamBuilder<bool>(
-          stream: widget.authProvider.isLoggedInStream,
-          initialData: widget.authProvider.isLoggedIn,
+          stream: widget.authProvider.isLoggedInStream, // 监听认证状态流
+          initialData: widget.authProvider.isLoggedIn, // 初始认证状态
           builder: (context, isLoggedInSnapshot) {
-            final bool isLoggedIn =
-                isLoggedInSnapshot.data ?? widget.authProvider.isLoggedIn;
-            // 主体 Scaffold 结构
+            final bool isLoggedIn = isLoggedInSnapshot.data ??
+                widget.authProvider.isLoggedIn; // 获取当前登录状态
+
             Widget mainContent = Scaffold(
-              appBar: !isDesktop
+              appBar: !isDesktop // 非桌面平台显示顶部导航栏
                   ? TopNavigationBar(
                       announcementService: widget.announcementService,
                       messageService: widget.messageService,
                       checkInService: widget.checkInService,
-                      authProvider: widget.authProvider, // TopNav 内部处理认证状态显示
+                      authProvider: widget.authProvider,
                       onLogoTap: () {
-                        widget.sidebarProvider.setCurrentIndex(0);
+                        widget.sidebarProvider
+                            .setCurrentIndex(0); // 点击 Logo 导航到首页
                       },
-                      onProfileTap: () => _handleProfileTap(isLoggedIn),
+                      onProfileTap: () =>
+                          _handleProfileTap(isLoggedIn), // 点击个人资料回调
                     )
-                  : null,
-              body: indexedStack,
-              bottomNavigationBar: !isDesktop ? bottomBar : null,
+                  : null, // 桌面平台不显示顶部导航栏
+              body: indexedStack, // 主体内容为 IndexedStack
+              bottomNavigationBar:
+                  !isDesktop ? bottomBar : null, // 非桌面平台显示底部导航栏
             );
-            return mainContent; // AuthProvider 不在加载状态，直接返回主内容
+            return mainContent; // 返回主内容组件
           },
         );
       },

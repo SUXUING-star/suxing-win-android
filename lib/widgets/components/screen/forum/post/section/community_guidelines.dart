@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/forum/post/community_guidelines.dart
+// lib/widgets/components/screen/forum/post/section/community_guidelines.dart
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';

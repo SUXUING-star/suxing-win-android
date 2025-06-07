@@ -1,26 +1,51 @@
 // lib/widgets/ui/appbar/custom_sliver_app_bar.dart
-import 'package:flutter/material.dart';
-import 'dart:io' show Platform;
 
+/// 该文件定义了 CustomSliverAppBar 组件，一个可定制的 SliverAppBar。
+/// CustomSliverAppBar 支持自定义标题、动作按钮、背景和折叠行为。
+library;
+
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'dart:io' show Platform; // 导入 Platform 类，用于获取平台信息
+
+/// `CustomSliverAppBar` 类：一个可定制的 SliverAppBar 组件。
+///
+/// 该组件提供标题、动作按钮、前导组件和底部组件，并支持折叠、悬浮和吸顶行为。
 class CustomSliverAppBar extends StatelessWidget {
-  final String titleText;
-  final List<Widget>? actions;
-  final Widget? leading;
-  final PreferredSizeWidget? bottom;
-  final bool pinned;
-  final bool floating;
-  final bool snap;
-  final double? expandedHeight;
-  final double? collapsedHeight;
-  final double toolbarHeight;
-  final bool? centerTitle; // 可选，让它根据平台/主题决定
-  final Widget? flexibleSpaceBackground; // 用于展开时的背景
-  final Color collapsedBackgroundColor; // 收起时的背景色 (非可选)
-  final TextStyle? titleTextStyle; // 允许自定义标题样式
-  final IconThemeData? iconTheme; // 控制 leading 图标颜色
-  final IconThemeData? actionsIconTheme; // 控制 actions 图标颜色
+  final String titleText; // 顶部栏标题文本
+  final List<Widget>? actions; // 右侧动作按钮列表
+  final Widget? leading; // 左侧前导组件
+  final PreferredSizeWidget? bottom; // 底部组件
+  final bool pinned; // AppBar 是否吸顶
+  final bool floating; // AppBar 是否悬浮
+  final bool snap; // AppBar 是否在浮动时自动吸附
+  final double? expandedHeight; // AppBar 展开时的高度
+  final double? collapsedHeight; // AppBar 收起时的高度
+  final double toolbarHeight; // 工具栏高度
+  final bool? centerTitle; // 标题是否居中
+  final Widget? flexibleSpaceBackground; // 灵活空间背景
+  final Color collapsedBackgroundColor; // 收起时的背景色
+  final TextStyle? titleTextStyle; // 标题文本样式
+  final IconThemeData? iconTheme; // 前导图标主题
+  final IconThemeData? actionsIconTheme; // 动作图标主题
 
-
+  /// 构造函数。
+  ///
+  /// [titleText]：标题文本。
+  /// [actions]：动作按钮。
+  /// [leading]：前导组件。
+  /// [bottom]：底部组件。
+  /// [pinned]：是否吸顶。
+  /// [floating]：是否悬浮。
+  /// [snap]：是否吸附。
+  /// [expandedHeight]：展开高度。
+  /// [collapsedHeight]：收起高度。
+  /// [toolbarHeight]：工具栏高度。
+  /// [centerTitle]：标题是否居中。
+  /// [flexibleSpaceBackground]：灵活空间背景。
+  /// [collapsedBackgroundColor]：收起时背景色。
+  /// [titleTextStyle]：标题文本样式。
+  /// [iconTheme]：前导图标主题。
+  /// [actionsIconTheme]：动作图标主题。
   const CustomSliverAppBar({
     super.key,
     required this.titleText,
@@ -32,45 +57,31 @@ class CustomSliverAppBar extends StatelessWidget {
     this.snap = false,
     this.expandedHeight,
     this.collapsedHeight,
-    this.toolbarHeight = kToolbarHeight, // 默认标准高度
-    this.centerTitle, // 不设置默认值，让 SliverAppBar 自己决定
+    this.toolbarHeight = kToolbarHeight,
+    this.centerTitle,
     this.flexibleSpaceBackground,
-    this.collapsedBackgroundColor = const Color(0xFF6AB7F0), // 默认浅蓝
-    this.titleTextStyle, // 允许覆盖默认样式
-    this.iconTheme = const IconThemeData(color: Colors.white), // 默认白色图标
-    this.actionsIconTheme = const IconThemeData(color: Colors.white), // 默认白色图标
-  }) : assert(!snap || floating, 'snap=true requires floating=true');
+    this.collapsedBackgroundColor = const Color(0xFF6AB7F0),
+    this.titleTextStyle,
+    this.iconTheme = const IconThemeData(color: Colors.white),
+    this.actionsIconTheme = const IconThemeData(color: Colors.white),
+  }) : assert(!snap || floating, 'snap=true 需要 floating=true。');
 
-  // // 辅助函数：构建默认底部线条 (可选)
-  // PreferredSizeWidget _buildDefaultBottom(BuildContext context, bool isAndroidLandscape) {
-  //   final double bottomLineHeightFactor = isAndroidLandscape ? 0.5 : 1.0;
-  //   final double visualHeight = 1.0 * bottomLineHeightFactor;
-  //   final double preferredHeight = 4.0 * bottomLineHeightFactor;
-  //
-  //   return PreferredSize(
-  //     preferredSize: Size.fromHeight(preferredHeight),
-  //     child: Opacity(
-  //       opacity: 0.7,
-  //       child: Container(
-  //         color: Colors.white.withSafeOpacity(0.2),
-  //         height: visualHeight,
-  //       ),
-  //     ),
-  //   );
-  // }
-
+  /// 构建自定义 SliverAppBar。
+  ///
+  /// 该方法根据平台、高度、样式等参数构建 SliverAppBar。
   @override
   Widget build(BuildContext context) {
     final bool isAndroidLandscape = Platform.isAndroid &&
-        MediaQuery.of(context).orientation == Orientation.landscape;
+        MediaQuery.of(context).orientation ==
+            Orientation.landscape; // 判断是否为 Android 横屏
 
-    // 1. 确定标题样式
-    final double defaultFontSize = isAndroidLandscape ? 18.0 : 20.0;
+    final double defaultFontSize = isAndroidLandscape ? 18.0 : 20.0; // 默认字体大小
     final TextStyle effectiveTitleStyle = TextStyle(
-      color: Colors.white,
-      fontWeight: FontWeight.bold,
-      fontSize: defaultFontSize,
+      color: Colors.white, // 文本颜色
+      fontWeight: FontWeight.bold, // 字体粗细
+      fontSize: defaultFontSize, // 字体大小
       shadows: const [
+        // 文本阴影
         Shadow(
           offset: Offset(0, 1),
           blurRadius: 3.0,
@@ -79,16 +90,15 @@ class CustomSliverAppBar extends StatelessWidget {
       ],
     ).merge(titleTextStyle); // 合并外部传入的样式
 
-    // 2. 创建简单的 Text Widget
     final Widget titleContent = Text(
-      titleText,
-      style: effectiveTitleStyle,
-      maxLines: 1, // 确保单行
-      overflow: TextOverflow.ellipsis, // 超出省略
+      titleText, // 标题文本
+      style: effectiveTitleStyle, // 文本样式
+      maxLines: 1, // 最大行数
+      overflow: TextOverflow.ellipsis, // 溢出显示省略号
     );
 
-    // 3. 创建默认渐变背景 (如果 flexibleSpaceBackground 未提供)
     final Widget defaultGradientBackground = Container(
+      // 默认渐变背景
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.centerLeft,
@@ -101,61 +111,52 @@ class CustomSliverAppBar extends StatelessWidget {
       ),
     );
 
-    // 4. 准备 FlexibleSpaceBar (严格按照原始逻辑)
-    Widget? effectiveFlexibleSpace;
-    // 只有在需要展开时才创建 FlexibleSpaceBar
+    Widget? effectiveFlexibleSpace; // 有效的 FlexibleSpace
     if (expandedHeight != null && expandedHeight! > toolbarHeight) {
+      // 需要展开时创建 FlexibleSpaceBar
       effectiveFlexibleSpace = FlexibleSpaceBar(
-        // *** 关键：title 放在 FlexibleSpaceBar 里 ***
-        title: titleContent,
-        centerTitle: centerTitle, // 使用传入的 centerTitle 或让 FlexibleSpaceBar 决定
-        background: flexibleSpaceBackground ?? defaultGradientBackground,
-        stretchModes: const [StretchMode.zoomBackground, StretchMode.fadeTitle],
-        // 让 FlexibleSpaceBar 使用默认的 titlePadding 计算逻辑
-        // titlePadding: ..., // 不设置，使用默认值
+        title: titleContent, // 标题
+        centerTitle: centerTitle, // 标题是否居中
+        background: flexibleSpaceBackground ?? defaultGradientBackground, // 背景
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.fadeTitle
+        ], // 拉伸模式
       );
     } else {
-      // 如果不展开，flexibleSpace 就是背景
-      effectiveFlexibleSpace = flexibleSpaceBackground ?? defaultGradientBackground;
+      // 不展开时，FlexibleSpace 为背景
+      effectiveFlexibleSpace =
+          flexibleSpaceBackground ?? defaultGradientBackground;
     }
 
-    // 5. 返回标准 SliverAppBar
     return SliverAppBar(
-      // --- 基础参数 ---
-      leading: leading,
-      automaticallyImplyLeading: leading == null,
-      actions: actions,
-      pinned: pinned,
-      floating: floating,
-      snap: snap,
-      expandedHeight: expandedHeight,
-      collapsedHeight: collapsedHeight,
-      toolbarHeight: toolbarHeight,
-      centerTitle: centerTitle, // 传递给 SliverAppBar
+      leading: leading, // 前导组件
+      automaticallyImplyLeading: leading == null, // 自动推断前导组件
+      actions: actions, // 动作按钮
+      pinned: pinned, // 是否吸顶
+      floating: floating, // 是否悬浮
+      snap: snap, // 是否吸附
+      expandedHeight: expandedHeight, // 展开高度
+      collapsedHeight: collapsedHeight, // 收起高度
+      toolbarHeight: toolbarHeight, // 工具栏高度
+      centerTitle: centerTitle, // 标题是否居中
 
-      // --- 样式 ---
       backgroundColor: collapsedBackgroundColor, // 收起时的背景色
-      elevation: 0,
-      shadowColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      foregroundColor: Colors.white, // 影响默认图标颜色
-      iconTheme: iconTheme,
-      actionsIconTheme: actionsIconTheme,
-      // 提供基础的 titleTextStyle，但会被 FlexibleSpaceBar 里的 title 覆盖
-      titleTextStyle: effectiveTitleStyle.copyWith(fontSize: 16), // 收起时可以稍微小一点字号，可选
+      elevation: 0, // 阴影高度
+      shadowColor: Colors.transparent, // 阴影颜色透明
+      surfaceTintColor: Colors.transparent, // 表面着色透明
+      foregroundColor: Colors.white, // 前景色
+      iconTheme: iconTheme, // 前导图标主题
+      actionsIconTheme: actionsIconTheme, // 动作图标主题
+      titleTextStyle: effectiveTitleStyle.copyWith(fontSize: 16), // 标题文本样式
 
-      // --- 核心逻辑：title 和 titleSpacing ---
-      flexibleSpace: effectiveFlexibleSpace,
-      // *** 关键：如果使用了 FlexibleSpaceBar，这里的 title 必须为 null ***
-      title: (effectiveFlexibleSpace is FlexibleSpaceBar) ? null : titleContent,
-      // *** 关键：不设置 titleSpacing，使用 Flutter 默认值！ ***
-      // titleSpacing: null, // 或者干脆不写这行
+      flexibleSpace: effectiveFlexibleSpace, // 灵活空间
+      title: (effectiveFlexibleSpace is FlexibleSpaceBar)
+          ? null
+          : titleContent, // 标题
+      bottom: bottom, // 底部组件
 
-      // --- 底部 ---
-      bottom: bottom, // 直接使用传入的 bottom，不再加默认线，如果需要线，从外部传入
-
-      // --- 其他 ---
-      primary: true,
+      primary: true, // 是否为主 AppBar
     );
   }
 }

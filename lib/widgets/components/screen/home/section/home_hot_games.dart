@@ -1,6 +1,5 @@
 // lib/widgets/components/screen/home/section/home_hot_games.dart
 import 'package:flutter/material.dart';
-
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -99,7 +98,10 @@ class HomeHotGames extends StatelessWidget {
 
     final int cardsCountPerPage =
         getCardsPerPage(context); // 动态计算或由 HomeScreen 传入
-    final int totalGamePages = getTotalPages(cardsCountPerPage, displayGames);
+    final int totalGamePages = getTotalPages(
+      cardsCountPerPage,
+      displayGames,
+    );
 
     return Stack(
       children: [
@@ -124,11 +126,7 @@ class HomeHotGames extends StatelessWidget {
                       // 用户结束拖动
                       if (notification.dragDetails == null) {
                         // 确保是拖拽结束，而不是程序化滚动结束
-                        // 有时候 ScrollEndNotification 的 dragDetails 在fling后会是null
-                        // 更可靠的方式可能是在 PageView 的 onPageChanged 后延迟一小段时间判断
-                        // 或者依赖 HomeScreen 中的 _isUserInteractingWithHotGamesPager 状态
                       }
-                      // 简单处理：只要是 ScrollEnd 就认为用户可能结束了交互
                       // HomeScreen 那边会处理计时器的重置
                       onUserInteraction(false);
                     }
@@ -141,7 +139,6 @@ class HomeHotGames extends StatelessWidget {
                     itemBuilder: (context, pageIndex) {
                       final startIndex = pageIndex * cardsCountPerPage;
                       if (!context.mounted) return const SizedBox.shrink();
-                      // PageView 内部的 LayoutBuilder 保持不变，用于动态决定每页实际卡片数
                       return Container(
                         margin: EdgeInsets.symmetric(
                             horizontal: 8), // PageView item 的边距
@@ -151,8 +148,6 @@ class HomeHotGames extends StatelessWidget {
                               return const SizedBox.shrink();
                             }
                             double availableWidth = constraints.maxWidth;
-                            // 这里再次计算是为了确保 PageView 内部item能正确布局
-                            // 如果 HomeScreen 能准确预估这里的宽度，也可以由 HomeScreen 计算后传入
                             int actualCardsThisPage =
                                 (availableWidth / (cardWidth + cardMargin))
                                     .floor();
@@ -164,21 +159,13 @@ class HomeHotGames extends StatelessWidget {
                             for (int i = 0; i < actualCardsThisPage; i++) {
                               final gameIndex = startIndex + i;
                               if (gameIndex >= displayGames.length) break;
-
                               cardWidgets.add(
-                                FadeInSlideUpItem(
-                                  // 使用 playInitialAnimation 控制首次动画
-                                  delay: playInitialAnimation
-                                      ? Duration(milliseconds: 50 * i)
-                                      : Duration.zero,
-                                  duration: const Duration(milliseconds: 300),
-                                  child: HomeGameCard(
-                                    game: displayGames[gameIndex],
-                                    onTap: () => Navigator.pushNamed(
-                                      context,
-                                      AppRoutes.gameDetail,
-                                      arguments: displayGames[gameIndex],
-                                    ),
+                                HomeGameCard(
+                                  game: displayGames[gameIndex],
+                                  onTap: () => Navigator.pushNamed(
+                                    context,
+                                    AppRoutes.gameDetail,
+                                    arguments: displayGames[gameIndex],
                                   ),
                                 ),
                               );

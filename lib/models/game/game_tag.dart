@@ -1,4 +1,4 @@
-// lib/models/tag/game_tag.dart
+// lib/models/tag/game_tag_item.dart
 class GameTag {
   final String name;
   final int count;

@@ -25,7 +25,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart';
+import 'package:suxingchahui/widgets/components/screen/game/game_detail_layout.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -699,7 +699,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Widget _buildGameContent(Game game, bool isPending, bool isDesktop) {
     final bool isPreview = isPending;
     // 当审核状态就代表是预览状态
-    return GameDetailContent(
+    return GameDetailLayout(
       gameListFilterProvider: widget.gameListFilterProvider,
       authProvider: widget.authProvider,
       sidebarProvider: widget.sidebarProvider,

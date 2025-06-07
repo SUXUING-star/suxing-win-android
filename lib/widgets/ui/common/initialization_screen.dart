@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
+import 'package:suxingchahui/layouts/desktop/desktop_frame_layout.dart';
 import 'package:suxingchahui/providers/initialize/initialization_status.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
@@ -11,7 +12,6 @@ import 'package:suxingchahui/windows/ui/windows_controls.dart'; // 引入 Window
 import 'package:window_manager/window_manager.dart'; // 引入 window_manager
 import 'dart:math';
 
-import '../../../layouts/desktop/desktop_frame_layout.dart.dart'; // For Random
 
 class InitializationScreen extends StatefulWidget {
   final InitializationStatus status;

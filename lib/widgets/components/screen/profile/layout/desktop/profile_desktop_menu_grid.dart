@@ -50,11 +50,11 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
                   double maxCrossAxisExtent;
                   // 可以根据屏幕宽度设定不同的期望子项宽度
                   if (screenWidth < 800) {
-                    maxCrossAxisExtent = 180; // 小屏幕时，期望每个格子宽一点，列数少
+                    maxCrossAxisExtent = 160; // 小屏幕时，期望每个格子宽一点，列数少
                   } else if (screenWidth < 1200) {
-                    maxCrossAxisExtent = 200; // 中等屏幕
+                    maxCrossAxisExtent = 170; // 中等屏幕
                   } else {
-                    maxCrossAxisExtent = 220; // 大屏幕时，期望每个格子宽一点
+                    maxCrossAxisExtent = 200; // 大屏幕时，期望每个格子宽一点
                   }
                   // 宽高比也可以动态计算，或者保持固定
                   double childAspectRatio = 1.4; // 可以尝试固定或也根据 screenWidth 调整
@@ -93,12 +93,12 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
 
     // 为每个菜单项定义独特的颜色方案
 
-
-    final colorScheme = ProfileConstants.getProfileMenuColorScheme[item.title] ??
-        {
-          'background': Color(0xFFF0F0F0),
-          'icon': Colors.grey.shade700,
-        };
+    final colorScheme =
+        ProfileConstants.getProfileMenuColorScheme[item.title] ??
+            {
+              'background': Color(0xFFF0F0F0),
+              'icon': Colors.grey.shade700,
+            };
 
     return Card(
       elevation: 1,

@@ -5,6 +5,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -46,6 +47,14 @@ class PostFavoritesLayout extends StatefulWidget {
 
   @override
   _PostFavoritesLayoutState createState() => _PostFavoritesLayoutState();
+}
+
+class _LoadingMorePlaceholder {
+  const _LoadingMorePlaceholder();
+}
+
+class _LoadMoreButtonPlaceholder {
+  const _LoadMoreButtonPlaceholder();
 }
 
 class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with AutomaticKeepAliveClientMixin {
@@ -186,36 +195,39 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
     final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(context);
     final cardRatio = DeviceUtils.calculatePostCardRatio(context);
 
-    return ListView(
-      controller: widget.scrollController,
+    // 准备要显示的所有项目
+    final List<Object> displayItems = [...widget.favoritePosts];
+    if (widget.isLoadingMore) {
+      displayItems.add(const _LoadingMorePlaceholder());
+    } else if (widget.paginationData?.hasNextPage() ?? false) {
+      displayItems.add(const _LoadMoreButtonPlaceholder());
+    }
+
+    // 使用封装好的 AnimatedContentGrid
+    return AnimatedContentGrid<Object>(
+      items: displayItems,
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: cardRatio,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: isDesktop ? 16 : 8,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),
-      children: [
-        GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: cardRatio,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: isDesktop ? 16 : 8,
-          ),
-          itemCount: widget.favoritePosts.length,
-          itemBuilder: (context, index) {
-            final postItem = widget.favoritePosts[index];
-            return FadeInSlideUpItem(
-              delay: Duration(milliseconds: 50 * index),
-              duration: const Duration(milliseconds: 350),
-              child: _buildPostCard(postItem, isDesktop),
-            );
-          },
-        ),
-        if (widget.isLoadingMore)
-          Padding(
+      itemBuilder: (context, index,item) {
+        // 如果项目是帖子
+        if (item is Post) {
+          return _buildPostCard(item, isDesktop);
+        }
+
+        // 如果项目是加载指示器
+        if (item is _LoadingMorePlaceholder) {
+          return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: FadeInItem(child: LoadingWidget.inline(message: "正在加载更多")),
-          ),
-        if (!widget.isLoadingMore && (widget.paginationData?.hasNextPage() ?? false) && widget.favoritePosts.isNotEmpty)
-          Padding(
+            child: LoadingWidget.inline(message: "正在加载更多"),
+          );
+        }
+
+        // 如果项目是加载更多按钮
+        if (item is _LoadMoreButtonPlaceholder) {
+          return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16.0),
             child: Center(
               child: FunctionalTextButton(
@@ -223,11 +235,13 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
                 label: '加载更多',
               ),
             ),
-          ),
-      ],
+          );
+        }
+
+        return const SizedBox.shrink();
+      },
     );
   }
-
   Widget _buildPostCard(Post postItem, bool isDesktop) {
     return Stack(
       children: [

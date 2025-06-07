@@ -12,7 +12,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/widgets/components/screen/game/game_detail_content.dart';
+import 'package:suxingchahui/widgets/components/screen/game/game_detail_layout.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class GamePreviewScreen extends StatelessWidget {
@@ -58,7 +58,7 @@ class GamePreviewScreen extends StatelessWidget {
   }
 
   Widget _buildGameContent(BuildContext context, bool isDesktop) {
-    return GameDetailContent(
+    return GameDetailLayout(
       sidebarProvider: sidebarProvider,
       gameListFilterProvider: gameListFilterProvider,
       gameCollectionService: gameCollectionService,

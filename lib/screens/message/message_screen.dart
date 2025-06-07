@@ -145,7 +145,7 @@ class _MessageScreenState extends State<MessageScreen>
         _isLoading = false;
       }); // 加载失败也要结束加载状态
       // 显示错误提示
-      showSnackbar(message: '加载消息失败: $e', type: SnackbarType.error);
+      showSnackBar(message: '加载消息失败: $e', type: SnackBarType.error);
     }
   }
 
@@ -187,12 +187,12 @@ class _MessageScreenState extends State<MessageScreen>
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
 
-      showSnackbar(message: '已将所有消息标记为已读', type: SnackbarType.success);
+      showSnackBar(message: '已将所有消息标记为已读', type: SnackBarType.success);
     } catch (e) {
       if (mounted) {
         // 标记失败时，也建议重新加载以获取真实状态
         await _loadGroupedMessages();
-        showSnackbar(message: '标记已读操作失败，请重试: $e', type: SnackbarType.error);
+        showSnackBar(message: '标记已读操作失败，请重试: $e', type: SnackBarType.error);
       }
     }
   }
@@ -288,7 +288,7 @@ class _MessageScreenState extends State<MessageScreen>
       ).catchError((e, stackTrace) {
         // 处理导航过程中可能发生的错误 (例如路由不存在或参数错误)
         //print("导航失败: Route=${navigationInfo.routeName}, Args=${navigationInfo.arguments}, Error: $e\n$stackTrace");
-        showSnackbar(message: '无法打开目标页面，请稍后重试。', type: SnackbarType.error);
+        showSnackBar(message: '无法打开目标页面，请稍后重试。', type: SnackBarType.error);
       });
     } else {
       // 如果没有导航信息，提示用户
@@ -359,13 +359,13 @@ class _MessageScreenState extends State<MessageScreen>
           await _loadGroupedMessages();
 
           // 4. 显示成功提示 (检查 mounted)
-          showSnackbar(message: '消息已删除', type: SnackbarType.success);
+          showSnackBar(message: '消息已删除', type: SnackBarType.success);
         } catch (e) {
           //print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
           if (!mounted) return; // 异步操作后再次检查
 
           // 2. 显示错误提示
-          showSnackbar(message: '删除失败: $e', type: SnackbarType.error);
+          showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
         }
         // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
       },

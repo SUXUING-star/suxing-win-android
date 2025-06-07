@@ -215,7 +215,7 @@ class _GameCommentItemState extends State<GameCommentItem>
           await widget.onUpdateComment(item, text); // 调用父级回调
           // 成功后父级会刷新，Dialog 会关闭
         } catch (e) {
-          showSnackbar(message: '编辑失败: $e', type: SnackbarType.error);
+          showSnackBar(message: '编辑失败: $e', type: SnackBarType.error);
           // --- 出错时，结束本地 Loading ---
           if (mounted) {
             setState(() {
@@ -276,7 +276,7 @@ class _GameCommentItemState extends State<GameCommentItem>
           // 成功后父级会刷新列表，此 Item (或其 Reply 部分) 会消失
           // 所以成功时不需要在 finally 里清除本地 loading 状态
         } catch (e) {
-          showSnackbar(message: '删除失败: $e', type: SnackbarType.error);
+          showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
           // --- 出错时，结束本地 Loading ---
           // 如果删除失败，Item 还在，必须清除 loading 状态
           if (mounted) {

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -12,6 +13,14 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'game_review_panel.dart'; // Review 面板组件
+
+class _LoadingMorePlaceholder {
+  const _LoadingMorePlaceholder();
+}
+
+class _LoadMoreButtonPlaceholder {
+  const _LoadMoreButtonPlaceholder();
+}
 
 class GameCollectionLayout extends StatelessWidget {
   final GameCollectionCounts? collectionCounts;
@@ -143,32 +152,24 @@ class GameCollectionLayout extends StatelessWidget {
               Text('收藏统计', style: titleStyle),
               const SizedBox(height: 16),
               _buildStatRow(context,
-                  isDesktop: true,
-                  icon: Icons.favorite_border,
-                  title: '想玩',
-                  value: collectionCounts!.wantToPlay.toString(),
-                  color: Colors.blueAccent),
+                  isDesktop: isDesktop,
+                  statusType: GameCollectionStatus.wantToPlay,
+                  value: collectionCounts!.wantToPlay.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
-                  isDesktop: true,
-                  icon: Icons.gamepad_outlined,
-                  title: '在玩',
-                  value: collectionCounts!.playing.toString(),
-                  color: Colors.green),
+                  isDesktop: isDesktop,
+                  statusType: GameCollectionStatus.playing,
+                  value: collectionCounts!.playing.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
-                  isDesktop: true,
-                  icon: Icons.check_circle_outline,
-                  title: '已玩',
-                  value: collectionCounts!.played.toString(),
-                  color: Colors.purpleAccent),
+                  isDesktop: isDesktop,
+                  statusType: GameCollectionStatus.played,
+                  value: collectionCounts!.played.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
-                  isDesktop: true,
-                  icon: Icons.collections_bookmark_outlined,
-                  title: '总计',
-                  value: collectionCounts!.total.toString(),
-                  color: Colors.orangeAccent),
+                  isDesktop: isDesktop,
+                  statusType: GameCollectionStatus.all,
+                  value: collectionCounts!.total.toString()),
             ],
           ),
         ),
@@ -208,37 +209,50 @@ class GameCollectionLayout extends StatelessWidget {
               const EdgeInsets.only(left: 16.0, right: 16.0, bottom: 12.0),
           children: <Widget>[
             _buildStatRow(context,
-                isDesktop: false,
-                icon: Icons.favorite_border,
-                title: '想玩',
-                value: collectionCounts!.wantToPlay.toString(),
-                color: Colors.blueAccent),
+                isDesktop: isDesktop,
+                statusType: GameCollectionStatus.wantToPlay,
+                value: collectionCounts!.wantToPlay.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
-                isDesktop: false,
-                icon: Icons.gamepad_outlined,
-                title: '在玩',
-                value: collectionCounts!.playing.toString(),
-                color: Colors.green),
+                isDesktop: isDesktop,
+                statusType: GameCollectionStatus.playing,
+                value: collectionCounts!.playing.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
-                isDesktop: false,
-                icon: Icons.check_circle_outline,
-                title: '已玩',
-                value: collectionCounts!.played.toString(),
-                color: Colors.purpleAccent),
+                isDesktop: isDesktop,
+                statusType: GameCollectionStatus.played,
+                value: collectionCounts!.played.toString()),
           ],
         ),
       );
     }
   }
 
-  Widget _buildStatRow(BuildContext context,
-      {required bool isDesktop,
-      required IconData icon,
-      required String title,
-      required String value,
-      required Color color}) {
+  Widget _buildStatRow(
+    BuildContext context, {
+    required bool isDesktop,
+    required String statusType,
+    required String value,
+  }) {
+    late final GameCollectionStatusTheme theme;
+
+    switch (statusType) {
+      case GameCollectionStatus.wantToPlay:
+        theme = GameCollectionStatusUtils.wantToPlayTheme;
+        break;
+      case GameCollectionStatus.playing:
+        theme = GameCollectionStatusUtils.playingTheme;
+        break;
+      case GameCollectionStatus.played:
+        theme = GameCollectionStatusUtils.playedTheme;
+        break;
+      case GameCollectionStatus.all:
+        theme = GameCollectionStatusUtils.totalTheme;
+        break;
+      default:
+        theme = GameCollectionStatusUtils.getTheme(null);
+    }
+
     final titleTextStyle = TextStyle(
         color:
             Theme.of(context).textTheme.bodyMedium?.color?.withSafeOpacity(0.7),
@@ -256,16 +270,16 @@ class GameCollectionLayout extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: color.withSafeOpacity(0.1),
+                color: theme.textColor.withSafeOpacity(0.1),
                 borderRadius: BorderRadius.circular(8)),
-            child: Icon(icon, color: color, size: iconSize),
+            child: Icon(theme.icon, color: theme.textColor, size: iconSize),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(title, style: titleTextStyle),
+                Text(theme.text, style: titleTextStyle),
                 const SizedBox(height: 2),
                 Text(value, style: valueTextStyle),
               ],
@@ -277,7 +291,6 @@ class GameCollectionLayout extends StatelessWidget {
   }
 
   Widget _buildGamesContent(BuildContext context, {required bool isDesktop}) {
-    // 处理空状态
     if ((collectionCounts?.total ?? 0) == 0 &&
         collectedGames.isEmpty &&
         !isLoadingMore) {
@@ -293,27 +306,14 @@ class GameCollectionLayout extends StatelessWidget {
       );
     }
 
-    // 计算 GridView 的 itemCount
-    final itemCount = collectedGames.length +
-        (isLoadingMore || (hasMore && collectedGames.isNotEmpty) ? 1 : 0);
-
-    // 定义 GridView 的通用样式参数
-    final gridPadding = EdgeInsets.all(isDesktop ? 16 : 12);
-    final crossAxisSpacing = isDesktop ? 16.0 : 8.0;
-    final mainAxisSpacing = isDesktop ? 16.0 : 12.0;
-
-    // 使用 LayoutBuilder 获取中间游戏列表区域的实际可用宽度
     return LayoutBuilder(
       builder: (BuildContext context, BoxConstraints constraints) {
         final double actualAvailableWidthForGames = constraints.maxWidth;
 
-        // 如果可用宽度无效，则不渲染 GridView
         if (actualAvailableWidthForGames <= 0) {
           return const SizedBox.shrink();
         }
 
-        // 使用获取到的实际宽度来计算每行卡片数
-        // 当 directAvailableWidth 提供时，DeviceUtils 内部 targetCardWidth 的选择已修改为主要基于此宽度
         final int crossAxisCount =
             DeviceUtils.calculateGameCardsInGameListPerRow(
           context,
@@ -324,57 +324,60 @@ class GameCollectionLayout extends StatelessWidget {
           rightPanelVisible: isDesktop && selectedGameForReview != null,
         );
 
-        // 使用获取到的实际宽度和计算出的每行卡片数来计算卡片宽高比
-        // 当 direct* 参数提供时，DeviceUtils 内部 min/max ratio 的选择逻辑已更新
         final double cardRatio = DeviceUtils.calculateGameCardRatio(
           context,
           directAvailableWidth: actualAvailableWidthForGames,
           directCardsPerRow: crossAxisCount,
-          showTags: true, // 卡片是否显示标签
-          // 同上，下面参数主要用于兼容 DeviceUtils 方法签名
+          showTags: true,
           withPanels: isDesktop && selectedGameForReview != null,
           leftPanelVisible: false,
           rightPanelVisible: isDesktop && selectedGameForReview != null,
         );
 
-        // Badge 样式参数定义
-        final double statusBadgeFontSize = isDesktop ? 10 : 11;
-        final EdgeInsets statusBadgePadding = isDesktop
-            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
-            : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
-        final Radius statusBadgeTopRightRadius =
-            Radius.circular(isDesktop ? 10 : 8);
-        final Radius statusBadgeBottomLeftRadius =
-            Radius.circular(isDesktop ? 8 : 10);
-        final Offset statusBadgeShadowOffset =
-            isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
-        final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
+        // 准备要显示的所有项目
+        final List<Object> displayItems = [...collectedGames];
+        if (isLoadingMore) {
+          displayItems.add(const _LoadingMorePlaceholder());
+        } else if (hasMore && collectedGames.isNotEmpty) {
+          displayItems.add(const _LoadMoreButtonPlaceholder());
+        }
 
-        // 构建 GridView
-        return GridView.builder(
-          key: const ValueKey('game_collection_final_grid'), // 使用唯一的 Key
-          controller: scrollController,
-          padding: gridPadding,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: cardRatio,
-            crossAxisSpacing: crossAxisSpacing,
-            mainAxisSpacing: mainAxisSpacing,
-          ),
-          itemCount: itemCount,
-          itemBuilder: (context, index) {
-            if (index < collectedGames.length) {
-              final gameWithCollection = collectedGames[index];
+        // 使用 AnimatedContentGrid
+        return AnimatedContentGrid<Object>(
+          gridKey: const ValueKey('game_collection_final_grid'),
+          items: displayItems,
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: cardRatio,
+          crossAxisSpacing: isDesktop ? 16.0 : 8.0,
+          mainAxisSpacing: isDesktop ? 16.0 : 12.0,
+          padding: EdgeInsets.all(isDesktop ? 16 : 12),
+          itemBuilder: (context, index, item) {
+            // 如果是游戏
+            if (item is GameWithCollection) {
+              final gameWithCollection = item;
               final game = gameWithCollection.game;
-              if (game == null) return const SizedBox.shrink(); // 防御性编程
+              if (game == null) return const SizedBox.shrink();
 
               final String currentStatusString =
                   gameWithCollection.collection.status;
               final String statusText =
                   _statusTextMap[currentStatusString] ?? '未知';
               final Color statusColor =
-                  GameConstants.getGameCollectionStatusColor(
-                      currentStatusString);
+                  GameCollectionStatusUtils.getTheme(currentStatusString)
+                      .textColor;
+
+              // Badge 样式参数
+              final double statusBadgeFontSize = isDesktop ? 10 : 11;
+              final EdgeInsets statusBadgePadding = isDesktop
+                  ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
+                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
+              final Radius statusBadgeTopRightRadius =
+                  Radius.circular(isDesktop ? 10 : 8);
+              final Radius statusBadgeBottomLeftRadius =
+                  Radius.circular(isDesktop ? 8 : 10);
+              final Offset statusBadgeShadowOffset =
+                  isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
+              final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
 
               return Stack(
                 clipBehavior: Clip.none,
@@ -384,14 +387,9 @@ class GameCollectionLayout extends StatelessWidget {
                     isGridItem: crossAxisCount > 1,
                     onTapOverride: isDesktop
                         ? () => onGameTapForReview(gameWithCollection)
-                        : () {
-                            // 移动端点击跳转
-                            NavigationUtils.pushNamed(
-                              context,
-                              AppRoutes.gameDetail,
-                              arguments: game,
-                            );
-                          },
+                        : () => NavigationUtils.pushNamed(
+                            context, AppRoutes.gameDetail,
+                            arguments: game),
                   ),
                   Positioned(
                     top: crossAxisCount > 1 ? 0 : -1,
@@ -424,21 +422,24 @@ class GameCollectionLayout extends StatelessWidget {
                   ),
                 ],
               );
-            } else {
-              // 加载更多或无更多
-              if (isLoadingMore) {
-                return Center(child: LoadingWidget.inline(message: "加载更多..."));
-              } else if (hasMore && collectedGames.isNotEmpty) {
-                return Center(
-                  child: FunctionalButton(
-                    onPressed: onLoadMore,
-                    label: '加载更多收藏',
-                  ),
-                );
-              } else {
-                return const SizedBox.shrink();
-              }
             }
+
+            // 如果是加载指示器
+            if (item is _LoadingMorePlaceholder) {
+              return Center(child: LoadingWidget.inline(message: "加载更多..."));
+            }
+
+            // 如果是加载更多按钮
+            if (item is _LoadMoreButtonPlaceholder) {
+              return Center(
+                child: FunctionalButton(
+                  onPressed: onLoadMore,
+                  label: '加载更多收藏',
+                ),
+              );
+            }
+
+            return const SizedBox.shrink();
           },
         );
       },

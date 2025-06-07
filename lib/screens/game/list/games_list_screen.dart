@@ -1,46 +1,60 @@
 // lib/screens/game/list/games_list_screen.dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:suxingchahui/constants/common/app_bar_actions.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart';
-import 'package:suxingchahui/models/game/game_tag.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart'; // Correct path
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
-import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:visibility_detector/visibility_detector.dart';
-import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart';
-import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart';
 
+/// 该文件定义了 GamesListScreen 组件，一个用于显示游戏列表的屏幕。
+/// GamesListScreen 负责加载和展示游戏数据，支持筛选、排序、分页和游戏操作。
+library;
+
+import 'dart:async'; // 导入异步操作所需
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
+import 'package:suxingchahui/constants/common/app_bar_actions.dart'; // 导入 AppBar 动作常量
+import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game_list_pagination.dart'; // 导入游戏列表分页模型
+import 'package:suxingchahui/models/game/game_tag.dart'; // 导入游戏标签模型
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
+import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
+import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
+import 'package:suxingchahui/services/main/game/game_service.dart'; // 导入游戏服务
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
+import 'package:suxingchahui/constants/game/game_constants.dart'; // 导入游戏常量
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart'; // 导入动画内容网格组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart'; // 导入悬浮动作按钮组
+import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
+import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart'; // 导入分页控件
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart'; // 导入基础输入对话框
+import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
+import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar
+import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 导入通用悬浮动作按钮
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入加载组件
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
+import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart'; // 导入基础游戏卡片
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
+import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart'; // 导入标签栏
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
+import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart'; // 导入游戏左侧面板
+import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart'; // 导入游戏右侧面板
+
+/// `GamesListScreen` 类：游戏列表屏幕。
+///
+/// 该屏幕负责加载、展示游戏数据，支持筛选、排序、分页和游戏操作。
 class GamesListScreen extends StatefulWidget {
-  final String? selectedTag;
-  final AuthProvider authProvider;
-  final GameService gameService;
-  final GameListFilterProvider gameListFilterProvider;
+  final String? selectedTag; // 初始选中的标签
+  final AuthProvider authProvider; // 认证 Provider
+  final GameService gameService; // 游戏服务
+  final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
 
+  /// 构造函数。
+  ///
+  /// [selectedTag]：初始选中标签。
+  /// [authProvider]：认证 Provider。
+  /// [gameService]：游戏服务。
+  /// [gameListFilterProvider]：游戏列表筛选 Provider。
   const GamesListScreen({
     super.key,
     this.selectedTag,
@@ -49,56 +63,70 @@ class GamesListScreen extends StatefulWidget {
     required this.gameListFilterProvider,
   });
 
+  /// 创建状态。
   @override
   _GamesListScreenState createState() => _GamesListScreenState();
 }
 
+/// `_NavigationTilePlaceholder` 类：导航瓦片占位符。
+///
+/// 用于在网格中表示上一页或下一页的导航项。
+class _NavigationTilePlaceholder {
+  final bool isPrevious; // 是否为上一页导航
+  /// 构造函数。
+  ///
+  /// [isPrevious]：是否上一页。
+  const _NavigationTilePlaceholder({
+    required this.isPrevious,
+  });
+}
+
+/// `_GamesListScreenState` 类：`GamesListScreen` 的状态管理。
+///
+/// 管理数据加载、筛选、排序、分页、缓存监听和 UI 状态。
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
-  bool _isLoadingData = false;
-  bool _isInitialized = false;
-  bool _isVisible = false;
-  bool _needsRefresh = false;
-  bool _hasInitializedDependencies = false;
-  String? _errorMessage;
-  bool _showMobileTagBar = false;
-  bool _showLeftPanel = true;
-  bool _showRightPanel = true;
-  List<Game> _gamesList = [];
-  int _currentPage = 1;
-  int _totalPages = 1;
-  String _currentSortBy = 'createTime';
-  bool _isDescending = true;
-  String? _currentTag;
-  String? _currentUserId;
-  String? _currentCategory;
-  // 直接上升为生命周期管控内部状态变量，不要写为可空的变量！！！！！！！！
+  bool _isLoadingData = false; // 数据是否正在加载中
+  bool _isInitialized = false; // 屏幕是否已初始化
+  bool _isVisible = false; // 屏幕是否可见
+  bool _needsRefresh = false; // 是否需要刷新
+  bool _hasInitializedDependencies = false; // 依赖是否已初始化
+  String? _errorMessage; // 错误消息
+  bool _showMobileTagBar = false; // 是否显示移动端标签栏
+  bool _showLeftPanel = true; // 是否显示左侧面板
+  bool _showRightPanel = true; // 是否显示右侧面板
+  List<Game> _gamesList = []; // 游戏列表数据
+  int _currentPage = 1; // 当前页码
+  int _totalPages = 1; // 总页数
+  String _currentSortBy = 'createTime'; // 当前排序字段
+  bool _isDescending = true; // 是否降序
+  String? _currentTag; // 当前选中的标签
+  String? _currentUserId; // 当前用户ID
+  String? _currentCategory; // 当前选中的分类
 
-  List<GameTag> _availableTags = [];
-  final List<String> _availableCategories = GameConstants.defaultGameCategory;
-  StreamSubscription<BoxEvent>? _cacheSubscription;
-  String _currentWatchIdentifier = '';
-  Timer? _refreshDebounceTimer;
-  Timer? _checkProviderDebounceTimer;
-  static const int _pageSize = GameService.gamesLimit;
-  static const Duration _cacheDebounceDuration = Duration(seconds: 2);
+  List<GameTag> _availableTags = []; // 可用的游戏标签列表
+  final List<String> _availableCategories =
+      GameConstants.defaultGameCategory; // 可用的游戏分类列表
+  StreamSubscription<BoxEvent>? _cacheSubscription; // 缓存订阅器
+  String _currentWatchIdentifier = ''; // 当前缓存监听标识符
+  Timer? _refreshDebounceTimer; // 刷新防抖计时器
+  Timer? _checkProviderDebounceTimer; // Provider 检查防抖计时器
+  static const int _pageSize = GameService.gamesLimit; // 每页大小
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
   static const Duration _checkProviderDebounceDuration =
-      Duration(milliseconds: 500);
-  final Map<String, String> _sortOptions = GameConstants.defaultFilter;
-  static const double _hideRightPanelThreshold = 1000.0;
-  static const double _hideLeftPanelThreshold = 800.0;
+      Duration(milliseconds: 500); // Provider 检查防抖时长
+  final Map<String, String> _sortOptions = GameConstants.defaultFilter; // 排序选项
+  static const double _hideRightPanelThreshold = 1000.0; // 隐藏右侧面板的屏幕宽度阈值
+  static const double _hideLeftPanelThreshold = 800.0; // 隐藏左侧面板的屏幕宽度阈值
 
-  bool _isPerformingRefresh = false; // 标记是否正在执行下拉刷新操作
+  bool _isPerformingRefresh = false; // 是否正在执行下拉刷新操作
   DateTime? _lastRefreshAttemptTime; // 上次尝试下拉刷新的时间戳
-  // 定义最小刷新间隔 (1 分钟)
-  static const Duration _minRefreshInterval = Duration(minutes: 1);
+  static const Duration _minRefreshInterval = Duration(minutes: 1); // 最小刷新间隔
 
-  // === Lifecycle ===
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-    // 不需要在这里赋值服务和provider
+    WidgetsBinding.instance.addObserver(this); // 添加应用生命周期观察者
   }
 
   @override
@@ -106,11 +134,11 @@ class _GamesListScreenState extends State<GamesListScreen>
     super.didChangeDependencies();
 
     if (!_hasInitializedDependencies) {
-      _hasInitializedDependencies = true;
+      // 依赖未初始化时
+      _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
-      // 初始化 _currentTag
-      _currentUserId = widget.authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
 
@@ -119,13 +147,15 @@ class _GamesListScreenState extends State<GamesListScreen>
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
+      // 用户ID变化时
       if (mounted) {
         setState(() {
-          _currentUserId = widget.authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
         });
       }
     }
     if (widget.selectedTag != oldWidget.selectedTag) {
+      // 选中标签变化时
       if (mounted) {
         setState(() {});
       }
@@ -134,160 +164,179 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _stopWatchingCache();
-    _refreshDebounceTimer?.cancel();
-    _checkProviderDebounceTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this); // 移除应用生命周期观察者
+    _stopWatchingCache(); // 停止监听缓存
+    _refreshDebounceTimer?.cancel(); // 取消刷新防抖计时器
+    _checkProviderDebounceTimer?.cancel(); // 取消 Provider 检查防抖计时器
     super.dispose();
-    // 不需要dispose内部监听的provider和服务状态变量自己会被gc掉
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (state == AppLifecycleState.resumed) {
+      // 应用从后台恢复时
       if (_currentUserId != widget.authProvider.currentUserId) {
+        // 用户ID变化时
         if (mounted) {
           setState(() {
-            _currentUserId = widget.authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
           });
         }
       }
       if (_isVisible) {
         // 页面当前可见
         _checkProviderAndApplyFilterIfNeeded(
-            reason: "App Resumed"); // 检查 Provider
-
-        _refreshDataIfNeeded(reason: "App Resumed"); // 刷新当前页数据
+            reason: "应用恢复"); // 检查 Provider 并应用筛选
+        _refreshDataIfNeeded(reason: "应用恢复"); // 刷新当前页数据
       } else {
         _needsRefresh = true; // 标记，等可见时刷新
       }
     } else if (state == AppLifecycleState.paused) {
-      _needsRefresh = true; // 可选：离开时标记需要刷新
+      // 应用暂停时
+      _needsRefresh = true; // 标记需要刷新
     }
   }
 
+  /// 初始化当前选中的标签。
   void _initializeCurrentTag() {
-    final initialProviderTag = widget.gameListFilterProvider.selectedTag;
-    final tagWasSet = widget.gameListFilterProvider.tagHasBeenSet;
-    _currentTag = tagWasSet ? initialProviderTag : widget.selectedTag;
+    final initialProviderTag =
+        widget.gameListFilterProvider.selectedTag; // 获取 Provider 中的标签
+    final tagWasSet =
+        widget.gameListFilterProvider.tagHasBeenSet; // 获取标签是否已设置标记
+    _currentTag =
+        tagWasSet ? initialProviderTag : widget.selectedTag; // 根据标记设置当前标签
   }
 
-  // === 可视处理 ===
+  /// 处理可见性变化。
+  ///
+  /// [visibilityInfo]：可见性信息。
   void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
-    // 使用一个稍微宽松的阈值，避免快速切换时误判
-    final bool nowVisible = visibilityInfo.visibleFraction > 0;
+    final bool nowVisible = visibilityInfo.visibleFraction > 0; // 判断当前是否可见
 
     if (widget.authProvider.currentUserId != _currentUserId) {
+      // 用户ID变化时
       if (mounted) {
         setState(() {
-          _currentUserId = widget.authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
         });
       }
     }
-    if (!mounted) return; // 组件已卸载，不处理
+    if (!mounted) return; // 组件已卸载时返回
     if (nowVisible && !_isVisible) {
-      _isVisible = true;
-      // 1. 检查 Provider 是否有新的 tag 指令
-      _checkProviderAndApplyFilterIfNeeded(reason: "Became Visible");
-
-      // 2. 处理加载逻辑
+      // 变为可见时
+      _isVisible = true; // 更新可见性状态
+      _checkProviderAndApplyFilterIfNeeded(reason: "变为可见"); // 检查 Provider 并应用筛选
       if (!_isInitialized) {
-        _initializeCurrentTag();
-        _loadTags(); // 异步加载可用标签列表
-        // 初始加载使用当前的 _currentTag (可能已被 _checkProvider 更新)
-        _loadGames(pageToFetch: 1, isInitialLoad: true);
+        // 未初始化时
+        _initializeCurrentTag(); // 初始化当前标签
+        _loadTags(); // 加载可用标签列表
+        _loadGames(pageToFetch: 1, isInitialLoad: true); // 初始加载游戏
       } else if (_needsRefresh) {
-        _refreshDataIfNeeded(reason: "Became Visible with NeedsRefresh");
-
-        _needsRefresh = false;
+        // 需要刷新时
+        _refreshDataIfNeeded(reason: "变为可见且需要刷新"); // 刷新数据
+        _needsRefresh = false; // 重置刷新标记
       } else {
-        // 确保缓存监听器在监听当前状态
-        _startOrUpdateWatchingCache();
+        _startOrUpdateWatchingCache(); // 启动或更新缓存监听
       }
     } else if (!nowVisible && _isVisible) {
-      _isVisible = false;
-      _stopWatchingCache(); // 页面隐藏时停止监听缓存
-      _refreshDebounceTimer?.cancel(); // 取消可能存在的刷新定时器
+      // 变为不可见时
+      _isVisible = false; // 更新可见性状态
+      _stopWatchingCache(); // 停止监听缓存
+      _refreshDebounceTimer?.cancel(); // 取消刷新定时器
     }
   }
 
-// === 检查provider是否需要更新内部状态 ===
+  /// 检查 Provider 是否需要更新内部状态并应用筛选。
+  ///
+  /// [reason]：检查原因。
   void _checkProviderAndApplyFilterIfNeeded({required String reason}) {
-    _checkProviderDebounceTimer?.cancel(); // 取消上一个计时器（如果存在）
+    _checkProviderDebounceTimer?.cancel(); // 取消上一个计时器
     _checkProviderDebounceTimer = Timer(_checkProviderDebounceDuration, () {
       if (!mounted) return; // 确保 Widget 仍然挂载
 
-      final providerTag = widget.gameListFilterProvider.selectedTag;
-      final providerCategory = widget.gameListFilterProvider.selectedCategory;
-      final tagWasSet = widget.gameListFilterProvider.tagHasBeenSet;
-      final categoryWasSet = widget.gameListFilterProvider.categoryHasBeenSet;
+      final providerTag =
+          widget.gameListFilterProvider.selectedTag; // 获取 Provider 中的标签
+      final providerCategory =
+          widget.gameListFilterProvider.selectedCategory; // 获取 Provider 中的分类
+      final tagWasSet = widget.gameListFilterProvider.tagHasBeenSet; // 标签是否已设置
+      final categoryWasSet =
+          widget.gameListFilterProvider.categoryHasBeenSet; // 分类是否已设置
 
       if (tagWasSet && !categoryWasSet && providerTag != _currentTag) {
+        // 标签已设置且分类未设置，且标签不同时
         _applyFilterAndSort(
             tag: providerTag,
             category: null,
             sortBy: _currentSortBy,
-            descending: _isDescending);
-        widget.gameListFilterProvider.resetTagFlag();
+            descending: _isDescending); // 应用筛选
+        widget.gameListFilterProvider.resetTagFlag(); // 重置标签标记
       } else if (tagWasSet && providerTag == _currentTag) {
-        // 即使 tag 相同，如果 provider 标记被设置过，也应该重置
-        widget.gameListFilterProvider.resetTagFlag();
+        // 标签相同但 Provider 标记已设置
+        widget.gameListFilterProvider.resetTagFlag(); // 重置标签标记
       }
 
       if (categoryWasSet &&
           !tagWasSet &&
           providerCategory != _currentCategory) {
+        // 分类已设置且标签未设置，且分类不同时
         _applyFilterAndSort(
             tag: null,
             category: providerCategory,
             sortBy: _currentSortBy,
-            descending: _isDescending);
-        widget.gameListFilterProvider.resetCategoryFlag();
+            descending: _isDescending); // 应用筛选
+        widget.gameListFilterProvider.resetCategoryFlag(); // 重置分类标记
       } else if (categoryWasSet && providerCategory == _currentCategory) {
-        // 即使 category 相同，如果 provider 标记被设置过，也应该重置
-        widget.gameListFilterProvider.resetCategoryFlag();
+        // 分类相同但 Provider 标记已设置
+        widget.gameListFilterProvider.resetCategoryFlag(); // 重置分类标记
       }
     });
   }
 
-  // === 加载标签 ===
+  /// 加载标签。
   Future<void> _loadTags() async {
     try {
-      final tags = await widget.gameService.getAllTags();
-      if (mounted) setState(() => _availableTags = tags);
+      final tags = await widget.gameService.getAllTags(); // 获取所有标签
+      if (mounted) setState(() => _availableTags = tags); // 更新可用标签列表
     } catch (e) {
       if (mounted) {
-        setState(() => _availableTags = []);
+        setState(() => _availableTags = []); // 错误时清空标签列表
       }
     }
   }
 
-  /// === 加载游戏数据 ===
+  /// 加载游戏数据。
+  ///
+  /// [pageToFetch]：目标页码。
+  /// [isInitialLoad]：是否为初始加载。
+  /// [isRefresh]：是否为刷新。
+  /// [forceRefresh]：是否强制刷新。
   Future<void> _loadGames({
-    int? pageToFetch, // 目标页码
+    int? pageToFetch,
     bool isInitialLoad = false,
     bool isRefresh = false,
     bool forceRefresh = false,
   }) async {
-    if (!mounted || _isLoadingData) return;
+    if (!mounted || _isLoadingData) return; // 组件未挂载或正在加载时返回
 
-    final int targetPage = pageToFetch ?? 1;
+    final int targetPage = pageToFetch ?? 1; // 目标页码
 
     if (targetPage < 1 ||
         (!isInitialLoad &&
             !isRefresh &&
             _totalPages > 1 &&
             targetPage > _totalPages)) {
+      // 目标页码无效时返回
       return;
     }
 
-    _isInitialized = true;
+    _isInitialized = true; // 标记为已初始化
 
     setState(() {
-      _isLoadingData = true;
-      _errorMessage = null;
+      _isLoadingData = true; // 设置加载状态
+      _errorMessage = null; // 清空错误消息
       if (isRefresh || isInitialLoad) {
+        // 刷新或初始加载时清空游戏列表
         _gamesList = [];
       }
     });
@@ -295,9 +344,9 @@ class _GamesListScreenState extends State<GamesListScreen>
     try {
       GameListPagination result;
       if (_currentCategory != null) {
-        // *** 优先检查分类 ***
+        // 按分类加载
         result = await widget.gameService.getGamesByCategoryWithInfo(
-          categoryName: _currentCategory!, // 使用分类 API
+          categoryName: _currentCategory!,
           page: targetPage,
           pageSize: _pageSize,
           sortBy: _currentSortBy,
@@ -305,6 +354,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           forceRefresh: forceRefresh,
         );
       } else if (_currentTag != null) {
+        // 按标签加载
         result = await widget.gameService.getGamesByTagWithInfo(
           tag: _currentTag!,
           page: targetPage,
@@ -314,6 +364,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           forceRefresh: forceRefresh,
         );
       } else {
+        // 加载所有游戏
         result = await widget.gameService.getGamesPaginatedWithInfo(
           page: targetPage,
           pageSize: _pageSize,
@@ -323,67 +374,73 @@ class _GamesListScreenState extends State<GamesListScreen>
         );
       }
 
-      if (!mounted) return;
+      if (!mounted) return; // 组件未挂载时返回
 
-      final games = result.games;
-      final pagination = result.pagination;
-      final int serverPage = pagination.page;
-      final int serverTotalPages = pagination.pages;
+      final games = result.games; // 获取游戏列表
+      final pagination = result.pagination; // 获取分页信息
+      final int serverPage = pagination.page; // 服务器返回的页码
+      final int serverTotalPages = pagination.pages; // 服务器返回的总页数
 
       setState(() {
-        _gamesList = games;
-        _currentPage = serverPage;
-        _totalPages = serverTotalPages;
-        _errorMessage = null;
-        if (!_isInitialized) _isInitialized = true;
+        _gamesList = games; // 更新游戏列表
+        _currentPage = serverPage; // 更新当前页码
+        _totalPages = serverTotalPages; // 更新总页数
+        _errorMessage = null; // 清空错误消息
+        if (!_isInitialized) _isInitialized = true; // 标记为已初始化
       });
 
-      _startOrUpdateWatchingCache(); // 监听当前页
+      _startOrUpdateWatchingCache(); // 监听当前页缓存
     } catch (e) {
       if (mounted) {
         setState(() {
-          _errorMessage = '加载失败，请稍后重试。';
+          _errorMessage = '加载失败，请稍后重试。'; // 设置错误消息
           if (isRefresh || isInitialLoad) {
+            // 刷新或初始加载时清空列表和重置分页
             _gamesList = [];
             _currentPage = 1;
             _totalPages = 1;
           }
         });
       }
-      _stopWatchingCache();
+      _stopWatchingCache(); // 停止监听缓存
     } finally {
       if (mounted) {
         setState(() {
-          _isLoadingData = false;
+          _isLoadingData = false; // 重置加载状态
         });
       }
     }
   }
 
-  /// 开始监听缓存
+  /// 开始监听缓存变化。
+  ///
+  /// 该方法根据当前的筛选条件和页码生成监听标识符，并监听游戏列表页的缓存变化。
   void _startOrUpdateWatchingCache() {
-    // 确定当前的筛选类型和值
-    final String filterType;
-    final String? filterValue;
+    final String filterType; // 筛选类型
+    final String? filterValue; // 筛选值
     if (_currentCategory != null) {
+      // 按分类筛选
       filterType = 'category';
       filterValue = _currentCategory;
     } else if (_currentTag != null) {
+      // 按标签筛选
       filterType = 'tag';
       filterValue = _currentTag;
     } else {
+      // 无筛选
       filterType = 'all';
-      filterValue = null; // 或者 'none'
+      filterValue = null;
     }
     final String newWatchIdentifier =
-        "${filterType}_${filterValue ?? 'none'}_${_currentPage}_${_currentSortBy}_$_isDescending";
+        "${filterType}_${filterValue ?? 'none'}_${_currentPage}_${_currentSortBy}_$_isDescending"; // 新的监听标识符
 
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
-      return; // 已经在监听同一个状态
+      // 已经在监听相同状态时返回
+      return;
     }
-    _stopWatchingCache();
-    _currentWatchIdentifier = newWatchIdentifier;
+    _stopWatchingCache(); // 停止之前的监听
+    _currentWatchIdentifier = newWatchIdentifier; // 更新监听标识符
     try {
       _cacheSubscription = widget.gameService
           .watchGameListPageChanges(
@@ -397,170 +454,174 @@ class _GamesListScreenState extends State<GamesListScreen>
       )
           .listen((BoxEvent event) {
         if (_isVisible) {
+          // 屏幕可见时触发刷新
           _refreshDataIfNeeded(
-              reason: "Cache Change on page $_currentPage,event$event",
+              reason: "缓存变化：第 $_currentPage 页，事件: $event",
               isCacheUpdated: true);
         } else {
+          // 屏幕不可见时标记需要刷新
           _needsRefresh = true;
         }
       }, onError: (e, s) {
-        _stopWatchingCache();
+        // 监听错误时
+        _stopWatchingCache(); // 停止监听
       }, onDone: () {
-        _stopWatchingCache();
-      }, cancelOnError: true);
+        // 监听完成时
+        _stopWatchingCache(); // 停止监听
+      }, cancelOnError: true); // 发生错误时自动取消监听
     } catch (e) {
-      _currentWatchIdentifier = '';
+      _currentWatchIdentifier = ''; // 启动监听失败时重置标识符
     }
   }
 
-  /// 停止监听
+  /// 停止监听缓存变化。
   void _stopWatchingCache() {
     if (_cacheSubscription != null) {
-      _cacheSubscription?.cancel();
-      _cacheSubscription = null;
-      _currentWatchIdentifier = '';
+      _cacheSubscription?.cancel(); // 取消订阅
+      _cacheSubscription = null; // 清空订阅器
+      _currentWatchIdentifier = ''; // 清空监听标识符
     }
   }
 
-  /// 防抖刷新
+  /// 刷新数据，带防抖控制。
+  ///
+  /// [reason]：刷新原因。
+  /// [isCacheUpdated]：是否因缓存更新触发。
   void _refreshDataIfNeeded(
       {required String reason, bool isCacheUpdated = false}) {
-    _refreshDebounceTimer?.cancel();
+    _refreshDebounceTimer?.cancel(); // 取消旧的防抖计时器
     _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
-      // 1. 如果组件已经卸载了，直接返回。
-      if (!mounted) return;
+      // 启动新的防抖计时器
+      if (!mounted) return; // 组件已卸载时返回
 
       if (!_isVisible) {
+        // 屏幕不可见时标记需要刷新
         _needsRefresh = true;
         return;
       }
 
-      // 3.  _isLoadingData 已经为 true
       if (_isLoadingData) {
+        // 正在加载数据时
         if (isCacheUpdated) {
+          // 如果是缓存更新触发
           return;
         } else {
-          _needsRefresh = true;
+          _needsRefresh = true; // 标记需要刷新
           return;
         }
       }
 
-      // 4. 如果以上条件都不满足 (mounted, _isVisible, 并且 _isLoadingData 为 false)，
-      _loadGames(pageToFetch: _currentPage, isRefresh: true); // 触发新的加载
+      _loadGames(pageToFetch: _currentPage, isRefresh: true); // 加载游戏数据
     });
   }
 
-  // === User Interactions ===
-
-  /// 刷新主逻辑
+  /// 刷新主逻辑。
+  ///
+  /// [needCheck]：是否需要进行时间间隔检查。
   Future<void> _refreshData({bool needCheck = true}) async {
-    // 1. 防止重复触发：如果已经在执行下拉刷新，直接返回
     if (_isPerformingRefresh) {
+      // 如果正在执行下拉刷新，则返回
       return;
     }
-    // 2. 检查时间间隔
     final now = DateTime.now();
     if (needCheck) {
+      // 需要进行时间间隔检查时
       if (_lastRefreshAttemptTime != null &&
           now.difference(_lastRefreshAttemptTime!) < _minRefreshInterval) {
-        // 可以给用户一个提示
+        // 时间间隔不足时
         if (mounted) {
           AppSnackBar.showWarning(context,
-              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshAttemptTime!).inSeconds)} 秒后再试');
+              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshAttemptTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
         }
-        return; // 时间不够，直接返回
+        return; // 返回
       }
     }
-
-    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
 
     if (mounted) {
       setState(() {
-        _isPerformingRefresh = true; // 开始下拉刷新
+        _isPerformingRefresh = true; // 设置正在执行下拉刷新标记
       });
     }
-    _lastRefreshAttemptTime = now; // 记录本次尝试刷新的时间
+    _lastRefreshAttemptTime = now; // 记录本次尝试刷新时间
 
     try {
-      // --- 原有的刷新逻辑 ---
       if (_isLoadingData) {
-        return; // 如果其他数据加载正在进行，也阻止（虽然 _isPerformingRefresh 应该已经挡住了）
+        // 如果其他数据加载正在进行，则返回
+        return;
       }
-      _stopWatchingCache();
+      _stopWatchingCache(); // 停止监听缓存
       await _loadGames(
           pageToFetch: 1, isRefresh: true, forceRefresh: true); // 加载第一页并标记为刷新
-      // --- 刷新逻辑结束 ---
     } catch (e) {
-      // print("下拉刷新执行过程中发生错误: $e");
-      // 可以在这里处理 specific refresh 错误
+      // 错误处理
     } finally {
-      // 4. 清除刷新状态标记 (无论成功失败)
       if (mounted) {
         setState(() {
-          _isPerformingRefresh = false; // 结束下拉刷新
+          _isPerformingRefresh = false; // 清除刷新状态标记
         });
-        // print("节流 (GameList): 下拉刷新操作完成 (finally)");
       }
     }
   }
 
-  /// 前一页
+  /// 前往上一页。
   Future<void> _goToPreviousPageInternal() async {
     if (_currentPage > 1 && !_isLoadingData) {
-      // print("导航到上一页 (目标: ${_currentPage - 1})");
-      _stopWatchingCache();
+      // 当前页大于 1 且未加载数据时
+      _stopWatchingCache(); // 停止监听缓存
       await _loadGames(pageToFetch: _currentPage - 1); // 加载上一页
     } else {
-      //
-      AppSnackBar.showWarning(context, "已经是第一页了");
+      AppSnackBar.showWarning(context, "已经是第一页了"); // 提示已是第一页
     }
   }
 
-  /// 下一页
+  /// 前往下一页。
   Future<void> _goToNextPageInternal() async {
     if (_currentPage < _totalPages && !_isLoadingData) {
-      _stopWatchingCache();
+      // 当前页小于总页数且未加载数据时
+      _stopWatchingCache(); // 停止监听缓存
       await _loadGames(pageToFetch: _currentPage + 1); // 加载下一页
     } else {
-      //
-      AppSnackBar.showWarning(context, "已经是最后一页了了");
+      AppSnackBar.showWarning(context, "已经是最后一页了了"); // 提示已是最后一页
     }
   }
 
-  /// 指定页数
+  /// 前往指定页码。
+  ///
+  /// [pageNumber]：目标页码。
   Future<void> _goToPage(int pageNumber) async {
     if (pageNumber >= 1 &&
         pageNumber <= _totalPages &&
         pageNumber != _currentPage &&
         !_isLoadingData) {
-      _stopWatchingCache();
-      await _loadGames(pageToFetch: pageNumber);
+      // 目标页码有效且非当前页且未加载数据时
+      _stopWatchingCache(); // 停止监听缓存
+      await _loadGames(pageToFetch: pageNumber); // 加载指定页
     } else if (pageNumber == _currentPage && mounted) {
+      // 目标页为当前页时无操作
     } else if (!_isLoadingData && mounted) {
-    } else if (_isLoadingData) {}
+      // 未加载数据时无操作
+    } else if (_isLoadingData) {
+      // 正在加载数据时无操作
+    }
   }
 
-  /// 显示筛选
-  void _showFilterDialog(BuildContext context) async {
-    // 改为 async
-    // 1. 在调用 show 之前定义临时状态变量
-    String? tempSelectedTag = _currentTag;
-    String? tempSelectedCategory = _currentCategory;
-    String tempSortBy = _currentSortBy;
-    bool tempDescending = _isDescending;
+  /// 显示筛选对话框。
+  ///
+  /// [context]：Build 上下文。
+  Future<void> _showFilterDialog(BuildContext context) async {
+    String? tempSelectedTag = _currentTag; // 临时选中的标签
+    String? tempSelectedCategory = _currentCategory; // 临时选中的分类
+    String tempSortBy = _currentSortBy; // 临时排序字段
+    bool tempDescending = _isDescending; // 临时降序标记
 
-    // 2. 调用 BaseInputDialog.show<bool> (返回 bool 表示是否确认)
     final confirmed = await BaseInputDialog.show<bool>(
       context: context,
       title: '筛选与排序',
       confirmButtonText: '应用',
-      // 3. contentBuilder 包含 StatefulBuilder 来管理临时状态
       contentBuilder: (dialogContext) {
-        // 使用 StatefulBuilder 使得对话框内部的内容可以局部刷新
         return StatefulBuilder(
           builder: (context, setDialogState) {
             return SingleChildScrollView(
-              // 确保内容可滚动
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -569,23 +630,21 @@ class _GamesListScreenState extends State<GamesListScreen>
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   DropdownButton<String?>(
-                    value: tempSelectedCategory, // 使用临时变量
+                    value: tempSelectedCategory,
                     hint: const Text('所有分类'),
                     isExpanded: true,
                     items: [
                       const DropdownMenuItem<String?>(
                           value: null, child: Text('所有分类')),
-                      ..._availableCategories
-                          .map((category) => DropdownMenuItem<String?>(
-                              // 使用常量
-                              value: category,
-                              child: Text(category))),
+                      ..._availableCategories.map((category) =>
+                          DropdownMenuItem<String?>(
+                              value: category, child: Text(category))),
                     ],
                     onChanged: (String? newValue) {
                       setDialogState(() {
                         tempSelectedCategory = newValue;
                         if (newValue != null) {
-                          tempSelectedTag = null; // *** 选择分类时，清除临时标签 ***
+                          tempSelectedTag = null; // 选择分类时清除临时标签
                         }
                       });
                     },
@@ -595,7 +654,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                       style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
                   DropdownButton<String?>(
-                    value: tempSelectedTag, // 使用临时变量
+                    value: tempSelectedTag,
                     hint: const Text('所有标签'),
                     isExpanded: true,
                     items: [
@@ -605,21 +664,19 @@ class _GamesListScreenState extends State<GamesListScreen>
                           value: tag.name,
                           child: Text('${tag.name} (${tag.count})'))),
                     ],
-                    onChanged: (String? newValue) => setDialogState(
-                        () => tempSelectedTag = newValue), // 更新临时变量
+                    onChanged: (String? newValue) =>
+                        setDialogState(() => tempSelectedTag = newValue),
                   ),
                   const SizedBox(height: 16),
                   Text('排序方式:', style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  // 注意: 这里传递的是临时变量和更新临时变量的回调
                   ..._sortOptions.entries.map((entry) => _buildSortOptionTile(
                         title: entry.value,
                         sortField: entry.key,
-                        currentSortBy: tempSortBy, // 传临时变量
-                        isDescending: tempDescending, // 传临时变量
+                        currentSortBy: tempSortBy,
+                        isDescending: tempDescending,
                         onChanged: (field, desc) {
                           setDialogState(() {
-                            // 更新临时变量
                             tempSortBy = field;
                             tempDescending = desc;
                           });
@@ -631,26 +688,26 @@ class _GamesListScreenState extends State<GamesListScreen>
           },
         );
       },
-      // 4. onConfirm 确认时返回 true
       onConfirm: () async {
-        // 确认按钮按下，表示用户希望应用更改
-        // 不需要在这里做复杂的逻辑，直接返回 true 即可关闭对话框
         return true; // 返回非 null 值表示确认成功，对话框将关闭
       },
-      // 可选: 添加图标等
-      iconData: Icons.filter_list_alt,
+      iconData: Icons.filter_list_alt, // 筛选图标
     );
 
-    // 5. 对话框关闭后，如果用户点击了 "应用" (confirmed == true)
     if (confirmed == true && mounted) {
-      // 使用更新后的临时变量调用应用逻辑
-      _handleFilterDialogConfirm(
-          tempSelectedCategory, tempSelectedTag, tempSortBy, tempDescending);
+      // 对话框确认关闭后
+      _handleFilterDialogConfirm(tempSelectedCategory, tempSelectedTag,
+          tempSortBy, tempDescending); // 处理筛选确认
     }
   }
-  // UI 构建
 
-  /// 筛选
+  /// 构建排序选项瓦片。
+  ///
+  /// [title]：标题。
+  /// [sortField]：排序字段。
+  /// [currentSortBy]：当前排序字段。
+  /// [isDescending]：是否降序。
+  /// [onChanged]：改变回调。
   Widget _buildSortOptionTile({
     required String title,
     required String sortField,
@@ -658,176 +715,187 @@ class _GamesListScreenState extends State<GamesListScreen>
     required bool isDescending,
     required Function(String, bool) onChanged,
   }) {
-    final bool isSelected = currentSortBy == sortField;
-    final colorScheme = Theme.of(context).colorScheme;
+    final bool isSelected = currentSortBy == sortField; // 是否选中
+    final colorScheme = Theme.of(context).colorScheme; // 颜色方案
     return ListTile(
       title: Text(title,
-          style: TextStyle(fontWeight: isSelected ? FontWeight.bold : null)),
-      selected: isSelected,
-      selectedTileColor: Colors.grey.withSafeOpacity(0.1),
-      dense: true,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 0),
+          style: TextStyle(
+              fontWeight: isSelected ? FontWeight.bold : null)), // 标题样式
+      selected: isSelected, // 是否选中
+      selectedTileColor: Colors.grey.withSafeOpacity(0.1), // 选中瓦片背景色
+      dense: true, // 紧凑模式
+      contentPadding: const EdgeInsets.symmetric(horizontal: 0), // 内容内边距
       onTap: () {
-        // onTap 是 VoidCallback
-        if (!isSelected) onChanged(sortField, true);
+        // 点击回调
+        if (!isSelected) onChanged(sortField, true); // 未选中时更新排序字段和降序
       },
       trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisSize: MainAxisSize.min, // 行主轴尺寸最小化
         children: [
           IconButton(
-              icon: const Icon(Icons.arrow_upward),
+              icon: const Icon(Icons.arrow_upward), // 升序图标
               iconSize: 20,
               color: isSelected && !isDescending
                   ? colorScheme.secondary
                   : Colors.grey,
-              tooltip: '升序',
-              onPressed: () =>
-                  onChanged(sortField, false), // onPressed 是 VoidCallback
-              splashRadius: 20,
-              constraints: const BoxConstraints(),
-              padding: EdgeInsets.zero),
+              tooltip: '升序', // 提示
+              onPressed: () => onChanged(sortField, false), // 升序点击回调
+              splashRadius: 20, // 水波纹半径
+              constraints: const BoxConstraints(), // 约束
+              padding: EdgeInsets.zero), // 内边距
           IconButton(
-              icon: const Icon(Icons.arrow_downward),
+              icon: const Icon(Icons.arrow_downward), // 降序图标
               iconSize: 20,
               color: isSelected && isDescending
                   ? colorScheme.secondary
                   : Colors.grey,
-              tooltip: '降序',
-              onPressed: () =>
-                  onChanged(sortField, true), // onPressed 是 VoidCallback
-              splashRadius: 20,
-              constraints: const BoxConstraints(),
-              padding: EdgeInsets.zero),
+              tooltip: '降序', // 提示
+              onPressed: () => onChanged(sortField, true), // 降序点击回调
+              splashRadius: 20, // 水波纹半径
+              constraints: const BoxConstraints(), // 约束
+              padding: EdgeInsets.zero), // 内边距
         ],
       ),
     );
   }
 
-  /// 应用筛选（标签或分类）和排序，并触发刷新
+  /// 应用筛选（标签或分类）和排序，并触发刷新。
+  ///
+  /// [tag]：要应用的标签。
+  /// [category]：要应用的分类。
+  /// [sortBy]：排序字段。
+  /// [descending]：是否降序。
   void _applyFilterAndSort(
-      {String? tag, // 要应用的标签 (null 表示不按标签筛选)
-      String? category, // <<< 新增：要应用的分类 (null 表示不按分类筛选)
-      required String sortBy, // 排序字段
-      required bool descending // 是否降序
-      }) {
-    // 确定新的筛选状态，并强制互斥
-    String? finalTag = tag;
-    String? finalCategory = category;
+      {String? tag,
+      String? category,
+      required String sortBy,
+      required bool descending}) {
+    String? finalTag = tag; // 最终标签
+    String? finalCategory = category; // 最终分类
 
     if (finalCategory != null && finalTag != null) {
-      finalTag = null; // *** 优先分类，清除标签 ***
+      // 如果同时选择了分类和标签，优先分类，清除标签
+      finalTag = null;
     }
 
-    // 检查状态是否真的改变了
-    bool categoryChanged = _currentCategory != finalCategory;
-    bool tagChanged = _currentTag != finalTag;
-    bool sortChanged = _currentSortBy != sortBy || _isDescending != descending;
+    bool categoryChanged = _currentCategory != finalCategory; // 分类是否改变
+    bool tagChanged = _currentTag != finalTag; // 标签是否改变
+    bool sortChanged =
+        _currentSortBy != sortBy || _isDescending != descending; // 排序是否改变
 
     if (categoryChanged || tagChanged || sortChanged) {
+      // 如果状态发生变化
       _stopWatchingCache(); // 停止旧监听
       setState(() {
-        // 更新内部状态
-        _currentCategory = finalCategory; // <<< 更新分类状态
-        _currentTag = finalTag; // <<< 更新标签状态 (可能是 null)
-        _currentSortBy = sortBy;
-        _isDescending = descending;
-        // 重置分页和错误信息
-        _currentPage = 1;
+        _currentCategory = finalCategory; // 更新分类
+        _currentTag = finalTag; // 更新标签
+        _currentSortBy = sortBy; // 更新排序字段
+        _isDescending = descending; // 更新降序标记
+        _currentPage = 1; // 重置分页
         _totalPages = 1;
-        _errorMessage = null;
-        _gamesList = []; // 清空列表
+        _errorMessage = null; // 清空错误消息
+        _gamesList = []; // 清空游戏列表
       });
       _loadGames(pageToFetch: 1, isRefresh: true); // 触发第一页加载
-    } else {}
+    }
   }
 
+  /// 清除标签筛选。
   void _clearTagFilter() {
-    // 清除标签，保持当前分类（如果选择了的话）
     _applyFilterAndSort(
-        tag: null, // <<< 清除标签
-        category: _currentCategory, // <<< 保持分类
+        tag: null,
+        category: _currentCategory,
         sortBy: _currentSortBy,
-        descending: _isDescending);
-    // *** Provider 只处理 Tag ***
+        descending: _isDescending); // 清除标签，保持当前分类和排序
     widget.gameListFilterProvider.clearTag(); // 更新 Provider 状态为 null
-    widget.gameListFilterProvider.resetTagFlag(); // 标记处理完成
+    widget.gameListFilterProvider.resetTagFlag(); // 重置标签标记
   }
 
-  // 清除分类筛选的处理
+  /// 清除分类筛选。
   void _clearCategoryFilter() {
-    // 清除分类，保持当前标签（如果选择了的话）
     _applyFilterAndSort(
-        tag: _currentTag, // <<< 保持标签
-        category: null, // <<< 清除分类
+        tag: _currentTag,
+        category: null,
         sortBy: _currentSortBy,
-        descending: _isDescending);
-    // Category 状态只在本地，不需要更新 Provider
+        descending: _isDescending); // 清除分类，保持当前标签和排序
   }
 
-  // 筛选对话框确认
+  /// 处理筛选对话框确认。
+  ///
+  /// [newCategory]：新的分类。
+  /// [newTag]：新的标签。
+  /// [newSortBy]：新的排序字段。
+  /// [newDescending]：新的降序标记。
   void _handleFilterDialogConfirm(String? newCategory, String? newTag,
       String newSortBy, bool newDescending) {
-    // 1. 调用 apply 函数更新页面状态并触发加载
     _applyFilterAndSort(
-      category: newCategory, // 传递分类
-      tag: newTag, // 传递标签
+      category: newCategory,
+      tag: newTag,
       sortBy: newSortBy,
       descending: newDescending,
-    );
-    // 2. 同步更新 Provider 状态
+    ); // 应用筛选和排序
     if (widget.gameListFilterProvider.selectedTag != newTag) {
+      // 更新 Provider 标签状态
       widget.gameListFilterProvider.setTag(newTag);
     }
     if (widget.gameListFilterProvider.selectedCategory != newCategory) {
+      // 更新 Provider 分类状态
       widget.gameListFilterProvider.setCategory(newCategory);
     }
-    // 3. 因为是页面内部操作触发，立即重置标志位
-    widget.gameListFilterProvider.resetTagFlag();
+    widget.gameListFilterProvider.resetTagFlag(); // 重置标签标记
   }
 
-  // <<< 新增：处理左右面板或未来可能的分类选择器点击 >>>
+  /// 处理分类选择。
+  ///
+  /// [category]：选中的分类。
   void _handleCategorySelected(String? category) {
-    final newCategory = (_currentCategory == category) ? null : category;
-    // 选择分类时，清除当前标签筛选
+    final newCategory =
+        (_currentCategory == category) ? null : category; // 切换分类
     _applyFilterAndSort(
-        tag: null, // <<< 清除标签
-        category: newCategory, // <<< 应用新分类
+        tag: null,
+        category: newCategory,
         sortBy: _currentSortBy,
-        descending: _isDescending);
+        descending: _isDescending); // 应用新分类并清除标签
     if (_currentTag != null) {
+      // 如果有标签，清除标签并重置标记
       widget.gameListFilterProvider.clearTag();
       widget.gameListFilterProvider.resetTagFlag();
     }
   }
 
-  // 移动端 TagBar 选择
+  /// 处理标签栏选择。
+  ///
+  /// [tag]：选中的标签。
   void _handleTagBarSelected(String? tag) {
-    final newTag = (_currentTag == tag) ? null : tag; // 点击相同 tag 则取消
-    // 1. 调用 apply 函数更新页面状态并触发加载
+    final newTag = (_currentTag == tag) ? null : tag; // 切换标签
     _applyFilterAndSort(
         tag: newTag,
         category: null,
         sortBy: _currentSortBy,
-        descending: _isDescending);
-    // 2. 同步更新 Provider 状态
+        descending: _isDescending); // 应用新标签并清除分类
     if (widget.gameListFilterProvider.selectedTag != newTag) {
+      // 更新 Provider 标签状态
       widget.gameListFilterProvider.setTag(newTag);
     }
-    // 3. 因为是页面内部操作触发，立即重置标志位
-    widget.gameListFilterProvider.resetTagFlag();
+    widget.gameListFilterProvider.resetTagFlag(); // 重置标签标记
   }
 
-  /// 删除游戏回调
+  /// 处理删除游戏。
+  ///
+  /// [game]：要删除的游戏。
   Future<void> _handleDeleteGame(Game game) async {
     if (!widget.authProvider.isLoggedIn) {
+      // 未登录时提示登录
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     if (!_checkCanEditOrDeleteGame(game)) {
+      // 无权限时提示错误
       AppSnackBar.showPermissionDenySnackBar(context);
       return;
     }
     await CustomConfirmDialog.show(
+      // 显示确认对话框
       context: context,
       title: '确认删除',
       message: '确定要删除这个游戏吗？此操作无法撤销。',
@@ -836,105 +904,123 @@ class _GamesListScreenState extends State<GamesListScreen>
       iconData: Icons.delete_forever,
       iconColor: Colors.red,
       onConfirm: () async {
-        // onConfirm 是 AsyncCallback?
+        // 确认删除回调
         try {
-          await widget.gameService.deleteGame(game);
-          // 刷新由 cache watcher 触发
-          if (!mounted) return;
-          AppSnackBar.showSuccess(context, "成功删除游戏");
+          await widget.gameService.deleteGame(game); // 调用删除游戏服务
+          if (!mounted) return; // 组件未挂载时返回
+          AppSnackBar.showSuccess(context, "成功删除游戏"); // 提示删除成功
         } catch (e) {
-          AppSnackBar.showError(context, "删除游戏失败");
-          // print("删除游戏失败: $gameId, Error: $e");
+          AppSnackBar.showError(context, "删除游戏失败"); // 提示删除失败
         }
       },
     );
   }
 
-  // 权限检查
+  /// 检查是否可编辑或删除游戏。
+  ///
+  /// [game]：要检查的游戏。
+  /// 返回 true 表示可编辑或删除，否则返回 false。
   bool _checkCanEditOrDeleteGame(Game game) {
     return widget.authProvider.isAdmin
         ? true
-        : widget.authProvider.currentUserId == game.authorId;
+        : widget.authProvider.currentUserId == game.authorId; // 管理员或作者可编辑删除
   }
 
-  // 处理编辑按钮点击事件
+  /// 处理编辑游戏。
+  ///
+  /// [game]：要编辑的游戏。
   Future<void> _handleEditGame(Game game) async {
     if (!widget.authProvider.isLoggedIn) {
+      // 未登录时提示登录
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     if (!_checkCanEditOrDeleteGame(game)) {
+      // 无权限时提示错误
       AppSnackBar.showPermissionDenySnackBar(context);
       return;
     }
 
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
-        arguments: game.id);
+        arguments: game.id); // 导航到编辑游戏页面
     if (result == true && mounted) {
-      _refreshDataIfNeeded(reason: "Edited Game"); // 触发刷新
+      // 编辑成功且组件挂载时
+      _refreshDataIfNeeded(reason: "已编辑游戏"); // 触发刷新
     }
   }
 
-  /// 添加游戏
+  /// 处理添加游戏。
   void _handleAddGame() {
     if (!widget.authProvider.isLoggedIn) {
+      // 未登录时提示登录
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
     NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
+      // 导航到添加游戏页面
       if (result == true && mounted) {
-        _refreshDataIfNeeded(reason: "Add Game Completed"); // 触发刷新
+        // 添加成功且组件挂载时
+        _refreshDataIfNeeded(reason: "添加游戏完成"); // 触发刷新
       }
     });
   }
 
-  void _toggleLeftPanel() => setState(() => _showLeftPanel = !_showLeftPanel);
+  /// 切换左侧面板的可见性。
+  void _toggleLeftPanel() =>
+      setState(() => _showLeftPanel = !_showLeftPanel); // 切换左侧面板可见性
 
+  /// 切换右侧面板的可见性。
   void _toggleRightPanel() =>
-      setState(() => _showRightPanel = !_showRightPanel);
+      setState(() => _showRightPanel = !_showRightPanel); // 切换右侧面板可见性
 
+  /// 构建屏幕 UI。
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(), // AppBar 不包含跳页按钮
+      appBar: _buildAppBar(), // AppBar
       body: VisibilityDetector(
-        key: const ValueKey('games_list_visibility_detector'),
-        onVisibilityChanged: _handleVisibilityChange,
-        child: _buildBodyContent(),
+        key: const ValueKey('games_list_visibility_detector'), // 可见性检测器 Key
+        onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
+        child: _buildBodyContent(), // 主体内容
       ),
-      floatingActionButton: _buildFabGroup(),
-      bottomNavigationBar:
-          _buildFloatingPaginationControlsIfNeeded(), // <--- 构建悬浮分页控件
+      floatingActionButton: _buildFabGroup(), // 悬浮动作按钮组
+      bottomNavigationBar: _buildFloatingPaginationControlsIfNeeded(), // 悬浮分页控件
     );
   }
 
-  /// Builds the AppBar. (移除了跳页按钮)
+  /// 构建 AppBar。
   PreferredSizeWidget _buildAppBar() {
-    final isDesktop = DeviceUtils.isDesktop;
-    String title = '游戏列表';
+    final isDesktop = DeviceUtils.isDesktop; // 是否为桌面平台
+    String title = '游戏列表'; // 默认标题
 
     if (_currentCategory != null) {
+      // 有分类时显示分类标题
       title = '分类: $_currentCategory';
     } else if (_currentTag != null) {
+      // 有标签时显示标签标题
       title = '标签: $_currentTag';
     }
-    final theme = Theme.of(context);
-    final appBarColor = theme.appBarTheme.backgroundColor ?? theme.primaryColor;
-    final secondaryColor = theme.colorScheme.secondary;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final canShowLeftPanelBasedOnWidth = screenWidth >= _hideLeftPanelThreshold;
+    final theme = Theme.of(context); // 当前主题
+    final appBarColor =
+        theme.appBarTheme.backgroundColor ?? theme.primaryColor; // AppBar 背景色
+    final secondaryColor = theme.colorScheme.secondary; // 次要颜色
+    final screenWidth = MediaQuery.of(context).size.width; // 屏幕宽度
+    final canShowLeftPanelBasedOnWidth =
+        screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
     final canShowRightPanelBasedOnWidth =
-        screenWidth >= _hideRightPanelThreshold;
+        screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
     final defaultAppBarIconColor =
-        ThemeData.estimateBrightnessForColor(appBarColor) == Brightness.dark
+        ThemeData.estimateBrightnessForColor(appBarColor) ==
+                Brightness.dark // 默认 AppBar 图标颜色
             ? Colors.white
             : Colors.black;
 
     return CustomAppBar(
-      title: title,
+      title: title, // 标题
       actions: [
-        if (isDesktop) SizedBox(width: 8),
-        if (isDesktop)
+        // 动作按钮
+        if (isDesktop) const SizedBox(width: 8), // 桌面平台间距
+        if (isDesktop) // 桌面平台左侧面板切换按钮
           FunctionalIconButton(
             buttonBackgroundColor: AppBarAction.toggleLeftPanel.defaultBgColor,
             icon: AppBarAction.toggleLeftPanel.icon,
@@ -944,8 +1030,8 @@ class _GamesListScreenState extends State<GamesListScreen>
             tooltip: _showLeftPanel ? '隐藏左侧面板' : '显示左侧面板',
             onPressed: canShowLeftPanelBasedOnWidth ? _toggleLeftPanel : null,
           ),
-        if (isDesktop) SizedBox(width: 8),
-        if (isDesktop)
+        if (isDesktop) const SizedBox(width: 8), // 桌面平台间距
+        if (isDesktop) // 桌面平台右侧面板切换按钮
           FunctionalIconButton(
             buttonBackgroundColor: AppBarAction.toggleRightPanel.defaultBgColor,
             icon: AppBarAction.toggleRightPanel.icon,
@@ -955,18 +1041,18 @@ class _GamesListScreenState extends State<GamesListScreen>
             tooltip: _showRightPanel ? '隐藏右侧面板' : '显示右侧面板',
             onPressed: canShowRightPanelBasedOnWidth ? _toggleRightPanel : null,
           ),
-        SizedBox(width: 8),
-        // 业务逻辑有审核机制
-        // 不需要admincheck
+        const SizedBox(width: 8), // 间距
         FunctionalIconButton(
+          // 添加游戏按钮
           icon: AppBarAction.addGame.icon,
           tooltip: AppBarAction.addGame.defaultTooltip!,
           iconColor: AppBarAction.addGame.defaultIconColor,
           buttonBackgroundColor: AppBarAction.addGame.defaultBgColor,
           onPressed: _isLoadingData ? null : _handleAddGame,
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8), // 间距
         FunctionalIconButton(
+          // 我的游戏按钮
           icon: AppBarAction.myGames.icon,
           tooltip: AppBarAction.myGames.defaultTooltip!,
           iconColor: AppBarAction.myGames.defaultIconColor,
@@ -975,8 +1061,9 @@ class _GamesListScreenState extends State<GamesListScreen>
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8), // 间距
         FunctionalIconButton(
+          // 搜索游戏按钮
           icon: AppBarAction.searchGame.icon,
           tooltip: AppBarAction.searchGame.defaultTooltip!,
           iconColor: AppBarAction.searchGame.defaultIconColor,
@@ -985,33 +1072,33 @@ class _GamesListScreenState extends State<GamesListScreen>
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.searchGame),
         ),
-        SizedBox(width: 8),
+        const SizedBox(width: 8), // 间距
         FunctionalIconButton(
+          // 筛选排序按钮
           icon: AppBarAction.filterSort.icon,
           tooltip: AppBarAction.filterSort.defaultTooltip!,
           iconColor: AppBarAction.filterSort.defaultIconColor,
           buttonBackgroundColor: AppBarAction.filterSort.defaultBgColor,
           onPressed: _isLoadingData ? null : () => _showFilterDialog(context),
         ),
-        // 清除分类按钮
-        if (_currentCategory != null) SizedBox(width: 8),
-        if (_currentCategory != null)
+        if (_currentCategory != null) const SizedBox(width: 8), // 清除分类按钮间距
+        if (_currentCategory != null) // 清除分类按钮
           IconButton(
             icon: Icon(AppBarAction.clearCategoryFilter.icon),
             color: AppBarAction.clearCategoryFilter.defaultIconColor,
             onPressed: _isLoadingData ? null : _clearCategoryFilter,
             tooltip: '清除分类筛选 ($_currentCategory)',
           ),
-        if (_currentTag != null) SizedBox(width: 8),
-        if (_currentTag != null)
+        if (_currentTag != null) const SizedBox(width: 8), // 清除标签按钮间距
+        if (_currentTag != null) // 清除标签按钮
           IconButton(
             icon: Icon(AppBarAction.clearTagFilter.icon),
             color: AppBarAction.clearTagFilter.defaultIconColor,
             onPressed: _isLoadingData ? null : _clearTagFilter,
             tooltip: '清除标签筛选 ($_currentTag)',
           ),
-        if (!isDesktop) SizedBox(width: 8),
-        if (!isDesktop)
+        if (!isDesktop) const SizedBox(width: 8), // 移动端间距
+        if (!isDesktop) // 移动端标签栏切换按钮
           IconButton(
             icon: Icon(AppBarAction.toggleMobileTagBar.icon),
             tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
@@ -1022,82 +1109,89 @@ class _GamesListScreenState extends State<GamesListScreen>
       ],
       bottom: (!DeviceUtils.isDesktop &&
               _showMobileTagBar &&
-              _availableTags.isNotEmpty)
+              _availableTags.isNotEmpty) // 底部标签栏
           ? TagBar(
               tags: _availableTags,
-              selectedTag: _currentTag, // 使用内部状态
-              onTagSelected: _handleTagBarSelected, // 调用新的处理函数
+              selectedTag: _currentTag,
+              onTagSelected: _handleTagBarSelected,
             )
           : null,
     );
   }
 
-  /// Builds the main body content.
+  /// 构建页面主体内容。
   Widget _buildBodyContent() {
-    final isDesktop = DeviceUtils.isDesktop;
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bool shouldShowLeftPanel =
-        isDesktop && _showLeftPanel && (screenWidth >= _hideLeftPanelThreshold);
+    final isDesktop = DeviceUtils.isDesktop; // 是否为桌面平台
+    final screenWidth = MediaQuery.of(context).size.width; // 屏幕宽度
+    final bool shouldShowLeftPanel = isDesktop &&
+        _showLeftPanel &&
+        (screenWidth >= _hideLeftPanelThreshold); // 是否显示左侧面板
     final bool shouldShowRightPanel = isDesktop &&
         _showRightPanel &&
-        (screenWidth >= _hideRightPanelThreshold);
-    const Duration panelAnimationDuration = Duration(milliseconds: 300);
-    const Duration leftPanelDelay = Duration(milliseconds: 50);
-    const Duration rightPanelDelay = Duration(milliseconds: 100);
+        (screenWidth >= _hideRightPanelThreshold); // 是否显示右侧面板
+    const Duration panelAnimationDuration =
+        Duration(milliseconds: 300); // 面板动画时长
+    const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
+    const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
 
     return RefreshIndicator(
-      onRefresh: () =>
-          _refreshData(needCheck: true), // onRefresh 需要 Future<void> Function()
+      onRefresh: () => _refreshData(needCheck: true), // 下拉刷新回调
       child: Stack(
         children: [
-          isDesktop
+          isDesktop // 桌面布局
               ? Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
                   children: [
-                    if (shouldShowLeftPanel)
+                    if (shouldShowLeftPanel) // 显示左侧面板
                       FadeInSlideLRItem(
-                        key: const ValueKey('game_list_left_panel'),
-                        slideDirection: SlideDirection.left,
-                        duration: panelAnimationDuration,
-                        delay: leftPanelDelay,
+                        key: const ValueKey('game_list_left_panel'), // 唯一键
+                        slideDirection: SlideDirection.left, // 滑动方向
+                        duration: panelAnimationDuration, // 动画时长
+                        delay: leftPanelDelay, // 延迟
                         child: GameLeftPanel(
-                          tags: _availableTags,
-                          selectedTag: _currentTag,
-                          onTagSelected: _isLoadingData
+                          tags: _availableTags, // 标签列表
+                          selectedTag: _currentTag, // 选中标签
+                          onTagSelected: _isLoadingData // 点击标签回调
                               ? (String? tag) {}
-                              : _handleTagBarSelected, // onTagSelected 需要 Function(String?)?
+                              : _handleTagBarSelected,
                         ),
                       ),
                     Expanded(
                       child: _buildMainContentArea(
-                          isDesktop, shouldShowLeftPanel, shouldShowRightPanel),
+                          // 主要内容区域
+                          isDesktop,
+                          shouldShowLeftPanel,
+                          shouldShowRightPanel),
                     ),
-                    if (shouldShowRightPanel &&
+                    if (shouldShowRightPanel && // 显示右侧面板
                         (_isInitialized || _gamesList.isNotEmpty))
                       FadeInSlideLRItem(
-                        key: const ValueKey('game_list_right_panel'),
-                        slideDirection: SlideDirection.right,
-                        duration: panelAnimationDuration,
-                        delay: rightPanelDelay,
+                        key: const ValueKey('game_list_right_panel'), // 唯一键
+                        slideDirection: SlideDirection.right, // 滑动方向
+                        duration: panelAnimationDuration, // 动画时长
+                        delay: rightPanelDelay, // 延迟
                         child: GameRightPanel(
-                          currentPageGames: _gamesList,
-                          totalGamesCount: _totalPages * _pageSize,
-                          selectedTag: _currentTag,
-                          onTagSelected: _isLoadingData
+                          currentPageGames: _gamesList, // 当前页游戏列表
+                          totalGamesCount: _totalPages * _pageSize, // 总游戏数量
+                          selectedTag: _currentTag, // 选中标签
+                          onTagSelected: _isLoadingData // 标签选择回调
                               ? null
-                              : _handleTagBarSelected, // onTagSelected 需要 Function(String?)?
-                          selectedCategory: _currentCategory,
-                          availableCategories: _availableCategories,
-                          onCategorySelected:
-                              _isLoadingData ? null : _handleCategorySelected,
+                              : _handleTagBarSelected,
+                          selectedCategory: _currentCategory, // 选中分类
+                          availableCategories: _availableCategories, // 可用分类
+                          onCategorySelected: _isLoadingData // 分类选择回调
+                              ? null
+                              : _handleCategorySelected,
                         ),
                       ),
                   ],
                 )
               : Column(
+                  // 移动端布局
                   children: [
                     Expanded(
-                      child: _buildMainContentArea(isDesktop, false, false),
+                      child: _buildMainContentArea(
+                          isDesktop, false, false), // 主要内容区域
                     ),
                   ],
                 ),
@@ -1106,157 +1200,147 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
-  /// Builds the central content area (loading, error, empty, or grid).
+  /// 构建中心内容区域（加载、错误、空或网格）。
   Widget _buildMainContentArea(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
     if (!_isInitialized) {
+      // 未初始化时显示加载中
       return FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载游戏...'));
     }
 
     if (_errorMessage != null && _gamesList.isEmpty && !_isLoadingData) {
+      // 错误且列表为空时显示错误组件
       return CustomErrorWidget(
         errorMessage: _errorMessage!,
         onRetry: () {
-          _loadGames(pageToFetch: 1, isRefresh: true);
-        }, // onRetry 是 VoidCallback?
+          _loadGames(pageToFetch: 1, isRefresh: true); // 点击重试加载
+        },
       );
     }
 
     if (!_isLoadingData && _errorMessage == null && _gamesList.isEmpty) {
+      // 无数据且无错误时显示空状态
       return _buildEmptyState();
     }
 
     return Stack(
       children: [
-        _buildGameGridWithNavigation(isDesktop, showLeftPanel, showRightPanel),
-        if (_isLoadingData && _gamesList.isNotEmpty)
+        _buildGameGridWithNavigation(
+            isDesktop, showLeftPanel, showRightPanel), // 游戏网格和导航
+        if (_isLoadingData && _gamesList.isNotEmpty) // 加载中且列表不为空时显示半透明加载层
           Positioned.fill(
             child: Container(
-              color: Colors.black.withAlpha(240),
-              child: LoadingWidget.inline(message: '加载中...'),
+              color: Colors.black.withAlpha(240), // 半透明黑色背景
+              child: LoadingWidget.inline(message: '加载中...'), // 内联加载指示器
             ),
           ),
-        if (_isLoadingData && _gamesList.isEmpty && _errorMessage == null)
+        if (_isLoadingData &&
+            _gamesList.isEmpty &&
+            _errorMessage == null) // 加载中且列表为空时显示加载组件
           LoadingWidget.inline(message: '正在加载游戏...'),
       ],
     );
   }
 
-  /// Builds the GridView with In-Grid Navigation Tiles.
+  /// 构建游戏网格和导航。
   Widget _buildGameGridWithNavigation(
       bool isDesktop, bool showLeftPanel, bool showRightPanel) {
-    final bool withPanels = isDesktop && (showLeftPanel || showRightPanel);
+    final bool withPanels =
+        isDesktop && (showLeftPanel || showRightPanel); // 是否显示面板
     int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
         withPanels: withPanels,
         leftPanelVisible: showLeftPanel,
-        rightPanelVisible: showRightPanel);
-    if (cardsPerRow <= 0) cardsPerRow = 1;
+        rightPanelVisible: showRightPanel); // 计算每行卡片数量
+    if (cardsPerRow <= 0) cardsPerRow = 1; // 确保至少为 1
 
-    final useCompactMode = cardsPerRow > 3 || (cardsPerRow == 3 && withPanels);
-    final cardRatio = withPanels
+    final useCompactMode =
+        cardsPerRow > 3 || (cardsPerRow == 3 && withPanels); // 是否使用紧凑模式
+    final cardRatio = withPanels // 卡片宽高比
         ? DeviceUtils.calculateGameListCardRatio(
             context, showLeftPanel, showRightPanel,
             showTags: true)
         : DeviceUtils.calculateSimpleGameCardRatio(context, showTags: true);
     if (cardRatio <= 0) {
-      //print("错误：计算出的卡片宽高比为 $cardRatio");
+      // 宽高比无效时显示错误
       return const CustomErrorWidget(errorMessage: "发生异常错误");
     }
 
-    int totalItemCount = _gamesList.length;
-    final bool showPrevTile = _currentPage > 1 && _totalPages > 1;
-    final bool showNextTile = _currentPage < _totalPages;
+    final List<Object> displayItems = []; // 要显示在网格中的所有项目列表
+    final bool showPrevTile = _currentPage > 1 && _totalPages > 1; // 是否显示上一页瓦片
+    final bool showNextTile = _currentPage < _totalPages; // 是否显示下一页瓦片
 
-    if (_gamesList.isNotEmpty ||
-        (_isLoadingData && (_isInitialized || _currentPage == 1))) {
-      if (showPrevTile) totalItemCount++;
-      if (showNextTile) totalItemCount++;
+    if (showPrevTile) {
+      displayItems
+          .add(const _NavigationTilePlaceholder(isPrevious: true)); // 添加上一页占位符
+    }
+    displayItems.addAll(_gamesList); // 添加游戏列表
+    if (showNextTile) {
+      displayItems
+          .add(const _NavigationTilePlaceholder(isPrevious: false)); // 添加下一页占位符
     }
 
     return LayoutBuilder(builder: (context, constraints) {
-      return GridView.builder(
-        key: ValueKey(
-            'game_grid_page_${_currentPage}_count_${_gamesList.length}_total_$totalItemCount'),
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 16.0), // 底部留白
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: cardsPerRow,
-          childAspectRatio: cardRatio,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: isDesktop ? 16 : 8,
-        ),
-        itemCount: totalItemCount,
-        itemBuilder: (context, index) {
-          int gameIndex = index;
-          bool isPrevTileRender = false;
-          bool isNextTileRender = false;
-
-          if (showPrevTile && index == 0) {
-            isPrevTileRender = true;
-          } else if (showPrevTile) {
-            gameIndex = index - 1;
-          }
-          if (showNextTile && index == totalItemCount - 1) {
-            isNextTileRender = true;
-          }
-
-          if (isPrevTileRender) {
-            return _buildNavigationTile(isPrevious: true, cardRatio: cardRatio);
-          } else if (isNextTileRender) {
+      return AnimatedContentGrid<Object>(
+        gridKey: ValueKey('game_grid_page_$_currentPage'), // 网格的 Key
+        items: displayItems, // 显示的项目列表
+        crossAxisCount: cardsPerRow, // 交叉轴项数
+        childAspectRatio: cardRatio, // 子项宽高比
+        crossAxisSpacing: 8, // 交叉轴间距
+        mainAxisSpacing: isDesktop ? 16 : 8, // 主轴间距
+        padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 16.0), // 内边距
+        itemBuilder: (context, index, item) {
+          if (item is _NavigationTilePlaceholder) {
+            // 如果是导航占位符
             return _buildNavigationTile(
-                isPrevious: false, cardRatio: cardRatio);
-          } else {
-            if (gameIndex < 0 || gameIndex >= _gamesList.length) {
-              return const SizedBox.shrink();
-            }
-            final game = _gamesList[gameIndex];
-            final animationDelayIndex = gameIndex % _pageSize;
+                isPrevious: item.isPrevious, cardRatio: cardRatio); // 构建导航瓦片
+          }
 
-            return FadeInSlideUpItem(
-              key: ValueKey(game.id),
-              delay: Duration(milliseconds: animationDelayIndex * 50),
-              child: BaseGameCard(
-                currentUser: widget.authProvider.currentUser,
-                game: game,
-                isGridItem: true,
-                showNewBadge: true,
-                showUpdatedBadge: true,
-                adaptForPanels: withPanels,
-                showTags: true,
-                showCollectionStats: true,
-                forceCompact: useCompactMode,
-                maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
-                // 当加载中传递空回调，即使加载成功(加载成功后是false)如果没有权限也传递空回调
-                onDeleteAction:
-                    _isLoadingData && !_checkCanEditOrDeleteGame(game)
-                        ? null
-                        : () {
-                            _handleDeleteGame(game);
-                          }, // onDeleteAction 是 VoidCallback?
-                onEditAction: _isLoadingData && !_checkCanEditOrDeleteGame(game)
-                    ? null
-                    : () => _handleEditGame(game),
-              ),
+          if (item is Game) {
+            // 如果是游戏
+            final game = item;
+            return BaseGameCard(
+              key: ValueKey(game.id), // 唯一键
+              currentUser: widget.authProvider.currentUser, // 当前用户
+              game: game, // 游戏数据
+              isGridItem: true, // 是否为网格项
+              showNewBadge: true, // 显示新徽章
+              showUpdatedBadge: true, // 显示更新徽章
+              adaptForPanels: withPanels, // 是否适应面板
+              showTags: true, // 显示标签
+              showCollectionStats: true, // 显示收藏统计
+              forceCompact: useCompactMode, // 强制紧凑模式
+              maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2), // 最大标签数
+              onDeleteAction:
+                  _isLoadingData && !_checkCanEditOrDeleteGame(game) // 删除回调
+                      ? null
+                      : () {
+                          _handleDeleteGame(game);
+                        },
+              onEditAction:
+                  _isLoadingData && !_checkCanEditOrDeleteGame(game) // 编辑回调
+                      ? null
+                      : () => _handleEditGame(game),
             );
           }
+
+          return const SizedBox.shrink(); // 否则返回空组件
         },
       );
     });
   }
 
-  /// Builds a navigation tile (Previous or Next).
+  /// 构建导航瓦片（上一页或下一页）。
   Widget _buildNavigationTile(
       {required bool isPrevious, required double cardRatio}) {
     final bool canNavigate =
-        isPrevious ? (_currentPage > 1) : (_currentPage < _totalPages);
+        isPrevious ? (_currentPage > 1) : (_currentPage < _totalPages); // 是否可导航
     final IconData icon =
-        isPrevious ? Icons.arrow_back_ios_new : Icons.arrow_forward_ios;
-    final String label = isPrevious ? '上一页' : '下一页';
-    final String pageInfo = isPrevious
+        isPrevious ? Icons.arrow_back_ios_new : Icons.arrow_forward_ios; // 图标
+    final String label = isPrevious ? '上一页' : '下一页'; // 标签
+    final String pageInfo = isPrevious // 页码信息
         ? '(${_currentPage - 1}/$_totalPages)'
         : '(${_currentPage + 1}/$_totalPages)';
-    // --- 修正: 定义 action 为 VoidCallback? 并使用函数体 ---
-    final VoidCallback? action = (_isLoadingData || !canNavigate)
+    final VoidCallback? action = (_isLoadingData || !canNavigate) // 动作回调
         ? null
         : (isPrevious
             ? () {
@@ -1267,44 +1351,45 @@ class _GamesListScreenState extends State<GamesListScreen>
               });
 
     return AspectRatio(
-      aspectRatio: cardRatio,
+      aspectRatio: cardRatio, // 宽高比
       child: Opacity(
-        opacity: action != null ? 1.0 : 0.5,
+        opacity: action != null ? 1.0 : 0.5, // 透明度
         child: Card(
-          clipBehavior: Clip.antiAlias,
-          margin: const EdgeInsets.all(4),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          clipBehavior: Clip.antiAlias, // 裁剪行为
+          margin: const EdgeInsets.all(4), // 外边距
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)), // 形状
           child: InkWell(
-            onTap: action, // onTap 是 VoidCallback?
-            borderRadius: BorderRadius.circular(12),
+            onTap: action, // 点击回调
+            borderRadius: BorderRadius.circular(12), // 圆角
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
               children: [
                 Icon(icon,
-                    size: 24, color: Theme.of(context).colorScheme.primary),
-                SizedBox(height: 4),
+                    size: 24,
+                    color: Theme.of(context).colorScheme.primary), // 图标
+                const SizedBox(height: 4), // 间距
                 Text(
-                  label,
+                  label, // 标签文本
                   style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
-                      color: Theme.of(context).colorScheme.primary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                      color: Theme.of(context).colorScheme.primary), // 样式
+                  maxLines: 1, // 最大行数
+                  overflow: TextOverflow.ellipsis, // 溢出显示省略号
                 ),
-                SizedBox(height: 2),
+                const SizedBox(height: 2), // 间距
                 Text(
-                  pageInfo,
+                  pageInfo, // 页码信息文本
                   style: TextStyle(
                       fontSize: 10,
                       color: Theme.of(context)
                           .textTheme
                           .bodySmall
                           ?.color
-                          ?.withSafeOpacity(0.7)),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                          ?.withSafeOpacity(0.7)), // 样式
+                  maxLines: 1, // 最大行数
+                  overflow: TextOverflow.ellipsis, // 溢出显示省略号
                 ),
               ],
             ),
@@ -1314,59 +1399,64 @@ class _GamesListScreenState extends State<GamesListScreen>
     );
   }
 
-  /// Builds the empty state widget. (Corrected onPressed)
+  /// 构建空状态组件。
   Widget _buildEmptyState() {
-    String message;
-    Widget? actionButton;
+    String message; // 消息
+    Widget? actionButton; // 动作按钮
 
-    // --- vv 修改空状态消息和按钮 vv ---
     if (_currentCategory != null) {
+      // 当前有分类筛选时
       message = '没有找到分类为 “$_currentCategory” 的游戏';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _clearCategoryFilter, // <<< 清除分类
+          onPressed: _isLoadingData ? null : _clearCategoryFilter, // 点击清除分类
           label: '查看全部游戏',
           icon: Icons.list_alt);
     } else if (_currentTag != null) {
+      // 当前有标签筛选时
       message = '没有找到标签为 “$_currentTag” 的游戏';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _clearTagFilter, // <<< 清除标签
+          onPressed: _isLoadingData ? null : _clearTagFilter, // 点击清除标签
           label: '查看全部游戏',
           icon: Icons.list_alt);
     } else {
+      // 无筛选时
       message = '这里还没有游戏呢';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _handleAddGame,
+          onPressed: _isLoadingData ? null : _handleAddGame, // 点击添加游戏
           label: '添加一个游戏',
           icon: Icons.add);
     }
 
     return EmptyStateWidget(
-      iconData: Icons.videogame_asset_off_outlined,
-      message: message,
-      action: actionButton,
+      iconData: Icons.videogame_asset_off_outlined, // 图标
+      message: message, // 消息
+      action: actionButton, // 动作按钮
     );
   }
 
-  /// Builds the Floating Action Button.
+  /// 构建悬浮动作按钮组。
   Widget? _buildFabGroup() {
     if (_isLoadingData) return null; // 加载时不显示
 
     return FloatingActionButtonGroup(
-        children:
-            widget.authProvider.isLoggedIn ? _addGameFab() : _toLoginFab());
+      children: widget.authProvider.isLoggedIn
+          ? _addGameFab()
+          : _toLoginFab(), // 根据登录状态显示不同按钮组
+    );
   }
 
+  /// 构建添加游戏悬浮动作按钮组。
   List<Widget> _addGameFab() {
     return [
       GenericFloatingActionButton(
-        onPressed: _handleAddGame, // onPressed 是 VoidCallback?
+        onPressed: _handleAddGame, // 点击添加游戏
         icon: AppBarAction.addGame.icon,
         tooltip: '添加游戏',
         heroTag: 'games_list_fab',
       ),
       GenericFloatingActionButton(
-        onPressed: () => NavigationUtils.pushNamed(
-            context, AppRoutes.myGames), // onPressed 是 VoidCallback?
+        onPressed: () =>
+            NavigationUtils.pushNamed(context, AppRoutes.myGames), // 点击导航到我的游戏
         icon: AppBarAction.myGames.icon,
         tooltip: '我的游戏',
         heroTag: 'games_list_fab',
@@ -1374,11 +1464,11 @@ class _GamesListScreenState extends State<GamesListScreen>
     ];
   }
 
+  /// 构建登录提示悬浮动作按钮组。
   List<Widget> _toLoginFab() {
     return [
       GenericFloatingActionButton(
-        onPressed: () => NavigationUtils.navigateToLogin(
-            context), // onPressed 是 VoidCallback?
+        onPressed: () => NavigationUtils.navigateToLogin(context), // 点击导航到登录页
         icon: Icons.login,
         tooltip: '登录后可以添加游戏',
         heroTag: 'login_frm_games_list_fab',
@@ -1386,21 +1476,19 @@ class _GamesListScreenState extends State<GamesListScreen>
     ];
   }
 
-  /// Builds the floating pagination controls if needed.
+  /// 构建悬浮分页控件（如果需要）。
   Widget? _buildFloatingPaginationControlsIfNeeded() {
-    // PaginationControls 组件内部会处理 totalPages <= 1 的情况，所以这里主要判断是否初始化
     if (!_isInitialized) {
-      return null; // 初始化完成前不显示任何东西
+      return null; // 未初始化时不显示
     }
 
-    // 直接使用你提供的 PaginationControls 组件
     return PaginationControls(
-      currentPage: _currentPage,
-      totalPages: _totalPages,
-      isLoading: _isLoadingData,
-      onPreviousPage: _goToPreviousPageInternal,
-      onNextPage: _goToNextPageInternal,
-      onPageSelected: _goToPage, // 当用户在下拉框选择页码时，调用 _goToPage
+      currentPage: _currentPage, // 当前页码
+      totalPages: _totalPages, // 总页数
+      isLoading: _isLoadingData, // 是否加载中
+      onPreviousPage: _goToPreviousPageInternal, // 上一页回调
+      onNextPage: _goToNextPageInternal, // 下一页回调
+      onPageSelected: _goToPage, // 页码选择回调
     );
   }
 }

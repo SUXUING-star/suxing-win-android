@@ -1,32 +1,49 @@
 // lib/screens/home/home_screen.dart
-import 'dart:async';
-import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
-import 'package:rxdart/rxdart.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/services/main/forum/post_service.dart';
-import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_extension.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:visibility_detector/visibility_detector.dart';
-import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart';
-import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart';
-import 'package:suxingchahui/widgets/components/screen/home/section/home_banner.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
+/// 该文件定义了 HomeScreen 组件，作为应用的主页显示各类热门和最新内容。
+/// HomeScreen 负责加载和展示热门游戏、最新游戏和热门帖子，并支持刷新和自动轮播。
+library;
+
+import 'dart:async'; // 导入异步操作所需，如 Timer
+import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
+import 'package:rxdart/rxdart.dart'; // 导入 RxDart，用于流的 debounceTime
+import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
+import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
+import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
+import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
+import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart'; // 导入热门帖子组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
+import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
+import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart'; // 导入最新游戏组件
+import 'package:suxingchahui/widgets/components/screen/home/section/home_banner.dart'; // 导入首页 Banner 组件
+import 'package:suxingchahui/services/main/game/game_service.dart'; // 导入游戏服务
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入加载组件
+
+/// `HomeScreen` 类：应用主页屏幕组件。
+///
+/// 该屏幕负责加载、展示热门游戏、最新游戏和热门帖子数据，
+/// 支持刷新和热门游戏的自动轮播。
 class HomeScreen extends StatefulWidget {
-  final AuthProvider authProvider;
-  final GameService gameService;
-  final PostService postService;
-  final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final AuthProvider authProvider; // 认证 Provider
+  final GameService gameService; // 游戏服务
+  final PostService postService; // 帖子服务
+  final UserFollowService followService; // 用户关注服务
+  final UserInfoProvider infoProvider; // 用户信息 Provider
+
+  /// 构造函数。
+  ///
+  /// [authProvider]：认证 Provider。
+  /// [gameService]：游戏服务。
+  /// [postService]：帖子服务。
+  /// [followService]：关注服务。
+  /// [infoProvider]：用户信息 Provider。
   const HomeScreen({
     super.key,
     required this.authProvider,
@@ -36,81 +53,80 @@ class HomeScreen extends StatefulWidget {
     required this.infoProvider,
   });
 
+  /// 创建状态。
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
+/// `HomeDataType` 枚举：表示主页不同数据类型。
 enum HomeDataType {
-  hotGames,
-  latestGames,
-  hotPosts,
+  hotGames, // 热门游戏
+  latestGames, // 最新游戏
+  hotPosts, // 热门帖子
 }
 
+/// `_HomeScreenState` 类：`HomeScreen` 的状态管理。
+///
+/// 管理数据加载、刷新、可见性、缓存监听、自动轮播和 UI 状态。
 class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
-  bool _isOverallInitialized = false; // 标记整体页面是否已“首次加载”过所有必要数据
-  bool _isVisible = false;
-  String? _overallErrorMessage; // 整体页面框架的错误
+  bool _isOverallInitialized = false; // 整体页面是否已首次加载标记
+  bool _isVisible = false; // 页面是否可见标记
+  String? _overallErrorMessage; // 整体页面框架的错误消息
 
-  bool _hasPlayedEntryAnimation = false; // 用于首次进入的动画控制
+  bool _hasPlayedEntryAnimation = false; // 用于首次进入动画的控制标记
 
-  // --- 下拉刷新节流 ---
-  bool _isPerformingHomeScreenRefresh = false;
-  DateTime? _lastHomeScreenRefreshAttemptTime;
+  bool _isPerformingHomeScreenRefresh = false; // 正在执行主页刷新操作标记
+  DateTime? _lastHomeScreenRefreshAttemptTime; // 上次尝试主页刷新的时间
   static const Duration _minHomeScreenRefreshInterval =
-      Duration(seconds: 60); // 改回60秒
+      Duration(seconds: 60); // 最小刷新间隔
 
-  // --- 子组件 Key Counters (用于强制重建子组件的UI结构，但不直接驱动数据获取) ---
-  // 现在主要用于缓存变化时，如果子组件内部有一些依赖Key的UI逻辑，可以保留
-  // 但数据刷新主要靠 HomeScreen 的 setState 更新 props
-  int _hotGamesKeyCounter = 0;
-  int _latestGamesKeyCounter = 0;
-  int _hotPostsKeyCounter = 0;
+  int _hotGamesKeyCounter = 0; // 热门游戏 Key 计数器
+  int _latestGamesKeyCounter = 0; // 最新游戏 Key 计数器
+  int _hotPostsKeyCounter = 0; // 热门帖子 Key 计数器
 
-  // --- HomeScreen 管理的数据和加载状态 ---
-  List<Game>? _hotGamesData;
-  bool _isHotGamesLoading = false;
-  String? _hotGamesError;
+  List<Game>? _hotGamesData; // 热门游戏数据列表
+  bool _isHotGamesLoading = false; // 热门游戏是否正在加载中
+  String? _hotGamesError; // 热门游戏错误消息
 
-  List<Game>? _latestGamesData;
-  bool _isLatestGamesLoading = false;
-  String? _latestGamesError;
+  List<Game>? _latestGamesData; // 最新游戏数据列表
+  bool _isLatestGamesLoading = false; // 最新游戏是否正在加载中
+  String? _latestGamesError; // 最新游戏错误消息
 
-  List<Post>? _hotPostsData;
-  bool _isHotPostsLoading = false;
-  String? _hotPostsError;
+  List<Post>? _hotPostsData; // 热门帖子数据列表
+  bool _isHotPostsLoading = false; // 热门帖子是否正在加载中
+  String? _hotPostsError; // 热门帖子错误消息
 
-  // --- HomeHotGames 轮播控制 ---
-  PageController _hotGamesPageController = PageController();
-  Timer? _hotGamesScrollTimer;
-  int _currentHotGamesPage = 0;
-  static const Duration _hotGamesAutoscrollDuration = Duration(seconds: 5);
-  bool _isHotGamesTimerActive = false; // 标记计时器是否应该运行
+  PageController _hotGamesPageController = PageController(); // 热门游戏轮播控制器
+  Timer? _hotGamesScrollTimer; // 热门游戏自动滚动计时器
+  int _currentHotGamesPage = 0; // 当前热门游戏轮播页码
+  static const Duration _hotGamesAutoscrollDuration =
+      Duration(seconds: 5); // 热门游戏自动滚动间隔
+  bool _isHotGamesTimerActive = false; // 热门游戏计时器是否活跃
 
-  // --- 缓存监听 ---
-  StreamSubscription? _hotGamesWatchSub;
-  StreamSubscription? _latestGamesWatchSub;
-  StreamSubscription? _hotPostsWatchSub;
-  static const Duration _cacheDebounceDuration = Duration(seconds: 2);
+  StreamSubscription? _hotGamesWatchSub; // 热门游戏缓存监听订阅
+  StreamSubscription? _latestGamesWatchSub; // 最新游戏缓存监听订阅
+  StreamSubscription? _hotPostsWatchSub; // 热门帖子缓存监听订阅
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
 
-  bool _hasInitializedDependencies = false;
-  String? _currentUserId;
+  bool _hasInitializedDependencies = false; // 依赖是否已初始化标记
+  String? _currentUserId; // 当前用户ID
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addObserver(this); // 添加应用生命周期观察者
     _hotGamesPageController = PageController(); // 初始化 PageController
-    // 初始加载由 VisibilityDetector 触发
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _hasInitializedDependencies = true;
+      // 依赖未初始化时
+      _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
-      _currentUserId = widget.authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
 
@@ -119,9 +135,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.didUpdateWidget(oldWidget);
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
+      // 用户ID变化时
       if (mounted) {
         setState(() {
-          _currentUserId = widget.authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
         });
       }
     }
@@ -129,101 +146,118 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _unsubscribeFromCacheChanges();
-    _hotGamesPageController.dispose();
-    _stopHotGamesAutoScrollTimer();
+    WidgetsBinding.instance.removeObserver(this); // 移除应用生命周期观察者
+    _unsubscribeFromCacheChanges(); // 取消缓存监听
+    _hotGamesPageController.dispose(); // 销毁 PageController
+    _stopHotGamesAutoScrollTimer(); // 停止自动轮播计时器
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
-    if (!mounted) return;
+    if (!mounted) return; // 组件未挂载时返回
 
     if (state == AppLifecycleState.resumed) {
+      // 应用从后台恢复时
       if (widget.authProvider.currentUserId != _currentUserId) {
+        // 用户ID变化时
         if (mounted) {
           setState(() {
-            _currentUserId = widget.authProvider.currentUserId;
+            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
           });
         }
       }
-      // App 恢复到前台
-      _subscribeToCacheChanges();
+      _subscribeToCacheChanges(); // 订阅缓存变化
       if (_isVisible) {
-        // 确保页面当前也可见
-        _startHotGamesAutoScrollTimer(); // 尝试启动轮播
+        // 页面当前可见时
+        _startHotGamesAutoScrollTimer(); // 启动轮播
         if (!_isOverallInitialized) {
-          _triggerInitialLoad(); // 如果还未初始化，则加载
+          // 未初始化时触发初始加载
+          _triggerInitialLoad();
         } else {
-          // 如果已经初始化过，检查是否需要刷新（例如从后台回来超过一定时间）
+          // 已初始化时尝试有条件刷新所有数据
           _attemptRefreshAllDataConditionally(checkInterval: true);
         }
       }
     } else if (state == AppLifecycleState.paused) {
-      // App 进入后台
-      _unsubscribeFromCacheChanges();
-      _stopHotGamesAutoScrollTimer(); // 暂停轮播
+      // 应用进入后台时
+      _unsubscribeFromCacheChanges(); // 取消缓存监听
+      _stopHotGamesAutoScrollTimer(); // 停止轮播
     }
   }
 
+  /// 处理可见性变化。
+  ///
+  /// [visibilityInfo]：可见性信息。
   void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
-    if (!mounted) return;
-    final bool wasVisible = _isVisible;
-    final bool currentlyVisible = visibilityInfo.visibleFraction > 0.1;
+    if (!mounted) return; // 组件未挂载时返回
+    final bool wasVisible = _isVisible; // 记录旧的可见性状态
+    final bool currentlyVisible =
+        visibilityInfo.visibleFraction > 0.1; // 判断当前可见性
 
     if (widget.authProvider.currentUserId != _currentUserId) {
+      // 用户ID变化时
       if (mounted) {
         setState(() {
-          _currentUserId = widget.authProvider.currentUserId;
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
         });
       }
     }
 
     if (currentlyVisible != wasVisible) {
+      // 可见性状态变化时
       setState(() {
-        _isVisible = currentlyVisible;
+        _isVisible = currentlyVisible; // 更新可见性状态
       });
 
       if (_isVisible) {
-        // ---- 页面变为可见 ----
-        _subscribeToCacheChanges();
+        // 页面变为可见时
+        _subscribeToCacheChanges(); // 订阅缓存变化
         _startHotGamesAutoScrollTimer(); // 启动轮播
 
         if (!_isOverallInitialized) {
+          // 未初始化时触发初始加载
           _triggerInitialLoad();
         } else {
-          // 页面从不可见到可见，可以考虑刷新，特别是如果上次刷新很久了
+          // 已初始化时尝试有条件刷新所有数据
           _attemptRefreshAllDataConditionally(checkInterval: true);
         }
       } else {
-        // ---- 页面变为不可见 ----
-        _unsubscribeFromCacheChanges();
+        // 页面变为不可见时
+        _unsubscribeFromCacheChanges(); // 取消缓存监听
         _stopHotGamesAutoScrollTimer(); // 停止轮播
       }
     }
   }
 
+  /// 触发初始加载。
+  ///
+  /// 仅在整体未初始化时加载所有必要数据。
   void _triggerInitialLoad() {
     if (!_isOverallInitialized && mounted) {
-      _loadAllData(isInitialLoad: true);
+      // 整体未初始化且组件挂载时
+      _loadAllData(isInitialLoad: true); // 加载所有数据
     }
   }
 
-  // --- 数据获取核心逻辑 ---
+  /// 获取所有数据。
+  ///
+  /// [isInitialLoad]：是否为初始加载。
+  /// [isRefresh]：是否为刷新。
   Future<void> _loadAllData(
       {bool isInitialLoad = false, bool isRefresh = false}) async {
-    if (!mounted) return;
+    if (!mounted) return; // 组件未挂载时返回
 
-    // 如果是刷新，且正在刷新中，则返回
-    if (isRefresh && _isPerformingHomeScreenRefresh) return;
-    // 如果是刷新，检查时间间隔
+    if (isRefresh && _isPerformingHomeScreenRefresh) return; // 刷新中时返回
+
     if (isRefresh) {
+      // 如果是刷新操作
       final now = DateTime.now();
       if (_lastHomeScreenRefreshAttemptTime != null &&
           now.difference(_lastHomeScreenRefreshAttemptTime!) <
               _minHomeScreenRefreshInterval) {
+        // 刷新间隔不足时
         final remainingSeconds = (_minHomeScreenRefreshInterval.inSeconds -
             now.difference(_lastHomeScreenRefreshAttemptTime!).inSeconds);
         if (mounted) {
@@ -233,31 +267,29 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             duration: const Duration(seconds: 2),
           );
         }
-        return;
+        return; // 返回
       }
-      _isPerformingHomeScreenRefresh = true;
-      _lastHomeScreenRefreshAttemptTime = now;
+      _isPerformingHomeScreenRefresh = true; // 标记正在刷新
+      _lastHomeScreenRefreshAttemptTime = now; // 记录刷新时间
     }
 
-    // 标记开始加载
     setState(() {
+      // 设置加载状态
       if (isInitialLoad) {
         _isHotGamesLoading = true;
         _isLatestGamesLoading = true;
         _isHotPostsLoading = true;
-        _overallErrorMessage = null; // 清除整体错误
+        _overallErrorMessage = null;
       } else if (isRefresh) {
-        // 下拉刷新时，也显示加载状态
         _isHotGamesLoading = true;
         _isLatestGamesLoading = true;
         _isHotPostsLoading = true;
       }
-      // 对于缓存驱动的单个板块刷新，其 loading 状态在 _fetchSpecificData 中处理
     });
 
     try {
-      // 并行获取所有数据
       await Future.wait([
+        // 并行获取所有数据
         _fetchSpecificData(HomeDataType.hotGames,
             isTriggeredByRefresh: isRefresh || isInitialLoad),
         _fetchSpecificData(HomeDataType.latestGames,
@@ -267,48 +299,53 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       ]);
 
       if (mounted) {
+        // 组件挂载时
         setState(() {
           if (isInitialLoad) {
             _isOverallInitialized = true; // 标记整体初始化完成
           }
-          // 如果所有数据加载都成功（没有error），可以清除整体错误
           if (_hotGamesError == null &&
               _latestGamesError == null &&
               _hotPostsError == null) {
-            _overallErrorMessage = null;
+            _overallErrorMessage = null; // 清除整体错误
           }
         });
-        // 初始加载或刷新成功后，重置并启动轮播
         if (isInitialLoad || isRefresh) {
+          // 初始加载或刷新成功后重置并启动轮播
           _resetAndStartHotGamesAutoScroll();
         }
       }
     } catch (e) {
       if (mounted) {
+        // 捕获错误时
         setState(() {
           if (isInitialLoad) {
-            _overallErrorMessage = "页面数据加载失败，请稍后重试。";
+            _overallErrorMessage = "页面数据加载失败，请稍后重试。"; // 设置整体错误消息
           }
-          // 具体的子模块错误在 _fetchSpecificData 中设置
         });
       }
     } finally {
       if (mounted && isRefresh) {
+        // 刷新结束后重置刷新标记
         setState(() {
           _isPerformingHomeScreenRefresh = false;
         });
       }
-      // loading状态在 _fetchSpecificData 的 finally 中处理
     }
   }
 
+  /// 获取特定类型的数据。
+  ///
+  /// [type]：数据类型。
+  /// [isTriggeredByCache]：是否因缓存触发。
+  /// [isTriggeredByRefresh]：是否因刷新触发。
   Future<void> _fetchSpecificData(HomeDataType type,
       {bool isTriggeredByCache = false,
       bool isTriggeredByRefresh = false}) async {
-    if (!mounted) return;
+    if (!mounted) return; // 组件未挂载时返回
 
-    // 设置对应板块的加载状态
     setState(() {
+      // 设置对应板块的加载状态
       switch (type) {
         case HomeDataType.hotGames:
           _isHotGamesLoading = true;
@@ -329,34 +366,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       dynamic data;
       switch (type) {
         case HomeDataType.hotGames:
-          data = await widget.gameService.getHotGames();
+          data = await widget.gameService.getHotGames(); // 获取热门游戏
           if (mounted) {
             setState(() {
-              _hotGamesData = data;
+              _hotGamesData = data; // 更新热门游戏数据
               if (isTriggeredByRefresh || isTriggeredByCache) {
-                // 如果是刷新或缓存更新，重置轮播
-                _resetAndStartHotGamesAutoScroll();
+                _resetAndStartHotGamesAutoScroll(); // 重置并启动轮播
               }
             });
           }
           break;
         case HomeDataType.latestGames:
-          data = await widget.gameService.getLatestGames();
-          if (mounted) setState(() => _latestGamesData = data);
+          data = await widget.gameService.getLatestGames(); // 获取最新游戏
+          if (mounted) setState(() => _latestGamesData = data); // 更新最新游戏数据
           break;
         case HomeDataType.hotPosts:
-          data = await widget.postService.getHotPosts();
-          if (mounted) setState(() => _hotPostsData = data);
+          data = await widget.postService.getHotPosts(); // 获取热门帖子
+          if (mounted) setState(() => _hotPostsData = data); // 更新热门帖子数据
           break;
       }
     } catch (e) {
       if (mounted) {
+        // 捕获错误时
         setState(() {
-          final errorMsg = '加载失败: $e';
+          final errorMsg = '加载失败: $e'; // 错误消息
           switch (type) {
             case HomeDataType.hotGames:
-              _hotGamesError = errorMsg;
-              _hotGamesData = null; // 出错时清空旧数据
+              _hotGamesError = errorMsg; // 设置错误消息
+              _hotGamesData = null; // 清空旧数据
               break;
             case HomeDataType.latestGames:
               _latestGamesError = errorMsg;
@@ -369,9 +406,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
         });
       }
-      // if (kDebugMode) print("Error fetching ${type.name} data: $e");
     } finally {
       if (mounted) {
+        // 组件挂载时重置加载状态
         setState(() {
           switch (type) {
             case HomeDataType.hotGames:
@@ -389,38 +426,41 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  // 下拉刷新调用
+  /// 处理下拉刷新。
   Future<void> _handlePullToRefresh() async {
-    await _loadAllData(isRefresh: true);
+    await _loadAllData(isRefresh: true); // 加载所有数据并标记为刷新
   }
 
-  // 尝试有条件地刷新所有数据（例如，从后台返回时）
+  /// 尝试有条件地刷新所有数据。
+  ///
+  /// [checkInterval]：是否检查刷新时间间隔。
   void _attemptRefreshAllDataConditionally({bool checkInterval = false}) {
     if (checkInterval) {
+      // 检查刷新时间间隔时
       final now = DateTime.now();
-      // 如果距离上次刷新成功的时间在最小间隔内，则不主动刷新
       if (_lastHomeScreenRefreshAttemptTime != null &&
           now.difference(_lastHomeScreenRefreshAttemptTime!) <
               _minHomeScreenRefreshInterval) {
-        // 可选：如果需要，这里可以只刷新缓存认为“脏”的数据，而不是全部
-        // debugPrint("HomeScreen: Conditional refresh skipped due to interval.");
+        // 时间间隔不足时返回
         return;
       }
     }
-    // 否则，执行一次类似下拉刷新的全量数据获取，但不显示“刷新太频繁”的提示
-    // _loadAllData(isRefresh: true) 会自己处理节流，但这里我们希望绕过那个节流提示，直接尝试刷新
     if (!_isPerformingHomeScreenRefresh) {
-      // 避免和用户触发的下拉刷新冲突
-      _isPerformingHomeScreenRefresh = true; // 标记开始
+      // 未在刷新中时
+      _isPerformingHomeScreenRefresh = true; // 标记开始刷新
       _lastHomeScreenRefreshAttemptTime = DateTime.now(); // 更新时间戳
 
-      _fetchSpecificData(HomeDataType.hotGames, isTriggeredByRefresh: true);
-      _fetchSpecificData(HomeDataType.latestGames, isTriggeredByRefresh: true);
-      _fetchSpecificData(HomeDataType.hotPosts, isTriggeredByRefresh: true)
+      _fetchSpecificData(HomeDataType.hotGames,
+          isTriggeredByRefresh: true); // 获取热门游戏
+      _fetchSpecificData(HomeDataType.latestGames,
+          isTriggeredByRefresh: true); // 获取最新游戏
+      _fetchSpecificData(HomeDataType.hotPosts,
+              isTriggeredByRefresh: true) // 获取热门帖子
           .whenComplete(() {
         if (mounted) {
+          // 组件挂载时
           setState(() {
-            _isPerformingHomeScreenRefresh = false; // 标记结束
+            _isPerformingHomeScreenRefresh = false; // 标记刷新结束
           });
         } else {
           _isPerformingHomeScreenRefresh = false;
@@ -429,47 +469,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
-  // --- 缓存变化处理 ---
+  /// 订阅缓存变化。
   void _subscribeToCacheChanges() {
-    _unsubscribeFromCacheChanges();
+    _unsubscribeFromCacheChanges(); // 先取消旧订阅
     try {
       _hotGamesWatchSub = widget.gameService.hotGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(
                 HomeDataType.hotGames,
                 event,
-              ));
+              )); // 监听热门游戏缓存变化
       _latestGamesWatchSub = widget.gameService.latestGamesCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(
                 HomeDataType.latestGames,
                 event,
-              ));
+              )); // 监听最新游戏缓存变化
       _hotPostsWatchSub = widget.postService.hotPostsCacheChangeNotifier
           .debounceTime(_cacheDebounceDuration)
           .listen((event) => _handleCacheChange(
                 HomeDataType.hotPosts,
                 event,
-              ));
+              )); // 监听热门帖子缓存变化
     } catch (e) {
-      //if (kDebugMode) print("Error subscribing to cache changes: $e");
+      // 订阅缓存变化发生错误
     }
   }
 
+  /// 取消缓存变化订阅。
   void _unsubscribeFromCacheChanges() {
-    _hotGamesWatchSub?.cancel();
+    _hotGamesWatchSub?.cancel(); // 取消热门游戏订阅
     _hotGamesWatchSub = null;
-    _latestGamesWatchSub?.cancel();
+    _latestGamesWatchSub?.cancel(); // 取消最新游戏订阅
     _latestGamesWatchSub = null;
-    _hotPostsWatchSub?.cancel();
+    _hotPostsWatchSub?.cancel(); // 取消热门帖子订阅
     _hotPostsWatchSub = null;
   }
 
+  /// 处理缓存变化。
+  ///
+  /// [type]：数据类型。
+  /// [event]：缓存事件。
   void _handleCacheChange(HomeDataType type, BoxEvent event) {
-    if (!mounted || !_isVisible) return; // 如果页面不可见，不处理缓存变化导致的数据刷新
+    if (!mounted || !_isVisible) return; // 组件未挂载或不可见时返回
 
-    // 缓存变化时，重新获取对应板块的数据，并更新Key以防子组件有依赖Key的内部状态
     setState(() {
+      // 更新 Key 计数器
       switch (type) {
         case HomeDataType.hotGames:
           _hotGamesKeyCounter++;
@@ -482,248 +527,219 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           break;
       }
     });
-    _fetchSpecificData(type, isTriggeredByCache: true);
+    _fetchSpecificData(type, isTriggeredByCache: true); // 获取对应板块数据
   }
 
+  /// 启动热门游戏自动滚动计时器。
   void _startHotGamesAutoScrollTimer() {
-    // 检查核心条件：页面可见、有数据、超过1页、且计时器当前未激活
     if (!mounted ||
         !_isVisible ||
         _isHotGamesTimerActive ||
         _hotGamesData == null ||
         _hotGamesData!.isEmpty) {
+      // 不满足启动条件时返回
       return;
     }
 
     final int totalPages = HomeHotGames.getTotalPages(
-        HomeHotGames.getCardsPerPage(context), // 确保 context 可用
-        _hotGamesData);
+        HomeHotGames.getCardsPerPage(context), _hotGamesData); // 获取总页数
 
     if (totalPages <= 1) {
-      _stopHotGamesAutoScrollTimer(); // 如果只有一页或没有数据，确保计时器是停止的
+      // 总页数小于等于 1 时停止计时器
+      _stopHotGamesAutoScrollTimer();
       return;
     }
 
-    // 如果条件都满足，才真正启动计时器
-    _isHotGamesTimerActive = true; // 先标记为 active
-    _hotGamesScrollTimer?.cancel(); // 先取消已有的，以防万一
-
-    //if (kDebugMode) print("HotGames auto-scroll timer: Attempting to start...");
+    _isHotGamesTimerActive = true; // 标记计时器活跃
+    _hotGamesScrollTimer?.cancel(); // 取消现有计时器
 
     _hotGamesScrollTimer = Timer.periodic(_hotGamesAutoscrollDuration, (timer) {
-      // Timer 回调内部的核心检查：
-      // 1. 组件是否还 mounted
-      // 2. 页面是否仍然应该滚动 (_isHotGamesTimerActive 这个标志位很重要)
-      // 3. PageController 是否可用 (hasClients)
+      // 启动周期计时器
       if (!mounted ||
           !_isHotGamesTimerActive ||
           !_hotGamesPageController.hasClients) {
-        // 如果这些核心条件之一不满足，通常意味着应该停止（可能是 dispose, 或外部指令）
-        // 但要小心这里的 _stopHotGamesAutoScrollTimer 调用，避免无限循环停止
-        // _stopHotGamesAutoScrollTimer(); // 这行暂时注释掉，因为外部会有更宏观的控制
+        // 核心条件不满足时返回
         return;
       }
 
-      // 重新获取当前实际的 cards per page 和 total pages，因为屏幕尺寸可能变化（虽然不常见）
-      final int currentCardsPerPage = HomeHotGames.getCardsPerPage(context);
-      final int currentActualTotalPages =
-          HomeHotGames.getTotalPages(currentCardsPerPage, _hotGamesData);
+      final int currentCardsPerPage =
+          HomeHotGames.getCardsPerPage(context); // 当前每页卡片数
+      final int currentActualTotalPages = HomeHotGames.getTotalPages(
+          currentCardsPerPage, _hotGamesData); // 当前实际总页数
 
       if (currentActualTotalPages <= 1) {
-        // 如果在滚动过程中数据变少到只有一页，则停止
+        // 实际总页数小于等于 1 时停止计时器
         _stopHotGamesAutoScrollTimer();
         return;
       }
 
-      // 获取当前 PageController 报告的页面，并四舍五入
-      // 注意：controller.page 在动画过程中是 double
       int currentPageFromController =
-          (_hotGamesPageController.page ?? 0.0).round();
-      int nextPage = currentPageFromController + 1;
+          (_hotGamesPageController.page ?? 0.0).round(); // 获取当前页码
+      int nextPage = currentPageFromController + 1; // 下一页页码
 
       if (nextPage >= currentActualTotalPages) {
         nextPage = 0; // 回到第一页
       }
 
-      // 执行动画，这里不需要再检查 hasClients，因为前面已经检查过了
       _hotGamesPageController.animateToPage(
+        // 动画滚动到下一页
         nextPage,
-        duration: const Duration(milliseconds: 800), // 动画时间
+        duration: const Duration(milliseconds: 800),
         curve: Curves.easeInOut,
       );
-      // 注意：animateToPage 会触发 onPageChanged，但我们下面会处理这个
     });
-    //if (kDebugMode) print("HotGames auto-scroll timer: STARTED with duration ${_hotGamesAutoscrollDuration.inSeconds}s.");
   }
 
+  /// 停止热门游戏自动滚动计时器。
   void _stopHotGamesAutoScrollTimer() {
     if (_hotGamesScrollTimer != null && _hotGamesScrollTimer!.isActive) {
-      _hotGamesScrollTimer!.cancel();
-      //if (kDebugMode) print("HotGames auto-scroll timer: CANCELLED.");
+      _hotGamesScrollTimer!.cancel(); // 取消计时器
     }
-    _hotGamesScrollTimer = null; // 置空
-    // 只有当计时器确实被停止时，才更新 _isHotGamesTimerActive 状态
-    // 防止在不应该停止的时候错误地将 _isHotGamesTimerActive 置为 false
+    _hotGamesScrollTimer = null; // 清空计时器引用
     if (_isHotGamesTimerActive) {
-      _isHotGamesTimerActive = false;
-      //if (kDebugMode) print("HotGames auto-scroll timer: Marked as INACTIVE.");
+      _isHotGamesTimerActive = false; // 标记计时器不活跃
     }
   }
 
-  // 标记用户是否正在拖拽，用于区分 onPageChanged 的触发源
-  bool _isUserInteractingWithHotGamesPager = false;
+  bool _isUserInteractingWithHotGamesPager = false; // 用户是否正在与热门游戏分页器交互
 
+  /// 处理热门游戏页码变化。
+  ///
+  /// [page]：新页码。
   void _onHotGamesPageChanged(int page) {
-    if (!mounted) return;
+    if (!mounted) return; // 组件未挂载时返回
 
-    // 更新内部追踪的当前页码
-    // 这个 setState 是必要的，因为 HomeHotGames 组件的 currentPage prop 依赖它
     setState(() {
-      _currentHotGamesPage = page;
+      _currentHotGamesPage = page; // 更新当前页码
     });
 
-    // 如果是用户手动滑动导致的页面变化，则重置并重启计时器
-    // 如果是自动滚动，则不应在这里重置，否则会打断下一次自动滚动计划
     if (_isUserInteractingWithHotGamesPager) {
-      _resetAndStartHotGamesAutoScroll(); // 用户交互后重置计时器
-    } else {
-      // 自动滚动时，不需要在这里重置计时器，Timer 会继续工作
-      // 也不需要在这里手动启动，因为Timer的下一个tick会自动处理
+      // 如果是用户手动滑动
+      _resetAndStartHotGamesAutoScroll(); // 重置并启动计时器
     }
   }
 
-  // _resetAndStartHotGamesAutoScroll 应该更纯粹地负责重置和启动逻辑
-  // 它被用户交互、数据变化、可见性变化等多种情况调用
+  /// 重置并启动热门游戏自动滚动计时器。
   void _resetAndStartHotGamesAutoScroll() {
-    if (!mounted) return;
-    _stopHotGamesAutoScrollTimer(); // 总是先停止当前的，无论是什么原因调用
+    if (!mounted) return; // 组件未挂载时返回
+    _stopHotGamesAutoScrollTimer(); // 总是先停止当前的计时器
 
-    // 只有在页面可见、有数据、且数据多于一页时才尝试启动
     if (_isVisible && _hotGamesData != null && _hotGamesData!.isNotEmpty) {
+      // 页面可见且有数据时
       final int totalPages = HomeHotGames.getTotalPages(
-          HomeHotGames.getCardsPerPage(context), _hotGamesData);
+          HomeHotGames.getCardsPerPage(context), _hotGamesData); // 获取总页数
       if (totalPages > 1) {
-        _startHotGamesAutoScrollTimer(); // 重新启动
-      } else {
-        //if (kDebugMode) print("HotGames reset: Not starting timer, total pages <= 1.");
+        // 总页数大于 1 时启动计时器
+        _startHotGamesAutoScrollTimer();
       }
-    } else {
-      //if (kDebugMode) print("HotGames reset: Not starting timer, conditions not met (visible: $_isVisible, data: ${(_hotGamesData != null && _hotGamesData!.isNotEmpty)}).");
     }
   }
 
-  // --- 构建UI ---
+  /// 构建 UI。
   @override
   Widget build(BuildContext context) {
     return VisibilityDetector(
-      key: const Key('home_screen_visibility'),
-      onVisibilityChanged: _handleVisibilityChange,
-      child: _buildScaffoldContent(),
+      key: const Key('home_screen_visibility'), // 可见性检测器 Key
+      onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
+      child: _buildScaffoldContent(), // 构建 Scaffold 内容
     );
   }
 
+  /// 构建 Scaffold 内容。
   Widget _buildScaffoldContent() {
-    // 首次加载时的整体骨架屏或loading
     if (!_isOverallInitialized &&
         (_isHotGamesLoading || _isLatestGamesLoading || _isHotPostsLoading)) {
+      // 首次加载时显示骨架屏或加载动画
       return Scaffold(
-        body: LoadingWidget.fullScreen(message: "少女祈祷中..."),
+        body: LoadingWidget.fullScreen(message: "少女祈祷中..."), // 全屏加载组件
       );
     }
 
-    // 整体加载错误
     if (_overallErrorMessage != null && !_isOverallInitialized) {
+      // 整体加载错误时显示错误组件
       return Scaffold(
         body: CustomErrorWidget(
-          errorMessage: _overallErrorMessage!,
-          onRetry: () => _loadAllData(isInitialLoad: true), // 重试整个页面的初始加载
+          errorMessage: _overallErrorMessage!, // 错误消息
+          onRetry: () => _loadAllData(isInitialLoad: true), // 重试初始加载
         ),
       );
     }
 
-    // 正常UI
-    const Duration initialDelay = Duration(milliseconds: 150);
-    const Duration stagger = Duration(milliseconds: 100);
-    int sectionIndex = 0;
+    const Duration initialDelay = Duration(milliseconds: 150); // 初始延迟
+    const Duration stagger = Duration(milliseconds: 100); // 交错延迟
+    int sectionIndex = 0; // 区域索引
 
-    // 这个 flag 决定当前 build 周期是否应该播放入口动画
-    bool playAnimationsThisBuildCycle = false;
+    bool playAnimationsThisBuildCycle = false; // 当前构建周期是否播放入口动画
     if (_isOverallInitialized && !_hasPlayedEntryAnimation) {
       playAnimationsThisBuildCycle = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          // 此处不需要 setState，因为这个状态的改变是为了影响 *未来* 的 build 行为。
-          _hasPlayedEntryAnimation = true;
+          _hasPlayedEntryAnimation = true; // 标记已播放动画
         }
       });
     }
-    // 使用这个一次性的动画触发标志
-    final bool currentPlaySectionEntryAnimation = playAnimationsThisBuildCycle;
+    final bool currentPlaySectionEntryAnimation =
+        playAnimationsThisBuildCycle; // 当前播放区域入口动画标记
 
     return Scaffold(
       body: RefreshIndicator(
-        onRefresh: _handlePullToRefresh,
+        onRefresh: _handlePullToRefresh, // 下拉刷新回调
         child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(), // 确保内容不足一屏也能下拉
+          physics: const AlwaysScrollableScrollPhysics(), // 始终可滚动物理
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+            crossAxisAlignment: CrossAxisAlignment.stretch, // 水平拉伸
             children: [
               FadeInSlideUpItemCanPlay(
-                  play: currentPlaySectionEntryAnimation, // 确保动画只在首次加载后播放
-                  delay: initialDelay,
-                  child: const HomeBanner()),
-              const SizedBox(height: 16),
+                  play: currentPlaySectionEntryAnimation, // 播放动画
+                  delay: initialDelay, // 延迟
+                  child: const HomeBanner()), // 首页 Banner
+              const SizedBox(height: 16), // 间距
 
-              // --- HomeHotGames ---
               FadeInSlideUpItemCanPlay(
-                play: currentPlaySectionEntryAnimation,
-                delay: initialDelay + stagger * sectionIndex++,
+                play: currentPlaySectionEntryAnimation, // 播放动画
+                delay: initialDelay + stagger * sectionIndex++, // 延迟
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16.0), // 水平内边距
                   child: HomeHotGames(
-                    key: ValueKey(
-                        'hot_games_$_hotGamesKeyCounter'), // Key用于缓存变化时重建UI
-                    games: _hotGamesData,
-                    isLoading: _isHotGamesLoading,
-                    errorMessage: _hotGamesError,
+                    key: ValueKey('hot_games_$_hotGamesKeyCounter'), // 唯一键
+                    games: _hotGamesData, // 游戏数据
+                    isLoading: _isHotGamesLoading, // 是否加载中
+                    errorMessage: _hotGamesError, // 错误消息
                     onRetry: () => _fetchSpecificData(HomeDataType.hotGames,
-                        isTriggeredByRefresh: true),
-                    pageController: _hotGamesPageController,
-                    currentPage: _currentHotGamesPage,
-                    onPageChanged: _onHotGamesPageChanged,
+                        isTriggeredByRefresh: true), // 重试回调
+                    pageController: _hotGamesPageController, // 页面控制器
+                    currentPage: _currentHotGamesPage, // 当前页码
+                    onPageChanged: _onHotGamesPageChanged, // 页面改变回调
                     playInitialAnimation:
-                        currentPlaySectionEntryAnimation && // 确保是首次动画
+                        currentPlaySectionEntryAnimation && // 播放初始动画
                             _hotGamesData != null &&
-                            _hotGamesData!.isNotEmpty, // 且有数据
+                            _hotGamesData!.isNotEmpty,
                     onUserInteraction: (isInteracting) {
-                      // 实现回调
+                      // 用户交互回调
                       if (!mounted) return;
-                      // 这里直接修改 _isUserInteractingWithHotGamesPager 状态
-                      // 不需要 setState 因为这个状态主要用于 _onHotGamesPageChanged 的逻辑判断
-                      // 而 _onHotGamesPageChanged 内部会 setState 更新 _currentHotGamesPage
-                      // 从而触发UI重建（如果需要）
-                      _isUserInteractingWithHotGamesPager = isInteracting;
+                      _isUserInteractingWithHotGamesPager =
+                          isInteracting; // 更新用户交互状态
                       if (isInteracting) {
-                        // 用户开始交互时，可以主动停止一下计时器，确保平滑
-                        _stopHotGamesAutoScrollTimer();
+                        _stopHotGamesAutoScrollTimer(); // 停止自动滚动计时器
                       }
                     },
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 16), // 间距
 
-              // --- Latest Games 和 Hot Posts (响应式布局) ---
               FadeInSlideUpItemCanPlay(
-                play: currentPlaySectionEntryAnimation, // 使用修正后的标志
-                delay: initialDelay + stagger * sectionIndex++,
+                play: currentPlaySectionEntryAnimation, // 播放动画
+                delay: initialDelay + stagger * sectionIndex++, // 延迟
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                  child: _buildPostsAndGamesSection(context,
-                      currentPlaySectionEntryAnimation), // playAnimations 参数也使用修正后的标志
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16.0), // 水平内边距
+                  child: _buildPostsAndGamesSection(
+                      context, currentPlaySectionEntryAnimation), // 帖子和游戏区域
                 ),
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 16), // 间距
             ],
           ),
         ),
@@ -731,46 +747,52 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  /// 构建帖子和游戏区域。
+  ///
+  /// [context]：Build 上下文。
+  /// [playAnimations]：是否播放动画。
   Widget _buildPostsAndGamesSection(BuildContext context, bool playAnimations) {
-    final bool isLarge = DeviceUtils.isLargeScreen(context);
+    final bool isLarge = DeviceUtils.isLargeScreen(context); // 判断是否为大屏幕
 
     final Widget hotPostsWidget = HomeHotPosts(
-      key: ValueKey('hot_posts_$_hotPostsKeyCounter'),
-      currentUser: widget.authProvider.currentUser,
-      followService: widget.followService,
-      infoProvider: widget.infoProvider,
-      posts: _hotPostsData,
-      isLoading: _isHotPostsLoading,
-      errorMessage: _hotPostsError,
-      onRetry: () =>
-          _fetchSpecificData(HomeDataType.hotPosts, isTriggeredByRefresh: true),
+      key: ValueKey('hot_posts_$_hotPostsKeyCounter'), // 唯一键
+      currentUser: widget.authProvider.currentUser, // 当前用户
+      followService: widget.followService, // 关注服务
+      infoProvider: widget.infoProvider, // 用户信息 Provider
+      posts: _hotPostsData, // 帖子数据
+      isLoading: _isHotPostsLoading, // 是否加载中
+      errorMessage: _hotPostsError, // 错误消息
+      onRetry: () => _fetchSpecificData(HomeDataType.hotPosts,
+          isTriggeredByRefresh: true), // 重试回调
     );
 
     final Widget latestGamesWidget = HomeLatestGames(
-      key: ValueKey('latest_games_$_latestGamesKeyCounter'),
-      games: _latestGamesData,
-      isLoading: _isLatestGamesLoading,
-      errorMessage: _latestGamesError,
+      key: ValueKey('latest_games_$_latestGamesKeyCounter'), // 唯一键
+      games: _latestGamesData, // 游戏数据
+      isLoading: _isLatestGamesLoading, // 是否加载中
+      errorMessage: _latestGamesError, // 错误消息
       onRetry: () => _fetchSpecificData(HomeDataType.latestGames,
-          isTriggeredByRefresh: true),
+          isTriggeredByRefresh: true), // 重试回调
     );
 
     if (isLarge) {
+      // 大屏幕时使用 Row 布局
       return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
         children: [
-          Expanded(child: hotPostsWidget),
-          const SizedBox(width: 16.0),
-          Expanded(child: latestGamesWidget),
+          Expanded(child: hotPostsWidget), // 热门帖子
+          const SizedBox(width: 16.0), // 间距
+          Expanded(child: latestGamesWidget), // 最新游戏
         ],
       );
     } else {
+      // 否则使用 Column 布局
       return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        crossAxisAlignment: CrossAxisAlignment.stretch, // 水平拉伸
         children: [
-          hotPostsWidget,
-          const SizedBox(height: 16.0),
-          latestGamesWidget,
+          hotPostsWidget, // 热门帖子
+          const SizedBox(height: 16.0), // 间距
+          latestGamesWidget, // 最新游戏
         ],
       );
     }
