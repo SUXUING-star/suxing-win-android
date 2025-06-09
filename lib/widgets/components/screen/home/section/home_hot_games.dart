@@ -10,10 +10,10 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'home_game_card.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
-// 改为 StatelessWidget
 class HomeHotGames extends StatelessWidget {
   final List<Game>? games;
   final bool isLoading;
+  final double screenWidth;
   final String? errorMessage;
   final VoidCallback? onRetry;
   final PageController pageController; // 由 HomeScreen 传入和管理
@@ -26,6 +26,7 @@ class HomeHotGames extends StatelessWidget {
     super.key,
     required this.games,
     required this.isLoading,
+    required this.screenWidth,
     this.errorMessage,
     this.onRetry,
     required this.pageController,
@@ -40,12 +41,16 @@ class HomeHotGames extends StatelessWidget {
   static const double containerHeight = 210;
 
   // 辅助方法移到这里，因为它们是纯计算
-  static int getCardsPerPage(BuildContext context) {
+  static int getCardsPerPage(
+    BuildContext context,
+    double screenWidth,
+  ) {
     if (!context.mounted) return 2;
-    double screenWidth = MediaQuery.of(context).size.width;
     double availableWidth =
         screenWidth - 32 - (8 * 2); // 32是父级padding, 8*2是PageView内部margin
-    int cardsPerPage = (availableWidth / (cardWidth + cardMargin)).floor();
+    int cardsPerPage =
+        (availableWidth / (HomeHotGames.cardWidth + HomeHotGames.cardMargin))
+            .floor();
     return cardsPerPage < 1 ? 1 : cardsPerPage;
   }
 
@@ -58,9 +63,9 @@ class HomeHotGames extends StatelessWidget {
   Widget build(BuildContext context) {
     // 1. 加载状态 (如果 games 为 null 且在加载中)
     if (isLoading && games == null) {
-      return SizedBox(
+      return const SizedBox(
         height: containerHeight + 80, // 保持和之前一致的高度
-        child: LoadingWidget.inline(message: "正在加载热门游戏..."),
+        child: LoadingWidget(message: "正在加载热门游戏..."),
       );
     }
 
@@ -96,12 +101,16 @@ class HomeHotGames extends StatelessWidget {
     final displayGames = games ?? []; // 使用 HomeScreen 传来的数据
     if (!context.mounted) return const SizedBox.shrink();
 
-    final int cardsCountPerPage =
-        getCardsPerPage(context); // 动态计算或由 HomeScreen 传入
+    final int cardsCountPerPage = getCardsPerPage(
+      context,
+      screenWidth,
+    ); // 动态计算或由 HomeScreen 传入
     final int totalGamePages = getTotalPages(
       cardsCountPerPage,
       displayGames,
     );
+    int actualCardsThisPage = (screenWidth / (cardWidth + cardMargin)).floor();
+    actualCardsThisPage = actualCardsThisPage < 1 ? 1 : actualCardsThisPage;
 
     return Stack(
       children: [
@@ -137,48 +146,33 @@ class HomeHotGames extends StatelessWidget {
                     itemCount: totalGamePages,
                     onPageChanged: onPageChanged, // 回调给 HomeScreen
                     itemBuilder: (context, pageIndex) {
-                      final startIndex = pageIndex * cardsCountPerPage;
                       if (!context.mounted) return const SizedBox.shrink();
+                      final startIndex = pageIndex * cardsCountPerPage;
+                      List<Widget> cardWidgets = [];
+                      for (int i = 0; i < actualCardsThisPage; i++) {
+                        final gameIndex = startIndex + i;
+                        if (gameIndex >= displayGames.length) break;
+                        cardWidgets.add(
+                          HomeGameCard(
+                            game: displayGames[gameIndex],
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              AppRoutes.gameDetail,
+                              arguments: displayGames[gameIndex],
+                            ),
+                          ),
+                        );
+                      }
                       return Container(
                         margin: EdgeInsets.symmetric(
                             horizontal: 8), // PageView item 的边距
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            if (!context.mounted) {
-                              return const SizedBox.shrink();
-                            }
-                            double availableWidth = constraints.maxWidth;
-                            int actualCardsThisPage =
-                                (availableWidth / (cardWidth + cardMargin))
-                                    .floor();
-                            actualCardsThisPage = actualCardsThisPage < 1
-                                ? 1
-                                : actualCardsThisPage;
-
-                            List<Widget> cardWidgets = [];
-                            for (int i = 0; i < actualCardsThisPage; i++) {
-                              final gameIndex = startIndex + i;
-                              if (gameIndex >= displayGames.length) break;
-                              cardWidgets.add(
-                                HomeGameCard(
-                                  game: displayGames[gameIndex],
-                                  onTap: () => Navigator.pushNamed(
-                                    context,
-                                    AppRoutes.gameDetail,
-                                    arguments: displayGames[gameIndex],
-                                  ),
-                                ),
-                              );
-                            }
-                            return Center(
-                              child: Wrap(
-                                spacing: cardMargin,
-                                runSpacing: cardMargin,
-                                alignment: WrapAlignment.center,
-                                children: cardWidgets,
-                              ),
-                            );
-                          },
+                        child: Center(
+                          child: Wrap(
+                            spacing: cardMargin,
+                            runSpacing: cardMargin,
+                            alignment: WrapAlignment.center,
+                            children: cardWidgets,
+                          ),
                         ),
                       );
                     },
@@ -195,7 +189,7 @@ class HomeHotGames extends StatelessWidget {
           Positioned.fill(
             child: Container(
               color: Colors.black.withSafeOpacity(0.1),
-              child: LoadingWidget.inline(size: 30),
+              child: const LoadingWidget(size: 30),
             ),
           ),
       ],
@@ -203,8 +197,9 @@ class HomeHotGames extends StatelessWidget {
   }
 
   Widget _buildNavigationButtons(BuildContext context, int totalGamePages) {
-    final buttonSize = DeviceUtils.isAndroid ? 32.0 : 40.0;
-    final iconSize = DeviceUtils.isAndroid ? 18.0 : 24.0;
+    final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+    final buttonSize = !isDesktop ? 32.0 : 40.0;
+    final iconSize = !isDesktop ? 18.0 : 24.0;
     return Positioned.fill(
       child: Align(
         alignment: Alignment.center,

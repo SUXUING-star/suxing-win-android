@@ -85,10 +85,9 @@ class ForceUpdateDialog {
       onConfirm: () async {
         // onConfirm 是 Future<void> Function()
         if (updateUrl.isEmpty) {
-          if (context.mounted) {
-            // 使用 AppSnackBar 显示错误
-            AppSnackBar.showError(context, '未配置有效的更新页面链接。');
-          }
+          // 使用 AppSnackBar 显示错误
+          AppSnackBar.showError('未配置有效的更新页面链接。');
+
           // 对于强制更新，对话框不应因 URL无效而关闭，所以不返回或返回的方式应不让 BaseInputDialog 关闭
           return; // 提前返回，不执行后续 launchUrl
         }
@@ -100,15 +99,12 @@ class ForceUpdateDialog {
             await launchUrl(uri, mode: LaunchMode.externalApplication);
           } else {
             // if (kDebugMode) print('ForceUpdateDialog: Cannot launch URL: $uri');
-            if (context.mounted) {
-              AppSnackBar.showError(context, '无法打开更新页面，请尝试手动访问。');
-            }
+
+              AppSnackBar.showError('无法打开更新页面，请尝试手动访问。');
+
           }
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context,
-                '打开链接时发生错误: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');
-          }
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       },
       showCancelButton: false, // 强制更新不显示取消按钮

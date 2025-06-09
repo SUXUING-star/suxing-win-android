@@ -126,7 +126,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     }
     try {
       await widget.gameService.addComment(widget.gameId, content);
-      if (mounted) AppSnackBar.showSuccess(context, '成功发表评论'); // 成功提示
+      if (mounted) AppSnackBar.showSuccess('成功发表评论'); // 成功提示
       _refreshComments();
     } catch (e) {
       _handleError(e, '发表评论失败'); // 统一错误处理
@@ -146,7 +146,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     try {
       await widget.gameService
           .addComment(widget.gameId, content, parentId: parentId);
-      if (mounted) AppSnackBar.showSuccess(context, '回复已提交');
+      if (mounted) AppSnackBar.showSuccess('回复已提交');
       _refreshComments();
     } catch (e) {
       _handleError(e, '回复评论失败');
@@ -163,7 +163,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       return;
     }
     if (!_checkCanUpdateOrDeleteComment(comment)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final commentId = comment.id;
@@ -172,7 +172,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
     try {
       await widget.gameService
           .updateComment(widget.gameId, comment, newContent);
-      if (mounted) AppSnackBar.showSuccess(context, '评论已更新');
+      if (mounted) AppSnackBar.showSuccess('评论已更新');
       _refreshComments();
     } catch (e) {
       _handleError(e, '更新评论失败');
@@ -190,7 +190,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       return;
     }
     if (!_checkCanUpdateOrDeleteComment(comment)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final commentId = comment.id;
@@ -198,7 +198,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
 
     try {
       await widget.gameService.deleteComment(widget.gameId, comment);
-      if (mounted) AppSnackBar.showSuccess(context, '评论已删除');
+      AppSnackBar.showSuccess('评论已删除');
       _refreshComments();
     } catch (e) {
       _handleError(e, '删除评论失败');
@@ -219,17 +219,17 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       if (remainingSeconds != null) {
         showRateLimitDialog(context, remainingSeconds); // 显示速率限制对话框
       } else {
-        AppSnackBar.showError(context, '$defaultMessage: 速率限制，请稍后再试');
+        AppSnackBar.showError('$defaultMessage: 速率限制，请稍后再试');
       }
     } else if (errorMsg.contains("Invalid ID")) {
       // 处理无效 ID 错误
-      AppSnackBar.showError(context, '$defaultMessage: 无效的操作对象');
+      AppSnackBar.showError('$defaultMessage: 无效的操作对象');
     } else if (errorMsg.contains("not found")) {
       // 处理未找到错误
-      AppSnackBar.showError(context, '$defaultMessage: 对象不存在或已被删除');
+      AppSnackBar.showError('$defaultMessage: 对象不存在或已被删除');
     } else if (errorMsg.contains("unauthorized")) {
       // 处理权限错误
-      AppSnackBar.showError(context, '$defaultMessage: 您没有权限执行此操作');
+      AppSnackBar.showError('$defaultMessage: 您没有权限执行此操作');
     } else {
       // 其他通用错误
       String displayError = errorMsg;
@@ -240,7 +240,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       if (displayError.length > 100) {
         displayError = "${displayError.substring(0, 100)}...";
       }
-      AppSnackBar.showError(context, '$defaultMessage: $displayError');
+      AppSnackBar.showError('$defaultMessage: $displayError');
     }
   }
 
@@ -345,7 +345,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Padding(
               padding: const EdgeInsets.symmetric(vertical: 32.0), // 添加一些垂直间距
-              child: LoadingWidget.inline(size: 24, message: "加载评论中..."));
+              child: const LoadingWidget(size: 24, message: "加载评论中..."));
         }
 
         // 2. 处理错误状态
@@ -354,10 +354,9 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
             // 加个 Padding 让错误提示不至于贴边
             padding: const EdgeInsets.symmetric(vertical: 32.0),
             child: InlineErrorWidget(
-                errorMessage: '加载评论失败', // 简化错误信息
-                // 移除错误详情: ${snapshot.error} 避免暴露过多信息
-                onRetry: _refreshComments // 点击重试调用刷新
-                ),
+              errorMessage: '加载评论失败',
+              onRetry: _refreshComments,
+            ),
           );
         }
 

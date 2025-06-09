@@ -1,6 +1,7 @@
 // lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -8,10 +9,10 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/models/message/message.dart';
 import 'package:suxingchahui/models/message/message_type.dart'; // 需要 MessageTypeInfo
@@ -24,18 +25,20 @@ import 'package:suxingchahui/widgets/components/screen/message/message_list.dart
 class MessageScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final MessageService messageService;
+  final WindowStateProvider windowStateProvider;
+
   const MessageScreen({
     super.key,
     required this.authProvider,
     required this.messageService,
+    required this.windowStateProvider,
   });
 
   @override
   _MessageScreenState createState() => _MessageScreenState();
 }
 
-class _MessageScreenState extends State<MessageScreen>
-    with SnackBarNotifierMixin {
+class _MessageScreenState extends State<MessageScreen> {
   bool _isLoading = false; // 是否正在加载数据
   bool _allMessagesRead = false; // 是否所有消息都已读
 
@@ -144,8 +147,7 @@ class _MessageScreenState extends State<MessageScreen>
       setState(() {
         _isLoading = false;
       }); // 加载失败也要结束加载状态
-      // 显示错误提示
-      showSnackBar(message: '加载消息失败: $e', type: SnackBarType.error);
+      AppSnackBar.showError('加载消息失败: ${e.toString()}');
     }
   }
 
@@ -187,12 +189,11 @@ class _MessageScreenState extends State<MessageScreen>
       // 成功后重新加载数据以确保同步
       await _loadGroupedMessages();
 
-      showSnackBar(message: '已将所有消息标记为已读', type: SnackBarType.success);
+      AppSnackBar.showSuccess('已将所有消息标记为已读');
     } catch (e) {
       if (mounted) {
-        // 标记失败时，也建议重新加载以获取真实状态
         await _loadGroupedMessages();
-        showSnackBar(message: '标记已读操作失败，请重试: $e', type: SnackBarType.error);
+        AppSnackBar.showError('标记已读操作失败，请重试: ${e.toString()}');
       }
     }
   }
@@ -286,9 +287,7 @@ class _MessageScreenState extends State<MessageScreen>
         navigationInfo.routeName, // 使用模型提供的路由名称
         arguments: navigationInfo.arguments, // 使用模型提供的参数
       ).catchError((e, stackTrace) {
-        // 处理导航过程中可能发生的错误 (例如路由不存在或参数错误)
-        //print("导航失败: Route=${navigationInfo.routeName}, Args=${navigationInfo.arguments}, Error: $e\n$stackTrace");
-        showSnackBar(message: '无法打开目标页面，请稍后重试。', type: SnackBarType.error);
+        AppSnackBar.showError('无法打开目标页面，请稍后重试。');
       });
     } else {
       // 如果没有导航信息，提示用户
@@ -359,15 +358,14 @@ class _MessageScreenState extends State<MessageScreen>
           await _loadGroupedMessages();
 
           // 4. 显示成功提示 (检查 mounted)
-          showSnackBar(message: '消息已删除', type: SnackBarType.success);
+          AppSnackBar.showSuccess('消息已删除');
         } catch (e) {
           //print("删除消息失败: ID=${message.id}, Error: $e\n$stackTrace");
           if (!mounted) return; // 异步操作后再次检查
 
           // 2. 显示错误提示
-          showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
+          AppSnackBar.showError('删除失败: ${e.toString()}');
         }
-        // 注意：不需要在这里管理加载状态 (如 _isLoading)，CustomConfirmDialog 内部处理
       },
     );
   }
@@ -377,7 +375,15 @@ class _MessageScreenState extends State<MessageScreen>
   Widget _buildMessageContent() {
     // 加载状态
     if (_isLoading && _groupedMessages.isEmpty) {
-      return LoadingWidget.fullScreen(message: "正在加载消息");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     return RefreshIndicator(
@@ -661,14 +667,13 @@ class _MessageScreenState extends State<MessageScreen>
   /// 构建整体页面结构 (区分移动端和桌面端)
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
-    final isDesktop = DeviceUtils.isDesktop;
-
     // 根据设备类型选择不同的布局
-    if (isDesktop) {
-      return _buildDesktopLayout();
-    } else {
-      return _buildMobileLayout();
-    }
+    return LazyLayoutBuilder(
+        windowStateProvider: widget.windowStateProvider,
+        builder: (context, constraints) {
+          final screenWidth = constraints.maxWidth;
+          final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+          return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
+        });
   }
 }

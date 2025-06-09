@@ -19,6 +19,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // �
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/components/screen/activity/panel/hot_activities_panel.dart'; // 导入热门活动面板
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart'; // 导入可折叠活动动态组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入加载组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
@@ -363,7 +364,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
           _error = '加载动态失败: $e';
         } else {
           // 否则显示 SnackBar 错误
-          AppSnackBar.showError(context, '刷新动态失败: $e');
+          AppSnackBar.showError('刷新动态失败: $e');
         }
         _isLoadingData = false; // 重置加载状态
       });
@@ -462,7 +463,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     } catch (e) {
       if (mounted) {
         // 捕获错误时
-        AppSnackBar.showError(context, '加载更多失败: $e'); // 显示错误提示
+        AppSnackBar.showError('加载更多失败: $e'); // 显示错误提示
         setState(() => _isLoadingMore = false); // 重置加载更多状态
       }
       _startOrUpdateWatchingCache(); // 尝试重新监听缓存
@@ -574,7 +575,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     if (!_checkCanEditOrCanDelete(activity)) {
       // 无权限时提示错误
-      AppSnackBar.showError(context, "你没有权限删除活动");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     await CustomConfirmDialog.show(
@@ -593,7 +594,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
               await widget.activityService.deleteActivity(activity); // 调用删除活动服务
           if (success && mounted) {
             // 删除成功且组件挂载时
-            AppSnackBar.showSuccess(context, '动态已删除'); // 提示删除成功
+            AppSnackBar.showSuccess('动态已删除'); // 提示删除成功
             setState(() {
               // 乐观更新 UI
               final initialTotal = _pagination?.total ?? _activities.length;
@@ -614,7 +615,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
           }
         } catch (e) {
           // 捕获错误时
-          if (mounted) AppSnackBar.showError(context, '删除失败: $e'); // 提示删除失败
+          if (mounted) AppSnackBar.showError('删除失败: ${e.toString()}'); // 提示删除失败
           rethrow; // 重新抛出错误
         }
       },
@@ -634,7 +635,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     try {
       await widget.activityService.likeActivity(activityId); // 调用点赞服务
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '点赞失败: $e'); // 提示点赞失败
+      AppSnackBar.showError('点赞失败: ${e.toString()}'); // 提示点赞失败
     }
   }
 
@@ -651,7 +652,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     try {
       await widget.activityService.unlikeActivity(activityId); // 调用取消点赞服务
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e'); // 提示取消点赞失败
+      AppSnackBar.showError('取消点赞失败: $e'); // 提示取消点赞失败
     }
   }
 
@@ -671,16 +672,16 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     try {
       final comment = await widget.activityService
           .commentOnActivity(activityId, content); // 调用添加评论服务
-      if (comment != null && mounted) {
+      if (comment != null) {
         // 评论成功且组件挂载时
-        AppSnackBar.showSuccess(context, '评论成功'); // 提示评论成功
+        AppSnackBar.showSuccess('评论成功'); // 提示评论成功
         return comment; // 返回评论对象
       } else if (mounted) {
         // 无操作
       }
     } catch (e) {
       // 捕获错误时
-      if (mounted) AppSnackBar.showError(context, '评论失败: $e'); // 提示评论失败
+      AppSnackBar.showError('评论失败: $e'); // 提示评论失败
     }
     return null; // 返回 null 表示失败
   }
@@ -712,7 +713,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     if (!_checkCanDeleteComment(comment)) {
       // 无权限时提示错误
       if (mounted) {
-        AppSnackBar.showError(context, "你没有权限删除这条评论");
+        AppSnackBar.showPermissionDenySnackBar();
       }
       return;
     }
@@ -731,16 +732,16 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         try {
           final success = await widget.activityService
               .deleteComment(activityId, comment); // 调用删除评论服务
-          if (success && mounted) {
+          if (success) {
             // 删除成功且组件挂载时
-            AppSnackBar.showSuccess(context, '评论已删除'); // 提示评论已删除
+            AppSnackBar.showSuccess('评论已删除'); // 提示评论已删除
           } else if (mounted) {
             // 服务报告失败时
             throw Exception("未能成功删除评论");
           }
         } catch (e) {
           // 捕获错误时
-          if (mounted) AppSnackBar.showError(context, '删除评论失败: $e'); // 提示删除失败
+          AppSnackBar.showError('删除评论失败: ${e.toString()}'); // 提示删除失败
           rethrow; // 重新抛出错误
         }
       },
@@ -763,7 +764,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       await widget.activityService
           .likeComment(activityId, commentId); // 调用点赞评论服务
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e'); // 提示点赞失败
+      AppSnackBar.showError('点赞评论失败: $e'); // 提示点赞失败
     }
   }
 
@@ -783,7 +784,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       await widget.activityService
           .unlikeComment(activityId, commentId); // 调用取消点赞评论服务
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e'); // 提示取消点赞失败
+      AppSnackBar.showError('取消点赞评论失败: $e'); // 提示取消点赞失败
     }
   }
 
@@ -809,8 +810,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         // 如果变为可见
         _triggerInitialLoad(); // 触发初始加载
         _startOrUpdateWatchingCache(); // 开始监听缓存
-        if (!wasVisible)
+        if (!wasVisible) {
           _refreshCurrentPageData(reason: "变为可见"); // 如果刚变为可见，刷新数据
+        }
       } else {
         // 如果变为不可见
         _stopWatchingCache(); // 停止监听缓存
@@ -837,12 +839,26 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   Widget _buildBodyContent() {
     if (!_isInitialized && !_isLoadingData) {
       // 未初始化且未加载数据时显示准备加载
-      return LoadingWidget.fullScreen(message: "准备加载动态...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "等待加载...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_isLoadingData && _activities.isEmpty) {
       // 正在加载数据且活动列表为空时显示正在加载
-      return LoadingWidget.fullScreen(message: "正在加载动态...");
+      // 全屏加载组件
+      return const LoadingWidget(
+        isOverlay: true,
+        message: "少女正在祈祷中...",
+        overlayOpacity: 0.4,
+        size: 36,
+      ); //
     }
 
     if (_error.isNotEmpty && _activities.isEmpty) {
@@ -902,11 +918,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
             ],
           );
         } else {
-          // 窄屏幕布局
+          // 移动布局
           return Column(
             children: [
-              topActionBar, // 顶部动作栏
-              Expanded(child: mainFeedContent), // 主要动态流内容占据剩余空间
+              topActionBar,
+              Expanded(child: mainFeedContent),
             ],
           );
         }

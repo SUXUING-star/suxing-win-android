@@ -106,7 +106,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return LoadingWidget.inline(
+      return const LoadingWidget(
         size: 24,
       );
     }

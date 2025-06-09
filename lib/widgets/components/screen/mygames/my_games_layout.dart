@@ -6,7 +6,6 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -22,6 +21,7 @@ enum GameStatType {
 class MyGamesLayout extends StatelessWidget {
   final List<Game> myGames;
   final bool isLoadingMore;
+  final bool isDesktop;
   final bool hasMore;
   final ScrollController scrollController;
   final VoidCallback onLoadMore;
@@ -34,6 +34,7 @@ class MyGamesLayout extends StatelessWidget {
     super.key,
     required this.myGames,
     required this.isLoadingMore,
+    required this.isDesktop,
     required this.hasMore,
     required this.scrollController,
     required this.onLoadMore,
@@ -45,8 +46,6 @@ class MyGamesLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
-
     if (myGames.isEmpty && !isLoadingMore && !hasMore) {
       return FadeInSlideUpItem(
         child: EmptyStateWidget(
@@ -59,11 +58,9 @@ class MyGamesLayout extends StatelessWidget {
       );
     }
 
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return isDesktop
+        ? _buildDesktopLayout(context)
+        : _buildMobileLayout(context);
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -361,9 +358,9 @@ class MyGamesLayout extends StatelessWidget {
 
         // 加载更多
         if (isLoadingMore)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: LoadingWidget.inline(message: "加载更多..."),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: LoadingWidget(message: "加载更多..."),
           ),
         if (!isLoadingMore && hasMore && myGames.isNotEmpty)
           Padding(

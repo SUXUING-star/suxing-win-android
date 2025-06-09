@@ -4,6 +4,7 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -14,6 +15,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class PostFavoritesLayout extends StatefulWidget {
   final List<Post> favoritePosts;
@@ -26,6 +28,7 @@ class PostFavoritesLayout extends StatefulWidget {
   final Function(String postId) onToggleFavorite;
   final ScrollController scrollController;
   final User? currentUser;
+  final WindowStateProvider windowStateProvider;
   final UserInfoProvider userInfoProvider;
   final UserFollowService userFollowService;
 
@@ -41,6 +44,7 @@ class PostFavoritesLayout extends StatefulWidget {
     required this.onToggleFavorite,
     required this.scrollController,
     required this.currentUser,
+    required this.windowStateProvider,
     required this.userInfoProvider,
     required this.userFollowService,
   });
@@ -57,7 +61,8 @@ class _LoadMoreButtonPlaceholder {
   const _LoadMoreButtonPlaceholder();
 }
 
-class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with AutomaticKeepAliveClientMixin {
+class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
+    with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
 
@@ -66,7 +71,15 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
     super.build(context);
 
     if (widget.isLoadingInitial) {
-      return Center(child: LoadingWidget.fullScreen(message: "正在加载收藏帖子"));
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (widget.errorMessage != null && widget.favoritePosts.isEmpty) {
@@ -89,13 +102,16 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
       );
     }
 
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
-
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktopLayout
+            ? _buildDesktopLayout(context)
+            : _buildMobileLayout(context);
+      },
+    );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -132,8 +148,10 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
     );
   }
 
-  Widget _buildPostFavoritesStatistics(BuildContext context, {required bool isDesktop}) {
-    final cardPadding = isDesktop ? const EdgeInsets.all(16) : const EdgeInsets.all(12);
+  Widget _buildPostFavoritesStatistics(BuildContext context,
+      {required bool isDesktop}) {
+    final cardPadding =
+        isDesktop ? const EdgeInsets.all(16) : const EdgeInsets.all(12);
     final titleStyle = TextStyle(
       fontSize: isDesktop ? 18 : 16,
       fontWeight: FontWeight.bold,
@@ -154,16 +172,33 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
           children: [
             Text('收藏帖子统计', style: titleStyle),
             const SizedBox(height: 16),
-            _buildStatRow(context, isDesktop: isDesktop, icon: Icons.star, title: '总收藏数', value: widget.paginationData?.total.toString() ?? widget.favoritePosts.length.toString(), color: Colors.blueAccent),
+            _buildStatRow(context,
+                isDesktop: isDesktop,
+                icon: Icons.star,
+                title: '总收藏数',
+                value: widget.paginationData?.total.toString() ??
+                    widget.favoritePosts.length.toString(),
+                color: Colors.blueAccent),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildStatRow(BuildContext context, {required bool isDesktop, required IconData icon, required String title, required String value, required Color color}) {
-    final titleTextStyle = TextStyle(color: Theme.of(context).textTheme.bodyMedium?.color?.withSafeOpacity(0.7), fontSize: isDesktop ? 14 : 13);
-    final valueTextStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: isDesktop ? 16 : 15, color: Theme.of(context).textTheme.bodyLarge?.color);
+  Widget _buildStatRow(BuildContext context,
+      {required bool isDesktop,
+      required IconData icon,
+      required String title,
+      required String value,
+      required Color color}) {
+    final titleTextStyle = TextStyle(
+        color:
+            Theme.of(context).textTheme.bodyMedium?.color?.withSafeOpacity(0.7),
+        fontSize: isDesktop ? 14 : 13);
+    final valueTextStyle = TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: isDesktop ? 16 : 15,
+        color: Theme.of(context).textTheme.bodyLarge?.color);
     final iconSize = isDesktop ? 22.0 : 20.0;
 
     return Padding(
@@ -172,7 +207,9 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: color.withSafeOpacity(0.1), borderRadius: BorderRadius.circular(8)),
+            decoration: BoxDecoration(
+                color: color.withSafeOpacity(0.1),
+                borderRadius: BorderRadius.circular(8)),
             child: Icon(icon, color: color, size: iconSize),
           ),
           const SizedBox(width: 16),
@@ -191,7 +228,8 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
     );
   }
 
-  Widget _buildFavoritesContent(BuildContext context, {required bool isDesktop}) {
+  Widget _buildFavoritesContent(BuildContext context,
+      {required bool isDesktop}) {
     final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(context);
     final cardRatio = DeviceUtils.calculatePostCardRatio(context);
 
@@ -204,53 +242,60 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout> with Automati
     }
 
     // 使用封装好的 AnimatedContentGrid
-    return AnimatedContentGrid<Object>(
-      items: displayItems,
-      crossAxisCount: crossAxisCount,
-      childAspectRatio: cardRatio,
-      crossAxisSpacing: 8,
-      mainAxisSpacing: isDesktop ? 16 : 8,
-      padding: EdgeInsets.all(isDesktop ? 16 : 8),
-      itemBuilder: (context, index,item) {
-        // 如果项目是帖子
-        if (item is Post) {
-          return _buildPostCard(item, isDesktop);
-        }
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        return AnimatedContentGrid<Object>(
+          items: displayItems,
+          crossAxisCount: crossAxisCount,
+          childAspectRatio: cardRatio,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: isDesktop ? 16 : 8,
+          padding: EdgeInsets.all(isDesktop ? 16 : 8),
+          itemBuilder: (context, index, item) {
+            // 如果项目是帖子
+            if (item is Post) {
+              return _buildPostCard(item, constraints.maxWidth);
+            }
 
-        // 如果项目是加载指示器
-        if (item is _LoadingMorePlaceholder) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: LoadingWidget.inline(message: "正在加载更多"),
-          );
-        }
+            // 如果项目是加载指示器
+            if (item is _LoadingMorePlaceholder) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: LoadingWidget(message: "正在加载更多"),
+              );
+            }
 
-        // 如果项目是加载更多按钮
-        if (item is _LoadMoreButtonPlaceholder) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Center(
-              child: FunctionalTextButton(
-                onPressed: widget.onLoadMore,
-                label: '加载更多',
-              ),
-            ),
-          );
-        }
+            // 如果项目是加载更多按钮
+            if (item is _LoadMoreButtonPlaceholder) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(
+                  child: FunctionalTextButton(
+                    onPressed: widget.onLoadMore,
+                    label: '加载更多',
+                  ),
+                ),
+              );
+            }
 
-        return const SizedBox.shrink();
+            return const SizedBox.shrink();
+          },
+        );
       },
     );
   }
-  Widget _buildPostCard(Post postItem, bool isDesktop) {
+
+  Widget _buildPostCard(Post postItem, double screenWidth) {
+    final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
     return Stack(
       children: [
         BasePostCard(
           post: postItem,
           currentUser: widget.currentUser,
+          screenWidth: screenWidth,
           infoProvider: widget.userInfoProvider,
           followService: widget.userFollowService,
-          isDesktopLayout: isDesktop,
           onDeleteAction: null,
           onEditAction: null,
           onToggleLockAction: null,

@@ -173,17 +173,14 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
           }
         });
       } catch (e) {
-        // print("Error creating Tool object or toJson: $e");
-        if (mounted) {
-          AppSnackBar.showError(context, "保存失败：数据格式错误");
-          setState(() {
-            _isSubmitting = false; // 出错时重置提交状态
-          });
-        }
+        AppSnackBar.showError("操作失败,${e.toString()}");
+        setState(() {
+          _isSubmitting = false; // 出错时重置提交状态
+        });
       }
     } else {
       // 验证失败提示
-      AppSnackBar.showError(context, "请检查表单中的错误");
+      AppSnackBar.showError("请检查表单中的错误");
     }
   }
 
@@ -200,8 +197,8 @@ class _ToolFormDialogState extends State<ToolFormDialog> {
         if (!didPop && _isSubmitting) {
           // 最好检查 context
           final messenger = ScaffoldMessenger.maybeOf(context);
-          if (messenger != null && mounted) {
-            AppSnackBar.showInfo(context, '正在保存中，请稍候...');
+          if (messenger != null) {
+            AppSnackBar.showInfo('正在保存中，请稍候...');
           }
         }
       },

@@ -11,9 +11,12 @@ import 'package:suxingchahui/constants/profile/profile_constants.dart'; // 导�
 import 'package:suxingchahui/models/user/daily_progress.dart'; // 导入每日进度模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 导入用户服务
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart'; // 导入基础输入对话框
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart'; // 导入文本输入框组件
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
@@ -48,6 +51,8 @@ class ProfileScreen extends StatefulWidget {
   final InputStateService inputStateService; // 输入状态服务
   final SidebarProvider sidebarProvider; // 侧边栏 Provider
   final RateLimitedFileUpload fileUpload; // 限速文件上传服务
+  final WindowStateProvider windowStateProvider;
+
   /// 构造函数。
   ///
   /// [authProvider]：认证 Provider。
@@ -58,6 +63,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     required this.authProvider,
+    required this.windowStateProvider,
     required this.userService,
     required this.inputStateService,
     required this.sidebarProvider,
@@ -279,8 +285,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             _minRefreshInterval - now.difference(_lastRefreshTime!);
         final remainingSeconds = remaining.inSeconds + 1;
         if (mounted) {
-          AppSnackBar.showInfo(
-              context, '刷新太频繁，请 $remainingSeconds 秒后再试'); // 提示刷新频繁
+          AppSnackBar.showInfo('刷新太频繁，请 $remainingSeconds 秒后再试'); // 提示刷新频繁
         }
         return; // 返回
       }
@@ -460,13 +465,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       if (updatePerformed == true) {
         // 更新成功时
         if (mounted) {
-          AppSnackBar.showSuccess(this.context, '个人资料更新成功！'); // 显示成功提示
+          AppSnackBar.showSuccess('个人资料更新成功！'); // 显示成功提示
         }
       }
     }).catchError((error) {
       // 捕获错误时
       if (mounted) {
-        AppSnackBar.showError(this.context, '操作失败: $error'); // 显示错误提示
+        AppSnackBar.showError('操作失败: $error'); // 显示错误提示
       }
     }).whenComplete(() {
       // 完成时清空输入
@@ -481,7 +486,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _showLogoutDialog(BuildContext context) {
     if (!widget.authProvider.isLoggedIn) {
       // 未登录时提示
-      AppSnackBar.showWarning(context, "你没登录你登出干什么");
+      AppSnackBar.showWarning("你没登录你登出干什么");
       return;
     }
     CustomConfirmDialog.show(
@@ -519,7 +524,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           setState(() {
             _isRefreshing = false; // 结束刷新
           });
-          AppSnackBar.showError(this.context, '登录失败：${e.toString()}'); // 显示错误提示
+          AppSnackBar.showError('登录失败：${e.toString()}'); // 显示错误提示
         }
       },
     );
@@ -559,13 +564,11 @@ class _ProfileScreenState extends State<ProfileScreen>
         await _loadDailyExperienceProgress(forceRefresh: true); // 强制刷新经验数据
       }
 
-      if (!mounted) return; // 组件未挂载时返回
-      AppSnackBar.showSuccess(this.context, '用户信息已刷新'); // 显示成功提示
+      AppSnackBar.showSuccess('用户信息已刷新'); // 显示成功提示
     } catch (e) {
       // 捕获刷新失败异常
-      if (!mounted) return; // 组件未挂载时返回
       widget.fileUpload.deleteUploadedImagesOnError([avatarUrl]); // 补偿删除头像
-      AppSnackBar.showError(this.context, '刷新用户信息失败：${e.toString()}'); // 显示错误提示
+      AppSnackBar.showError('刷新用户信息失败：${e.toString()}'); // 显示错误提示
     } finally {
       // 无论成功失败，确保刷新状态重置
       if (mounted) {
@@ -579,11 +582,6 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// 构建个人资料屏幕的主体 UI。
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size; // 屏幕尺寸
-    final bool isDesktop = DeviceUtils.isDesktop; // 是否为桌面平台
-    final bool useDesktopLayout =
-        isDesktop && screenSize.width > 900; // 是否使用桌面布局
-
     return VisibilityDetector(
       key: visibilityKey, // 可见性检测器键
       onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
@@ -592,7 +590,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         appBar: const CustomAppBar(title: '个人中心', actions: []), // AppBar
         body: RefreshIndicator(
           onRefresh: () => _refreshProfile(), // 下拉刷新回调
-          child: _buildProfileContent(useDesktopLayout), // 个人资料内容
+          child: _buildProfileContent(), // 个人资料内容
         ),
         floatingActionButton: _buildFloatButtons(context), // 悬浮按钮
       ),
@@ -606,6 +604,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0, right: 16.0), // 内边距
       child: FloatingActionButtonGroup(
+        toggleButtonHeroTag: "profile_heroTags",
         spacing: 16.0, // 间距
         alignment: MainAxisAlignment.end, // 对齐方式
         children: [
@@ -657,12 +656,15 @@ class _ProfileScreenState extends State<ProfileScreen>
           ),
           const SizedBox(width: 24), // 间距
           Expanded(
-            flex: 2, // 比例
+            flex: 2,
             child: FadeInSlideLRItem(
               slideDirection: SlideDirection.right, // 滑动方向
               duration: const Duration(milliseconds: 500), // 动画时长
               delay: const Duration(milliseconds: 250), // 延迟
-              child: ProfileDesktopMenuGrid(menuItems: menuItems), // 桌面端菜单网格
+              child: ProfileDesktopMenuGrid(
+                menuItems: menuItems,
+                windowStateProvider: widget.windowStateProvider,
+              ), // 桌面端菜单网格
             ),
           ),
         ],
@@ -711,7 +713,7 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// 构建个人资料内容。
   ///
   /// [useDesktopLayout]：是否使用桌面布局。
-  Widget _buildProfileContent(bool useDesktopLayout) {
+  Widget _buildProfileContent() {
     return StreamBuilder<User?>(
         stream: widget.authProvider.currentUserStream, // 监听当前用户流
         initialData: widget.authProvider.currentUser, // 初始用户数据
@@ -746,10 +748,25 @@ class _ProfileScreenState extends State<ProfileScreen>
 
           if (_isRefreshing && _error == null) {
             // 刷新中且无错误时显示全屏加载
-            return LoadingWidget.fullScreen(message: "正在刷新...");
+            return const FadeInItem(
+              // 全屏加载组件
+              child: LoadingWidget(
+                isOverlay: true,
+                message: "等待加载...",
+                overlayOpacity: 0.4,
+                size: 36,
+              ),
+            ); //
           } else if (!_isInitialized && _error == null) {
             // 未初始化且无错误时显示全屏加载
-            return LoadingWidget.fullScreen(message: "正在加载个人资料");
+            return const
+                // 全屏加载组件
+                LoadingWidget(
+              isOverlay: true,
+              message: "少女正在祈祷中...",
+              overlayOpacity: 0.4,
+              size: 36,
+            ); //
           } else if (_error != null) {
             // 有错误时显示错误组件
             return Center(
@@ -764,10 +781,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           );
           return Stack(
             children: [
-              if (useDesktopLayout) // 根据是否桌面布局选择内容
-                _buildDesktopContent(currentUser, menuItems)
-              else
-                _buildMobileContent(currentUser, menuItems),
+              LazyLayoutBuilder(
+                  windowStateProvider: widget.windowStateProvider,
+                  builder: (context, constraints) {
+                    final screenWidth = constraints.maxWidth;
+                    return DeviceUtils.isDesktopInThisWidth(screenWidth)
+                        ? _buildDesktopContent(currentUser, menuItems)
+                        : _buildMobileContent(currentUser, menuItems);
+                  }),
               if (_isRefreshing) // 刷新中时显示半透明遮罩和进度指示器
                 Positioned.fill(
                   child: Container(

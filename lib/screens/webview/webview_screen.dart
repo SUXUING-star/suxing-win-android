@@ -6,7 +6,6 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart';
 
 // --- 导入 WebView 控制器类型 ---
@@ -27,8 +26,7 @@ class WebViewScreen extends StatefulWidget {
   State<WebViewScreen> createState() => _WebViewScreenState();
 }
 
-class _WebViewScreenState extends State<WebViewScreen>
-    with SnackBarNotifierMixin {
+class _WebViewScreenState extends State<WebViewScreen> {
   dynamic _controller;
   bool _isLoadingPage = true;
   String _currentAppBarTitle = '';
@@ -150,8 +148,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       errorMsg += ': ${error.toString()}';
     }
 
-    AppSnackBar.showError(context, errorMsg,
-        duration: const Duration(seconds: 5));
+    AppSnackBar.showError(errorMsg, duration: const Duration(seconds: 5));
     _updateNavigationState();
     // if (mounted) setState(() { _currentAppBarTitle = widget.title ?? "页面错误"; });
   }
@@ -231,7 +228,7 @@ class _WebViewScreenState extends State<WebViewScreen>
         await _controller.goBack(); // Android 和 Windows 都有 goBack
         // 状态更新现在依赖 historyChanged stream (Windows) 或 NavigationDelegate (Android)
       } catch (e) {
-        showSnackBar(message: "无法后退: $e", type: SnackBarType.error);
+        AppSnackBar.showError("无法后退: ${e.toString()}");
       }
     }
   }
@@ -241,7 +238,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       try {
         await _controller.goForward(); // Android 和 Windows 都有 goForward
       } catch (e) {
-        showSnackBar(message: "无法前进: $e", type: SnackBarType.error);
+        AppSnackBar.showError("无法前进: $e");
       }
     }
   }
@@ -251,7 +248,7 @@ class _WebViewScreenState extends State<WebViewScreen>
       try {
         await _controller.reload(); // Android 和 Windows 都有 reload
       } catch (e) {
-        showSnackBar(message: "无法刷新: $e", type: SnackBarType.error);
+        AppSnackBar.showError("无法刷新: $e");
       }
     }
   }
@@ -305,9 +302,11 @@ class _WebViewScreenState extends State<WebViewScreen>
               onWebResourceError: _handleWebResourceError,
             ),
             if (_isLoadingPage && _controller != null)
-              LoadingWidget.fullScreen(
+              const LoadingWidget(
                 message: '页面加载中...',
-                opacity: 0.3,
+                isOverlay: true,
+                overlayOpacity: 0.4,
+                size: 36,
               ),
           ],
         ),

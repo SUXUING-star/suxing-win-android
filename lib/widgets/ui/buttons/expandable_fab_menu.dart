@@ -38,7 +38,7 @@ class ExpandableFabMenu extends StatefulWidget {
   final Color modalBarrierColor; // 遮罩颜色
 
   const ExpandableFabMenu({
-    Key? key,
+    super.key,
     this.initiallyOpen = false,
     this.distance = 90.0, // 默认距离
     required this.children,
@@ -52,7 +52,7 @@ class ExpandableFabMenu extends StatefulWidget {
     this.animationDuration = const Duration(milliseconds: 250),
     this.useModalBarrier = true, // 默认使用遮罩
     this.modalBarrierColor = Colors.black38, // 默认遮罩颜色
-  }) : super(key: key);
+  });
 
   @override
   _ExpandableFabMenuState createState() => _ExpandableFabMenuState();
@@ -147,7 +147,7 @@ class _ExpandableFabMenuState extends State<ExpandableFabMenu>
   }
 
   OverlayEntry _buildOverlayEntry() {
-    RenderBox renderBox = context.findRenderObject()! as RenderBox;
+    // RenderBox renderBox = context.findRenderObject()! as RenderBox;
     // var size = renderBox.size; // 主按钮的尺寸，这里我们用标准 _fabDimension
     // var offset = renderBox.localToGlobal(Offset.zero); // 主按钮的全局位置
 
@@ -203,8 +203,8 @@ class _ExpandableFabMenuState extends State<ExpandableFabMenu>
     final count = widget.children.length;
     // 简单的向上垂直排列，可以修改为扇形
     // 例如，对于扇形展开，每个 child 的 offset 会不同
-    final double initialAngle = -math.pi / 2; // 向上为 -90度
-    final double sweepAngle = math.pi / (count + 1); // 假设90度扇形展开
+    // final double initialAngle = -math.pi / 2; // 向上为 -90度
+    // final double sweepAngle = math.pi / (count + 1); // 假设90度扇形展开
 
     for (var i = 0; i < count; i++) {
       // 简单的垂直向上排列，每个按钮之间加一点点间隔
@@ -273,8 +273,8 @@ class _ExpandableFabMenuState extends State<ExpandableFabMenu>
         _toggle(); // 点击子按钮后关闭菜单
       },
       tooltip: action.tooltip,
-      child: action.icon,
       elevation: 4.0,
+      child: action.icon,
     );
   }
 

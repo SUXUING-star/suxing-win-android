@@ -10,7 +10,6 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/services/main/user/user_ban_service.dart';
 import 'package:intl/intl.dart'; // 用于日期格式化
@@ -30,8 +29,7 @@ class UserManagement extends StatefulWidget {
   State<UserManagement> createState() => _UserManagementState();
 }
 
-class _UserManagementState extends State<UserManagement>
-    with SnackBarNotifierMixin {
+class _UserManagementState extends State<UserManagement> {
   bool _loading = false;
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
@@ -167,8 +165,7 @@ class _UserManagementState extends State<UserManagement>
                                 if (endTime!.isBefore(DateTime.now())) {
                                   endTime = DateTime.now()
                                       .add(Duration(minutes: 5)); // 或给个最小默认值
-                                  AppSnackBar.showError(
-                                      context, '解封时间不能早于当前时间');
+                                  AppSnackBar.showError('解封时间不能早于当前时间');
                                 }
                               });
                             }
@@ -192,19 +189,19 @@ class _UserManagementState extends State<UserManagement>
                 ? null
                 : () async {
                     if (reasonController.text.trim().isEmpty) {
-                      AppSnackBar.showWarning(context, '请输入封禁原因');
+                      AppSnackBar.showWarning('请输入封禁原因');
                       return;
                     }
                     // 确保选择了时间（如果不是永久）
                     if (!isPermanent && endTime == null) {
-                      AppSnackBar.showWarning(context, '请选择解封时间');
+                      AppSnackBar.showWarning('请选择解封时间');
                       return;
                     }
                     // 确保时间有效
                     if (!isPermanent &&
                         endTime != null &&
                         endTime!.isBefore(DateTime.now())) {
-                      AppSnackBar.showWarning(context, '解封时间不能早于当前时间');
+                      AppSnackBar.showWarning('解封时间不能早于当前时间');
                       return;
                     }
 
@@ -220,13 +217,10 @@ class _UserManagementState extends State<UserManagement>
                       NavigationUtils.pop(context);
                       if (mounted) {
                         _refreshUserList();
-                        AppSnackBar.showSuccess(
-                            context, '用户 ${user['username']} 已被封禁');
+                        AppSnackBar.showSuccess('用户 ${user['username']} 已被封禁');
                       }
                     } catch (e) {
-                      if (mounted) {
-                        AppSnackBar.showError(context, '封禁失败：$e');
-                      }
+                      AppSnackBar.showError('封禁失败：$e');
                     } finally {
                       if (mounted) setState(() => _loading = false);
                     }
@@ -263,12 +257,9 @@ class _UserManagementState extends State<UserManagement>
                       if (mounted) {
                         _refreshUserList();
                       }
-                      showSnackBar(
-                          message: '已解除用户 ${user['username']} 的封禁',
-                          type: SnackBarType.success);
+                      AppSnackBar.showSuccess('已解除用户 ${user['username']} 的封禁');
                     } catch (e) {
-                      showSnackBar(
-                          message: '操作失败：$e', type: SnackBarType.error);
+                      AppSnackBar.showError('操作失败：$e');
                     } finally {
                       if (mounted) setState(() => _loading = false);
                     }
@@ -280,9 +271,30 @@ class _UserManagementState extends State<UserManagement>
     );
   }
 
+  Future<void> _setAdminStatus(
+      Map<String, dynamic> targetUser, String targetUserId, bool value) async {
+    if (!mounted) return;
+    if (!(widget.currentUser?.isSuperAdmin ?? false)) {
+      AppSnackBar.showPermissionDenySnackBar();
+    }
+    setState(() => _loading = true);
+    try {
+      await _userService.updateUserAdminStatus(
+          targetUserId, value); // 使用 userId
+      _refreshUserList(); // 刷新整个列表
+      AppSnackBar.showSuccess(
+          '用户 ${targetUser['username']} 已${value ? '设置' : '取消'}管理员');
+    } catch (e) {
+      AppSnackBar.showError('操作失败: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _loading = false);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     final bool isSuperAdmin = _currentUser?.isAdmin ?? false;
 
     // 权限检查
@@ -297,7 +309,7 @@ class _UserManagementState extends State<UserManagement>
       future: _userService.getAllUsers(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return LoadingWidget.inline();
+          return const LoadingWidget();
         }
         if (snapshot.hasError) {
           return InlineErrorWidget(
@@ -315,17 +327,16 @@ class _UserManagementState extends State<UserManagement>
           child: ListView.builder(
             itemCount: users.length,
             itemBuilder: (context, index) {
-              final user = users[index];
-              final userId = user['id']?.toString(); // 获取用户ID字符串
-
+              final targetUser = users[index];
+              final targetUserId = targetUser['id']?.toString(); // 获取用户ID字符串
               // --- 核心改动：不显示当前登录用户 ---
-              if (userId == null || userId == currentUserId) {
+              if (targetUserId == null || targetUserId == currentUserId) {
                 return const SizedBox.shrink(); // 如果是自己或者ID无效，则不显示
               }
 
               // --- 解析状态 ---
-              final isAdmin = user['isAdmin'] as bool? ?? false;
-              final banInfo = user['banInfo']; // banInfo 是 map 或者 null
+              final isAdmin = targetUser['isAdmin'] as bool? ?? false;
+              final banInfo = targetUser['banInfo']; // banInfo 是 map 或者 null
               final isBanned = banInfo != null;
               String banReason = banInfo?['reason'] ?? '无';
               String banStatusText = '已封禁';
@@ -352,7 +363,7 @@ class _UserManagementState extends State<UserManagement>
                 child: ListTile(
                   // 2. 标题 (用户名)
                   title: Text(
-                    user['username'] ?? '未知用户',
+                    targetUser['username'] ?? '未知用户',
                     style: TextStyle(fontWeight: FontWeight.w500),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
@@ -367,7 +378,7 @@ class _UserManagementState extends State<UserManagement>
                       children: [
                         // 邮箱
                         Text(
-                          user['email'] ?? '无邮箱',
+                          targetUser['email'] ?? '无邮箱',
                           style: TextStyle(
                               fontSize: 12, color: Colors.grey.shade600),
                           maxLines: 1,
@@ -410,25 +421,11 @@ class _UserManagementState extends State<UserManagement>
                               onChanged: _loading
                                   ? null
                                   : (bool value) async {
-                                      setState(() => _loading = true);
-                                      try {
-                                        await _userService
-                                            .updateUserAdminStatus(
-                                                userId, value); // 使用 userId
-                                        _refreshUserList(); // 刷新整个列表
-                                        showSnackBar(
-                                            message:
-                                                '用户 ${user['username']} 已${value ? '设置' : '取消'}管理员',
-                                            type: SnackBarType.success);
-                                      } catch (e) {
-                                        showSnackBar(
-                                            message: '操作失败: $e',
-                                            type: SnackBarType.error);
-                                      } finally {
-                                        if (mounted) {
-                                          setState(() => _loading = false);
-                                        }
-                                      }
+                                      await _setAdminStatus(
+                                        targetUser,
+                                        targetUserId,
+                                        value,
+                                      );
                                     },
                               materialTapTargetSize:
                                   MaterialTapTargetSize.shrinkWrap, // 减小点击区域
@@ -450,9 +447,9 @@ class _UserManagementState extends State<UserManagement>
                             ? null
                             : () {
                                 if (isBanned) {
-                                  _showUnbanDialog(context, user);
+                                  _showUnbanDialog(context, targetUser);
                                 } else {
-                                  _showBanDialog(context, user);
+                                  _showBanDialog(context, targetUser);
                                 }
                               },
                       ),

@@ -55,11 +55,10 @@ class AnnouncementIndicator extends StatelessWidget {
         _showAnnouncementsDialogs(context, unread); // 显示公告对话框序列
       } else {
         // 无未读公告时
-        if (context.mounted) AppSnackBar.showInfo(context, '没有新的公告'); // 显示信息提示
+        AppSnackBar.showInfo('没有新的公告'); // 显示信息提示
       }
     } catch (e) {
-      if (context.mounted)
-        AppSnackBar.showError(context, '获取公告失败'); // 捕获错误时显示错误提示
+      AppSnackBar.showError('获取公告失败,${e.toString()}'); // 捕获错误时显示错误提示
     }
   }
 
@@ -107,7 +106,7 @@ class AnnouncementIndicator extends StatelessWidget {
   ///
   /// [context]：Build 上下文。
   /// [announcement]：要显示的公告。
-  /// 返回一个 Future<bool>，表示对话框是否成功关闭。
+  /// 返回一个 Future，表示对话框是否成功关闭。
   Future<bool> _showSingleAnnouncementDialog(
       BuildContext context, Announcement announcement) async {
     final completer = Completer<bool>(); // 创建 Completer
@@ -181,7 +180,7 @@ class AnnouncementIndicator extends StatelessWidget {
               // 显示加载指示器
               width: 24,
               height: 24,
-              child: LoadingWidget.inline(size: 12));
+              child: const LoadingWidget(size: 12));
         }
 
         if (data.unreadCount > 0) {

@@ -111,9 +111,12 @@ class _GameMusicSectionState extends State<GameMusicSection> {
         children: [
           _buildTitleRow(context),
           const SizedBox(height: 12),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 24.0),
-            child: LoadingWidget.inline(message: '解析乐谱链接中...', size: 24.0),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 24.0),
+            child: LoadingWidget(
+              message: '解析乐谱链接中...',
+              size: 24.0,
+            ),
           ),
         ],
       );
@@ -319,7 +322,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                         .surfaceContainerLowest
                         .withSafeOpacity(0.8),
                     child:
-                        LoadingWidget.inline(message: '播放器加载中...', size: 24.0)),
+                        const LoadingWidget(message: '播放器加载中...', size: 24.0)),
               ),
             if (!_isLoading &&
                 _loadingError != null &&

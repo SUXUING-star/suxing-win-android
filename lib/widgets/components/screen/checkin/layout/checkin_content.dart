@@ -11,11 +11,11 @@ import 'package:suxingchahui/widgets/components/screen/checkin/progress/level_pr
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/checkin_rules_card.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/today_checkin_list.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 
-class CheckInContent extends StatelessWidget {
+class CheckInLayout extends StatelessWidget {
   final CheckInStatus checkInStatus;
   final User currentUser;
+  final bool isDesktop;
   final UserInfoProvider infoProvider;
   final UserCheckInService checkInService;
   final UserFollowService followService;
@@ -30,10 +30,11 @@ class CheckInContent extends StatelessWidget {
   final int missedDays;
   final int consecutiveMissedDays;
 
-  const CheckInContent({
+  const CheckInLayout({
     super.key,
     required this.checkInStatus,
     required this.currentUser,
+    required this.isDesktop,
     required this.infoProvider,
     required this.checkInService,
     required this.followService,
@@ -218,10 +219,6 @@ class CheckInContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isTablet = DeviceUtils.isTablet(context);
-    final isDesktop = DeviceUtils.isDesktop;
-    final isLandscape = DeviceUtils.isLandscape(context);
-
     // Unique key for the root to ensure proper rebuilds if top-level props change identity,
     // though individual section keys handle most animation triggers.
     // Using a combination of relevant props for the key.
@@ -231,7 +228,7 @@ class CheckInContent extends StatelessWidget {
     return Padding(
       key: rootKey,
       padding: const EdgeInsets.all(0), // Padding handled by layouts
-      child: isDesktop || (isTablet && isLandscape)
+      child: isDesktop
           ? _buildHorizontalLayout(context)
           : _buildVerticalLayout(context),
     );

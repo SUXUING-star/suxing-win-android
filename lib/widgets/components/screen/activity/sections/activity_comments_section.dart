@@ -77,7 +77,7 @@ class ActivityCommentsSection extends StatelessWidget {
     if (isLoadingComments && comments.isEmpty) {
       commentListContent = Padding(
           padding: EdgeInsets.symmetric(vertical: 48.0), // 增加Loading时的垂直间距
-          child: LoadingWidget.inline(message: "正在加载评论...") // 居中显示
+          child: const LoadingWidget(message: "正在加载评论...") // 居中显示
           );
     } else if (comments.isEmpty && !isLoadingComments) {
       commentListContent = const Padding(

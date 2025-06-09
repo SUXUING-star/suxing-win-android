@@ -102,7 +102,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     // 2. 检查时间间隔：判断离上次刷新是否足够久
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minRefreshInterval) {
-      AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
+      AppSnackBar.showWarning('操作太快了，请稍后再试');
 
       return; // 时间不够，直接返回
     }
@@ -228,8 +228,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
 
               // 4. 其他情况 (理论上 FutureBuilder 主要关注 waiting 和 done)
               // 可以返回一个初始占位符或者加载指示器
-              return SizedBox(
-                  height: 200, child: LoadingWidget.inline(size: 12));
+              return const SizedBox(
+                  height: 200, child: LoadingWidget(size: 12));
             },
           ),
         ],

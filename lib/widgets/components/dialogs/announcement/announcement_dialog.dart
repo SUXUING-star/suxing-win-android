@@ -293,14 +293,10 @@ class AnnouncementDialog extends StatelessWidget {
               if (await canLaunchUrl(url)) {
                 await launchUrl(url, mode: LaunchMode.externalApplication);
               } else {
-                if (context.mounted) {
-                  AppSnackBar.showWarning(context, '无法打开链接');
-                }
+                AppSnackBar.showWarning('无法打开链接');
               }
             } catch (e) {
-              if (context.mounted) {
-                AppSnackBar.showError(context, '打开链接失败');
-              }
+              AppSnackBar.showError("操作失败,${e.toString()}");
             }
           }
         },

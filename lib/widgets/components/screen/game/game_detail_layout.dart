@@ -5,7 +5,6 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/game/collection_change_result.dart'; // 导入收藏变化结果模型
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/game/game_collection.dart'; // 导入游戏收藏模型
 import 'package:suxingchahui/models/game/game_navigation_info.dart'; // 导入游戏导航信息模型
@@ -45,7 +44,7 @@ class GameDetailLayout extends StatelessWidget {
   final User? currentUser; // 当前登录用户
   final Function(String)? onNavigate; // 导航回调
   final GameCollectionItem? initialCollectionStatus; // 初始收藏状态
-  final Function(CollectionChangeResult)? onCollectionChanged; // 收藏状态改变回调
+  final Function(GameCollectionItem?, Game?)? onCollectionChanged;
   final GameNavigationInfo? navigationInfo; // 游戏导航信息
   final bool isPreviewMode; // 是否为预览模式
   final SidebarProvider sidebarProvider; // 侧边栏 Provider

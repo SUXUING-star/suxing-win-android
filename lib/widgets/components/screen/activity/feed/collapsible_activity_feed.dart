@@ -251,7 +251,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   Widget build(BuildContext context) {
     if (widget.isLoading && widget.activities.isEmpty) {
       // 加载中且活动列表为空时显示加载组件
-      return LoadingWidget.inline(message: "加载中...");
+      return const LoadingWidget(message: "加载中...");
     }
     if (widget.error.isNotEmpty && widget.activities.isEmpty) {
       // 有错误且活动列表为空时显示错误状态

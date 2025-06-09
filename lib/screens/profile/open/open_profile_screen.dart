@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/open/open_profile_layout.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -14,6 +17,7 @@ import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
@@ -23,6 +27,7 @@ class OpenProfileScreen extends StatefulWidget {
   final PostService postService;
   final GameService gameService;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
 
   const OpenProfileScreen({
     super.key,
@@ -33,6 +38,7 @@ class OpenProfileScreen extends StatefulWidget {
     required this.followService,
     required this.infoProvider,
     required this.userId,
+    required this.windowStateProvider,
   });
 
   @override
@@ -170,7 +176,15 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
 
   Widget _buildBodyContent() {
     if (_isLoading) {
-      return LoadingWidget.fullScreen(message: '正在加载用户资料...');
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在偷看中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_error != null) {
@@ -185,16 +199,26 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       );
     }
 
-    return OpenProfileLayout(
-      targetUser: _targetUser!,
-      recentPosts: _recentPosts,
-      publishedGames: _publishedGames,
-      isGridView: _isGridView,
-      tabController: _tabController,
-      authProvider: widget.authProvider, // 传入 AuthProvider
-      infoProvider: widget.infoProvider,
-      followService: widget.followService, // 传入 UserFollowService
-      onFollowChanged: _handleFollowChanged, // 传入关注变化的回调
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return OpenProfileLayout(
+          targetUser: _targetUser!,
+          recentPosts: _recentPosts,
+          publishedGames: _publishedGames,
+          isGridView: _isGridView,
+          tabController: _tabController,
+          authProvider: widget.authProvider,
+          isDesktop: isDesktop,
+          screenWidth: screenWidth,
+          infoProvider: widget.infoProvider,
+          followService: widget.followService,
+          // 传入 UserFollowService
+          onFollowChanged: _handleFollowChanged, // 传入关注变化的回调
+        );
+      },
     );
   }
 }

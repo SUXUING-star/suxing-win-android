@@ -89,7 +89,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
               // 热门动态列表
               Expanded(
                 child: isLoading
-                    ? LoadingWidget.inline(
+                    ? const LoadingWidget(
                         size: 12,
                       )
                     : hasError

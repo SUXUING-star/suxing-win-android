@@ -4,7 +4,9 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -24,6 +26,7 @@ class PostHistoryLayout extends StatefulWidget {
   final String? errorMessage;
   final ScrollController scrollController;
   final User? currentUser;
+  final WindowStateProvider windowStateProvider;
   final UserInfoProvider userInfoProvider;
   final UserFollowService userFollowService;
 
@@ -38,6 +41,7 @@ class PostHistoryLayout extends StatefulWidget {
     this.errorMessage,
     required this.scrollController,
     required this.currentUser,
+    required this.windowStateProvider,
     required this.userInfoProvider,
     required this.userFollowService,
   });
@@ -56,7 +60,15 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
     super.build(context);
 
     if (widget.isLoadingInitial) {
-      return Center(child: LoadingWidget.fullScreen(message: "正在加载帖子浏览记录"));
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (widget.errorMessage != null && widget.postHistoryItems.isEmpty) {
@@ -297,6 +309,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
     return HistoryPostGridView(
       posts: widget.postHistoryItems,
       currentUser: widget.currentUser,
+      windowStateProvider: widget.windowStateProvider,
       infoProvider: widget.userInfoProvider,
       followService: widget.userFollowService,
       scrollController: widget.scrollController,

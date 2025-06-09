@@ -4,7 +4,9 @@ import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/gamecollection/game_collection_layout.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -18,11 +20,14 @@ class GameCollectionScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameCollectionService gameCollectionService;
   final SidebarProvider sidebarProvider;
+  final WindowStateProvider windowStateProvider;
+
   const GameCollectionScreen({
     super.key,
     required this.authProvider,
     required this.gameCollectionService,
     required this.sidebarProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -161,8 +166,9 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
           if (isInitialLoad || forceRefresh) {
             _allCollections.clear();
             // _collectionCounts = null; // 会在下面被重新赋值
-            if (forceRefresh)
+            if (forceRefresh) {
               _selectedGameForReview = null; // 强制刷新时，清除选中的游戏Review
+            }
           }
         }
       });
@@ -201,7 +207,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
             _allCollections.clear();
             _selectedGameForReview = null; // 加载失败，清除选中的游戏
           } else {
-            if (context.mounted) AppSnackBar.showError(context, '加载更多失败');
+            AppSnackBar.showError("操作失败");
           }
         }
       }
@@ -213,7 +219,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
           _collectionCounts = null;
           _selectedGameForReview = null; // 异常，清除选中的游戏
         } else {
-          if (context.mounted) AppSnackBar.showError(context, '加载更多失败');
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       }
     } finally {
@@ -252,7 +258,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
 
     if (_lastForcedRefreshTime != null &&
         now.difference(_lastForcedRefreshTime!) < _minForcedRefreshInterval) {
-      if (context.mounted) AppSnackBar.showWarning(context, '操作太快了，请稍后再试');
+      if (context.mounted) AppSnackBar.showWarning('操作太快了，请稍后再试');
       return;
     }
 
@@ -314,7 +320,15 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
         _allCollections.isEmpty &&
         _collectionCounts == null &&
         _error == null) {
-      return LoadingWidget.fullScreen(message: "正在加载收藏数据...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //// 全屏加载组件
     }
 
     if (_error != null && _allCollections.isEmpty) {
@@ -327,6 +341,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
     return RefreshIndicator(
       onRefresh: _handleRefreshFromIndicator,
       child: GameCollectionLayout(
+        windowStateProvider: widget.windowStateProvider,
         collectionCounts: _collectionCounts,
         collectedGames: _allCollections,
         isLoadingMore: _isLoading && _currentPage > 1,

@@ -1,6 +1,6 @@
 // lib/models/user/daily_progress.dart
 
-import 'package:suxingchahui/widgets/components/screen/profile/experience/models/task_style.dart';
+import 'package:suxingchahui/models/user/task_style.dart';
 
 // 任务详情模型
 class Task {

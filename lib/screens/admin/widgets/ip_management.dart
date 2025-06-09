@@ -59,10 +59,10 @@ class _IPManagementState extends State<IPManagement>
     try {
       await _defenceService.removeFromBlacklist(ip);
       if (!mounted) return;
-      AppSnackBar.showError(context, '已从黑名单移除: $ip');
+      AppSnackBar.showError('已从黑名单移除: $ip');
       setState(() {});
     } catch (e) {
-      AppSnackBar.showError(context, '操作失败: $e');
+      AppSnackBar.showError('操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -70,7 +70,7 @@ class _IPManagementState extends State<IPManagement>
 
   Future<void> _addToBlacklist(String ip) async {
     if (ip.isEmpty) {
-      AppSnackBar.showWarning(context, '请输入有效的IP地址');
+      AppSnackBar.showWarning('请输入有效的IP地址');
       return;
     }
 
@@ -79,11 +79,11 @@ class _IPManagementState extends State<IPManagement>
       await _defenceService.addToBlacklist(ip);
       _blacklistIpController.clear();
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '已添加到黑名单: $ip');
+      AppSnackBar.showSuccess('已添加到黑名单: $ip');
       setState(() {});
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(context, '操作失败: $e');
+      AppSnackBar.showError('操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -91,7 +91,7 @@ class _IPManagementState extends State<IPManagement>
 
   Future<void> _addToWhitelist(String ip) async {
     if (ip.isEmpty) {
-      AppSnackBar.showWarning(context, '请输入有效的IP地址');
+      AppSnackBar.showWarning('请输入有效的IP地址');
       return;
     }
 
@@ -100,10 +100,10 @@ class _IPManagementState extends State<IPManagement>
       await _defenceService.addToWhitelist(ip);
       _ipController.clear();
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '已添加到白名单: $ip');
+      AppSnackBar.showSuccess('已添加到白名单: $ip');
       setState(() {});
     } catch (e) {
-      AppSnackBar.showError(context, '操作失败: $e');
+      AppSnackBar.showError('操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -114,11 +114,11 @@ class _IPManagementState extends State<IPManagement>
     try {
       await _defenceService.removeFromWhitelist(ip);
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '已从白名单移除: $ip');
+      AppSnackBar.showSuccess('已从白名单移除: $ip');
       setState(() {});
     } catch (e) {
       if (!mounted) return;
-      AppSnackBar.showError(context, '操作失败: $e');
+      AppSnackBar.showError('操作失败: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -182,7 +182,7 @@ class _IPManagementState extends State<IPManagement>
             future: _defenceService.getBlacklist(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return LoadingWidget.inline();
+                return const LoadingWidget();
               }
 
               if (snapshot.hasError) {
@@ -279,7 +279,7 @@ class _IPManagementState extends State<IPManagement>
             future: _defenceService.getWhitelist(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return LoadingWidget.inline();
+                return const LoadingWidget();
               }
 
               if (snapshot.hasError) {

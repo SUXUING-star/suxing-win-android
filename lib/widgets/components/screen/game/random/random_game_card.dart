@@ -26,7 +26,7 @@ class RandomGameCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         onTap: onTap ??
             () {
-              NavigationUtils.pushReplacementNamed(
+              NavigationUtils.pushNamed(
                 context,
                 AppRoutes.gameDetail,
                 arguments: game.id,

@@ -1,5 +1,3 @@
-// lib/widgets/components/screen/forum/card/base_post_card.dart
-
 /// 该文件定义了 BasePostCard 组件，一个用于展示论坛帖子预览的卡片。
 /// BasePostCard 展示帖子标题、标签、用户信息、统计数据，并提供操作菜单。
 library;
@@ -25,13 +23,17 @@ import 'post_tag_row.dart'; // 导入帖子标签行组件
 class BasePostCard extends StatelessWidget {
   final Post post; // 要展示的帖子数据模型
   final User? currentUser; // 当前登录用户
-  final UserFollowService followService; // 用户关注服务实例
-  final UserInfoProvider infoProvider; // 用户信息提供者实例
-  final bool isDesktopLayout; // 是否采用桌面布局样式
+  final UserFollowService followService; // 用户关注服务
+  final UserInfoProvider infoProvider; // 用户信息提供者
+  final double screenWidth;
   final Future<void> Function(Post post)? onDeleteAction; // 删除操作回调
   final void Function(Post post)? onEditAction; // 编辑操作回调
   final Future<void> Function(String postId)? onToggleLockAction; // 切换锁定状态回调
   final bool showPinnedStatus; // 是否显示帖子的置顶状态高亮
+
+  static const double thresholdWidth = 280.0; // 宽度阈值
+  // 为标签行预留的固定高度，确保布局稳定
+  static const double _tagRowHeight = 28.0;
 
   /// 构造函数。
   ///
@@ -50,7 +52,7 @@ class BasePostCard extends StatelessWidget {
     required this.post,
     required this.followService,
     required this.infoProvider,
-    this.isDesktopLayout = false,
+    required this.screenWidth,
     this.onDeleteAction,
     this.onEditAction,
     this.onToggleLockAction,
@@ -62,8 +64,8 @@ class BasePostCard extends StatelessWidget {
   /// 该方法根据帖子数据和用户权限构建卡片 UI。
   @override
   Widget build(BuildContext context) {
-    final bool isAndroidPortrait = DeviceUtils.isAndroid &&
-        DeviceUtils.isPortrait(context); // 判断是否为 Android 竖屏
+    final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+    final isAndroidLayout = !isDesktopLayout;
 
     final String? currentUserId = currentUser?.id; // 当前用户ID
     final bool isAdmin = currentUser?.isAdmin ?? false; // 是否管理员
@@ -100,35 +102,48 @@ class BasePostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(40, 12, 12, 8), // 内边距
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start, // 垂直顶部对齐
-                    children: [
-                      Expanded(
-                        child: Text(
-                          post.title, // 帖子标题
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600, // 字体粗细
-                            fontSize: isAndroidPortrait ? 14 : 16, // 字体大小
+                Stack(
+                  children: [
+                    // 标题区域，其 Padding 决定了 Stack 的基础尺寸和为标签预留的空间
+                    Padding(
+                      // 底部 padding 增大，为 Positioned 的标签行腾出空间
+                      padding: EdgeInsets.fromLTRB(
+                          40, 12, 12, post.tags.isNotEmpty ? _tagRowHeight : 8),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start, // 垂直顶部对齐
+                        children: [
+                          Expanded(
+                            child: Text(
+                              post.title, // 帖子标题
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600, // 字体粗细
+                                fontSize: isAndroidLayout ? 14 : 16, // 字体大小
+                              ),
+                              maxLines: 2, // 最大行数
+                              overflow: TextOverflow.ellipsis, // 溢出显示省略号
+                            ),
                           ),
-                          maxLines: 2, // 最大行数
-                          overflow: TextOverflow.ellipsis, // 溢出显示省略号
+                          _buildPopupMenu(context, canPotentiallyModify,
+                              isAdmin, currentUserId), // 操作菜单
+                        ],
+                      ),
+                    ),
+
+                    // 标签行，使用 Positioned 定位，脱离布局流
+                    if (post.tags.isNotEmpty)
+                      Positioned(
+                        bottom: 4, // 距离底部一点距离
+                        left: 12,
+                        right: 12,
+                        child: PostTagRow(
+                          tags: post.tags, // 标签列表
+                          isAndroidPortrait: isAndroidLayout, // 是否为 Android 竖屏
                         ),
                       ),
-                      _buildPopupMenu(context, canPotentiallyModify, isAdmin,
-                          currentUserId), // 操作菜单
-                    ],
-                  ),
+                  ],
                 ),
-                if (post.tags.isNotEmpty) // 显示标签行
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(12, 0, 12, 8), // 内边距
-                    child: PostTagRow(
-                      tags: post.tags, // 标签列表
-                      isAndroidPortrait: isAndroidPortrait, // 是否为 Android 竖屏
-                    ),
-                  ),
+
+                // 底部信息栏：作者和统计数据
                 Container(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 12, vertical: 8), // 内边距
@@ -144,13 +159,10 @@ class BasePostCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      const double thresholdWidth = 280.0; // 宽度阈值
-
-                      if (constraints.maxWidth >= thresholdWidth) {
-                        // 宽度大于阈值时使用 Row 布局
-                        return Row(
+                  child: screenWidth >= thresholdWidth
+                      ?
+                      // 宽度大于阈值时使用 Row 布局
+                      Row(
                           mainAxisAlignment:
                               MainAxisAlignment.spaceBetween, // 主轴两端对齐
                           children: [
@@ -170,14 +182,13 @@ class BasePostCard extends StatelessWidget {
                               replyCount: post.replyCount, // 回复数量
                               likeCount: post.likeCount, // 点赞数量
                               favoriteCount: post.favoriteCount, // 收藏数量
-                              isSmallScreen:
-                                  constraints.maxWidth < 320, // 是否为小屏幕
+                              isSmallScreen: screenWidth < 320, // 是否为小屏幕
                             ),
                           ],
-                        );
-                      } else {
-                        // 宽度小于阈值时使用 Column 布局
-                        return Column(
+                        )
+                      :
+                      // 宽度小于阈值时使用 Column 布局
+                      Column(
                           crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
                           children: [
                             UserInfoBadge(
@@ -200,10 +211,7 @@ class BasePostCard extends StatelessWidget {
                               ),
                             ),
                           ],
-                        );
-                      }
-                    },
-                  ),
+                        ),
                 ),
               ],
             ),

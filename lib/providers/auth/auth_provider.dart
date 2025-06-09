@@ -1,6 +1,6 @@
 // lib/providers/auth/auth_provider.dart
 
-/// 该文件定义了 AuthProvider，一个管理用户认证状态的 ChangeNotifier。
+/// 该文件定义了 AuthProvider，管理用户认证状态
 /// AuthProvider 负责处理用户的登录、登出、状态初始化和刷新。
 /// 它提供相应的状态流供 UI 订阅。
 ///
@@ -8,8 +8,6 @@
 library;
 
 
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart'; // ChangeNotifier 使用该包的功能
 import 'package:suxingchahui/events/app_events.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
@@ -18,7 +16,7 @@ import 'dart:async';
 /// `AuthProvider` 类：管理用户认证状态的核心 Provider。
 ///
 /// 该类通过 StreamController 提供状态更新。
-class AuthProvider with ChangeNotifier {
+class AuthProvider {
   // --- 内部状态变量 ---
   User? _currentUser; // 当前登录用户的信息
   bool _isInitializing = false; // 认证模块初始化状态
@@ -279,7 +277,6 @@ class AuthProvider with ChangeNotifier {
   /// 清理资源。
   ///
   /// 当 `AuthProvider` 实例不再需要时调用，取消所有 Stream 订阅并关闭 StreamController。
-  @override
   void dispose() {
     _unauthorizedSubscription?.cancel(); // 取消未授权事件的订阅
     _currentUserController.close(); // 关闭所有 StreamController
@@ -288,7 +285,6 @@ class AuthProvider with ChangeNotifier {
     _isInitializingController.close();
     _isRefreshingController.close();
     _isLoadingController.close(); // 关闭 isLoadingController
-    super.dispose(); // 调用父类的 dispose 方法
   }
 }
 

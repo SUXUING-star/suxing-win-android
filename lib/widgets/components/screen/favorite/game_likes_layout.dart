@@ -2,16 +2,20 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class GameLikesLayout extends StatefulWidget {
+  final WindowStateProvider windowStateProvider;
   final List<Game> favoriteGames;
   final PaginationData? paginationData;
   final bool isLoadingInitial;
@@ -24,6 +28,7 @@ class GameLikesLayout extends StatefulWidget {
 
   const GameLikesLayout({
     super.key,
+    required this.windowStateProvider,
     required this.favoriteGames,
     required this.paginationData,
     required this.isLoadingInitial,
@@ -49,7 +54,15 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
     super.build(context);
 
     if (widget.isLoadingInitial) {
-      return Center(child: LoadingWidget.fullScreen(message: "正在加载收藏游戏"));
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (widget.errorMessage != null && widget.favoriteGames.isEmpty) {
@@ -72,13 +85,16 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
       );
     }
 
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
-
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktopLayout
+            ? _buildDesktopLayout(context)
+            : _buildMobileLayout(context);
+      },
+    );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -226,9 +242,9 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
 
         // 加载更多的逻辑保持不变
         if (widget.isLoadingMore)
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: LoadingWidget.inline(message: "正在加载更多"),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: LoadingWidget(message: "正在加载更多"),
           ),
         if (!widget.isLoadingMore &&
             (widget.paginationData?.hasNextPage() ?? false) &&

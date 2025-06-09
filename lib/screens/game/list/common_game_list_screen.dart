@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -14,6 +15,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class CommonGameListScreen extends StatelessWidget {
   final String title;
@@ -37,12 +39,14 @@ class CommonGameListScreen extends StatelessWidget {
   final Future<void> Function(Game game)? onDeleteGameAction;
   final Widget Function(Game)? customCardBuilder;
   final List<Widget>? additionalActions;
+  final WindowStateProvider windowStateProvider;
 
   const CommonGameListScreen({
     super.key,
     required this.currentUser,
     required this.title,
     required this.games,
+    required this.windowStateProvider,
     this.isLoading = false,
     this.error,
     this.onRefreshTriggered,
@@ -65,14 +69,13 @@ class CommonGameListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktop;
     final displayTitle = title;
     final finalShowAddButton = currentUser == null ? false : showAddButton;
 
     final appBar = useScaffold
         ? CustomAppBar(
             title: displayTitle,
-            actions: _buildAppBarActions(context, isDesktop),
+            actions: _buildAppBarActions(context),
             bottom: null,
           )
         : null;
@@ -89,13 +92,13 @@ class CommonGameListScreen extends StatelessWidget {
 
     Widget bodyContent;
     if (isLoading && games.isEmpty) {
-      bodyContent = _buildLoading("加载中...");
+      bodyContent = _buildLoading();
     } else if (error != null && games.isEmpty) {
       bodyContent = _buildError(error!, onRefreshTriggered);
     } else if (!isLoading && games.isEmpty) {
       bodyContent = _buildEmptyState(context);
     } else {
-      bodyContent = _buildContentWrapper(context, isDesktop);
+      bodyContent = _buildContentWrapper(context);
     }
 
     if (useScaffold) {
@@ -108,8 +111,8 @@ class CommonGameListScreen extends StatelessWidget {
     }
   }
 
-  Widget _buildContentWrapper(BuildContext context, bool isDesktop) {
-    Widget content = _buildContentList(context: context, isDesktop: isDesktop);
+  Widget _buildContentWrapper(BuildContext context) {
+    Widget content = _buildContentList(context: context);
     if (onRefreshTriggered != null) {
       return RefreshIndicator(
         onRefresh: onRefreshTriggered!,
@@ -122,7 +125,6 @@ class CommonGameListScreen extends StatelessWidget {
 
   Widget _buildContentList({
     required BuildContext context,
-    required bool isDesktop,
   }) {
     final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
       context,
@@ -130,35 +132,42 @@ class CommonGameListScreen extends StatelessWidget {
     );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
-    return AnimatedContentGrid<Game>(
-      gridKey: PageStorageKey('game_grid_$title'),
-      items: games,
-      crossAxisCount: cardsPerRow > 0 ? cardsPerRow : 1,
-      childAspectRatio: cardRatio,
-      padding: EdgeInsets.all(isDesktop ? 16 : 8),
-      mainAxisSpacing: isDesktop ? 16 : 8,
-      itemBuilder: (context, index, game) {
-        // itemBuilder 专注于构建业务卡片。
-        return customCardBuilder != null
-            ? customCardBuilder!(game)
-            : BaseGameCard(
-                key: ValueKey(game.id),
-                currentUser: currentUser,
-                game: game,
-                isGridItem: true,
-                adaptForPanels: false,
-                showCollectionStats: true,
-                forceCompact: cardsPerRow > 3,
-                maxTags: 1,
-                onDeleteAction: onDeleteGameAction != null
-                    ? () => onDeleteGameAction!(game)
-                    : null,
-              );
+    return LazyLayoutBuilder(
+      windowStateProvider: windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return AnimatedContentGrid<Game>(
+          gridKey: PageStorageKey('game_grid_$title'),
+          items: games,
+          crossAxisCount: cardsPerRow > 0 ? cardsPerRow : 1,
+          childAspectRatio: cardRatio,
+          padding: EdgeInsets.all(isDesktop ? 16 : 8),
+          mainAxisSpacing: isDesktop ? 16 : 8,
+          itemBuilder: (context, index, game) {
+            // itemBuilder 专注于构建业务卡片。
+            return customCardBuilder != null
+                ? customCardBuilder!(game)
+                : BaseGameCard(
+                    key: ValueKey(game.id),
+                    currentUser: currentUser,
+                    game: game,
+                    isGridItem: true,
+                    adaptForPanels: false,
+                    showCollectionStats: true,
+                    forceCompact: cardsPerRow > 3,
+                    maxTags: 1,
+                    onDeleteAction: onDeleteGameAction != null
+                        ? () => onDeleteGameAction!(game)
+                        : null,
+                  );
+          },
+        );
       },
     );
   }
 
-  List<Widget> _buildAppBarActions(BuildContext context, bool isDesktop) {
+  List<Widget> _buildAppBarActions(BuildContext context) {
     final actions = <Widget>[];
     final Color enabledColor = Colors.white;
 
@@ -201,8 +210,16 @@ class CommonGameListScreen extends StatelessWidget {
     return actions;
   }
 
-  static Widget _buildLoading(String message) {
-    return FadeInItem(child: LoadingWidget.fullScreen(message: message));
+  static Widget _buildLoading() {
+    return const FadeInItem(
+      // 全屏加载组件
+      child: LoadingWidget(
+        isOverlay: true,
+        message: "少女祈祷中...",
+        overlayOpacity: 0.4,
+        size: 36,
+      ),
+    ); //
   }
 
   static Widget _buildError(String message, Future<void> Function()? onRetry) {

@@ -30,9 +30,7 @@ class GameCommentInput extends StatelessWidget {
         inputStateService.clearText(slotName); // 使用 this.slotName
       }
     } catch (e) {
-      if (context.mounted) {
-        AppSnackBar.showError(context, '评论发表失败: $e');
-      }
+      AppSnackBar.showError("操作失败,${e.toString()}");
     }
   }
 

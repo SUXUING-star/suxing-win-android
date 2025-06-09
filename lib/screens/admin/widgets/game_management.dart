@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -21,11 +22,13 @@ class GameManagement extends StatefulWidget {
   final User? currentUser;
   final GameService gameService;
   final InputStateService inputStateService;
+  final WindowStateProvider windowStateProvider;
   const GameManagement({
     super.key,
     required this.currentUser,
     required this.gameService,
     required this.inputStateService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -169,7 +172,7 @@ class _GameManagementState extends State<GameManagement>
             _reviewQueueError = '加载审核队列失败: $e';
             _reviewQueueGames = [];
           } else {
-            AppSnackBar.showError(context, '加载更多失败: $e');
+            AppSnackBar.showError('加载更多失败: $e');
             _reviewQueueHasMore = false;
           }
         });
@@ -218,7 +221,7 @@ class _GameManagementState extends State<GameManagement>
   Future<void> _refreshReviewQueue() async {
     await _loadInitialReviewQueueData();
     if (mounted && _reviewQueueError == null) {
-      AppSnackBar.showSuccess(context, '审核队列已刷新');
+      AppSnackBar.showSuccess('审核队列已刷新');
     }
   }
 
@@ -237,12 +240,12 @@ class _GameManagementState extends State<GameManagement>
           try {
             await _gameService.deleteGame(game);
             if (mounted) {
-              AppSnackBar.showSuccess(context, '游戏已删除');
+              AppSnackBar.showSuccess('游戏已删除');
               _refreshAllGames(); // 刷新 All Games
               _refreshReviewQueue(); // 刷新审核队列
             }
           } catch (e) {
-            if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+            AppSnackBar.showError('删除失败: $e');
             rethrow; // 让 Dialog 知道出错了
           }
         });
@@ -254,7 +257,7 @@ class _GameManagementState extends State<GameManagement>
         arguments: game.id);
     // 如果编辑成功返回 true
     if (result == true && mounted) {
-      AppSnackBar.showSuccess(context, '游戏信息已更新');
+      AppSnackBar.showSuccess('游戏信息已更新');
       _refreshAllGames(); // 刷新 All Games
       _refreshReviewQueue(); // 刷新审核队列
     }
@@ -263,7 +266,7 @@ class _GameManagementState extends State<GameManagement>
   void _handleAddGame() {
     NavigationUtils.pushNamed(context, AppRoutes.addGame).then((added) {
       if (added == true && mounted) {
-        AppSnackBar.showSuccess(context, '游戏已添加');
+        AppSnackBar.showSuccess('游戏已添加');
         _refreshAllGames(); // 刷新 All Games (如果管理员添加直接 approved)
         _refreshReviewQueue(); // 刷新审核队列 (看到新提交的 pending)
       }
@@ -299,7 +302,7 @@ class _GameManagementState extends State<GameManagement>
         iconData: Icons.comment_outlined,
         onSave: (String reason) async {
           if (reason.trim().isEmpty) {
-            if (mounted) AppSnackBar.showWarning(context, '必须填写拒绝原因');
+            AppSnackBar.showWarning('必须填写拒绝原因');
             return; // Stop further processing
           }
           // Got a valid reason, now show the FINAL confirmation dialog
@@ -326,15 +329,14 @@ class _GameManagementState extends State<GameManagement>
     try {
       await _gameService.reviewGame(game, status, comment);
       if (mounted) {
-        AppSnackBar.showSuccess(
-            context, '游戏已${status == 'approved' ? '批准' : '拒绝'}');
+        AppSnackBar.showSuccess('游戏已${status == 'approved' ? '批准' : '拒绝'}');
         _refreshReviewQueue();
         if (status == 'approved') {
           _refreshAllGames();
         }
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '审核操作失败: $e');
+      AppSnackBar.showError('审核操作失败: $e');
       // 可选: rethrow 让 Dialog 知道失败了
     }
   }
@@ -379,6 +381,7 @@ class _GameManagementState extends State<GameManagement>
                     return CommonGameListScreen(
                       title: '游戏管理',
                       useScaffold: false,
+                      windowStateProvider: widget.windowStateProvider,
                       games: snapshot.hasData ? snapshot.data! : [],
                       currentUser: _currentUser,
                       isLoading:
@@ -451,14 +454,14 @@ class _GameManagementState extends State<GameManagement>
     required Future<void> Function(Game game) onDeleteAction,
   }) {
     if (isLoading) {
-      return Center(child: LoadingWidget.inline(message: "加载中..."));
+      return const  LoadingWidget(message: "加载中...");
     }
     if (error != null) {
-      return Center(
-          child: InlineErrorWidget(errorMessage: error, onRetry: onRefresh));
+      return
+           CustomErrorWidget(errorMessage: error, onRetry: onRefresh);
     }
     if (games.isEmpty) {
-      return Center(child: EmptyStateWidget(message: emptyMessage));
+      return  EmptyStateWidget(message: emptyMessage);
     }
 
     // 使用 CommonGameListScreen 来构建 GridView
@@ -479,12 +482,10 @@ class _GameManagementState extends State<GameManagement>
             return false;
           },
           child: ListView(
-            // 使用 ListView 容纳 CommonGameListScreen 和加载指示器
-            // *** 不再需要 controller 绑定在这里，让 GridView 内部滚动 ***
-            // controller: scrollController,
             physics: AlwaysScrollableScrollPhysics(), // 保证 RefreshIndicator 可用
             children: [
               CommonGameListScreen(
+                windowStateProvider: widget.windowStateProvider,
                 title: "", // title 不重要
                 useScaffold: false,
                 currentUser: _currentUser,

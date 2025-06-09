@@ -1,10 +1,15 @@
 // lib/providers/inputs/input_state_provider.dart
+
+/// `InputStateService` 类：全局管理不同输入框的文本状态。
+library;
+
+
 import 'package:flutter/material.dart';
 
 /// `InputStateService` 类：全局管理不同输入框的文本状态。
 ///
 /// 该类提供输入框文本内容的存取、控制器管理和资源清理。
-class InputStateService with ChangeNotifier {
+class InputStateService {
   final Map<String, String> _textStates = {}; // 存储各个输入框的文本内容
   final Map<String, TextEditingController> _controllers = {}; // 缓存各个输入框的控制器实例
   final Map<String, VoidCallback> _listeners = {}; // 缓存各个控制器对应的监听器回调
@@ -101,7 +106,6 @@ class InputStateService with ChangeNotifier {
   ///
   /// 遍历所有缓存的控制器，移除监听器并销毁控制器实例，
   /// 清空所有内部缓存。
-  @override
   void dispose() {
     _controllers.forEach((slotName, controller) {
       // 遍历所有缓存的控制器
@@ -123,6 +127,5 @@ class InputStateService with ChangeNotifier {
     _controllers.clear(); // 清空控制器缓存
     _listeners.clear(); // 清空监听器缓存
     _textStates.clear(); // 清空文本状态缓存
-    super.dispose(); // 调用父类的销毁方法
   }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 
@@ -132,8 +133,15 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
     }
 
     if (_isLoading) {
-      return LoadingWidget.fullScreen(
-          message: "正在加载收藏数据"); // Use consistent loading widget
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_games.isEmpty) {

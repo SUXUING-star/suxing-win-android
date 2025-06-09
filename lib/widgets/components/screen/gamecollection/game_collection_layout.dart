@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
@@ -12,6 +13,7 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'game_review_panel.dart'; // Review 面板组件
 
 class _LoadingMorePlaceholder {
@@ -33,6 +35,7 @@ class GameCollectionLayout extends StatelessWidget {
   final GameWithCollection? selectedGameForReview;
   final Function(GameWithCollection) onGameTapForReview;
   final VoidCallback onCloseReviewPanel;
+  final WindowStateProvider windowStateProvider;
 
   const GameCollectionLayout({
     super.key,
@@ -46,23 +49,21 @@ class GameCollectionLayout extends StatelessWidget {
     this.selectedGameForReview,
     required this.onGameTapForReview,
     required this.onCloseReviewPanel,
+    required this.windowStateProvider,
   });
-
-  static const Map<String, String> _statusTextMap = {
-    GameCollectionStatus.wantToPlay: '想玩',
-    GameCollectionStatus.playing: '在玩',
-    GameCollectionStatus.played: '已玩',
-  };
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
-
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return LazyLayoutBuilder(
+      windowStateProvider: windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktopLayout
+            ? _buildDesktopLayout(context)
+            : _buildMobileLayout(context);
+      },
+    );
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -342,6 +343,19 @@ class GameCollectionLayout extends StatelessWidget {
           displayItems.add(const _LoadMoreButtonPlaceholder());
         }
 
+        // Badge 样式参数
+        final double statusBadgeFontSize = isDesktop ? 10 : 11;
+        final EdgeInsets statusBadgePadding = isDesktop
+            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
+            : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
+        final Radius statusBadgeTopRightRadius =
+            Radius.circular(isDesktop ? 10 : 8);
+        final Radius statusBadgeBottomLeftRadius =
+            Radius.circular(isDesktop ? 8 : 10);
+        final Offset statusBadgeShadowOffset =
+            isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
+        final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
+
         // 使用 AnimatedContentGrid
         return AnimatedContentGrid<Object>(
           gridKey: const ValueKey('game_collection_final_grid'),
@@ -360,24 +374,9 @@ class GameCollectionLayout extends StatelessWidget {
 
               final String currentStatusString =
                   gameWithCollection.collection.status;
-              final String statusText =
-                  _statusTextMap[currentStatusString] ?? '未知';
-              final Color statusColor =
-                  GameCollectionStatusUtils.getTheme(currentStatusString)
-                      .textColor;
 
-              // Badge 样式参数
-              final double statusBadgeFontSize = isDesktop ? 10 : 11;
-              final EdgeInsets statusBadgePadding = isDesktop
-                  ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
-                  : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
-              final Radius statusBadgeTopRightRadius =
-                  Radius.circular(isDesktop ? 10 : 8);
-              final Radius statusBadgeBottomLeftRadius =
-                  Radius.circular(isDesktop ? 8 : 10);
-              final Offset statusBadgeShadowOffset =
-                  isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
-              final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
+              final GameCollectionStatusTheme statusTheme =
+                  GameCollectionStatusUtils.getTheme(currentStatusString);
 
               return Stack(
                 clipBehavior: Clip.none,
@@ -397,7 +396,7 @@ class GameCollectionLayout extends StatelessWidget {
                     child: Container(
                       padding: statusBadgePadding,
                       decoration: BoxDecoration(
-                        color: statusColor,
+                        color: statusTheme.textColor,
                         borderRadius: BorderRadius.only(
                           topRight: statusBadgeTopRightRadius,
                           bottomLeft: statusBadgeBottomLeftRadius,
@@ -411,7 +410,7 @@ class GameCollectionLayout extends StatelessWidget {
                         ],
                       ),
                       child: Text(
-                        statusText,
+                        statusTheme.text,
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: statusBadgeFontSize,
@@ -426,7 +425,7 @@ class GameCollectionLayout extends StatelessWidget {
 
             // 如果是加载指示器
             if (item is _LoadingMorePlaceholder) {
-              return Center(child: LoadingWidget.inline(message: "加载更多..."));
+              return const LoadingWidget(message: "加载更多...");
             }
 
             // 如果是加载更多按钮

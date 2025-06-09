@@ -1,18 +1,17 @@
 // lib/providers/user/user_info_provider.dart
 
-/// 该文件定义了 UserInfoProvider，一个管理用户数据加载状态的 ChangeNotifier。
+/// 该文件定义了 UserInfoProvider，管理用户数据加载状态
 /// UserInfoProvider 负责按需加载、缓存和提供用户详细信息。
 library;
 
 import 'dart:async'; // 异步编程所需
-import 'package:flutter/foundation.dart'; // 导入 Flutter 基础工具，提供 ChangeNotifier 功能。
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 用户服务，用于获取用户数据
 import 'user_data_status.dart'; // 用户数据状态枚举和类
 
 /// `UserInfoProvider` 类：管理用户详细数据加载状态的 Provider。
 ///
 /// 该类为每个用户ID提供其数据的加载状态、缓存和实时更新。
-class UserInfoProvider with ChangeNotifier {
+class UserInfoProvider {
   final UserService _userService; // 用户服务实例
   final Map<String, UserDataStatus> _userStatusMap = {}; // 存储每个用户的当前数据状态
   final Map<String, Completer<void>> _loadingCompleters = {}; // 管理每个用户数据的并发加载请求
@@ -160,7 +159,6 @@ class UserInfoProvider with ChangeNotifier {
   /// 销毁 Provider。
   ///
   /// 清理所有内部 Completer 和 StreamController 资源。
-  @override
   void dispose() {
     _loadingCompleters.forEach((key, completer) {
       // 遍历所有 Completer
@@ -173,6 +171,5 @@ class UserInfoProvider with ChangeNotifier {
       controller.close(); // 关闭 StreamController
     });
     _userStatusStreamControllers.clear(); // 清空 StreamController 缓存
-    super.dispose(); // 调用父类销毁方法
   }
 }

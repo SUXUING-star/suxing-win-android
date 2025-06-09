@@ -8,9 +8,11 @@ import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入 p
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -28,6 +30,7 @@ class FavoritesScreen extends StatefulWidget {
   final PostService postService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
   const FavoritesScreen({
     super.key,
     required this.authProvider,
@@ -35,6 +38,7 @@ class FavoritesScreen extends StatefulWidget {
     required this.postService,
     required this.followService,
     required this.infoProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -186,7 +190,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _isLoadingGames = false;
         _gameError = '加载收藏游戏失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载收藏游戏失败');
+      AppSnackBar.showError('加载收藏游戏失败');
     }
   }
 
@@ -228,7 +232,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _isLoadingMoreGames = false;
         _gameError = '加载更多收藏游戏失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载更多收藏游戏失败');
+      AppSnackBar.showError('加载更多收藏游戏失败');
     }
   }
 
@@ -237,9 +241,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       await widget.gameService.toggleLike(gameId, true); // 妈的，传递旧状态为 true
       await _fetchGames(isRefresh: true);
     } catch (e) {
-      if (mounted) {
-        AppSnackBar.showError(context, '取消收藏失败: $e');
-      }
+      AppSnackBar.showError('取消收藏失败: ${e.toString()}');
     }
   }
 
@@ -284,7 +286,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _isLoadingPosts = false;
         _postError = '加载收藏帖子失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载收藏帖子失败');
+      AppSnackBar.showError('加载收藏帖子失败');
     }
   }
 
@@ -324,7 +326,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _isLoadingMorePosts = false;
         _postError = '加载更多收藏帖子失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载更多收藏帖子失败');
+      AppSnackBar.showError('加载更多收藏帖子失败');
     }
   }
 
@@ -333,9 +335,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
       await widget.postService.togglePostLike(postId);
       await _fetchPosts(isRefresh: true);
     } catch (e) {
-      if (mounted) {
-        AppSnackBar.showError(context, '取消收藏失败: $e');
-      }
+      AppSnackBar.showError('取消收藏失败: ${e.toString()}');
     }
   }
 
@@ -415,13 +415,29 @@ class _FavoritesScreenState extends State<FavoritesScreen>
         _gameError == null &&
         _favoriteGames.isEmpty &&
         _tabController.index == 0) {
-      return LoadingWidget.fullScreen(message: "正在加载收藏游戏...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "等待加载...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
     if (_isLoadingPosts &&
         _postError == null &&
         _favoritePosts.isEmpty &&
         _tabController.index == 1) {
-      return LoadingWidget.fullScreen(message: "正在加载收藏帖子...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_gameError != null &&
@@ -479,6 +495,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   onLoadMore: _loadMoreGames,
                   onToggleLike: _toggleGameLike,
                   scrollController: _gameScrollController,
+                  windowStateProvider: widget.windowStateProvider,
                 ),
                 PostFavoritesLayout(
                   favoritePosts: _favoritePosts,
@@ -491,6 +508,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   onToggleFavorite: _togglePostFavorite,
                   scrollController: _postScrollController,
                   currentUser: _currentUser,
+                  windowStateProvider: widget.windowStateProvider,
                   userInfoProvider: widget.infoProvider,
                   userFollowService: widget.followService,
                 ),

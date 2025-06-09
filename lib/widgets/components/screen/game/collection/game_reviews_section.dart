@@ -156,7 +156,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
           _paginationData =
               PaginationData(page: _page, limit: _pageSize, total: 0, pages: 0);
         } else {
-          if (context.mounted) AppSnackBar.showError(context, '加载更多动态失败');
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       });
     } finally {
@@ -292,9 +292,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
   Widget _buildContent() {
     if (_isLoading && _page == 1 && _reviews.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 32.0),
-        child: LoadingWidget.inline(message: '正在加载动态...'),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 32.0),
+        child: LoadingWidget(size: 18, message: "正在加载"),
       );
     }
     if (_error != null && _page == 1) {
@@ -306,7 +306,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
     if (_reviews.isEmpty && !_isLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 32.0),
-        child: EmptyStateWidget(message: '暂无玩家动态'),
+        child: EmptyStateWidget(message: '暂无评价'),
       );
     }
     return ListView.separated(
@@ -327,9 +327,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
 
   Widget _buildLoadMoreSection() {
     if (_isLoading && !_isProcessingPageOne && _page > 1) {
-      return Padding(
-          padding: const EdgeInsets.only(top: 16.0),
-          child: LoadingWidget.inline(size: 20, message: "加载中..."));
+      return const Padding(
+          padding: EdgeInsets.only(top: 16.0),
+          child: LoadingWidget(size: 20, message: "加载中..."));
     }
     if (!_isLoading &&
         (_paginationData?.hasNextPage() ?? false) &&

@@ -1,9 +1,8 @@
 // lib/providers/windows/window_state_provider.dart
 
-/// 该文件定义了 WindowStateProvider，一个管理窗口状态的 ChangeNotifier。
+/// 该文件定义了 WindowStateProvider，管理窗口状态
 /// WindowStateProvider 跟踪窗口的拖拽和尺寸调整状态。
 library;
-
 
 import 'dart:async'; // 异步编程所需
 import 'package:flutter/foundation.dart'; // 平台判断所需
@@ -12,7 +11,7 @@ import 'package:window_manager/window_manager.dart'; // 窗口管理库
 /// `WindowStateProvider` 类：管理窗口状态的 Provider。
 ///
 /// 该类通过监听窗口事件来提供窗口的尺寸调整和拖拽状态。
-class WindowStateProvider with ChangeNotifier, WindowListener {
+class WindowStateProvider with WindowListener {
   bool _isResizingWindow = false; // 标识窗口是否正在调整尺寸
   Timer? _resizeEndTimer; // 用于尺寸调整结束的防抖计时器
   static const Duration _resizeDebounceDuration =
@@ -88,6 +87,8 @@ class WindowStateProvider with ChangeNotifier, WindowListener {
     _endResizingOrTitleBarDragging(); // 结束调整尺寸/拖拽逻辑
   }
 
+
+
   /// 窗口尺寸调整事件回调。
   @override
   void onWindowResize() {
@@ -138,7 +139,6 @@ class WindowStateProvider with ChangeNotifier, WindowListener {
   /// 清理资源。
   ///
   /// 在桌面平台移除窗口监听器，取消计时器，并关闭 StreamController。
-  @override
   void dispose() {
     if (!kIsWeb &&
         (defaultTargetPlatform == TargetPlatform.windows ||
@@ -148,6 +148,5 @@ class WindowStateProvider with ChangeNotifier, WindowListener {
     }
     _resizeEndTimer?.cancel(); // 取消计时器
     _isResizingWindowController.close(); // 关闭 StreamController
-    super.dispose(); // 调用父类销毁方法
   }
 }

@@ -26,7 +26,7 @@ class PullOutMenuHost extends StatelessWidget {
   final List<BoxShadow>? panelBoxShadow;
 
   const PullOutMenuHost({
-    Key? key,
+    super.key,
     required this.pageContent,
     required this.menuItems,
     // 从 EdgePullOutPanel 复制默认值
@@ -44,7 +44,7 @@ class PullOutMenuHost extends StatelessWidget {
     this.initiallyOpen = false,
     this.panelBorderRadius,
     this.panelBoxShadow,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -53,7 +53,6 @@ class PullOutMenuHost extends StatelessWidget {
         pageContent, // 你的 Scaffold 在底层
         // EdgePullOutPanel 会自己处理 Positioned 和动画
         EdgePullOutPanel(
-          children: menuItems,
           panelColor: panelColor,
           handleColor: handleColor,
           handleIconOpened: handleIconOpened,
@@ -68,6 +67,7 @@ class PullOutMenuHost extends StatelessWidget {
           initiallyOpen: initiallyOpen,
           panelBorderRadius: panelBorderRadius,
           panelBoxShadow: panelBoxShadow,
+          children: menuItems,
         ),
       ],
     );

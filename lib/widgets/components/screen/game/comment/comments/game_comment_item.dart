@@ -8,7 +8,6 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -48,8 +47,7 @@ class GameCommentItem extends StatefulWidget {
   State<GameCommentItem> createState() => _GameCommentItemState();
 }
 
-class _GameCommentItemState extends State<GameCommentItem>
-    with SnackBarNotifierMixin {
+class _GameCommentItemState extends State<GameCommentItem> {
   bool _showReplyInput = false;
   bool _isSubmittingReply = false; // 添加新回复的 loading
 
@@ -215,7 +213,7 @@ class _GameCommentItemState extends State<GameCommentItem>
           await widget.onUpdateComment(item, text); // 调用父级回调
           // 成功后父级会刷新，Dialog 会关闭
         } catch (e) {
-          showSnackBar(message: '编辑失败: $e', type: SnackBarType.error);
+          AppSnackBar.showError("操作失败,${e.toString()}");
           // --- 出错时，结束本地 Loading ---
           if (mounted) {
             setState(() {
@@ -276,7 +274,7 @@ class _GameCommentItemState extends State<GameCommentItem>
           // 成功后父级会刷新列表，此 Item (或其 Reply 部分) 会消失
           // 所以成功时不需要在 finally 里清除本地 loading 状态
         } catch (e) {
-          showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
+          AppSnackBar.showError("操作失败,${e.toString()}");
           // --- 出错时，结束本地 Loading ---
           // 如果删除失败，Item 还在，必须清除 loading 状态
           if (mounted) {
@@ -310,7 +308,7 @@ class _GameCommentItemState extends State<GameCommentItem>
         // 输入框内容由 GameReplyInput 内部在成功回调后清空 (如果需要)
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '回复失败: $e');
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) setState(() => _isSubmittingReply = false);
     }
@@ -370,7 +368,6 @@ class _GameCommentItemState extends State<GameCommentItem>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
 
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
@@ -434,7 +431,7 @@ class _GameCommentItemState extends State<GameCommentItem>
                 TextButton(
                   onPressed: () {
                     if (widget.currentUser == null) {
-                      AppSnackBar.showError(context, '请先登录后才能回复');
+                      AppSnackBar.showLoginRequiredSnackBar(context);
                       return;
                     }
                     setState(() {

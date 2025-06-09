@@ -147,7 +147,7 @@ class _LoginScreenState extends State<LoginScreen> {
       widget.inputStateService.getController(passwordSlotName).text =
           account.password; // 填充密码
     } catch (e) {
-      AppSnackBar.showError(context, "无法自动填充账号信息"); // 显示错误提示
+      AppSnackBar.showError( "无法自动填充账号信息"); // 显示错误提示
       return; // 无法更新时返回
     }
 
@@ -183,7 +183,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const String successMessage = "登录成功~🎉"; // 成功消息
         NavigationUtils.navigateToHome(widget.sidebarProvider, context,
             tabIndex: 0); // 导航到首页
-        AppSnackBar.showSuccess(context, successMessage); // 显示成功提示
+        AppSnackBar.showSuccess( successMessage); // 显示成功提示
       }
     } catch (e) {
       // 捕获登录失败异常
@@ -195,7 +195,7 @@ class _LoginScreenState extends State<LoginScreen> {
         });
         if (_errorMessage != null) {
           // 显示错误提示
-          AppSnackBar.showError(context, _errorMessage!);
+          AppSnackBar.showError(_errorMessage!);
         }
       }
     } finally {

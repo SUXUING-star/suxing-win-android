@@ -349,7 +349,7 @@ class _PostFormState extends State<PostForm> {
                           if (_selectedTags.length < 3) {
                             _selectedTags.add(tag);
                           } else {
-                            AppSnackBar.showWarning(context, '最多只能选择 3 个标签');
+                            AppSnackBar.showWarning('最多只能选择 3 个标签');
                           }
                         } else {
                           _selectedTags.remove(tag);
@@ -484,11 +484,11 @@ class _PostFormState extends State<PostForm> {
     FocusScope.of(context).unfocus();
 
     if (!_formKey.currentState!.validate()) {
-      AppSnackBar.showWarning(context, '请检查标题和内容是否填写完整');
+      AppSnackBar.showWarning('请检查标题和内容是否填写完整');
       return;
     }
     if (_selectedTags.isEmpty) {
-      AppSnackBar.showWarning(context, '请至少选择一个标签');
+      AppSnackBar.showWarning('请至少选择一个标签');
       return;
     }
 
@@ -498,7 +498,7 @@ class _PostFormState extends State<PostForm> {
 
     // 再次校验从 Service 获取的值
     if (finalTitle.trim().isEmpty || finalContent.trim().isEmpty) {
-      AppSnackBar.showWarning(context, '请确保标题和内容已输入');
+      AppSnackBar.showWarning('请确保标题和内容已输入');
       // 这种情况理论上不应该发生，因为 FormField 验证过了，
       // 且 Service 的值应该与 Controller 同步。但加上保险。
       return;
@@ -521,14 +521,11 @@ class _PostFormState extends State<PostForm> {
           widget.inputStateService.clearText(_contentSlotName);
           // print("提交触发，已清除 Title 和 Content 的内存状态。");
         } catch (e) {
-          // print("执行提交操作时出错: $e");
-          if (mounted) AppSnackBar.showError(context, '提交时发生错误');
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       },
       onLockFailed: () {
-        if (mounted) {
-          AppSnackBar.showInfo(context, '正在提交中，请稍候...');
-        }
+        AppSnackBar.showInfo('正在提交中，请稍候...');
       },
     );
 

@@ -1,7 +1,6 @@
 // lib/widgets/components/screen/game/collection/game_collection_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -11,7 +10,6 @@ import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_di
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 class GameCollectionButton extends StatefulWidget {
   final Game game;
@@ -19,7 +17,7 @@ class GameCollectionButton extends StatefulWidget {
   final InputStateService inputStateService;
   final bool compact;
   final User? currentUser;
-  final Function(CollectionChangeResult)? onCollectionChanged;
+  final Function(GameCollectionItem?, Game?)? onCollectionChanged;
   final GameCollectionItem? initialCollectionStatus;
   final bool isPreview;
 
@@ -39,8 +37,7 @@ class GameCollectionButton extends StatefulWidget {
   _GameCollectionButtonState createState() => _GameCollectionButtonState();
 }
 
-class _GameCollectionButtonState extends State<GameCollectionButton>
-    with SnackBarNotifierMixin {
+class _GameCollectionButtonState extends State<GameCollectionButton> {
   bool _isLoading = false;
   GameCollectionItem? _collectionStatus; // 本地状态，用于按钮显示
 
@@ -158,14 +155,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
         _isLoading = true;
       });
 
-      GameCollectionItem? finalNewStatus = oldStatus; // 默认为旧状态
-      Map<String, int> countDeltas = {
-        'want': 0,
-        'playing': 0,
-        'played': 0,
-        'total': 0
-      }; // 默认增量为0
-
+      // *** 这里是修改的核心 ***
       try {
         if (action == 'set') {
           final status = result['status'] as String;
@@ -173,123 +163,58 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
           final review = result['review'] as String?;
           final rating = result['rating'] as double?;
 
-          // 调用 Service
-          final (item, returnedStatus) = await widget.gameCollectionService
+          // 调用 Service，现在接收三个返回值
+          final (newItem, returnedStatus, updatedGame) = await widget
+              .gameCollectionService
               .setGameCollection(widget.game.id, status, oldStatus?.status,
                   notes: notes, review: review, rating: rating);
 
-          if (item != null && returnedStatus == status) {
-            finalNewStatus = item; // API 调用成功，记录新状态
-            // *** 计算增量 ***
-            countDeltas =
-                _calculateCountDeltas(oldStatus?.status, finalNewStatus.status);
-
-            showSnackBar(message: '收藏状态已更新', type: SnackBarType.success);
+          if (newItem != null && returnedStatus == status) {
+            AppSnackBar.showSuccess('收藏状态已更新');
+            // *** 直接用后端返回的数据更新状态和调用回调 ***
+            if (mounted) {
+              setState(() {
+                _collectionStatus = newItem;
+              });
+              // 把后端给的最新 game 对象和 collection 对象传上去
+              widget.onCollectionChanged?.call(newItem, updatedGame);
+            }
           } else {
-            showSnackBar(message: "更新失败", type: SnackBarType.error);
-            throw Exception("更新收藏失败");
+            AppSnackBar.showError("操作失败");
           }
         } else if (action == 'remove') {
-          // 调用 Service
-          final success = await widget.gameCollectionService
+          // 调用 Service，现在接收两个返回值
+          final (success, updatedGame) = await widget.gameCollectionService
               .removeGameCollection(widget.game.id);
+
           if (success) {
-            finalNewStatus = null; // API 调用成功，新状态为 null
-            // *** 计算增量 ***
-            countDeltas = _calculateCountDeltas(oldStatus?.status, null);
-            showSnackBar(message: '已从收藏中移除', type: SnackBarType.success);
+            AppSnackBar.showSuccess('已从收藏中移除');
+            if (mounted) {
+              setState(() {
+                _collectionStatus = null;
+              });
+              // 移除后 collection 为 null，同样把后端给的 game 对象传上去
+              widget.onCollectionChanged?.call(null, updatedGame);
+            }
           } else {
-            showSnackBar(message: "移除收藏失败", type: SnackBarType.error);
-            throw Exception("移除收藏失败");
+            AppSnackBar.showError("操作失败");
           }
         }
-
-        // *** 操作成功后 ***
-        if (mounted) {
-          // 1. 更新按钮自身的显示状态
-          setState(() {
-            _collectionStatus = finalNewStatus;
-          });
-
-          // 2. 调用回调，传递包含新状态和增量的结果对象给父组件
-          final changeResult = CollectionChangeResult(
-              newStatus: finalNewStatus, countDeltas: countDeltas);
-          widget.onCollectionChanged?.call(changeResult); // <--- 传递结果对象
-        }
       } catch (e) {
-        // 统一处理 Service 调用失败或解析失败的异常
-        // print(
-        //     'GameCollectionButton (${widget.game.id}): Operation error in dialog handler: $e');
-        showSnackBar(
-            message: '操作失败: ${e.toString().split(':').last.trim()}',
-            type: SnackBarType.error);
+        AppSnackBar.showError("操作失败, ${e.toString()}");
       } finally {
-        // *** 无论成功失败，结束加载状态 ***
         if (mounted) {
           setState(() {
             _isLoading = false;
           });
         }
       }
-    } else {}
-  }
-
-  /// 计算收藏状态变化导致的计数增量
-  Map<String, int> _calculateCountDeltas(
-      String? oldStatusString, String? newStatusString) {
-    Map<String, int> deltas = {
-      'want': 0,
-      'playing': 0,
-      'played': 0,
-      'total': 0
-    };
-
-    bool hadStatus = oldStatusString != null;
-    bool hasStatus = newStatusString != null;
-
-    // 1. 处理旧状态的减少
-    if (hadStatus) {
-      if (oldStatusString == GameCollectionStatus.wantToPlay) {
-        deltas['want'] = -1;
-      }
-      if (oldStatusString == GameCollectionStatus.playing) {
-        deltas['playing'] = -1;
-      }
-      if (oldStatusString == GameCollectionStatus.played) deltas['played'] = -1;
     }
-
-    // 2. 处理新状态的增加
-    if (hasStatus) {
-      if (newStatusString == GameCollectionStatus.wantToPlay) {
-        deltas['want'] = (deltas['want'] ?? 0) + 1;
-      }
-      if (newStatusString == GameCollectionStatus.playing) {
-        deltas['playing'] = (deltas['playing'] ?? 0) + 1;
-      }
-      if (newStatusString == GameCollectionStatus.played) {
-        deltas['played'] = (deltas['played'] ?? 0) + 1;
-      }
-    }
-
-    // 3. 处理总数变化
-    if (hadStatus && !hasStatus) {
-      // 从有状态到无状态（移除）
-      deltas['total'] = -1;
-    } else if (!hadStatus && hasStatus) {
-      // 从无状态到有状态（新增）
-      deltas['total'] = 1;
-    } else {
-      // 状态变化 (want -> playing) 或无变化
-      deltas['total'] = 0;
-    }
-
-    return deltas;
   }
 
   // 构建按钮 UI 的主方法 (build)
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     // 检查本地状态 _collectionStatus 是否为 null 来判断是否已收藏
     final bool hasStatus = _collectionStatus != null;
     final ThemeData theme = Theme.of(context);
@@ -313,7 +238,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
-            ? LoadingWidget.inline(size: 12)
+            ? const LoadingWidget(size: 18)
             : Icon(Icons.add_circle_outline, color: theme.primaryColor),
         tooltip: _isLoading ? '处理中...' : '添加收藏',
         onPressed: _isLoading ? null : _showCollectionDialog,
@@ -321,7 +246,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     } else {
       return ElevatedButton.icon(
         icon: _isLoading
-            ? LoadingWidget.inline(size: 12)
+            ? const LoadingWidget(size: 18)
             : Icon(Icons.add_circle_outline, color: Colors.white, size: 18),
         label: Text(_isLoading ? '处理中...' : '添加收藏'),
         style: ElevatedButton.styleFrom(
@@ -345,7 +270,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     if (widget.compact) {
       return IconButton(
         icon: _isLoading
-            ? LoadingWidget.inline(size: 12, message: "正在加载")
+            ? const LoadingWidget(size: 18, message: "正在加载")
             : Icon(statusTheme.icon, color: statusTheme.textColor),
         tooltip: _isLoading ? '处理中...' : statusTheme.text,
         onPressed: _isLoading ? null : _showCollectionDialog,
@@ -353,7 +278,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton>
     } else {
       return OutlinedButton.icon(
         icon: _isLoading
-            ? LoadingWidget.inline(size: 12, message: "正在加载")
+            ? const LoadingWidget(size: 18, message: "正在加载")
             : Icon(statusTheme.icon, size: 18),
         label: Text(_isLoading ? '处理中...' : statusTheme.text),
         style: OutlinedButton.styleFrom(

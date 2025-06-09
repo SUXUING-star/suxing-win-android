@@ -2,26 +2,31 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'dart:async';
 
 // Services
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class SearchGameScreen extends StatefulWidget {
   final GameService gameService;
   final UserService userService;
+  final WindowStateProvider windowStateProvider;
   const SearchGameScreen({
     super.key,
     required this.gameService,
     required this.userService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -288,7 +293,15 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   Widget _buildBody() {
     if (_isSearching) {
       // 首次加载或刷新时
-      return LoadingWidget.fullScreen(message: '正在搜索游戏...');
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "正在搜索...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_error != null &&
@@ -403,44 +416,48 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         return true;
       },
       // 使用封装好的 AnimatedListView
-      child: AnimatedListView<Object>(
-        items: displayItems,
-        padding: const EdgeInsets.all(8.0),
-        itemBuilder: (context, index, item) {
-          // 如果项目是游戏
-          if (item is Game) {
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: CommonGameCard(
-                game: item,
-                isGridItem: false,
-                showTags: true,
-                maxTags: 3,
-              ),
+      child: LazyLayoutBuilder(
+          windowStateProvider: widget.windowStateProvider,
+          builder: (context, constraints) {
+            return AnimatedListView<Object>(
+              items: displayItems,
+              padding: const EdgeInsets.all(8.0),
+              itemBuilder: (context, index, item) {
+                // 如果项目是游戏
+                if (item is Game) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 12.0),
+                    child: CommonGameCard(
+                      game: item,
+                      isGridItem: false,
+                      showTags: true,
+                      maxTags: 3,
+                    ),
+                  );
+                }
+
+                // 如果项目是加载指示器的占位符
+                if (item is _LoadingIndicatorPlaceholder) {
+                  if (_isLoadingMore) {
+                    return const Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      child: LoadingWidget(message: "加载中..."),
+                    );
+                  }
+                  if (_error != null && _searchResults!.games.isNotEmpty) {
+                    return Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text(_error!,
+                          style: const TextStyle(color: Colors.red),
+                          textAlign: TextAlign.center),
+                    );
+                  }
+                }
+
+                return const SizedBox.shrink();
+              },
             );
-          }
-
-          // 如果项目是加载指示器的占位符
-          if (item is _LoadingIndicatorPlaceholder) {
-            if (_isLoadingMore) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: LoadingWidget.inline(message: "加载中..."),
-              );
-            }
-            if (_error != null && _searchResults!.games.isNotEmpty) {
-              return Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(_error!,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center),
-              );
-            }
-          }
-
-          return const SizedBox.shrink();
-        },
-      ),
+          }),
     );
   }
 }

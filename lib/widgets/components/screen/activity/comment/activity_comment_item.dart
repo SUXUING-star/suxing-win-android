@@ -96,7 +96,7 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
           _comment.isLiked = originalLikedState;
           _comment.likesCount = originalLikesCount;
         });
-        AppSnackBar.showError(context, '操作失败');
+        AppSnackBar.showError("操作失败,${e.toString()}");
       }
     }
   }

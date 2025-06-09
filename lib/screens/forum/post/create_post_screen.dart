@@ -5,10 +5,10 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/widgets/components/form/postform/post_form.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -25,8 +25,7 @@ class CreatePostScreen extends StatefulWidget {
   _CreatePostScreenState createState() => _CreatePostScreenState();
 }
 
-class _CreatePostScreenState extends State<CreatePostScreen>
-    with SnackBarNotifierMixin {
+class _CreatePostScreenState extends State<CreatePostScreen> {
   final List<PostTag> _availableTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _hasInitializedDependencies = false;
@@ -44,11 +43,11 @@ class _CreatePostScreenState extends State<CreatePostScreen>
       setState(() => _isSubmitting = true);
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
       await widget.postService.createPost(data.title, data.content, postTags);
-      showSnackBar(message: "编辑成功", type: SnackBarType.success);
+      AppSnackBar.showSuccess("编辑成功");
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {
-      showSnackBar(message: '编辑失败: ${e.toString()}', type: SnackBarType.error);
+      AppSnackBar.showError('编辑失败: ${e.toString()}');
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -56,8 +55,6 @@ class _CreatePostScreenState extends State<CreatePostScreen>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
-
     return StreamBuilder<User?>(
       stream: widget.authProvider.currentUserStream,
       initialData: widget.authProvider.currentUser,

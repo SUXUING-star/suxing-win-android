@@ -15,6 +15,11 @@ class GameTagList extends StatelessWidget {
   final int maxTags; // 最大显示标签数量
   final bool isScrollable; // 是否可水平滚动
 
+  final bool isCompact;
+
+  final double tagSpacing;
+  final double tagRunSpacing;
+
   /// 构造函数。
   ///
   /// [tags]：标签列表。
@@ -24,8 +29,10 @@ class GameTagList extends StatelessWidget {
     super.key,
     required this.tags,
     required this.maxTags,
+    this.isCompact = false,
     this.isScrollable = false,
-  });
+  })  : tagSpacing = isCompact ? 2.0 : 4.0,
+        tagRunSpacing = isCompact ? 2.0 : 4.0;
 
   /// 构建游戏标签列表。
   ///
@@ -44,8 +51,8 @@ class GameTagList extends StatelessWidget {
     } else {
       // 不可滚动时
       return Wrap(
-        spacing: 4, // 水平间距
-        runSpacing: 4, // 垂直间距
+        spacing: tagSpacing, // 水平间距
+        runSpacing: tagRunSpacing, // 垂直间距
         children: tagWidgets, // Wrap 布局
       );
     }

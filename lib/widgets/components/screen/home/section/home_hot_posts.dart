@@ -16,6 +16,7 @@ class HomeHotPosts extends StatelessWidget {
   final User? currentUser;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final double screenWidth;
   final bool isLoading;
   final String? errorMessage;
   final VoidCallback? onRetry;
@@ -27,6 +28,7 @@ class HomeHotPosts extends StatelessWidget {
     required this.infoProvider,
     required this.followService,
     required this.isLoading,
+    required this.screenWidth,
     this.errorMessage,
     this.onRetry,
   });
@@ -82,7 +84,7 @@ class HomeHotPosts extends StatelessWidget {
     if (isLoading && posts == null) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: LoadingWidget.inline(message: '加载热门帖子...', size: 24),
+        child: const LoadingWidget(message: '加载热门帖子...', size: 24),
       );
     }
 
@@ -139,7 +141,7 @@ class HomeHotPosts extends StatelessWidget {
           Positioned.fill(
               child: Container(
             color: Colors.white.withSafeOpacity(0.5),
-            child: Center(child: LoadingWidget.inline(size: 30)),
+            child: const LoadingWidget(size: 30),
           )),
       ],
     );
@@ -152,8 +154,8 @@ class HomeHotPosts extends StatelessWidget {
     return BasePostCard(
       followService: followService,
       infoProvider: infoProvider,
+      screenWidth: screenWidth,
       post: post,
-      isDesktopLayout: false,
       currentUser: currentUser,
     );
   }

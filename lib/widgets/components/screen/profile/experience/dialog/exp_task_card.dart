@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/experience/dialog/exp_task_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/experience/models/task_style.dart';
+import 'package:suxingchahui/models/user/task_style.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';

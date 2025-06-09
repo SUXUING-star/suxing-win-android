@@ -12,12 +12,15 @@ import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_posts.dart'; // 导入热门帖子组件
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
@@ -37,6 +40,8 @@ class HomeScreen extends StatefulWidget {
   final UserFollowService followService; // 用户关注服务
   final UserInfoProvider infoProvider; // 用户信息 Provider
 
+  final WindowStateProvider windowStateProvider;
+
   /// 构造函数。
   ///
   /// [authProvider]：认证 Provider。
@@ -51,6 +56,7 @@ class HomeScreen extends StatefulWidget {
     required this.postService,
     required this.followService,
     required this.infoProvider,
+    required this.windowStateProvider,
   });
 
   /// 创建状态。
@@ -111,6 +117,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   bool _hasInitializedDependencies = false; // 依赖是否已初始化标记
   String? _currentUserId; // 当前用户ID
 
+  late double _screenWidth;
+
   @override
   void initState() {
     super.initState();
@@ -126,6 +134,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
+      _screenWidth = DeviceUtils.getScreenWidth(context);
       _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
@@ -133,6 +142,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
+    setState(() {
+      _screenWidth = DeviceUtils.getScreenWidth(context);
+    });
+
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
       // 用户ID变化时
@@ -159,6 +172,9 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (!mounted) return; // 组件未挂载时返回
 
     if (state == AppLifecycleState.resumed) {
+      setState(() {
+        _screenWidth = DeviceUtils.getScreenWidth(context);
+      });
       // 应用从后台恢复时
       if (widget.authProvider.currentUserId != _currentUserId) {
         // 用户ID变化时
@@ -261,8 +277,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         final remainingSeconds = (_minHomeScreenRefreshInterval.inSeconds -
             now.difference(_lastHomeScreenRefreshAttemptTime!).inSeconds);
         if (mounted) {
-          AppSnackBar.showInfo(
-            context,
+          AppSnackBar.showWarning(
             '刷新太频繁啦，请 $remainingSeconds 秒后再试',
             duration: const Duration(seconds: 2),
           );
@@ -542,7 +557,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
 
     final int totalPages = HomeHotGames.getTotalPages(
-        HomeHotGames.getCardsPerPage(context), _hotGamesData); // 获取总页数
+        HomeHotGames.getCardsPerPage(
+          context,
+          _screenWidth,
+        ),
+        _hotGamesData); // 获取总页数
 
     if (totalPages <= 1) {
       // 总页数小于等于 1 时停止计时器
@@ -562,8 +581,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
 
-      final int currentCardsPerPage =
-          HomeHotGames.getCardsPerPage(context); // 当前每页卡片数
+      final int currentCardsPerPage = HomeHotGames.getCardsPerPage(
+        context,
+        _screenWidth,
+      ); // 当前每页卡片数
       final int currentActualTotalPages = HomeHotGames.getTotalPages(
           currentCardsPerPage, _hotGamesData); // 当前实际总页数
 
@@ -627,7 +648,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     if (_isVisible && _hotGamesData != null && _hotGamesData!.isNotEmpty) {
       // 页面可见且有数据时
       final int totalPages = HomeHotGames.getTotalPages(
-          HomeHotGames.getCardsPerPage(context), _hotGamesData); // 获取总页数
+          HomeHotGames.getCardsPerPage(
+            context,
+            _screenWidth,
+          ),
+          _hotGamesData); // 获取总页数
       if (totalPages > 1) {
         // 总页数大于 1 时启动计时器
         _startHotGamesAutoScrollTimer();
@@ -648,10 +673,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// 构建 Scaffold 内容。
   Widget _buildScaffoldContent() {
     if (!_isOverallInitialized &&
-        (_isHotGamesLoading || _isLatestGamesLoading || _isHotPostsLoading)) {
+        (_isHotGamesLoading ||
+            _isLatestGamesLoading ||
+            _isHotPostsLoading ||
+            !_hasInitializedDependencies)) {
       // 首次加载时显示骨架屏或加载动画
       return Scaffold(
-        body: LoadingWidget.fullScreen(message: "少女祈祷中..."), // 全屏加载组件
+        body: const FadeInItem(
+          // 全屏加载组件
+          child: LoadingWidget(
+            isOverlay: true,
+            message: "少女祈祷中...",
+            overlayOpacity: 0.4,
+            size: 36,
+          ),
+        ),
       );
     }
 
@@ -698,35 +734,21 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               FadeInSlideUpItemCanPlay(
                 play: currentPlaySectionEntryAnimation, // 播放动画
                 delay: initialDelay + stagger * sectionIndex++, // 延迟
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16.0), // 水平内边距
-                  child: HomeHotGames(
-                    key: ValueKey('hot_games_$_hotGamesKeyCounter'), // 唯一键
-                    games: _hotGamesData, // 游戏数据
-                    isLoading: _isHotGamesLoading, // 是否加载中
-                    errorMessage: _hotGamesError, // 错误消息
-                    onRetry: () => _fetchSpecificData(HomeDataType.hotGames,
-                        isTriggeredByRefresh: true), // 重试回调
-                    pageController: _hotGamesPageController, // 页面控制器
-                    currentPage: _currentHotGamesPage, // 当前页码
-                    onPageChanged: _onHotGamesPageChanged, // 页面改变回调
-                    playInitialAnimation:
-                        currentPlaySectionEntryAnimation && // 播放初始动画
-                            _hotGamesData != null &&
-                            _hotGamesData!.isNotEmpty,
-                    onUserInteraction: (isInteracting) {
-                      // 用户交互回调
-                      if (!mounted) return;
-                      _isUserInteractingWithHotGamesPager =
-                          isInteracting; // 更新用户交互状态
-                      if (isInteracting) {
-                        _stopHotGamesAutoScrollTimer(); // 停止自动滚动计时器
-                      }
-                    },
-                  ),
+                child: LazyLayoutBuilder(
+                  windowStateProvider: widget.windowStateProvider,
+                  builder: (context, constraints) {
+                    _screenWidth = constraints.maxWidth;
+                    if (!context.mounted) return const SizedBox.shrink();
+                    return Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16.0), // 水平内边距
+                      child: _buildHotGamesSection(
+                          currentPlaySectionEntryAnimation),
+                    );
+                  },
                 ),
               ),
+
               const SizedBox(height: 16), // 间距
 
               FadeInSlideUpItemCanPlay(
@@ -736,7 +758,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 16.0), // 水平内边距
                   child: _buildPostsAndGamesSection(
-                      context, currentPlaySectionEntryAnimation), // 帖子和游戏区域
+                      currentPlaySectionEntryAnimation), // 帖子和游戏区域
                 ),
               ),
               const SizedBox(height: 16), // 间距
@@ -747,17 +769,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     );
   }
 
+  Widget _buildHotGamesSection(
+    bool currentPlaySectionEntryAnimation,
+  ) {
+    return HomeHotGames(
+      key: ValueKey('hot_games_$_hotGamesKeyCounter'), // 唯一键
+      games: _hotGamesData, // 游戏数据
+      isLoading: _isHotGamesLoading, // 是否加载中
+      screenWidth: _screenWidth,
+      errorMessage: _hotGamesError, // 错误消息
+      onRetry: () => _fetchSpecificData(HomeDataType.hotGames,
+          isTriggeredByRefresh: true), // 重试回调
+      pageController: _hotGamesPageController, // 页面控制器
+      currentPage: _currentHotGamesPage, // 当前页码
+      onPageChanged: _onHotGamesPageChanged, // 页面改变回调
+      playInitialAnimation: currentPlaySectionEntryAnimation && // 播放初始动画
+          _hotGamesData != null &&
+          _hotGamesData!.isNotEmpty,
+      onUserInteraction: (isInteracting) {
+        // 用户交互回调
+        if (!mounted) return;
+        _isUserInteractingWithHotGamesPager = isInteracting; // 更新用户交互状态
+        if (isInteracting) {
+          _stopHotGamesAutoScrollTimer(); // 停止自动滚动计时器
+        }
+      },
+    );
+  }
+
   /// 构建帖子和游戏区域。
   ///
   /// [context]：Build 上下文。
   /// [playAnimations]：是否播放动画。
-  Widget _buildPostsAndGamesSection(BuildContext context, bool playAnimations) {
-    final bool isLarge = DeviceUtils.isLargeScreen(context); // 判断是否为大屏幕
-
+  Widget _buildPostsAndGamesSection(bool playAnimations) {
     final Widget hotPostsWidget = HomeHotPosts(
       key: ValueKey('hot_posts_$_hotPostsKeyCounter'), // 唯一键
       currentUser: widget.authProvider.currentUser, // 当前用户
       followService: widget.followService, // 关注服务
+      screenWidth: _screenWidth,
       infoProvider: widget.infoProvider, // 用户信息 Provider
       posts: _hotPostsData, // 帖子数据
       isLoading: _isHotPostsLoading, // 是否加载中
@@ -775,7 +824,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           isTriggeredByRefresh: true), // 重试回调
     );
 
-    if (isLarge) {
+    if (DeviceUtils.isDesktopInThisWidth(_screenWidth)) {
       // 大屏幕时使用 Row 布局
       return Row(
         crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐

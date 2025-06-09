@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -18,7 +17,7 @@ class GameCollectionSection extends StatelessWidget {
   final User? currentUser;
   final GameCollectionItem? initialCollectionStatus;
   final bool isPreviewMode;
-  final Function(CollectionChangeResult)? onCollectionChanged;
+  final Function(GameCollectionItem?, Game?)? onCollectionChanged;
 
   const GameCollectionSection({
     super.key,

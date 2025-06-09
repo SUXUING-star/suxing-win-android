@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'common_game_list_screen.dart';
 
 class HotGamesScreen extends StatefulWidget {
   final GameService gameService;
   final AuthProvider authProvider;
+  final WindowStateProvider windowStateProvider;
   const HotGamesScreen({
     super.key,
     required this.authProvider,
     required this.gameService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -93,6 +96,7 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
             isLoading: _isLoading,
             error: _error,
             onRefreshTriggered: _handleRefresh,
+            windowStateProvider: widget.windowStateProvider,
             // 传递刷新回调
             onDeleteGameAction: null,
             emptyStateMessage: '暂无热门游戏',

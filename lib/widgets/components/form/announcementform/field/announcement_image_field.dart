@@ -7,7 +7,6 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
-
 class AnnouncementImageField extends StatelessWidget {
   final dynamic imageSource;
   final ValueChanged<dynamic> onImageSourceChanged;
@@ -34,7 +33,7 @@ class AnnouncementImageField extends StatelessWidget {
   void _clearImage(BuildContext context) {
     if (imageSource != null) {
       onImageSourceChanged(null); // 回调 null 清除图片源
-      AppSnackBar.showSuccess(context, '图片已清除'); // 反馈
+      AppSnackBar.showSuccess('图片已清除'); // 反馈
     }
   }
 

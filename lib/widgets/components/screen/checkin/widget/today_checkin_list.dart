@@ -143,7 +143,7 @@ class _TodayCheckInListState extends State<TodayCheckInList> {
       }
       return SizedBox(
         height: loadingDisplayHeight,
-        child: LoadingWidget.inline(), // 使用内联 Loading
+        child: const LoadingWidget(), // 使用内联 Loading
       );
     }
 

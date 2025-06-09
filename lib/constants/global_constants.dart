@@ -17,7 +17,8 @@ class GlobalConstants {
       'https://space.bilibili.com/32892805?spm_id_from=333.1007.0.0'; // Bilibili 空间链接
 
   static const String groupNumber = '829701655'; // QQ 群号
-  static const String qrCodeAssetPath = 'assets/images/qq.png'; // QQ 群二维码图片资源路径
+  static const String qrCodeAssetPath =
+      'assets/images/qq/qq.png'; // QQ 群二维码图片资源路径
   static const String appName = '宿星茶会'; // 应用名称
   static const String appNameAndroid = '$appName（安卓版）'; // 安卓版应用名称
   static const String appNameWindows = '$appName（Windows）'; // Windows 版应用名称
@@ -36,25 +37,25 @@ class GlobalConstants {
 
   /// 默认背景图片列表。
   static const List<String> defaultBackgroundImages = [
-    'assets/images/bg-1.jpg',
-    'assets/images/bg-2.jpg',
+    'assets/images/background/bg-1.jpg',
+    'assets/images/background/bg-2.jpg',
   ];
 
   /// 默认旋转后的背景图片列表。
   static const List<String> defaultBackgroundImagesRotated = [
-    'assets/images/bg-1rotate.jpg',
-    'assets/images/bg-2rotate.jpg',
+    'assets/images/background/bg-1rotate.jpg',
+    'assets/images/background/bg-2rotate.jpg',
   ];
 
   static const int defaultParticleCount = 30; // 默认粒子数量
 
   static const String initScreenGifFirst =
-      'assets/images/cappo.gif'; // 初始化屏幕 GIF 1
+      'assets/images/menu/cappo.gif'; // 初始化屏幕 GIF 1
   static const String initScreenGifSecond =
-      'assets/images/cappo1.gif'; // 初始化屏幕 GIF 2
+      'assets/images/menu/cappo1.gif'; // 初始化屏幕 GIF 2
 
   static const String defaultBannerImage =
-      'assets/images/kaev.jpg'; // 默认 Banner 图片
+      'assets/images/banner/banner_image.png'; // 默认 Banner 图片
 
   /// 默认导航页面颜色列表。
   static const List<Color> defaultNavPageColors = [

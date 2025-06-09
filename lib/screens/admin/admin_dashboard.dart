@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -28,10 +29,12 @@ class AdminDashboard extends StatefulWidget {
   final InputStateService inputStateService;
   final MaintenanceService maintenanceService;
   final AnnouncementService announcementService;
+  final WindowStateProvider windowStateProvider;
   final RateLimitedFileUpload fileUpload;
   const AdminDashboard({
     super.key,
     required this.authProvider,
+    required this.windowStateProvider,
     required this.gameService,
     required this.userService,
     required this.inputStateService,
@@ -85,6 +88,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
     final commonPages = [
       GameManagement(
         currentUser: currentUser,
+        windowStateProvider: widget.windowStateProvider,
         gameService: widget.gameService,
         inputStateService: widget.inputStateService,
       ),

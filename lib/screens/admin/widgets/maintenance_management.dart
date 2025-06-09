@@ -4,8 +4,8 @@ import 'package:intl/intl.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class MaintenanceManagement extends StatefulWidget {
   final MaintenanceService maintenanceService;
@@ -20,8 +20,7 @@ class MaintenanceManagement extends StatefulWidget {
   State<MaintenanceManagement> createState() => _MaintenanceManagementState();
 }
 
-class _MaintenanceManagementState extends State<MaintenanceManagement>
-    with SnackBarNotifierMixin {
+class _MaintenanceManagementState extends State<MaintenanceManagement> {
   final _formKey = GlobalKey<FormState>();
   bool _isActive = false;
   bool _allowLogin = false;
@@ -112,14 +111,12 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
       );
 
       if (success) {
-        showSnackBar(
-            message: _isActive ? '系统维护模式已开启' : '系统维护模式已关闭',
-            type: SnackBarType.success);
+        AppSnackBar.showSuccess(_isActive ? '系统维护模式已开启' : '系统维护模式已关闭');
       } else {
-        showSnackBar(message: '设置维护模式失败', type: SnackBarType.error);
+        AppSnackBar.showError('设置维护模式失败');
       }
     } catch (e) {
-      showSnackBar(message: '发生错误: $e', type: SnackBarType.error);
+      AppSnackBar.showError('发生错误: $e');
     } finally {
       setState(() {
         _isLoading = false;
@@ -167,7 +164,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
             if (newDateTime.isAfter(_startTime)) {
               _endTime = newDateTime;
             } else {
-              showSnackBar(message: '结束时间必须晚于开始时间', type: SnackBarType.warning);
+              AppSnackBar.showWarning('结束时间必须晚于开始时间');
             }
           }
         });
@@ -177,7 +174,6 @@ class _MaintenanceManagementState extends State<MaintenanceManagement>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16.0),
       child: Form(

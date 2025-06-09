@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 导入功能文本按钮
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart'; // 导入 SnackBar 通知混入
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart'; // 导入应用文本类型
 import 'dart:async'; // 导入 Timer
@@ -55,8 +55,7 @@ class RegisterScreen extends StatefulWidget {
 /// `_RegisterScreenState` 类：`RegisterScreen` 的状态管理。
 ///
 /// 管理表单验证、输入状态、验证码发送、注册过程和计时器。
-class _RegisterScreenState extends State<RegisterScreen>
-    with SnackBarNotifierMixin {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>(); // 表单键
 
   static const String usernameSlotName = 'register_username'; // 用户名输入框槽名称
@@ -126,7 +125,7 @@ class _RegisterScreenState extends State<RegisterScreen>
 
     if (email.isEmpty || !email.contains('@')) {
       // 邮箱格式无效时显示警告
-      showSnackBar(message: '请输入有效的邮箱地址', type: SnackBarType.warning);
+      AppSnackBar.showWarning('请输入有效的邮箱地址');
       setState(() => _error = '请输入有效的邮箱地址'); // 设置内联错误
       return;
     }
@@ -145,13 +144,12 @@ class _RegisterScreenState extends State<RegisterScreen>
         _codeSent = true; // 标记验证码已发送
         _error = null; // 清空错误消息
       });
-      showSnackBar(
-          message: "验证码已发送至您的邮箱，请注意查收！", type: SnackBarType.success); // 显示成功提示
+      AppSnackBar.showSuccess("验证码已发送至您的邮箱，请注意查收！");
     } catch (e) {
       if (!mounted) return; // 组件未挂载时返回
       final errorMessage = '发送验证码失败：${e.toString()}'; // 错误消息
       setState(() => _error = errorMessage); // 设置错误消息
-      showSnackBar(message: errorMessage, type: SnackBarType.error); // 显示错误提示
+      AppSnackBar.showError(errorMessage);
     } finally {
       if (mounted) {
         // 确保加载状态重置
@@ -167,7 +165,7 @@ class _RegisterScreenState extends State<RegisterScreen>
     if (!_formKey.currentState!.validate()) return; // 表单验证失败时返回
     if (!_codeSent) {
       // 验证码未发送时显示警告
-      showSnackBar(message: '请先获取验证码', type: SnackBarType.warning);
+      AppSnackBar.showWarning('请先获取验证码');
       return;
     }
 
@@ -197,8 +195,7 @@ class _RegisterScreenState extends State<RegisterScreen>
         // 验证码无效时
         registrationError = '验证码错误或已过期'; // 错误消息
         setState(() => _error = registrationError); // 设置错误消息
-        showSnackBar(
-            message: registrationError, type: SnackBarType.error); // 显示错误提示
+        AppSnackBar.showError(registrationError);
         setState(() => _isRegistering = false); // 结束注册状态
         return;
       }
@@ -229,8 +226,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       widget.inputStateService.clearText(confirmPasswordSlotName); // 清空确认密码输入
       widget.inputStateService.clearText(verificationCodeSlotName); // 清空验证码输入
 
-      showSnackBar(
-          message: "注册成功，即将跳转...", type: SnackBarType.success); // 显示成功提示
+      AppSnackBar.showSuccess("注册成功，即将跳转...");
       await Future.delayed(const Duration(milliseconds: 1000)); // 延迟
       if (!mounted) return; // 组件未挂载时返回
       NavigationUtils.pop(context); // 弹出当前路由
@@ -240,8 +236,7 @@ class _RegisterScreenState extends State<RegisterScreen>
       registrationError =
           (isCodeValid ? '注册失败：' : '验证码校验出错：') + e.toString(); // 错误消息
       setState(() => _error = registrationError); // 设置错误消息
-      showSnackBar(
-          message: registrationError, type: SnackBarType.error); // 显示错误提示
+      AppSnackBar.showError(registrationError);
     } finally {
       if (mounted) {
         // 确保加载状态重置
@@ -437,12 +432,7 @@ class _RegisterScreenState extends State<RegisterScreen>
   /// 构建注册屏幕的主体 UI。
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context); // 构建 SnackBar
-
     final bool isLoading = _isSendingCode || _isRegistering; // 是否正在加载
-    final String loadingMessage = _isSendingCode
-        ? '正在发送验证码...'
-        : (_isRegistering ? '正在注册...' : ''); // 加载消息
 
     final bool isRegisterButtonEnabled = !isLoading && _codeSent; // 注册按钮是否启用
     final bool isBackButtonEnabled = !isLoading; // 返回按钮是否启用
@@ -465,7 +455,19 @@ class _RegisterScreenState extends State<RegisterScreen>
       body: Stack(
         children: [
           if (isLoading)
-            LoadingWidget.fullScreen(message: loadingMessage), // 显示全屏加载
+            _isSendingCode
+                ? const LoadingWidget(
+                    isOverlay: true,
+                    message: '正在发送验证码...',
+                    overlayOpacity: 0.4,
+                    size: 36,
+                  )
+                : const LoadingWidget(
+                    isOverlay: true,
+                    overlayOpacity: 0.4,
+                    size: 36,
+                  ), // 加载消息
+
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 500), // 约束最大宽度

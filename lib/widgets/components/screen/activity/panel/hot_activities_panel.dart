@@ -102,25 +102,19 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     final screenWidth = MediaQuery.of(context).size.width;
     final panelWidth = screenWidth < 600 ? screenWidth * 0.9 : 300.0;
 
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 默认完整面板
-        return HotActivitiesFullPanel(
-          userInfoProvider: widget.userInfoProvider,
-          userFollowService: widget.followService,
-          currentUser: widget.currentUser,
-          hotActivities: _hotActivities,
-          activityStats: _activityStats,
-          isLoading: _isLoading,
-          hasError: _hasError,
-          errorMessage: _errorMessage,
-          onRefresh: _loadData,
-          getActivityTypeName: ActivityTypeUtils.getActivityTypeText,
-          getActivityTypeColor:
-              ActivityTypeUtils.getActivityTypeBackgroundColor,
-          panelWidth: panelWidth,
-        );
-      },
+    return HotActivitiesFullPanel(
+      userInfoProvider: widget.userInfoProvider,
+      userFollowService: widget.followService,
+      currentUser: widget.currentUser,
+      hotActivities: _hotActivities,
+      activityStats: _activityStats,
+      isLoading: _isLoading,
+      hasError: _hasError,
+      errorMessage: _errorMessage,
+      onRefresh: _loadData,
+      getActivityTypeName: ActivityTypeUtils.getActivityTypeText,
+      getActivityTypeColor: ActivityTypeUtils.getActivityTypeBackgroundColor,
+      panelWidth: panelWidth,
     );
   }
 }

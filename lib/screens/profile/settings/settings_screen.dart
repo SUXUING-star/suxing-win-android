@@ -4,6 +4,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
@@ -63,11 +64,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
       await widget.postService.clearPostHistory();
 
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '浏览历史已清除');
+      AppSnackBar.showSuccess('浏览历史已清除');
     } catch (e) {
       //print("清除历史记录时出错: $e\n$s");
-      if (!mounted) return;
-      AppSnackBar.showError(context, '清除失败: ${e.toString()}');
+      AppSnackBar.showError('清除失败: ${e.toString()}');
     } finally {
       setState(() {
         _isLoading = false;
@@ -78,6 +78,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      );
+    }
     return Scaffold(
       appBar: const CustomAppBar(title: '设置'),
       body: Stack(
@@ -141,15 +152,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const Divider(height: 1),
             ],
           ),
-          if (_isLoading)
-            Container(
-              color: Colors.black.withSafeOpacity(0.5),
-              child: Center(
-                child: LoadingWidget.fullScreen(
-                  message: _loadingMessage,
-                ),
-              ),
-            ),
         ],
       ),
     );

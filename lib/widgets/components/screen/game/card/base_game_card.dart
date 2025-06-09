@@ -323,7 +323,11 @@ class BaseGameCard extends StatelessWidget {
         if (showTags && game.tags.isNotEmpty) // 显示标签
           Padding(
             padding: const EdgeInsets.only(top: 2.0, bottom: 4.0), // 顶部和底部内边距
-            child: GameTagList(tags: game.tags, maxTags: maxTags), // 游戏标签列表
+            child: GameTagList(
+              tags: game.tags,
+              maxTags: maxTags,
+              isCompact: false,
+            ), // 游戏标签列表
           ),
         GestureDetector(
           onTap: () {
@@ -333,9 +337,10 @@ class BaseGameCard extends StatelessWidget {
             }
           },
           child: GameStatsWidget(
-              game: game,
-              showCollectionStats: showCollectionStats,
-              isGrid: false), // 游戏统计组件
+            game: game,
+            showCollectionStats: showCollectionStats,
+            isGrid: false,
+          ), // 游戏统计组件
         ),
       ],
     );
@@ -345,32 +350,42 @@ class BaseGameCard extends StatelessWidget {
   ///
   /// [context]：Build 上下文。
   Widget _buildGridInfoSection(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
-      mainAxisAlignment: MainAxisAlignment.spaceBetween, // 垂直两端对齐
+    // 使用 Stack 布局，让内容和标签分层
+    return Stack(
       children: [
+        // 第一层：标题和摘要，作为基础内容
         Column(
           crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
           children: [
-            Text(game.title, // 游戏标题
-                style:
-                    const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis),
-            const SizedBox(height: 4), // 间距
-            Text(game.summary, // 游戏摘要
-                style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis),
+            Text(
+              game.title, // 游戏标题
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2), // 间距
+            Text(
+              game.summary, // 游戏摘要
+              style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+              // 为标签列表留出空间，这里限制摘要最多显示2行
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
           ],
         ),
-        if (showTags && game.tags.isNotEmpty) // 显示标签
-          Padding(
-            padding: const EdgeInsets.only(top: 0), // 顶部内边距
+
+        // 第二层：游戏标签，使用 Positioned 定位到底部
+        if (showTags && game.tags.isNotEmpty)
+          Positioned(
+            bottom: 0, // 紧贴底部
+            left: 0, // 紧贴左边
+            right: 0, // 紧贴右边
             child: GameTagList(
-                tags: game.tags,
-                maxTags: maxTags,
-                isScrollable: true), // 游戏标签列表
+              tags: game.tags,
+              maxTags: maxTags,
+              isScrollable: true,
+              isCompact: true,
+            ),
           ),
       ],
     );

@@ -6,15 +6,19 @@ import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/effects/checkin_particle_effect.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/layout/checkin_content.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
@@ -23,6 +27,7 @@ class CheckInScreen extends StatefulWidget {
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   final UserCheckInService checkInService;
+  final WindowStateProvider windowStateProvider;
 
   const CheckInScreen({
     super.key,
@@ -30,6 +35,7 @@ class CheckInScreen extends StatefulWidget {
     required this.infoProvider,
     required this.followService,
     required this.checkInService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -158,10 +164,10 @@ class _CheckInScreenState extends State<CheckInScreen>
         _showCheckInSuccess(result);
       }
     } catch (e) {
-      if (mounted) {
+
         AppSnackBar.showError(
-            context, '签到失败: ${e.toString().replaceAll('Exception: ', '')}');
-      }
+             '签到失败: ${e.toString()}');
+
     } finally {
       if (mounted) {
         setState(() => _checkInLoading = false);
@@ -243,28 +249,45 @@ class _CheckInScreenState extends State<CheckInScreen>
   }
 
   Widget _buildContentLayout() {
-    return CheckInContent(
-      infoProvider: widget.infoProvider,
-      checkInService: widget.checkInService,
-      followService: widget.followService,
-      checkInStatus: _checkInStatus!,
-      currentUser: _currentUser!,
-      monthlyData: _monthlyData,
-      selectedYear: _selectedYear,
-      selectedMonth: _selectedMonth,
-      isCheckInLoading: _checkInLoading,
-      hasCheckedToday: _checkInStatus!.checkedInToday,
-      animationController: _particleController,
-      onChangeMonth: _handleChangeMonth,
-      onCheckIn: _handleCheckIn,
-      missedDays: _missedDays,
-      consecutiveMissedDays: _consecutiveMissedDays,
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return CheckInLayout(
+          isDesktop: isDesktopLayout,
+          infoProvider: widget.infoProvider,
+          checkInService: widget.checkInService,
+          followService: widget.followService,
+          checkInStatus: _checkInStatus!,
+          currentUser: _currentUser!,
+          monthlyData: _monthlyData,
+          selectedYear: _selectedYear,
+          selectedMonth: _selectedMonth,
+          isCheckInLoading: _checkInLoading,
+          hasCheckedToday: _checkInStatus!.checkedInToday,
+          animationController: _particleController,
+          onChangeMonth: _handleChangeMonth,
+          onCheckIn: _handleCheckIn,
+          missedDays: _missedDays,
+          consecutiveMissedDays: _consecutiveMissedDays,
+        );
+      },
     );
+
   }
 
   Widget _buildMainSection() {
     if (_isLoading && (_checkInStatus == null || _monthlyData == null)) {
-      return LoadingWidget.fullScreen(message: '正在加载签到数据...');
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_errorMessage != null) {

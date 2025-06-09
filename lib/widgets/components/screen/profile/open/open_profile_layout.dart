@@ -26,9 +26,11 @@ class OpenProfileLayout extends StatelessWidget {
   final bool isGridView;
   final TabController tabController;
   final AuthProvider authProvider; // 传递 authProvider 用于 FollowUserButton
+  final double screenWidth;
   final UserFollowService followService; // 传递 followService
   final UserInfoProvider infoProvider;
   final VoidCallback onFollowChanged; // 关注状态变化后的回调
+  final bool isDesktop;
 
   const OpenProfileLayout({
     super.key,
@@ -41,23 +43,21 @@ class OpenProfileLayout extends StatelessWidget {
     required this.followService,
     required this.infoProvider,
     required this.onFollowChanged,
+    required this.screenWidth,
+    required this.isDesktop,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
     // 使用传入的 user?.id 或 targetUserId 作为 ValueKey 的一部分，确保用户切换时动画能正确执行
     final contentKey = ValueKey<String>('profile_layout_${targetUser.id}');
 
-    if (isDesktop) {
-      return _buildDesktopLayout(context, contentKey, isDesktop: isDesktop);
-    } else {
-      return _buildMobileLayout(context, contentKey, isDesktop: isDesktop);
-    }
+    return isDesktop
+        ? _buildDesktopLayout(context, contentKey)
+        : _buildMobileLayout(context, contentKey);
   }
 
-  Widget _buildDesktopLayout(BuildContext context, Key animationKey,
-      {required bool isDesktop}) {
+  Widget _buildDesktopLayout(BuildContext context, Key animationKey) {
     return Row(
       key: animationKey,
       children: [
@@ -69,7 +69,7 @@ class OpenProfileLayout extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  _buildUserHeader(context, isDesktop: isDesktop),
+                  _buildUserHeader(context),
                   const SizedBox(height: 16),
                   _buildUserStatistics(context),
                 ],
@@ -88,12 +88,14 @@ class OpenProfileLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, Key animationKey,
-      {required bool isDesktop}) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    Key animationKey,
+  ) {
     return Column(
       key: animationKey,
       children: [
-        _buildUserHeader(context, isDesktop: isDesktop),
+        _buildUserHeader(context),
         Expanded(
           child: _buildContentSection(
             context,
@@ -104,7 +106,7 @@ class OpenProfileLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildUserHeader(BuildContext context, {required bool isDesktop}) {
+  Widget _buildUserHeader(BuildContext context) {
     final double avatarRadius = isDesktop ? 50.0 : 38.0;
     final EdgeInsets cardMargin = isDesktop
         ? const EdgeInsets.all(12)
@@ -396,6 +398,7 @@ class OpenProfileLayout extends StatelessWidget {
           child: BasePostCard(
             post: post,
             followService: followService,
+            screenWidth: screenWidth,
             currentUser: authProvider.currentUser,
             infoProvider: infoProvider,
           ),

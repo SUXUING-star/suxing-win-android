@@ -5,6 +5,7 @@ import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/error/api_error_definitions.dart';
 import 'package:suxingchahui/services/error/api_exception.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -13,9 +14,9 @@ import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_de
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
@@ -39,6 +40,8 @@ class PostDetailScreen extends StatefulWidget {
   final InputStateService inputStateService;
   final SidebarProvider sidebarProvider;
   final PostListFilterProvider postListFilterProvider;
+  final WindowStateProvider windowStateProvider;
+
   const PostDetailScreen({
     super.key,
     required this.postId,
@@ -49,14 +52,14 @@ class PostDetailScreen extends StatefulWidget {
     required this.inputStateService,
     required this.sidebarProvider,
     required this.postListFilterProvider,
+    required this.windowStateProvider,
     this.needHistory = true,
   });
   @override
   _PostDetailScreenState createState() => _PostDetailScreenState();
 }
 
-class _PostDetailScreenState extends State<PostDetailScreen>
-    with SnackBarNotifierMixin {
+class _PostDetailScreenState extends State<PostDetailScreen> {
   Post? _post;
   String? _currentUserId;
   UserPostActions? _userActions;
@@ -244,7 +247,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       return;
     }
     if (!_checkCanEditOrDeletePost(_post!)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     CustomConfirmDialog.show(
@@ -264,9 +267,10 @@ class _PostDetailScreenState extends State<PostDetailScreen>
           if (_post != null) {
             await widget.postService.deletePost(_post!);
           }
+
           if (!mounted) return;
           _hasInteraction = true;
-          showSnackBar(message: '帖子已删除', type: SnackBarType.success);
+          AppSnackBar.showSuccess('帖子已删除');
           if (Navigator.canPop(this.context)) {
             // 使用 this.context
             Navigator.pop(this.context, _hasInteraction); // 使用 this.context
@@ -277,8 +281,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
                 widget.sidebarProvider, this.context); // 使用 this.context
           }
         } catch (e) {
-          if (!mounted) return;
-          showSnackBar(message: e.toString(), type: SnackBarType.error);
+          AppSnackBar.showError(" 删除失败,${e.toString()}");
           setState(() {
             _isLoading = false;
           });
@@ -295,7 +298,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       return;
     }
     if (!_checkCanEditOrDeletePost(_post!)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final result = await NavigationUtils.pushNamed(
@@ -318,7 +321,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       return;
     }
     if (!_checkCanLockPost()) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     setState(() {
@@ -327,12 +330,11 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     try {
       await widget.postService.togglePostLock(widget.postId);
       if (!mounted) return;
-      showSnackBar(message: '帖子状态已切换', type: SnackBarType.success);
+      AppSnackBar.showSuccess('帖子状态已切换');
       _hasInteraction = true;
       await _refreshPost(); // 刷新获取最新状态
     } catch (e) {
-      if (!mounted) return;
-      showSnackBar(message: e.toString(), type: SnackBarType.error);
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) {
         setState(() {
@@ -352,7 +354,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     }
     // 检查是否有置顶权限
     if (!widget.authProvider.isAdmin) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
 
@@ -372,13 +374,12 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       });
 
       // 显示成功消息
-      showSnackBar(message: '帖子置顶状态已切换', type: SnackBarType.success);
+      AppSnackBar.showSuccess('帖子置顶状态已切换');
       // 标记页面有改动
       _hasInteraction = true;
     } catch (e) {
-      if (!mounted) return;
       // 捕获 Service 层抛出的错误并显示
-      showSnackBar(message: e.toString(), type: SnackBarType.error);
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) {
         // 结束加载状态
@@ -408,14 +409,19 @@ class _PostDetailScreenState extends State<PostDetailScreen>
   // *** 构建界面 ***
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
     // --- 加载状态 ---
     if (_isLoading && _post == null) {
-      return Scaffold(
-        appBar: const CustomAppBar(title: '帖子详情'),
-        body: FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载帖子...')),
+      return const Scaffold(
+        appBar: CustomAppBar(title: '帖子详情'),
+        body: FadeInItem(
+          // 全屏加载组件
+          child: LoadingWidget(
+            isOverlay: true,
+            message: "少女正在祈祷中...",
+            overlayOpacity: 0.4,
+            size: 36,
+          ),
+        ), //
       );
     }
 
@@ -484,7 +490,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
       ),
       body: RefreshIndicator(
         onRefresh: _refreshPost,
-        child: _buildPostDetailLayout(isDesktop),
+        child: _buildPostDetailLayout(),
       ),
       floatingActionButton:
           _buildPostActionButtonsGroup(context, _post!), // FAB 依赖 _post 状态
@@ -492,23 +498,30 @@ class _PostDetailScreenState extends State<PostDetailScreen>
     );
   }
 
-  Widget _buildPostDetailLayout(bool isDesktop) {
+  Widget _buildPostDetailLayout() {
     final currentUserActions = _userActions ??
         UserPostActions.defaultActions(
             widget.postId, widget.authProvider.currentUserId ?? "");
-    return PostDetailLayout(
-      isDesktop: isDesktop,
-      authProvider: widget.authProvider,
-      inputStateService: widget.inputStateService,
-      post: _post!, // 传递 Post
-      userActions: currentUserActions,
-      postId: widget.postId,
-      onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
-      postService: widget.postService,
-      infoProvider: widget.infoProvider,
-      followService: widget.followService,
-      onTagTap: (context, newTagString) =>
-          _handleFilterTagSelect(context, newTagString),
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return PostDetailLayout(
+          isDesktop: isDesktop,
+          authProvider: widget.authProvider,
+          inputStateService: widget.inputStateService,
+          post: _post!, // 传递 Post
+          userActions: currentUserActions,
+          postId: widget.postId,
+          onPostUpdated: _handlePostUpdateFromInteraction, // 传递回调
+          postService: widget.postService,
+          infoProvider: widget.infoProvider,
+          followService: widget.followService,
+          onTagTap: (context, newTagString) =>
+              _handleFilterTagSelect(context, newTagString),
+        );
+      },
     );
   }
 
@@ -536,6 +549,7 @@ class _PostDetailScreenState extends State<PostDetailScreen>
         return Padding(
           padding: EdgeInsets.only(bottom: bottomPadding, right: 16.0),
           child: FloatingActionButtonGroup(
+            toggleButtonHeroTag: "post_detail_heroTags",
             spacing: 12.0,
             alignment: MainAxisAlignment.start,
             children: [

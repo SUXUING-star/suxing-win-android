@@ -11,15 +11,16 @@ import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dar
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class EditGameScreen extends StatefulWidget {
   final String gameId;
@@ -50,8 +51,7 @@ class EditGameScreen extends StatefulWidget {
   _EditGameScreenState createState() => _EditGameScreenState();
 }
 
-class _EditGameScreenState extends State<EditGameScreen>
-    with SnackBarNotifierMixin {
+class _EditGameScreenState extends State<EditGameScreen> {
   bool _hasInitializedDependencies = false;
   bool _isLoading = false;
   Game? _game; // _game 可以在加载完成后保存游戏数据
@@ -93,8 +93,7 @@ class _EditGameScreenState extends State<EditGameScreen>
       if (mounted) {
         setState(() => _isLoading = false);
       }
-      showSnackBar(
-          message: '加载帖子数据失败: ${e.toString()}', type: SnackBarType.error);
+      AppSnackBar.showError('加载帖子数据失败: ${e.toString()}');
     }
   }
 
@@ -102,7 +101,7 @@ class _EditGameScreenState extends State<EditGameScreen>
     if (!mounted) return;
 
     try {
-      await widget.gameService.updateGame( gameDataFromForm);
+      await widget.gameService.updateGame(gameDataFromForm);
 
       // API 调用成功
       if (!mounted) return;
@@ -115,12 +114,9 @@ class _EditGameScreenState extends State<EditGameScreen>
         if (mounted) Navigator.of(context).pop(true);
       }
     } catch (e) {
-      if (!mounted) return;
-      // API 调用失败，GameForm 内部通常会显示一个即时的错误 SnackBar
-      // _EditGameScreenState 可以在这里显示一个更具体的错误提示或执行其他错误处理
-      showSnackBar(
-          message: '操作失败: ${e.toString().replaceFirst("Exception: ", "")}',
-          type: SnackBarType.error);
+      AppSnackBar.showError(
+        '操作失败: ${e.toString()}',
+      );
     }
   }
 
@@ -237,11 +233,17 @@ class _EditGameScreenState extends State<EditGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context); // SnackBarNotifierMixin 的方法，放在这里确保 SnackBar 正常工作
-
     // 如果正在加载数据，显示全屏加载动画
     if (_isLoading) {
-      return LoadingWidget.fullScreen(message: "正在加载游戏数据...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     // 如果数据加载完成但 _game 为 null（例如，游戏ID不存在）

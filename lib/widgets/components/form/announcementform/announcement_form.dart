@@ -80,7 +80,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
-      AppSnackBar.showWarning(context, '请检查表单内容是否填写完整');
+      AppSnackBar.showWarning( '请检查表单内容是否填写完整');
       return;
     }
 
@@ -130,10 +130,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
     } catch (e) {
       // 捕获上传或处理过程中的错误
       uploadError = '处理公告时出错: $e';
-      // print(uploadError);
-      if (mounted) {
-        AppSnackBar.showError(context, uploadError);
-      }
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) {
         setState(() {
@@ -206,7 +203,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                             onEndDateChanged: (date) {
                               if (date.isBefore(_formData.startDate)) {
                                 AppSnackBar.showWarning(
-                                    context, '结束日期不能早于开始日期');
+                                    '结束日期不能早于开始日期');
                               } else {
                                 setState(() => _formData =
                                     _formData.copyWith(endDate: date));
@@ -336,7 +333,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                   () => _formData = _formData.copyWith(startDate: date)),
               onEndDateChanged: (date) {
                 if (date.isBefore(_formData.startDate)) {
-                  AppSnackBar.showWarning(context, '结束日期不能早于开始日期');
+                  AppSnackBar.showWarning('结束日期不能早于开始日期');
                 } else {
                   setState(() => _formData = _formData.copyWith(endDate: date));
                 }

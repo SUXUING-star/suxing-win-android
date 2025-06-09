@@ -72,7 +72,7 @@ class OpenWebUrlUtils {
       BuildContext context, String url, String? title) {
     if (Uri.tryParse(url) == null) {
       // URL 格式无效时显示错误
-      AppSnackBar.showError(context, '应用内打开失败：链接格式无效');
+      AppSnackBar.showError('应用内打开失败：链接格式无效');
       return;
     }
     NavigationUtils.pushNamed(
@@ -91,7 +91,7 @@ class OpenWebUrlUtils {
     final Uri? uri = Uri.tryParse(url);
     if (uri == null) {
       // URL 格式无效时显示错误
-      AppSnackBar.showError(context, '外部打开失败：链接格式无效');
+      AppSnackBar.showError('外部打开失败：链接格式无效');
       return;
     }
 

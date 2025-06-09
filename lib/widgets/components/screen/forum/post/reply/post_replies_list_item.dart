@@ -130,8 +130,8 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
     }
 
     try {
-      final PostReplyPagination result = await widget.postService.getPostReplies(
-          postId: _postId, page: page, limit: _replyLimit);
+      final PostReplyPagination result = await widget.postService
+          .getPostReplies(postId: _postId, page: page, limit: _replyLimit);
       if (!mounted) return;
 
       setState(() {
@@ -169,7 +169,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
     final content = text.trim();
     if (content.isEmpty || _isSubmittingTopLevelReply) return;
     if (widget.currentUser == null) {
-      AppSnackBar.showError(modalContext, "请先登录");
+      AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
 
@@ -179,7 +179,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
       await widget.postService.addReply(widget.postId, content, parentId: null);
       if (mounted) {
         widget.inputStateService.clearText(_topLevelReplySlotName);
-        AppSnackBar.showSuccess(context, '评论发表成功');
+        AppSnackBar.showSuccess('评论发表成功');
         _loadReplies(page: 1, isRefresh: true); // 提交评论后刷新第一页
 
         if (modalContext.mounted && Navigator.canPop(modalContext)) {
@@ -187,10 +187,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
         }
       }
     } catch (e) {
-      if (mounted) {
-        AppSnackBar.showError(
-            context, '评论发表失败: ${e.toString().replaceFirst("Exception: ", "")}');
-      }
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) setState(() => _isSubmittingTopLevelReply = false);
     }
@@ -259,9 +256,9 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
     Widget contentChild;
 
     if (_isLoadingInitial && _currentReplies.isEmpty) {
-      contentChild = Padding(
+      contentChild = const Padding(
         padding: EdgeInsets.symmetric(vertical: 64.0),
-        child: LoadingWidget.inline(message: "正在加载评论..."),
+        child: LoadingWidget(message: "正在加载评论..."),
       );
     } else if (_error != null && _currentReplies.isEmpty) {
       contentChild = Padding(
@@ -317,7 +314,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
                 if (_isLoadingMore) {
                   return Padding(
                     padding: EdgeInsets.all(16.0),
-                    child: LoadingWidget.inline(message: "加载更多..."),
+                    child: const LoadingWidget(message: "加载更多..."),
                   );
                 } else if (_paginationData?.hasNextPage() ?? false) {
                   return Padding(

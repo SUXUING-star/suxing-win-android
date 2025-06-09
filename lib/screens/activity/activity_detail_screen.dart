@@ -162,9 +162,8 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         _activity.isLiked = currentlyLiked;
         _activity.likesCount = currentLikesCount;
       });
-      if (mounted) {
-        AppSnackBar.showError(context, '操作失败，请稍后重试');
-      }
+
+      AppSnackBar.showError('操作失败，请稍后重试');
     }
   }
 
@@ -190,8 +189,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showError(context,
-            '评论失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
+        AppSnackBar.showError('评论失败: ${e.toString()}');
       }
     }
   }
@@ -208,7 +206,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       return;
     }
     if (!_checkCanDeleteComment(comment)) {
-      AppSnackBar.showError(context, "你没有权限删除评论");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final commentId = comment.id;
@@ -231,12 +229,12 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 _activity.commentsCount = _activity.comments.length;
                 _refreshCounter++; // 强制 UI 刷新
               });
-              AppSnackBar.showSuccess(context, '评论已删除');
+              AppSnackBar.showSuccess('评论已删除');
             } else if (mounted) {
               throw Exception("删除评论失败");
             }
           } catch (e) {
-            if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+            if (mounted) AppSnackBar.showError('删除失败: ${e.toString()}');
             rethrow;
           }
         });
@@ -270,7 +268,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
     if (!_checkCanEditOrCanDelete(_activity)) {
       if (mounted) {
-        AppSnackBar.showError(context, '您没有权限删除此动态');
+        AppSnackBar.showPermissionDenySnackBar();
       }
       return;
     }
@@ -320,15 +318,14 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 _refreshCounter++; // 强制刷新UI
               });
               if (mounted) {
-                AppSnackBar.showSuccess(context, '动态更新成功');
+                AppSnackBar.showSuccess('动态更新成功');
               }
             } else {
               throw Exception('Update failed');
             }
           } catch (e) {
             if (mounted) {
-              AppSnackBar.showError(context,
-                  '更新失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
+              AppSnackBar.showError('更新失败: ${e.toString()}');
             }
             // 重新抛出，让 EditDialog 的调用者知道出错了（如果需要）
             rethrow;
@@ -358,7 +355,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
     if (!_checkCanEditOrCanDelete(_activity)) {
       if (mounted) {
-        AppSnackBar.showError(context, '您没有权限删除此动态');
+        AppSnackBar.showPermissionDenySnackBar();
       }
       return;
     }
@@ -382,15 +379,14 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               if (mounted) {
                 // 删除成功后，关闭当前页面
                 Navigator.pop(context);
-                AppSnackBar.showSuccess(context, '动态已删除');
+                AppSnackBar.showSuccess('动态已删除');
               }
             } else {
               throw Exception('删除失败');
             }
           } catch (e) {
             if (mounted) {
-              AppSnackBar.showError(context,
-                  '删除失败: ${e is Exception ? e.toString().replaceFirst("Exception: ", "") : "请稍后重试"}');
+              AppSnackBar.showError('删除失败: ${e.toString()}');
             }
             rethrow;
           }
@@ -452,7 +448,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
       appBar: CustomAppBar(
         title: '动态详情',

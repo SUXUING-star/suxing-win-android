@@ -11,7 +11,7 @@ import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
@@ -44,8 +44,7 @@ class AddGameScreen extends StatefulWidget {
   _AddGameScreenState createState() => _AddGameScreenState();
 }
 
-class _AddGameScreenState extends State<AddGameScreen>
-    with SnackBarNotifierMixin {
+class _AddGameScreenState extends State<AddGameScreen> {
   // _hasInitializedDependencies 在这里似乎没有实际用途，可以保留或移除，
   // 因为没有像 EditGameScreen 那样在 didChangeDependencies 中进行数据加载。
   bool _hasInitializedDependencies = false;
@@ -87,9 +86,9 @@ class _AddGameScreenState extends State<AddGameScreen>
       }
     } catch (e) {
       if (!mounted) return;
-      showSnackBar(
-          message: '添加失败: ${e.toString().replaceFirst("Exception: ", "")}',
-          type: SnackBarType.error);
+      AppSnackBar.showError(
+        '添加失败: ${e.toString()}',
+      );
     }
   }
 
@@ -160,8 +159,6 @@ class _AddGameScreenState extends State<AddGameScreen>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context); // SnackBarNotifierMixin 的方法
-
     return Scaffold(
       appBar: const CustomAppBar(
         title: '添加新游戏',

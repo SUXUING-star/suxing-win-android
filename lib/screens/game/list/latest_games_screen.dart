@@ -3,16 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'common_game_list_screen.dart';
 
 class LatestGamesScreen extends StatefulWidget {
   final GameService gameService;
   final AuthProvider authProvider;
+  final WindowStateProvider windowStateProvider;
   const LatestGamesScreen({
     super.key,
     required this.gameService,
     required this.authProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -93,8 +96,7 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
             isLoading: _isLoading,
             error: _error,
             onRefreshTriggered: _handleRefresh,
-            // 传递刷新回调
-            // --- 其他参数保持不变 ---
+            windowStateProvider: widget.windowStateProvider,
             onDeleteGameAction: null,
             emptyStateMessage: '暂无最新游戏',
             emptyStateIcon:

@@ -132,11 +132,10 @@ class LoadingWidget extends StatefulWidget {
   }
 
   /// 预设的简单内联加载指示器。
-  static final Widget simpleInline = LoadingWidget.inline();
+  static const Widget simpleInline = const LoadingWidget();
 
   /// 预设的带默认消息的内联加载指示器。
-  static final Widget inlineWithMessage =
-      LoadingWidget.inline(message: "努力加载中...");
+  static const Widget inlineWithMessage = LoadingWidget(message: "努力加载中...");
 
   /// 预设的简单全屏加载指示器。
   static final Widget simpleFullScreen = LoadingWidget.fullScreen();

@@ -114,7 +114,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (email.isEmpty || !email.contains('@')) {
       // 邮箱格式无效时
       setState(() => _error = '请输入有效的邮箱地址'); // 设置错误消息
-      AppSnackBar.showWarning(context, '请输入有效的邮箱地址'); // 显示警告
+      AppSnackBar.showWarning('请输入有效的邮箱地址'); // 显示警告
       return;
     }
 
@@ -134,12 +134,12 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
           _codeSent = true; // 标记验证码已发送
           _error = null; // 清空错误消息
         });
-        AppSnackBar.showSuccess(context, "验证码已发送至您的邮箱，请去查看！"); // 显示成功提示
+        AppSnackBar.showSuccess("验证码已发送至您的邮箱，请去查看！"); // 显示成功提示
       });
     } catch (e) {
       if (!mounted) return; // 组件未挂载时返回
       setState(() => _error = '发送验证码失败: ${e.toString()}'); // 设置错误消息
-      AppSnackBar.showError(context, _error!); // 显示错误提示
+      AppSnackBar.showError(_error!); // 显示错误提示
     } finally {
       if (mounted) {
         // 确保加载状态重置
@@ -156,7 +156,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     if (!_codeSent) {
       // 验证码未发送时
       setState(() => _error = '请先获取验证码'); // 设置错误消息
-      AppSnackBar.showWarning(context, _error!); // 显示警告
+      AppSnackBar.showWarning(_error!); // 显示警告
       return;
     }
 
@@ -177,13 +177,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       } else {
         // 验证码无效时
         setState(() => _error = '验证码错误或已过期'); // 设置错误消息
-        AppSnackBar.showError(context, _error!); // 显示错误提示
+        AppSnackBar.showError(_error!); // 显示错误提示
       }
     } catch (e) {
       // 捕获验证错误
       if (!mounted) return; // 组件未挂载时返回
       setState(() => _error = '验证码校验时发生错误: ${e.toString()}'); // 设置错误消息
-      AppSnackBar.showError(context, _error!); // 显示错误提示
+      AppSnackBar.showError(_error!); // 显示错误提示
     } finally {
       if (mounted) {
         // 确保加载状态重置
@@ -262,7 +262,6 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final bool isOverallLoading = _isSendingCode || _isVerifying; // 是否整体加载中
-    final String loadingMessage = '请稍候...'; // 加载消息
 
     final String sendButtonLabel = _codeSent
         ? (_countDown > 0 ? '${_countDown}s' : '重新发送')
@@ -290,10 +289,13 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       body: Stack(
         children: [
           if (isOverallLoading) // 如果正在加载，显示全屏加载组件
-            FadeInItem(
-              child:
-                  LoadingWidget.fullScreen(message: loadingMessage), // 全屏加载组件
-            ),
+            const FadeInItem(
+                child: LoadingWidget(
+              isOverlay: true,
+              message: '正在拼命加载...',
+              overlayOpacity: 0.4,
+              size: 36,
+            )),
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 450), // 约束最大宽度

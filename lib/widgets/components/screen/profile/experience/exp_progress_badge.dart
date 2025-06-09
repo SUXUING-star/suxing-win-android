@@ -76,7 +76,7 @@ class ExpProgressBadge extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: LoadingWidget.inline(size: size * 0.6),
+      child: LoadingWidget(size: size * 0.6),
     );
   }
 

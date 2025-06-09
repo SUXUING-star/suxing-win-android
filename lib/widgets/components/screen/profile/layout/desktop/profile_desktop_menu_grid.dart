@@ -1,23 +1,25 @@
 // lib/widgets/components/screen/profile/layout/desktop/profile_desktop_menu_grid.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/profile/profile_constants.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class ProfileDesktopMenuGrid extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
+  final WindowStateProvider windowStateProvider;
 
   const ProfileDesktopMenuGrid({
     super.key,
     required this.menuItems,
+    required this.windowStateProvider,
   });
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -44,8 +46,10 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Flexible(
-              child: LayoutBuilder(
+              child: LazyLayoutBuilder(
+                windowStateProvider: windowStateProvider,
                 builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
                   // constraints.maxWidth 是 GridView 可用的最大宽度
                   double maxCrossAxisExtent;
                   // 可以根据屏幕宽度设定不同的期望子项宽度

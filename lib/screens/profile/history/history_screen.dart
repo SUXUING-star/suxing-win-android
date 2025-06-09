@@ -7,6 +7,7 @@ import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -22,6 +23,7 @@ class HistoryScreen extends StatefulWidget {
   final PostService postService;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
+  final WindowStateProvider windowStateProvider;
   const HistoryScreen({
     super.key,
     required this.gameService,
@@ -29,6 +31,7 @@ class HistoryScreen extends StatefulWidget {
     required this.postService,
     required this.infoProvider,
     required this.followService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -188,7 +191,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _isLoadingGameHistory = false;
         _gameHistoryError = '加载游戏历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载游戏历史失败');
+      AppSnackBar.showError( '加载游戏历史失败');
     }
   }
 
@@ -229,7 +232,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _gameHistoryError =
             '加载更多游戏历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载更多游戏历史失败');
+      AppSnackBar.showError( '加载更多游戏历史失败');
     }
   }
 
@@ -275,7 +278,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _isLoadingPostHistory = false;
         _postHistoryError = '加载帖子历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载帖子历史失败');
+      AppSnackBar.showError('加载帖子历史失败');
     }
   }
 
@@ -316,7 +319,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _postHistoryError =
             '加载更多帖子历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError(context, '加载更多帖子历史失败');
+      AppSnackBar.showError('加载更多帖子历史失败');
     }
   }
 
@@ -386,6 +389,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                             _fetchGameHistory(isRefresh: true),
                         errorMessage: _gameHistoryError,
                         scrollController: _gameScrollController,
+                        windowStateProvider: widget.windowStateProvider,
                       ),
                       PostHistoryLayout(
                         postHistoryItems: _postHistoryItems,
@@ -400,6 +404,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                         scrollController: _postScrollController,
                         currentUser: _currentUser,
                         userInfoProvider: widget.infoProvider,
+                        windowStateProvider: widget.windowStateProvider,
                         userFollowService: widget.followService,
                       ),
                     ],

@@ -6,15 +6,19 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/myposts/my_posts_layout.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -25,12 +29,14 @@ class MyPostsScreen extends StatefulWidget {
   final PostService postService;
   final UserInfoProvider infoProvider;
   final AuthProvider authProvider;
+  final WindowStateProvider windowStateProvider;
   const MyPostsScreen({
     super.key,
     required this.authProvider,
     required this.postService,
     required this.followService,
     required this.infoProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -168,7 +174,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
         setState(() {
           _isLoadingMore = false;
           _error = '加载更多失败: ${e.toString().split(':').last.trim()}';
-          AppSnackBar.showError(context, '加载更多帖子失败');
+          AppSnackBar.showError('加载更多帖子失败');
         });
       }
     }
@@ -195,7 +201,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       return;
     }
     if (!_checkCanEditOrDeletePost(post)) {
-      AppSnackBar.showPermissionDenySnackBar(context);
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
 
@@ -230,9 +236,8 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           try {
             await widget.postService.deletePost(post);
             if (!_isMounted) return;
-            if (mounted) {
-              AppSnackBar.showPostDeleteSuccessfullySnackBar(context);
-            }
+
+            AppSnackBar.showPostDeleteSuccessfullySnackBar();
 
             if (_posts.isEmpty && (_paginationData?.total ?? 0) > 0) {
               _fetchPosts(isRefresh: true);
@@ -250,8 +255,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                 }
                 _error = '删除帖子失败';
               });
-              if (!mounted) return;
-              AppSnackBar.showError(context, '删除帖子失败');
+              AppSnackBar.showError('删除帖子失败');
             }
           }
         });
@@ -263,7 +267,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       return;
     }
     if (!_checkCanEditOrDeletePost(post)) {
-      AppSnackBar.showPermissionDenySnackBar(context);
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final result = await NavigationUtils.pushNamed(
@@ -293,6 +297,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       return const SizedBox.shrink();
     }
     return FloatingActionButtonGroup(
+      toggleButtonHeroTag: "my_posts_heroTags",
       children: [
         GenericFloatingActionButton(
           icon: Icons.refresh,
@@ -326,7 +331,15 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           }
 
           if (_isLoading && _posts.isEmpty && _error == null) {
-            return LoadingWidget.fullScreen(message: "拼命加载中");
+            return const FadeInItem(
+              // 全屏加载组件
+              child: LoadingWidget(
+                isOverlay: true,
+                message: "少女正在祈祷中...",
+                overlayOpacity: 0.4,
+                size: 36,
+              ),
+            ); //
           }
 
           if (_error != null && _posts.isEmpty) {
@@ -339,21 +352,31 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           return RefreshIndicator(
             onRefresh:
                 _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
-            child: MyPostsLayout(
-              posts: _posts,
-              isLoadingMore: _isLoadingMore,
-              hasMore: _paginationData?.hasNextPage() ?? false,
-              scrollController: _scrollController,
-              onAddPost: _handleAddPost,
-              onDeletePost: _handleDeletePost,
-              onEditPost: _handleEditPost,
-              errorMessage: _error,
-              onRetry: () => _fetchPosts(isRefresh: true),
-              currentUser: currentUser,
-              infoProvider: widget.infoProvider,
-              followService: widget.followService,
-              totalPostCount: _paginationData?.total ?? _posts.length,
-            ),
+            child: LazyLayoutBuilder(
+                windowStateProvider: widget.windowStateProvider,
+                builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
+                  final isDesktopLayout =
+                      DeviceUtils.isDesktopInThisWidth(screenWidth);
+                  return MyPostsLayout(
+                    posts: _posts,
+                    screenWidth: screenWidth,
+                    isDesktop: isDesktopLayout,
+                    isLoadingMore: _isLoadingMore,
+                    hasMore: _paginationData?.hasNextPage() ?? false,
+                    scrollController: _scrollController,
+                    onAddPost: _handleAddPost,
+                    onDeletePost: _handleDeletePost,
+                    onEditPost: _handleEditPost,
+                    errorMessage: _error,
+                    onRetry: () => _fetchPosts(isRefresh: true),
+                    currentUser: currentUser,
+                    infoProvider: widget.infoProvider,
+                    windowStateProvider: widget.windowStateProvider,
+                    followService: widget.followService,
+                    totalPostCount: _paginationData?.total ?? _posts.length,
+                  );
+                }),
           );
         },
       ),

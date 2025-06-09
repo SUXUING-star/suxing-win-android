@@ -86,7 +86,7 @@ class AboutScreen extends StatelessWidget {
                 Clipboard.setData(
                     ClipboardData(text: GlobalConstants.groupNumber));
                 // 显示提示信息
-                AppSnackBar.showSuccess(context, '群号已复制到剪贴板！');
+                AppSnackBar.showSuccess( '群号已复制到剪贴板！');
               },
             ),
           ],

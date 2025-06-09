@@ -213,7 +213,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
   Widget build(BuildContext context) {
     // --- 构建逻辑保持不变，使用你的 UI 组件 ---
     if (_isInitializing) {
-      return LoadingWidget.inline(message: '正在初始化 WebView...');
+      return const LoadingWidget(message: '正在初始化 WebView...');
     }
 
     if (_initializationError) {

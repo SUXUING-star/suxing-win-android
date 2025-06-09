@@ -28,7 +28,8 @@ const Key _particleEffectKey =
 /// 动态显示背景图片、模糊效果、粒子效果和鼠标拖尾效果。
 class AppBackgroundEffect extends StatefulWidget {
   final Widget child; // 子组件
-  final bool isDark; // 标识是否为深色模式
+  final List<Color> backgroundGradientColor;
+  final Color particleColor;
   final WindowStateProvider windowStateProvider; // 窗口状态 Provider 实例
 
   /// 构造函数。
@@ -39,9 +40,10 @@ class AppBackgroundEffect extends StatefulWidget {
   /// [windowStateProvider]：窗口状态 Provider 实例。
   const AppBackgroundEffect({
     super.key,
-    required this.child,
-    required this.isDark,
+    required this.backgroundGradientColor,
+    required this.particleColor,
     required this.windowStateProvider,
+    required this.child,
   });
 
   /// 创建 `_AppBackgroundEffectState` 状态。
@@ -214,26 +216,26 @@ class _AppBackgroundEffectState extends State<AppBackgroundEffect>
   /// 返回一个 `Stack` 组件，包含背景图片、模糊效果、粒子效果、主内容和鼠标拖尾效果。
   @override
   Widget build(BuildContext context) {
-    final particleColor = // 粒子颜色
-        widget.isDark ? const Color(0xFFE0E0E0) : const Color(0xFFB3E5FC);
-
-    final List<Color> gradientColors = widget.isDark // 渐变颜色
-        ? [
-            const Color.fromRGBO(0, 0, 0, 0.6),
-            const Color.fromRGBO(0, 0, 0, 0.4)
-          ]
-        : [
-            const Color.fromRGBO(255, 255, 255, 0.7),
-            const Color.fromRGBO(255, 255, 255, 0.5)
-          ];
-
     List<String> imagesToUse = _isAndroidPortrait // 根据设备方向选择背景图片
         ? GlobalConstants.defaultBackgroundImagesRotated
         : GlobalConstants.defaultBackgroundImages;
 
-    if (imagesToUse.isEmpty && _isCurrentlyResizing) {
+    if (imagesToUse.isEmpty || _isCurrentlyResizing) {
       // 无图片且正在调整大小时
-      return widget.child; // 直接返回子组件
+      return Stack(
+        children: [
+          widget.child,
+          Positioned.fill(
+            child: InitializationScreen(
+              status: InitializationStatus.inProgress,
+              message: "正在调整窗口大小...",
+              progress: 0.0,
+              onRetry: null,
+              onExit: null,
+            ),
+          ),
+        ],
+      );
     }
     if (imagesToUse.isNotEmpty && _currentImageIndex >= imagesToUse.length) {
       // 图片索引超出范围时
@@ -243,37 +245,38 @@ class _AppBackgroundEffectState extends State<AppBackgroundEffect>
     return LayoutBuilder(
       // 布局构建器
       builder: (context, constraints) {
+        final Widget backgroundImage = Offstage(
+          // 背景图片
+          offstage: _isCurrentlyResizing, // 窗口调整大小时隐藏
+          child: (imagesToUse.isNotEmpty)
+              ? AnimatedSwitcher(
+                  // 动画切换器
+                  duration: const Duration(milliseconds: 800),
+                  transitionBuilder:
+                      (Widget child, Animation<double> animation) {
+                    return FadeTransition(
+                        opacity: animation, child: child); // 淡入过渡
+                  },
+                  child: Image.asset(
+                    // 图片资源
+                    imagesToUse[_currentImageIndex],
+                    key: ValueKey<int>(_currentImageIndex),
+                    fit: BoxFit.cover, // 覆盖填充
+                    width: constraints.maxWidth,
+                    height: constraints.maxHeight,
+                    errorBuilder: (context, error, stackTrace) {
+                      // 图片加载错误时
+                      return Container(color: Colors.grey[800]); // 显示深色占位
+                    },
+                  ),
+                )
+              : Container(color: Colors.transparent), // 无图片时显示透明容器
+        );
         return Stack(
           // 堆叠布局
           fit: StackFit.expand, // 填充父组件
           children: [
-            Offstage(
-              // 背景图片
-              offstage: _isCurrentlyResizing, // 窗口调整大小时隐藏
-              child: (imagesToUse.isNotEmpty)
-                  ? AnimatedSwitcher(
-                      // 动画切换器
-                      duration: const Duration(milliseconds: 800),
-                      transitionBuilder:
-                          (Widget child, Animation<double> animation) {
-                        return FadeTransition(
-                            opacity: animation, child: child); // 淡入过渡
-                      },
-                      child: Image.asset(
-                        // 图片资源
-                        imagesToUse[_currentImageIndex],
-                        key: ValueKey<int>(_currentImageIndex),
-                        fit: BoxFit.cover, // 覆盖填充
-                        width: constraints.maxWidth,
-                        height: constraints.maxHeight,
-                        errorBuilder: (context, error, stackTrace) {
-                          // 图片加载错误时
-                          return Container(color: Colors.grey[800]); // 显示深色占位
-                        },
-                      ),
-                    )
-                  : Container(color: Colors.transparent), // 无图片时显示透明容器
-            ),
+            backgroundImage,
             if (_isCurrentlyResizing) // 窗口调整大小时显示背景色
               Container(
                 color: Theme.of(context)
@@ -282,9 +285,10 @@ class _AppBackgroundEffectState extends State<AppBackgroundEffect>
               ),
 
             AppBlurEffect(
-                // 背景模糊
-                isCurrentlyResizing: _isCurrentlyResizing,
-                gradientColors: gradientColors),
+              // 背景模糊
+              isCurrentlyResizing: _isCurrentlyResizing,
+              gradientColors: widget.backgroundGradientColor,
+            ),
 
             ParticleEffect(
               // 背景粒子特效
@@ -297,18 +301,7 @@ class _AppBackgroundEffectState extends State<AppBackgroundEffect>
 
             if (DeviceUtils.isDesktop) // 桌面端显示鼠标特效
               MouseTrailEffect(
-                particleColor: particleColor,
-              ),
-
-            if (_isCurrentlyResizing) // 窗口调整大小时显示挡板
-              Positioned.fill(
-                child: InitializationScreen(
-                  status: InitializationStatus.inProgress,
-                  message: "正在调整窗口大小...",
-                  progress: 0.0,
-                  onRetry: null,
-                  onExit: null,
-                ),
+                particleColor: widget.particleColor,
               ),
           ],
         );

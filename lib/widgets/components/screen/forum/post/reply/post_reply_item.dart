@@ -50,7 +50,7 @@ class PostReplyItem extends StatelessWidget {
     String slotName,
   ) async {
     if (text.trim().isEmpty) {
-      AppSnackBar.showWarning(context, "回复内容不能为空");
+      AppSnackBar.showWarning("回复内容不能为空");
       throw Exception("回复内容不能为空");
     }
 
@@ -61,7 +61,7 @@ class PostReplyItem extends StatelessWidget {
 
       if (context.mounted) {
         NavigationUtils.pop(context); // 关闭底部输入框
-        AppSnackBar.showSuccess(context, '回复成功');
+        AppSnackBar.showSuccess('回复成功');
       }
       onActionSuccess();
     } catch (e) {
@@ -84,14 +84,12 @@ class PostReplyItem extends StatelessWidget {
       onSave: (newContent) async {
         try {
           await postService.updateReply(postId, reply, newContent);
-          if (context.mounted) {
-            AppSnackBar.showSuccess(context, '回复编辑成功');
-          }
+
+          AppSnackBar.showSuccess('回复编辑成功');
+
           onActionSuccess();
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context, '编辑失败：${e.toString()}');
-          }
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       },
     );
@@ -110,14 +108,12 @@ class PostReplyItem extends StatelessWidget {
       onConfirm: () async {
         try {
           await postService.deleteReply(postId, reply);
-          if (context.mounted) {
-            AppSnackBar.showSuccess(context, '回复删除成功');
-          }
+
+          AppSnackBar.showSuccess('回复删除成功');
+
           onActionSuccess();
         } catch (e) {
-          if (context.mounted) {
-            AppSnackBar.showError(context, '删除失败：${e.toString()}');
-          }
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       },
     );

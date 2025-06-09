@@ -64,12 +64,26 @@ class DeviceUtils {
     return MediaQuery.of(context).size.width >= 1200; // 屏幕宽度大于等于特定值时判定为大屏幕
   }
 
+  /// 返回屏幕宽度
+  /// [context]：Build 上下文。
+  static double getScreenWidth(BuildContext context) {
+    return MediaQuery.of(context).size.width;
+  }
+
   /// 判断当前屏幕是否为桌面屏幕尺寸。
   ///
   /// [context]：Build 上下文。
   /// 根据屏幕宽度判断是否为桌面屏幕。
   static bool isDesktopScreen(BuildContext context) {
     return MediaQuery.of(context).size.width >= 1000; // 屏幕宽度大于等于特定值时判定为桌面屏幕
+  }
+
+  /// 判断当前屏幕是否为桌面屏幕尺寸。
+  ///
+  /// [context]：Build 上下文。
+  /// 根据屏幕宽度判断是否为桌面屏幕。
+  static bool isDesktopInThisWidth(double screenWidth) {
+    return screenWidth >= 900; // 屏幕宽度大于等于特定值时判定为桌面屏幕
   }
 
   /// 获取当前窗口是否为全屏状态。
@@ -192,16 +206,17 @@ class DeviceUtils {
 
     double targetCardWidth; // 目标卡片宽度
     if (availableWidth < 400) {
-      isCompact ? targetCardWidth = 120 : targetCardWidth = 150;
+      isCompact ? targetCardWidth = 120 : targetCardWidth = 140;
     } else if (availableWidth < 600) {
-      isCompact ? targetCardWidth = 130 : targetCardWidth = 160;
+      isCompact ? targetCardWidth = 130 : targetCardWidth = 150;
     } else if (availableWidth < 900) {
-      isCompact ? targetCardWidth = 140 : targetCardWidth = 165;
+      isCompact ? targetCardWidth = 140 : targetCardWidth = 155;
     } else if (availableWidth < 1200) {
-      isCompact ? targetCardWidth = 150 : targetCardWidth = 170;
+      isCompact ? targetCardWidth = 150 : targetCardWidth = 160;
     } else {
-      isCompact ? targetCardWidth = 160 : targetCardWidth = 190;
+      isCompact ? targetCardWidth = 160 : targetCardWidth = 175;
     }
+
 
     int cardsPerRow = ((effectiveWidth + crossAxisSpacing) /
             (targetCardWidth + crossAxisSpacing))
@@ -329,10 +344,14 @@ class DeviceUtils {
   /// [showTags]：是否显示标签。
   /// 调用 `calculateGameCardRatio` 方法，考虑侧边面板。
   static double calculateGameListCardRatio(
-      BuildContext context, bool leftPanelVisible, bool rightPanelVisible,
-      {bool showTags = true}) {
+      BuildContext context,
+      bool leftPanelVisible,
+      bool rightPanelVisible,
+
+      {bool showTags = true,double? directAvailableWidth,}) {
     return calculateGameCardRatio(context,
         withPanels: true,
+        directAvailableWidth: directAvailableWidth,
         leftPanelVisible: leftPanelVisible,
         rightPanelVisible: rightPanelVisible,
         showTags: showTags); // 调用 calculateGameCardRatio
@@ -342,8 +361,18 @@ class DeviceUtils {
   ///
   /// [context]：Build 上下文。
   /// 根据可用宽度和卡片目标宽度计算每行卡片数量。
-  static int calculatePostCardsPerRow(BuildContext context) {
-    final availableWidth = getAvailableContentWidth(context); // 获取可用宽度
+  static int calculatePostCardsPerRow(
+    BuildContext context, {
+    bool withPanels = false,
+    bool leftPanelVisible = true,
+    bool rightPanelVisible = true,
+  }) {
+    final availableWidth = getAvailableContentWidth(
+      context,
+      withPanels: withPanels,
+      leftPanelVisible: leftPanelVisible,
+      rightPanelVisible: rightPanelVisible,
+    ); // 获取可用宽度
     final horizontalPadding = 16.0; // GridView 左右的总内边距
     final crossAxisSpacing = 16.0; // 卡片间的水平间距
 

@@ -156,9 +156,9 @@ class GameDownloadLinks extends StatelessWidget {
     if (text != null && text.isNotEmpty) {
       // 文本非空时
       Clipboard.setData(ClipboardData(text: text)); // 复制到剪贴板
-      AppSnackBar.showSuccess(context, '链接已复制'); // 显示成功提示
+      AppSnackBar.showSuccess('链接已复制'); // 显示成功提示
     } else {
-      AppSnackBar.showError(context, '复制失败，链接为空'); // 显示失败提示
+      AppSnackBar.showError('复制失败，链接为空'); // 显示失败提示
     }
   }
 }

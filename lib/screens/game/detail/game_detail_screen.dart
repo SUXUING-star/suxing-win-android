@@ -1,19 +1,21 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/collection_change_result.dart';
 import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/error/api_error_definitions.dart';
 import 'package:suxingchahui/services/error/api_exception.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
@@ -42,6 +44,7 @@ class GameDetailScreen extends StatefulWidget {
   final InputStateService inputStateService;
   final GameListFilterProvider gameListFilterProvider;
   final SidebarProvider sidebarProvider;
+  final WindowStateProvider windowStateProvider;
   const GameDetailScreen({
     super.key,
     this.gameId,
@@ -54,6 +57,7 @@ class GameDetailScreen extends StatefulWidget {
     required this.gameListFilterProvider,
     required this.followService,
     required this.sidebarProvider,
+    required this.windowStateProvider,
   });
   @override
   _GameDetailScreenState createState() => _GameDetailScreenState();
@@ -261,9 +265,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             } else {
               // 刷新失败
               WidgetsBinding.instance.addPostFrameCallback((_) {
-                if (mounted) {
-                  AppSnackBar.showError(context, "刷新失败: ${errorMsg ?? '未知错误'}");
-                }
+                AppSnackBar.showError("刷新失败: ${errorMsg ?? '未知错误'}");
               });
               // 保留旧数据，只显示 Toaster
             }
@@ -293,98 +295,30 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   }
 
   Future<void> _handleCollectionStateChangedInButton(
-      CollectionChangeResult result) async {
+    GameCollectionItem? newCollectionStatus,
+    Game? updatedGame,
+  ) async {
     // 1. 安全检查
-    if (!mounted || _game == null) {
+    if (!mounted) {
       return;
     }
 
-    // 2. 获取当前状态和变化信息
-    final Game currentGame = _game!;
-    final Map<String, int> countDeltas = result.countDeltas; // 收藏计数增量 (来自按钮的回调)
-    final GameCollectionItem? newCollectionItem = result.newStatus;
-    final GameCollectionItem? oldCollectionItem =
-        _collectionStatus; // 使用屏幕 State 中记录的旧状态
-
-    // 3. 计算评分的 Delta (前端计算)
-    double deltaRatingSum = 0;
-    int deltaRatingCount = 0;
-    final oldStatusString = oldCollectionItem?.status;
-    final newStatusString = newCollectionItem?.status;
-    final oldRatingValue = oldCollectionItem?.rating;
-    final newRatingValue = newCollectionItem?.rating;
-
-    bool oldHadRating = oldStatusString == GameCollectionStatus.played &&
-        oldRatingValue != null;
-    bool newHasRating = newStatusString == GameCollectionStatus.played &&
-        newRatingValue != null;
-
-    if (!oldHadRating && newHasRating) {
-      deltaRatingSum = newRatingValue;
-      deltaRatingCount = 1;
-    } else if (oldHadRating && newHasRating) {
-      if (oldRatingValue != newRatingValue) {
-        deltaRatingSum = newRatingValue - oldRatingValue;
-      }
-    } else if (oldHadRating && !newHasRating) {
-      deltaRatingSum = -oldRatingValue;
-      deltaRatingCount = -1;
-    }
-
-    // 4. 计算补偿后的新评分统计数据和平均分
-    final int newRatingCount =
-        (currentGame.ratingCount + deltaRatingCount).clamp(0, 1000000);
-    final double newTotalRatingSum = (newRatingCount == 0)
-        ? 0.0
-        : (currentGame.totalRatingSum + deltaRatingSum);
-
-    // *** 在前端计算平均分 ***
-    double newAverageRating = 0.0;
-    if (newRatingCount > 0) {
-      newAverageRating = newTotalRatingSum / newRatingCount;
-      // 保留一位小数 (可选)
-      newAverageRating = (newAverageRating * 10).round() / 10;
-    }
-    // 限制在 0 到 10 之间 (可选，增加健壮性)
-    newAverageRating = newAverageRating.clamp(0.0, 10.0);
-
-    // 5. 使用 copyWith 创建包含所有补偿后数据的新 Game 对象
-    final Game updatedGame = currentGame.copyWith(
-      // 补偿收藏计数
-      wantToPlayCount:
-          (currentGame.wantToPlayCount + (countDeltas['want'] ?? 0))
-              .clamp(0, 1000000),
-      playingCount: (currentGame.playingCount + (countDeltas['playing'] ?? 0))
-          .clamp(0, 1000000),
-      playedCount: (currentGame.playedCount + (countDeltas['played'] ?? 0))
-          .clamp(0, 1000000),
-      totalCollections:
-          (currentGame.totalCollections + (countDeltas['total'] ?? 0))
-              .clamp(0, 1000000),
-      ratingCount: newRatingCount,
-      totalRatingSum: newTotalRatingSum,
-      rating: newAverageRating, // *** 使用前端计算的新平均分 ***
-      updateTime: DateTime.now(), // 更新游戏整体更新时间
-      ratingUpdateTime: (deltaRatingCount != 0 || deltaRatingSum != 0)
-          ? DateTime.now()
-          : currentGame.ratingUpdateTime,
-    );
-
-    try {
-      // 确保使用 dialog 返回的最新 status (result.newStatus) 来缓存
-      await widget.gameService.cacheNewData(updatedGame, result.newStatus);
-      // 6. 使用 setState 更新状态 (在缓存成功后)
-      // 不再需要加延迟，await 已经保证了顺序
-      if (mounted) {
-        // 再次检查 mounted 状态，因为 await 可能耗时
-        setState(() {
-          _collectionStatus = result.newStatus; // 更新收藏按钮状态
-          _game = updatedGame; // *** 更新包含所有补偿后数据的 game 对象 ***
-          _refreshCounter++; // 强制子组件重建
-        });
-      }
-    } catch (cacheError) {
-      //
+    // 2. 直接用后端返回的数据更新状态，一把梭！
+    //    如果后端因为某些原因没返回 updatedGame，我们就不更新 _game，保持现状
+    //    这样可以防止界面数据错乱
+    if (updatedGame != null) {
+      setState(() {
+        _collectionStatus = newCollectionStatus; // 更新收藏状态
+        _game = updatedGame; // *** 直接替换成后端爹给的最新 game 对象 ***
+        _refreshCounter++; // 强制子组件重建，显示最新数据
+      });
+    } else {
+      // 如果 updatedGame 是 null，只更新 collectionStatus，游戏数据等下次刷新
+      // 这是一种防御性编程
+      setState(() {
+        _collectionStatus = newCollectionStatus;
+        _refreshCounter++;
+      });
     }
   }
 
@@ -414,11 +348,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           _isLiked = newIsLikedStatus; // 直接更新点赞状态
         });
-        AppSnackBar.showSuccess(context, newIsLikedStatus ? '点赞成功' : '已取消点赞');
+        AppSnackBar.showSuccess(newIsLikedStatus ? '点赞成功' : '已取消点赞');
       }
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showError(context, e.toString());
+        AppSnackBar.showError(e.toString());
       }
     } finally {
       if (mounted) {
@@ -448,7 +382,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       AppSnackBar.showLoginRequiredSnackBar(context);
     }
     if (!_canEditOrDeleteGame(game)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
@@ -465,7 +399,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       return;
     }
     if (!_canEditOrDeleteGame(game)) {
-      AppSnackBar.showError(context, "你没有权限编辑");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     await CustomConfirmDialog.show(
@@ -482,9 +416,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           await widget.gameService.deleteGame(game);
           // 刷新由 cache watcher 触发
           if (!mounted) return;
-          AppSnackBar.showSuccess(context, "成功删除游戏");
+          AppSnackBar.showGameDeleteSuccessfullySnackBar();
         } catch (e) {
-          AppSnackBar.showError(context, "删除游戏失败");
+          AppSnackBar.showError("删除游戏失败,${e.toString()}");
           // print("删除游戏失败: $gameId, Error: $e");
         }
       },
@@ -510,14 +444,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
-  Widget _buildActionButtonsGroup(BuildContext context, Game game) {
-    final String editHeroTag = MediaQuery.of(context).size.width >= 1024
-        ? 'editButtonDesktop'
-        : 'editButtonMobile';
-    final String deleteHeroTag = MediaQuery.of(context).size.width >= 1024
-        ? 'deleteButtonDesktop'
-        : 'deleteButtonMobile';
-    final String likeHeroTag = MediaQuery.of(context).size.width >= 1024
+  Widget _buildActionButtonsGroup(
+    BuildContext context,
+    Game game,
+    bool isDesktop,
+  ) {
+    final String editHeroTag =
+        isDesktop ? 'editButtonDesktop' : 'editButtonMobile';
+    final String deleteHeroTag =
+        isDesktop ? 'deleteButtonDesktop' : 'deleteButtonMobile';
+    final String likeHeroTag = isDesktop
         ? 'likeButtonDesktop'
         : 'likeButtonMobile'; // 给点赞按钮也加上区分的 heroTag
 
@@ -536,6 +472,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           // 给整个按钮组添加统一的外边距
           padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
           child: FloatingActionButtonGroup(
+            toggleButtonHeroTag: "game_detail_heroTags",
             spacing: 16.0, // 按钮间距
             alignment: MainAxisAlignment.end, // 底部对齐
             children: [
@@ -670,7 +607,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ),
       ),
       // --- 直接调用辅助方法构建 FAB 组 ---
-      floatingActionButton: _buildActionButtonsGroup(context, game),
+      floatingActionButton: _buildActionButtonsGroup(context, game, isDesktop),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat, // 保持位置
     );
@@ -690,7 +627,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           child: _buildGameContent(game, isPending, isDesktop),
         ),
       ),
-      floatingActionButton: _buildActionButtonsGroup(context, game),
+      floatingActionButton: _buildActionButtonsGroup(context, game, isDesktop),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat, // 指定位置
     );
@@ -776,11 +713,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // --- Loading / Error / Content 构建逻辑 ---
     if (_isLoading && _game == null) {
       // 首次加载时全屏 Loading
-      return FadeInItem(
-        child: LoadingWidget.fullScreen(
-          message: '正在加载游戏数据...',
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
         ),
-      );
+      ); //
     }
 
     if (_error != null && _game == null) {
@@ -831,13 +772,26 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---
     if (_isLoading && _game != null) {
       // 正在刷新且有旧数据
-      bodyContent = LoadingWidget.fullScreen(message: "正在加载游戏数据");
+      bodyContent = const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     } else {
-      final isDesktop = MediaQuery.of(context).size.width >= 1024;
-
-      bodyContent = isDesktop
-          ? _buildDesktopLayout(_game!, isPending, isDesktop)
-          : _buildMobileLayout(_game!, isPending, isDesktop);
+      bodyContent = LazyLayoutBuilder(
+        windowStateProvider: widget.windowStateProvider,
+        builder: (context, constraints) {
+          final bool isDesktop =
+              DeviceUtils.isDesktopInThisWidth(constraints.maxWidth);
+          return isDesktop
+              ? _buildDesktopLayout(_game!, isPending, isDesktop)
+              : _buildMobileLayout(_game!, isPending, isDesktop);
+        },
+      );
     }
     if (isPending) {
       return Material(

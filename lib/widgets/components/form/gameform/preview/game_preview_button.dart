@@ -90,10 +90,10 @@ class GamePreviewButton extends StatelessWidget {
     final passValid = isValidMusic && isValidBV;
 
     if (!isValidMusic) {
-      return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");
+      return AppSnackBar.showWarning("点我也没用，检查填的有没有问题");
     }
     if (!isValidBV) {
-      return AppSnackBar.showWarning(context, "点我也没用，检查填的有没有问题");
+      return AppSnackBar.showWarning("点我也没用，检查填的有没有问题");
     }
     final previewGame = Game(
       id: existingGame?.id ?? mongo.ObjectId().oid,

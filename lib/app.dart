@@ -11,6 +11,7 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/routes/slide_fade_page_route.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
@@ -24,6 +25,7 @@ import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/utils/navigation/sidebar_updater_observer.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
@@ -38,6 +40,7 @@ import 'services/main/network/network_manager.dart';
 final GlobalKey<NavigatorState> mainNavigatorKey = GlobalKey<NavigatorState>();
 final RouteObserver<ModalRoute<void>> routeObserver =
     RouteObserver<ModalRoute<void>>();
+final GlobalKey<NavigatorState> rootNavigatorKey = GlobalKey<NavigatorState>();
 
 class App extends StatelessWidget {
   const App({super.key});
@@ -68,9 +71,11 @@ class MainApp extends StatefulWidget {
   State<MainApp> createState() => _MainAppState();
 }
 
-class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
+class _MainAppState extends State<MainApp> {
   bool _hasInitializedProviders = false;
   bool _hasInitializedStateService = false;
+
+  late final ThemeProvider _themeProvider;
   late final SidebarProvider _sidebarProvider;
   late final NetworkManager _networkManager;
   late final AuthProvider _authProvider;
@@ -98,22 +103,19 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedProviders) {
-      _sidebarProvider = Provider.of<SidebarProvider>(context, listen: false);
-      _networkManager = Provider.of<NetworkManager>(context, listen: false);
-      _authProvider = Provider.of<AuthProvider>(context, listen: false);
-      _windowStateProvider =
-          Provider.of<WindowStateProvider>(context, listen: false);
-      _gameListFilterProvider =
-          Provider.of<GameListFilterProvider>(context, listen: false);
-      _postListFilterProvider =
-          Provider.of<PostListFilterProvider>(context, listen: false);
+      _themeProvider = context.read<ThemeProvider>();
+      _sidebarProvider = context.read<SidebarProvider>();
+      _networkManager = context.read<NetworkManager>();
+      _authProvider = context.read<AuthProvider>();
+      _windowStateProvider = context.read<WindowStateProvider>();
+      _gameListFilterProvider = context.read<GameListFilterProvider>();
+      _postListFilterProvider = context.read<PostListFilterProvider>();
       _fileUploadService = context.read<RateLimitedFileUpload>();
       _messageService = context.read<MessageService>();
       _announcementService = context.read<AnnouncementService>();
@@ -127,9 +129,8 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _linkToolService = context.read<LinkToolService>();
       _emailService = context.read<EmailService>();
       _checkInService = context.read<UserCheckInService>();
-      _infoProvider = Provider.of<UserInfoProvider>(context, listen: false);
-      _inputStateService =
-          Provider.of<InputStateService>(context, listen: false);
+      _infoProvider = context.read<UserInfoProvider>();
+      _inputStateService = context.read<InputStateService>();
       _hasInitializedProviders = true;
     }
     if (!_hasInitializedStateService && _hasInitializedProviders) {
@@ -141,22 +142,9 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (!mounted) return;
-    if (state == AppLifecycleState.resumed) {
-      Future.delayed(const Duration(milliseconds: 1000), () {
-        if (mounted) {
-          // 再次检查 mounted
-          _networkManager.getNetworkStatus();
-        }
-      });
-    }
-  }
-
-  @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
     _sidebarProvider.dispose();
+    _themeProvider.dispose();
     super.dispose();
   }
 
@@ -182,11 +170,13 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       _sidebarProvider,
       _postListFilterProvider,
       _fileUploadService,
+      _windowStateProvider,
     );
   }
 
   Widget _buildMainLayout() {
     return MainLayout(
+      key: const ValueKey('MainLayoutKey'),
       gameListFilterProvider: _gameListFilterProvider,
       checkInService: _checkInService,
       inputStateService: _inputStateService,
@@ -201,28 +191,33 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       activityService: _activityService,
       followService: _followService,
       infoProvider: _infoProvider,
+      windowStateProvider: _windowStateProvider,
       postListFilterProvider: _postListFilterProvider,
       fileUpload: _fileUploadService,
     );
   }
 
   Widget _buildBaseContent(
-    ThemeProvider themeProvider,
+    ThemeMode themeMode,
     Color particleColor,
+    List<Color> backgroundGradientColor,
     Widget? materialAppGeneratedChild,
   ) {
     return NetworkErrorListenerWidget(
+      networkManager: _networkManager,
       child: GlobalApiErrorListener(
         child: MaintenanceWrapper(
           maintenanceService: _maintenanceService,
           authProvider: _authProvider,
           child: AppBackgroundEffect(
-            isDark: themeProvider.themeMode == ThemeMode.dark,
+            backgroundGradientColor: backgroundGradientColor,
+            particleColor: particleColor,
             windowStateProvider: _windowStateProvider,
             child: Navigator(
+              key: rootNavigatorKey,
               onGenerateRoute: (settings) {
-                return MaterialPageRoute(
-                  settings: settings,
+                return SlideFadePageRoute(
+                  routeSettings: settings,
                   builder: (_) => PlatformWrapper(
                     checkInService: _checkInService,
                     messageService: _messageService,
@@ -246,26 +241,44 @@ class _MainAppState extends State<MainApp> with WidgetsBindingObserver {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Consumer<ThemeProvider>(
-      builder: (context, themeProvider, _) {
-        final particleColor = themeProvider.themeMode == ThemeMode.dark
-            ? const Color(0xFFE0E0E0)
-            : const Color(0xFFB3E5FC);
+    return StreamBuilder<ThemeMode>(
+      stream: _themeProvider.themeModeStream,
+      initialData: _themeProvider.currentThemeMode,
+      builder: (context, snapshot) {
+        final themeMode = snapshot.data!;
+        final isDark = themeMode == ThemeMode.dark;
+        final particleColor =
+            isDark ? const Color(0xFFE0E0E0) : const Color(0xFFB3E5FC);
+        final List<Color> backgroundGradientColors = isDark // 渐变颜色
+            ? [
+                const Color.fromRGBO(0, 0, 0, 0.6),
+                const Color.fromRGBO(0, 0, 0, 0.4)
+              ]
+            : [
+                const Color.fromRGBO(255, 255, 255, 0.7),
+                const Color.fromRGBO(255, 255, 255, 0.5)
+              ];
 
         return MaterialApp(
           navigatorKey: mainNavigatorKey,
           title: GlobalConstants.appName,
-          theme: themeProvider.lightTheme,
-          darkTheme: themeProvider.darkTheme,
-          themeMode: themeProvider.themeMode,
+          theme: _themeProvider.lightTheme,
+          darkTheme: _themeProvider.darkTheme,
+          themeMode: themeMode,
           debugShowCheckedModeBanner: false,
-          navigatorObservers: [routeObserver],
+          navigatorObservers: [
+            routeObserver,
+            SidebarUpdaterObserver(
+              sidebarProvider: _sidebarProvider,
+            ),
+          ],
           onGenerateRoute: (routeSettings) => _buildAppRoutes(routeSettings),
           home: _mainLayout,
           builder: (builderContext, materialAppGeneratedChild) {
             return _buildBaseContent(
-              themeProvider,
+              themeMode,
               particleColor,
+              backgroundGradientColors,
               materialAppGeneratedChild,
             ); // 基础应用内容
           },

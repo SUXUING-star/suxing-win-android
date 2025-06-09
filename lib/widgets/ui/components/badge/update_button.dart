@@ -123,11 +123,9 @@ class UpdateButton extends StatelessWidget {
     if (!updateService.updateAvailable) {
       // 无可用更新时
       await updateService.checkForUpdates(); // 触发更新检查
-      if (context.mounted) {
-        // 检查上下文是否挂载
-        if (!updateService.updateAvailable) {
-          AppSnackBar.showInfo(context, '当前已是最新版本'); // 显示信息提示
-        }
+      // 检查上下文是否挂载
+      if (!updateService.updateAvailable) {
+        AppSnackBar.showInfo('当前已是最新版本'); // 显示信息提示
       }
       return; // 首次点击且无更新时，检查完就返回
     }
@@ -136,8 +134,9 @@ class UpdateButton extends StatelessWidget {
 
     if (releasePageUrl.isEmpty) {
       // 发布页面 URL 为空时
-      if (context.mounted)
-        AppSnackBar.showError(context, '未配置有效的发布页面链接。'); // 显示错误提示
+
+      AppSnackBar.showError('未配置有效的发布页面链接。'); // 显示错误提示
+
       return;
     }
 
@@ -180,16 +179,10 @@ class UpdateButton extends StatelessWidget {
                 await launchUrl(uri,
                     mode: LaunchMode.externalApplication); // 启动外部应用
               } else {
-                if (context.mounted) {
-                  AppSnackBar.showError(context, '无法打开发布页面链接'); // 显示错误提示
-                }
+                AppSnackBar.showError('无法打开发布页面链接'); // 显示错误提示
               }
             } catch (e) {
-              if (context.mounted) {
-                AppSnackBar.showError(
-                    context, // 显示错误提示
-                    '打开链接时出错: ${e.toString().substring(0, (e.toString().length < 100 ? e.toString().length : 100))}');
-              }
+              AppSnackBar.showError("操作失败,${e.toString()}");
             }
           },
         );

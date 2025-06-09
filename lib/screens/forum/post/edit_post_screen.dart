@@ -9,10 +9,11 @@ import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
 import 'package:suxingchahui/widgets/components/form/postform/post_form.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class EditPostScreen extends StatefulWidget {
   final String postId;
@@ -32,8 +33,7 @@ class EditPostScreen extends StatefulWidget {
   _EditPostScreenState createState() => _EditPostScreenState();
 }
 
-class _EditPostScreenState extends State<EditPostScreen>
-    with SnackBarNotifierMixin {
+class _EditPostScreenState extends State<EditPostScreen> {
   final List<PostTag> _availablePostTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _isLoading = true;
@@ -67,8 +67,7 @@ class _EditPostScreenState extends State<EditPostScreen>
       });
     } catch (e) {
       setState(() => _isLoading = false);
-      showSnackBar(
-          message: '加载帖子数据失败: ${e.toString()}', type: SnackBarType.error);
+      AppSnackBar.showError('加载帖子数据失败: ${e.toString()}');
     }
   }
 
@@ -78,11 +77,11 @@ class _EditPostScreenState extends State<EditPostScreen>
       final postTags = PostTagsUtils.tagsToStringList(data.tags);
       await widget.postService
           .updatePost(_post!, data.title, data.content, postTags);
-      showSnackBar(message: "编辑成功", type: SnackBarType.success);
+      AppSnackBar.showSuccess("编辑成功");
       if (!mounted) return;
       NavigationUtils.pop(context, true);
     } catch (e) {
-      showSnackBar(message: '编辑失败: ${e.toString()}', type: SnackBarType.error);
+      AppSnackBar.showError('编辑失败: ${e.toString()}');
     } finally {
       setState(() => _isSubmitting = false);
     }
@@ -90,9 +89,16 @@ class _EditPostScreenState extends State<EditPostScreen>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     if (_isLoading) {
-      return LoadingWidget.fullScreen(message: "正在加载数据");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_post == null) {

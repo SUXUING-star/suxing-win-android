@@ -318,6 +318,7 @@ class _MouseTrailPainter extends CustomPainter {
   ///
   /// [canvas]：画布。
   /// [size]：绘制区域大小。
+  @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint() // 画笔
       ..style = PaintingStyle.fill // 填充样式

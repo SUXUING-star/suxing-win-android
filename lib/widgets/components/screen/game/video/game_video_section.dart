@@ -169,7 +169,7 @@ class _GameVideoSectionState extends State<GameVideoSection> {
             opacity: _isLoadingVideo ? 1.0 : 0.0,
             duration: const Duration(milliseconds: 200),
             child: _isLoadingVideo
-                ? LoadingWidget.inline(
+                ? const LoadingWidget(
                     // 使用你的内联 Loading
                     message: '加载中...',
                     size: 32.0, // 可以调整大小

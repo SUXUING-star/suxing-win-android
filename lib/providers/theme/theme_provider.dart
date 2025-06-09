@@ -1,33 +1,238 @@
 // lib/providers/theme/theme_provider.dart
+import 'dart:async';
 import 'package:flutter/material.dart';
-import '../../utils/font/font_config.dart'; // 引入 FontConfig
+import 'package:suxingchahui/utils/font/font_config.dart';
 
-class ThemeProvider extends ChangeNotifier {
-  ThemeMode _themeMode = ThemeMode.system;
+
+/// 管理应用的主题，并提供主题变更的数据流。
+class ThemeProvider {
+  /// 初始主题模式。
+  static const _initialThemeMode = ThemeMode.system;
+
+  /// 当前的主题模式。
+  /// 用于为新的流监听者提供初始值。
+  ThemeMode _currentThemeMode = _initialThemeMode;
+
+  /// 用于广播主题模式变更的流控制器。
+  final _themeController = StreamController<ThemeMode>.broadcast();
 
   ThemeProvider() {
     _loadThemeMode();
   }
 
-  ThemeMode get themeMode => _themeMode;
+  /// 对外暴露的 [ThemeMode] 变更流，供UI组件监听。
+  Stream<ThemeMode> get themeModeStream => _themeController.stream;
 
-  void _loadThemeMode() {
-    _themeMode = ThemeMode.system;
-    notifyListeners();
-  }
+  /// 同步获取当前 [ThemeMode] 的方法，方便提供初始数据。
+  ThemeMode get currentThemeMode => _currentThemeMode;
 
+  /// 设置新的主题模式，并通过流通知所有监听者。
   void setThemeMode(ThemeMode mode) {
-    _themeMode = mode;
-    notifyListeners();
+    if (mode == _currentThemeMode) return;
+
+    _currentThemeMode = mode;
+    _themeController.add(_currentThemeMode);
   }
 
-  // 获取平台相关的字体配置
+  /// 关闭流控制器以防止内存泄漏。
+  ///
+  /// 当 Provider 不再需要时应调用此方法。
+  void dispose() {
+    _themeController.close();
+  }
+
+  /// 加载主题模式。
+  ///
+  /// 实际应用中，这里应从持久化存储（如 SharedPreferences）加载主题。
+  void _loadThemeMode() {
+    // 此处仅设置初始值并推送到流中。
+    _themeController.add(_initialThemeMode);
+  }
+
+  // --- 主题数据定义 ---
+
+  /// 应用的亮色主题配置。
+  ThemeData get lightTheme {
+    final baseTheme = ThemeData(
+      primarySwatch: Colors.blue,
+      primaryColor: Colors.blue.shade300,
+      scaffoldBackgroundColor: Colors.transparent,
+      fontFamily: FontConfig.defaultFontFamily,
+      cardColor: Colors.white,
+    );
+
+    return baseTheme.copyWith(
+      textTheme: _getPlatformTextTheme(baseTheme.textTheme),
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        backgroundColor: Colors.blue,
+        foregroundColor: Colors.white,
+        titleTextStyle: TextStyle(
+          fontFamily: FontConfig.defaultFontFamily,
+          fontFamilyFallback: FontConfig.fontFallback,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      canvasColor: Colors.white,
+      cardTheme: CardTheme(
+        elevation: 2,
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide.none,
+        ),
+        errorStyle: TextStyle(
+          color: Colors.red[700],
+          fontSize: 12.0,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w300,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: Colors.blue,
+          fontSize: 12.0,
+        ),
+        labelStyle: TextStyle(
+          color: Colors.grey[700],
+          fontSize: 14.0,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  /// 应用的暗色主题配置。
+  ThemeData get darkTheme {
+    final baseTheme = ThemeData.dark().copyWith();
+
+    return baseTheme.copyWith(
+      primaryColor: Colors.white,
+      scaffoldBackgroundColor: Colors.transparent,
+      textTheme: _getPlatformTextTheme(baseTheme.textTheme),
+      appBarTheme: AppBarTheme(
+        elevation: 0,
+        backgroundColor: const Color(0xFF1F1F1F),
+        titleTextStyle: TextStyle(
+          fontFamily: FontConfig.defaultFontFamily,
+          fontFamilyFallback: FontConfig.fontFallback,
+          fontSize: 20,
+          fontWeight: FontWeight.w500,
+          color: Colors.white,
+        ),
+      ),
+      canvasColor: Colors.white,
+      cardTheme: CardTheme(
+        elevation: 2,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          textStyle: TextStyle(
+            fontFamily: FontConfig.defaultFontFamily,
+            fontFamilyFallback: FontConfig.fontFallback,
+          ),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Colors.grey[100],
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide.none,
+        ),
+        labelStyle: TextStyle(
+          color: Colors.grey[700],
+          fontSize: 14.0,
+        ),
+        errorStyle: TextStyle(
+          color: Colors.red[700],
+          fontSize: 12.0,
+        ),
+        hintStyle: TextStyle(
+          color: Colors.grey[400],
+          fontSize: 14.0,
+          fontWeight: FontWeight.w300,
+        ),
+        floatingLabelStyle: TextStyle(
+          color: Colors.blue,
+          fontSize: 12.0,
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8.0),
+          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
+        ),
+      ),
+    );
+  }
+
+  /// 将平台特定的字体配置应用到给定的 [TextTheme]。
   TextTheme _getPlatformTextTheme(TextTheme baseTheme) {
-    // 使用 FontConfig 中定义的字体配置
     final String defaultFontFamily = FontConfig.defaultFontFamily;
     final List<String> fontFallback = FontConfig.fontFallback;
 
-    // 在原有样式基础上只修改字体相关属性
     return baseTheme.copyWith(
       bodyLarge: baseTheme.bodyLarge?.copyWith(
         fontFamily: defaultFontFamily,
@@ -53,7 +258,6 @@ class ThemeProvider extends ChangeNotifier {
         fontFamily: defaultFontFamily,
         fontFamilyFallback: fontFallback,
       ),
-      // 添加更多文本样式，确保所有组件都使用正确的字体
       displayLarge: baseTheme.displayLarge?.copyWith(
         fontFamily: defaultFontFamily,
         fontFamilyFallback: fontFallback,
@@ -89,196 +293,6 @@ class ThemeProvider extends ChangeNotifier {
       labelSmall: baseTheme.labelSmall?.copyWith(
         fontFamily: defaultFontFamily,
         fontFamilyFallback: fontFallback,
-      ),
-    );
-  }
-
-  // 亮色主题
-  ThemeData get lightTheme {
-    final baseTheme = ThemeData(
-      primarySwatch: Colors.blue,
-      primaryColor: Colors.blue.shade300,
-      scaffoldBackgroundColor: Colors.transparent,
-      fontFamily: FontConfig.defaultFontFamily, // 设置全局默认字体
-      cardColor: Colors.white,
-    );
-
-    return baseTheme.copyWith(
-      textTheme: _getPlatformTextTheme(baseTheme.textTheme),
-      appBarTheme: AppBarTheme(
-        elevation: 0,
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        // 确保 AppBar 文本也使用正确的字体
-        titleTextStyle: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily,
-          fontFamilyFallback: FontConfig.fontFallback,
-          fontSize: 20,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      canvasColor: Colors.white,
-      cardTheme: CardTheme(
-        elevation: 2,
-        color: Colors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      // 添加按钮主题，确保按钮文本使用正确字体
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[100], // 或者 Colors.black.withOpacity(0.04)
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide.none, // 如果用 fillColor，可以考虑无边框或极细边框
-        ),
-        // 错误文本样式
-        errorStyle: TextStyle(
-          color: Colors.red[700],
-          fontSize: 12.0,
-        ),
-        hintStyle: TextStyle(
-          color: Colors.grey[400],     // 1. 颜色更浅，与标签和输入内容区分
-          fontSize: 14.0,            // 2. 字号可以比标签略小一点 (或相同)
-          fontWeight: FontWeight.w300, // 3. 字重更轻 (Light)
-        ),
-        floatingLabelStyle: TextStyle(
-          color: Colors.blue, // 比如用主题色
-          fontSize: 12.0, // 通常浮动上去后字号会小一些
-          // fontWeight: FontWeight.bold,
-        ),
-        labelStyle: TextStyle(
-          color: Colors.grey[700], // 比占位符颜色深一点
-          fontSize: 14.0,
-          // fontWeight: FontWeight.normal, // 默认即可
-        ),
-        enabledBorder: OutlineInputBorder(
-          // 或者只在 enabled 时给一个细边框
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
-        ),
-      ),
-    );
-  }
-
-  // 暗色主题
-  ThemeData get darkTheme {
-    final baseTheme = ThemeData.dark().copyWith();
-
-    return baseTheme.copyWith(
-      primaryColor: Colors.white,
-      scaffoldBackgroundColor: Colors.transparent,
-      textTheme: _getPlatformTextTheme(baseTheme.textTheme),
-      appBarTheme: AppBarTheme(
-        elevation: 0,
-        backgroundColor: Color(0xFF1F1F1F),
-        // 确保 AppBar 文本也使用正确的字体
-        titleTextStyle: TextStyle(
-          fontFamily: FontConfig.defaultFontFamily,
-          fontFamilyFallback: FontConfig.fontFallback,
-          fontSize: 20,
-          fontWeight: FontWeight.w500,
-          color: Colors.white,
-        ),
-      ),
-      canvasColor: Colors.white,
-      cardTheme: CardTheme(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
-      ),
-      // 添加按钮主题，确保按钮文本使用正确字体
-      textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-      outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          textStyle: TextStyle(
-            fontFamily: FontConfig.defaultFontFamily,
-            fontFamilyFallback: FontConfig.fontFallback,
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: Colors.grey[100], // 或者 Colors.black.withOpacity(0.04)
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide.none, // 如果用 fillColor，可以考虑无边框或极细边框
-        ),
-        labelStyle: TextStyle(
-          color: Colors.grey[700], // 比占位符颜色深一点
-          fontSize: 14.0,
-          // fontWeight: FontWeight.normal, // 默认即可
-        ),
-        // 错误文本样式
-        errorStyle: TextStyle(
-          color: Colors.red[700],
-          fontSize: 12.0,
-        ),
-        hintStyle: TextStyle(
-          color: Colors.grey[400],     // 1. 颜色更浅，与标签和输入内容区分
-          fontSize: 14.0,            // 2. 字号可以比标签略小一点 (或相同)
-          fontWeight: FontWeight.w300, // 3. 字重更轻 (Light)
-        ),
-        floatingLabelStyle: TextStyle(
-          color: Colors.blue, // 比如用主题色
-          fontSize: 12.0, // 通常浮动上去后字号会小一些
-          // fontWeight: FontWeight.bold,
-        ),
-        enabledBorder: OutlineInputBorder(
-          // 或者只在 enabled 时给一个细边框
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Colors.grey[300]!, width: 0.8),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8.0),
-          borderSide: BorderSide(color: Colors.blue.shade300, width: 1.5),
-        ),
       ),
     );
   }

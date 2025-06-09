@@ -34,10 +34,7 @@ class GameReplyInput extends StatelessWidget {
       // 成功后也可以选择调用 onCancel 关闭输入框
       // onCancel?.call(); // 如果需要，可以取消注释这行
     } catch (e) {
-      // 提交失败，保留输入内容
-      if (context.mounted) {
-        AppSnackBar.showError(context, '回复失败: $e');
-      }
+      AppSnackBar.showError("操作失败,${e.toString()}");
     }
   }
 

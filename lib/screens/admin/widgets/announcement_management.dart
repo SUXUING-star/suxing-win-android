@@ -3,13 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
 import 'package:suxingchahui/widgets/components/form/announcementform/announcement_form.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class AnnouncementManagement extends StatefulWidget {
   final AnnouncementService announcementService;
@@ -27,8 +28,7 @@ class AnnouncementManagement extends StatefulWidget {
   State<AnnouncementManagement> createState() => _AnnouncementManagementState();
 }
 
-class _AnnouncementManagementState extends State<AnnouncementManagement>
-    with SnackBarNotifierMixin {
+class _AnnouncementManagementState extends State<AnnouncementManagement> {
   bool _isLoading = false;
   bool _hasInitializedDependencies = false;
   List<AnnouncementFull> _announcements = [];
@@ -121,13 +121,13 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
           // 创建新公告
           await widget.announcementService.createAnnouncement(result);
 
-          showSnackBar(message: '新公告已创建', type: SnackBarType.success);
+          AppSnackBar.showSuccess('新公告已创建');
         } else {
           // 更新现有公告
           await widget.announcementService
               .updateAnnouncement(existingAnnouncement.id, result);
 
-          showSnackBar(message: '公告已更新', type: SnackBarType.success);
+          AppSnackBar.showError('公告已更新');
         }
 
         // 重新加载公告列表
@@ -137,7 +137,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
           _isLoading = false;
           _errorMessage = '保存公告失败: $e';
         });
-        showSnackBar(message: '操作失败: $e', type: SnackBarType.error);
+        AppSnackBar.showError('操作失败: $e');
       }
     }
   }
@@ -177,8 +177,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
     try {
       await widget.announcementService.deleteAnnouncement(id);
 
-      showSnackBar(message: '公告已删除', type: SnackBarType.success);
-
+      AppSnackBar.showSuccess('公告已删除');
       // 重新加载公告列表
       await _loadAnnouncements();
     } catch (e) {
@@ -187,7 +186,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
         _errorMessage = '删除公告失败: $e';
       });
 
-      showSnackBar(message: '删除失败: $e', type: SnackBarType.error);
+      AppSnackBar.showError('删除失败: $e');
     }
   }
 
@@ -215,9 +214,16 @@ class _AnnouncementManagementState extends State<AnnouncementManagement>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     if (_isLoading) {
-      return LoadingWidget.fullScreen();
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (_errorMessage.isNotEmpty) {

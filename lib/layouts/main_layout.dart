@@ -5,11 +5,11 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/app.dart'; // 导入应用程序入口，用于访问路由观察者
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 导入活动服务
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart'; // 导入公告服务
@@ -53,6 +53,7 @@ class MainLayout extends StatefulWidget {
   final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
   final PostListFilterProvider postListFilterProvider; // 帖子列表筛选 Provider
   final RateLimitedFileUpload fileUpload; // 限速文件上传服务
+  final WindowStateProvider windowStateProvider; // 窗口管理
 
   /// 构造函数。
   ///
@@ -72,6 +73,7 @@ class MainLayout extends StatefulWidget {
   /// [gameListFilterProvider]：游戏列表筛选 Provider。
   /// [postListFilterProvider]：帖子列表筛选 Provider。
   /// [fileUpload]：文件上传服务。
+  /// [windowStateProvider]：文件上传服务。
   const MainLayout({
     super.key,
     required this.sidebarProvider,
@@ -90,6 +92,7 @@ class MainLayout extends StatefulWidget {
     required this.gameListFilterProvider,
     required this.postListFilterProvider,
     required this.fileUpload,
+    required this.windowStateProvider,
   });
 
   /// 创建状态。
@@ -100,7 +103,7 @@ class MainLayout extends StatefulWidget {
 /// `_MainLayoutState` 类：`MainLayout` 的状态管理。
 ///
 /// 管理屏幕初始化、路由监听和子路由状态。
-class _MainLayoutState extends State<MainLayout> with RouteAware {
+class _MainLayoutState extends State<MainLayout> {
   bool _hasInitializedProviders = false; // Provider 是否已初始化标记
   bool _hasInitializedScreens = false; // 屏幕是否已初始化标记
   late List<Widget> _screens; // 存储所有屏幕组件的列表
@@ -113,7 +116,6 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    routeObserver.subscribe(this, ModalRoute.of(context)!); // 订阅路由变化
     if (!_hasInitializedProviders) {
       _hasInitializedProviders = true; // 标记 Provider 已初始化
     }
@@ -125,41 +127,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
 
   @override
   void dispose() {
-    routeObserver.unsubscribe(this); // 取消路由订阅
     super.dispose();
-  }
-
-  /// 路由被推入时调用。
-  @override
-  void didPush() {
-    _updateSubRouteStatus(false); // 更新子路由状态为非激活
-  }
-
-  /// 路由被弹出时调用。
-  @override
-  void didPop() {}
-
-  /// 新路由被推到当前路由之上时调用。
-  @override
-  void didPushNext() {
-    _updateSubRouteStatus(true); // 更新子路由状态为激活
-  }
-
-  /// 位于当前路由之上的路由被弹出时调用。
-  @override
-  void didPopNext() {
-    _updateSubRouteStatus(false); // 更新子路由状态为非激活
-  }
-
-  /// 更新侧边栏的子路由激活状态。
-  ///
-  /// [isActive]：子路由是否激活。
-  void _updateSubRouteStatus(bool isActive) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        widget.sidebarProvider.setSubRouteActive(isActive); // 设置子路由激活状态
-      }
-    });
   }
 
   /// 处理个人资料点击。
@@ -180,6 +148,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   List<Widget> _buildScreens() {
     return [
       HomeScreen(
+        windowStateProvider: widget.windowStateProvider,
         authProvider: widget.authProvider,
         gameService: widget.gameService,
         postService: widget.postService,
@@ -190,6 +159,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         authProvider: widget.authProvider,
         gameService: widget.gameService,
         gameListFilterProvider: widget.gameListFilterProvider,
+        windowStateProvider: widget.windowStateProvider,
       ),
       PostListScreen(
         authProvider: widget.authProvider,
@@ -197,6 +167,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         followService: widget.followService,
         infoProvider: widget.infoProvider,
         postListFilterProvider: widget.postListFilterProvider,
+        windowStateProvider: widget.windowStateProvider,
       ),
       ActivityFeedScreen(
         authProvider: widget.authProvider,
@@ -209,6 +180,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         authProvider: widget.authProvider,
         linkToolService: widget.linkToolService,
         inputStateService: widget.inputStateService,
+        windowStateProvider: widget.windowStateProvider,
       ),
       ProfileScreen(
         sidebarProvider: widget.sidebarProvider,
@@ -216,6 +188,7 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
         userService: widget.userService,
         inputStateService: widget.inputStateService,
         fileUpload: widget.fileUpload,
+        windowStateProvider: widget.windowStateProvider,
       ),
     ];
   }
@@ -227,6 +200,10 @@ class _MainLayoutState extends State<MainLayout> with RouteAware {
   @override
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
+
+    print("测试widgetbuild有没有被调用");
+    print("主导航的index发生变化没有？？");
+    print(widget.sidebarProvider.currentIndex);
 
     return StreamBuilder<int>(
       stream: widget.sidebarProvider.indexStream, // 监听侧边栏索引流

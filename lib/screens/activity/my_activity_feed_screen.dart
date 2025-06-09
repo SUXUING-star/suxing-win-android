@@ -12,6 +12,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible_activity_feed.dart';
@@ -166,7 +167,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
           _error = '加载动态失败: $e';
         } else {
           // Otherwise, show snackbar for refresh errors
-          AppSnackBar.showError(context, '刷新动态失败: $e');
+          AppSnackBar.showError('刷新动态失败: $e');
         }
         _isLoading = false;
       });
@@ -214,7 +215,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       });
     } catch (e) {
       if (mounted) {
-        AppSnackBar.showError(context, '加载更多失败: $e'); // Show error in snackbar
+        AppSnackBar.showError(
+            '加载更多失败: ${e.toString()}'); // Show error in snackbar
         setState(() {
           _isLoadingMore = false; // Reset loading more state on error
         });
@@ -360,7 +362,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
     if (!_checkCanEditOrCanDelete(activity)) {
       if (mounted) {
-        AppSnackBar.showError(context, '您没有权限删除此动态');
+        AppSnackBar.showPermissionDenySnackBar();
       }
       return;
     }
@@ -378,7 +380,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
         try {
           final success = await widget.activityService.deleteActivity(activity);
           if (success && mounted) {
-            AppSnackBar.showSuccess(context, '动态已删除');
+            AppSnackBar.showSuccess('动态已删除');
             // Optimistically remove from list and update pagination
             setState(() {
               final initialTotal = _pagination?.total ?? _activities.length;
@@ -396,7 +398,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
             throw Exception("删除失败，请重试");
           }
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+          AppSnackBar.showError('删除失败: $e');
           rethrow; // Propagate error to dialog
         }
       },
@@ -416,7 +418,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       // Optional: If service doesn't return updated activity, you might need
       // to manually update the state here or trigger a refresh for the specific item.
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '点赞失败: $e');
+      AppSnackBar.showError('点赞失败: ${e.toString()}');
       // Trigger UI rollback in ActivityCard if optimistic update was done.
     }
   }
@@ -433,7 +435,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     try {
       await widget.activityService.unlikeActivity(activityId);
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '取消点赞失败: $e');
+      AppSnackBar.showError('取消点赞失败: ${e.toString()}');
       // Trigger UI rollback.
     }
   }
@@ -451,7 +453,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       final comment =
           await widget.activityService.commentOnActivity(activityId, content);
       if (comment != null && mounted) {
-        AppSnackBar.showSuccess(context, '评论成功');
+        AppSnackBar.showSuccess('评论成功');
         // The new comment object is returned. The ActivityCard should handle
         // adding this comment to its internal state/display.
         return comment;
@@ -459,7 +461,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
         throw Exception("未能添加评论");
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '评论失败: $e');
+      AppSnackBar.showError('评论失败: $e');
     }
     return null; // Return null on failure
   }
@@ -481,7 +483,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     }
     if (!_checkCanDeleteComment(comment)) {
       if (mounted) {
-        AppSnackBar.showError(context, "你没有权限删除这条评论");
+        AppSnackBar.showError("你没有权限删除这条评论");
       }
       return;
     }
@@ -499,12 +501,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
           final success =
               await widget.activityService.deleteComment(activityId, comment);
           if (success && mounted) {
-            AppSnackBar.showSuccess(context, '评论已删除');
+            AppSnackBar.showSuccess('评论已删除');
           } else if (mounted) {
             throw Exception("删除评论失败");
           }
         } catch (e) {
-          if (mounted) AppSnackBar.showError(context, '删除评论失败: $e');
+          if (mounted) AppSnackBar.showError('删除评论失败: ${e.toString()}');
           rethrow;
         }
       },
@@ -514,15 +516,14 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// Handles liking a comment.
   Future<void> _handleLikeComment(String activityId, String commentId) async {
     if (!widget.authProvider.isLoggedIn) {
-      if (mounted) {
-        AppSnackBar.showLoginRequiredSnackBar(context);
-      }
+      AppSnackBar.showLoginRequiredSnackBar(context);
+
       return;
     }
     try {
       await widget.activityService.likeComment(activityId, commentId);
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '点赞评论失败: $e');
+      AppSnackBar.showError('点赞评论失败: ${e.toString()}');
       // Trigger rollback in Comment widget.
     }
   }
@@ -538,7 +539,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     try {
       await widget.activityService.unlikeComment(activityId, commentId);
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '取消点赞评论失败: $e');
+      AppSnackBar.showError('取消点赞评论失败: ${e.toString()}');
       // Trigger rollback in Comment widget.
     }
   }
@@ -571,7 +572,15 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
     }
     // --- 1. Initial Loading State ---
     if (_isLoading && _activities.isEmpty) {
-      return LoadingWidget.fullScreen(message: "正在加载动态...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     // --- 2. Error State (only when list is empty) ---

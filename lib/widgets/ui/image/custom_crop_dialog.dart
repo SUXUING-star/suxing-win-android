@@ -14,57 +14,11 @@ import 'package:image/image.dart' as img; // 图片处理库
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 功能文本按钮组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展工具
+import 'package:suxingchahui/widgets/ui/image/hand_drawn_crop_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 应用 SnackBar 工具
 import 'package:vector_math/vector_math_64.dart' show Vector3; // 向量数学库
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 功能按钮组件
 import 'package:path/path.dart' as p; // 路径处理库
-
-/// `_CropOverlayPainter` 类：自定义裁剪覆盖层绘制器。
-///
-/// 该绘制器在画布上绘制半透明的遮罩和裁剪圆形边框。
-class _CropOverlayPainter extends CustomPainter {
-  final double cropCircleRadius; // 裁剪圆形区域的半径
-  final Offset centerOffset; // 裁剪区域的中心偏移
-
-  /// 构造函数。
-  ///
-  /// [cropCircleRadius]：裁剪圆形半径。
-  /// [centerOffset]：中心偏移。
-  _CropOverlayPainter(
-      {required this.cropCircleRadius, required this.centerOffset});
-
-  /// 绘制裁剪覆盖层。
-  ///
-  /// [canvas]：画布。
-  /// [size]：绘制区域尺寸。
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = centerOffset; // 裁剪区域中心
-    final overlayRect = Rect.fromLTWH(0, 0, size.width, size.height); // 覆盖层矩形
-    final circlePath = Path()
-      ..addOval(
-          Rect.fromCircle(center: center, radius: cropCircleRadius)); // 裁剪圆形路径
-    final overlayPath = Path.combine(PathOperation.difference,
-        Path()..addRect(overlayRect), circlePath); // 结合路径
-    final Paint paint = Paint()
-      ..color = Colors.black.withSafeOpacity(0.6); // 绘制半透明黑色
-    canvas.drawPath(overlayPath, paint); // 绘制覆盖层
-    final Paint borderPaint = Paint()
-      ..color = Colors.white.withSafeOpacity(0.8)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5; // 绘制白色边框
-    canvas.drawCircle(center, cropCircleRadius, borderPaint); // 绘制圆形边框
-  }
-
-  /// 判断是否需要重绘。
-  ///
-  /// [oldDelegate]：旧的绘制器代理。
-  @override
-  bool shouldRepaint(covariant _CropOverlayPainter oldDelegate) {
-    return oldDelegate.cropCircleRadius != cropCircleRadius ||
-        oldDelegate.centerOffset != centerOffset; // 裁剪半径或中心偏移变化时重绘
-  }
-}
 
 /// `CropResult` 类：表示图片裁剪结果。
 ///
@@ -231,7 +185,7 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
     } catch (e) {
       if (mounted) {
         setState(() => _isLoadingImage = false); // 捕获异常时取消加载状态
-        AppSnackBar.showError(context, '无法加载图片，请重新换一张图片'); // 显示错误提示
+        AppSnackBar.showError('无法加载图片，请重新换一张图片'); // 显示错误提示
       }
     }
   }
@@ -458,7 +412,7 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
         Navigator.of(context).pop(finalResult); // 返回裁剪结果
       } else {
         Navigator.of(context).pop(null); // 返回 null
-        AppSnackBar.showError(context, "图片裁剪失败，请重试"); // 显示错误提示
+        AppSnackBar.showError("图片裁剪失败，请重试"); // 显示错误提示
       }
     }
   }
@@ -466,155 +420,118 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
   /// 构建裁剪对话框的内容界面。
   @override
   Widget build(BuildContext context) {
-    final double buttonIconSize = 18.0; // 按钮图标大小
-    final double buttonFontSize = 15.0; // 按钮字体大小
+    final double buttonIconSize = 18.0;
+    final double buttonFontSize = 15.0;
     final EdgeInsets buttonPadding =
-        const EdgeInsets.symmetric(horizontal: 10, vertical: 10); // 按钮内边距
+        const EdgeInsets.symmetric(horizontal: 10, vertical: 10);
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 12.0), // 容器内边距
+      padding: const EdgeInsets.fromLTRB(20.0, 20.0, 20.0, 12.0),
       child: Column(
-        mainAxisSize: MainAxisSize.min, // 列主轴尺寸最小化以适应内容
-        crossAxisAlignment: CrossAxisAlignment.stretch, // 交叉轴拉伸
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Padding(
-            padding: const EdgeInsets.only(bottom: 16.0), // 底部填充
+            padding: const EdgeInsets.only(bottom: 16.0),
             child: Text(
-              '更新头像', // 标题文本
-              style: Theme.of(context).textTheme.headlineSmall, // 文本样式
-              textAlign: TextAlign.center, // 文本居中
+              '更新头像',
+              style: Theme.of(context).textTheme.headlineSmall,
+              textAlign: TextAlign.center,
             ),
           ),
           Flexible(
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // 交叉轴拉伸
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Expanded(
-                  flex: 6, // 裁剪区域宽度比例
+                  flex: 6,
                   child: Container(
                     decoration: BoxDecoration(
                         color: Colors.black38,
                         borderRadius: BorderRadius.circular(8),
-                        border:
-                            Border.all(color: Colors.grey.shade700)), // 裁剪区域装饰
-                    margin: const EdgeInsets.only(right: 8.0), // 右侧外边距
+                        border: Border.all(color: Colors.grey.shade700)),
+                    margin: const EdgeInsets.only(right: 8.0),
                     child: LayoutBuilder(
+                      // 保留LayoutBuilder以获取尺寸
                       builder: (context, constraints) {
+                        // LayoutBuilder 仍然有用，用来确定初始尺寸和半径
                         WidgetsBinding.instance.addPostFrameCallback((_) {
                           if (mounted &&
                               (_cropAreaSize == null ||
                                   _cropAreaSize !=
                                       Size(constraints.maxWidth,
                                           constraints.maxHeight))) {
-                            // 裁剪区域尺寸变化时
-                            final newSize = Size(constraints.maxWidth,
-                                constraints.maxHeight); // 新尺寸
+                            final newSize = Size(
+                                constraints.maxWidth, constraints.maxHeight);
+                            // 这里的 cropCircleRadius 只是用于计算，实际绘制由 RenderObject 负责
                             final newRadius =
                                 math.min(newSize.width, newSize.height) /
                                     2 *
-                                    0.85; // 新半径
+                                    0.85;
                             setState(() {
-                              _cropAreaSize = newSize; // 更新裁剪区域尺寸
-                              _cropCircleRadius = newRadius; // 更新裁剪圆形半径
-                              if (_decodedUiImage != null) {
-                                _setInitialTransformation(); // 设置初始变换
+                              _cropAreaSize = newSize;
+                              _cropCircleRadius = newRadius;
+                              if (_decodedUiImage != null &&
+                                  _transformationController.value ==
+                                      Matrix4.identity()) {
+                                _setInitialTransformation(); // 仅在未设置时设置初始变换
                               }
                             });
                           }
                         });
 
-                        final currentCropAreaSize = _cropAreaSize ??
-                            Size(constraints.maxWidth,
-                                constraints.maxHeight); // 当前裁剪区域尺寸
-                        final currentRadius = _cropCircleRadius > 0
-                            ? _cropCircleRadius
-                            : math.min(constraints.maxWidth,
-                                    constraints.maxHeight) /
-                                2 *
-                                0.85; // 当前裁剪半径
-                        final centerOffset = Offset(
-                            currentCropAreaSize.width / 2,
-                            currentCropAreaSize.height / 2); // 中心偏移
-
-                        Widget content; // 内容组件
+                        Widget content;
                         if (_isLoadingImage) {
-                          content = LoadingWidget.inline(size: 24); // 显示加载动画
+                          content = const LoadingWidget(size: 24);
                         } else if (_originalImageBytes == null ||
                             _decodedUiImage == null) {
                           content = Center(
                             child: FunctionalButton(
-                              icon: Icons.upload_file, // 上传文件图标
-                              label: '选择图片', // 按钮文本
-                              onPressed: _pickImage, // 点击回调
-                              foregroundColor: Colors.black, // 前景色
-                              backgroundColor: Colors.white, // 背景色
+                              icon: Icons.upload_file,
+                              label: '选择图片',
+                              onPressed: _pickImage,
+                              foregroundColor: Colors.black,
+                              backgroundColor: Colors.white,
                             ),
                           );
                         } else {
                           content = ClipRect(
-                            // 裁剪矩形
-                            child: Stack(
-                              alignment: Alignment.center, // 堆栈内容居中
-                              children: [
-                                InteractiveViewer(
-                                  // 交互式查看器
-                                  transformationController:
-                                      _transformationController, // 变换控制器
-                                  boundaryMargin: const EdgeInsets.all(
-                                      double.infinity), // 边界边距
-                                  minScale: 0.1, // 最小缩放
-                                  maxScale: 10.0, // 最大缩放
-                                  constrained: false, // 不受约束
-                                  child: Image.memory(
-                                      _originalImageBytes!, // 原始图片字节
-                                      key: ValueKey(
-                                          _originalImageBytes!.hashCode), // 唯一键
-                                      fit: BoxFit.contain, // 填充模式
-                                      alignment: Alignment.center, // 对齐方式
-                                      filterQuality:
-                                          FilterQuality.medium), // 过滤质量
-                                ),
-                                IgnorePointer(
-                                  // 忽略指针事件
-                                  child: CustomPaint(
-                                    size: currentCropAreaSize, // 尺寸
-                                    painter: _CropOverlayPainter(
-                                        cropCircleRadius: currentRadius,
-                                        centerOffset: centerOffset), // 绘制器
-                                  ),
-                                ),
-                              ],
+                            // ClipRect 保证手势不出界
+                            child: HandDrawnCropWidget(
+                              image: _decodedUiImage,
+                              controller: _transformationController,
+                              // cropCircleRadiusRatio 可以自定义，这里保持和原来逻辑一致
+                              // 实际的半径计算和绘制都封装在 RenderObject 里了
                             ),
                           );
                         }
-                        return content; // 返回内容
+                        return content;
                       },
                     ),
                   ),
                 ),
                 Expanded(
-                  flex: 4, // 预览区域宽度比例
+                  flex: 4,
                   child: Container(
-                    padding: const EdgeInsets.all(16.0), // 内边距
+                    padding: const EdgeInsets.all(16.0),
                     decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
-                        borderRadius: BorderRadius.circular(8)), // 装饰
-                    margin: const EdgeInsets.only(left: 8.0), // 左侧外边距
+                        borderRadius: BorderRadius.circular(8)),
+                    margin: const EdgeInsets.only(left: 8.0),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center, // 垂直居中
-                      crossAxisAlignment: CrossAxisAlignment.center, // 水平居中
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         const Text('效果预览',
                             style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500)), // 预览标题
-                        const SizedBox(height: 20), // 间距
+                                fontSize: 16, fontWeight: FontWeight.w500)),
+                        const SizedBox(height: 20),
                         CircleAvatar(
-                          radius: 60, // 半径
-                          backgroundColor: Colors.grey.shade200, // 背景色
+                          radius: 60,
+                          backgroundColor: Colors.grey.shade200,
                           backgroundImage: (_croppedPreviewBytes != null &&
                                   _croppedPreviewBytes!.isNotEmpty)
-                              ? MemoryImage(_croppedPreviewBytes!) // 预览图片
+                              ? MemoryImage(_croppedPreviewBytes!)
                               : null,
                           child: (_croppedPreviewBytes == null ||
                                   _croppedPreviewBytes!.isEmpty)
@@ -624,29 +541,25 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
                                           width: 24,
                                           height: 24,
                                           child: CircularProgressIndicator(
-                                              strokeWidth: 2)) // 预览加载动画
+                                              strokeWidth: 2))
                                       : Icon(Icons.image_not_supported_outlined,
-                                          size: 40,
-                                          color: Colors.grey[400])) // 预览失败图标
-                                  : Icon(Icons.person, // 初始状态图标
-                                      size: 60,
-                                      color: Colors.white70)
+                                          size: 40, color: Colors.grey[400]))
+                                  : Icon(Icons.person,
+                                      size: 60, color: Colors.white70)
                               : null,
                         ),
-                        const SizedBox(height: 15), // 间距
-                        if (_decodedUiImage != null) // 显示重新选择按钮
+                        const SizedBox(height: 15),
+                        if (_decodedUiImage != null)
                           TextButton.icon(
-                            icon: const Icon(Icons.refresh, size: 18), // 刷新图标
-                            label: const Text('重新选择'), // 按钮文本
-                            onPressed: _pickImage, // 点击回调
+                            icon: const Icon(Icons.refresh, size: 18),
+                            label: const Text('重新选择'),
+                            onPressed: _pickImage,
                             style: TextButton.styleFrom(
-                                foregroundColor: Theme.of(context)
-                                    .colorScheme
-                                    .secondary, // 字体颜色
+                                foregroundColor:
+                                    Theme.of(context).colorScheme.secondary,
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 12, vertical: 6), // 内边距
-                                textStyle:
-                                    const TextStyle(fontSize: 14)), // 文本样式
+                                    horizontal: 12, vertical: 6),
+                                textStyle: const TextStyle(fontSize: 14)),
                           ),
                       ],
                     ),
@@ -656,32 +569,32 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.only(top: 16.0, bottom: 8.0), // 内边距
+            padding: const EdgeInsets.only(top: 16.0, bottom: 8.0),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.end, // 主轴末尾对齐
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 FunctionalTextButton(
                   onPressed: _isProcessingConfirm
                       ? null
-                      : () => Navigator.of(context).pop(null), // 取消按钮点击回调
-                  label: '取消', // 按钮文本
+                      : () => Navigator.of(context).pop(null),
+                  label: '取消',
                 ),
-                const SizedBox(width: 12), // 间距
+                const SizedBox(width: 12),
                 FunctionalButton(
-                  label: '确定', // 按钮文本
-                  icon: Icons.check, // 图标
+                  label: '确定',
+                  icon: Icons.check,
                   onPressed: (_croppedPreviewBytes != null &&
                           _croppedPreviewBytes!.isNotEmpty)
                       ? _confirmCrop
-                      : null, // 仅当预览有效时可点击确定
-                  isLoading: _isProcessingConfirm, // 加载状态
+                      : null,
+                  isLoading: _isProcessingConfirm,
                   isEnabled: (_croppedPreviewBytes != null &&
                       _croppedPreviewBytes!.isNotEmpty &&
                       !_isProcessingConfirm &&
-                      !_isLoadingImage), // 启用状态
-                  fontSize: buttonFontSize, // 字体大小
-                  iconSize: buttonIconSize, // 图标大小
-                  padding: buttonPadding, // 内边距
+                      !_isLoadingImage),
+                  fontSize: buttonFontSize,
+                  iconSize: buttonIconSize,
+                  padding: buttonPadding,
                 ),
               ],
             ),

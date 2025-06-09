@@ -210,7 +210,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     try {
       // 必须确保 draftKey 有效
       if (_draftKey == null) {
-        if (mounted) AppSnackBar.showError(context, "无法保存草稿：内部错误");
+        if (mounted) AppSnackBar.showError("无法保存草稿");
         return; // 无法保存，不退出
       }
 
@@ -218,16 +218,15 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       await _performSaveDraft(); // 这个方法会处理图片占位符等
 
       // 保存成功后提示并退出
+
+      AppSnackBar.showSuccess('草稿已保存');
+      // 延迟一小段时间再 pop，确保 SnackBar 能显示出来
+      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
-        AppSnackBar.showSuccess(context, '草稿已保存');
-        // 延迟一小段时间再 pop，确保 SnackBar 能显示出来
-        await Future.delayed(const Duration(milliseconds: 500));
-        if (mounted) {
-          Navigator.pop(context); // 退出当前页面
-        }
+        Navigator.pop(context); // 退出当前页面
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '保存草稿失败: ${e.toString()}');
+      AppSnackBar.showError("操作失败,${e.toString()}");
       // 保存失败，暂时不退出，让用户看到错误信息
     }
   }
@@ -312,12 +311,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // AppSnackBar.showInfo(context, '草稿已丢弃'); // 暂时不需要，对话框关闭即可
       }
     } catch (e) {
-      // print(
-      //     "Error discarding draft (load, clear Hive, or delete files) for key $_draftKey: $e");
-      if (mounted) {
-        AppSnackBar.showError(context, '丢弃草稿时出错');
-      }
-      // 即使出错，也要确保 onCancel 回调结束，对话框能正常关闭
+      AppSnackBar.showError("操作失败,${e.toString()}");
     }
     // onCancel 通常只是关闭对话框，不需要在这里 pop 页面等
   }
@@ -353,12 +347,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             // 注意：这里的 await 会在 CustomConfirmDialog 内部处理
             await _loadAndApplyDraft(); // 加载并应用
             // 确认操作完成后，检查组件是否还在树上
-            if (mounted) {
-              setState(() {
-                _isDraftRestored = true;
-              }); // 标记已恢复
-              AppSnackBar.showSuccess(context, '草稿已恢复');
-            }
+
+            setState(() {
+              _isDraftRestored = true;
+            }); // 标记已恢复
+            AppSnackBar.showSuccess('草稿已恢复');
           },
 
           // --- 取消回调：清除草稿 ---
@@ -368,7 +361,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // CustomConfirmDialog.show 返回 Future<void>，await 它会等待 onConfirm 完成
         // 如果 onConfirm 出错，错误会从这里抛出
       } catch (e) {
-        if (mounted) AppSnackBar.showError(context, '处理草稿时出错: ${e.toString()}');
+        AppSnackBar.showError("操作失败,${e.toString()}");
         // 即使对话框处理出错，也尝试清除草稿避免死循环
         try {
           await _cacheService.clearDraft(_draftKey!);
@@ -443,8 +436,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // print("Could not load draft or draft was null for key: $_draftKey.");
       }
     } catch (e) {
-      // print("Error applying draft for key $_draftKey: $e");
-      if (mounted) AppSnackBar.showError(context, '应用草稿时出错');
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) {
         setState(() => _isProcessing = false);
@@ -637,8 +629,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     try {
       await _cacheService.saveDraft(_draftKey!, draft);
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '保存草稿时发生错误');
-      // print("Error in _cacheService.saveDraft: $e");
+      AppSnackBar.showError("操作失败,${e.toString()}");
     }
   }
 
@@ -768,7 +759,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     if (isValidMes != null) {
       isValid = false;
       if (context.mounted) {
-        AppSnackBar.showWarning(context, isValidMes);
+        AppSnackBar.showWarning(isValidMes);
       }
     } else {
       isValid = true;
@@ -1085,13 +1076,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         } catch (e) {
           // action 内部错误处理
           if (mounted) {
-            String errorMessage = e.toString();
-            if (e is Exception) {
-              errorMessage = e
-                  .toString()
-                  .replaceFirst("Exception: ", ""); // 移除 "Exception: " 前缀
-            }
-            AppSnackBar.showError(context, '提交处理失败: $errorMessage');
+            AppSnackBar.showError("操作失败,${e.toString()}");
           }
 
           // 新增：核心业务逻辑失败，触发异步删除已上传的图片
@@ -1105,7 +1090,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         // 锁定时（操作已在进行中）的回调
         //print("Operation ($operationKey) is already in progress.");
         if (mounted) {
-          AppSnackBar.showInfo(context, '操作正在进行中，请稍候...');
+          AppSnackBar.showInfo('操作正在进行中，请稍候...');
         }
         // 锁获取失败时，应该重置 processing 状态，因为当前实例并未执行操作
         if (mounted) {
@@ -1172,7 +1157,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           Positioned.fill(
             child: Container(
               color: Colors.black.withSafeOpacity(0.1), // 半透明遮罩
-              child: LoadingWidget.inline(), // 居中显示
+              child: const LoadingWidget(), // 居中显示
             ),
           ),
       ],
@@ -1183,9 +1168,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Future<void> _handleBlockedPopAttempt() async {
     // First, check if it was blocked due to processing
     if (_isProcessing) {
-      if (mounted) {
-        AppSnackBar.showInfo(context, '正在处理中，请稍候...');
-      }
+      AppSnackBar.showInfo('正在处理中，请稍候...');
+
       return; // Do nothing more, pop remains blocked
     }
 

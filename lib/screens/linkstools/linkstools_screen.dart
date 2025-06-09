@@ -2,13 +2,16 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -25,11 +28,14 @@ class LinksToolsScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final LinkToolService linkToolService;
   final InputStateService inputStateService;
+  final WindowStateProvider windowStateProvider;
+
   const LinksToolsScreen({
     super.key,
     required this.authProvider,
     required this.linkToolService,
     required this.inputStateService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -53,8 +59,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   late final AuthProvider _authProvider;
 
   String? _currentUserId;
-
-  final double _desktopBreakpoint = 900.0;
 
   @override
   void initState() {
@@ -152,11 +156,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
   }
 
-
   // --- _showAddLinkDialog ---
   void _showAddLinkDialog(BuildContext context) {
     if (!_checkCanEditOrDelete()) {
-      AppSnackBar.showPermissionDenySnackBar(context);
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     showDialog<Map<String, dynamic>>(
@@ -169,11 +172,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
           await _linkToolService.addLink(SiteLink.fromJson(linkData));
           await _loadData();
           if (!mounted) return;
-          AppSnackBar.showSuccess(this.context, '添加链接成功');
+          AppSnackBar.showSuccess('添加链接成功');
         } catch (e) {
-          if (mounted) {
-            AppSnackBar.showError(this.context, '添加链接失败: ${e.toString()}');
-          }
+          AppSnackBar.showError('添加链接失败: ${e.toString()}');
         }
       }
     });
@@ -186,7 +187,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   // --- _showAddToolDialog  ---
   void _showAddToolDialog(BuildContext context) {
     if (!_checkCanEditOrDelete()) {
-      AppSnackBar.showPermissionDenySnackBar(context);
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     showDialog<Map<String, dynamic>>(
@@ -200,13 +201,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
           await _linkToolService.addTool(Tool.fromJson(toolData));
           if (mounted) await _loadData();
 
-          if (mounted) {
-            AppSnackBar.showSuccess(this.context, '添加工具成功');
-          }
+          AppSnackBar.showSuccess('添加工具成功');
         } catch (e) {
-          if (mounted) {
-            AppSnackBar.showError(this.context, "添加失败 ${e.toString()}");
-          }
+          AppSnackBar.showError("添加失败 ${e.toString()}");
         }
       }
     });
@@ -246,8 +243,6 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
           final currentUser = authSnapshot.data;
 
           final isAdmin = currentUser?.isAdmin ?? false;
-          final screenWidth = MediaQuery.of(context).size.width;
-          final isDesktop = screenWidth >= _desktopBreakpoint;
 
           return VisibilityDetector(
             key: Key('linkstools_screen_visibility'),
@@ -256,10 +251,9 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
               appBar: const CustomAppBar(title: '实用工具'),
               body: RefreshIndicator(
                 onRefresh: _loadData,
-                child: _buildLinksToolsContent(isAdmin, isDesktop),
+                child: _buildLinksToolsContent(isAdmin),
               ),
-              floatingActionButton:
-                  _buildFloatButtons(isAdmin, context),
+              floatingActionButton: _buildFloatButtons(isAdmin, context),
             ),
           );
         });
@@ -271,6 +265,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
       child: FloatingActionButtonGroup(
+        toggleButtonHeroTag: "link_tool_heroTags",
         spacing: 16.0,
         alignment: MainAxisAlignment.end,
         children: [
@@ -291,15 +286,30 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     );
   }
 
-  Widget _buildLinksToolsContent(bool isAdmin, bool isDesktop) {
+  Widget _buildLinksToolsContent(bool isAdmin) {
     // State 1: 未初始化 (逻辑不变)
     if (!_isInitialized && !_isLoadingData) {
-      return LoadingWidget.fullScreen(message: "等待加载...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "等待加载...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
     // State 2: 加载中
     else if (_isLoadingData && (_links == null || _tools == null)) {
-      // 仅在首次加载且数据为 null 时显示全屏 Loading
-      return LoadingWidget.fullScreen(message: "正在加载工具和链接...");
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
     // State 3: 错误 (逻辑不变, 重试调用 _loadData())
     else if (_errorMessage != null) {
@@ -312,11 +322,16 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
     // State 4: 加载成功 (逻辑不变)
     else {
-      if (isDesktop) {
-        return _buildDesktopLayout(isAdmin);
-      } else {
-        return _buildMobileLayout(isAdmin);
-      }
+      return LazyLayoutBuilder(
+        windowStateProvider: widget.windowStateProvider,
+        builder: (context, constraints) {
+          final screenWidth = constraints.maxWidth;
+          final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+          return isDesktop
+              ? _buildDesktopLayout(isAdmin)
+              : _buildMobileLayout(isAdmin);
+        },
+      );
     }
   }
 
@@ -450,7 +465,10 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   Widget _buildLinksContent(bool isAdmin) {
     if (_links == null && _isLoadingData) {
       // 首次加载中
-      return SliverFillRemaining(child: LoadingWidget.inline());
+      return const SliverFillRemaining(
+          child: LoadingWidget(
+        size: 24,
+      ));
     } else if (_links == null || _links!.isEmpty) {
       // 加载失败或为空
       return SliverToBoxAdapter(
@@ -482,7 +500,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   Widget _buildToolsContent(bool isAdmin) {
     if (_tools == null && _isLoadingData) {
       // 首次加载中
-      return SliverFillRemaining(child: LoadingWidget.inline());
+      return const SliverFillRemaining(child: LoadingWidget());
     } else if (_tools == null || _tools!.isEmpty) {
       // 加载失败或为空
       return SliverToBoxAdapter(

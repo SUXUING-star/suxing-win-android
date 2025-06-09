@@ -80,6 +80,36 @@ class NavigationUtils {
         () => _getRootNavigator().push(route)); // 安全调用根导航器的 push 方法
   }
 
+  /// 获取最顶层的可用上下文
+  ///
+  /// 该方法尝试获取当前应用中最顶层的 Overlay 的上下文。
+  /// 这对于在对话框、模态框等新路由之上显示全局组件（如 SnackBar）至关重要。
+  /// 它能确保组件总是在视觉的最上层。
+  ///
+  /// 优先顺序：
+  /// 1. 根导航器的 Overlay 上下文 (mainNavigatorKey.currentState.overlay.context)
+  /// 2. 根导航器的上下文 (mainNavigatorKey.currentContext)
+  ///
+  /// 如果都失败，会抛出异常。
+  static BuildContext getTopmostContext() {
+    final navigator = mainNavigatorKey.currentState;
+    if (navigator != null) {
+      // 优先使用 overlay 的 context，因为它通常是视觉最顶层的。
+      // 当有对话框弹出时，这个 context 就是对话框的 context。
+      if (navigator.overlay != null && navigator.overlay!.context.mounted) {
+        return navigator.overlay!.context;
+      }
+      // 如果 overlay context 不行，回退到 navigator 自己的 context。
+      if (navigator.context.mounted) {
+        return navigator.context;
+      }
+    }
+
+    // 如果通过 key 找不到，就抛个异常，让问题暴露出来。
+    throw FlutterError('NavigationUtils.getTopmostContext: 无法获取任何有效的顶层上下文。'
+        '请确保 mainNavigatorKey 已正确附加到 MaterialApp。');
+  }
+
   /// 通过路由名称推送一个新路由到导航栈。
   ///
   /// [context]：Build 上下文。
@@ -188,10 +218,31 @@ class NavigationUtils {
   /// [result]：可选的返回结果。
   /// 返回 true 表示成功弹出，false 表示无法弹出。
   static bool pop<T>(BuildContext context, [T? result]) {
-    final navigator = _getRootNavigator(); // 获取根导航器
-    if (!navigator.canPop()) return false; // 无法弹出时返回 false
-    _safeCallSync(() => navigator.pop(result)); // 安全同步调用导航器的 pop 方法
-    return true; // 成功弹出
+    // 核心修复：优先使用当前 context 的 Navigator。这是最精确、最稳妥的方式。
+    // 它能确保 pop 操作与当前的渲染树完美同步，从而避免了那一帧的黑屏。
+    final navigator = Navigator.of(context);
+
+    // 我们首先尝试用当前的 navigator 来 pop。
+    if (navigator.canPop()) {
+      navigator.pop(result);
+      return true;
+    }
+
+    // 如果当前 context 的 Navigator 无法 pop（比如它就是根，或者在一个独立的 Navigator 里），
+    // 我们再尝试用全局的根 Navigator 作为后备方案，以确保在任何情况下都能 pop。
+    // 这结合了精确性和健壮性。
+    try {
+      final rootNavigator = _getRootNavigator();
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop(result);
+        return true;
+      }
+    } catch (e) {
+      // 捕获获取 rootNavigator 可能出现的错误
+    }
+
+    // 如果两种方式都无法 pop，才返回 false。
+    return false;
   }
 
   /// 弹出直到满足指定条件的路由。

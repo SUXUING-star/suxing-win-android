@@ -4,12 +4,10 @@
 /// PostListFilterProvider 控制帖子列表的选中标签。
 library;
 
-import 'package:flutter/foundation.dart'; // 导入 Flutter 基础工具，提供 ChangeNotifier 功能
-
 /// `PostListFilterProvider` 类：管理帖子列表筛选器状态的 Provider。
 ///
 /// 该类提供帖子列表的标签筛选状态。
-class PostListFilterProvider with ChangeNotifier {
+class PostListFilterProvider {
   String? _selectedTagString; // 当前选中的标签字符串
   bool _tagHasBeenSet = false; // 标签是否已被显式设置的标记
 
@@ -31,7 +29,6 @@ class PostListFilterProvider with ChangeNotifier {
       // 检查新标签是否与当前标签不同
       _selectedTagString = newTagString; // 更新标签
       _tagHasBeenSet = true; // 设置标签已设置标记
-      notifyListeners(); // 通知监听者状态已更新
     } else if (newTagString != null && !_tagHasBeenSet) {
       // 检查新标签非空且标记未设置
       _tagHasBeenSet = true; // 设置标签已设置标记

@@ -3,14 +3,13 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class FollowsLayout extends StatelessWidget {
   final User? currentUser;
+  final bool isDesktopLayout;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
   final TabController tabController;
@@ -24,6 +23,7 @@ class FollowsLayout extends StatelessWidget {
     super.key,
     required this.infoProvider,
     required this.followService,
+    required this.isDesktopLayout,
     required this.currentUser,
     required this.tabController,
     required this.followingsIDs,
@@ -35,15 +35,9 @@ class FollowsLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktop;
-    final isTablet = DeviceUtils.isTablet(context);
-    final isLandscape = DeviceUtils.isLandscape(context);
-
-    if (isDesktop || (isTablet && isLandscape)) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return isDesktopLayout
+        ? _buildDesktopLayout(context)
+        : _buildMobileLayout(context);
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -61,8 +55,8 @@ class FollowsLayout extends StatelessWidget {
                   child: Text(
                     '关注 ${followingsIDs?.length ?? 0}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Expanded(
@@ -85,8 +79,8 @@ class FollowsLayout extends StatelessWidget {
                   child: Text(
                     '粉丝 ${followersIDs?.length ?? 0}',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 Expanded(
@@ -112,14 +106,14 @@ class FollowsLayout extends StatelessWidget {
           onRefresh: onRefreshTargetUser,
           child: (isLoadingTargetUser &&
                   (followingsIDs == null || followingsIDs!.isEmpty))
-              ? _buildLoadingView("加载关注列表...")
+              ? const LoadingWidget(message: "加载关注列表...")
               : _buildUserList(context, followingsIDs, isFollowingList: true),
         ),
         RefreshIndicator(
           onRefresh: onRefreshTargetUser,
           child: (isLoadingTargetUser &&
                   (followersIDs == null || followersIDs!.isEmpty))
-              ? _buildLoadingView("加载粉丝列表...")
+              ? const LoadingWidget(message: "加载粉丝列表...")
               : _buildUserList(context, followersIDs, isFollowingList: false),
         ),
       ],
@@ -137,14 +131,12 @@ class FollowsLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildLoadingView(String message) {
-    return LoadingWidget.inline(message: message);
-  }
-
   Widget _buildUserList(BuildContext context, List<String>? userIds,
       {required bool isFollowingList}) {
     if (isLoadingTargetUser && (userIds == null || userIds.isEmpty)) {
-      return _buildLoadingView(isFollowingList ? "加载关注列表中..." : "加载粉丝列表中...");
+      return isFollowingList
+          ? const LoadingWidget(message: "加载关注列表中...")
+          : const LoadingWidget(message: "加载粉丝列表中...");
     }
 
     if (userIds?.isEmpty ?? true) {
@@ -167,8 +159,7 @@ class FollowsLayout extends StatelessWidget {
               style: TextStyle(fontSize: 16, color: Colors.grey[600]),
             ),
             const SizedBox(height: 24),
-            FunctionalTextButton(
-                onPressed: onRefreshTargetUser, label: '刷新看看'),
+            FunctionalTextButton(onPressed: onRefreshTargetUser, label: '刷新看看'),
           ],
         ),
       );

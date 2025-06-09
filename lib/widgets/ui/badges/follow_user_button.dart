@@ -90,7 +90,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
     if (widget.currentUser == null) {
       // 用户未登录
       if (!mounted) return; // 组件未挂载时返回
-      AppSnackBar.showInfo(context, '请先登录'); // 提示登录
+      AppSnackBar.showLoginRequiredSnackBar(context); // 提示登录
       return;
     }
 
@@ -122,8 +122,7 @@ class _FollowUserButtonState extends State<FollowUserButton> {
         setState(() {
           _isFollowing = wasFollowing; // 恢复关注状态
         });
-        AppSnackBar.showError(
-            context, wasFollowing ? '取消关注失败' : '关注失败'); // 显示错误提示
+        AppSnackBar.showError(wasFollowing ? '取消关注失败' : '关注失败'); // 显示错误提示
       }
     } on ApiException catch (apiException) {
       // 捕获 API 异常
@@ -136,27 +135,26 @@ class _FollowUserButtonState extends State<FollowUserButton> {
         setState(() {
           _isFollowing = true; // 确保状态为已关注
         });
-        AppSnackBar.showInfo(context, displayMessage); // 显示信息提示
+        AppSnackBar.showInfo(displayMessage); // 显示信息提示
       } else if (apiException.apiErrorCode ==
           BackendApiErrorCodes.unFollowAlready) {
         // 已取消关注错误
         setState(() {
           _isFollowing = false; // 确保状态为未关注
         });
-        AppSnackBar.showInfo(context, displayMessage); // 显示信息提示
+        AppSnackBar.showInfo(displayMessage); // 显示信息提示
       } else {
         setState(() {
           _isFollowing = wasFollowing; // 恢复关注状态
         });
-        AppSnackBar.showError(context, displayMessage); // 显示错误提示
+        AppSnackBar.showError(displayMessage); // 显示错误提示
       }
     } catch (e) {
       // 捕获其他异常
-      if (!mounted) return; // 组件未挂载时返回
       setState(() {
         _isFollowing = wasFollowing; // 恢复关注状态
       });
-      AppSnackBar.showError(context, '操作失败: ${e.toString()}'); // 显示操作失败提示
+      AppSnackBar.showError("操作失败,${e.toString()}");
     }
   }
 

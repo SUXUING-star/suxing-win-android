@@ -4,7 +4,6 @@
 /// 该组件支持显示用户头像、触发头像编辑流程和处理图片上传。
 library;
 
-
 import 'dart:io'; // 导入 File 类
 import 'dart:typed_data'; // 导入 Uint8List
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
@@ -90,10 +89,9 @@ class EditableUserAvatar extends StatelessWidget {
 
       final avatarUrl = await fileUpload.uploadAvatar(tempFile); // 上传临时文件
 
-      if (context.mounted) {
-        // 检查上下文挂载状态
-        AppSnackBar.showSuccess(context, '头像更新成功'); // 显示成功提示
-      }
+      // 检查上下文挂载状态
+      AppSnackBar.showSuccess('头像更新成功'); // 显示成功提示
+
       onUploadSuccess(avatarUrl); // 通知父组件上传成功
     } catch (e) {
       // 捕获上传过程中的异常
@@ -102,10 +100,9 @@ class EditableUserAvatar extends StatelessWidget {
         final errorMsg = e.toString(); // 获取错误消息字符串
         if (errorMsg.contains('头像上传速率超限')) {
           // 判断是否为速率超限错误
-          AppSnackBar.showWarning(context, '头像上传过于频繁，请稍后再试。'); // 显示速率超限警告
+          AppSnackBar.showWarning('头像上传过于频繁，请稍后再试。'); // 显示速率超限警告
         } else {
-          AppSnackBar.showError(
-              context, '上传头像失败: ${e.toString()}'); // 显示通用上传失败错误
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       }
       if (context.mounted) {

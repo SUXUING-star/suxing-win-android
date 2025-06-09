@@ -21,8 +21,7 @@ class AppText extends StatelessWidget {
   final double? decorationThickness;
 
   // --- Text 的所有原生参数，一个不漏 ---
-  @override
-  final Key? key;
+
   final TextStyle? style;
   final StrutStyle? strutStyle;
   final TextAlign? textAlign;
@@ -44,7 +43,7 @@ class AppText extends StatelessWidget {
 
   const AppText(
       this.data, {
-        this.key,
+        super.key,
         this.type = AppTextType.body,
         // --- 直接样式参数 ---
         this.color,
@@ -74,7 +73,7 @@ class AppText extends StatelessWidget {
         this.selectionColor,
         this.prefixIcon,
         this.iconSpacing = 4.0,
-      }) : super(key: key);
+      });
 
   @override
   Widget build(BuildContext context) {

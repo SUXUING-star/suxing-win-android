@@ -142,7 +142,7 @@ class CalendarView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             monthlyData == null
-                ? LoadingWidget.inline() // 数据加载中显示 Loading
+                ?  const LoadingWidget() // 数据加载中显示 Loading
                 : _buildCalendarGrid(context),
           ],
         ),

@@ -73,7 +73,7 @@ class _ImagePreviewScreenState extends State<ImagePreviewScreen> {
         itemCount: widget.images.length,
         // 7. PhotoViewGallery 自带 loadingBuilder，会使用这里的
         loadingBuilder: (context, event) {
-          return LoadingWidget.inline();
+          return const LoadingWidget();
         },
         pageController: pageController,
         onPageChanged: (index) {

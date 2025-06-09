@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -11,6 +13,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/follow/follows_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class UserFollowsScreen extends StatefulWidget {
   final String userId;
@@ -20,6 +23,7 @@ class UserFollowsScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
   final UserService userService;
+  final WindowStateProvider windowStateProvider;
 
   const UserFollowsScreen({
     super.key,
@@ -29,6 +33,7 @@ class UserFollowsScreen extends StatefulWidget {
     required this.followService,
     required this.infoProvider,
     required this.userService,
+    required this.windowStateProvider,
     this.initialShowFollowing = true,
   });
 
@@ -75,19 +80,16 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final isDesktopLayout = DeviceUtils.isDesktop ||
-        (DeviceUtils.isTablet(context) && DeviceUtils.isLandscape(context));
+    if (widget.authProvider.currentUser == null ||
+        !widget.authProvider.isLoggedIn) {
+      return const LoginPromptWidget();
+    }
 
-    return StreamBuilder<User?>(
-      stream: widget.authProvider.currentUserStream,
-      initialData: widget.authProvider.currentUser,
-      builder: (context, authSnapshot) {
-        final User? currentUser = authSnapshot.data;
-
-        if (currentUser == null) {
-          return const LoginPromptWidget();
-        }
-
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return FutureBuilder<User>(
           future: _targetUserFuture,
           builder: (context, targetUserSnapshot) {
@@ -102,8 +104,15 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
 
             if (targetUserSnapshot.connectionState == ConnectionState.waiting &&
                 targetUserToDisplay == null) {
-              bodyContent = LoadingWidget.fullScreen(
-                  message: "加载用户信息..."); // LoadingWidget 通常需要 message
+              bodyContent = const FadeInItem(
+                // 全屏加载组件
+                child: LoadingWidget(
+                  isOverlay: true,
+                  message: "加载用户信息...",
+                  overlayOpacity: 0.4,
+                  size: 36,
+                ),
+              ); //
             } else if (targetUserSnapshot.hasError &&
                 targetUserToDisplay == null) {
               bodyContent = CustomErrorWidget(
@@ -133,7 +142,8 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
                 tabFollowerCount = followerIDsForLayout.length;
 
                 bodyContent = FollowsLayout(
-                  currentUser: currentUser,
+                  currentUser: widget.authProvider.currentUser,
+                  isDesktopLayout: isDesktopLayout,
                   viewingUserId: widget.userId,
                   tabController: _tabController,
                   followService: widget.followService,

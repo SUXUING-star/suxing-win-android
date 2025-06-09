@@ -199,17 +199,14 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
       }
     } catch (e) {
       // --- API 失败，回滚 UI 计数 ---
-      if (mounted) {
-        AppSnackBar.showError(
-            context, '操作失败: ${e.toString().replaceFirst("Exception: ", "")}');
-        // *** 只回滚本地计数 ***
-        setState(() {
-          _likeCount = originalLikeCount;
-          _agreeCount = originalAgreeCount;
-          _favoriteCount = originalFavoriteCount;
-        });
-        // *** 不需要回滚 _isLiked 等，因为它们由 widget.userActions 控制 ***
-      }
+
+      AppSnackBar.showError("操作失败,${e.toString()}");
+      setState(() {
+        _likeCount = originalLikeCount;
+        _agreeCount = originalAgreeCount;
+        _favoriteCount = originalFavoriteCount;
+      });
+      // *** 不需要回滚 _isLiked 等，因为它们由 widget.userActions 控制 ***
     } finally {
       // --- 结束加载状态 ---
       if (mounted) {

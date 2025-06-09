@@ -6,9 +6,9 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
 class ToolManagement extends StatefulWidget {
   final LinkToolService linkToolService;
@@ -23,8 +23,7 @@ class ToolManagement extends StatefulWidget {
   State<ToolManagement> createState() => _ToolManagementState();
 }
 
-class _ToolManagementState extends State<ToolManagement>
-    with SnackBarNotifierMixin {
+class _ToolManagementState extends State<ToolManagement> {
   late Future<List<Tool>> _toolsFuture;
   bool _isProcessing = false; // 防止重复点击
   bool _hasInitializedDependencies = false;
@@ -62,7 +61,6 @@ class _ToolManagementState extends State<ToolManagement>
 
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context);
     return Scaffold(
       // --- 修改: 使用 FutureBuilder ---
       body: FutureBuilder<List<Tool>>(
@@ -70,7 +68,7 @@ class _ToolManagementState extends State<ToolManagement>
         builder: (context, snapshot) {
           // 处理加载状态
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return LoadingWidget.inline();
+            return const LoadingWidget();
           }
           // 处理错误状态
           if (snapshot.hasError) {
@@ -177,9 +175,9 @@ class _ToolManagementState extends State<ToolManagement>
           final tool = Tool.fromJson(result); // 转换
           await widget.linkToolService.addTool(tool);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackBar(message: '工具添加成功', type: SnackBarType.success);
+          AppSnackBar.showSuccess('工具添加成功');
         } catch (e) {
-          showSnackBar(message: '添加失败：$e', type: SnackBarType.error);
+          AppSnackBar.showError('添加失败：${e.toString()}');
         }
       }
     } finally {
@@ -205,10 +203,9 @@ class _ToolManagementState extends State<ToolManagement>
           final updatedTool = Tool.fromJson(result); // 转换
           await widget.linkToolService.updateTool(updatedTool);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackBar(message: '工具更新成功', type: SnackBarType.success);
+          AppSnackBar.showSuccess('工具更新成功');
         } catch (e) {
-          // print('更新工具错误: $e');
-          showSnackBar(message: '更新失败：$e', type: SnackBarType.error);
+          AppSnackBar.showError('更新失败：$e');
         }
       }
     } finally {
@@ -239,9 +236,9 @@ class _ToolManagementState extends State<ToolManagement>
         try {
           await widget.linkToolService.deleteTool(tool.id);
           _loadTools(forceRefresh: true); // 强制刷新
-          showSnackBar(message: '工具删除成功', type: SnackBarType.success);
+          AppSnackBar.showSuccess('工具删除成功');
         } catch (e) {
-          showSnackBar(message: '删除失败：$e', type: SnackBarType.error);
+          AppSnackBar.showError('删除失败：$e');
         }
       }
     } finally {

@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snackbar/snackbar_notifier_mixin.dart'; // 导入 SnackBar 通知混入
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 导入用户服务
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar
@@ -51,8 +51,7 @@ class ResetPasswordScreen extends StatefulWidget {
 /// `_ResetPasswordScreenState` 类：`ResetPasswordScreen` 的状态管理。
 ///
 /// 管理表单验证、输入控制器、加载状态和密码重置流程。
-class _ResetPasswordScreenState extends State<ResetPasswordScreen>
-    with SnackBarNotifierMixin {
+class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
   final _formKey = GlobalKey<FormState>(); // 表单键
   final _passwordController = TextEditingController(); // 密码输入控制器
   final _confirmPasswordController = TextEditingController(); // 确认密码输入控制器
@@ -105,8 +104,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
         _passwordController.text,
       ); // 调用用户服务重置密码
 
-      showSnackBar(
-          message: "重置密码成功，用新的密码进行登录吧！", type: SnackBarType.success); // 显示成功提示
+      AppSnackBar.showSuccess("重置密码成功，用新的密码进行登录吧！");
 
       if (!mounted) return; // 组件未挂载时返回
       NavigationUtils.navigateToLogin(context); // 导航到登录页面
@@ -115,7 +113,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       setState(() {
         _error = '重置密码失败：${e.toString()}'; // 设置错误消息
       });
-      showSnackBar(message: "重置密码失败", type: SnackBarType.error); // 显示错误提示
+      AppSnackBar.showError("重置密码失败,${e.toString()}");
     } finally {
       // 无论成功失败，确保加载状态重置
       setState(() {
@@ -211,8 +209,6 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
   /// 构建重置密码屏幕的主体 UI。
   @override
   Widget build(BuildContext context) {
-    buildSnackBar(context); // 构建 SnackBar
-
     const Duration initialDelay = Duration(milliseconds: 200); // 初始延迟
     const Duration stagger = Duration(milliseconds: 80); // 交错延迟
 
@@ -233,9 +229,15 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen>
       body: Stack(
         children: [
           if (_isLoading) // 如果正在加载，显示全屏加载组件
-            FadeInItem(
-              child: LoadingWidget.fullScreen(message: '正在重置密码...'), // 全屏加载组件
-            ),
+            const FadeInItem(
+              // 全屏加载组件
+              child: LoadingWidget(
+                isOverlay: true,
+                message: "正在重置密码...",
+                overlayOpacity: 0.4,
+                size: 36,
+              ),
+            ), //
           Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(

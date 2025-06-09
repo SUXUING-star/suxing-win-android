@@ -80,9 +80,7 @@ class ProfileConstants {
             );
           } else {
             // 用户未登录
-            if (context.mounted) {
-              AppSnackBar.showError(context, '无法加载用户数据'); // 显示错误提示
-            }
+            AppSnackBar.showError('无法加载用户数据'); // 显示错误提示
           }
         },
       ),
@@ -98,7 +96,7 @@ class ProfileConstants {
         route: '', // 无直接路由
         onTap: () {
           // 点击回调
-          if (context.mounted) AppSnackBar.showInfo(context, '分享功能开发中'); // 显示提示
+          AppSnackBar.showInfo('分享功能开发中'); // 显示提示
         },
       ),
       ProfileMenuItem(

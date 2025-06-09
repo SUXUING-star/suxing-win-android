@@ -167,7 +167,7 @@ class _ActivityCardState extends State<ActivityCard> {
     // content 由 ActivityCommentInput 传递进来，已经 trim 过了
     if (content.isEmpty || _isSubmittingComment) return;
     if (widget.onAddComment == null) {
-      if (mounted) AppSnackBar.showError(context, '无法添加评论');
+      AppSnackBar.showError("操作失败");
       return;
     }
 
@@ -192,7 +192,7 @@ class _ActivityCardState extends State<ActivityCard> {
         throw Exception("添加评论失败"); // 抛出异常以便 catch 处理
       }
     } catch (e) {
-      if (mounted) AppSnackBar.showError(context, '评论失败: $e');
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       // --- 无论成功失败，结束提交状态 ---
       if (mounted) {

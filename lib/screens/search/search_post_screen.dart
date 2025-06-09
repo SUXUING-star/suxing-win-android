@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/post_list_pagination.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 
 // Services
 import 'package:suxingchahui/services/main/forum/post_service.dart';
@@ -16,11 +17,13 @@ import 'package:suxingchahui/services/main/user/user_service.dart';
 // Providers
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 // Widgets
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
 
@@ -34,6 +37,7 @@ class SearchPostScreen extends StatefulWidget {
   final UserFollowService followService;
   final AuthProvider authProvider;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
   const SearchPostScreen({
     super.key,
     required this.postService,
@@ -41,6 +45,7 @@ class SearchPostScreen extends StatefulWidget {
     required this.followService,
     required this.authProvider,
     required this.infoProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -298,7 +303,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       return;
     }
     if (!_checkCanEditOrDeletePost(post)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showError("你没有权限操作");
       return;
     }
     try {
@@ -318,9 +323,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
             setState(() {
               _searchResults.removeWhere((p) => p.id == postId);
             });
-            AppSnackBar.showSuccess(context, '帖子已删除');
+            AppSnackBar.showSuccess('帖子已删除');
           } catch (e) {
-            if (mounted) AppSnackBar.showError(context, '删除失败: $e');
+            AppSnackBar.showError('删除失败: $e');
             rethrow;
           }
         },
@@ -338,7 +343,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
       return;
     }
     if (!_checkCanEditOrDeletePost(postToEdit)) {
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     NavigationUtils.pushNamed(
@@ -359,13 +364,13 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
   Future<void> _handleToggleLockAction(String postId) async {
     if (!mounted) return;
     if (!widget.authProvider.isAdmin) {
-      AppSnackBar.showPermissionDenySnackBar(context);
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     try {
       await widget.postService.togglePostLock(postId);
       if (!mounted) return;
-      AppSnackBar.showSuccess(context, '帖子状态已切换');
+      AppSnackBar.showSuccess('帖子状态已切换');
       // 更新列表中的状态
       setState(() {
         final index = _searchResults.indexWhere((p) => p.id == postId);
@@ -378,8 +383,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
         }
       });
     } catch (e) {
-      // print("SearchPostScreen: Error toggling lock for post $postId: $e");
-      if (mounted) AppSnackBar.showError(context, '操作失败: $e');
+      AppSnackBar.showError('操作失败: ${e.toString()}');
     }
   }
   // --- 回调处理方法结束 ---
@@ -442,9 +446,15 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // *** 1. 检查是否正在进行新的搜索 ***
     // 只有在新搜索且当前结果为空时才显示全屏加载
     if (_isSearching && _searchResults.isEmpty) {
-      // print("SearchPostScreen: Displaying initial search LoadingWidget.");
-      return LoadingWidget.fullScreen(
-          message: '正在搜索...'); // 或者 LoadingWidget.inline()
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "正在搜索...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     // *** 2. 检查是否有错误信息 ***
@@ -557,38 +567,46 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     }
 
     // 使用封装好的 AnimatedListView
-    return AnimatedListView<Object>(
-      listKey:
-          ValueKey('search_post_results_${_searchController.text}'), // 提供一个Key
-      items: displayItems,
-      physics: const AlwaysScrollableScrollPhysics(), // 确保可滚动
-      padding: const EdgeInsets.all(8.0),
-      itemBuilder: (context, index, item) {
-        // 如果项目是帖子
-        if (item is Post) {
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 8.0),
-            child: BasePostCard(
-              currentUser: widget.authProvider.currentUser,
-              post: item,
-              followService: widget.followService,
-              infoProvider: widget.infoProvider,
-              onDeleteAction: _handleDeletePostAction,
-              onEditAction: _handleEditPostAction,
-              onToggleLockAction: _handleToggleLockAction,
-            ),
-          );
-        }
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        return AnimatedListView<Object>(
+          listKey: ValueKey('search_post_results_${_searchController.text}'),
+          // 提供一个Key
+          items: displayItems,
+          physics: const AlwaysScrollableScrollPhysics(),
+          // 确保可滚动
+          padding: const EdgeInsets.all(8.0),
+          itemBuilder: (context, index, item) {
+            // 如果项目是帖子
+            if (item is Post) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: BasePostCard(
+                  screenWidth: screenWidth,
+                  currentUser: widget.authProvider.currentUser,
+                  post: item,
+                  followService: widget.followService,
+                  infoProvider: widget.infoProvider,
+                  onDeleteAction: _handleDeletePostAction,
+                  onEditAction: _handleEditPostAction,
+                  onToggleLockAction: _handleToggleLockAction,
+                ),
+              );
+            }
 
-        // 如果项目是加载指示器的占位符
-        if (item is _LoadingIndicatorPlaceholder) {
-          return const Padding(
-            padding: EdgeInsets.symmetric(vertical: 16.0),
-            child: Center(child: CircularProgressIndicator()),
-          );
-        }
+            // 如果项目是加载指示器的占位符
+            if (item is _LoadingIndicatorPlaceholder) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16.0),
+                child: Center(child: CircularProgressIndicator()),
+              );
+            }
 
-        return const SizedBox.shrink();
+            return const SizedBox.shrink();
+          },
+        );
       },
     );
   }

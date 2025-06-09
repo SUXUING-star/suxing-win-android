@@ -1,21 +1,35 @@
 // lib/wrapper/initialization_wrapper.dart
-import 'dart:io'; // 用于 Platform 和 exit
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // 用于 SystemNavigator
-import 'package:provider/single_child_widget.dart';
-import 'package:suxingchahui/providers/initialize/initialization_status.dart';
+
+/// 该文件定义了 InitializationWrapper，一个管理应用初始化流程的 StatefulWidget。
+/// InitializationWrapper 负责显示初始化进度、处理初始化错误，并在初始化成功后渲染主应用界面。
+library;
+
+import 'dart:io'; // 导入 Platform 和 exit 函数
+import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:flutter/services.dart'; // 导入 SystemNavigator
+import 'package:provider/single_child_widget.dart'; // 导入 Provider 列表类型
+import 'package:suxingchahui/providers/initialize/initialization_status.dart'; // 初始化状态枚举
 
 // 相关的 Provider 和服务
-import 'package:suxingchahui/initialization/app_initializer.dart';
+import 'package:suxingchahui/initialization/app_initializer.dart'; // 应用初始化器
 import 'package:suxingchahui/providers/initialize/initialization_provider.dart'; // 初始化状态 Provider
 
 // 初始化界面 Widget
-import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart';
+import 'package:suxingchahui/widgets/ui/common/initialization_screen.dart'; // 初始化屏幕组件
 
+/// `InitializationWrapper` 类：应用初始化包装器。
+///
+/// 该 Widget 负责管理应用启动时的初始化过程，根据初始化状态显示不同的界面。
 class InitializationWrapper extends StatefulWidget {
-  /// 初始化成功后调用的回调函数，传入创建好的 Provider 列表
+  /// 初始化成功后调用的回调函数。
+  ///
+  /// 该函数接收一个创建好的 Provider 列表作为参数。
   final Widget Function(List<SingleChildWidget> providers) onInitialized;
 
+  /// 构造函数。
+  ///
+  /// [key]：Widget 的 Key。
+  /// [onInitialized]：初始化成功后的回调函数。
   const InitializationWrapper({
     super.key,
     required this.onInitialized,
@@ -25,105 +39,85 @@ class InitializationWrapper extends StatefulWidget {
   State<InitializationWrapper> createState() => _InitializationWrapperState();
 }
 
+/// `_InitializationWrapperState` 类：`InitializationWrapper` 的状态管理。
 class _InitializationWrapperState extends State<InitializationWrapper> {
-  // 用于管理初始化状态和进度的 Provider
-  late final InitializationProvider _initProvider;
-  // 保存初始化成功后的服务实例 Map
-  Map<String, dynamic>? _services;
-  // 保存具体的初始化错误信息，用于可能更详细的显示
-  String? _initializationError;
-  String? get initializationError => _initializationError;
-  // 标记是否发生过网络相关或认证失败的错误（用于网络恢复时的逻辑判断）
-  bool _networkOrAuthErrorOccurred = false;
-  bool get networkOrAuthErrorOccurred => _networkOrAuthErrorOccurred;
-  // 防止在 initState 完成前或初始化进行中重复调用 _startInitialization
-  bool _hasAttemptedInit = false;
-  // 标记组件是否仍在 Widget 树中
-  bool _isMounted = true;
+  late final InitializationProvider _initProvider; // 管理初始化状态和进度的 Provider
+  Map<String, dynamic>? _services; // 保存初始化成功后的服务实例 Map
+  String? _initializationError; // 保存具体的初始化错误信息
+  bool _networkOrAuthErrorOccurred = false; // 标记是否发生过网络或认证相关错误
+  bool _hasAttemptedInit = false; // 标记是否已尝试过初始化
+  bool _isMounted = true; // 标记组件是否仍在 Widget 树中
 
+  /// 获取初始化错误信息。
+  String? get initializationError => _initializationError;
+
+  /// 获取网络或认证错误是否发生标记。
+  bool get networkOrAuthErrorOccurred => _networkOrAuthErrorOccurred;
+
+  /// 初始化状态。
+  ///
+  /// 创建 `InitializationProvider` 实例，添加监听器，并调度初始化流程。
   @override
   void initState() {
     super.initState();
-    _isMounted = true;
-    //print("InitializationWrapper: initState called.");
-    _initProvider = InitializationProvider();
-    // 添加监听器，当 _initProvider 状态改变时，调用 setState 刷新 UI
-    _initProvider.addListener(_onProviderUpdate);
+    _isMounted = true; // 设置组件挂载标记
+    _initProvider = InitializationProvider(); // 实例化初始化 Provider
+    _initProvider.addListener(_onProviderUpdate); // 添加监听器以刷新 UI
 
-    // 使用 WidgetsBinding.instance.addPostFrameCallback 确保 initState 完成后再开始初始化
-    // 这样可以安全地访问 BuildContext (虽然这里没直接用，但这是好习惯)
-    // 并且避免在 build 过程中触发可能导致状态问题的初始化
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // 再次检查 mounted 状态，因为回调可能在 dispose 之后执行
+      // 在当前帧渲染完成后回调
       if (_isMounted && !_hasAttemptedInit) {
-        _startInitialization();
-      } else if (!_isMounted) {
-      } else if (_hasAttemptedInit) {}
+        // 检查组件挂载状态和是否已尝试初始化
+        _startInitialization(); // 启动初始化流程
+      }
     });
   }
 
-  // Provider 状态更新时的回调
+  /// Provider 状态更新时的回调。
+  ///
+  /// 当组件还在 Widget 树中时，调用 `setState` 刷新 UI。
   void _onProviderUpdate() {
-    // 只有当组件还在 Widget 树中时才调用 setState
     if (_isMounted) {
+      // 检查组件是否已挂载
       setState(() {
-        // 这个 setState 调用会触发 build 方法，
-        // build 方法会根据 _initProvider 的最新状态来决定显示哪个界面
+        // UI 将根据 _initProvider 的最新状态刷新
       });
-    } else {
-      //print("InitializationWrapper: Provider updated but widget is disposed, skipping setState.");
     }
   }
 
-  // 开始执行初始化流程
+  /// 启动初始化流程。
+  ///
+  /// 重置状态变量，调用 `AppInitializer` 执行初始化步骤，并处理成功或失败状态。
   Future<void> _startInitialization() async {
-    // 防止重复或并发调用
     if (_hasAttemptedInit &&
         _initProvider.status == InitializationStatus.inProgress) {
-      //print("InitializationWrapper: Initialization already in progress, skipping call.");
-      return;
+      return; // 正在初始化中，阻止重复调用
     }
 
     _hasAttemptedInit = true; // 标记已尝试初始化
-    //print("InitializationWrapper: Starting initialization process...");
 
-    // 重置所有状态变量
-    _initializationError = null;
-    _networkOrAuthErrorOccurred = false;
-    _services = null; // 清空旧的服务实例
-    _initProvider
-        .reset(); // 将 Provider 状态重置为 InProgress (这会触发 _onProviderUpdate -> setState)
+    _initializationError = null; // 清空错误信息
+    _networkOrAuthErrorOccurred = false; // 重置错误标记
+    _services = null; // 清空旧服务实例
+    _initProvider.reset(); // 重置 Provider 状态为 InProgress
 
     try {
-      // *** 调用 AppInitializer 来执行所有初始化步骤 ***
-      // AppInitializer 内部会更新 _initProvider 的进度和消息
-      // 如果任何关键步骤失败 (特别是 AuthProvider)，AppInitializer 会抛出异常
       final initializedServices =
-          await AppInitializer.initializeServices(_initProvider);
+          await AppInitializer.initializeServices(_initProvider); // 调用应用初始化器
 
-      // *** 初始化成功 ***
-      // 再次检查 mounted 状态，因为异步操作可能在 Widget dispose 后才完成
       if (_isMounted) {
+        // 检查组件是否已挂载
         _services = initializedServices; // 保存初始化成功的服务实例
-
-        // 这会触发 _onProviderUpdate -> setState -> build，最终显示主应用界面
-        _initProvider.setCompleted();
-        //print("InitializationWrapper: Initialization status set to Completed.");
-      } else {
-        // print(
-        //     "InitializationWrapper: Initialization successful, but widget disposed before completion handling.");
+        _initProvider.setCompleted(); // 设置初始化状态为完成
       }
     } catch (e) {
-      // 检查组件是否还在树中
+      // 捕获初始化过程中的异常
       if (_isMounted) {
-        // 格式化错误信息
-        // final errorMessage = '初始化失败: ${ErrorFormatter.formatErrorMessage(e)}'; // 可选的格式化
-        final errorMessage =
-            '初始化失败: ${e.toString()}'; // 直接使用异常的 toString() 通常足够
+        // 检查组件是否已挂载
+        final errorMessage = '初始化失败: ${e.toString()}'; // 格式化错误信息
         _initializationError = errorMessage; // 保存错误信息
 
-        // 检查错误是否与网络或认证相关
-        final errorStringLower = e.toString().toLowerCase();
+        final errorStringLower = e.toString().toLowerCase(); // 将错误信息转为小写
         if (errorStringLower.contains('network') ||
             errorStringLower.contains('connection') ||
             errorStringLower.contains('timeout') ||
@@ -131,73 +125,67 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
             errorStringLower.contains('handshake') ||
             errorStringLower.contains('certificate') ||
             errorStringLower.contains('http')) {
-          _networkOrAuthErrorOccurred = true;
+          _networkOrAuthErrorOccurred = true; // 标记为网络或认证错误
         } else {
-          _networkOrAuthErrorOccurred = false;
-          // print("InitializationWrapper: Non-network/auth error detected.");
+          _networkOrAuthErrorOccurred = false; // 标记为非网络或认证错误
         }
 
-        // 这会触发 _onProviderUpdate -> setState -> build，显示错误界面
-        _initProvider.setError(errorMessage);
-      } else {
-        // print("InitializationWrapper: Initialization failed, but widget disposed before error handling.");
+        _initProvider.setError(errorMessage); // 设置初始化状态为错误
       }
     } finally {
-      // 重置尝试标志，允许用户通过点击“重试”再次启动初始化
-      // （如果是在错误状态下）
       if (_initProvider.status == InitializationStatus.error) {
-        _hasAttemptedInit = false;
-        // print("InitializationWrapper: Resetting _hasAttemptedInit flag due to error.");
+        _hasAttemptedInit = false; // 错误状态下重置尝试标志，允许用户重试
       }
     }
   }
 
-  // 处理“重试”按钮的点击事件
+  /// 处理“重试”按钮的点击事件。
+  ///
+  /// 重新开始完整的初始化流程。
   void _handleRetry() {
-    // 确保组件还在树中
     if (!_isMounted) {
+      // 检查组件是否已挂载
       return;
     }
-    // 直接重新开始完整的初始化流程
-    // _startInitialization 会重置所有相关状态
-    _startInitialization();
+    _startInitialization(); // 重新启动初始化流程
   }
 
-  // 处理“退出”按钮的点击事件
+  /// 处理“退出”按钮的点击事件。
+  ///
+  /// 根据不同平台执行退出操作。
   void _handleExit() {
-    // 根据不同平台执行退出操作
     if (Platform.isWindows ||
         Platform.isLinux ||
         Platform.isMacOS ||
         Platform.isFuchsia) {
       exit(0); // 桌面平台直接退出进程
     } else {
-      // 移动平台 (Android/iOS) 尝试弹出当前 Activity/View Controller
-      SystemNavigator.pop();
-      // 注意：SystemNavigator.pop() 可能并不总是符合预期，取决于应用结构
+      SystemNavigator.pop(); // 移动平台尝试弹出当前 Activity/View Controller
     }
   }
 
+  /// 销毁状态。
+  ///
+  /// 移除 Provider 的监听器，并销毁 Provider 自身。
   @override
   void dispose() {
-    //print("InitializationWrapper: dispose called.");
-    _isMounted = false; // 标记组件已卸载
-    // 移除 Provider 的监听器，防止内存泄漏
-    _initProvider.removeListener(_onProviderUpdate);
-    // Dispose Provider 自身
-    _initProvider.dispose();
+    _isMounted = false; // 设置组件已卸载标记
+    _initProvider.removeListener(_onProviderUpdate); // 移除 Provider 监听器
+    _initProvider.dispose(); // 销毁 Provider
 
-    super.dispose();
+    super.dispose(); // 调用父类销毁方法
   }
 
+  /// 构建 Widget。
+  ///
+  /// 根据初始化状态显示不同的界面。
   @override
   Widget build(BuildContext context) {
     switch (_initProvider.status) {
       case InitializationStatus.inProgress:
-      case InitializationStatus.idle: // Idle 状态也视为正在加载/准备中
-        // 显示初始化加载界面
+      case InitializationStatus.idle:
         return InitializationScreen(
-          status: _initProvider.status,
+          status: _initProvider.status, // 显示当前初始化状态
           message: _initProvider.message, // 显示当前加载消息
           progress: _initProvider.progress, // 显示加载进度
           onRetry: null, // 加载中不允许重试
@@ -205,36 +193,26 @@ class _InitializationWrapperState extends State<InitializationWrapper> {
         );
 
       case InitializationStatus.error:
-        // 显示初始化错误界面
         return InitializationScreen(
-          status: _initProvider.status,
-          // 显示具体的错误信息
-          message: _initProvider.message, // _initProvider.message 包含了错误信息
-          // 可以考虑附加 _initializationError 获取更详细的信息，如果需要的话
-          // message: "${_initProvider.message}\n${_initializationError ?? ''}",
-          progress: _initProvider.progress, // 显示失败时的进度（可能无意义）
-          onRetry: _handleRetry, // *** 提供重试按钮 ***
+          status: _initProvider.status, // 显示错误状态
+          message: _initProvider.message, // 显示错误消息
+          progress: _initProvider.progress, // 显示失败时的进度
+          onRetry: _handleRetry, // 提供重试按钮
           onExit: _handleExit, // 提供退出按钮
         );
 
       case InitializationStatus.completed:
-        // *** 初始化成功完成 ***
-        // 必须确保 _services 不为 null (理论上此时它应该已经被赋值)
         if (_services != null) {
-          // 调用 widget 的 onInitialized 回调，传入创建好的 Provider 列表，构建主应用界面
-          return widget
-              .onInitialized(AppInitializer.createProviders(_services!));
+          // 检查服务实例是否存在
+          return widget.onInitialized(
+              AppInitializer.createProviders(_services!)); // 构建主应用界面
         } else {
-          // *** 异常状态：状态为 completed 但服务实例丢失 ***
-          // 这种情况理论上不应发生，但作为保险处理
-          // 显示一个紧急错误界面，提示用户可能需要重启
           return InitializationScreen(
             status: InitializationStatus.error, // 强制显示为错误状态
-            message:
-                "发生意外错误：初始化状态异常 (completed but no services)。\n请尝试退出并重新启动应用。",
+            message: "发生意外错误：初始化状态异常。请尝试退出并重新启动应用。", // 紧急错误消息
             progress: 0,
-            onRetry: _handleRetry, // 仍然提供重试选项，虽然可能无效
-            onExit: _handleExit,
+            onRetry: _handleRetry, // 仍然提供重试选项
+            onExit: _handleExit, // 提供退出按钮
           );
         }
     }

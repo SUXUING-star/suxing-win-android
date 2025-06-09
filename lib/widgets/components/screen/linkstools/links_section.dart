@@ -52,10 +52,10 @@ class LinksSection extends StatelessWidget {
       if (linkData != null) {
         try {
           await linkToolService.updateLink(SiteLink.fromJson(linkData));
-          if (context.mounted) AppSnackBar.showSuccess(context, '更新链接成功');
+          AppSnackBar.showSuccess('更新链接成功');
           onRefresh();
         } catch (e) {
-          if (context.mounted) AppSnackBar.showError(context, '更新链接失败: $e');
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       }
     });

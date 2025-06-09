@@ -12,13 +12,16 @@ import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数�
 import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入帖子列表分页模型
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart'; // 导入动画列表视图组件
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart'; // 导入动画瀑布流网格视图组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
@@ -47,6 +50,7 @@ class PostListScreen extends StatefulWidget {
   final UserFollowService followService; // 用户关注服务
   final UserInfoProvider infoProvider; // 用户信息 Provider
   final PostListFilterProvider postListFilterProvider; // 帖子列表筛选 Provider
+  final WindowStateProvider windowStateProvider;
 
   /// 构造函数。
   ///
@@ -64,6 +68,7 @@ class PostListScreen extends StatefulWidget {
     required this.followService,
     required this.infoProvider,
     required this.postListFilterProvider,
+    required this.windowStateProvider,
   });
 
   /// 创建状态。
@@ -80,6 +85,8 @@ class _PostListScreenState extends State<PostListScreen>
   PostTag? _selectedTag; // 当前选中的标签
   List<Post>? _posts; // 帖子列表数据
   String? _errorMessage; // 错误消息
+
+  late double _screenWidth;
 
   int _currentPage = 1; // 当前页码
   int _totalPages = 1; // 总页数
@@ -158,6 +165,7 @@ class _PostListScreenState extends State<PostListScreen>
       } else {
         _selectedTag = null; // 否则设为 null
       }
+      _screenWidth = DeviceUtils.getScreenWidth(context);
       _hasInitializedDependencies = true; // 标记依赖已初始化
     }
   }
@@ -288,17 +296,16 @@ class _PostListScreenState extends State<PostListScreen>
     }
     if (!_checkCanLockPost()) {
       // 无权限时提示错误
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     try {
       await widget.postService.togglePostLock(postId); // 调用切换帖子锁定状态服务
       if (!mounted) return; // 组件未挂载时返回
-      AppSnackBar.showSuccess(context, '帖子状态已切换'); // 提示状态已切换
+      AppSnackBar.showSuccess('帖子状态已切换'); // 提示状态已切换
       await _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据
     } catch (e) {
-      if (!mounted) return; // 组件未挂载时返回
-      AppSnackBar.showError(context, '操作失败: $e'); // 提示操作失败
+      AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       // routeObserver?.hideLoading(); // 隐藏加载状态
     }
@@ -398,7 +405,6 @@ class _PostListScreenState extends State<PostListScreen>
             now.difference(_lastForumRefreshAttemptTime!).inSeconds);
         if (mounted) {
           AppSnackBar.showInfo(
-            context,
             '手速太快了！请 $remainingSeconds 秒后再刷新',
             duration: const Duration(seconds: 2),
           );
@@ -682,14 +688,6 @@ class _PostListScreenState extends State<PostListScreen>
     });
   }
 
-  /// 判断是否为桌面布局。
-  ///
-  /// [context]：Build 上下文。
-  /// 返回 true 表示是桌面布局，否则返回 false。
-  bool _isDesktop(BuildContext context) {
-    return MediaQuery.of(context).size.width > 600; // 屏幕宽度大于 600 时判定为桌面
-  }
-
   /// 导航到创建帖子页面。
   void _navigateToCreatePost() async {
     final result = await NavigationUtils.pushNamed(
@@ -711,7 +709,7 @@ class _PostListScreenState extends State<PostListScreen>
     }
     if (!_checkCanEditOrDeletePost(post)) {
       // 无权限时提示错误
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     await CustomConfirmDialog.show(
@@ -725,12 +723,10 @@ class _PostListScreenState extends State<PostListScreen>
         // 确认删除回调
         try {
           await widget.postService.deletePost(post); // 调用删除帖子服务
-          if (!mounted) return; // 组件未挂载时返回
-          AppSnackBar.showSuccess(context, '帖子已删除'); // 提示删除成功
+          AppSnackBar.showSuccess('帖子已删除'); // 提示删除成功
           _refreshData(); // 刷新数据
         } catch (e) {
-          if (!mounted) return; // 组件未挂载时返回
-          AppSnackBar.showError(context, '删除失败: $e'); // 提示删除失败
+          AppSnackBar.showError("操作失败,${e.toString()}");
         }
       },
     );
@@ -747,7 +743,7 @@ class _PostListScreenState extends State<PostListScreen>
     }
     if (!_checkCanEditOrDeletePost(post)) {
       // 无权限时提示错误
-      AppSnackBar.showError(context, "你没有权限操作");
+      AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     final result = await NavigationUtils.pushNamed(
@@ -833,12 +829,11 @@ class _PostListScreenState extends State<PostListScreen>
   /// 构建屏幕 UI。
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width; // 屏幕宽度
-    final isDesktop = _isDesktop(context); // 是否为桌面布局
+    final isDesktop = DeviceUtils.isDesktopInThisWidth(_screenWidth);
     final bool canShowLeftPanelBasedOnWidth =
-        screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
+        _screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
     final bool canShowRightPanelBasedOnWidth =
-        screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
+        _screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
     final bool actuallyShowLeftPanel = isDesktop &&
         _showLeftPanel &&
         canShowLeftPanelBasedOnWidth; // 实际是否显示左侧面板
@@ -954,8 +949,8 @@ class _PostListScreenState extends State<PostListScreen>
                 onTagSelected: _onTagSelected, // 点击标签回调
               ),
             Expanded(
-              child: _buildBodyContent(isDesktop, actuallyShowLeftPanel,
-                  actuallyShowRightPanel), // 主体内容
+              child: _buildBodyContent(
+                  actuallyShowLeftPanel, actuallyShowRightPanel), // 主体内容
             ),
             if (!_isLoadingData && _posts != null && _totalPages > 1) // 显示分页控件
               PaginationControls(
@@ -974,7 +969,7 @@ class _PostListScreenState extends State<PostListScreen>
 
   /// 构建页面主体内容。
   Widget _buildBodyContent(
-      bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
+      bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     if (_errorMessage != null && (_posts == null || _posts!.isEmpty)) {
       // 发生错误且无数据时显示错误组件
       return FadeInItem(
@@ -987,42 +982,66 @@ class _PostListScreenState extends State<PostListScreen>
     }
 
     if (_isLoadingData && _posts == null) {
-      // 正在加载数据且无旧数据时显示全屏加载
-      return FadeInItem(child: LoadingWidget.fullScreen(message: '正在加载帖子...'));
+      return const FadeInItem(
+        // 全屏加载组件
+        child: LoadingWidget(
+          isOverlay: true,
+          message: "少女正在祈祷中...",
+          overlayOpacity: 0.4,
+          size: 36,
+        ),
+      ); //
     }
 
     if (!_isLoadingData && _posts != null && _posts!.isEmpty) {
-      // 加载完成但帖子列表为空时显示空状态
-      return FadeInItem(child: const EmptyStateWidget(message: "啥也没有"));
+      // 全屏加载组件
+      return const LoadingWidget(
+        isOverlay: true,
+        message: "啥也没有哇...",
+        overlayOpacity: 0.4,
+        size: 36,
+      ); //
     }
 
     if (_posts != null && _posts!.isNotEmpty) {
       // 有帖子数据时显示主要内容
       return _buildMainContent(
-        isDesktop,
         actuallyShowLeftPanel: actuallyShowLeftPanel,
         actuallyShowRightPanel: actuallyShowRightPanel,
       );
     }
 
-    return LoadingWidget.fullScreen(message: "等待加载..."); // 默认显示加载状态
+    return FadeInItem(
+      // 全屏加载组件
+      child: const LoadingWidget(
+        isOverlay: true,
+        message: "少女祈祷中...",
+        overlayOpacity: 0.4,
+        size: 36,
+      ),
+    ); // 默认显示加载状态
   }
 
   /// 构建主要内容布局。
-  Widget _buildMainContent(
-    bool isDesktop, {
+  Widget _buildMainContent({
     bool actuallyShowLeftPanel = false,
     bool actuallyShowRightPanel = false,
   }) {
-    return isDesktop
-        ? _buildDesktopLayout(
-            isDesktop,
-            actuallyShowLeftPanel,
-            actuallyShowRightPanel,
-          ) // 桌面布局
-        : _buildMobileLayout(
-            isDesktop,
-          ); // 移动端布局
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        _screenWidth = screenWidth;
+
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktop
+            ? _buildDesktopLayout(
+                actuallyShowLeftPanel,
+                actuallyShowRightPanel,
+              ) // 桌面布局
+            : _buildMobileLayout(); // 移动端布局
+      },
+    );
   }
 
   /// 构建桌面布局。
@@ -1031,7 +1050,7 @@ class _PostListScreenState extends State<PostListScreen>
   /// [actuallyShowLeftPanel]：实际是否显示左侧面板。
   /// [actuallyShowRightPanel]：实际是否显示右侧面板。
   Widget _buildDesktopLayout(
-      bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
+      bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
     const Duration panelAnimationDuration =
         Duration(milliseconds: 300); // 面板动画时长
     const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
@@ -1055,7 +1074,6 @@ class _PostListScreenState extends State<PostListScreen>
         Expanded(
           child: _buildDesktopPostsGrid(
             // 桌面帖子网格
-            isDesktop,
             actuallyShowLeftPanel,
             actuallyShowRightPanel,
           ),
@@ -1076,17 +1094,10 @@ class _PostListScreenState extends State<PostListScreen>
     );
   }
 
-  /// 构建移动端布局。
-  ///
-  /// [isDesktop]：是否为桌面。
-  Widget _buildMobileLayout(bool isDesktop) {
-    return _buildMobilePostsList(isDesktop); // 构建移动端帖子列表
-  }
-
   /// 构建移动端帖子列表。
   ///
   /// [isDesktop]：是否为桌面。
-  Widget _buildMobilePostsList(bool isDesktop) {
+  Widget _buildMobileLayout() {
     if (_posts == null) return const SizedBox.shrink(); // 帖子列表为空时返回空组件
 
     return RefreshIndicator(
@@ -1100,7 +1111,6 @@ class _PostListScreenState extends State<PostListScreen>
             child: Padding(
               padding: const EdgeInsets.only(bottom: 8.0), // 底部内边距
               child: _buildPostCard(
-                isDesktop,
                 post,
               ),
             ),
@@ -1115,16 +1125,15 @@ class _PostListScreenState extends State<PostListScreen>
   /// [isDesktop]：是否为桌面。
   /// [post]：帖子数据。
   Widget _buildPostCard(
-    bool isDesktop,
     Post post,
   ) {
     return BasePostCard(
       currentUser: widget.authProvider.currentUser, // 当前用户
       post: post, // 帖子数据
+      screenWidth: _screenWidth,
       showPinnedStatus: true, // 显示置顶状态
       infoProvider: widget.infoProvider, // 用户信息 Provider
       followService: widget.followService, // 关注服务
-      isDesktopLayout: isDesktop, // 是否为桌面布局
       onDeleteAction: _handleDeletePostFromCard, // 删除回调
       onEditAction: _handleEditPostFromCard, // 编辑回调
       onToggleLockAction: _handleToggleLockFromCard, // 切换锁定回调
@@ -1137,7 +1146,9 @@ class _PostListScreenState extends State<PostListScreen>
   /// [actuallyShowLeftPanel]：实际是否显示左侧面板。
   /// [actuallyShowRightPanel]：实际是否显示右侧面板。
   Widget _buildDesktopPostsGrid(
-      bool isDesktop, bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
+    bool actuallyShowLeftPanel,
+    bool actuallyShowRightPanel,
+  ) {
     if (_posts == null) return const SizedBox.shrink(); // 帖子列表为空时返回空组件
 
     int crossAxisCount = 3; // 默认交叉轴数量
@@ -1156,7 +1167,6 @@ class _PostListScreenState extends State<PostListScreen>
       items: _posts!, // 帖子列表
       itemBuilder: (context, index, item) {
         return _buildPostCard(
-          isDesktop,
           item,
         ); // 构建帖子卡片
       },

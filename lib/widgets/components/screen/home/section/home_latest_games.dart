@@ -90,9 +90,9 @@ class HomeLatestGames extends StatelessWidget {
   Widget _buildGameListArea(BuildContext context) {
     // context 作为参数
     if (isLoading && games == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: LoadingWidget.inline(message: '加载最新游戏...', size: 24),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: LoadingWidget(message: '加载最新游戏...', size: 24),
       );
     }
 
@@ -125,7 +125,7 @@ class HomeLatestGames extends StatelessWidget {
           Positioned.fill(
               child: Container(
             color: Colors.white.withSafeOpacity(0.5),
-            child: Center(child: LoadingWidget.inline(size: 30)),
+            child: const LoadingWidget(size: 30),
           )),
       ],
     );

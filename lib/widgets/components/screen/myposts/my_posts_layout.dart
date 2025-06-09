@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -23,6 +23,8 @@ class MyPostsLayout extends StatelessWidget {
   final List<Post> posts;
   final bool isLoadingMore;
   final bool hasMore;
+  final bool isDesktop;
+  final double screenWidth;
   final ScrollController scrollController;
   final VoidCallback onAddPost;
   final Future<void> Function(Post post) onDeletePost;
@@ -32,12 +34,15 @@ class MyPostsLayout extends StatelessWidget {
   final User? currentUser;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
+  final WindowStateProvider windowStateProvider;
   final int totalPostCount;
 
   const MyPostsLayout({
     super.key,
     required this.posts,
     required this.isLoadingMore,
+    required this.isDesktop,
+    required this.screenWidth,
     required this.hasMore,
     required this.scrollController,
     required this.onAddPost,
@@ -47,14 +52,13 @@ class MyPostsLayout extends StatelessWidget {
     required this.onRetry,
     required this.currentUser,
     required this.infoProvider,
+    required this.windowStateProvider,
     required this.followService,
     required this.totalPostCount,
   });
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
-
     if (errorMessage != null && posts.isEmpty && !isLoadingMore) {
       return Center(
         child: FunctionalTextButton(
@@ -77,11 +81,9 @@ class MyPostsLayout extends StatelessWidget {
       );
     }
 
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+    return isDesktop
+        ? _buildDesktopLayout(context)
+        : _buildMobileLayout(context);
   }
 
   Widget _buildDesktopLayout(BuildContext context) {
@@ -98,7 +100,7 @@ class MyPostsLayout extends StatelessWidget {
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
           flex: 4,
-          child: _buildPostsContent(context, isDesktop: true),
+          child: _buildPostsContent(context),
         ),
       ],
     );
@@ -112,7 +114,7 @@ class MyPostsLayout extends StatelessWidget {
           child: _buildMyPostsStatistics(context, isDesktop: false),
         ),
         Expanded(
-          child: _buildPostsContent(context, isDesktop: false),
+          child: _buildPostsContent(context),
         ),
       ],
     );
@@ -331,16 +333,18 @@ class MyPostsLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsContent(BuildContext context, {required bool isDesktop}) {
+  Widget _buildPostsContent(BuildContext context) {
     return PostGridView(
       posts: posts,
+      screenWidth: screenWidth,
+      isDesktopLayout: isDesktop,
+      windowStateProvider: windowStateProvider,
       currentUser: currentUser,
       infoProvider: infoProvider,
       followService: followService,
       scrollController: scrollController,
       isLoading: isLoadingMore,
       hasMoreData: hasMore,
-      isDesktopLayout: isDesktop,
       onDeleteAction: onDeletePost,
       onEditAction: onEditPost,
     );

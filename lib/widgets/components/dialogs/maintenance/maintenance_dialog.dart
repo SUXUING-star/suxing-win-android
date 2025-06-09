@@ -108,11 +108,7 @@ class MaintenanceDialog {
         try {
           await maintenanceService.checkMaintenanceStatus();
         } catch (e) {
-          // 可以在这里处理刷新失败的情况，例如显示一个 SnackBar
-          if (context.mounted) {
-            // 检查 context 是否仍然有效
-            AppSnackBar.showError(context, "刷新失败: $e");
-          }
+          AppSnackBar.showError("操作失败,${e.toString()}");
           // 重新抛出错误，让 BaseInputDialog 的 Future 失败
           rethrow;
         }

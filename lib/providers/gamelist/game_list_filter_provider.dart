@@ -4,12 +4,11 @@
 /// GameListFilterProvider 控制游戏列表的选中标签和选中分类。
 library;
 
-import 'package:flutter/foundation.dart'; // 导入 Flutter 基础工具，提供 ChangeNotifier 功能
 
 /// `GameListFilterProvider` 类：管理游戏列表筛选器状态的 Provider。
 ///
 /// 该类提供游戏列表的标签和分类筛选状态。
-class GameListFilterProvider with ChangeNotifier {
+class GameListFilterProvider {
   String? _selectedTag; // 当前选中的标签字符串
   bool _tagHasBeenSet = false; // 标签是否已被显式设置的标记
 
@@ -47,7 +46,6 @@ class GameListFilterProvider with ChangeNotifier {
         _selectedCategory = null; // 清除分类
         _categoryHasBeenSet = false; // 重置分类已设置标记
       }
-      notifyListeners(); // 通知监听者状态已更新
     } else if (newTag != null && !_tagHasBeenSet) {
       // 标签相同时，如果未被主动设置过，也标记为已设置
       _tagHasBeenSet = true; // 设置标签已设置标记
@@ -70,7 +68,6 @@ class GameListFilterProvider with ChangeNotifier {
         _selectedTag = null; // 清除标签
         _tagHasBeenSet = false; // 重置标签已设置标记
       }
-      notifyListeners(); // 通知监听者状态已更新
     } else if (newCategory != null && !_categoryHasBeenSet) {
       // 分类相同时，如果未被主动设置过，也标记为已设置
       _categoryHasBeenSet = true; // 设置分类已设置标记
