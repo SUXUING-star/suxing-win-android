@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -14,7 +15,8 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // Import error widgets
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // Import loading widgets
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // Import loading widgets
 
 class GameCollectionListScreen extends StatefulWidget {
   final String collectionType;
@@ -22,6 +24,7 @@ class GameCollectionListScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameCollectionService gameCollectionService;
   final SidebarProvider sidebarProvider;
+  final WindowStateProvider windowStateProvider;
 
   const GameCollectionListScreen({
     super.key,
@@ -30,6 +33,7 @@ class GameCollectionListScreen extends StatefulWidget {
     required this.authProvider,
     required this.sidebarProvider,
     required this.gameCollectionService,
+    required this.windowStateProvider,
   });
 
   @override
@@ -148,24 +152,29 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       return _buildEmptyState(context);
     }
 
-    return GridView.builder(
-      padding: EdgeInsets.all(8),
-      gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-        maxCrossAxisExtent: 250,
-        childAspectRatio: DeviceUtils.calculateGameCardRatio(context),
-        crossAxisSpacing: 8,
-        mainAxisSpacing: 8,
-      ),
-      itemCount: _games.length,
-      itemBuilder: (context, index) {
-        final item = _games[index];
-        final game = item.game;
-        if (game == null) {
-          return const SizedBox.shrink();
-        }
-        return BaseGameCard(
-          currentUser: widget.authProvider.currentUser,
-          game: game,
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        return GridView.builder(
+          padding: EdgeInsets.all(8),
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 250,
+            childAspectRatio: DeviceUtils.calculateGameCardRatio(context),
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+          ),
+          itemCount: _games.length,
+          itemBuilder: (context, index) {
+            final item = _games[index];
+            final game = item.game;
+            if (game == null) {
+              return const SizedBox.shrink();
+            }
+            return BaseGameCard(
+              currentUser: widget.authProvider.currentUser,
+              game: game,
+            );
+          },
         );
       },
     );

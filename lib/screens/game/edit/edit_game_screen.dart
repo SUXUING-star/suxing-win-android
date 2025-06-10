@@ -6,6 +6,7 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
@@ -20,7 +21,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class EditGameScreen extends StatefulWidget {
   final String gameId;
@@ -33,6 +34,8 @@ class EditGameScreen extends StatefulWidget {
   final GameListFilterProvider gameListFilterProvider;
   final SidebarProvider sidebarProvider;
   final InputStateService inputStateService;
+  final WindowStateProvider windowStateProvider;
+
   const EditGameScreen({
     super.key,
     required this.gameId,
@@ -43,6 +46,7 @@ class EditGameScreen extends StatefulWidget {
     required this.authProvider,
     required this.infoProvider,
     required this.gameListFilterProvider,
+    required this.windowStateProvider,
     required this.sidebarProvider,
     required this.inputStateService,
   });
@@ -211,6 +215,7 @@ class _EditGameScreenState extends State<EditGameScreen> {
             if (!isAdmin) _buildNeedToPending(),
             Expanded(
               child: GameForm(
+                windowStateProvider: widget.windowStateProvider,
                 inputStateService: widget.inputStateService,
                 fileUpload: widget.fileUpload,
                 sidebarProvider: widget.sidebarProvider,

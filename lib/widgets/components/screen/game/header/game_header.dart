@@ -12,6 +12,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class GameHeader extends StatelessWidget {
+  final bool isDesktop;
   final Game game;
   final User? currentUser;
   final UserInfoProvider infoProvider;
@@ -22,6 +23,7 @@ class GameHeader extends StatelessWidget {
 
   const GameHeader({
     super.key,
+    required this.isDesktop,
     required this.game,
     required this.currentUser,
     required this.infoProvider,
@@ -32,8 +34,6 @@ class GameHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = MediaQuery.of(context).size.width >= 1024;
-
     return Container(
       padding: EdgeInsets.all(16),
       decoration: BoxDecoration(

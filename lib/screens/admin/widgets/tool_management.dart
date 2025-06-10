@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class ToolManagement extends StatefulWidget {
   final LinkToolService linkToolService;
@@ -102,10 +102,8 @@ class _ToolManagementState extends State<ToolManagement> {
                         ? SizedBox(
                             width: 20,
                             height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white)))
+                            child: LoadingWidget(),
+                          )
                         : const Icon(Icons.add),
                     label: Text(_isProcessing ? '处理中...' : '添加工具'),
                   ),

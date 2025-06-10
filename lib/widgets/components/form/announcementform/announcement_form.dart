@@ -4,10 +4,13 @@ import 'dart:io'; // 需要导入 dart:io
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'field/announcement_basic_info_field.dart';
@@ -21,6 +24,7 @@ class AnnouncementForm extends StatefulWidget {
   final RateLimitedFileUpload fileUpload;
   final AnnouncementService announcementService;
   final InputStateService inputStateService;
+  final WindowStateProvider windowStateProvider;
   final VoidCallback onCancel;
 
   const AnnouncementForm({
@@ -29,6 +33,7 @@ class AnnouncementForm extends StatefulWidget {
     required this.announcementService,
     required this.fileUpload,
     required this.inputStateService,
+    required this.windowStateProvider,
     required this.onSubmit,
     required this.onCancel,
   });
@@ -43,6 +48,9 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   bool _isLoading = false; // 表单级别的加载状态
   bool _hasInitializedDependencies = false;
 
+  late bool _isDesktop;
+  late Size _screenSize;
+
   // --- 图片状态 ---
   dynamic _imageSource;
   String? _originalImageUrl;
@@ -52,6 +60,10 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _screenSize = DeviceUtils.getScreenSize(context);
+      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenSize.width);
     }
   }
 
@@ -80,7 +92,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
 
   Future<void> _submitForm() async {
     if (!_formKey.currentState!.validate()) {
-      AppSnackBar.showWarning( '请检查表单内容是否填写完整');
+      AppSnackBar.showWarning('请检查表单内容是否填写完整');
       return;
     }
 
@@ -89,7 +101,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
     });
 
     String? finalImageUrl; // 最终提交的图片 URL
-    String? uploadError;
 
     try {
       // --- 图片处理 ---
@@ -129,7 +140,6 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
       widget.onSubmit(announcementToSubmit);
     } catch (e) {
       // 捕获上传或处理过程中的错误
-      uploadError = '处理公告时出错: $e';
       AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
       if (mounted) {
@@ -142,17 +152,23 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final bool isDesktop = DeviceUtils.isDesktop;
-    final bool useDesktopLayout = isDesktop && screenSize.width > 900;
-
     return Stack(
       children: [
         Form(
           key: _formKey,
-          child: useDesktopLayout
-              ? _buildDesktopLayout(context)
-              : _buildMobileLayout(context),
+          child: LazyLayoutBuilder(
+            windowStateProvider: widget.windowStateProvider,
+            builder: (context, constraints) {
+              final screenSize = constraints.biggest;
+              final isDesktop =
+                  DeviceUtils.isDesktopInThisWidth(screenSize.width);
+              _screenSize = screenSize;
+              _isDesktop = isDesktop;
+              return _isDesktop
+                  ? _buildDesktopLayout(context)
+                  : _buildMobileLayout(context);
+            },
+          ),
         ),
         if (_isLoading) _buildLoadingOverlay(), // 加载遮罩
       ],
@@ -162,8 +178,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
   // --- 布局构建方法 ---
   // Desktop 布局
   Widget _buildDesktopLayout(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final double cardHeight = screenSize.height - 100;
+    final double cardHeight = _screenSize.height - 100;
     final isEditing = widget.announcement.id.isNotEmpty;
 
     return SingleChildScrollView(
@@ -202,8 +217,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                                     _formData.copyWith(startDate: date)),
                             onEndDateChanged: (date) {
                               if (date.isBefore(_formData.startDate)) {
-                                AppSnackBar.showWarning(
-                                    '结束日期不能早于开始日期');
+                                AppSnackBar.showWarning('结束日期不能早于开始日期');
                               } else {
                                 setState(() => _formData =
                                     _formData.copyWith(endDate: date));
@@ -396,8 +410,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
                   width: 18,
                   height: 18,
                   margin: const EdgeInsets.only(right: 8),
-                  child: const CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white),
+                  child: const LoadingWidget(),
                 )
               : Icon(isEditing ? Icons.save : Icons.add_circle_outline,
                   size: 20),
@@ -425,7 +438,7 @@ class _AnnouncementFormState extends State<AnnouncementForm> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                CircularProgressIndicator(),
+                LoadingWidget(),
                 SizedBox(height: 16),
                 Text('正在处理...', style: TextStyle(fontSize: 16)),
               ],

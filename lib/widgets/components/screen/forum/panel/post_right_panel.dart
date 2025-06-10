@@ -7,17 +7,18 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/stats/tag_stat.dart';
 import 'package:suxingchahui/services/main/forum/post_stats_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 
 class PostRightPanel extends StatelessWidget {
+  final double panelWidth;
   final List<Post> currentPosts;
   final PostTag? selectedTag;
   final Function(PostTag?)? onTagSelected;
 
   const PostRightPanel({
     super.key,
+    required this.panelWidth,
     required this.currentPosts,
     this.selectedTag,
     this.onTagSelected,
@@ -34,8 +35,6 @@ class PostRightPanel extends StatelessWidget {
         PostStatsService.getMostDiscussedPosts(currentPosts, limit: 3);
     final List<Post> mostViewedPosts =
         PostStatsService.getMostViewedPosts(currentPosts, limit: 3);
-
-    final panelWidth = DeviceUtils.getSidePanelWidth(context);
     final primaryColor = Theme.of(context).primaryColor;
 
     return Container(

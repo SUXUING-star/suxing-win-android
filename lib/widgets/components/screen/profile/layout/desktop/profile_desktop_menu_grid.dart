@@ -5,21 +5,35 @@ import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class ProfileDesktopMenuGrid extends StatelessWidget {
+  final double screenWidth;
   final List<ProfileMenuItem> menuItems;
   final WindowStateProvider windowStateProvider;
 
   const ProfileDesktopMenuGrid({
     super.key,
+    required this.screenWidth,
     required this.menuItems,
     required this.windowStateProvider,
   });
 
   @override
   Widget build(BuildContext context) {
+    // constraints.maxWidth 是 GridView 可用的最大宽度
+    double maxCrossAxisExtent;
+    // 可以根据屏幕宽度设定不同的期望子项宽度
+    if (screenWidth < 800) {
+      maxCrossAxisExtent = 160; // 小屏幕时，期望每个格子宽一点，列数少
+    } else if (screenWidth < 1200) {
+      maxCrossAxisExtent = 170; // 中等屏幕
+    } else {
+      maxCrossAxisExtent = 200; // 大屏幕时，期望每个格子宽一点
+    }
+    // 宽高比也可以动态计算，或者保持固定
+    double childAspectRatio = 1.4; // 可以尝试固定或也根据 screenWidth 调整
+
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -46,39 +60,20 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
             ),
             SizedBox(height: 20),
             Flexible(
-              child: LazyLayoutBuilder(
-                windowStateProvider: windowStateProvider,
-                builder: (context, constraints) {
-                  final screenWidth = constraints.maxWidth;
-                  // constraints.maxWidth 是 GridView 可用的最大宽度
-                  double maxCrossAxisExtent;
-                  // 可以根据屏幕宽度设定不同的期望子项宽度
-                  if (screenWidth < 800) {
-                    maxCrossAxisExtent = 160; // 小屏幕时，期望每个格子宽一点，列数少
-                  } else if (screenWidth < 1200) {
-                    maxCrossAxisExtent = 170; // 中等屏幕
-                  } else {
-                    maxCrossAxisExtent = 200; // 大屏幕时，期望每个格子宽一点
-                  }
-                  // 宽高比也可以动态计算，或者保持固定
-                  double childAspectRatio = 1.4; // 可以尝试固定或也根据 screenWidth 调整
-
-                  return GridView.builder(
-                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
-                      maxCrossAxisExtent: maxCrossAxisExtent, // 指定子项最大宽度
-                      childAspectRatio: childAspectRatio,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: menuItems.length,
-                    itemBuilder: (context, index) {
-                      final item = menuItems[index];
-                      // 这里仍然可以根据 screenWidth 或 constraints.maxWidth / crossAxisCount (如果能拿到)
-                      // 来调整 _buildMenuCard 内部的元素大小，但会更复杂
-                      return _buildMenuCard(
-                          context, item, screenWidth); // 暂时还用 screenWidth
-                    },
-                  );
+              child: GridView.builder(
+                gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                  maxCrossAxisExtent: maxCrossAxisExtent, // 指定子项最大宽度
+                  childAspectRatio: childAspectRatio,
+                  crossAxisSpacing: 12,
+                  mainAxisSpacing: 12,
+                ),
+                itemCount: menuItems.length,
+                itemBuilder: (context, index) {
+                  final item = menuItems[index];
+                  // 这里仍然可以根据 screenWidth 或 constraints.maxWidth / crossAxisCount (如果能拿到)
+                  // 来调整 _buildMenuCard 内部的元素大小，但会更复杂
+                  return _buildMenuCard(
+                      context, item, screenWidth); // 暂时还用 screenWidth
                 },
               ),
             ),

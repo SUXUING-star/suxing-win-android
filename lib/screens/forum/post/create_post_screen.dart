@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/widgets/components/form/postform/post_form.dart';
 import 'package:suxingchahui/widgets/components/form/postform/field/post_guidelines.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class CreatePostScreen extends StatefulWidget {
   final AuthProvider authProvider;

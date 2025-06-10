@@ -25,7 +25,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 // Utils & Routes
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -600,7 +600,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
             if (item is _LoadingIndicatorPlaceholder) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(child: CircularProgressIndicator()),
+                child: LoadingWidget(),
               );
             }
 

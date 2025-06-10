@@ -4,7 +4,8 @@
 /// 该组件支持自定义图标、颜色、工具提示和加载状态处理。
 library;
 
-import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入 Flutter UI 组件
 
 /// `GenericFloatingActionButton` 类：一个通用的悬浮动作按钮组件。
 ///
@@ -74,8 +75,7 @@ class GenericFloatingActionButton extends StatelessWidget {
         ? SizedBox(
             width: loadingIndicatorSize,
             height: loadingIndicatorSize,
-            child: CircularProgressIndicator(
-              strokeWidth: loadingIndicatorStrokeWidth,
+            child: LoadingWidget(
               color: effectiveLoadingIndicatorColor,
             ),
           )

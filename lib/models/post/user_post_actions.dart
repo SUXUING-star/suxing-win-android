@@ -1,4 +1,8 @@
 // lib/models/post/user_post_actions.dart
+
+import 'package:flutter/cupertino.dart';
+
+@immutable
 class UserPostActions {
   final bool liked;
   final bool agreed;

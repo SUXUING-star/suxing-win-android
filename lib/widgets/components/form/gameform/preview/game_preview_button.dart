@@ -5,12 +5,13 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'game_preview_screen.dart';
@@ -18,6 +19,7 @@ import 'package:mongo_dart/mongo_dart.dart' as mongo;
 
 class GamePreviewButton extends StatelessWidget {
   final GameService gameService;
+  final WindowStateProvider windowStateProvider;
   final GameCollectionService gameCollectionService;
   final UserInfoProvider infoProvider;
   final GameListFilterProvider gameListFilterProvider;
@@ -43,6 +45,7 @@ class GamePreviewButton extends StatelessWidget {
     super.key,
     required this.followService,
     required this.sidebarProvider,
+    required this.windowStateProvider,
     required this.gameListFilterProvider,
     required this.infoProvider,
     required this.authProvider,
@@ -125,6 +128,7 @@ class GamePreviewButton extends StatelessWidget {
       NavigationUtils.of(context).push(
         MaterialPageRoute(
           builder: (context) => GamePreviewScreen(
+            windowStateProvider: windowStateProvider,
             sidebarProvider: sidebarProvider,
             gameListFilterProvider: gameListFilterProvider,
             gameCollectionService: gameCollectionService,

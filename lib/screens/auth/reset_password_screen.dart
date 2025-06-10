@@ -13,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 导入用户服务
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar

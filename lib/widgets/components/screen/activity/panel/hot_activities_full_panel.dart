@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/activity/panel/layout/desktop/hot_activities_full_panel.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/activity/activity_stats.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -13,7 +14,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
   final UserInfoProvider userInfoProvider;
   final List<UserActivity> hotActivities;
   final User? currentUser;
-  final Map<String, int> activityStats;
+  final ActivityStats activityStats;
   final bool isLoading;
   final bool hasError;
   final String errorMessage;
@@ -56,9 +57,10 @@ class HotActivitiesFullPanel extends StatelessWidget {
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.local_fire_department, color: Colors.orange),
-                      SizedBox(width: 8),
-                      Text(
+                      const Icon(Icons.local_fire_department,
+                          color: Colors.orange),
+                      const SizedBox(width: 8),
+                      const Text(
                         '热门动态',
                         style: TextStyle(
                           fontSize: 18,
@@ -68,13 +70,13 @@ class HotActivitiesFullPanel extends StatelessWidget {
                     ],
                   ),
                   IconButton(
-                    icon: Icon(Icons.refresh),
+                    icon: const Icon(Icons.refresh),
                     onPressed: onRefresh,
                     tooltip: '刷新数据',
                   ),
                 ],
               ),
-              Divider(),
+              const Divider(),
 
               // 统计卡片部分
               ActivityStatsCard(
@@ -84,7 +86,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
                 getActivityTypeColor: getActivityTypeColor,
               ),
 
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
 
               // 热门动态列表
               Expanded(

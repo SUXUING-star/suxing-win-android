@@ -7,7 +7,8 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -144,10 +145,10 @@ class _GameCommentItemState extends State<GameCommentItem> {
             child: isLocallyDeleting
                 ? Row(children: [
                     SizedBox(
-                        width: isReply ? 16 : 18,
-                        height: isReply ? 16 : 18,
-                        child: CircularProgressIndicator(
-                            strokeWidth: 2, color: theme.disabledColor)),
+                      width: isReply ? 16 : 18,
+                      height: isReply ? 16 : 18,
+                      child: LoadingWidget(),
+                    ),
                     SizedBox(width: isReply ? 8 : 10),
                     Text('删除中...',
                         style: TextStyle(color: theme.disabledColor)),
@@ -368,7 +369,6 @@ class _GameCommentItemState extends State<GameCommentItem> {
 
   @override
   Widget build(BuildContext context) {
-
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
       elevation: 1,

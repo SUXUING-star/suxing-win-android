@@ -6,6 +6,7 @@ library;
 
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 
@@ -130,10 +131,7 @@ class FunctionalButton extends StatelessWidget {
       iconWidget = SizedBox(
         width: iconSize, // 宽度
         height: iconSize, // 高度
-        child: CircularProgressIndicator(
-          strokeWidth: 2, // 粗细
-          color: currentForegroundColor, // 颜色
-        ),
+        child: const LoadingWidget(),
       );
     } else if (icon != null) {
       // 存在图标

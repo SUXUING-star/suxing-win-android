@@ -21,7 +21,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
 import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart'; // 导入最新游戏组件

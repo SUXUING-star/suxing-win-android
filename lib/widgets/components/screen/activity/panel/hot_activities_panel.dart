@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/activity/panel/hot_activities_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/activity/activity_stats.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -10,11 +11,13 @@ import 'hot_activities_full_panel.dart';
 
 class HotActivitiesPanel extends StatefulWidget {
   final User? currentUser;
+  final double screenWidth;
   final UserInfoProvider userInfoProvider;
   final ActivityService activityService;
   final UserFollowService followService;
   const HotActivitiesPanel({
     required this.currentUser,
+    required this.screenWidth,
     required this.activityService,
     required this.userInfoProvider,
     required this.followService,
@@ -28,7 +31,7 @@ class HotActivitiesPanel extends StatefulWidget {
 class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     with AutomaticKeepAliveClientMixin {
   List<UserActivity> _hotActivities = [];
-  Map<String, int> _activityStats = {};
+  ActivityStats _activityStats = ActivityStats.empty();
   bool _isLoading = true;
   bool _hasError = false;
   String _errorMessage = '';
@@ -71,15 +74,13 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
 
     try {
       // 并行加载数据
-      final results = await Future.wait([
-        widget.activityService.getHotActivities(),
-        widget.activityService.getActivityTypeStats(),
-      ]);
+      final hotActivities = await widget.activityService.getHotActivities();
+      final typeStats = await widget.activityService.getActivityTypeStats();
 
       if (mounted) {
         setState(() {
-          _hotActivities = results[0] as List<UserActivity>;
-          _activityStats = results[1] as Map<String, int>;
+          _hotActivities = hotActivities;
+          _activityStats = typeStats;
           _isLoading = false;
         });
       }
@@ -99,8 +100,8 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     super.build(context);
 
     // 响应式宽度
-    final screenWidth = MediaQuery.of(context).size.width;
-    final panelWidth = screenWidth < 600 ? screenWidth * 0.9 : 300.0;
+    final panelWidth =
+        widget.screenWidth < 600 ? widget.screenWidth * 0.9 : 300.0;
 
     return HotActivitiesFullPanel(
       userInfoProvider: widget.userInfoProvider,

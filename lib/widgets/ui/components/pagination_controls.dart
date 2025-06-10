@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_page_popup_item.dart'; // 导入自定义页码弹窗项
 import 'package:suxingchahui/widgets/ui/buttons/popup/custom_popup_menu_button.dart'; // 导入自定义弹窗菜单按钮
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 
 /// `PaginationControls` 类：分页控制组件。
@@ -193,8 +194,7 @@ class PaginationControls extends StatelessWidget {
             child: SizedBox(
               width: indicatorSize, // 宽度
               height: indicatorSize, // 高度
-              child: CircularProgressIndicator(
-                strokeWidth: 1.5, // 粗细
+              child: LoadingWidget(
                 color: colorScheme.primary.withSafeOpacity(0.8), // 颜色
               ),
             ),

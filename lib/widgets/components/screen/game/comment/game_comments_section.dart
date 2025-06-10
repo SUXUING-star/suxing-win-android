@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误提示 Widget
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载 Widget
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // SnackBar 提示
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // SnackBar 提示
 
 class GameCommentsSection extends StatefulWidget {
   final GameService gameService;

@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/review/game_review_item.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class GameReviewSection extends StatefulWidget {
   final Game game;
@@ -328,8 +328,9 @@ class GameReviewSectionState extends State<GameReviewSection> {
   Widget _buildLoadMoreSection() {
     if (_isLoading && !_isProcessingPageOne && _page > 1) {
       return const Padding(
-          padding: EdgeInsets.only(top: 16.0),
-          child: LoadingWidget(size: 20, message: "加载中..."));
+        padding: EdgeInsets.only(top: 16.0),
+        child: LoadingWidget(size: 20, message: "加载中..."),
+      );
     }
     if (!_isLoading &&
         (_paginationData?.hasNextPage() ?? false) &&

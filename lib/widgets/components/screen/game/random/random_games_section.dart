@@ -1,12 +1,13 @@
 // lib/widgets/components/screen/game/random/random_games_section.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'random_game_card.dart';
 
 class RandomGamesSection extends StatefulWidget {
   final String currentGameId;
@@ -123,11 +124,10 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
     }
 
     // 获取屏幕宽度以计算卡片宽度
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 1024;
+    final isDesktop = DeviceUtils.isDesktopScreen(context);
 
     // 调整卡片宽度和边距
-    final double cardWidth = isDesktop ? 180.0 : 140.0;
+    final double cardWidth = isDesktop ? 160.0 : 140.0;
     final double cardMargin = 12.0;
     final double sectionHeight = isDesktop ? 200.0 : 180.0;
 
@@ -186,7 +186,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
                   width: cardWidth,
                   margin: EdgeInsets.only(
                       right: index < _randomGames.length - 1 ? cardMargin : 0),
-                  child: RandomGameCard(
+                  child: CommonGameCard(
                     game: _randomGames[index],
                   ),
                 );

@@ -20,10 +20,9 @@ import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dar
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart'; // 导入分页控件
@@ -122,6 +121,11 @@ class _PostListScreenState extends State<PostListScreen>
   static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 800); // Provider 检查防抖时长
+
+  static const Duration panelAnimationDuration =
+      Duration(milliseconds: 300); // 面板动画时长
+  static const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
+  static const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
 
   @override
   void initState() {
@@ -1051,10 +1055,7 @@ class _PostListScreenState extends State<PostListScreen>
   /// [actuallyShowRightPanel]：实际是否显示右侧面板。
   Widget _buildDesktopLayout(
       bool actuallyShowLeftPanel, bool actuallyShowRightPanel) {
-    const Duration panelAnimationDuration =
-        Duration(milliseconds: 300); // 面板动画时长
-    const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
-    const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
+    final panelWidth = DeviceUtils.getSidePanelWidthInScreenWidth(_screenWidth);
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
@@ -1066,6 +1067,7 @@ class _PostListScreenState extends State<PostListScreen>
             duration: panelAnimationDuration, // 动画时长
             delay: leftPanelDelay, // 延迟
             child: PostLeftPanel(
+              panelWidth: panelWidth,
               tags: _tags, // 标签列表
               selectedTag: _selectedTag, // 选中标签
               onTagSelected: _onTagSelected, // 点击标签回调
@@ -1085,6 +1087,7 @@ class _PostListScreenState extends State<PostListScreen>
             duration: panelAnimationDuration, // 动画时长
             delay: rightPanelDelay, // 延迟
             child: PostRightPanel(
+              panelWidth: panelWidth,
               currentPosts: _posts!, // 当前帖子列表
               selectedTag: _selectedTag, // 选中标签
               onTagSelected: _onTagSelected, // 点击标签回调
@@ -1151,17 +1154,18 @@ class _PostListScreenState extends State<PostListScreen>
   ) {
     if (_posts == null) return const SizedBox.shrink(); // 帖子列表为空时返回空组件
 
-    int crossAxisCount = 3; // 默认交叉轴数量
-    if (actuallyShowLeftPanel && actuallyShowRightPanel) {
-      // 左右面板都显示时
-      crossAxisCount = 2; // 交叉轴数量为 2
-    } else if (!actuallyShowLeftPanel && !actuallyShowRightPanel) {
-      // 左右面板都不显示时
-      crossAxisCount = 4; // 交叉轴数量为 4
-    }
+    double availableWidth = _screenWidth;
+    final panelWidth = DeviceUtils.getSidePanelWidthInScreenWidth(_screenWidth);
+    if (actuallyShowLeftPanel) availableWidth -= panelWidth;
+    if (actuallyShowRightPanel) availableWidth -= panelWidth;
+
+    final cardsPerRow = DeviceUtils.calculatePostCardsPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+    );
 
     return AnimatedMasonryGridView<Post>(
-      crossAxisCount: crossAxisCount, // 交叉轴数量
+      crossAxisCount: cardsPerRow, // 交叉轴数量
       mainAxisSpacing: 8, // 主轴间距
       crossAxisSpacing: 16, // 交叉轴间距
       items: _posts!, // 帖子列表

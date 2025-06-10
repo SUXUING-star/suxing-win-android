@@ -220,11 +220,16 @@ class GameReviewPanel extends StatelessWidget {
   }
 
   Widget _buildCategoryTag(Game game) {
-    return Flexible(
-      child: GameCategoryTagView(
-        category: game.category,
-        isMini: true,
-      ),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        Flexible(
+          child: GameCategoryTagView(
+            category: game.category,
+            isMini: true,
+          ),
+        ),
+      ],
     );
   }
 

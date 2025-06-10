@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dar
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';

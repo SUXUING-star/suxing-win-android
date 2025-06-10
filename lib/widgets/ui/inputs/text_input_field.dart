@@ -7,6 +7,7 @@ library;
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入系统服务，如剪贴板
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态服务
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/menus/context_menu_bubble.dart'; // 导入上下文菜单气泡组件
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 
@@ -535,10 +536,7 @@ class _TextInputFieldState extends State<TextInputField> {
                 width: 36,
                 height: 36,
                 padding: const EdgeInsets.all(8.0),
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.5,
-                  valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-                ),
+                child: const LoadingWidget(),
               )
             else // 否则显示提交按钮
               TextButton(

@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展工具
 import 'package:suxingchahui/widgets/ui/image/hand_drawn_crop_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 SnackBar 工具
 import 'package:vector_math/vector_math_64.dart' show Vector3; // 向量数学库
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 功能按钮组件
 import 'package:path/path.dart' as p; // 路径处理库
@@ -540,8 +540,8 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
                                       ? const SizedBox(
                                           width: 24,
                                           height: 24,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2))
+                                          child: LoadingWidget(),
+                                        )
                                       : Icon(Icons.image_not_supported_outlined,
                                           size: 40, color: Colors.grey[400]))
                                   : Icon(Icons.person,

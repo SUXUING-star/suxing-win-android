@@ -16,6 +16,7 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
@@ -25,8 +26,9 @@ import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 // --- UI 和辅助组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -42,6 +44,7 @@ import 'field/game_tags_field.dart';
 import 'preview/game_preview_button.dart';
 
 class GameForm extends StatefulWidget {
+  final WindowStateProvider windowStateProvider;
   final GameService gameService;
   final RateLimitedFileUpload fileUpload;
   final SidebarProvider sidebarProvider;
@@ -58,6 +61,7 @@ class GameForm extends StatefulWidget {
   const GameForm({
     super.key,
     this.game,
+    required this.windowStateProvider,
     required this.sidebarProvider,
     required this.authProvider,
     required this.followService,
@@ -123,6 +127,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   late final GameFormCacheService _cacheService;
   User? _currentUser;
 
+  late Size _screenSize;
+  late bool _isDesktop;
+
   @override
   void initState() {
     super.initState();
@@ -137,16 +144,20 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       _hasInitializedDependencies = true;
     }
     if (_hasInitializedDependencies) {
+      _screenSize = DeviceUtils.getScreenSize(context);
+      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenSize.width);
       _draftKey = _getDraftKey(); // 获取当前模式的草稿 Key
       WidgetsBinding.instance.addObserver(this);
       _initializeFormData(); // 初始化（会设置 _initialGameData 如果是编辑）
       // initState 完成后检查草稿，避免在 build 前 setState
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          // 再次检查 mounted
-          _checkAndRestoreDraft(); // 检查并恢复草稿
-        }
-      });
+      WidgetsBinding.instance.addPostFrameCallback(
+        (_) {
+          if (mounted) {
+            // 再次检查 mounted
+            _checkAndRestoreDraft(); // 检查并恢复草稿
+          }
+        },
+      );
     }
   }
 
@@ -159,6 +170,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _currentUser = widget.currentUser;
       });
     }
+    setState(() {
+      _screenSize = DeviceUtils.getScreenSize(context);
+      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenSize.width);
+    });
   }
 
   // 获取当前表单对应的草稿 Key
@@ -1117,10 +1132,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // --- 构建 UI ---
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final bool isDesktop = DeviceUtils.isDesktop;
-    final bool useDesktopLayout = isDesktop && screenSize.width > 950;
-
     // --- NEW: Determine canPop value ---
     // Block pop initially if processing OR if there are unsaved changes requiring confirmation
     bool hasUnsavedChanges = widget.game != null && _hasChanges();
@@ -1147,9 +1158,19 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           },
           child: Form(
             key: _formKey,
-            child: useDesktopLayout
-                ? _buildDesktopLayout(context, currentUserId)
-                : _buildMobileLayout(context, currentUserId),
+            child: LazyLayoutBuilder(
+              windowStateProvider: widget.windowStateProvider,
+              builder: (context, constraints) {
+                final screenSize = constraints.biggest;
+                final isDesktop =
+                    DeviceUtils.isDesktopInThisWidth(screenSize.width);
+                _screenSize = screenSize;
+                _isDesktop = isDesktop;
+                return _isDesktop
+                    ? _buildDesktopLayout(context, currentUserId)
+                    : _buildMobileLayout(context, currentUserId);
+              },
+            ),
           ),
         ),
         // 使用 _isProcessing 控制 LoadingWidget.inline 的显示
@@ -1378,7 +1399,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         AppText(
           title,
           style: TextStyle(
-            fontSize: DeviceUtils.isDesktop ? 18 : 16, // 桌面端字号稍大
+            fontSize: _isDesktop ? 18 : 16, // 桌面端字号稍大
             fontWeight: FontWeight.bold,
             color: Theme.of(context)
                     .textTheme
@@ -1478,9 +1499,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           child: Icon(Icons.description_outlined),
         ),
       ),
-      minLines: DeviceUtils.isDesktop ? 5 : 4,
+      minLines: _isDesktop ? 5 : 4,
       maxLength: 500,
-      maxLines: DeviceUtils.isDesktop ? 10 : 8,
+      maxLines: _isDesktop ? 10 : 8,
       isEnabled: !_isProcessing,
       textInputAction: TextInputAction.newline,
       validator: (value) =>
@@ -1652,6 +1673,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         .toList();
 
     return GamePreviewButton(
+      windowStateProvider: widget.windowStateProvider,
       sidebarProvider: widget.sidebarProvider,
       gameListFilterProvider: widget.gameListFilterProvider,
       gameCollectionService: widget.gameCollectionService,

@@ -1,4 +1,4 @@
-// lib/widgets/ui/snackbar/app_snackbar.dart
+// lib/widgets/ui/snackbar/app_snackBar.dart
 
 /// 该文件定义了应用内的 SnackBar 通知组件和管理工具。
 /// SnackBar 组件支持自定义内容、背景色、图标和操作按钮。

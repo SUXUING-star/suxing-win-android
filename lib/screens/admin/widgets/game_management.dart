@@ -8,7 +8,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
@@ -50,7 +50,6 @@ class _GameManagementState extends State<GameManagement>
   final ScrollController _rejectedScrollController = ScrollController();
 
   bool _hasInitializedDependencies = false;
-  late final GameService _gameService;
   User? _currentUser;
 
   // "All Games" Tab 的 Future (暂时保持不变)
@@ -68,7 +67,6 @@ class _GameManagementState extends State<GameManagement>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _gameService = widget.gameService;
       _currentUser = widget.currentUser;
       _hasInitializedDependencies = true;
     }
@@ -145,9 +143,8 @@ class _GameManagementState extends State<GameManagement>
 
   Future<void> _fetchReviewQueuePage(int page) async {
     try {
-      final result = await _gameService.getAdminReviewQueueGamesWithInfo(
+      final result = await widget.gameService.getAdminReviewQueueGamesWithInfo(
         page: page,
-        pageSize: 15,
       );
       if (mounted) {
         final List<Game> newGames = result.games;
@@ -200,7 +197,7 @@ class _GameManagementState extends State<GameManagement>
 
   Future<List<Game>> _loadAllGames() async {
     try {
-      final result = await _gameService.getGamesPaginatedWithInfo(
+      final result = await widget.gameService.getGamesPaginatedWithInfo(
         page: 1,
         sortBy: 'createTime',
         descending: true,
@@ -238,7 +235,7 @@ class _GameManagementState extends State<GameManagement>
         iconColor: Colors.red,
         onConfirm: () async {
           try {
-            await _gameService.deleteGame(game);
+            await widget.gameService.deleteGame(game);
             if (mounted) {
               AppSnackBar.showSuccess('游戏已删除');
               _refreshAllGames(); // 刷新 All Games
@@ -327,7 +324,7 @@ class _GameManagementState extends State<GameManagement>
   Future<void> _reviewGameApiCall(
       Game game, String status, String comment) async {
     try {
-      await _gameService.reviewGame(game, status, comment);
+      await widget.gameService.reviewGame(game, status, comment);
       if (mounted) {
         AppSnackBar.showSuccess('游戏已${status == 'approved' ? '批准' : '拒绝'}');
         _refreshReviewQueue();
@@ -454,14 +451,13 @@ class _GameManagementState extends State<GameManagement>
     required Future<void> Function(Game game) onDeleteAction,
   }) {
     if (isLoading) {
-      return const  LoadingWidget(message: "加载中...");
+      return const LoadingWidget(message: "加载中...");
     }
     if (error != null) {
-      return
-           CustomErrorWidget(errorMessage: error, onRetry: onRefresh);
+      return CustomErrorWidget(errorMessage: error, onRetry: onRefresh);
     }
     if (games.isEmpty) {
-      return  EmptyStateWidget(message: emptyMessage);
+      return EmptyStateWidget(message: emptyMessage);
     }
 
     // 使用 CommonGameListScreen 来构建 GridView
@@ -500,12 +496,17 @@ class _GameManagementState extends State<GameManagement>
               // 加载更多指示器
               if (hasMore && isLoadingMore) // 只有在加载更多时显示
                 Container(
-                    padding: const EdgeInsets.all(16.0),
-                    alignment: Alignment.center,
-                    child: const CircularProgressIndicator(strokeWidth: 2.0)),
+                  padding: const EdgeInsets.all(16.0),
+                  alignment: Alignment.center,
+                  child: const LoadingWidget(),
+                ),
               // 如果 hasMore 但不在加载中，可以显示一个空的 SizedBox 或 "没有更多了"
-              // if (!hasMore && games.isNotEmpty)
-              //    Container(padding: const EdgeInsets.all(16.0), alignment: Alignment.center, child: Text("没有更多了")),
+              if (!hasMore && games.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.all(16.0),
+                  alignment: Alignment.center,
+                  child: Text("没有更多了"),
+                ),
             ],
           ),
         ));

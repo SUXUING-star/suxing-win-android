@@ -131,6 +131,7 @@ class GameDetailLayout extends StatelessWidget {
       delay: delay, // 动画延迟
       slideOffset: slideOffset, // 滑入偏移量
       child: GameHeader(
+        isDesktop: isDesktop,
         game: game, // 游戏数据
         currentUser: currentUser, // 当前用户
         followService: followService, // 关注服务

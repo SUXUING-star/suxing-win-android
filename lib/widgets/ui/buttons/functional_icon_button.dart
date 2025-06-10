@@ -4,7 +4,8 @@
 /// 该组件支持图标背景、加载状态、禁用状态和细粒度的颜色控制。
 library;
 
-import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入 Flutter UI 组件
 
 /// `FunctionalIconButton` 类：功能更强大的图标按钮组件。
 ///
@@ -146,8 +147,7 @@ class FunctionalIconButton extends StatelessWidget {
           child: SizedBox(
             width: iconSize * 0.8, // 宽度
             height: iconSize * 0.8, // 高度
-            child: CircularProgressIndicator(
-              strokeWidth: loadingIndicatorStrokeWidth, // 粗细
+            child: LoadingWidget(
               color: effectiveLoadingIndicatorColor, // 颜色
             ),
           ),

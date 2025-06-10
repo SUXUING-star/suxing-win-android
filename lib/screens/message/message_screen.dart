@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/models/message/message.dart';
 import 'package:suxingchahui/models/message/message_type.dart'; // 需要 MessageTypeInfo
@@ -395,23 +395,12 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   Widget _buildEmptyContent() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Container(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            alignment: Alignment.center,
-            child: FadeInSlideUpItem(
-              // 使用 FadeInSlideUpItem 包裹
-              child: const EmptyStateWidget(
-                message: '暂无任何消息',
-                iconData: Icons.mark_as_unread_outlined,
-              ),
-            ),
-          ),
-        );
-      },
+    return const FadeInSlideUpItem(
+      // 使用 FadeInSlideUpItem 包裹
+      child: EmptyStateWidget(
+        message: '暂无任何消息',
+        iconData: Icons.mark_as_unread_outlined,
+      ),
     );
   }
 
@@ -561,18 +550,23 @@ class _MessageScreenState extends State<MessageScreen> {
   }
 
   /// 构建桌面端布局
-  Widget _buildDesktopLayout() {
+  Widget _buildDesktopLayout(
+    double screenWidth,
+  ) {
     return Scaffold(
       appBar: CustomAppBar(
         title: '消息中心',
         actions: [if (!_allMessagesRead) _iconRead(), _iconRefresh()],
       ),
-      body: _buildDesktopBody(),
+      body: _buildDesktopBody(screenWidth),
     );
   }
 
-  Widget _buildDesktopBody() {
-    final sidePanelWidth = DeviceUtils.getSidePanelWidth(context);
+  Widget _buildDesktopBody(
+    double screenWidth,
+  ) {
+    final sidePanelWidth =
+        DeviceUtils.getSidePanelWidthInScreenWidth(screenWidth);
     return StreamBuilder<bool>(
       stream: widget.authProvider.isLoggedInStream,
       initialData: widget.authProvider.isLoggedIn,
@@ -669,11 +663,14 @@ class _MessageScreenState extends State<MessageScreen> {
   Widget build(BuildContext context) {
     // 根据设备类型选择不同的布局
     return LazyLayoutBuilder(
-        windowStateProvider: widget.windowStateProvider,
-        builder: (context, constraints) {
-          final screenWidth = constraints.maxWidth;
-          final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-          return isDesktop ? _buildDesktopLayout() : _buildMobileLayout();
-        });
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktop
+            ? _buildDesktopLayout(screenWidth)
+            : _buildMobileLayout();
+      },
+    );
   }
 }

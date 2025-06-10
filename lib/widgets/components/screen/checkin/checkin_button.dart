@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/checkin/checkin_button.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/effects/checkin_particle_effect.dart';
-
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 class CheckInButton extends StatelessWidget {
   final bool hasCheckedToday;
@@ -47,35 +47,26 @@ class CheckInButton extends StatelessWidget {
             elevation: hasCheckedToday ? 0 : 4,
           ),
           child: isLoading
-              ? const SizedBox(
-            width: 20,
-            height: 20,
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              strokeWidth: 3,
-            ),
-          )
+              ? const SizedBox(width: 20, height: 20, child: LoadingWidget())
               : Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                hasCheckedToday
-                    ? Icons.check_circle_outline
-                    : Icons.add_circle_outline,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                hasCheckedToday
-                    ? '今日已签到'
-                    : '立即签到 +$nextReward经验',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      hasCheckedToday
+                          ? Icons.check_circle_outline
+                          : Icons.add_circle_outline,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      hasCheckedToday ? '今日已签到' : '立即签到 +$nextReward经验',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         ),
       ],
     );

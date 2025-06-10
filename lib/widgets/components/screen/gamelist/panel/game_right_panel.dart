@@ -10,6 +10,7 @@ import 'package:suxingchahui/services/main/game/game_stats_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameRightPanel extends StatelessWidget {
+  final double panelWidth;
   final List<Game> currentPageGames;
   final int totalGamesCount;
   final String? selectedTag;
@@ -20,6 +21,7 @@ class GameRightPanel extends StatelessWidget {
 
   const GameRightPanel({
     super.key,
+    required this.panelWidth,
     required this.currentPageGames,
     required this.totalGamesCount,
     required this.availableCategories, // 确保传入
@@ -40,9 +42,6 @@ class GameRightPanel extends StatelessWidget {
         GameStatsService.getUniqueCategoriesCount(currentPageGames);
     final int uniqueTagsCount =
         GameStatsService.getUniqueTagsCount(currentPageGames);
-
-    // 面板宽度
-    final panelWidth = DeviceUtils.getSidePanelWidth(context);
 
     return Container(
       width: panelWidth,

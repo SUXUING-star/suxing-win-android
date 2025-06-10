@@ -290,10 +290,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
       itemBuilder: (context, index) {
         if (index == widget.activities.length) {
           // 最后一项且正在加载更多时显示加载指示器
-          return const Center(
-              child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(strokeWidth: 2)));
+          return const LoadingWidget(
+            size: 24,
+          );
         }
         final activity = widget.activities[index]; // 当前活动
         final bool isAlternate =
@@ -348,10 +347,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
       itemBuilder: (context, index) {
         if (index == groupedActivities.length) {
           // 最后一项且正在加载更多时显示加载指示器
-          return const Center(
-              child: Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: CircularProgressIndicator(strokeWidth: 2)));
+          return const LoadingWidget();
         }
 
         final groupKey = groupedActivities.keys.elementAt(index); // 分组键

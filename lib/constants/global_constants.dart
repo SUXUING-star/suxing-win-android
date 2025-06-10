@@ -55,7 +55,7 @@ class GlobalConstants {
       'assets/images/menu/cappo1.gif'; // 初始化屏幕 GIF 2
 
   static const String defaultBannerImage =
-      'assets/images/banner/banner_image.png'; // 默认 Banner 图片
+      'assets/images/banner/banner_colorful.png'; // 默认 Banner 图片
 
   /// 默认导航页面颜色列表。
   static const List<Color> defaultNavPageColors = [

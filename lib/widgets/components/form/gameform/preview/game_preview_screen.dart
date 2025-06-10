@@ -6,19 +6,23 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/components/screen/game/game_detail_layout.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class GamePreviewScreen extends StatelessWidget {
   final GameService gameService;
   final GameCollectionService gameCollectionService;
   final AuthProvider authProvider;
+  final WindowStateProvider windowStateProvider;
   final SidebarProvider sidebarProvider;
   final Game game;
   final User? currentUser;
@@ -30,6 +34,7 @@ class GamePreviewScreen extends StatelessWidget {
   const GamePreviewScreen({
     super.key,
     required this.gameCollectionService,
+    required this.windowStateProvider,
     required this.gameService,
     required this.authProvider,
     required this.sidebarProvider,
@@ -43,10 +48,17 @@ class GamePreviewScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
-    return isDesktop
-        ? _buildDesktopLayout(context, isDesktop)
-        : _buildMobileLayout(context, isDesktop);
+    return LazyLayoutBuilder(
+      windowStateProvider: windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+
+        return isDesktop
+            ? _buildDesktopLayout(context, isDesktop)
+            : _buildMobileLayout(context, isDesktop);
+      },
+    );
   }
 
   Widget _buildFab(BuildContext context) {
@@ -57,7 +69,7 @@ class GamePreviewScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGameContent(BuildContext context, bool isDesktop) {
+  Widget _buildGameContent(BuildContext context,bool isDesktop) {
     return GameDetailLayout(
       sidebarProvider: sidebarProvider,
       gameListFilterProvider: gameListFilterProvider,
@@ -198,7 +210,7 @@ class GamePreviewScreen extends StatelessWidget {
                   child: AppText(
                     '预览模式 - 实时预览效果',
                     style: TextStyle(
-                       fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.bold,
                       fontSize: 14,
                     ),
                   ),

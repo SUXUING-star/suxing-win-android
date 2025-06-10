@@ -70,12 +70,18 @@ class DeviceUtils {
     return MediaQuery.of(context).size.width;
   }
 
+  /// 返回屏幕尺寸
+  /// [context]：Build 上下文。
+  static Size getScreenSize(BuildContext context) {
+    return MediaQuery.of(context).size;
+  }
+
   /// 判断当前屏幕是否为桌面屏幕尺寸。
   ///
   /// [context]：Build 上下文。
   /// 根据屏幕宽度判断是否为桌面屏幕。
   static bool isDesktopScreen(BuildContext context) {
-    return MediaQuery.of(context).size.width >= 1000; // 屏幕宽度大于等于特定值时判定为桌面屏幕
+    return MediaQuery.of(context).size.width >= 900; // 屏幕宽度大于等于特定值时判定为桌面屏幕
   }
 
   /// 判断当前屏幕是否为桌面屏幕尺寸。
@@ -139,11 +145,11 @@ class DeviceUtils {
 
   /// 获取侧边面板宽度。
   ///
-  /// [context]：Build 上下文。
+  /// [screenWidth] 屏幕宽度
   /// 根据屏幕宽度返回不同的面板宽度。
-  static double getSidePanelWidth(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width; // 获取屏幕宽度
-
+  static double getSidePanelWidthInScreenWidth(
+    double screenWidth,
+  ) {
     if (screenWidth < 600) {
       return 180; // 窄屏幕面板宽度
     } else if (screenWidth < 1200) {
@@ -168,7 +174,7 @@ class DeviceUtils {
 
     if (withPanels && isDesktop) {
       // 如果考虑面板且为桌面平台
-      double panelWidth = getSidePanelWidth(context); // 获取面板宽度
+      double panelWidth = getSidePanelWidthInScreenWidth(screenWidth); // 获取面板宽度
       double deduction = 0; // 初始化扣减值
       if (leftPanelVisible) deduction += panelWidth; // 左侧面板可见时增加扣减
       if (rightPanelVisible) deduction += panelWidth; // 右侧面板可见时增加扣减
@@ -193,10 +199,12 @@ class DeviceUtils {
       bool isCompact = false,
       double? directAvailableWidth}) {
     final double availableWidth = directAvailableWidth ??
-        getAvailableContentWidth(context,
-            withPanels: withPanels,
-            leftPanelVisible: leftPanelVisible,
-            rightPanelVisible: rightPanelVisible); // 获取可用宽度
+        getAvailableContentWidth(
+          context,
+          withPanels: withPanels,
+          leftPanelVisible: leftPanelVisible,
+          rightPanelVisible: rightPanelVisible,
+        ); // 获取可用宽度
 
     final double horizontalPadding = 16.0; // 水平内边距
     final double crossAxisSpacing = 8.0; // 水平间距
@@ -216,7 +224,6 @@ class DeviceUtils {
     } else {
       isCompact ? targetCardWidth = 160 : targetCardWidth = 175;
     }
-
 
     int cardsPerRow = ((effectiveWidth + crossAxisSpacing) /
             (targetCardWidth + crossAxisSpacing))
@@ -322,7 +329,9 @@ class DeviceUtils {
       maxRatio = min(maxRatio, 0.85); // 限制最大宽高比
       minRatio = max(minRatio, 0.60); // 限制最小宽高比
     }
-    return ratio.clamp(minRatio, maxRatio); // 返回钳制后的宽高比
+
+    final double finalRatio = ratio.clamp(minRatio, maxRatio);
+    return finalRatio; // 返回钳制后的宽高比
   }
 
   /// 计算热门/最新游戏列表的卡片比例。
@@ -344,11 +353,12 @@ class DeviceUtils {
   /// [showTags]：是否显示标签。
   /// 调用 `calculateGameCardRatio` 方法，考虑侧边面板。
   static double calculateGameListCardRatio(
-      BuildContext context,
-      bool leftPanelVisible,
-      bool rightPanelVisible,
-
-      {bool showTags = true,double? directAvailableWidth,}) {
+    BuildContext context, {
+    bool leftPanelVisible = false,
+    bool rightPanelVisible = false,
+    bool showTags = true,
+    double? directAvailableWidth,
+  }) {
     return calculateGameCardRatio(context,
         withPanels: true,
         directAvailableWidth: directAvailableWidth,
@@ -366,13 +376,15 @@ class DeviceUtils {
     bool withPanels = false,
     bool leftPanelVisible = true,
     bool rightPanelVisible = true,
+    double? directAvailableWidth,
   }) {
-    final availableWidth = getAvailableContentWidth(
-      context,
-      withPanels: withPanels,
-      leftPanelVisible: leftPanelVisible,
-      rightPanelVisible: rightPanelVisible,
-    ); // 获取可用宽度
+    final availableWidth = directAvailableWidth ??
+        getAvailableContentWidth(
+          context,
+          withPanels: withPanels,
+          leftPanelVisible: leftPanelVisible,
+          rightPanelVisible: rightPanelVisible,
+        ); // 获取可用宽度
     final horizontalPadding = 16.0; // GridView 左右的总内边距
     final crossAxisSpacing = 16.0; // 卡片间的水平间距
 

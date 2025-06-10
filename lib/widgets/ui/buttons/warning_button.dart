@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 
 /// `WarningButton` 类：一个用于显示警告或危险操作的按钮组件。
@@ -63,8 +64,7 @@ class WarningButton extends StatelessWidget {
           ? SizedBox(
               width: iconSize,
               height: iconSize,
-              child: CircularProgressIndicator(
-                strokeWidth: 2, // 粗细
+              child: LoadingWidget(
                 color: buttonForegroundColor, // 颜色
               ),
             )

@@ -1,100 +1,61 @@
 // lib/widgets/components/screen/home/section/home_game_card.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/components/screen/game/card/game_stats_widget.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
-class HomeGameCard extends StatelessWidget {
-  final Game game;
-  final VoidCallback onTap;
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
+// 废话不多说，先把大哥请过来
+import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
+
+/// 首页专用的游戏卡片，一个有固定尺寸的展示组件。
+///
+/// 这玩意儿也他妈的继承了 BaseGameCard，代码清爽得一批。
+/// 它唯一的特殊之处就是需要一个固定的尺寸，所以我们重写了 build 方法，
+/// 用一个 SizedBox 把大哥（BaseGameCard）的成果包起来。
+class HomeGameCard extends BaseGameCard {
+  /// 卡片的固定宽度
   static const double cardWidth = 160.0;
+  /// 卡片的固定高度
   static const double cardHeight = 210;
 
+  /// 构造函数。
+  ///
+  /// 接收 game 和 onTap，然后把一堆预设好的配置喂给大哥 BaseGameCard。
   const HomeGameCard({
     super.key,
-    required this.game,
-    required this.onTap,
-  });
+    required Game game,
+    required VoidCallback onTap,
+  }) : super(
+    // --- 把核心数据和回调传给大哥 ---
+    game: game,
+    onTapOverride: onTap, // 把自己的 onTap 传给大哥的 onTapOverride，完美对接
 
+    // --- 根据 HomeGameCard 的样式，把参数写死 ---
+    isGridItem: true, // 必须是网格布局
+    showTags: true, // 首页卡片不显示那一长串标签
+    maxTags: 1,
+    showCollectionStats: true, // 封面上的统计数据要显示
+    currentUser: null, // 没用户，禁用所有编辑/删除功能
+    showNewBadge: false, // 不显示“新”徽章
+    showUpdatedBadge: false, // 不显示“更新”徽章
+  );
+
+  /// 重写 build 方法，这是与 CommonGameCard 唯一的不同之处。
+  ///
+  /// 因为首页卡片需要固定大小，我们不能直接用大哥的 build 结果。
+  /// 我们得先调用 `super.build(context)` 拿到大哥渲染好的卡片，
+  /// 然后再用一个 `SizedBox`把它框在一个固定的尺寸里。
   @override
   Widget build(BuildContext context) {
-    if (game.approvalStatus == GameStatus.pending) {
-      return const SizedBox.shrink();
-    }
+    // 调用 super.build(context) 让大哥先把卡片UI造出来
+    final Widget baseCardFromSuper = super.build(context);
+
+    // 然后我们把大哥的作品放进一个固定大小的盒子里，搞定。
     return SizedBox(
       width: cardWidth,
       height: cardHeight,
-      child: Card(
-        margin: const EdgeInsets.symmetric(horizontal: 8),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.0),
-        ),
-        elevation: 1.5, // 你可以根据喜好调整或设为 0
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(12.0),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Stack(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: SafeCachedImage(
-                        imageUrl: game.coverImage,
-                        width: double.infinity,
-                        height: 120,
-                        fit: BoxFit.cover,
-                        memCacheWidth: 320,
-                        borderRadius: BorderRadius.circular(8),
-                        backgroundColor: Colors.grey[200],
-                      ),
-                    ),
-                    Positioned(
-                        top: 8,
-                        left: 8,
-                        child: GameCategoryTagView(
-                          category: game.category,
-                        )),
-                    Positioned(
-                      bottom: 4,
-                      right: 4,
-                      child: GameStatsWidget(
-                        game: game,
-                        showCollectionStats: true,
-                        isGrid: true,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  game.title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  game.summary,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: Padding(
+        // 这个 Padding 是为了让卡片之间有间距，因为SizedBox会撑满空间
+        padding: const EdgeInsets.symmetric(horizontal: 4.0),
+        child: baseCardFromSuper,
       ),
     );
   }

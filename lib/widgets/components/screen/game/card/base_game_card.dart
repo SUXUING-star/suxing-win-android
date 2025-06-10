@@ -35,6 +35,7 @@ class BaseGameCard extends StatelessWidget {
   final VoidCallback? onEditAction; // 编辑操作回调
   final bool showNewBadge; // 是否显示新游戏徽章
   final bool showUpdatedBadge; // 是否显示更新游戏徽章
+  final VoidCallback? onTapOverride;
 
   /// 构造函数。
   ///
@@ -64,6 +65,7 @@ class BaseGameCard extends StatelessWidget {
     this.onEditAction,
     this.showNewBadge = false,
     this.showUpdatedBadge = false,
+    this.onTapOverride,
   });
 
   /// 构建游戏卡片。
@@ -102,27 +104,31 @@ class BaseGameCard extends StatelessWidget {
   ///
   /// [text]：徽章文本。
   /// [color]：徽章背景颜色。
-  Widget _buildBadge(String text, Color color) {
+  Widget _buildCornerBadge(String text, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3), // 内边距
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color, // 背景色
-        borderRadius: BorderRadius.circular(4), // 圆角
+        color: color,
+        // 这个 borderRadius 是关键，只给右上和左下角设置圆角，制造折角感
+        borderRadius: const BorderRadius.only(
+          topRight: Radius.circular(12),
+          bottomLeft: Radius.circular(8),
+        ),
+        // 阴影也给你加上，更有实体感
         boxShadow: [
-          // 阴影
           BoxShadow(
-            color: Colors.black.withSafeOpacity(0.2), // 阴影颜色
-            blurRadius: 2, // 模糊半径
-            offset: const Offset(0, 1), // 偏移量
+            color: Colors.black.withSafeOpacity(0.3), // 阴影加深一点
+            blurRadius: 4,
+            offset: const Offset(-2, 2), // 往左下偏移，模拟光照
           ),
         ],
       ),
       child: Text(
-        text, // 文本
+        text,
         style: const TextStyle(
-          color: Colors.white, // 颜色
-          fontSize: 10, // 字号
-          fontWeight: FontWeight.bold, // 字重
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );
@@ -132,7 +138,7 @@ class BaseGameCard extends StatelessWidget {
   ///
   /// [context]：Build 上下文。
   Widget _buildListCard(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
+    final bool isDesktop = DeviceUtils.isDesktopScreen(context); // 判断是否为桌面平台
     return Card(
       elevation: 2, // 阴影
       clipBehavior: Clip.antiAlias, // 裁剪行为
@@ -145,11 +151,11 @@ class BaseGameCard extends StatelessWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch, // 子项垂直拉伸
             children: [
-              _buildGameCover(context, isDesktop), // 左侧封面
+              _buildListCardGameCover(context, isDesktop), // 左侧封面
               Expanded(
                 child: Padding(
                   padding: const EdgeInsets.all(10.0), // 内边距
-                  child: _buildGameInfo(context), // 右侧信息
+                  child: _buildListCardGameInfo(context), // 右侧信息
                 ),
               ),
             ],
@@ -184,27 +190,13 @@ class BaseGameCard extends StatelessWidget {
                     memCacheWidth: DeviceUtils.isDesktop ? 480 : 280, // 内存缓存宽度
                   ),
                   Positioned(
-                    top: 8, // 顶部偏移
-                    left: 8, // 左侧偏移
+                    top: 0, // 顶部偏移
+                    left: 0, // 左侧偏移
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
                       children: [
-                        if (showNewBadge && _isGameNew()) // 显示新游戏徽章
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                            child:
-                                _buildBadge('新发布', Colors.red.shade700), // 徽章
-                          )
-                        else if (showUpdatedBadge &&
-                            _isGameRecentlyUpdated()) // 显示更新游戏徽章
-                          Padding(
-                            padding:
-                                const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                            child:
-                                _buildBadge('最近更新', Colors.blue.shade700), // 徽章
-                          ),
-                        GameCategoryTagView(category: game.category), // 类别标签
+                        ..._buildShowUpdateAndCategoryRow()
+                        // 类别标签
                       ],
                     ),
                   ),
@@ -215,18 +207,7 @@ class BaseGameCard extends StatelessWidget {
                   Positioned(
                     bottom: 8, // 底部偏移
                     right: 8, // 右侧偏移
-                    child: GestureDetector(
-                      onTap: () {
-                        // 点击手势
-                        if (showCollectionStats && game.totalCollections > 0) {
-                          showGameCollectionDialog(context, game); // 显示游戏收藏对话框
-                        }
-                      },
-                      child: GameStatsWidget(
-                          game: game,
-                          showCollectionStats: showCollectionStats,
-                          isGrid: true), // 游戏统计组件
-                    ),
+                    child: _buildGameStatsWidget(context),
                   ),
                 ],
               ),
@@ -235,7 +216,7 @@ class BaseGameCard extends StatelessWidget {
               flex: 3, // 游戏信息区域比例
               child: Padding(
                 padding: const EdgeInsets.all(12.0), // 内边距
-                child: _buildGridInfoSection(context), // 网格信息区域
+                child: _buildGridCardInfoSection(context), // 网格信息区域
               ),
             ),
           ],
@@ -244,11 +225,75 @@ class BaseGameCard extends StatelessWidget {
     );
   }
 
+  ///
+  ///
+  /// 构建更新/最新发布的角标以及分类
+  List<Widget> _buildShowUpdateAndCategoryRow() {
+    List<Widget> rows = [];
+
+    if (showNewBadge && _isGameNew()) {
+      isGridItem
+          ? rows.add(_buildCornerBadge('新发布', Colors.red.shade700))
+          : rows.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
+                child: _buildCornerBadge('更新', Colors.red.shade700), // 徽章
+              ),
+            );
+    } else if (showUpdatedBadge && _isGameRecentlyUpdated()) {
+      isGridItem
+          ? rows.add(_buildCornerBadge('最近更新', Colors.blue.shade700))
+          : rows.add(
+              Padding(
+                padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
+                child: _buildCornerBadge('更新', Colors.blue.shade700), // 徽章
+              ),
+            );
+    }
+    rows.add(GameCategoryTagView(
+      category: game.category,
+      isFrosted: false,
+    )); // 类别标签
+    return rows;
+  }
+
+  ///
+  ///
+  ///  构建统计项
+  Widget _buildGameStatsWidget(BuildContext context) {
+    // 游戏统计组件
+    return GestureDetector(
+      onTap: () {
+        // 点击手势
+        if (showCollectionStats && game.totalCollections > 0) {
+          showGameCollectionDialog(context, game); // 显示游戏收藏对话框
+        }
+      },
+      child: GameStatsWidget(
+        game: game,
+        showCollectionStats: showCollectionStats,
+        isGrid: isGridItem,
+      ),
+    );
+  }
+
+  ///
+  ///
+  ///  构建标签
+  Widget _buildGameTagsWidget() {
+    return GameTagList(
+      tags: game.tags,
+      maxTags: maxTags,
+      isCompact: !isGridItem,
+      isScrollable: isGridItem,
+    );
+  }
+
   /// 构建游戏封面图。
   ///
   /// [context]：Build 上下文。
   /// [isDesktop]：是否为桌面布局。
-  Widget _buildGameCover(BuildContext context, bool isDesktop) {
+  Widget _buildListCardGameCover(BuildContext context, bool isDesktop) {
     final coverWidth = isDesktop ? 120.0 : 100.0; // 封面宽度
     return SizedBox(
       width: coverWidth, // 宽度
@@ -262,23 +307,11 @@ class BaseGameCard extends StatelessWidget {
             backgroundColor: Colors.grey[200], // 背景色
           ),
           Positioned(
-            top: 8, // 顶部偏移
-            left: 8, // 左侧偏移
+            top: 0, // 顶部偏移
+            left: 0, // 左侧偏移
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
-              children: [
-                if (showNewBadge && _isGameNew()) // 显示新徽章
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                    child: _buildBadge('新', Colors.red.shade700), // 徽章
-                  )
-                else if (showUpdatedBadge && _isGameRecentlyUpdated()) // 显示更新徽章
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                    child: _buildBadge('更新', Colors.blue.shade700), // 徽章
-                  ),
-                GameCategoryTagView(category: game.category), // 类别标签
-              ],
+              children: [..._buildShowUpdateAndCategoryRow()],
             ),
           ),
         ],
@@ -289,7 +322,7 @@ class BaseGameCard extends StatelessWidget {
   /// 构建游戏信息（列表布局）。
   ///
   /// [context]：Build 上下文。
-  Widget _buildGameInfo(BuildContext context) {
+  Widget _buildListCardGameInfo(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
       mainAxisAlignment: MainAxisAlignment.spaceBetween, // 垂直两端对齐
@@ -323,25 +356,9 @@ class BaseGameCard extends StatelessWidget {
         if (showTags && game.tags.isNotEmpty) // 显示标签
           Padding(
             padding: const EdgeInsets.only(top: 2.0, bottom: 4.0), // 顶部和底部内边距
-            child: GameTagList(
-              tags: game.tags,
-              maxTags: maxTags,
-              isCompact: false,
-            ), // 游戏标签列表
+            child: _buildGameTagsWidget(), // 游戏标签列表
           ),
-        GestureDetector(
-          onTap: () {
-            // 点击手势
-            if (showCollectionStats && game.totalCollections > 0) {
-              showGameCollectionDialog(context, game); // 显示游戏收藏对话框
-            }
-          },
-          child: GameStatsWidget(
-            game: game,
-            showCollectionStats: showCollectionStats,
-            isGrid: false,
-          ), // 游戏统计组件
-        ),
+        _buildGameStatsWidget(context),
       ],
     );
   }
@@ -349,7 +366,7 @@ class BaseGameCard extends StatelessWidget {
   /// 构建游戏信息（网格布局）。
   ///
   /// [context]：Build 上下文。
-  Widget _buildGridInfoSection(BuildContext context) {
+  Widget _buildGridCardInfoSection(BuildContext context) {
     // 使用 Stack 布局，让内容和标签分层
     return Stack(
       children: [
@@ -377,16 +394,10 @@ class BaseGameCard extends StatelessWidget {
         // 第二层：游戏标签，使用 Positioned 定位到底部
         if (showTags && game.tags.isNotEmpty)
           Positioned(
-            bottom: 0, // 紧贴底部
-            left: 0, // 紧贴左边
-            right: 0, // 紧贴右边
-            child: GameTagList(
-              tags: game.tags,
-              maxTags: maxTags,
-              isScrollable: true,
-              isCompact: true,
-            ),
-          ),
+              bottom: 0, // 紧贴底部
+              left: 0, // 紧贴左边
+              right: 0, // 紧贴右边
+              child: _buildGameTagsWidget()),
       ],
     );
   }
@@ -395,11 +406,12 @@ class BaseGameCard extends StatelessWidget {
   ///
   /// [context]：Build 上下文。
   void _onCardTap(BuildContext context) {
-    Navigator.pushNamed(
-      context,
-      AppRoutes.gameDetail, // 导航到游戏详情路由
-      arguments: game, // 传递游戏数据
-    );
+    onTapOverride ??
+        Navigator.pushNamed(
+          context,
+          AppRoutes.gameDetail, // 导航到游戏详情路由
+          arguments: game, // 传递游戏数据
+        );
   }
 
   /// 构建右上角弹出菜单。

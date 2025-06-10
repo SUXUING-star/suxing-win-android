@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart'; // Ensure GameStatus enum is here
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
@@ -11,6 +12,7 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 enum GameStatType {
   views,
@@ -21,7 +23,6 @@ enum GameStatType {
 class MyGamesLayout extends StatelessWidget {
   final List<Game> myGames;
   final bool isLoadingMore;
-  final bool isDesktop;
   final bool hasMore;
   final ScrollController scrollController;
   final VoidCallback onLoadMore;
@@ -29,12 +30,19 @@ class MyGamesLayout extends StatelessWidget {
   final Function(Game) onResubmit;
   final Function(String) onShowReviewComment;
   final AuthProvider authProvider;
+  final WindowStateProvider windowStateProvider;
+
+  static const int desktopStatsFlex = 1;
+  static const int desktopGameListFlex = 4;
+  static const double desktopDividerWidth = 1.0;
+
+  static const double mobileStatsTopPadding = 12;
+  static const double mobileStatsBottomPadding = 8;
 
   const MyGamesLayout({
     super.key,
     required this.myGames,
     required this.isLoadingMore,
-    required this.isDesktop,
     required this.hasMore,
     required this.scrollController,
     required this.onLoadMore,
@@ -42,6 +50,7 @@ class MyGamesLayout extends StatelessWidget {
     required this.onResubmit,
     required this.onShowReviewComment,
     required this.authProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -58,47 +67,83 @@ class MyGamesLayout extends StatelessWidget {
       );
     }
 
-    return isDesktop
-        ? _buildDesktopLayout(context)
-        : _buildMobileLayout(context);
+    return LazyLayoutBuilder(
+      windowStateProvider: windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktopLayout
+            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
+            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
+      },
+    );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 1,
+          flex: desktopStatsFlex,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildMyGamesStatistics(context, isDesktop: true),
+            child: _buildMyGamesStatistics(
+              context,
+              isDesktopLayout,
+            ),
           ),
         ),
-        const VerticalDivider(width: 1, thickness: 0.5),
+        const VerticalDivider(width: desktopDividerWidth, thickness: 0.5),
         Expanded(
-          flex: 4,
-          child: _buildGamesContent(context, isDesktop: true),
+          flex: desktopGameListFlex,
+          child: _buildGamesContent(
+            context,
+            isDesktopLayout,
+            screenWidth,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildMyGamesStatistics(context, isDesktop: false),
+          padding: const EdgeInsets.fromLTRB(
+            12,
+            mobileStatsTopPadding,
+            12,
+            mobileStatsBottomPadding,
+          ),
+          child: _buildMyGamesStatistics(
+            context,
+            isDesktopLayout,
+          ),
         ),
         Expanded(
-          child: _buildGamesContent(context, isDesktop: false),
+          child: _buildGamesContent(
+            context,
+            isDesktopLayout,
+            screenWidth,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMyGamesStatistics(BuildContext context,
-      {required bool isDesktop}) {
+  Widget _buildMyGamesStatistics(
+    BuildContext context,
+    bool isDesktop,
+  ) {
     final int totalGames = myGames.length;
     final int pendingGames = myGames
         .where((game) => game.approvalStatus == GameStatus.pending)
@@ -332,10 +377,25 @@ class MyGamesLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildGamesContent(BuildContext context, {required bool isDesktop}) {
+  Widget _buildGamesContent(
+    BuildContext context,
+    bool isDesktop,
+    double screenWidth,
+  ) {
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth = (screenWidth - desktopDividerWidth) *
+          desktopGameListFlex /
+          (desktopStatsFlex + desktopGameListFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
+    final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+    );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
-    final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(context,
-        withPanels: true, leftPanelVisible: true);
+
 
     return ListView(
       key: ValueKey<int>(myGames.length),
@@ -348,9 +408,12 @@ class MyGamesLayout extends StatelessWidget {
           childAspectRatio: cardRatio,
           crossAxisSpacing: 8,
           mainAxisSpacing: isDesktop ? 16 : 8,
-          padding: EdgeInsets.zero, // 外部 ListView 已有 padding
-          shrinkWrap: true, // 关键：使其在 ListView 内正常工作
-          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          padding: EdgeInsets.zero,
+          // 外部 ListView 已有 padding
+          shrinkWrap: true,
+          // 关键：使其在 ListView 内正常工作
+          physics: const NeverScrollableScrollPhysics(),
+          // 关键：禁用其内部滚动
           itemBuilder: (context, index, game) {
             return _buildGameCardItem(game);
           },

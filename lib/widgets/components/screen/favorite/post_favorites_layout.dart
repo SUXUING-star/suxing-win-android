@@ -108,13 +108,16 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context);
+            ? _buildDesktopLayout(context, isDesktopLayout)
+            : _buildMobileLayout(context, isDesktopLayout);
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -122,27 +125,37 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
           flex: 1,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildPostFavoritesStatistics(context, isDesktop: true),
+            child: _buildPostFavoritesStatistics(context,
+                isDesktop: isDesktopLayout),
           ),
         ),
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
           flex: 3,
-          child: _buildFavoritesContent(context, isDesktop: true),
+          child: _buildFavoritesContent(
+            context,
+            isDesktop: isDesktopLayout,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(BuildContext context, bool isDesktopLayout) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildPostFavoritesStatistics(context, isDesktop: false),
+          child: _buildPostFavoritesStatistics(
+            context,
+            isDesktop: isDesktopLayout,
+          ),
         ),
         Expanded(
-          child: _buildFavoritesContent(context, isDesktop: false),
+          child: _buildFavoritesContent(
+            context,
+            isDesktop: isDesktopLayout,
+          ),
         ),
       ],
     );
@@ -230,9 +243,6 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
 
   Widget _buildFavoritesContent(BuildContext context,
       {required bool isDesktop}) {
-    final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(context);
-    final cardRatio = DeviceUtils.calculatePostCardRatio(context);
-
     // 准备要显示的所有项目
     final List<Object> displayItems = [...widget.favoritePosts];
     if (widget.isLoadingMore) {
@@ -241,59 +251,66 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
       displayItems.add(const _LoadMoreButtonPlaceholder());
     }
 
-    // 使用封装好的 AnimatedContentGrid
-    return LazyLayoutBuilder(
-      windowStateProvider: widget.windowStateProvider,
-      builder: (context, constraints) {
-        return AnimatedContentGrid<Object>(
-          items: displayItems,
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: cardRatio,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: isDesktop ? 16 : 8,
-          padding: EdgeInsets.all(isDesktop ? 16 : 8),
-          itemBuilder: (context, index, item) {
-            // 如果项目是帖子
-            if (item is Post) {
-              return _buildPostCard(item, constraints.maxWidth);
-            }
+    final thisWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(
+      context,
+      directAvailableWidth: thisWidth,
+    );
+    final cardRatio = DeviceUtils.calculatePostCardRatio(context);
+    return AnimatedContentGrid<Object>(
+      items: displayItems,
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: cardRatio,
+      crossAxisSpacing: 8,
+      mainAxisSpacing: isDesktop ? 16 : 8,
+      padding: EdgeInsets.all(isDesktop ? 16 : 8),
+      itemBuilder: (context, index, item) {
+        // 如果项目是帖子
+        if (item is Post) {
+          return _buildPostCard(
+            item,
+            thisWidth,
+            isDesktop,
+          );
+        }
 
-            // 如果项目是加载指示器
-            if (item is _LoadingMorePlaceholder) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16.0),
-                child: LoadingWidget(message: "正在加载更多"),
-              );
-            }
+        // 如果项目是加载指示器
+        if (item is _LoadingMorePlaceholder) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16.0),
+            child: LoadingWidget(message: "正在加载更多"),
+          );
+        }
 
-            // 如果项目是加载更多按钮
-            if (item is _LoadMoreButtonPlaceholder) {
-              return Padding(
-                padding: const EdgeInsets.symmetric(vertical: 16.0),
-                child: Center(
-                  child: FunctionalTextButton(
-                    onPressed: widget.onLoadMore,
-                    label: '加载更多',
-                  ),
-                ),
-              );
-            }
+        // 如果项目是加载更多按钮
+        if (item is _LoadMoreButtonPlaceholder) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16.0),
+            child: Center(
+              child: FunctionalTextButton(
+                onPressed: widget.onLoadMore,
+                label: '加载更多',
+              ),
+            ),
+          );
+        }
 
-            return const SizedBox.shrink();
-          },
-        );
+        return const SizedBox.shrink();
       },
     );
   }
 
-  Widget _buildPostCard(Post postItem, double screenWidth) {
-    final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+  Widget _buildPostCard(
+    Post postItem,
+    double postListWidth,
+    bool isDesktop,
+  ) {
     return Stack(
       children: [
         BasePostCard(
           post: postItem,
           currentUser: widget.currentUser,
-          screenWidth: screenWidth,
+          screenWidth: postListWidth,
           infoProvider: widget.userInfoProvider,
           followService: widget.userFollowService,
           onDeleteAction: null,

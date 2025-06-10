@@ -28,6 +28,7 @@ class PostTagRow extends StatelessWidget {
             child: PostTagItem(
               tagString: tagString,
               isMini: true,
+              isSelected: true,
             ),
           );
         }).toList(),

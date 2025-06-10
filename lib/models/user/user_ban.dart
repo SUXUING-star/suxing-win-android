@@ -1,5 +1,8 @@
 // lib/models/user/user_ban.dart
 
+import 'package:flutter/cupertino.dart';
+
+@immutable
 class UserBan {
   final String id;
   final String userId;
@@ -8,7 +11,7 @@ class UserBan {
   final DateTime? endTime;  // null表示永久封禁
   final String bannedBy;   // 执行封禁的管理员ID
 
-  UserBan({
+  const UserBan({
     required this.id,
     required this.userId,
     required this.reason,

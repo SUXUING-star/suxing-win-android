@@ -175,6 +175,7 @@ class _MainLayoutState extends State<MainLayout> {
         followService: widget.followService,
         infoProvider: widget.infoProvider,
         inputStateService: widget.inputStateService,
+        windowStateProvider: widget.windowStateProvider,
       ),
       LinksToolsScreen(
         authProvider: widget.authProvider,
@@ -201,9 +202,9 @@ class _MainLayoutState extends State<MainLayout> {
   Widget build(BuildContext context) {
     final bool isDesktop = DeviceUtils.isDesktop; // 判断是否为桌面平台
 
-    print("测试widgetbuild有没有被调用");
-    print("主导航的index发生变化没有？？");
-    print(widget.sidebarProvider.currentIndex);
+    // print("测试widgetbuild有没有被调用");
+    // print("主导航的index发生变化没有？？");
+    // print(widget.sidebarProvider.currentIndex);
 
     return StreamBuilder<int>(
       stream: widget.sidebarProvider.indexStream, // 监听侧边栏索引流

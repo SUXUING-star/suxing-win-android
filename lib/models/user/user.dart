@@ -1,5 +1,8 @@
 // lib/models/user/user.dart
 
+import 'package:flutter/cupertino.dart';
+
+@immutable
 class User {
   final String id;
   final String username;
@@ -23,7 +26,7 @@ class User {
   final double levelProgress; // 当前等级进度百分比 (0-100)
   final bool isMaxLevel; // 是否满级
 
-  User({
+  const User({
     required this.id,
     required this.username,
     required this.email,

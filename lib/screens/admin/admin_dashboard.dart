@@ -113,6 +113,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ),
         AnnouncementManagement(
           fileUpload: widget.fileUpload,
+          windowStateProvider: widget.windowStateProvider,
           announcementService: widget.announcementService,
           inputStateService: widget.inputStateService,
         ), // 添加公告管理页面

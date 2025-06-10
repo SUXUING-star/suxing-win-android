@@ -1,13 +1,15 @@
 // lib/models/activity/user_activity.dart
 
+import 'package:meta/meta.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 
+@immutable
 class CheckInActivityDetails {
   final int consecutiveDays;
   final int expGained;
   final List<DateTime> recentCheckIns;
 
-  CheckInActivityDetails({
+  const CheckInActivityDetails({
     required this.consecutiveDays,
     required this.expGained,
     required this.recentCheckIns,

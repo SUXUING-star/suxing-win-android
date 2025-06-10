@@ -44,7 +44,7 @@ class LoadingWidget extends StatefulWidget {
     super.key,
     this.message,
     this.color,
-    this.size = 32.0,
+    this.size = 16.0,
     this.isOverlay = false,
     this.isDismissible = false,
     this.child,
@@ -132,7 +132,7 @@ class LoadingWidget extends StatefulWidget {
   }
 
   /// 预设的简单内联加载指示器。
-  static const Widget simpleInline = const LoadingWidget();
+  static const Widget simpleInline = LoadingWidget();
 
   /// 预设的带默认消息的内联加载指示器。
   static const Widget inlineWithMessage = LoadingWidget(message: "努力加载中...");

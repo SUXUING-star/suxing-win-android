@@ -13,6 +13,7 @@ import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数�
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 导入活动服务
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
@@ -23,8 +24,9 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入加载组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 
 /// `ActivityFeedScreen` 类：用户动态流显示屏幕。
@@ -40,6 +42,7 @@ class ActivityFeedScreen extends StatefulWidget {
   final String title; // 屏幕标题
   final bool useAlternatingLayout; // 是否使用交替布局
   final bool showHotActivities; // 是否显示热门活动面板
+  final WindowStateProvider windowStateProvider;
 
   /// 构造函数。
   ///
@@ -48,6 +51,7 @@ class ActivityFeedScreen extends StatefulWidget {
   /// [followService]：关注服务。
   /// [infoProvider]：用户信息 Provider。
   /// [inputStateService]：输入状态 Provider。
+  ///  [windowStateProvider] : 窗口管理 Provider
   /// [title]：屏幕标题。
   /// [useAlternatingLayout]：是否使用交替布局。
   /// [showHotActivities]：是否显示热门活动。
@@ -56,6 +60,7 @@ class ActivityFeedScreen extends StatefulWidget {
     required this.authProvider,
     required this.activityService,
     required this.followService,
+    required this.windowStateProvider,
     required this.infoProvider,
     required this.inputStateService,
     this.title = '动态广场',
@@ -100,6 +105,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       const Duration(seconds: 10); // 最小 UI 刷新间隔
   final Duration _refreshDebounceTime =
       const Duration(milliseconds: 800); // 刷新防抖时间
+
+  static const double desktopBreakpoint = 720.0; // 桌面布局断点'
 
   bool _hasInitializedDependencies = false; // 依赖是否已初始化
   String? _currentUserId; // 当前用户ID
@@ -872,13 +879,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     Widget topActionBar = _buildTopActionBar(); // 构建顶部动作栏
     Widget mainFeedContent = _buildMainFeedContent(); // 构建主要动态流内容
 
-    return LayoutBuilder(
+    return LazyLayoutBuilder(
       // 布局构建器，用于响应式布局
+      windowStateProvider: widget.windowStateProvider,
       builder: (context, constraints) {
-        const double desktopBreakpoint = 720.0; // 桌面布局断点
+        final screenWidth = constraints.maxWidth;
 
-        if (constraints.maxWidth >= desktopBreakpoint &&
-            widget.showHotActivities) {
+        if (screenWidth >= desktopBreakpoint && widget.showHotActivities) {
           // 宽屏幕且显示热门活动时
           return Column(
             children: [
@@ -905,6 +912,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                           padding: const EdgeInsets.only(
                               top: 8.0, right: 8.0, bottom: 8.0), // 内边距
                           child: HotActivitiesPanel(
+                            screenWidth: screenWidth,
                             activityService: widget.activityService,
                             userInfoProvider: widget.infoProvider,
                             followService: widget.followService,

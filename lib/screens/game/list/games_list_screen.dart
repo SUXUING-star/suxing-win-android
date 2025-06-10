@@ -37,7 +37,7 @@ import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
 import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart'; // 导入标签栏
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart'; // 导入游戏左侧面板
 import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart'; // 导入游戏右侧面板
@@ -121,8 +121,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 500); // Provider 检查防抖时长
   final Map<String, String> _sortOptions = GameConstants.defaultFilter; // 排序选项
-  static const double _hideRightPanelThreshold = 1000.0; // 隐藏右侧面板的屏幕宽度阈值
-  static const double _hideLeftPanelThreshold = 800.0; // 隐藏左侧面板的屏幕宽度阈值
 
   bool _isPerformingRefresh = false; // 是否正在执行下拉刷新操作
   DateTime? _lastRefreshAttemptTime; // 上次尝试下拉刷新的时间戳
@@ -131,6 +129,15 @@ class _GamesListScreenState extends State<GamesListScreen>
   Timer? _resizeDebounceTimer; // 防抖计时器
 
   late bool _isDesktop;
+  late double _screenWidth;
+
+  static const double _hideRightPanelThreshold = 1000.0; // 隐藏右侧面板的屏幕宽度阈值
+  static const double _hideLeftPanelThreshold = 800.0; // 隐藏左侧面板的屏幕宽度阈值
+
+  // 面板动画时长
+  static const Duration panelAnimationDuration = Duration(milliseconds: 300);
+  static const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
+  static const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
 
   @override
   void initState() {
@@ -149,6 +156,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     if (_hasInitializedDependencies) {
       final screenWidth = DeviceUtils.getScreenWidth(context);
       _isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+      _screenWidth = screenWidth;
       _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
@@ -156,10 +164,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   @override
   void didUpdateWidget(covariant GamesListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final screenWidth = DeviceUtils.getScreenWidth(context);
-    setState(() {
-      _isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-    });
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
       // 用户ID变化时
@@ -1001,11 +1005,12 @@ class _GamesListScreenState extends State<GamesListScreen>
           windowStateProvider: widget.windowStateProvider,
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
-            final isDesktop = DeviceUtils.isDesktop;
-            return _buildBodyContent(
-              isDesktop,
-              screenWidth,
-            ); // 主体内容
+            // 注这个screenWidth就是指整个屏幕的宽度
+            final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+            // 要用这个值去判断这个实际宽度
+            _screenWidth = screenWidth;
+            _isDesktop = isDesktop;
+            return _buildBodyContent(); // 主体内容
           },
         ),
       ),
@@ -1029,11 +1034,10 @@ class _GamesListScreenState extends State<GamesListScreen>
     final appBarColor =
         theme.appBarTheme.backgroundColor ?? theme.primaryColor; // AppBar 背景色
     final secondaryColor = theme.colorScheme.secondary; // 次要颜色
-    final screenWidth = MediaQuery.of(context).size.width; // 屏幕宽度
     final canShowLeftPanelBasedOnWidth =
-        screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
+        _screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
     final canShowRightPanelBasedOnWidth =
-        screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
+        _screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
     final defaultAppBarIconColor =
         ThemeData.estimateBrightnessForColor(appBarColor) ==
                 Brightness.dark // 默认 AppBar 图标颜色
@@ -1145,23 +1149,21 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 构建页面主体内容。
-  Widget _buildBodyContent(bool isDesktop, double screenWidth) {
-    final bool shouldShowLeftPanel = isDesktop &&
+  Widget _buildBodyContent() {
+    final bool shouldShowLeftPanel = _isDesktop &&
         _showLeftPanel &&
-        (screenWidth >= _hideLeftPanelThreshold); // 是否显示左侧面板
-    final bool shouldShowRightPanel = isDesktop &&
+        (_screenWidth >= _hideLeftPanelThreshold); // 是否显示左侧面板
+    final bool shouldShowRightPanel = _isDesktop &&
         _showRightPanel &&
-        (screenWidth >= _hideRightPanelThreshold); // 是否显示右侧面板
-    const Duration panelAnimationDuration =
-        Duration(milliseconds: 300); // 面板动画时长
-    const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
-    const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
+        (_screenWidth >= _hideRightPanelThreshold); // 是否显示右侧面板
+
+    final panelWidth = DeviceUtils.getSidePanelWidthInScreenWidth(_screenWidth);
 
     return RefreshIndicator(
       onRefresh: () => _refreshData(needCheck: true), // 下拉刷新回调
       child: Stack(
         children: [
-          isDesktop // 桌面布局
+          _isDesktop // 桌面布局
               ? Row(
                   crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
                   children: [
@@ -1172,6 +1174,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                         duration: panelAnimationDuration, // 动画时长
                         delay: leftPanelDelay, // 延迟
                         child: GameLeftPanel(
+                          panelWidth: panelWidth,
                           tags: _availableTags, // 标签列表
                           selectedTag: _currentTag, // 选中标签
                           onTagSelected: _isLoadingData // 点击标签回调
@@ -1182,7 +1185,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                     Expanded(
                       child: _buildMainContentArea(
                           // 主要内容区域
-                          isDesktop,
+                          _isDesktop,
                           shouldShowLeftPanel,
                           shouldShowRightPanel),
                     ),
@@ -1194,6 +1197,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                         duration: panelAnimationDuration, // 动画时长
                         delay: rightPanelDelay, // 延迟
                         child: GameRightPanel(
+                          panelWidth: panelWidth,
                           currentPageGames: _gamesList, // 当前页游戏列表
                           totalGamesCount: _totalPages * _pageSize, // 总游戏数量
                           selectedTag: _currentTag, // 选中标签
@@ -1214,7 +1218,10 @@ class _GamesListScreenState extends State<GamesListScreen>
                   children: [
                     Expanded(
                       child: _buildMainContentArea(
-                          isDesktop, false, false), // 主要内容区域
+                        _isDesktop,
+                        false,
+                        false,
+                      ), // 主要内容区域
                     ),
                   ],
                 ),
@@ -1295,83 +1302,99 @@ class _GamesListScreenState extends State<GamesListScreen>
           .add(const _NavigationTilePlaceholder(isPrevious: false)); // 添加下一页占位符
     }
 
-    return LazyLayoutBuilder(
-        windowStateProvider: widget.windowStateProvider,
-        builder: (context, constraints) {
-          final screenWidth = constraints.maxWidth;
-          final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-          _isDesktop = isDesktop;
+    double availableWidth = _screenWidth;
+    final panelWidth = DeviceUtils.getSidePanelWidthInScreenWidth(_screenWidth);
+    if (showLeftPanel) availableWidth -= panelWidth;
+    if (showRightPanel) availableWidth -= panelWidth;
 
-          final bool withPanels =
-              isDesktop && (showLeftPanel || showRightPanel); // 是否显示面板
-          int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
+    final bool withPanels =
+        _isDesktop && (showLeftPanel || showRightPanel); // 是否显示面板
+    int cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+    ); // 计算每行卡片数量
+    if (cardsPerRow <= 0) cardsPerRow = 1; // 确保至少为 1
+
+    final useCompactMode =
+        cardsPerRow > 3 || (cardsPerRow == 3 && withPanels); // 是否使用紧凑模式
+
+    final cardRatio = withPanels // 卡片宽高比
+        ? DeviceUtils.calculateGameListCardRatio(
             context,
-            directAvailableWidth: screenWidth,
-            isCompact: true,
-          ); // 计算每行卡片数量
-          if (cardsPerRow <= 0) cardsPerRow = 1; // 确保至少为 1
+            directAvailableWidth: availableWidth,
+          )
+        : DeviceUtils.calculateSimpleGameCardRatio(context, showTags: true);
+    if (cardRatio <= 0) {
+      // 宽高比无效时显示错误
+      return const CustomErrorWidget(errorMessage: "发生异常错误");
+    }
 
-          final useCompactMode =
-              cardsPerRow > 3 || (cardsPerRow == 3 && withPanels); // 是否使用紧凑模式
-          final cardRatio = withPanels // 卡片宽高比
-              ? DeviceUtils.calculateGameListCardRatio(
-                  context, showLeftPanel, showRightPanel,
-                  directAvailableWidth: screenWidth, showTags: true)
-              : DeviceUtils.calculateSimpleGameCardRatio(context,
-                  showTags: true);
-          if (cardRatio <= 0) {
-            // 宽高比无效时显示错误
-            return const CustomErrorWidget(errorMessage: "发生异常错误");
-          }
+    return AnimatedContentGrid<Object>(
+      gridKey: ValueKey('game_grid_page_$_currentPage'),
+      // 网格的 Key
+      items: displayItems,
+      // 显示的项目列表
+      crossAxisCount: cardsPerRow,
+      // 交叉轴项数
+      childAspectRatio: cardRatio,
+      // 子项宽高比
+      crossAxisSpacing: 8,
+      // 交叉轴间距
+      mainAxisSpacing: _isDesktop ? 16 : 8,
+      // 主轴间距
+      padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 16.0),
+      // 内边距
+      itemBuilder: (context, index, item) {
+        if (item is _NavigationTilePlaceholder) {
+          // 如果是导航占位符
+          return _buildNavigationTile(
+            isPrevious: item.isPrevious,
+            cardRatio: cardRatio,
+          ); // 构建导航瓦片
+        }
 
-          return AnimatedContentGrid<Object>(
-            gridKey: ValueKey('game_grid_page_$_currentPage'), // 网格的 Key
-            items: displayItems, // 显示的项目列表
-            crossAxisCount: cardsPerRow, // 交叉轴项数
-            childAspectRatio: cardRatio, // 子项宽高比
-            crossAxisSpacing: 8, // 交叉轴间距
-            mainAxisSpacing: isDesktop ? 16 : 8, // 主轴间距
-            padding: const EdgeInsets.fromLTRB(8.0, 8.0, 8.0, 16.0), // 内边距
-            itemBuilder: (context, index, item) {
-              if (item is _NavigationTilePlaceholder) {
-                // 如果是导航占位符
-                return _buildNavigationTile(
-                    isPrevious: item.isPrevious,
-                    cardRatio: cardRatio); // 构建导航瓦片
-              }
-
-              if (item is Game) {
-                // 如果是游戏
-                final game = item;
-                return BaseGameCard(
-                  key: ValueKey(game.id), // 唯一键
-                  currentUser: widget.authProvider.currentUser, // 当前用户
-                  game: game, // 游戏数据
-                  isGridItem: true, // 是否为网格项
-                  showNewBadge: true, // 显示新徽章
-                  showUpdatedBadge: true, // 显示更新徽章
-                  adaptForPanels: withPanels, // 是否适应面板
-                  showTags: true, // 显示标签
-                  showCollectionStats: true, // 显示收藏统计
-                  forceCompact: useCompactMode, // 强制紧凑模式
-                  maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2), // 最大标签数
-                  onDeleteAction:
-                      _isLoadingData && !_checkCanEditOrDeleteGame(game) // 删除回调
-                          ? null
-                          : () {
-                              _handleDeleteGame(game);
-                            },
-                  onEditAction:
-                      _isLoadingData && !_checkCanEditOrDeleteGame(game) // 编辑回调
-                          ? null
-                          : () => _handleEditGame(game),
-                );
-              }
-
-              return const SizedBox.shrink(); // 否则返回空组件
-            },
+        if (item is Game) {
+          // 如果是游戏
+          final game = item;
+          return BaseGameCard(
+            key: ValueKey(game.id),
+            // 唯一键
+            currentUser: widget.authProvider.currentUser,
+            // 当前用户
+            game: game,
+            // 游戏数据
+            isGridItem: true,
+            // 是否为网格项
+            showNewBadge: true,
+            // 显示新徽章
+            showUpdatedBadge: true,
+            // 显示更新徽章
+            adaptForPanels: withPanels,
+            // 是否适应面板
+            showTags: true,
+            // 显示标签
+            showCollectionStats: true,
+            // 显示收藏统计
+            forceCompact: useCompactMode,
+            // 强制紧凑模式
+            maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
+            // 最大标签数
+            onDeleteAction:
+                _isLoadingData && !_checkCanEditOrDeleteGame(game) // 删除回调
+                    ? null
+                    : () {
+                        _handleDeleteGame(game);
+                      },
+            onEditAction:
+                _isLoadingData && !_checkCanEditOrDeleteGame(game) // 编辑回调
+                    ? null
+                    : () => _handleEditGame(game),
           );
-        });
+        }
+
+        return const SizedBox.shrink(); // 否则返回空组件
+      },
+    );
   }
 
   /// 构建导航瓦片（上一页或下一页）。

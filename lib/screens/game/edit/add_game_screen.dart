@@ -5,13 +5,14 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
@@ -26,6 +27,7 @@ class AddGameScreen extends StatefulWidget {
   final GameCollectionService gameCollectionService;
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
   final InputStateService inputStateService;
   const AddGameScreen({
     super.key,
@@ -36,6 +38,7 @@ class AddGameScreen extends StatefulWidget {
     required this.fileUpload,
     required this.authProvider,
     required this.followService,
+    required this.windowStateProvider,
     required this.infoProvider,
     required this.inputStateService,
   });
@@ -143,6 +146,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
         return GameForm(
           inputStateService: widget.inputStateService,
           fileUpload: widget.fileUpload,
+          windowStateProvider: widget.windowStateProvider,
           sidebarProvider: widget.sidebarProvider,
           gameListFilterProvider: widget.gameListFilterProvider,
           gameCollectionService: widget.gameCollectionService,

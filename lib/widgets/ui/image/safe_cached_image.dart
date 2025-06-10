@@ -8,6 +8,7 @@ import 'dart:async'; // 异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
 import 'package:cached_network_image/cached_network_image.dart'; // 缓存网络图片库
 import 'package:suxingchahui/utils/network/url_utils.dart'; // URL 工具类
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // 可见性检测库
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // 缓存管理库
 import 'package:provider/provider.dart'; // Provider 状态管理库
@@ -137,14 +138,7 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
       color: widget.backgroundColor ?? Colors.grey[200], // 背景色
       width: widget.width, // 宽度
       height: widget.height, // 高度
-      child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2, // 进度条粗细
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Theme.of(context).primaryColor.withSafeOpacity(0.5), // 进度条颜色
-          ),
-        ),
-      ),
+      child: const LoadingWidget(),
     );
   }
 

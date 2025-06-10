@@ -5,7 +5,8 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart'; // 导入游戏分类标签视图
+import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 
 /// `GameCategoryTag` 类：可点击的游戏分类标签组件。
 ///
@@ -48,7 +49,7 @@ class GameCategoryTag extends StatelessWidget {
     }
 
     final double inkWellRadius =
-        GameCategoryTagView.getRadius(isMini); // 获取圆角半径
+        isMini ? BaseTagView.miniRadius : BaseTagView.normalRadius; // 获取圆角半径
 
     return InkWell(
       onTap: () => onClickFilterGameCategory!(context, category), // 点击回调

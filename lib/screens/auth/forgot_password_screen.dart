@@ -18,7 +18,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/services/main/email/email_service.dart'; // 导入邮箱服务
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar

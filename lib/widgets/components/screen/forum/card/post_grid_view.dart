@@ -48,7 +48,10 @@ class PostGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(context);
+    final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(
+      context,
+      directAvailableWidth: screenWidth,
+    );
 
     // 准备要显示的所有项目
     final List<Object> displayItems = [...posts];

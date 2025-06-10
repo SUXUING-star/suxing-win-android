@@ -5,11 +5,13 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 enum StatType {
   views,
@@ -23,8 +25,6 @@ class MyPostsLayout extends StatelessWidget {
   final List<Post> posts;
   final bool isLoadingMore;
   final bool hasMore;
-  final bool isDesktop;
-  final double screenWidth;
   final ScrollController scrollController;
   final VoidCallback onAddPost;
   final Future<void> Function(Post post) onDeletePost;
@@ -37,12 +37,17 @@ class MyPostsLayout extends StatelessWidget {
   final WindowStateProvider windowStateProvider;
   final int totalPostCount;
 
+  static const int desktopStatsFlex = 1;
+  static const int desktopGameListFlex = 4;
+  static const double desktopDividerWidth = 1.0;
+
+  static const double mobileStatsTopPadding = 12;
+  static const double mobileStatsBottomPadding = 8;
+
   const MyPostsLayout({
     super.key,
     required this.posts,
     required this.isLoadingMore,
-    required this.isDesktop,
-    required this.screenWidth,
     required this.hasMore,
     required this.scrollController,
     required this.onAddPost,
@@ -81,12 +86,23 @@ class MyPostsLayout extends StatelessWidget {
       );
     }
 
-    return isDesktop
-        ? _buildDesktopLayout(context)
-        : _buildMobileLayout(context);
+    return LazyLayoutBuilder(
+      windowStateProvider: windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return isDesktopLayout
+            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
+            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
+      },
+    );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -94,34 +110,48 @@ class MyPostsLayout extends StatelessWidget {
           flex: 1,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildMyPostsStatistics(context, isDesktop: true),
+            child: _buildMyPostsStatistics(context, isDesktopLayout),
           ),
         ),
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
           flex: 4,
-          child: _buildPostsContent(context),
+          child: _buildPostsContent(context, isDesktopLayout, screenWidth),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildMyPostsStatistics(context, isDesktop: false),
+          padding: const EdgeInsets.fromLTRB(
+            12,
+            mobileStatsTopPadding,
+            12,
+            mobileStatsBottomPadding,
+          ),
+          child: _buildMyPostsStatistics(
+            context,
+            isDesktopLayout,
+          ),
         ),
         Expanded(
-          child: _buildPostsContent(context),
+          child: _buildPostsContent(context, isDesktopLayout, screenWidth),
         ),
       ],
     );
   }
 
-  Widget _buildMyPostsStatistics(BuildContext context,
-      {required bool isDesktop}) {
+  Widget _buildMyPostsStatistics(
+    BuildContext context,
+    bool isDesktop,
+  ) {
     if (isDesktop) {
       final cardPadding = const EdgeInsets.all(16);
       final titleStyle = TextStyle(
@@ -333,11 +363,24 @@ class MyPostsLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsContent(BuildContext context) {
+  Widget _buildPostsContent(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
+    double availableWidth;
+    if (isDesktopLayout) {
+      availableWidth = (screenWidth - desktopDividerWidth) *
+          desktopGameListFlex /
+          (desktopStatsFlex + desktopGameListFlex);
+    } else {
+      availableWidth =
+          screenWidth;
+    }
     return PostGridView(
       posts: posts,
-      screenWidth: screenWidth,
-      isDesktopLayout: isDesktop,
+      screenWidth: availableWidth,
+      isDesktopLayout: isDesktopLayout,
       windowStateProvider: windowStateProvider,
       currentUser: currentUser,
       infoProvider: infoProvider,

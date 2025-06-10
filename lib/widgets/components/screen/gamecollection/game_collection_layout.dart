@@ -37,6 +37,14 @@ class GameCollectionLayout extends StatelessWidget {
   final VoidCallback onCloseReviewPanel;
   final WindowStateProvider windowStateProvider;
 
+  // 定义各区域的flex值
+  static const int statsFlex = 1;
+  static const int listFlexWithReview = 4; // 当Review面板可见时，列表的flex
+  static const int listFlexWithoutReview = 6; // 当Review面板不可见时，列表的flex
+  static const int reviewFlex = 2; // Review面板的flex
+
+  static const double dividerWidth = 1;
+
   const GameCollectionLayout({
     super.key,
     required this.collectionCounts,
@@ -60,20 +68,26 @@ class GameCollectionLayout extends StatelessWidget {
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context);
+            ? _buildDesktopLayout(
+                context,
+                isDesktopLayout,
+                screenWidth,
+              )
+            : _buildMobileLayout(
+                context,
+                isDesktopLayout,
+                screenWidth,
+              );
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktop,
+    double screenWidth,
+  ) {
     final bool hasReviewPanel = selectedGameForReview != null;
-
-    // 定义各区域的flex值
-    const int statsFlex = 1;
-    const int listFlexWithReview = 4; // 当Review面板可见时，列表的flex
-    const int listFlexWithoutReview = 6; // 当Review面板不可见时，列表的flex
-    const int reviewFlex = 2; // Review面板的flex
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,18 +97,22 @@ class GameCollectionLayout extends StatelessWidget {
           flex: statsFlex,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildCollectionStatistics(context, isDesktop: true),
+            child: _buildCollectionStatistics(context, isDesktop: isDesktop),
           ),
         ),
-        const VerticalDivider(width: 1, thickness: 0.5),
+        const VerticalDivider(width: dividerWidth, thickness: 0.5),
         // 中间：游戏卡片列表
         Expanded(
           flex: hasReviewPanel ? listFlexWithReview : listFlexWithoutReview,
-          child: _buildGamesContent(context, isDesktop: true),
+          child: _buildGamesContent(
+            context,
+            isDesktop: isDesktop,
+            screenWidth: screenWidth,
+          ),
         ),
         // 右侧：Review 面板 (如果 selectedGameForReview 不为 null)
         if (hasReviewPanel) ...[
-          const VerticalDivider(width: 1, thickness: 0.5),
+          const VerticalDivider(width: dividerWidth, thickness: 0.5),
           Expanded(
             flex: reviewFlex,
             child: GameReviewPanel(
@@ -107,17 +125,25 @@ class GameCollectionLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    bool isDesktop,
+    double screenWidth,
+  ) {
     return Column(
       children: [
         // 移动端：统计信息在上方
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildCollectionStatistics(context, isDesktop: false),
+          child: _buildCollectionStatistics(context, isDesktop: isDesktop),
         ),
         // 移动端：游戏卡片列表在下方
         Expanded(
-          child: _buildGamesContent(context, isDesktop: false),
+          child: _buildGamesContent(
+            context,
+            isDesktop: isDesktop,
+            screenWidth: screenWidth,
+          ),
         ),
       ],
     );
@@ -291,7 +317,11 @@ class GameCollectionLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildGamesContent(BuildContext context, {required bool isDesktop}) {
+  Widget _buildGamesContent(
+    BuildContext context, {
+    required bool isDesktop,
+    required double screenWidth,
+  }) {
     if ((collectionCounts?.total ?? 0) == 0 &&
         collectedGames.isEmpty &&
         !isLoadingMore) {
@@ -307,140 +337,142 @@ class GameCollectionLayout extends StatelessWidget {
       );
     }
 
-    return LayoutBuilder(
-      builder: (BuildContext context, BoxConstraints constraints) {
-        final double actualAvailableWidthForGames = constraints.maxWidth;
+    // 准备要显示的所有项目
+    final List<Object> displayItems = [...collectedGames];
+    if (isLoadingMore) {
+      displayItems.add(const _LoadingMorePlaceholder());
+    } else if (hasMore && collectedGames.isNotEmpty) {
+      displayItems.add(const _LoadMoreButtonPlaceholder());
+    }
 
-        if (actualAvailableWidthForGames <= 0) {
-          return const SizedBox.shrink();
-        }
+    // Badge 样式参数
+    final double statusBadgeFontSize = isDesktop ? 10 : 11;
+    final EdgeInsets statusBadgePadding = isDesktop
+        ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
+        : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
+    final Radius statusBadgeTopRightRadius =
+        Radius.circular(isDesktop ? 10 : 8);
+    final Radius statusBadgeBottomLeftRadius =
+        Radius.circular(isDesktop ? 8 : 10);
+    final Offset statusBadgeShadowOffset =
+        isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
+    final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
 
-        final int crossAxisCount =
-            DeviceUtils.calculateGameCardsInGameListPerRow(
-          context,
-          directAvailableWidth: actualAvailableWidthForGames,
-          withPanels: isDesktop && selectedGameForReview != null,
-          isCompact: true,
-          leftPanelVisible: isDesktop,
-          rightPanelVisible: isDesktop && selectedGameForReview != null,
-        );
+    double actualAvailableWidthForGames;
+    final bool hasReviewPanel = selectedGameForReview != null;
+    if (hasReviewPanel) {
+      actualAvailableWidthForGames = (screenWidth - (dividerWidth) * 2) *
+          listFlexWithReview /
+          (statsFlex + listFlexWithReview + reviewFlex);
+    } else {
+      actualAvailableWidthForGames = (screenWidth - dividerWidth) *
+          listFlexWithoutReview /
+          (statsFlex + listFlexWithoutReview);
+    }
 
-        final double cardRatio = DeviceUtils.calculateGameCardRatio(
-          context,
-          directAvailableWidth: actualAvailableWidthForGames,
-          directCardsPerRow: crossAxisCount,
-          showTags: true,
-          withPanels: isDesktop && selectedGameForReview != null,
-          leftPanelVisible: false,
-          rightPanelVisible: isDesktop && selectedGameForReview != null,
-        );
+    if (actualAvailableWidthForGames <= 0) {
+      return const SizedBox.shrink();
+    }
 
-        // 准备要显示的所有项目
-        final List<Object> displayItems = [...collectedGames];
-        if (isLoadingMore) {
-          displayItems.add(const _LoadingMorePlaceholder());
-        } else if (hasMore && collectedGames.isNotEmpty) {
-          displayItems.add(const _LoadMoreButtonPlaceholder());
-        }
+    final int crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      isCompact: true,
+      directAvailableWidth: actualAvailableWidthForGames,
+    );
 
-        // Badge 样式参数
-        final double statusBadgeFontSize = isDesktop ? 10 : 11;
-        final EdgeInsets statusBadgePadding = isDesktop
-            ? const EdgeInsets.symmetric(horizontal: 8, vertical: 3)
-            : const EdgeInsets.symmetric(horizontal: 10, vertical: 4);
-        final Radius statusBadgeTopRightRadius =
-            Radius.circular(isDesktop ? 10 : 8);
-        final Radius statusBadgeBottomLeftRadius =
-            Radius.circular(isDesktop ? 8 : 10);
-        final Offset statusBadgeShadowOffset =
-            isDesktop ? const Offset(-1, 1) : const Offset(-1, 1);
-        final double statusBadgeShadowBlur = isDesktop ? 4 : 3;
+    final double cardRatio = DeviceUtils.calculateGameCardRatio(
+      context,
+      directAvailableWidth: actualAvailableWidthForGames,
+      directCardsPerRow: crossAxisCount,
+      showTags: false,
+      withPanels: isDesktop && selectedGameForReview != null,
+      leftPanelVisible: false,
+      rightPanelVisible: isDesktop && selectedGameForReview != null,
+    );
 
-        // 使用 AnimatedContentGrid
-        return AnimatedContentGrid<Object>(
-          gridKey: const ValueKey('game_collection_final_grid'),
-          items: displayItems,
-          crossAxisCount: crossAxisCount,
-          childAspectRatio: cardRatio,
-          crossAxisSpacing: isDesktop ? 16.0 : 8.0,
-          mainAxisSpacing: isDesktop ? 16.0 : 12.0,
-          padding: EdgeInsets.all(isDesktop ? 16 : 12),
-          itemBuilder: (context, index, item) {
-            // 如果是游戏
-            if (item is GameWithCollection) {
-              final gameWithCollection = item;
-              final game = gameWithCollection.game;
-              if (game == null) return const SizedBox.shrink();
+    // 使用 AnimatedContentGrid
+    return AnimatedContentGrid<Object>(
+      gridKey: const ValueKey('game_collection_final_grid'),
+      items: displayItems,
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: cardRatio,
+      crossAxisSpacing: isDesktop ? 16.0 : 8.0,
+      mainAxisSpacing: isDesktop ? 16.0 : 12.0,
+      padding: EdgeInsets.all(isDesktop ? 16 : 12),
+      itemBuilder: (context, index, item) {
+        // 如果是游戏
+        if (item is GameWithCollection) {
+          final gameWithCollection = item;
+          final game = gameWithCollection.game;
+          if (game == null) return const SizedBox.shrink();
 
-              final String currentStatusString =
-                  gameWithCollection.collection.status;
+          final String currentStatusString =
+              gameWithCollection.collection.status;
 
-              final GameCollectionStatusTheme statusTheme =
-                  GameCollectionStatusUtils.getTheme(currentStatusString);
+          final GameCollectionStatusTheme statusTheme =
+              GameCollectionStatusUtils.getTheme(currentStatusString);
 
-              return Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  CommonGameCard(
-                    game: game,
-                    isGridItem: crossAxisCount > 1,
-                    onTapOverride: isDesktop
-                        ? () => onGameTapForReview(gameWithCollection)
-                        : () => NavigationUtils.pushNamed(
-                            context, AppRoutes.gameDetail,
-                            arguments: game),
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              CommonGameCard(
+                game: game,
+                isGridItem: crossAxisCount > 1,
+                onTapOverride: isDesktop
+                    ? () => onGameTapForReview(gameWithCollection)
+                    : () => NavigationUtils.pushNamed(
+                        context, AppRoutes.gameDetail,
+                        arguments: game),
+              ),
+              Positioned(
+                top: crossAxisCount > 1 ? 0 : -1,
+                right: crossAxisCount > 1 ? 0 : -1,
+                child: Container(
+                  padding: statusBadgePadding,
+                  decoration: BoxDecoration(
+                    color: statusTheme.textColor,
+                    borderRadius: BorderRadius.only(
+                      topRight: statusBadgeTopRightRadius,
+                      bottomLeft: statusBadgeBottomLeftRadius,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withSafeOpacity(0.3),
+                        blurRadius: statusBadgeShadowBlur,
+                        offset: statusBadgeShadowOffset,
+                      )
+                    ],
                   ),
-                  Positioned(
-                    top: crossAxisCount > 1 ? 0 : -1,
-                    right: crossAxisCount > 1 ? 0 : -1,
-                    child: Container(
-                      padding: statusBadgePadding,
-                      decoration: BoxDecoration(
-                        color: statusTheme.textColor,
-                        borderRadius: BorderRadius.only(
-                          topRight: statusBadgeTopRightRadius,
-                          bottomLeft: statusBadgeBottomLeftRadius,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withSafeOpacity(0.3),
-                            blurRadius: statusBadgeShadowBlur,
-                            offset: statusBadgeShadowOffset,
-                          )
-                        ],
-                      ),
-                      child: Text(
-                        statusTheme.text,
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: statusBadgeFontSize,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
+                  child: Text(
+                    statusTheme.text,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: statusBadgeFontSize,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ],
-              );
-            }
-
-            // 如果是加载指示器
-            if (item is _LoadingMorePlaceholder) {
-              return const LoadingWidget(message: "加载更多...");
-            }
-
-            // 如果是加载更多按钮
-            if (item is _LoadMoreButtonPlaceholder) {
-              return Center(
-                child: FunctionalButton(
-                  onPressed: onLoadMore,
-                  label: '加载更多收藏',
                 ),
-              );
-            }
+              ),
+            ],
+          );
+        }
 
-            return const SizedBox.shrink();
-          },
-        );
+        // 如果是加载指示器
+        if (item is _LoadingMorePlaceholder) {
+          return const LoadingWidget(message: "加载更多...");
+        }
+
+        // 如果是加载更多按钮
+        if (item is _LoadMoreButtonPlaceholder) {
+          return Center(
+            child: FunctionalButton(
+              onPressed: onLoadMore,
+              label: '加载更多收藏',
+            ),
+          );
+        }
+
+        return const SizedBox.shrink();
       },
     );
   }

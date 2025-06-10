@@ -48,6 +48,10 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
   @override
   bool get wantKeepAlive => true;
 
+  static const int desktopStatsFlex = 1;
+  static const int desktopGameListFlex = 4;
+  static const double desktopDividerWidth = 1.0;
+
   @override
   Widget build(BuildContext context) {
     super.build(context);
@@ -90,41 +94,53 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context);
+            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
+            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 1,
+          flex: desktopStatsFlex,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildGameHistoryStatistics(context, isDesktop: true),
+            child: _buildGameHistoryStatistics(context,
+                isDesktop: isDesktopLayout),
           ),
         ),
-        const VerticalDivider(width: 1, thickness: 0.5),
+        const VerticalDivider(width: desktopDividerWidth, thickness: 0.5),
         Expanded(
-          flex: 3,
-          child: _buildHistoryContent(context, isDesktop: true),
+          flex: desktopGameListFlex,
+          child: _buildHistoryContent(context,
+              isDesktop: isDesktopLayout, screenWidth: screenWidth),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+      BuildContext context, bool isDesktopLayout, double screenWidth) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildGameHistoryStatistics(context, isDesktop: false),
+          child:
+              _buildGameHistoryStatistics(context, isDesktop: isDesktopLayout),
         ),
         Expanded(
-          child: _buildHistoryContent(context, isDesktop: false),
+          child: _buildHistoryContent(
+            context,
+            isDesktop: isDesktopLayout,
+            screenWidth: screenWidth,
+          ),
         ),
       ],
     );
@@ -301,9 +317,23 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
     );
   }
 
-  Widget _buildHistoryContent(BuildContext context, {required bool isDesktop}) {
-    final crossAxisCount =
-        DeviceUtils.calculateGameCardsInGameListPerRow(context);
+  Widget _buildHistoryContent(
+    BuildContext context, {
+    required bool isDesktop,
+    required double screenWidth,
+  }) {
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth = (screenWidth - desktopDividerWidth) *
+          desktopGameListFlex /
+          (desktopStatsFlex + desktopGameListFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
+    final cardsPerRow = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+    );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
 
     return ListView(
@@ -313,7 +343,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
         // 使用升级后的 AnimatedContentGrid
         AnimatedContentGrid<Game>(
           items: widget.gameHistoryItems,
-          crossAxisCount: crossAxisCount,
+          crossAxisCount: cardsPerRow,
           childAspectRatio: cardRatio,
           crossAxisSpacing: 8,
           mainAxisSpacing: isDesktop ? 16 : 8,
@@ -358,7 +388,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
       BuildContext context, Game gameItem, bool isDesktop, DateTime? viewTime) {
     Widget commonGameCardWidget = CommonGameCard(
       game: gameItem,
-      showTags: true,
+      showTags: false,
       maxTags: isDesktop ? 2 : 3,
     );
 

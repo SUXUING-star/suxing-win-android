@@ -1,8 +1,11 @@
 // lib/models/user/monthly_checkin_report.dart
+
 import 'package:intl/intl.dart';
+import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/user/daily_checkin_info.dart'; // 导入DailyCheckInInfo
 
 /// 月度签到报告模型
+@immutable
 class MonthlyCheckInReport {
   final int year;
   final int month;
@@ -13,7 +16,7 @@ class MonthlyCheckInReport {
   final int maxConsecutive; // 当月最大连续签到天数
   final int totalExp; // 当月总经验值
 
-  MonthlyCheckInReport({
+  const MonthlyCheckInReport({
     required this.year,
     required this.month,
     required this.monthName,

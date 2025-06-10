@@ -15,6 +15,7 @@ import 'package:suxingchahui/widgets/components/screen/history/history_post_grid
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 引入 LazyLayoutBuilder
 
 class PostHistoryLayout extends StatefulWidget {
   final List<Post> postHistoryItems;
@@ -29,6 +30,11 @@ class PostHistoryLayout extends StatefulWidget {
   final WindowStateProvider windowStateProvider;
   final UserInfoProvider userInfoProvider;
   final UserFollowService userFollowService;
+
+  // 定义 flex 和 divider 宽度为 static const
+  static const int desktopStatsFlex = 1;
+  static const int desktopGridFlex = 3;
+  static const double desktopDividerWidth = 1.0;
 
   const PostHistoryLayout({
     super.key,
@@ -59,16 +65,16 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
   Widget build(BuildContext context) {
     super.build(context);
 
+    // ... (加载、错误、空状态逻辑不变)
     if (widget.isLoadingInitial) {
       return const FadeInItem(
-        // 全屏加载组件
         child: LoadingWidget(
           isOverlay: true,
           message: "少女正在祈祷中...",
           overlayOpacity: 0.4,
           size: 36,
         ),
-      ); //
+      );
     }
 
     if (widget.errorMessage != null && widget.postHistoryItems.isEmpty) {
@@ -91,49 +97,62 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
       );
     }
 
-    final isDesktop = DeviceUtils.isDesktopScreen(context);
+    // 核心改动：用 LazyLayoutBuilder 包裹，判断布局模式
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
 
-    if (isDesktop) {
-      return _buildDesktopLayout(context);
-    } else {
-      return _buildMobileLayout(context);
-    }
+        if (isDesktop) {
+          return _buildDesktopLayout(context, isDesktop, screenWidth);
+        } else {
+          return _buildMobileLayout(context, isDesktop, screenWidth);
+        }
+      },
+    );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(
+      BuildContext context, bool isDesktop, double screenWidth) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 1,
+          flex: PostHistoryLayout.desktopStatsFlex,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildPostHistoryStatistics(context, isDesktop: true),
+            child: _buildPostHistoryStatistics(context, isDesktop: isDesktop),
           ),
         ),
-        const VerticalDivider(width: 1, thickness: 0.5),
+        const VerticalDivider(
+            width: PostHistoryLayout.desktopDividerWidth, thickness: 0.5),
         Expanded(
-          flex: 3,
-          child: _buildHistoryContent(context, isDesktop: true),
+          flex: PostHistoryLayout.desktopGridFlex,
+          child: _buildHistoryContent(context,
+              isDesktop: isDesktop, screenWidth: screenWidth),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(
+      BuildContext context, bool isDesktop, double screenWidth) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildPostHistoryStatistics(context, isDesktop: false),
+          child: _buildPostHistoryStatistics(context, isDesktop: isDesktop),
         ),
         Expanded(
-          child: _buildHistoryContent(context, isDesktop: false),
+          child: _buildHistoryContent(context,
+              isDesktop: isDesktop, screenWidth: screenWidth),
         ),
       ],
     );
   }
 
+  // _buildPostHistoryStatistics 和 _buildStatRow 方法完全不变 ...
   Widget _buildPostHistoryStatistics(BuildContext context,
       {required bool isDesktop}) {
     DateTime? earliestViewTime;
@@ -305,17 +324,32 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
     );
   }
 
-  Widget _buildHistoryContent(BuildContext context, {required bool isDesktop}) {
+  // 核心改动：_buildHistoryContent 现在也接收 screenWidth 并进行计算
+  Widget _buildHistoryContent(BuildContext context,
+      {required bool isDesktop, required double screenWidth}) {
+    double gridAvailableWidth;
+    if (isDesktop) {
+      // 数学家上线
+      gridAvailableWidth =
+          (screenWidth - PostHistoryLayout.desktopDividerWidth) *
+              PostHistoryLayout.desktopGridFlex /
+              (PostHistoryLayout.desktopStatsFlex +
+                  PostHistoryLayout.desktopGridFlex);
+    } else {
+      // 移动端，网格占满全部宽度
+      gridAvailableWidth = screenWidth;
+    }
+
     return HistoryPostGridView(
       posts: widget.postHistoryItems,
       currentUser: widget.currentUser,
-      windowStateProvider: widget.windowStateProvider,
       infoProvider: widget.userInfoProvider,
       followService: widget.userFollowService,
       scrollController: widget.scrollController,
       isLoading: widget.isLoadingMore,
       hasMoreData: widget.paginationData?.hasNextPage() ?? false,
       isDesktopLayout: isDesktop,
+      availableWidth: gridAvailableWidth, // 把计算好的宽度传下去
     );
   }
 }

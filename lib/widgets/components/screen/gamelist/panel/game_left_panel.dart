@@ -1,18 +1,19 @@
 // lib/widgets/components/screen/gamelist/panel/game_left_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_tag.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class GameLeftPanel extends StatelessWidget {
+  final double panelWidth;
   final List<GameTag> tags;
   final String? selectedTag;
   final Function(String?) onTagSelected;
 
   const GameLeftPanel({
     super.key,
+    required this.panelWidth,
     required this.tags,
     required this.selectedTag,
     required this.onTagSelected,
@@ -20,8 +21,6 @@ class GameLeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final panelWidth = DeviceUtils.getSidePanelWidth(context);
-
     return Container(
       width: panelWidth,
       margin: EdgeInsets.all(8),
@@ -129,15 +128,13 @@ class GameLeftPanel extends StatelessWidget {
           child: InkWell(
             onTap: () => onTagSelected(tag.name),
             child: Container(
-              // **核心改动：背景色处理**
               color: isSelected
                   ? Theme.of(context)
                       .primaryColor
                       .withSafeOpacity(0.1) // 选中时淡主色背景
-                  : Colors.transparent, // **未选中时完全透明！干掉那个傻逼边框和背景！**
+                  : Colors.transparent,
 
               child: Padding(
-                // 微调 GameTag 周围的 Padding，让它呼吸一下
                 padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
                 child: GameTagItem(
                   tag: tag.name,

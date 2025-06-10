@@ -4,11 +4,13 @@ import 'package:mongo_dart/mongo_dart.dart'
     show ObjectId, Timestamp; // MongoDB BSON ObjectId 和 Timestamp 类型
 
 // GameStatus 类：定义游戏审批状态常量
+@immutable
 class GameStatus {
   static const String approved = "approved";
   static const String rejected = "rejected";
   static const String pending = "pending";
 }
+
 
 class Game {
   final String id;

@@ -1,6 +1,7 @@
 // lib/screens/admin/widgets/announcement_management.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -10,18 +11,20 @@ import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
 import 'package:suxingchahui/widgets/components/form/announcementform/announcement_form.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class AnnouncementManagement extends StatefulWidget {
   final AnnouncementService announcementService;
   final RateLimitedFileUpload fileUpload;
   final InputStateService inputStateService;
+  final WindowStateProvider windowStateProvider;
 
   const AnnouncementManagement({
     super.key,
     required this.announcementService,
     required this.inputStateService,
     required this.fileUpload,
+    required this.windowStateProvider,
   });
 
   @override
@@ -99,6 +102,7 @@ class _AnnouncementManagementState extends State<AnnouncementManagement> {
         content: SingleChildScrollView(
           child: AnnouncementForm(
             announcementService: widget.announcementService,
+            windowStateProvider: widget.windowStateProvider,
             fileUpload: widget.fileUpload,
             inputStateService: widget.inputStateService,
             announcement: announcement,

@@ -1,5 +1,6 @@
 // lib/widgets/components/screen/game/tag/game_tags.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
@@ -83,7 +84,8 @@ class GameTags extends StatelessWidget {
 
     return InkWell(
       onTap: () => onClickFilterGameTag!(context, tag),
-      borderRadius: BorderRadius.circular(GameTagItem.tagBorderRadius),
+      borderRadius:
+          BorderRadius.circular(BaseTagView.tagRadius),
       child: GameTagItem(
         tag: tag,
         isSelected: true,

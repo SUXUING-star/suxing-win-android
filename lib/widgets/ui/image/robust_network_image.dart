@@ -1,6 +1,7 @@
 // lib/widgets/ui/image/robust_network_image.dart
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
 /// 一个健壮的网络图片组件，处理错误情况并提供缓存支持
 class RobustNetworkImage extends StatelessWidget {
@@ -169,14 +170,7 @@ class RobustNetworkImage extends StatelessWidget {
       width: width,
       height: height,
       color: backgroundColor,
-      child: Center(
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(
-            Theme.of(context).primaryColor,
-          ),
-        ),
-      ),
+      child: LoadingWidget(),
     );
   }
 

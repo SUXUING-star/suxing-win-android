@@ -1,11 +1,11 @@
-/// 定义了 ResizeOptimizedLayoutBuilder 组件。
+/// 定义了 LazyLayoutBuilder 组件。
 library;
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
-typedef ResizeOptimizedBuilderCallback = Widget Function(
+typedef LazyLayoutBuilderCallback = Widget Function(
     BuildContext context, BoxConstraints constraints);
 
 /// 一个根据窗口调整状态来优化布局构建的组件。
@@ -17,7 +17,7 @@ class LazyLayoutBuilder extends StatelessWidget {
   final WindowStateProvider windowStateProvider;
 
   /// 用于构建正常UI的构建器，其签名与 [LayoutBuilder.builder] 完全相同。
-  final ResizeOptimizedBuilderCallback builder;
+  final LazyLayoutBuilderCallback builder;
 
   /// 在窗口调整大shims显示时的占位符 Widget。
   final Widget? resizingPlaceholder;
@@ -42,9 +42,7 @@ class LazyLayoutBuilder extends StatelessWidget {
         if (isResizing) {
           // 正在调整大小时，显示占位符。
           return resizingPlaceholder ??
-              const Center(
-                child: LoadingWidget(message: "正在调整布局..."),
-              );
+              const LoadingWidget(message: "正在调整布局...");
         } else {
           // 调整结束后，使用原生 LayoutBuilder 来获取约束并执行 builder。
           // 这里的 LayoutBuilder 是安全的，因为它仅在非调整状态下被构建。

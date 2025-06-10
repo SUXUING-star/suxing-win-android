@@ -1,8 +1,10 @@
 // lib/models/user/user_checkin.dart
+import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
 
 // --- CheckInStats 模型 ---
+@immutable
 class CheckInStats {
   final int totalCheckIns; // 累计签到天数
   final int continuousDays; // 当前连续签到天数
@@ -10,7 +12,7 @@ class CheckInStats {
   final bool canCheckInToday; // 今天是否还能签到
   final int nextRewardExp; // 下次签到预计可获得的经验
 
-  CheckInStats({
+  const CheckInStats({
     required this.totalCheckIns,
     required this.continuousDays,
     required this.hasCheckedToday,

@@ -1,6 +1,7 @@
 // lib/widgets/components/screen/profile/experience/exp_badge_widget.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
@@ -48,12 +49,7 @@ class ExpBadgeWidget extends StatelessWidget {
               SizedBox(
                 width: size * 0.8,
                 height: size * 0.8,
-                child: CircularProgressIndicator(
-                  value: completionPercentage / 100,
-                  backgroundColor: Colors.white.withSafeOpacity(0.3),
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  strokeWidth: size * 0.08,
-                ),
+                child: const LoadingWidget()
               ),
               // 经验值文本
               AppText(

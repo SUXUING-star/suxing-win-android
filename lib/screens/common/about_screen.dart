@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/constants/global_constants.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/network/open_web_url_utils.dart';
 import 'package:suxingchahui/utils/network/url_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 确保引入动画组件
@@ -9,12 +10,17 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class AboutScreen extends StatelessWidget {
-  const AboutScreen({super.key});
+  final WindowStateProvider windowStateProvider;
+  const AboutScreen({
+    super.key,
+    required this.windowStateProvider,
+  });
 
   Future<void> _handleOpenLink(
       BuildContext context, String? title, String url) async {
@@ -86,7 +92,7 @@ class AboutScreen extends StatelessWidget {
                 Clipboard.setData(
                     ClipboardData(text: GlobalConstants.groupNumber));
                 // 显示提示信息
-                AppSnackBar.showSuccess( '群号已复制到剪贴板！');
+                AppSnackBar.showSuccess('群号已复制到剪贴板！');
               },
             ),
           ],
@@ -260,7 +266,8 @@ class AboutScreen extends StatelessWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16.0),
-                      LayoutBuilder(
+                      LazyLayoutBuilder(
+                        windowStateProvider: windowStateProvider,
                         builder: (context, constraints) {
                           return Wrap(
                             spacing: 8, // 水平间距

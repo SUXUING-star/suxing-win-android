@@ -11,7 +11,7 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入�
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/buttons/url/open_url_button.dart'; // 导入打开 URL 按钮
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 
 /// `GameDownloadLinks` 类：显示游戏下载链接的组件。

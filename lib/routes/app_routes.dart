@@ -129,7 +129,10 @@ class AppRoutes {
     switch (routeName) {
       case about:
         return SlideFadePageRoute(
-            routeSettings: settings, builder: (_) => AboutScreen());
+            routeSettings: settings,
+            builder: (_) => AboutScreen(
+                  windowStateProvider: windowStateProvider,
+                ));
       case login:
         return SlideFadePageRoute(
             routeSettings: settings,
@@ -272,6 +275,7 @@ class AppRoutes {
         return SlideFadePageRoute(
             routeSettings: settings,
             builder: (_) => AddGameScreen(
+                  windowStateProvider: windowStateProvider,
                   inputStateService: inputStateService,
                   fileUpload: fileUploadService,
                   sidebarProvider: sidebarProvider,
@@ -298,6 +302,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => EditGameScreen(
+            windowStateProvider: windowStateProvider,
             inputStateService: inputStateService,
             gameId: gameId,
             fileUpload: fileUploadService,
@@ -462,6 +467,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => GameCollectionListScreen(
+            windowStateProvider: windowStateProvider,
             sidebarProvider: sidebarProvider,
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,
@@ -473,6 +479,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => GameCollectionListScreen(
+            windowStateProvider: windowStateProvider,
             sidebarProvider: sidebarProvider,
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,
@@ -484,6 +491,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => GameCollectionListScreen(
+            windowStateProvider: windowStateProvider,
             sidebarProvider: sidebarProvider,
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,
@@ -495,6 +503,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => GameCollectionListScreen(
+            windowStateProvider: windowStateProvider,
             sidebarProvider: sidebarProvider,
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,

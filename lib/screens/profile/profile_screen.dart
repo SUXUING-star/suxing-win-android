@@ -25,7 +25,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; /
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart'; // 导入悬浮动作按钮组
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 导入通用悬浮动作按钮
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart'; // 导入个人资料菜单项常量
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
@@ -96,12 +96,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   String? _expDataError; // 经验数据错误消息
   bool _expDataLoadedOnce = false; // 经验数据是否已加载至少一次
 
+  late double _screenWidth;
+
   static const String _editUsernameSlot = 'profile_edit_username'; // 编辑用户名槽名称
   static const String _editSignatureSlot = 'profile_edit_signature'; // 编辑签名槽名称
 
   @override
   void initState() {
     super.initState();
+
     WidgetsBinding.instance.addObserver(this); // 添加应用生命周期观察者
   }
 
@@ -113,6 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
+      _screenWidth = DeviceUtils.getScreenWidth(context);
       _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
@@ -662,6 +666,7 @@ class _ProfileScreenState extends State<ProfileScreen>
               duration: const Duration(milliseconds: 500), // 动画时长
               delay: const Duration(milliseconds: 250), // 延迟
               child: ProfileDesktopMenuGrid(
+                screenWidth: _screenWidth,
                 menuItems: menuItems,
                 windowStateProvider: widget.windowStateProvider,
               ), // 桌面端菜单网格
@@ -782,20 +787,22 @@ class _ProfileScreenState extends State<ProfileScreen>
           return Stack(
             children: [
               LazyLayoutBuilder(
-                  windowStateProvider: widget.windowStateProvider,
-                  builder: (context, constraints) {
-                    final screenWidth = constraints.maxWidth;
-                    return DeviceUtils.isDesktopInThisWidth(screenWidth)
-                        ? _buildDesktopContent(currentUser, menuItems)
-                        : _buildMobileContent(currentUser, menuItems);
-                  }),
+                windowStateProvider: widget.windowStateProvider,
+                builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
+                  _screenWidth = screenWidth;
+                  return DeviceUtils.isDesktopInThisWidth(screenWidth)
+                      ? _buildDesktopContent(currentUser, menuItems)
+                      : _buildMobileContent(currentUser, menuItems);
+                },
+              ),
               if (_isRefreshing) // 刷新中时显示半透明遮罩和进度指示器
                 Positioned.fill(
                   child: Container(
                     color: Colors.black.withSafeOpacity(0.1), // 半透明黑色背景
-                    child: const Center(
-                        child:
-                            CircularProgressIndicator(strokeWidth: 2)), // 进度指示器
+                    child: const LoadingWidget(
+                      size: 40,
+                    ), // 进度指示器
                   ),
                 ),
             ],

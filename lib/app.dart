@@ -26,6 +26,7 @@ import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/sidebar_updater_observer.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
@@ -238,7 +239,7 @@ class _MainAppState extends State<MainApp> {
   @override
   Widget build(BuildContext context) {
     if (!_hasInitializedProviders) {
-      return const Center(child: CircularProgressIndicator());
+      return const LoadingWidget();
     }
 
     return StreamBuilder<ThemeMode>(

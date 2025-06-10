@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -264,25 +264,17 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
           return RefreshIndicator(
             onRefresh: _loadInitialGames,
-            child: LazyLayoutBuilder(
+            child: MyGamesLayout(
+              myGames: _myGames,
               windowStateProvider: widget.windowStateProvider,
-              builder: (context, constraints) {
-                final screenWidth = constraints.maxWidth;
-                final isDesktopLayout =
-                    DeviceUtils.isDesktopInThisWidth(screenWidth);
-                return MyGamesLayout(
-                  myGames: _myGames,
-                  isDesktop: isDesktopLayout,
-                  isLoadingMore: _isFetchingMore,
-                  hasMore: _currentPage < _totalPages,
-                  scrollController: _scrollController,
-                  onLoadMore: _loadMoreGames,
-                  onAddGame: _handleAddGame,
-                  onResubmit: _handleResubmit,
-                  onShowReviewComment: _showReviewCommentDialog,
-                  authProvider: widget.authProvider,
-                );
-              },
+              isLoadingMore: _isFetchingMore,
+              hasMore: _currentPage < _totalPages,
+              scrollController: _scrollController,
+              onLoadMore: _loadMoreGames,
+              onAddGame: _handleAddGame,
+              onResubmit: _handleResubmit,
+              onShowReviewComment: _showReviewCommentDialog,
+              authProvider: widget.authProvider,
             ),
           );
         },

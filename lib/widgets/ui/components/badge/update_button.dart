@@ -8,10 +8,11 @@ import 'package:flutter/material.dart'; // Flutter UI 框架
 import 'package:provider/provider.dart'; // Provider 状态管理
 import 'package:suxingchahui/services/main/update/update_service.dart'; // 更新服务
 import 'package:suxingchahui/widgets/components/dialogs/update/force_update_dialog.dart'; // 强制更新对话框
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 确认对话框
 import 'package:url_launcher/url_launcher.dart'; // URL 启动器
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 Snackbar
 import 'package:suxingchahui/config/app_config.dart'; // 应用配置
 
 /// `UpdateButton` 类：应用更新按钮。
@@ -42,16 +43,7 @@ class UpdateButton extends StatelessWidget {
             // 显示加载指示器
             width: 24,
             height: 24,
-            child: Center(
-              child: SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: Colors.white,
-                ),
-              ),
-            ),
+            child: LoadingWidget(),
           );
         }
 

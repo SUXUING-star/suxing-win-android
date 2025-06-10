@@ -6,7 +6,10 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 引�
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 引入 Button
 import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class LinkManagement extends StatefulWidget {
   final LinkToolService linkToolService;
@@ -70,22 +73,15 @@ class _LinkManagementState extends State<LinkManagement> {
           // 处理加载状态
           if (snapshot.connectionState == ConnectionState.waiting) {
             // 保持加载指示器在中间
-            return const Center(child: CircularProgressIndicator());
+            return const LoadingWidget();
           }
           // 处理错误状态
           if (snapshot.hasError) {
-            return Center(
-                child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('错误: ${snapshot.error}'),
-                SizedBox(height: 10),
-                ElevatedButton(
-                  onPressed: () => _loadLinks(forceRefresh: true),
-                  child: Text('重试'),
-                )
-              ],
-            ));
+            return CustomErrorWidget(
+              onRetry: () => _loadLinks(forceRefresh: true),
+              retryText: '重试',
+              errorMessage: '错误: ${snapshot.error}',
+            );
           }
           // 处理无数据或空数据状态
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
@@ -96,7 +92,9 @@ class _LinkManagementState extends State<LinkManagement> {
                 // 使用 Stack 让 "暂无数据" 能响应下拉刷新
                 children: [
                   ListView(), // 空 ListView 使得 RefreshIndicator 可用
-                  Center(child: Text('暂无链接数据'))
+                  const EmptyStateWidget(
+                    message: "啥也没有",
+                  ),
                 ],
               ),
             );
@@ -114,13 +112,7 @@ class _LinkManagementState extends State<LinkManagement> {
                     onPressed:
                         _isProcessing ? null : _showAddLinkDialog, // 防止重复点击
                     icon: _isProcessing
-                        ? SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    Colors.white)))
+                        ? const LoadingWidget()
                         : const Icon(Icons.add),
                     label: Text(_isProcessing ? '处理中...' : '添加链接'),
                   ),

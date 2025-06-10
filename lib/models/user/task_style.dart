@@ -2,11 +2,15 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
+@immutable
 class TaskStyle {
   final Color color;
   final IconData icon;
 
-  TaskStyle({required this.color, required this.icon});
+  const TaskStyle({
+    required this.color,
+    required this.icon,
+  });
 
   // 获取任务样式（颜色和图标）
   static TaskStyle getTaskStyle(String type, bool completed) {

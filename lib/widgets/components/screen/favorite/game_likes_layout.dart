@@ -91,13 +91,13 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context)
-            : _buildMobileLayout(context);
+            ? _buildDesktopLayout(context, isDesktopLayout)
+            : _buildMobileLayout(context, isDesktopLayout);
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context) {
+  Widget _buildDesktopLayout(BuildContext context, bool isDesktopLayout) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -105,34 +105,45 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
           flex: 1,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildGameFavoritesStatistics(context, isDesktop: true),
+            child: _buildGameLikesStatistics(
+              context,
+              isDesktopLayout,
+            ),
           ),
         ),
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
           flex: 4,
-          child: _buildFavoritesContent(context, isDesktop: true),
+          child: _buildFavoritesContent(
+            context,
+            isDesktop: isDesktopLayout,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context) {
+  Widget _buildMobileLayout(BuildContext context, bool isDesktopLayout) {
     return Column(
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-          child: _buildGameFavoritesStatistics(context, isDesktop: false),
+          child: _buildGameLikesStatistics(
+            context,
+            isDesktopLayout,
+          ),
         ),
         Expanded(
-          child: _buildFavoritesContent(context, isDesktop: false),
+          child: _buildFavoritesContent(
+            context,
+            isDesktop: isDesktopLayout,
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildGameFavoritesStatistics(BuildContext context,
-      {required bool isDesktop}) {
+  Widget _buildGameLikesStatistics(BuildContext context, bool isDesktop) {
     final cardPadding =
         isDesktop ? const EdgeInsets.all(16) : const EdgeInsets.all(12);
     final titleStyle = TextStyle(
@@ -213,14 +224,13 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
 
   Widget _buildFavoritesContent(BuildContext context,
       {required bool isDesktop}) {
+    // 保持外部的 ListView 结构
+    final thisWidth = MediaQuery.of(context).size.width;
     final crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(
       context,
-      withPanels: true,
-      leftPanelVisible: true,
+      directAvailableWidth: thisWidth,
     );
     final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
-
-    // 保持外部的 ListView 结构
     return ListView(
       controller: widget.scrollController,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),
@@ -232,9 +242,12 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
           childAspectRatio: cardRatio,
           crossAxisSpacing: 8,
           mainAxisSpacing: isDesktop ? 16 : 8,
-          padding: EdgeInsets.zero, // 外部 ListView 已有 padding
-          shrinkWrap: true, // 关键：使其在 ListView 内正常工作
-          physics: const NeverScrollableScrollPhysics(), // 关键：禁用其内部滚动
+          padding: EdgeInsets.zero,
+          // 外部 ListView 已有 padding
+          shrinkWrap: true,
+          // 关键：使其在 ListView 内正常工作
+          physics: const NeverScrollableScrollPhysics(),
+          // 关键：禁用其内部滚动
           itemBuilder: (context, index, gameItem) {
             return _buildGameCard(gameItem, isDesktop);
           },

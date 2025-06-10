@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/components/screen/favorite/game_likes_layou
 import 'package:suxingchahui/widgets/components/screen/favorite/post_favorites_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackbar.dart';
+import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final AuthProvider authProvider;
