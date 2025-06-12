@@ -834,16 +834,23 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       key: Key(
           'activity_feed_visibility_${widget.key?.toString() ?? widget.title}'), // 可见性检测器 Key
       onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
-      child: Scaffold(
-        body: SafeArea(
-          child: _buildBodyContent(), // 构建主内容区域
-        ),
+      child: LazyLayoutBuilder(
+        // 布局构建器，用于响应式布局
+        windowStateProvider: widget.windowStateProvider,
+        builder: (context, constraints) {
+          final screenWidth = constraints.maxWidth;
+          return Scaffold(
+            body: SafeArea(
+              child: _buildBodyContent(screenWidth), // 构建主内容区域
+            ),
+          );
+        },
       ),
     );
   }
 
   /// 构建页面主体内容。
-  Widget _buildBodyContent() {
+  Widget _buildBodyContent(double screenWidth) {
     if (!_isInitialized && !_isLoadingData) {
       // 未初始化且未加载数据时显示准备加载
       return const FadeInItem(
@@ -879,63 +886,55 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     Widget topActionBar = _buildTopActionBar(); // 构建顶部动作栏
     Widget mainFeedContent = _buildMainFeedContent(); // 构建主要动态流内容
 
-    return LazyLayoutBuilder(
-      // 布局构建器，用于响应式布局
-      windowStateProvider: widget.windowStateProvider,
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-
-        if (screenWidth >= desktopBreakpoint && widget.showHotActivities) {
-          // 宽屏幕且显示热门活动时
-          return Column(
-            children: [
-              topActionBar, // 顶部动作栏
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
-                  children: [
-                    Expanded(
-                      flex: 3, // 动态流占据更多空间
-                      child: mainFeedContent, // 主要动态流内容
-                    ),
-                    VerticalDivider(
-                        // 垂直分隔线
-                        width: 1,
-                        thickness: 1,
-                        indent: 10,
-                        endIndent: 10,
-                        color: Colors.grey.shade200),
-                    if (_showHotActivities) // 显示热门活动面板
-                      SizedBox(
-                        width: 300, // 面板固定宽度
-                        child: Padding(
-                          padding: const EdgeInsets.only(
-                              top: 8.0, right: 8.0, bottom: 8.0), // 内边距
-                          child: HotActivitiesPanel(
-                            screenWidth: screenWidth,
-                            activityService: widget.activityService,
-                            userInfoProvider: widget.infoProvider,
-                            followService: widget.followService,
-                            currentUser: widget.authProvider.currentUser,
-                          ),
-                        ),
-                      ),
-                  ],
+    if (screenWidth >= desktopBreakpoint && widget.showHotActivities) {
+      // 宽屏幕且显示热门活动时
+      return Column(
+        children: [
+          topActionBar, // 顶部动作栏
+          Expanded(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
+              children: [
+                Expanded(
+                  flex: 3, // 动态流占据更多空间
+                  child: mainFeedContent, // 主要动态流内容
                 ),
-              ),
-            ],
-          );
-        } else {
-          // 移动布局
-          return Column(
-            children: [
-              topActionBar,
-              Expanded(child: mainFeedContent),
-            ],
-          );
-        }
-      },
-    );
+                VerticalDivider(
+                    // 垂直分隔线
+                    width: 1,
+                    thickness: 1,
+                    indent: 10,
+                    endIndent: 10,
+                    color: Colors.grey.shade200),
+                if (_showHotActivities) // 显示热门活动面板
+                  SizedBox(
+                    width: 300, // 面板固定宽度
+                    child: Padding(
+                      padding: const EdgeInsets.only(
+                          top: 8.0, right: 8.0, bottom: 8.0), // 内边距
+                      child: HotActivitiesPanel(
+                        screenWidth: screenWidth,
+                        activityService: widget.activityService,
+                        userInfoProvider: widget.infoProvider,
+                        followService: widget.followService,
+                        currentUser: widget.authProvider.currentUser,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      );
+    } else {
+      // 移动布局
+      return Column(
+        children: [
+          topActionBar,
+          Expanded(child: mainFeedContent),
+        ],
+      );
+    }
   }
 
   /// 构建可折叠活动动态组件。

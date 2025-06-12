@@ -9,6 +9,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -19,6 +20,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/feed/collapsible
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -31,6 +33,7 @@ class MyActivityFeedScreen extends StatefulWidget {
   final UserFollowService followService;
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
 
   const MyActivityFeedScreen({
     super.key,
@@ -40,6 +43,7 @@ class MyActivityFeedScreen extends StatefulWidget {
     required this.followService,
     required this.inputStateService,
     required this.infoProvider,
+    required this.windowStateProvider,
     this.title = 'TA的动态', // 默认标题可以改得通用些
   });
 
@@ -547,14 +551,19 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   // === Build Method ===
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: CustomAppBar(
-        title: widget.title, // Use the title passed to the widget
-      ),
-      body: SafeArea(
-        // Ensure content is within safe area
-        child: _buildBody(),
-      ),
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        return Scaffold(
+          appBar: CustomAppBar(
+            title: widget.title, // Use the title passed to the widget
+          ),
+          body: SafeArea(
+            // Ensure content is within safe area
+            child: _buildBody(),
+          ),
+        );
+      },
     );
   }
 
@@ -607,42 +616,43 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
   Widget _buildCollapsibleActivities() {
     return StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
-        builder: (context, currentUserSnapshot) {
-          final User? currentUser = currentUserSnapshot.data;
-          if (_currentUserId != currentUser?.id) {
-            setState(() {
-              _currentUserId = currentUser?.id;
-            });
-          }
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, currentUserSnapshot) {
+        final User? currentUser = currentUserSnapshot.data;
+        if (_currentUserId != currentUser?.id) {
+          setState(() {
+            _currentUserId = currentUser?.id;
+          });
+        }
 
-          return CollapsibleActivityFeed(
-            key: ValueKey('my_feed_${widget.userId}_${_collapseMode.index}'),
-            activities: _activities,
-            inputStateService: widget.inputStateService,
-            infoProvider: widget.infoProvider,
-            followService: widget.followService,
-            currentUser: currentUser,
-            isLoading: _isLoading && _activities.isEmpty,
-            isLoadingMore: _isLoadingMore,
-            error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
-            collapseMode: _collapseMode, // Current collapse mode
-            useAlternatingLayout: _useAlternatingLayout, // Current layout mode
-            scrollController: _scrollController, // Pass the scroll controller-
-            onActivityTap: _navigateToActivityDetail,
-            onRefresh: _refreshData,
-            onLoadMore: _loadMoreActivities,
-            onDeleteActivity: _handleDeleteActivity,
-            onLikeActivity: _handleLikeActivity,
-            onUnlikeActivity: _handleUnlikeActivity,
-            onAddComment: _handleAddComment,
-            onDeleteComment: _handleDeleteComment,
-            onLikeComment: _handleLikeComment,
-            onUnlikeComment: _handleUnlikeComment,
-            onEditActivity: null, // Edit not implemented yet
-          );
-        });
+        return CollapsibleActivityFeed(
+          key: ValueKey('my_feed_${widget.userId}_${_collapseMode.index}'),
+          activities: _activities,
+          inputStateService: widget.inputStateService,
+          infoProvider: widget.infoProvider,
+          followService: widget.followService,
+          currentUser: currentUser,
+          isLoading: _isLoading && _activities.isEmpty,
+          isLoadingMore: _isLoadingMore,
+          error: _error.isNotEmpty && _activities.isEmpty ? _error : '',
+          collapseMode: _collapseMode, // Current collapse mode
+          useAlternatingLayout: _useAlternatingLayout, // Current layout mode
+          scrollController: _scrollController, // Pass the scroll controller-
+          onActivityTap: _navigateToActivityDetail,
+          onRefresh: _refreshData,
+          onLoadMore: _loadMoreActivities,
+          onDeleteActivity: _handleDeleteActivity,
+          onLikeActivity: _handleLikeActivity,
+          onUnlikeActivity: _handleUnlikeActivity,
+          onAddComment: _handleAddComment,
+          onDeleteComment: _handleDeleteComment,
+          onLikeComment: _handleLikeComment,
+          onUnlikeComment: _handleUnlikeComment,
+          onEditActivity: null, // Edit not implemented yet
+        );
+      },
+    );
   }
 
   /// Builds the action bar containing view controls.

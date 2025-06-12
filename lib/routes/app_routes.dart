@@ -393,6 +393,7 @@ class AppRoutes {
           routeSettings: settings,
           builder: (_) => MyActivityFeedScreen(
             infoProvider: infoProvider,
+            windowStateProvider: windowStateProvider,
             inputStateService: inputStateService,
             authProvider: authProvider,
             activityService: activityService,

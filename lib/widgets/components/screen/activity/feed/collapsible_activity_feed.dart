@@ -600,66 +600,82 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     return InkWell(
       onTap: () {
         // 点击展开分组
-        setState(() {
-          final String groupKey =
-              (widget.collapseMode == FeedCollapseMode.byUser)
-                  ? (latestActivity.userId)
-                  : latestActivity.type; // 分组键
-          _expandedGroups[groupKey] = true; // 展开分组
-        });
+        setState(
+          () {
+            final String groupKey =
+                (widget.collapseMode == FeedCollapseMode.byUser)
+                    ? (latestActivity.userId)
+                    : latestActivity.type; // 分组键
+            _expandedGroups[groupKey] = true; // 展开分组
+          },
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(16), // 内边距
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
           children: [
-            Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 8, vertical: 4), // 内边距
-                decoration: BoxDecoration(
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 4), // 内边距
+                  decoration: BoxDecoration(
                     color: groupColor.withSafeOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12)), // 装饰
-                child: Text(
-                  DateTimeFormatter.formatTimeAgo(
-                      latestActivity.createTime), // 格式化时间
-                  style: TextStyle(
+                    borderRadius: BorderRadius.circular(12),
+                  ), // 装饰
+                  child: Text(
+                    DateTimeFormatter.formatTimeAgo(
+                        latestActivity.createTime), // 格式化时间
+                    style: TextStyle(
                       fontSize: 12,
                       color: groupColor,
-                      fontWeight: FontWeight.bold),
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 12), // 间距
-              Expanded(
+                const SizedBox(width: 12), // 间距
+                Expanded(
                   child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
-                      children: [
-                    if (latestActivity.content.isNotEmpty) // 显示活动内容
-                      Text(latestActivity.content,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                              fontSize: 14, color: Colors.grey.shade800)),
-                    Row(children: [
-                      Icon(
-                          ActivityTypeUtils.getActivityTypeIcon(
-                              latestActivity.type), // 活动类型图标
-                          size: 14,
-                          color: Colors.grey.shade600),
-                      const SizedBox(width: 4), // 间距
-                    ]),
-                  ])),
-            ]),
+                    crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
+                    children: [
+                      if (latestActivity.content.isNotEmpty) // 显示活动内容
+                        Text(latestActivity.content,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                                fontSize: 14, color: Colors.grey.shade800)),
+                      Row(
+                        children: [
+                          Icon(
+                            ActivityTypeUtils.getActivityTypeIcon(
+                                latestActivity.type), // 活动类型图标
+                            size: 14,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(
+                            width: 4,
+                          ), // 间距
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 12), // 间距
             Center(
               child: Container(
                 padding: const EdgeInsets.symmetric(
                     vertical: 8, horizontal: 16), // 内边距
                 decoration: BoxDecoration(
-                    color: groupColor.withSafeOpacity(0.1),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                        color: groupColor.withSafeOpacity(0.3))), // 装饰
+                  color: groupColor.withSafeOpacity(0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: groupColor.withSafeOpacity(0.3),
+                  ),
+                ), // 装饰
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -667,8 +683,11 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                         style: TextStyle(
                             color: groupColor, fontWeight: FontWeight.bold)),
                     const SizedBox(width: 4), // 间距
-                    Icon(Icons.keyboard_arrow_down,
-                        size: 16, color: groupColor) // 图标
+                    Icon(
+                      Icons.keyboard_arrow_down,
+                      size: 16,
+                      color: groupColor,
+                    ) // 图标
                   ],
                 ),
               ),
