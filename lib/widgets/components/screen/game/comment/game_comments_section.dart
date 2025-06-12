@@ -268,7 +268,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withSafeOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
@@ -294,7 +294,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 '评论区',
                 style: TextStyle(
@@ -305,7 +305,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
               ),
             ],
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
 
           // --- 根据登录状态显示输入框或登录提示 ---
           _currentUser != null
@@ -321,7 +321,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
                       isSubmitting: _isAddingComment, // 传递顶级评论提交状态
                       inputStateService: widget.inputStateService,
                     ),
-                    SizedBox(height: 16),
+                    const SizedBox(height: 16),
                     // --- 评论列表构建区域 ---
                     _buildCommentListSection(), // 调用下面封装的方法
                   ],
@@ -343,9 +343,10 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
       builder: (context, snapshot) {
         // 1. 处理加载状态
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 32.0), // 添加一些垂直间距
-              child: const LoadingWidget(size: 24, message: "加载评论中..."));
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 32.0), // 添加一些垂直间距
+            child: LoadingWidget(size: 24, message: "加载评论中..."),
+          );
         }
 
         // 2. 处理错误状态
@@ -368,7 +369,9 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
             child: Center(
               child: Text(
                 '还没有评论，快来抢沙发吧！',
-                style: TextStyle(color: Colors.grey[600]),
+                style: TextStyle(
+                  color: Colors.grey[600],
+                ),
               ),
             ),
           );

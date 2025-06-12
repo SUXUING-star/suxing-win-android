@@ -185,11 +185,12 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
             builder: (context, snapshot) {
               // 1. 处理加载状态
               if (snapshot.connectionState == ConnectionState.waiting) {
-                return SizedBox(
-                    height: 200, // 给个固定高度防止跳动
-                    child: LoadingWidget.inline(
-                      size: 12,
-                    ));
+                return const SizedBox(
+                  height: 200, // 给个固定高度防止跳动
+                  child: LoadingWidget(
+                    size: 12,
+                  ),
+                );
               }
 
               // 2. 处理错误状态 (加载完成后)
@@ -229,7 +230,9 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
               // 4. 其他情况 (理论上 FutureBuilder 主要关注 waiting 和 done)
               // 可以返回一个初始占位符或者加载指示器
               return const SizedBox(
-                  height: 200, child: LoadingWidget(size: 12));
+                height: 200,
+                child: LoadingWidget(size: 12),
+              );
             },
           ),
         ],
@@ -237,7 +240,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     );
   }
 
-  // _buildReplyItem 方法保持不变
+  // _buildReplyItem
   Widget _buildReplyItem(
     BuildContext context,
     GlobalPostReplyItem reply,

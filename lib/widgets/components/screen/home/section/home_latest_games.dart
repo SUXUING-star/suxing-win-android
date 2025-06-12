@@ -27,60 +27,85 @@ class HomeLatestGames extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withSafeOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withSafeOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 2))
+            color: Colors.black.withSafeOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          )
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200, width: 1))),
+              border: Border(
+                bottom: BorderSide(
+                  color: Colors.grey.shade200,
+                  width: 1,
+                ),
+              ),
+            ),
             child: Row(
               children: [
                 Container(
-                    width: 6,
-                    height: 22,
-                    decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(3))),
-                SizedBox(width: 12),
-                Text('最新发布',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey[900])),
-                Spacer(),
+                  width: 6,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '最新发布',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[900],
+                  ),
+                ),
+                const Spacer(),
                 InkWell(
-                    borderRadius: BorderRadius.circular(8),
-                    onTap: () {
-                      NavigationUtils.pushNamed(context, AppRoutes.latestGames);
-                    },
-                    child: Padding(
-                        padding:
-                            EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        child: Row(children: [
-                          Text('更多',
-                              style: TextStyle(
-                                  color: Colors.grey[700], fontSize: 14)),
-                          SizedBox(width: 4),
-                          Icon(Icons.arrow_forward_ios,
-                              size: 14, color: Colors.grey[700])
-                        ]))),
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () {
+                    NavigationUtils.pushNamed(
+                      context,
+                      AppRoutes.latestGames,
+                    );
+                  },
+                  child: Padding(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    child: Row(
+                      children: [
+                        Text(
+                          '更多',
+                          style: TextStyle(
+                            color: Colors.grey[700],
+                            fontSize: 14,
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.grey[700],
+                        )
+                      ],
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildGameListArea(context), // context 作为参数传入
         ],
       ),
@@ -107,9 +132,9 @@ class HomeLatestGames extends StatelessWidget {
     }
     final displayGames = games ?? [];
     if (!isLoading && displayGames.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: const EmptyStateWidget(
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: EmptyStateWidget(
           message: '暂无最新游戏',
           iconData: Icons.inbox_outlined,
           iconSize: 40,
@@ -134,10 +159,15 @@ class HomeLatestGames extends StatelessWidget {
   Widget _buildVerticalGameList(List<Game> gameList, BuildContext context) {
     final itemsToShow = gameList.take(3).toList();
     if (itemsToShow.isEmpty) {
-      return SizedBox(
-          height: 100,
-          child: Center(
-              child: Text("没有最新游戏可显示", style: TextStyle(color: Colors.grey))));
+      return const SizedBox(
+        height: 100,
+        child: Center(
+          child: Text(
+            "没有最新游戏可显示",
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
     }
 
     // 使用封装好的 AnimatedListView

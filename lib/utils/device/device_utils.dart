@@ -86,7 +86,7 @@ class DeviceUtils {
 
   /// 判断当前屏幕是否为桌面屏幕尺寸。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   /// 根据屏幕宽度判断是否为桌面屏幕。
   static bool isDesktopInThisWidth(double screenWidth) {
     return screenWidth >= 900; // 屏幕宽度大于等于特定值时判定为桌面屏幕
@@ -409,47 +409,112 @@ class DeviceUtils {
     return max(1, cardsPerRow); // 返回每行卡片数量，至少为 1
   }
 
-  /// 计算帖子卡片的宽高比。
+  /// 计算帖子卡片的高度。
   ///
-  /// [context]：Build 上下文。
-  /// 根据可用宽度、每行卡片数量和估算高度计算宽高比。
-  static double calculatePostCardRatio(BuildContext context) {
-    final availableWidth = getAvailableContentWidth(context); // 获取可用宽度
-    final horizontalPadding = 16.0; // 水平内边距
-    final crossAxisSpacing = 16.0; // 水平间距
+  /// 该方法通过累加卡片内各可见部分的精确高度来计算总高度。
+  /// 为了保持布局计算的统一性，标题区域的底部留白始终按有标签的情况处理。
+  static double calculatePostCardHeight(
+    BuildContext context, {
+    required int? contentMaxLines,
+    required bool isDesktopLayout,
+    required double screenWidth,
+  }) {
+    // 1. 标题区域高度
+    // 标题区域的底部留白始终为最大值(28.0)，以容纳可能存在的悬浮标签。
+    // 这确保了无论有无标签，外部计算的高度都是一致的。
+    const double titleTopPadding = 12.0;
+    const double titleBottomPadding = 28.0; // 固定为最大值
+    final double titleFontSize = isDesktopLayout ? 16 : 14;
+    final double titleLineHeight = 1.2;
+    const double titleMaxLines = 2;
+    final double titleHeight =
+        (titleFontSize * titleLineHeight * titleMaxLines) +
+            titleTopPadding +
+            titleBottomPadding;
 
-    final cardsPerRow = calculatePostCardsPerRow(context); // 计算每行卡片数量
-    if (cardsPerRow <= 0) return 1.0; // 每行卡片数量小于等于 0 时返回默认比例
+    // 2. 内容区域高度
+    double contentHeight = 0;
+    if (contentMaxLines != null && contentMaxLines > 0) {
+      const double contentVerticalPadding = 8.0 + 12.0;
+      final double contentFontSize = isDesktopLayout ? 14 : 13;
+      final double contentLineHeight = 1.5;
+      contentHeight = (contentFontSize * contentLineHeight * contentMaxLines) +
+          contentVerticalPadding;
+    }
+
+    // 3. 底部信息栏高度
+    const double bottomBarVerticalPadding = 8.0 * 2;
+    const double thresholdWidth = 400.0;
+    final bool isBottomBarSingleLine = screenWidth >= thresholdWidth;
+
+    final double userInfoBadgeHeight = isDesktopLayout ? 24.0 : 22.0;
+    final double statsRowHeight = isDesktopLayout ? 20.0 : 18.0;
+
+    double bottomBarHeight;
+    if (isBottomBarSingleLine) {
+      bottomBarHeight =
+          max(userInfoBadgeHeight, statsRowHeight) + bottomBarVerticalPadding;
+    } else {
+      const double spacing = 6.0;
+      bottomBarHeight = userInfoBadgeHeight +
+          statsRowHeight +
+          spacing +
+          bottomBarVerticalPadding;
+    }
+
+    // 最终高度为各部分之和。
+    return titleHeight + contentHeight + bottomBarHeight;
+  }
+
+  /// 计算帖子卡片的宽高比 (childAspectRatio)。
+  ///
+  /// 该方法不再需要关心帖子是否有标签，简化了调用。
+  static double calculatePostCardRatio(
+    BuildContext context, {
+    int contentMaxLines = 2,
+    bool withPanel = false,
+    bool showLeftPanel = false,
+    bool showRightPanel = false,
+    double? directAvailableWidth,
+  }) {
+    final availableWidth = directAvailableWidth ??
+        getAvailableContentWidth(
+          context,
+          withPanels: withPanel,
+          leftPanelVisible: showLeftPanel,
+          rightPanelVisible: showRightPanel,
+        );
+    final isDesktopLayout = isDesktopScreen(context);
+
+    final horizontalPadding = 16.0;
+    final crossAxisSpacing = 16.0;
+
+    final cardsPerRow = calculatePostCardsPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+      withPanels: withPanel,
+      leftPanelVisible: showLeftPanel,
+      rightPanelVisible: showRightPanel,
+    );
+    if (cardsPerRow <= 0) return 1.0;
 
     final actualCardWidth = (availableWidth -
             horizontalPadding -
             (crossAxisSpacing * (cardsPerRow - 1))) /
-        cardsPerRow; // 计算实际卡片宽度
-    if (actualCardWidth <= 0) return 1.0; // 实际卡片宽度小于等于 0 时返回默认比例
+        cardsPerRow;
+    if (actualCardWidth <= 0) return 1.0;
 
-    final double titleHeight =
-        isAndroid && isPortrait(context) ? 36.0 : 40.0; // 标题高度
-    final double tagsHeight = 32.0; // 标签行高度
-    final double infoRowHeight = 40.0; // 底部信息栏高度
-    final double verticalSpacing = 24.0; // 垂直间距估算
-    final double minContentHeight =
-        isAndroid && isPortrait(context) ? 40.0 : 50.0; // 最小内容高度
+    final double cardHeight = calculatePostCardHeight(
+      context,
+      contentMaxLines: contentMaxLines,
+      isDesktopLayout: isDesktopLayout,
+      screenWidth: actualCardWidth,
+    );
 
-    final double estimatedCardHeight = titleHeight +
-        minContentHeight +
-        tagsHeight +
-        infoRowHeight +
-        verticalSpacing; // 估算卡片总高度
+    if (cardHeight <= 0) return 1.0;
 
-    double ratio = actualCardWidth / estimatedCardHeight; // 计算初始宽高比
+    final double ratio = actualCardWidth / cardHeight;
 
-    ratio = ratio.clamp(0.85, 1.2); // 钳制宽高比
-
-    if (isAndroid && isPortrait(context)) {
-      // Android 竖屏特殊处理
-      ratio = ratio.clamp(0.75, 1.0); // 调整宽高比范围
-    }
-
-    return ratio; // 返回宽高比
+    return ratio.clamp(0.7, 2.0);
   }
 }

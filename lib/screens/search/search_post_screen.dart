@@ -584,7 +584,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
               return Padding(
                 padding: const EdgeInsets.only(bottom: 8.0),
                 child: BasePostCard(
-                  screenWidth: screenWidth,
+                  availableWidth: screenWidth,
                   currentUser: widget.authProvider.currentUser,
                   post: item,
                   followService: widget.followService,

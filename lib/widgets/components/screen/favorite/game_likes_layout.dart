@@ -26,6 +26,9 @@ class GameLikesLayout extends StatefulWidget {
   final Function(String gameId) onToggleLike;
   final ScrollController scrollController;
 
+  static const int leftFlex = 1;
+  static const int rightFlex = 4;
+
   const GameLikesLayout({
     super.key,
     required this.windowStateProvider,
@@ -91,13 +94,17 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context, isDesktopLayout)
-            : _buildMobileLayout(context, isDesktopLayout);
+            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
+            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
       },
     );
   }
 
-  Widget _buildDesktopLayout(BuildContext context, bool isDesktopLayout) {
+  Widget _buildDesktopLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -117,13 +124,18 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
           child: _buildFavoritesContent(
             context,
             isDesktop: isDesktopLayout,
+            screenWidth: screenWidth,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, bool isDesktopLayout) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Column(
       children: [
         Padding(
@@ -137,6 +149,7 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
           child: _buildFavoritesContent(
             context,
             isDesktop: isDesktopLayout,
+            screenWidth: screenWidth,
           ),
         ),
       ],
@@ -223,14 +236,26 @@ class _GameLikesLayoutState extends State<GameLikesLayout>
   }
 
   Widget _buildFavoritesContent(BuildContext context,
-      {required bool isDesktop}) {
+      {required bool isDesktop, required double screenWidth}) {
     // 保持外部的 ListView 结构
-    final thisWidth = MediaQuery.of(context).size.width;
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth = screenWidth *
+          GameLikesLayout.rightFlex /
+          (GameLikesLayout.leftFlex + GameLikesLayout.rightFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
+
     final crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(
       context,
-      directAvailableWidth: thisWidth,
+      directAvailableWidth: availableWidth,
+      isCompact: true,
     );
-    final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
+    final cardRatio = DeviceUtils.calculateGameCardRatio(
+      context,
+      directAvailableWidth: availableWidth,
+    );
     return ListView(
       controller: widget.scrollController,
       padding: EdgeInsets.all(isDesktop ? 16 : 8),

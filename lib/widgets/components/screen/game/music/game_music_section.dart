@@ -187,11 +187,14 @@ class _GameMusicSectionState extends State<GameMusicSection> {
               borderRadius: BorderRadius.circular(2)),
         ),
         const SizedBox(width: 8),
-        Text('相关音乐',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[800])),
+        Text(
+          '相关音乐',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[800],
+          ),
+        ),
       ],
     );
   }
@@ -208,13 +211,19 @@ class _GameMusicSectionState extends State<GameMusicSection> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.screen_rotation_rounded,
-              size: 32, color: Colors.grey[600]),
+          Icon(
+            Icons.screen_rotation_rounded,
+            size: 32,
+            color: Colors.grey[600],
+          ),
           const SizedBox(height: 12),
           Text(
             '请旋转至横屏以播放音乐',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey[700], fontSize: 14),
+            style: TextStyle(
+              color: Colors.grey[700],
+              fontSize: 14,
+            ),
           ),
         ],
       ),
@@ -317,12 +326,12 @@ class _GameMusicSectionState extends State<GameMusicSection> {
             if (_isLoading) // WebView 正在加载页面时显示
               Positioned.fill(
                 child: Container(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .surfaceContainerLowest
-                        .withSafeOpacity(0.8),
-                    child:
-                        const LoadingWidget(message: '播放器加载中...', size: 24.0)),
+                  color: Theme.of(context)
+                      .colorScheme
+                      .surfaceContainerLowest
+                      .withSafeOpacity(0.8),
+                  child: const LoadingWidget(message: '播放器加载中...', size: 24.0),
+                ),
               ),
             if (!_isLoading &&
                 _loadingError != null &&
@@ -359,12 +368,6 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                           setState(() {
                             _loadingError = null;
                             _isLoading = true; // 触发WebView重新加载的loading
-                            // Key的改变会强制WebView重建并重新加载initialUrl
-                            // 为了更明确的重载，理想情况下EmbeddedWebView应有reload方法
-                            // 这里通过改变key来强制重建
-                            // 或者，如果WebView支持，调用其reload方法
-                            // _showWebView = false; // 先隐藏
-                            // Future.delayed(Duration(milliseconds: 50), () => setState(()=> _showWebView = true));
                             _embedUrl =
                                 _embedUrl!; // 技巧：稍微改变URL（如加个空串）或改变Key来强制刷新
                           });

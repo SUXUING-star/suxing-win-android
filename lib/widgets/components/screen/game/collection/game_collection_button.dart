@@ -3,10 +3,11 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_form_data.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
-import 'package:suxingchahui/widgets/components/screen/game/dialog/collection_dialog.dart';
+import 'package:suxingchahui/widgets/components/screen/game/dialog/game_collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
@@ -106,7 +107,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
     // *** 记住操作前的状态 ***
     final GameCollectionItem? oldStatus = _collectionStatus;
 
-    final result = await showGeneralDialog<Map<String, dynamic>>(
+    final result = await showGeneralDialog<GameCollectionFormData>(
       context: context,
       barrierDismissible: true, //  允许点击外部关闭
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -150,18 +151,17 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
       },
     );
     if (result != null && mounted) {
-      final action = result['action'] as String;
+      final action = result.action;
       setState(() {
         _isLoading = true;
       });
 
-      // *** 这里是修改的核心 ***
       try {
-        if (action == 'set') {
-          final status = result['status'] as String;
-          final notes = result['notes'] as String?;
-          final review = result['review'] as String?;
-          final rating = result['rating'] as double?;
+        if (action == CollectionActionType.setCollectionAction) {
+          final status = result.status;
+          final notes = result.notes;
+          final review = result.review;
+          final rating = result.rating;
 
           // 调用 Service，现在接收三个返回值
           final (newItem, returnedStatus, updatedGame) = await widget
@@ -182,7 +182,7 @@ class _GameCollectionButtonState extends State<GameCollectionButton> {
           } else {
             AppSnackBar.showError("操作失败");
           }
-        } else if (action == 'remove') {
+        } else if (action == CollectionActionType.removeCollectionAction) {
           // 调用 Service，现在接收两个返回值
           final (success, updatedGame) = await widget.gameCollectionService
               .removeGameCollection(widget.game.id);

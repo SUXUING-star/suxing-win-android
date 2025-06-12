@@ -21,8 +21,8 @@ class GameImages extends StatelessWidget {
     }
 
     return Container(
-      margin: EdgeInsets.symmetric(vertical: 16),
-      padding: EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withSafeOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
@@ -30,7 +30,7 @@ class GameImages extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 10,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -47,7 +47,7 @@ class GameImages extends StatelessWidget {
                   borderRadius: BorderRadius.circular(2),
                 ),
               ),
-              SizedBox(width: 8),
+              const SizedBox(width: 8),
               Text(
                 '游戏截图',
                 style: TextStyle(
@@ -58,7 +58,7 @@ class GameImages extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 12),
+          const SizedBox(height: 12),
           SizedBox(
             height: 180,
             child: ListView.builder(
@@ -82,7 +82,7 @@ class GameImages extends StatelessWidget {
           BoxShadow(
             color: Colors.black.withSafeOpacity(0.1),
             blurRadius: 8,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),

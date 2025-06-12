@@ -1,3 +1,8 @@
+// lib/widgets/components/screen/forum/post/tag/post_tags.dart
+
+/// PostDetail页面提供的PostTags
+library;
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';

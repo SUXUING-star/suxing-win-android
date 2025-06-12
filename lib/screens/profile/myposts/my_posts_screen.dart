@@ -352,22 +352,30 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
           return RefreshIndicator(
             onRefresh:
                 _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
-            child: MyPostsLayout(
-              posts: _posts,
-              isLoadingMore: _isLoadingMore,
-              hasMore: _paginationData?.hasNextPage() ?? false,
-              scrollController: _scrollController,
-              onAddPost: _handleAddPost,
-              onDeletePost: _handleDeletePost,
-              onEditPost: _handleEditPost,
-              errorMessage: _error,
-              onRetry: () => _fetchPosts(isRefresh: true),
-              currentUser: currentUser,
-              infoProvider: widget.infoProvider,
-              windowStateProvider: widget.windowStateProvider,
-              followService: widget.followService,
-              totalPostCount: _paginationData?.total ?? _posts.length,
-            ),
+            child: LazyLayoutBuilder(
+                windowStateProvider: widget.windowStateProvider,
+                builder: (context, constraints) {
+                  final screenWidth = constraints.maxWidth;
+                  final isDesktopLayout =
+                      DeviceUtils.isDesktopInThisWidth(screenWidth);
+                  return MyPostsLayout(
+                    posts: _posts,
+                    isLoadingMore: _isLoadingMore,
+                    hasMore: _paginationData?.hasNextPage() ?? false,
+                    scrollController: _scrollController,
+                    onAddPost: _handleAddPost,
+                    onDeletePost: _handleDeletePost,
+                    onEditPost: _handleEditPost,
+                    errorMessage: _error,
+                    isDesktopLayout: isDesktopLayout,
+                    screenWidth: screenWidth,
+                    onRetry: () => _fetchPosts(isRefresh: true),
+                    currentUser: currentUser,
+                    infoProvider: widget.infoProvider,
+                    followService: widget.followService,
+                    totalPostCount: _paginationData?.total ?? _posts.length,
+                  );
+                }),
           );
         },
       ),

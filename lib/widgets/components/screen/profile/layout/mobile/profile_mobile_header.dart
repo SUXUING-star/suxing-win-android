@@ -16,7 +16,6 @@ class ProfileMobileHeader extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
   final RateLimitedFileUpload fileUpload;
-  final Function(bool) onUploadStateChanged;
   final Function(String avatarUrl) onUploadSuccess;
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
@@ -29,7 +28,6 @@ class ProfileMobileHeader extends StatelessWidget {
     required this.onEditProfile,
     required this.onLogout,
     required this.fileUpload,
-    required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess, // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
     required this.isLoadingExpData,
@@ -64,7 +62,6 @@ class ProfileMobileHeader extends StatelessWidget {
               EditableUserAvatar(
                 user: user,
                 radius: avatarRadius,
-                onUploadStateChanged: onUploadStateChanged,
                 onUploadSuccess: onUploadSuccess,
                 fileUpload: fileUpload,
                 iconBackgroundColor: Colors.white,

@@ -11,7 +11,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/components/screen/profile/follow/follows_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/follow/follows_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
@@ -142,6 +142,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
                 tabFollowerCount = followerIDsForLayout.length;
 
                 bodyContent = FollowsLayout(
+                  screenWidth: screenWidth,
                   currentUser: widget.authProvider.currentUser,
                   isDesktopLayout: isDesktopLayout,
                   viewingUserId: widget.userId,

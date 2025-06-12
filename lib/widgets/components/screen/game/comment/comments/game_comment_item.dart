@@ -147,7 +147,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
                     SizedBox(
                       width: isReply ? 16 : 18,
                       height: isReply ? 16 : 18,
-                      child: LoadingWidget(),
+                      child: const LoadingWidget(),
                     ),
                     SizedBox(width: isReply ? 8 : 10),
                     Text('删除中...',
@@ -326,7 +326,10 @@ class _GameCommentItemState extends State<GameCommentItem> {
       padding: const EdgeInsets.only(bottom: 8.0),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: Colors.grey.shade200, width: 0.5),
+          bottom: BorderSide(
+            color: Colors.grey.shade200,
+            width: 0.5,
+          ),
         ),
       ),
       child: Column(
@@ -349,7 +352,10 @@ class _GameCommentItemState extends State<GameCommentItem> {
               Text(
                 DateTimeFormatter.formatRelative(reply.createTime) +
                     (reply.hasBeenEdited ? ' (已编辑)' : ''),
-                style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 10,
+                  color: Colors.grey[600],
+                ),
               ),
               // 调用通用的 Action Menu，传入 reply 对象
               _buildActionsMenu(context, reply),
@@ -359,7 +365,9 @@ class _GameCommentItemState extends State<GameCommentItem> {
             padding: const EdgeInsets.only(top: 4.0),
             child: Text(
               reply.content,
-              style: theme.textTheme.bodyMedium?.copyWith(height: 1.3),
+              style: theme.textTheme.bodyMedium?.copyWith(
+                height: 1.3,
+              ),
             ),
           ),
         ],
@@ -400,7 +408,11 @@ class _GameCommentItemState extends State<GameCommentItem> {
           // --- 主评论 Content ---
           Padding(
             padding: const EdgeInsets.only(
-                left: 16.0, right: 16.0, top: 8.0, bottom: 8.0),
+              left: 16.0,
+              right: 16.0,
+              top: 8.0,
+              bottom: 8.0,
+            ),
             child: Text(
               widget.comment.content,
               style:
@@ -416,7 +428,10 @@ class _GameCommentItemState extends State<GameCommentItem> {
               child: Text(
                 DateTimeFormatter.formatRelative(widget.comment.createTime) +
                     (widget.comment.hasBeenEdited ? ' (已编辑)' : ''),
-                style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                ),
               ),
             ),
           ),
@@ -424,7 +439,11 @@ class _GameCommentItemState extends State<GameCommentItem> {
           const Divider(height: 1, thickness: 0.5),
           Padding(
             padding: const EdgeInsets.only(
-                left: 16.0, right: 16.0, top: 4.0, bottom: 4.0),
+              left: 16.0,
+              right: 16.0,
+              top: 4.0,
+              bottom: 4.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
@@ -441,14 +460,16 @@ class _GameCommentItemState extends State<GameCommentItem> {
                   style: TextButton.styleFrom(
                     foregroundColor: Theme.of(context).primaryColor,
                     padding: const EdgeInsets.symmetric(horizontal: 8),
-                    minimumSize: Size(0, 30), // 调整按钮大小
+                    minimumSize: const Size(0, 30), // 调整按钮大小
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(_showReplyInput ? Icons.close : Icons.reply,
-                          size: 16),
+                      Icon(
+                        _showReplyInput ? Icons.close : Icons.reply,
+                        size: 16,
+                      ),
                       const SizedBox(width: 4),
                       Text(_showReplyInput ? '收起' : '回复'),
                     ],
@@ -472,7 +493,11 @@ class _GameCommentItemState extends State<GameCommentItem> {
                 if (widget.comment.replies.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(
-                        left: 40.0, right: 16.0, top: 0, bottom: 8.0),
+                      left: 40.0,
+                      right: 16.0,
+                      top: 0,
+                      bottom: 8.0,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: widget.comment.replies

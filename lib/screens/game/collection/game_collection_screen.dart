@@ -127,6 +127,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
     } else if (_previousIsLoggedIn == null && currentIsLoggedIn) {
       // 首次加载且用户已登录
       _loadData(isInitialLoad: true);
+      _lastForcedRefreshTime = DateTime.now();
     } else if (_previousIsLoggedIn == null && !currentIsLoggedIn) {
       // 首次加载且用户未登录
       if (mounted) {
@@ -349,8 +350,10 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
         scrollController: _scrollController,
         onLoadMore: _loadMoreData,
         onGoToDiscover: () => NavigationUtils.navigateToHome(
-            widget.sidebarProvider, context,
-            tabIndex: 1),
+          widget.sidebarProvider,
+          context,
+          tabIndex: 1,
+        ),
         // 新增参数传递
         selectedGameForReview: _selectedGameForReview,
         onGameTapForReview: _handleGameTapForReview,

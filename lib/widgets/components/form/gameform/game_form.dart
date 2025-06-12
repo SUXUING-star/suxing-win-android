@@ -170,10 +170,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _currentUser = widget.currentUser;
       });
     }
-    setState(() {
-      _screenSize = DeviceUtils.getScreenSize(context);
-      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenSize.width);
-    });
   }
 
   // 获取当前表单对应的草稿 Key
@@ -1432,8 +1428,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             child: Text(
               _coverImageError!,
               style: TextStyle(
-                  color: Theme.of(context).colorScheme.error, // 使用主题错误颜色
-                  fontSize: 12),
+                color: Theme.of(context).colorScheme.error, // 使用主题错误颜色
+                fontSize: 12,
+              ),
             ),
           ),
       ],

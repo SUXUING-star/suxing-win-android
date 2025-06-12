@@ -29,6 +29,7 @@ class WebViewScreen extends StatefulWidget {
 class _WebViewScreenState extends State<WebViewScreen> {
   dynamic _controller;
   bool _isLoadingPage = true;
+  bool _hasFinishedInitialLoad = false;
   String _currentAppBarTitle = '';
   bool _canGoBack = false;
   bool _canGoForward = false;
@@ -73,19 +74,26 @@ class _WebViewScreenState extends State<WebViewScreen> {
 
   void _handlePageStarted(String url) {
     if (!mounted) return;
-    setState(() {
-      _isLoadingPage = true;
-      if (widget.title == null) _currentAppBarTitle = '加载中...';
-    });
-    // 页面开始加载时，也应该更新导航状态（可能从无法导航变为可以）
+    // 只在首次加载时显示全屏 Loading
+    if (!_hasFinishedInitialLoad) {
+      setState(() {
+        _isLoadingPage = true;
+        if (widget.title == null) _currentAppBarTitle = '加载中...';
+      });
+    }
     _updateNavigationState();
   }
 
   void _handlePageFinished(String url) {
     if (!mounted) return;
-    setState(() {
-      _isLoadingPage = false;
-    });
+    // 如果这是首次加载完成
+    if (!_hasFinishedInitialLoad) {
+      setState(() {
+        _isLoadingPage = false;
+        _hasFinishedInitialLoad = true; // 标记首次加载已完成，之后不再触发
+      });
+    }
+    // 其他更新照常进行
     _updateNavigationState();
     _fetchPageTitle();
   }

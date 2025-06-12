@@ -267,6 +267,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           if (widget.authProvider.isLoggedIn && !_expDataLoadedOnce) {
             // 已登录且经验数据未加载时
             _loadDailyExperienceProgress(); // 加载每日经验进度
+            _lastRefreshTime = DateTime.now();
           }
         }
       });
@@ -534,22 +535,6 @@ class _ProfileScreenState extends State<ProfileScreen>
     );
   }
 
-  /// 处理上传状态变化。
-  ///
-  /// [isLoading]：是否正在上传。
-  void _handleUploadStateChanged(bool isLoading) {
-    if (mounted && _isRefreshing != isLoading) {
-      // 组件挂载且刷新状态不同时
-      Future.microtask(() {
-        if (mounted) {
-          setState(() {
-            _isRefreshing = isLoading; // 更新刷新状态
-          });
-        }
-      });
-    }
-  }
-
   /// 处理上传成功。
   ///
   /// [context]：Build 上下文。
@@ -646,7 +631,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                 onEditProfile: () =>
                     _showEditProfileDialog(currentUser, context), // 编辑个人资料回调
                 onLogout: () => _showLogoutDialog(context), // 登出回调
-                onUploadStateChanged: _handleUploadStateChanged, // 上传状态变化回调
                 fileUpload: widget.fileUpload, // 文件上传服务
                 onUploadSuccess: (avatarUrl) =>
                     _handleUploadSuccess(context, avatarUrl), // 上传成功回调
@@ -695,7 +679,6 @@ class _ProfileScreenState extends State<ProfileScreen>
                 _showEditProfileDialog(currentUser, context), // 编辑个人资料回调
             onLogout: () => _showLogoutDialog(context), // 登出回调
             fileUpload: widget.fileUpload, // 文件上传服务
-            onUploadStateChanged: _handleUploadStateChanged, // 上传状态变化回调
             onUploadSuccess: (avatarUrl) =>
                 _handleUploadSuccess(context, avatarUrl), // 上传成功回调
             dailyProgressData: _dailyProgressData, // 每日进度数据

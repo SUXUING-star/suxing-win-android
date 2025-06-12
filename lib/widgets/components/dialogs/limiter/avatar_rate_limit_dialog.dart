@@ -5,13 +5,17 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 class AvatarRateLimitDialog extends StatelessWidget {
   final int remainingSeconds;
 
-  const AvatarRateLimitDialog({super.key, required this.remainingSeconds});
+  const AvatarRateLimitDialog({
+    super.key,
+    required this.remainingSeconds,
+  });
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
       title: const Text('头像上传速率限制'),
-      content: Text('您的头像上传速率超出限制。每分钟最多只能上传2次头像。\n\n请在 $remainingSeconds 秒后再尝试。'),
+      content:
+          Text('您的头像上传速率超出限制。每分钟最多只能上传2次头像。\n\n请在 $remainingSeconds 秒后再尝试。'),
       actions: [
         TextButton(
           onPressed: () => NavigationUtils.of(context).pop(),
@@ -26,7 +30,8 @@ class AvatarRateLimitDialog extends StatelessWidget {
 void showAvatarRateLimitDialog(BuildContext context, int remainingSeconds) {
   showDialog(
     context: context,
-    builder: (context) => AvatarRateLimitDialog(remainingSeconds: remainingSeconds),
+    builder: (context) =>
+        AvatarRateLimitDialog(remainingSeconds: remainingSeconds),
   );
 }
 

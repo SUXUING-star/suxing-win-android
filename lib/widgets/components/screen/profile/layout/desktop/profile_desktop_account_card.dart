@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/daily_progress.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/level/level_progress_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -16,7 +17,6 @@ class ProfileDesktopAccountCard extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onLogout;
   final RateLimitedFileUpload fileUpload;
-  final Function(bool) onUploadStateChanged;
   final Function(String avatarUrl) onUploadSuccess;
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
@@ -29,7 +29,6 @@ class ProfileDesktopAccountCard extends StatelessWidget {
     required this.onEditProfile,
     required this.onLogout,
     required this.fileUpload,
-    required this.onUploadStateChanged, // 父级需要知道上传状态以显示 Loading
     required this.onUploadSuccess, // 父级需要知道上传成功以刷新用户数据
     required this.dailyProgressData,
     required this.isLoadingExpData,
@@ -39,8 +38,8 @@ class ProfileDesktopAccountCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final bool isSmallScreen = screenWidth < 1000; // 调整阈值以适应你的设计
+    final bool isSmallScreen =
+        !DeviceUtils.isDesktopScreen(context); // 调整阈值以适应你的设计
 
     final double avatarRadius = isSmallScreen ? 50.0 : 60.0; // 头像半径
     final double badgeSize = isSmallScreen ? 32.0 : 38.0; // 经验徽章大小
@@ -73,7 +72,6 @@ class ProfileDesktopAccountCard extends StatelessWidget {
                     user: user,
                     radius: avatarRadius, // 控制头像大小
                     fileUpload: fileUpload,
-                    onUploadStateChanged: onUploadStateChanged, // 将回调传递下去
                     onUploadSuccess: onUploadSuccess, // 将回调传递下去
                     iconBackgroundColor:
                         Theme.of(context).primaryColor, // 编辑图标背景色
@@ -109,16 +107,6 @@ class ProfileDesktopAccountCard extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis, // 超长时显示省略号
-              ),
-              SizedBox(height: 8),
-              AppText(
-                user.email,
-                style: TextStyle(
-                  color: Colors.grey.shade700,
-                  fontSize: isSmallScreen ? 14 : 16,
-                ),
-                textAlign: TextAlign.center,
-                overflow: TextOverflow.ellipsis,
               ),
 
               if (hasSignature) ...[

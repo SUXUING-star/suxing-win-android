@@ -2,7 +2,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:intl/intl.dart';
 
-
 // --- CheckInStats 模型 ---
 @immutable
 class CheckInStats {
@@ -169,18 +168,18 @@ class CheckInUser {
 
 // --- CheckInUserList 模型 (修改后) ---
 // 包含用户 ID 列表
-class CheckInUserList {
+class TodayCheckInList {
   final String date;
   final List<String> users; // <-- 修改这里：从 List<CheckInUser> 改为 List<String>
   final int count;
 
-  CheckInUserList({
+  TodayCheckInList({
     required this.date,
-    required this.users,    // <-- 修改这里
+    required this.users, // <-- 修改这里
     required this.count,
   });
 
-  factory CheckInUserList.fromJson(Map<String, dynamic> json) {
+  factory TodayCheckInList.fromJson(Map<String, dynamic> json) {
     // Helper function (can be defined outside or copied here)
     int safeInt(dynamic value, int defaultValue) {
       if (value == null) return defaultValue;
@@ -197,7 +196,8 @@ class CheckInUserList {
     }
 
     List<String> userIdList = []; // <-- 修改这里：初始化为空的 String 列表
-    if (json['users'] != null && json['users'] is List) { // <-- 修改这里：检查 'users' 字段
+    if (json['users'] != null && json['users'] is List) {
+      // <-- 修改这里：检查 'users' 字段
       userIdList = (json['users'] as List)
           .map((item) => item?.toString() ?? '') // 将每个元素转为 String
           .where((id) => id.isNotEmpty) // 过滤掉空的 ID
@@ -211,8 +211,7 @@ class CheckInUserList {
       // print("Warning: Received 'list' field instead of 'users' for check-in list. Assuming it contains user IDs.");
     }
 
-
-    return CheckInUserList(
+    return TodayCheckInList(
       date: json['date']?.toString() ??
           DateTime.now().toIso8601String().substring(0, 10),
       users: userIdList, // <-- 修改这里：使用解析出的 userIdList
@@ -221,8 +220,16 @@ class CheckInUserList {
     );
   }
 
-  factory CheckInUserList.empty() {
-    return CheckInUserList(
+  Map<String, dynamic> toJson() {
+    return {
+      'date': date,
+      'users': users,
+      'count': count,
+    };
+  }
+
+  factory TodayCheckInList.empty() {
+    return TodayCheckInList(
       date: DateTime.now().toIso8601String().substring(0, 10),
       users: [], // <-- 修改这里：空列表
       count: 0,

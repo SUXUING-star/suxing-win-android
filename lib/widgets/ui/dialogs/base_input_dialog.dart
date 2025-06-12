@@ -7,7 +7,6 @@ library;
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/widgets/ui/animation/animated_dialog.dart'; // 导入动画对话框工具
 import 'dart:async'; // 异步操作所需
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 导入功能文本按钮
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 
@@ -365,13 +364,11 @@ class _BaseInputDialogState<T> extends State<BaseInputDialog<T>> {
                   ),
                   const SizedBox(width: 8),
                 ],
-                FunctionalButton(
+                FunctionalTextButton(
                   label: widget.confirmButtonText, // 确认按钮
-                  foregroundColor: widget.confirmButtonTextColor,
                   onPressed: _handleConfirm,
                   isLoading: _isProcessing,
                   isEnabled: !_isProcessing,
-                  backgroundColor: widget.confirmButtonColor,
                   minWidth: widget.showCancelButton ? 88 : 120,
                 ),
               ],

@@ -202,7 +202,9 @@ class _CommentInputFieldState extends State<CommentInputField> {
       if (widget.loginPrompt != null) {
         // 存在自定义登录提示组件
         return Padding(
-            padding: widget.padding, child: widget.loginPrompt!); // 显示自定义登录提示
+          padding: widget.padding,
+          child: widget.loginPrompt!,
+        ); // 显示自定义登录提示
       }
       if (widget.isReply) {
         return const SizedBox.shrink(); // 回复模式下未登录时不显示

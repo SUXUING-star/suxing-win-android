@@ -188,7 +188,7 @@ class AppSnackBar {
 
   /// 核心显示方法：通过 Overlay 显示 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   /// [message]：显示的消息文本。
   /// [backgroundColor]：背景色。
   /// [iconData]：图标。
@@ -197,7 +197,6 @@ class AppSnackBar {
   /// [actionLabel]：操作按钮文本。
   /// [onActionPressed]：操作按钮点击回调。
   static void _showOverlaySnackBar(
-    // ✨ 去掉了 BuildContext context 参数
     String message,
     Color backgroundColor,
     IconData iconData, {
@@ -205,14 +204,10 @@ class AppSnackBar {
     double maxWidth = _defaultMaxWidth,
     String? actionLabel,
     VoidCallback? onActionPressed,
+    BuildContext? uiContext,
   }) {
-    // ✨ 使用新的方法获取最顶层的 context
-    late final BuildContext context;
-    try {
-      context = NavigationUtils.getTopmostContext();
-    } catch (e) {
-      return;
-    }
+    final BuildContext context =
+        uiContext ?? NavigationUtils.getTopmostContext();
 
     final overlayState = Overlay.of(context); // 获取 OverlayState
 
@@ -274,7 +269,7 @@ class AppSnackBar {
 
   /// 显示成功消息的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   /// [message]：消息文本。
   /// [maxWidth]：最大宽度。
   /// [duration]：持续时间。
@@ -286,6 +281,7 @@ class AppSnackBar {
     Duration duration = const Duration(seconds: 3),
     String? actionLabel,
     VoidCallback? onActionPressed,
+    BuildContext? uiContext,
   }) {
     _showOverlaySnackBar(
       message,
@@ -295,12 +291,13 @@ class AppSnackBar {
       duration: duration,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
+      uiContext: uiContext,
     );
   }
 
   /// 显示错误消息的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [uiContext]：Build 上下文。
   /// [message]：消息文本。
   /// [maxWidth]：最大宽度。
   /// [duration]：持续时间。
@@ -312,6 +309,7 @@ class AppSnackBar {
     Duration duration = const Duration(seconds: 4),
     String? actionLabel,
     VoidCallback? onActionPressed,
+    BuildContext? uiContext,
   }) {
     _showOverlaySnackBar(
       message,
@@ -321,12 +319,13 @@ class AppSnackBar {
       duration: duration,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
+      uiContext: uiContext,
     );
   }
 
   /// 显示警告消息的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [uiContext]：Build 上下文。
   /// [message]：消息文本。
   /// [maxWidth]：最大宽度。
   /// [duration]：持续时间。
@@ -338,6 +337,7 @@ class AppSnackBar {
     Duration duration = const Duration(seconds: 3),
     String? actionLabel,
     VoidCallback? onActionPressed,
+    BuildContext? uiContext,
   }) {
     _showOverlaySnackBar(
       message,
@@ -347,12 +347,13 @@ class AppSnackBar {
       duration: duration,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
+      uiContext: uiContext,
     );
   }
 
   /// 显示信息提示的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [uiContext]：Build 上下文。
   /// [message]：消息文本。
   /// [maxWidth]：最大宽度。
   /// [duration]：持续时间。
@@ -364,6 +365,7 @@ class AppSnackBar {
     Duration duration = const Duration(seconds: 3),
     String? actionLabel,
     VoidCallback? onActionPressed,
+    BuildContext? uiContext,
   }) {
     _showOverlaySnackBar(
       message,
@@ -373,6 +375,7 @@ class AppSnackBar {
       duration: duration,
       actionLabel: actionLabel,
       onActionPressed: onActionPressed,
+      uiContext: uiContext,
     );
   }
 
@@ -404,7 +407,7 @@ class AppSnackBar {
 
   /// 显示帖子删除成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showPostDeleteSuccessfullySnackBar() {
     showSuccess(
       "你成功删除帖子",
@@ -413,7 +416,7 @@ class AppSnackBar {
 
   /// 显示帖子编辑成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showPostEditSuccessfullySnackBar() {
     showSuccess(
       "你成功编辑帖子",
@@ -422,7 +425,7 @@ class AppSnackBar {
 
   /// 显示游戏删除成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showGameDeleteSuccessfullySnackBar() {
     showSuccess(
       "你成功删除游戏",
@@ -431,7 +434,7 @@ class AppSnackBar {
 
   /// 显示游戏编辑成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showGameEditSuccessfullySnackBar() {
     showSuccess(
       "你成功编辑游戏",
@@ -440,7 +443,7 @@ class AppSnackBar {
 
   /// 显示评论编辑成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showCommentEditSuccessfullySnackBar() {
     showSuccess(
       "你成功编辑评论",
@@ -449,7 +452,7 @@ class AppSnackBar {
 
   /// 显示评论添加成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showCommentAddSuccessfullySnackBar() {
     showSuccess(
       "你成功添加评论",
@@ -458,7 +461,7 @@ class AppSnackBar {
 
   /// 显示评论删除成功的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showCommentDeleteSuccessfullySnackBar() {
     showSuccess(
       "你成功删除评论",
@@ -467,7 +470,7 @@ class AppSnackBar {
 
   /// 显示权限不足的 SnackBar。
   ///
-  /// [context]：Build 上下文。
+  /// [dialogContext]：Build 上下文。
   static void showPermissionDenySnackBar() {
     showWarning(
       "你没有权限操作",

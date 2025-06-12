@@ -22,6 +22,7 @@ class PostLeftPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 整体容器样式向 GameLeftPanel 看齐
+    final primaryColor = Theme.of(context).primaryColor;
     return Container(
       width: panelWidth,
       margin: const EdgeInsets.all(8),
@@ -41,10 +42,9 @@ class PostLeftPanel extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- 骚气的标题栏 ---
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: Theme.of(context).primaryColor.withSafeOpacity(0.85),
+              color: primaryColor.withSafeOpacity(0.85),
               child: const Row(
                 children: [
                   Icon(Icons.label_important_outline,

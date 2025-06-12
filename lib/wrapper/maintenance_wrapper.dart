@@ -182,7 +182,7 @@ class _MaintenanceWrapperState extends State<MaintenanceWrapper> {
                       // 渐变背景
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
-                      colors: [...DesktopFrameLayout.desktopBarColor],
+                      colors: [...GlobalConstants.desktopBarColor],
                     ),
                   ),
                 ),

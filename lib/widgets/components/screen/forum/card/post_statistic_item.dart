@@ -1,13 +1,13 @@
 // lib/widgets/components/screen/forum/card/post_statistic_item.dart
 import 'package:flutter/material.dart';
-class StatisticItem extends StatelessWidget {
+class PostStatisticItem extends StatelessWidget {
   final IconData icon;
   final String count;
   final Color color;
   final bool isSmallScreen;
   final String? label;
 
-  const StatisticItem({
+  const PostStatisticItem({
     super.key,
     required this.icon,
     required this.count,

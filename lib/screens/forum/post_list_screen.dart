@@ -15,7 +15,7 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入�
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart'; // 导入动画列表视图组件
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart'; // 导入动画瀑布流网格视图组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
@@ -32,7 +32,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart'; // 导入基础帖子卡片
-import 'package:suxingchahui/widgets/components/screen/forum/tag_filter.dart'; // 导入标签筛选组件
+import 'package:suxingchahui/widgets/components/screen/forum/post/tag/mobile_tag_filter.dart'; // 导入标签筛选组件
 import 'package:suxingchahui/widgets/components/screen/forum/panel/post_right_panel.dart'; // 导入帖子右侧面板
 import 'package:suxingchahui/widgets/components/screen/forum/panel/post_left_panel.dart'; // 导入帖子左侧面板
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
@@ -86,6 +86,7 @@ class _PostListScreenState extends State<PostListScreen>
   String? _errorMessage; // 错误消息
 
   late double _screenWidth;
+  late bool _isDesktop;
 
   int _currentPage = 1; // 当前页码
   int _totalPages = 1; // 总页数
@@ -170,6 +171,7 @@ class _PostListScreenState extends State<PostListScreen>
         _selectedTag = null; // 否则设为 null
       }
       _screenWidth = DeviceUtils.getScreenWidth(context);
+      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenWidth);
       _hasInitializedDependencies = true; // 标记依赖已初始化
     }
   }
@@ -833,15 +835,14 @@ class _PostListScreenState extends State<PostListScreen>
   /// 构建屏幕 UI。
   @override
   Widget build(BuildContext context) {
-    final isDesktop = DeviceUtils.isDesktopInThisWidth(_screenWidth);
     final bool canShowLeftPanelBasedOnWidth =
         _screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
     final bool canShowRightPanelBasedOnWidth =
         _screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
-    final bool actuallyShowLeftPanel = isDesktop &&
+    final bool actuallyShowLeftPanel = _isDesktop &&
         _showLeftPanel &&
         canShowLeftPanelBasedOnWidth; // 实际是否显示左侧面板
-    final bool actuallyShowRightPanel = isDesktop &&
+    final bool actuallyShowRightPanel = _isDesktop &&
         _showRightPanel &&
         canShowRightPanelBasedOnWidth; // 实际是否显示右侧面板
     final Color secondaryColor =
@@ -858,115 +859,138 @@ class _PostListScreenState extends State<PostListScreen>
       key: Key(
           'forum_screen_visibility_${_selectedTag}_$_currentPage'), // 可见性检测器 Key
       onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
-      child: Scaffold(
-        appBar: CustomAppBar(
-          // 自定义 AppBar
-          title: '论坛', // 标题
-          actions: [
-            // 动作按钮
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0), // 水平内边距
-              child: FunctionalIconButton(
-                icon: AppBarAction.searchForumPost.icon, // 搜索图标
-                tooltip: AppBarAction.searchForumPost.defaultTooltip!, // 提示
-                iconColor:
-                    AppBarAction.searchForumPost.defaultIconColor, // 图标颜色
-                buttonBackgroundColor:
-                    AppBarAction.searchForumPost.defaultBgColor, // 背景色
-                onPressed: () => NavigationUtils.pushNamed(
-                    context, AppRoutes.searchPost), // 点击导航到搜索帖子页面
-                iconButtonPadding: EdgeInsets.zero, // 内边距
-              ),
-            ),
-            if (isDesktop) // 桌面平台显示左侧面板切换按钮
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: FunctionalIconButton(
-                  icon: AppBarAction.toggleLeftPanel.icon, // 图标
-                  buttonBackgroundColor:
-                      AppBarAction.toggleLeftPanel.defaultBgColor, // 背景色
-                  iconColor: leftPanelIconColor, // 图标颜色
-                  tooltip: _showLeftPanel // 提示
-                      ? (canShowLeftPanelBasedOnWidth ? '隐藏分类' : '屏幕宽度不足')
-                      : (canShowLeftPanelBasedOnWidth ? '显示分类' : '屏幕宽度不足'),
-                  onPressed: canShowLeftPanelBasedOnWidth // 点击回调
-                      ? _toggleLeftPanel
-                      : null,
-                  iconButtonPadding: EdgeInsets.zero, // 内边距
-                ),
-              ),
-            if (isDesktop) // 桌面平台显示右侧面板切换按钮
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4.0),
-                child: FunctionalIconButton(
-                  icon: AppBarAction.toggleRightPanel.icon, // 图标
-                  buttonBackgroundColor:
-                      AppBarAction.toggleRightPanel.defaultBgColor, // 背景色
-                  iconColor: rightPanelIconColor, // 图标颜色
-                  tooltip: _showRightPanel // 提示
-                      ? (canShowRightPanelBasedOnWidth ? '隐藏统计' : '屏幕宽度不足')
-                      : (canShowRightPanelBasedOnWidth ? '显示统计' : '屏幕宽度不足'),
-                  onPressed: canShowRightPanelBasedOnWidth // 点击回调
-                      ? _toggleRightPanel
-                      : null,
-                  iconButtonPadding: EdgeInsets.zero, // 内边距
-                ),
-              ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0), // 水平内边距
-              child: FunctionalIconButton(
-                icon: AppBarAction.refreshForum.icon, // 刷新图标
-                tooltip: AppBarAction.refreshForum.defaultTooltip!, // 提示
-                iconColor: AppBarAction.refreshForum.defaultIconColor, // 图标颜色
-                buttonBackgroundColor:
-                    AppBarAction.refreshForum.defaultBgColor, // 背景色
-                onPressed: _isLoadingData ? null : _refreshData, // 点击回调
-                iconButtonPadding: EdgeInsets.zero, // 内边距
-              ),
-            ),
+      child: LazyLayoutBuilder(
+        windowStateProvider: widget.windowStateProvider,
+        builder: (context, constraints) {
+          final screenWidth = constraints.maxWidth;
+          _screenWidth = screenWidth;
+          final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+          _isDesktop = isDesktop;
 
-            widget.authProvider.isLoggedIn // 登录时显示创建帖子按钮
-                ? Padding(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 4.0), // 水平内边距
+          return Scaffold(
+            appBar: CustomAppBar(
+              // 自定义 AppBar
+              title: '论坛', // 标题
+              actions: [
+                // 动作按钮
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0), // 水平内边距
+                  child: FunctionalIconButton(
+                    icon: AppBarAction.searchForumPost.icon, // 搜索图标
+                    tooltip: AppBarAction.searchForumPost.defaultTooltip!, // 提示
+                    iconColor:
+                        AppBarAction.searchForumPost.defaultIconColor, // 图标颜色
+                    buttonBackgroundColor:
+                        AppBarAction.searchForumPost.defaultBgColor, // 背景色
+                    onPressed: () => NavigationUtils.pushNamed(
+                        context, AppRoutes.searchPost), // 点击导航到搜索帖子页面
+                    iconButtonPadding: EdgeInsets.zero, // 内边距
+                  ),
+                ),
+                if (_isDesktop) // 桌面平台显示左侧面板切换按钮
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
                     child: FunctionalIconButton(
-                      icon: AppBarAction.createForumPost.icon, // 创建帖子图标
-                      tooltip:
-                          AppBarAction.createForumPost.defaultTooltip!, // 提示
-                      iconColor:
-                          AppBarAction.createForumPost.defaultIconColor, // 图标颜色
+                      icon: AppBarAction.toggleLeftPanel.icon, // 图标
+                      buttonBackgroundColor: Colors.white,
+                      onPressed: () => _refreshData(needCheck: true),
+                    ),
+                  ),
+
+                if (_isDesktop) // 桌面平台显示左侧面板切换按钮
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FunctionalIconButton(
+                      icon: AppBarAction.toggleLeftPanel.icon, // 图标
                       buttonBackgroundColor:
-                          AppBarAction.createForumPost.defaultBgColor, // 背景色
-                      onPressed: _navigateToCreatePost, // 点击导航到创建帖子页面
+                          AppBarAction.toggleLeftPanel.defaultBgColor, // 背景色
+                      iconColor: leftPanelIconColor, // 图标颜色
+                      tooltip: _showLeftPanel // 提示
+                          ? (canShowLeftPanelBasedOnWidth ? '隐藏分类' : '屏幕宽度不足')
+                          : (canShowLeftPanelBasedOnWidth ? '显示分类' : '屏幕宽度不足'),
+                      onPressed: canShowLeftPanelBasedOnWidth // 点击回调
+                          ? _toggleLeftPanel
+                          : null,
                       iconButtonPadding: EdgeInsets.zero, // 内边距
                     ),
-                  )
-                : const SizedBox.shrink() // 未登录时隐藏
-          ],
-        ),
-        body: Column(
-          children: [
-            if (!isDesktop) // 移动端显示标签筛选
-              TagFilter(
-                tags: PostTagsUtils.tagsToStringList(_tags), // 标签列表
-                selectedTag: _selectedTag, // 选中标签
-                onTagSelected: _onTagSelected, // 点击标签回调
-              ),
-            Expanded(
-              child: _buildBodyContent(
-                  actuallyShowLeftPanel, actuallyShowRightPanel), // 主体内容
+                  ),
+                if (_isDesktop) // 桌面平台显示右侧面板切换按钮
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4.0),
+                    child: FunctionalIconButton(
+                      icon: AppBarAction.toggleRightPanel.icon, // 图标
+                      buttonBackgroundColor:
+                          AppBarAction.toggleRightPanel.defaultBgColor, // 背景色
+                      iconColor: rightPanelIconColor, // 图标颜色
+                      tooltip: _showRightPanel // 提示
+                          ? (canShowRightPanelBasedOnWidth ? '隐藏统计' : '屏幕宽度不足')
+                          : (canShowRightPanelBasedOnWidth ? '显示统计' : '屏幕宽度不足'),
+                      onPressed: canShowRightPanelBasedOnWidth // 点击回调
+                          ? _toggleRightPanel
+                          : null,
+                      iconButtonPadding: EdgeInsets.zero, // 内边距
+                    ),
+                  ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4.0), // 水平内边距
+                  child: FunctionalIconButton(
+                    icon: AppBarAction.refreshForum.icon, // 刷新图标
+                    tooltip: AppBarAction.refreshForum.defaultTooltip!, // 提示
+                    iconColor:
+                        AppBarAction.refreshForum.defaultIconColor, // 图标颜色
+                    buttonBackgroundColor:
+                        AppBarAction.refreshForum.defaultBgColor, // 背景色
+                    onPressed: _isLoadingData ? null : _refreshData, // 点击回调
+                    iconButtonPadding: EdgeInsets.zero, // 内边距
+                  ),
+                ),
+
+                widget.authProvider.isLoggedIn // 登录时显示创建帖子按钮
+                    ? Padding(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 4.0), // 水平内边距
+                        child: FunctionalIconButton(
+                          icon: AppBarAction.createForumPost.icon, // 创建帖子图标
+                          tooltip: AppBarAction
+                              .createForumPost.defaultTooltip!, // 提示
+                          iconColor: AppBarAction
+                              .createForumPost.defaultIconColor, // 图标颜色
+                          buttonBackgroundColor: AppBarAction
+                              .createForumPost.defaultBgColor, // 背景色
+                          onPressed: _navigateToCreatePost, // 点击导航到创建帖子页面
+                          iconButtonPadding: EdgeInsets.zero, // 内边距
+                        ),
+                      )
+                    : const SizedBox.shrink() // 未登录时隐藏
+              ],
             ),
-            if (!_isLoadingData && _posts != null && _totalPages > 1) // 显示分页控件
-              PaginationControls(
-                currentPage: _currentPage, // 当前页码
-                totalPages: _totalPages, // 总页数
-                isLoading: false, // 是否加载中
-                onPreviousPage: _goToPreviousPage, // 上一页回调
-                onNextPage: _goToNextPage, // 下一页回调
-                onPageSelected: _goToPage, // 页码选择回调
-              ),
-          ],
-        ),
+            body: Column(
+              children: [
+                if (!_isDesktop) // 移动端显示标签筛选
+                  MobileTagFilter(
+                    tags: PostTagsUtils.tagsToStringList(_tags), // 标签列表
+                    selectedTag: _selectedTag, // 选中标签
+                    onTagSelected: _onTagSelected, // 点击标签回调
+                  ),
+                Expanded(
+                  child: _buildBodyContent(
+                      actuallyShowLeftPanel, actuallyShowRightPanel), // 主体内容
+                ),
+                if (!_isLoadingData &&
+                    _posts != null &&
+                    _totalPages > 1) // 显示分页控件
+                  PaginationControls(
+                    currentPage: _currentPage, // 当前页码
+                    totalPages: _totalPages, // 总页数
+                    isLoading: false, // 是否加载中
+                    onPreviousPage: _goToPreviousPage, // 上一页回调
+                    onNextPage: _goToNextPage, // 下一页回调
+                    onPageSelected: _goToPage, // 页码选择回调
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }
@@ -1031,21 +1055,12 @@ class _PostListScreenState extends State<PostListScreen>
     bool actuallyShowLeftPanel = false,
     bool actuallyShowRightPanel = false,
   }) {
-    return LazyLayoutBuilder(
-      windowStateProvider: widget.windowStateProvider,
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        _screenWidth = screenWidth;
-
-        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-        return isDesktop
-            ? _buildDesktopLayout(
-                actuallyShowLeftPanel,
-                actuallyShowRightPanel,
-              ) // 桌面布局
-            : _buildMobileLayout(); // 移动端布局
-      },
-    );
+    return _isDesktop
+        ? _buildDesktopLayout(
+            actuallyShowLeftPanel,
+            actuallyShowRightPanel,
+          ) // 桌面布局
+        : _buildMobileLayout(); // 移动端布局
   }
 
   /// 构建桌面布局。
@@ -1099,15 +1114,22 @@ class _PostListScreenState extends State<PostListScreen>
 
   /// 构建移动端帖子列表。
   ///
-  /// [isDesktop]：是否为桌面。
   Widget _buildMobileLayout() {
     if (_posts == null) return const SizedBox.shrink(); // 帖子列表为空时返回空组件
+
+    final cardsPerRow = DeviceUtils.calculatePostCardsPerRow(context,
+        directAvailableWidth: _screenWidth);
+    final cardRatio = DeviceUtils.calculatePostCardRatio(context,
+        directAvailableWidth: _screenWidth, contentMaxLines: 2);
 
     return RefreshIndicator(
       key: ValueKey(_selectedTag), // 唯一键
       onRefresh: _refreshData, // 下拉刷新回调
-      child: AnimatedListView<Post>(
+      child: AnimatedContentGrid<Post>(
         items: _posts!, // 帖子列表
+        crossAxisCount: cardsPerRow,
+        childAspectRatio: cardRatio,
+        crossAxisSpacing: 8,
         itemBuilder: (context, index, post) {
           return GestureDetector(
             onTap: () => _navigateToPostDetail(post), // 点击导航到帖子详情
@@ -1133,7 +1155,7 @@ class _PostListScreenState extends State<PostListScreen>
     return BasePostCard(
       currentUser: widget.authProvider.currentUser, // 当前用户
       post: post, // 帖子数据
-      screenWidth: _screenWidth,
+      availableWidth: _screenWidth,
       showPinnedStatus: true, // 显示置顶状态
       infoProvider: widget.infoProvider, // 用户信息 Provider
       followService: widget.followService, // 关注服务

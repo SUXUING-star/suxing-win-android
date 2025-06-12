@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/activity_detail_content.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +15,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 引入 AuthP
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
@@ -25,6 +28,7 @@ class ActivityDetailScreen extends StatefulWidget {
   final UserFollowService followService;
   final InputStateService inputStateService;
   final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
 
   const ActivityDetailScreen({
     super.key,
@@ -34,6 +38,7 @@ class ActivityDetailScreen extends StatefulWidget {
     required this.authProvider,
     required this.inputStateService,
     required this.infoProvider,
+    required this.windowStateProvider,
     this.activity,
   });
 
@@ -425,22 +430,30 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       // 传递编辑和删除的回调给 ActivityDetailContent
       return RefreshIndicator(
         onRefresh: _refreshActivity,
-        child: ActivityDetailContent(
-          inputStateService: widget.inputStateService,
-          key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
-          currentUser: widget.authProvider.currentUser,
-          userInfoProvider: widget.infoProvider,
-          userFollowService: widget.followService,
-          activity: _activity,
-          comments: _activity.comments,
-          isLoadingComments: _isLoadingComments,
-          scrollController: _scrollController,
-          onAddComment: _addComment,
-          onCommentDeleted: _handleCommentDeleted,
-          onCommentLikeToggled: _handleCommentLikeToggled,
-          onActivityUpdated: _handleActivityUpdated, // 传递更新回调
-          onEditActivity: _handleEditActivity, // 传递编辑回调
-          onDeleteActivity: _handleDeleteActivity, // 传递删除回调
+        child: LazyLayoutBuilder(
+          windowStateProvider: widget.windowStateProvider,
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+            return ActivityDetailContent(
+              inputStateService: widget.inputStateService,
+              key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
+              currentUser: widget.authProvider.currentUser,
+              userInfoProvider: widget.infoProvider,
+              userFollowService: widget.followService,
+              activity: _activity,
+              isDesktopLayout: isDesktopLayout,
+              comments: _activity.comments,
+              isLoadingComments: _isLoadingComments,
+              scrollController: _scrollController,
+              onAddComment: _addComment,
+              onCommentDeleted: _handleCommentDeleted,
+              onCommentLikeToggled: _handleCommentLikeToggled,
+              onActivityUpdated: _handleActivityUpdated, // 传递更新回调
+              onEditActivity: _handleEditActivity, // 传递编辑回调
+              onDeleteActivity: _handleDeleteActivity, // 传递删除回调
+            );
+          },
         ),
       );
     }

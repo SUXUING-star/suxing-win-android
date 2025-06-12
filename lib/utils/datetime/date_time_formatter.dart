@@ -2,6 +2,7 @@
 
 /// 该文件定义了 DateTimeFormatter 工具类，提供日期时间格式化功能。
 /// 该类用于将日期时间转换为特定时区并按不同格式输出。
+library;
 
 import 'package:intl/intl.dart'; // 导入 intl 包，用于自定义日期时间格式化
 

@@ -3,15 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/post_grid_view.dart';
-import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 enum StatType {
   views,
@@ -34,8 +31,9 @@ class MyPostsLayout extends StatelessWidget {
   final User? currentUser;
   final UserInfoProvider infoProvider;
   final UserFollowService followService;
-  final WindowStateProvider windowStateProvider;
   final int totalPostCount;
+  final bool isDesktopLayout;
+  final double screenWidth;
 
   static const int desktopStatsFlex = 1;
   static const int desktopGameListFlex = 4;
@@ -57,9 +55,10 @@ class MyPostsLayout extends StatelessWidget {
     required this.onRetry,
     required this.currentUser,
     required this.infoProvider,
-    required this.windowStateProvider,
     required this.followService,
     required this.totalPostCount,
+    required this.isDesktopLayout,
+    required this.screenWidth,
   });
 
   @override
@@ -86,22 +85,13 @@ class MyPostsLayout extends StatelessWidget {
       );
     }
 
-    return LazyLayoutBuilder(
-      windowStateProvider: windowStateProvider,
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
-        return isDesktopLayout
-            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
-            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
-      },
-    );
+    return isDesktopLayout
+        ? _buildDesktopLayout(context)
+        : _buildMobileLayout(context);
   }
 
   Widget _buildDesktopLayout(
     BuildContext context,
-    bool isDesktopLayout,
-    double screenWidth,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -110,13 +100,13 @@ class MyPostsLayout extends StatelessWidget {
           flex: 1,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
-            child: _buildMyPostsStatistics(context, isDesktopLayout),
+            child: _buildMyPostsStatistics(context),
           ),
         ),
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
           flex: 4,
-          child: _buildPostsContent(context, isDesktopLayout, screenWidth),
+          child: _buildPostsContent(context),
         ),
       ],
     );
@@ -124,8 +114,6 @@ class MyPostsLayout extends StatelessWidget {
 
   Widget _buildMobileLayout(
     BuildContext context,
-    bool isDesktopLayout,
-    double screenWidth,
   ) {
     return Column(
       children: [
@@ -138,11 +126,10 @@ class MyPostsLayout extends StatelessWidget {
           ),
           child: _buildMyPostsStatistics(
             context,
-            isDesktopLayout,
           ),
         ),
         Expanded(
-          child: _buildPostsContent(context, isDesktopLayout, screenWidth),
+          child: _buildPostsContent(context),
         ),
       ],
     );
@@ -150,9 +137,8 @@ class MyPostsLayout extends StatelessWidget {
 
   Widget _buildMyPostsStatistics(
     BuildContext context,
-    bool isDesktop,
   ) {
-    if (isDesktop) {
+    if (isDesktopLayout) {
       final cardPadding = const EdgeInsets.all(16);
       final titleStyle = TextStyle(
         fontSize: 18,
@@ -365,8 +351,6 @@ class MyPostsLayout extends StatelessWidget {
 
   Widget _buildPostsContent(
     BuildContext context,
-    bool isDesktopLayout,
-    double screenWidth,
   ) {
     double availableWidth;
     if (isDesktopLayout) {
@@ -374,14 +358,12 @@ class MyPostsLayout extends StatelessWidget {
           desktopGameListFlex /
           (desktopStatsFlex + desktopGameListFlex);
     } else {
-      availableWidth =
-          screenWidth;
+      availableWidth = screenWidth;
     }
     return PostGridView(
       posts: posts,
-      screenWidth: availableWidth,
+      availableWidth: availableWidth,
       isDesktopLayout: isDesktopLayout,
-      windowStateProvider: windowStateProvider,
       currentUser: currentUser,
       infoProvider: infoProvider,
       followService: followService,

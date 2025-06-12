@@ -126,6 +126,7 @@ class GameImagesField extends StatelessWidget {
                     width: imageWidth,
                     height: imageHeight,
                     fit: BoxFit.cover,
+                    memCacheWidth: 400,
                   );
                 } else {
                   imageWidget = Container(

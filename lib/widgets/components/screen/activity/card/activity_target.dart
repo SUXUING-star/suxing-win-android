@@ -77,6 +77,8 @@ class ActivityTarget extends StatelessWidget {
     final title = activity.gameTitle ?? '未知游戏'; // 游戏标题
     final coverImage = activity.gameCoverImage; // 游戏封面图片 URL
     final double imageSize = 60 * cardHeight; // 图片尺寸
+    final int memCacheWidth = 320;
+    final int memCacheHeight = 200;
     final double borderRadiusValue = 4 * math.sqrt(cardHeight); // 边框圆角值
 
     return Container(
@@ -95,6 +97,8 @@ class ActivityTarget extends StatelessWidget {
                   imageUrl: coverImage, // 图片 URL
                   width: imageSize, // 图片宽度
                   height: imageSize, // 图片高度
+                  memCacheHeight: memCacheHeight,
+                  memCacheWidth: memCacheWidth,
                   fit: BoxFit.cover, // 图片填充模式
                   borderRadius:
                       BorderRadius.circular(borderRadiusValue), // 图片圆角

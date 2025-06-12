@@ -83,28 +83,29 @@ class _LatestGamesScreenState extends State<LatestGamesScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final User? currentUser = authSnapshot.data;
-          return CommonGameListScreen(
-            key: ValueKey(
-                'latest_games_${_latestGames.length}_$_isLoading$_error'),
-            title: '最新发布',
-            currentUser: currentUser,
-            games: _latestGames,
-            isLoading: _isLoading,
-            error: _error,
-            onRefreshTriggered: _handleRefresh,
-            windowStateProvider: widget.windowStateProvider,
-            onDeleteGameAction: null,
-            emptyStateMessage: '暂无最新游戏',
-            emptyStateIcon:
-                Icon(Icons.new_releases, size: 48, color: Colors.grey),
-            useScaffold: true,
-            showAddButton: false,
-            showSortOptions: false,
-          );
-        });
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final User? currentUser = authSnapshot.data;
+        return CommonGameListScreen(
+          key: ValueKey(
+              'latest_games_${_latestGames.length}_$_isLoading$_error'),
+          title: '最新发布',
+          currentUser: currentUser,
+          games: _latestGames,
+          isLoading: _isLoading,
+          error: _error,
+          onRefreshTriggered: _handleRefresh,
+          windowStateProvider: widget.windowStateProvider,
+          onDeleteGameAction: null,
+          emptyStateMessage: '暂无最新游戏',
+          emptyStateIcon:
+              Icon(Icons.new_releases, size: 48, color: Colors.grey),
+          useScaffold: true,
+          showAddButton: false,
+          showSortOptions: false,
+        );
+      },
+    );
   }
 }

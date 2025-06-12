@@ -12,7 +12,6 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:visibility_detector/visibility_detector.dart'; // 可见性检测库
 import 'package:flutter_cache_manager/flutter_cache_manager.dart'; // 缓存管理库
 import 'package:provider/provider.dart'; // Provider 状态管理库
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展工具
 
 /// `SafeCachedImage` 类：一个用于安全显示网络缓存图片的 StatefulWidget。
 ///

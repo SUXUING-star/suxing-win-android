@@ -30,7 +30,7 @@ class PostStatisticsRow extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         // Reply count
-        StatisticItem(
+        PostStatisticItem(
           icon: Icons.chat_bubble_outline,
           count: replyCount.toString(),
           color: replyColor ?? Colors.green[400]!,
@@ -41,7 +41,7 @@ class PostStatisticsRow extends StatelessWidget {
         SizedBox(width: isSmallScreen ? 4 : 8),
 
         // Like count
-        StatisticItem(
+        PostStatisticItem(
           icon: Icons.thumb_up_outlined,
           count: likeCount.toString(),
           color: likeColor ?? Colors.pink[300]!,
@@ -52,7 +52,7 @@ class PostStatisticsRow extends StatelessWidget {
         SizedBox(width: isSmallScreen ? 4 : 8),
 
         // Favorite count
-        StatisticItem(
+        PostStatisticItem(
           icon: Icons.star_border,
           count: favoriteCount.toString(),
           color: favoriteColor ?? Colors.amber[400]!,

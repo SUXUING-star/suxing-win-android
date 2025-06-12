@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 导入
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart'; // 导入游戏分类标签视图
 import 'game_stats_widget.dart'; // 导入游戏统计组件
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart'; // 导入游戏标签列表
-import 'game_collection_dialog.dart'; // 导入游戏收藏对话框
+import 'game_card_collection_stats_dialog.dart'; // 导入游戏收藏对话框
 
 /// `BaseGameCard` 类：基础游戏卡片组件。
 ///
@@ -105,30 +105,34 @@ class BaseGameCard extends StatelessWidget {
   /// [text]：徽章文本。
   /// [color]：徽章背景颜色。
   Widget _buildCornerBadge(String text, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color,
-        // 这个 borderRadius 是关键，只给右上和左下角设置圆角，制造折角感
-        borderRadius: const BorderRadius.only(
-          topRight: Radius.circular(12),
-          bottomLeft: Radius.circular(8),
-        ),
-        // 阴影也给你加上，更有实体感
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withSafeOpacity(0.3), // 阴影加深一点
-            blurRadius: 4,
-            offset: const Offset(-2, 2), // 往左下偏移，模拟光照
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
+
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        decoration: BoxDecoration(
+          color: color.withSafeOpacity(0.8),
+          // 这个 borderRadius 是关键，只给右上和左下角设置圆角，制造折角感
+          borderRadius: const BorderRadius.only(
+            topRight: Radius.circular(12),
+            bottomLeft: Radius.circular(8),
           ),
-        ],
-      ),
-      child: Text(
-        text,
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 11,
-          fontWeight: FontWeight.w500,
+          // 阴影也给你加上，更有实体感
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withSafeOpacity(0.2), // 阴影加深一点
+              blurRadius: 4,
+              offset: const Offset(-1, 1), // 往左下偏移，模拟光照
+            ),
+          ],
+        ),
+        child: Text(
+          text,
+          style: const TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
         ),
       ),
     );
@@ -142,8 +146,9 @@ class BaseGameCard extends StatelessWidget {
     return Card(
       elevation: 2, // 阴影
       clipBehavior: Clip.antiAlias, // 裁剪行为
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)), // 形状
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+      ), // 形状
       child: InkWell(
         onTap: () => _onCardTap(context), // 点击卡片跳转详情
         child: IntrinsicHeight(
@@ -172,8 +177,9 @@ class BaseGameCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias, // 裁剪行为
       elevation: 3, // 阴影
-      shape:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)), // 形状
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+      ), // 形状
       child: InkWell(
         onTap: () => _onCardTap(context), // 点击卡片跳转详情
         child: Column(
@@ -187,7 +193,7 @@ class BaseGameCard extends StatelessWidget {
                   SafeCachedImage(
                     imageUrl: game.coverImage, // 封面图 URL
                     fit: BoxFit.cover, // 填充模式
-                    memCacheWidth: DeviceUtils.isDesktop ? 480 : 280, // 内存缓存宽度
+                    memCacheWidth: DeviceUtils.isDesktop ? 320 : 240, // 内存缓存宽度
                   ),
                   Positioned(
                     top: 0, // 顶部偏移
@@ -201,9 +207,10 @@ class BaseGameCard extends StatelessWidget {
                     ),
                   ),
                   Positioned(
-                      top: 4,
-                      right: 4,
-                      child: _buildPopupMenu(context)), // 右上角弹出菜单
+                    top: 4,
+                    right: 4,
+                    child: _buildPopupMenu(context),
+                  ), // 右上角弹出菜单
                   Positioned(
                     bottom: 8, // 底部偏移
                     right: 8, // 右侧偏移
@@ -234,21 +241,11 @@ class BaseGameCard extends StatelessWidget {
     if (showNewBadge && _isGameNew()) {
       isGridItem
           ? rows.add(_buildCornerBadge('新发布', Colors.red.shade700))
-          : rows.add(
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                child: _buildCornerBadge('更新', Colors.red.shade700), // 徽章
-              ),
-            );
+          : rows.add(_buildCornerBadge('更新', Colors.red.shade700));
     } else if (showUpdatedBadge && _isGameRecentlyUpdated()) {
       isGridItem
           ? rows.add(_buildCornerBadge('最近更新', Colors.blue.shade700))
-          : rows.add(
-              Padding(
-                padding: const EdgeInsets.only(bottom: 4.0), // 底部内边距
-                child: _buildCornerBadge('更新', Colors.blue.shade700), // 徽章
-              ),
-            );
+          : rows.add(_buildCornerBadge('更新', Colors.blue.shade700));
     }
     rows.add(GameCategoryTagView(
       category: game.category,
@@ -266,7 +263,22 @@ class BaseGameCard extends StatelessWidget {
       onTap: () {
         // 点击手势
         if (showCollectionStats && game.totalCollections > 0) {
-          showGameCollectionDialog(context, game); // 显示游戏收藏对话框
+          showGeneralDialog<bool>(
+            context: context,
+            barrierDismissible: true, //  允许点击外部关闭
+            barrierLabel:
+                MaterialLocalizations.of(context).modalBarrierDismissLabel,
+            barrierColor: Colors.black54, // 半透明遮罩层
+            transitionDuration: const Duration(
+              milliseconds: 350,
+            ), // 动画时长，和 CustomConfirmDialog 一致
+
+            pageBuilder: (BuildContext buildContext,
+                Animation<double> animation,
+                Animation<double> secondaryAnimation) {
+              return GameCardCollectionStatsDialog(game: game);
+            },
+          );
         }
       },
       child: GameStatsWidget(
@@ -281,7 +293,7 @@ class BaseGameCard extends StatelessWidget {
   ///
   ///  构建标签
   Widget _buildGameTagsWidget() {
-    return GameTagList(
+    return GameTagsRow(
       tags: game.tags,
       maxTags: maxTags,
       isCompact: !isGridItem,

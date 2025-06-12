@@ -615,18 +615,20 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
           children: [
             Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 8, vertical: 4), // 内边距
-                  decoration: BoxDecoration(
-                      color: groupColor.withSafeOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12)), // 装饰
-                  child: Text(
-                      DateTimeFormatter.formatTimeAgo(
-                          latestActivity.createTime), // 格式化时间
-                      style: TextStyle(
-                          fontSize: 12,
-                          color: groupColor,
-                          fontWeight: FontWeight.bold))),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 8, vertical: 4), // 内边距
+                decoration: BoxDecoration(
+                    color: groupColor.withSafeOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12)), // 装饰
+                child: Text(
+                  DateTimeFormatter.formatTimeAgo(
+                      latestActivity.createTime), // 格式化时间
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: groupColor,
+                      fontWeight: FontWeight.bold),
+                ),
+              ),
               const SizedBox(width: 12), // 间距
               Expanded(
                   child: Column(
@@ -650,22 +652,27 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
             ]),
             const SizedBox(height: 12), // 间距
             Center(
-                child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 8, horizontal: 16), // 内边距
-                    decoration: BoxDecoration(
-                        color: groupColor.withSafeOpacity(0.1),
-                        borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                            color: groupColor.withSafeOpacity(0.3))), // 装饰
-                    child: Row(mainAxisSize: MainAxisSize.min, children: [
-                      Text('查看全部${activities.length}条动态', // 文本
-                          style: TextStyle(
-                              color: groupColor, fontWeight: FontWeight.bold)),
-                      const SizedBox(width: 4), // 间距
-                      Icon(Icons.keyboard_arrow_down,
-                          size: 16, color: groupColor) // 图标
-                    ]))),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 8, horizontal: 16), // 内边距
+                decoration: BoxDecoration(
+                    color: groupColor.withSafeOpacity(0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                        color: groupColor.withSafeOpacity(0.3))), // 装饰
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('查看全部${activities.length}条动态', // 文本
+                        style: TextStyle(
+                            color: groupColor, fontWeight: FontWeight.bold)),
+                    const SizedBox(width: 4), // 间距
+                    Icon(Icons.keyboard_arrow_down,
+                        size: 16, color: groupColor) // 图标
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

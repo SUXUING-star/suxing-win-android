@@ -4,10 +4,17 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/user/user_with_ban_status.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
+import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
@@ -18,12 +25,18 @@ class UserManagement extends StatefulWidget {
   final User? currentUser;
   final UserService userService;
   final InputStateService inputStateService;
+  final UserFollowService followService;
+  final UserInfoProvider infoProvider;
+  final WindowStateProvider windowStateProvider;
 
   const UserManagement({
     super.key,
     required this.currentUser,
     required this.userService,
     required this.inputStateService,
+    required this.followService,
+    required this.infoProvider,
+    required this.windowStateProvider,
   });
 
   @override
@@ -41,14 +54,12 @@ class _UserManagementState extends State<UserManagement> {
   bool _operationLoading = false;
 
   late final UserBanService _banService;
-  late final UserService _userService;
   User? _currentUser;
   bool _dependenciesInitialized = false;
 
   @override
   void initState() {
     super.initState();
-    _userService = widget.userService;
     _currentUser = widget.currentUser;
     _scrollController.addListener(_onScroll);
   }
@@ -102,7 +113,7 @@ class _UserManagementState extends State<UserManagement> {
       }
     });
     try {
-      final result = await _userService.getAllUsersWithPagination(
+      final result = await widget.userService.getAllUsersWithPagination(
           page: isLoadMore ? _currentPage + 1 : 1,
           pageSize: UserService.allUsersLimit);
       if (!mounted) return;
@@ -304,7 +315,8 @@ class _UserManagementState extends State<UserManagement> {
     }
     setState(() => _operationLoading = true);
     try {
-      await _userService.updateUserAdminStatus(userWithStatus.user.id, value);
+      await widget.userService
+          .updateUserAdminStatus(userWithStatus.user.id, value);
       // --- 修复：在 await 后立刻检查 mounted ---
       if (!mounted) return;
       AppSnackBar.showSuccess(
@@ -329,129 +341,149 @@ class _UserManagementState extends State<UserManagement> {
       return InlineErrorWidget(errorMessage: '加载用户列表失败: $_error\n请尝试下拉刷新。');
     }
     if (_users.isEmpty) {
-      // --- 修复：ListView() 不能是 const ---
       return RefreshIndicator(
           onRefresh: _handleRefresh,
           child: Stack(children: [
-            ListView(),
+            ListView(), // To make RefreshIndicator work
             const EmptyStateWidget(message: '没有用户数据')
           ]));
     }
 
     return RefreshIndicator(
       onRefresh: _handleRefresh,
-      child: ListView.builder(
-        controller: _scrollController,
-        itemCount: _users.length + (_hasMore ? 1 : 0),
-        itemBuilder: (context, index) {
-          if (index == _users.length) {
-            return _isLoadingMore
-                ? const Center(
-                    child: Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: CircularProgressIndicator()))
-                : const SizedBox.shrink();
-          }
+      child: LazyLayoutBuilder(
+          windowStateProvider: widget.windowStateProvider,
+          builder: (context, constraints) {
+            final availableWidth = constraints.maxWidth;
+            final crossAxisCount = (availableWidth / 300).floor().clamp(1, 5);
 
-          final userWithStatus = _users[index];
-          final targetUser = userWithStatus.user;
-          final banInfo = userWithStatus.banInfo;
+            // 把加载更多的逻辑从 item 本身移到 GridView 的 children 里
+            final List<Widget> gridItems = _users
+                .where((userWithStatus) =>
+                    userWithStatus.user.id != _currentUser?.id)
+                .map(
+                    (userWithStatus) => _buildUserCard(context, userWithStatus))
+                .toList();
 
-          if (targetUser.id == _currentUser?.id) {
-            return const SizedBox.shrink();
-          }
+            return ListView(
+              controller: _scrollController,
+              padding: const EdgeInsets.all(12),
+              children: [
+                AnimatedContentGrid<Widget>(
+                  items: gridItems,
+                  crossAxisCount: crossAxisCount,
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 2.2,
+                  itemBuilder: (context, index, item) => item,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                ),
+                if (_isLoadingMore)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24.0),
+                    child: LoadingWidget(),
+                  ),
+              ],
+            );
+          }),
+    );
+  }
 
-          final isAdmin = targetUser.isAdmin;
-          final isBanned = banInfo != null;
-          String banStatusText = '';
-          if (isBanned) {
-            banStatusText = '已封禁';
-            if (banInfo.isPermanent) {
-              banStatusText += ' (永久)';
-            } else if (banInfo.endTime != null) {
-              banStatusText +=
-                  ' (至: ${DateFormat('yyyy-MM-dd').format(banInfo.endTime!)})';
-            }
-          }
+  /// 构建单个用户卡片
+  Widget _buildUserCard(
+      BuildContext context, UserWithBanStatus userWithStatus) {
+    final targetUser = userWithStatus.user;
+    final banInfo = userWithStatus.banInfo;
+    final isAdmin = targetUser.isAdmin;
+    final isBanned = banInfo != null;
 
-          return Card(
-            margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            elevation: 2,
-            child: ListTile(
-              title: Text(targetUser.username,
-                  style: const TextStyle(fontWeight: FontWeight.w500),
+    String banStatusText = '';
+    if (isBanned) {
+      banStatusText = '已封禁';
+      if (banInfo.isPermanent) {
+        banStatusText += ' (永久)';
+      } else if (banInfo.endTime != null) {
+        banStatusText +=
+            ' (至: ${DateFormat('yyyy-MM-dd').format(banInfo.endTime!)})';
+      }
+    }
+
+    return Card(
+      key: ValueKey(targetUser.id),
+      elevation: 2,
+      clipBehavior: Clip.antiAlias,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      child: Padding(
+        padding: const EdgeInsets.all(12.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // 用户信息徽章
+            Expanded(
+              child: UserInfoBadge(
+                infoProvider: widget.infoProvider,
+                followService: widget.followService,
+                targetUserId: targetUser.id,
+                currentUser: _currentUser,
+                showFollowButton: false, // 管理页面不显示关注按钮
+                showLevel: true,
+              ),
+            ),
+            // 分割线和状态信息
+            const Divider(height: 16),
+            if (isBanned)
+              Tooltip(
+                message: '原因: ${banInfo.reason}',
+                child: Text(
+                  banStatusText,
+                  style: TextStyle(fontSize: 11, color: Colors.red.shade700),
                   maxLines: 1,
-                  overflow: TextOverflow.ellipsis),
-              subtitle: Padding(
-                padding: const EdgeInsets.only(top: 4.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(targetUser.email,
-                        style: TextStyle(
-                            fontSize: 12, color: Colors.grey.shade600),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis),
-                    if (isBanned)
-                      Tooltip(
-                        message: '原因: ${banInfo.reason}',
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 2.0),
-                          child: Text(banStatusText,
-                              style: TextStyle(
-                                  fontSize: 11, color: Colors.red.shade700),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis),
-                        ),
-                      ),
-                  ],
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              trailing: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(isAdmin ? '管理员' : '用户',
-                      style: const TextStyle(fontSize: 10)),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      SizedBox(
-                        height: 20,
-                        child: Switch(
-                          value: isAdmin,
-                          onChanged: _operationLoading
-                              ? null
-                              : (value) =>
-                                  _setAdminStatus(userWithStatus, value),
-                          materialTapTargetSize:
-                              MaterialTapTargetSize.shrinkWrap,
-                        ),
+            // 操作按钮行
+            const SizedBox(height: 8),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                // 切换管理员
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text('管理员', style: TextStyle(fontSize: 10)),
+                    const SizedBox(width: 10),
+                    SizedBox(
+                      height: 20,
+                      width: 36,
+                      child: Switch(
+                        value: isAdmin,
+                        onChanged: _operationLoading
+                            ? null
+                            : (value) => _setAdminStatus(userWithStatus, value),
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                       ),
-                    ],
-                  ),
-                  IconButton(
-                    icon: Icon(isBanned ? Icons.lock_open : Icons.block,
-                        color: isBanned
-                            ? Colors.orange.shade700
-                            : Colors.red.shade700,
-                        size: 20),
-                    tooltip: isBanned ? '解除封禁' : '封禁用户',
-                    onPressed: _operationLoading
-                        ? null
-                        : () => isBanned
-                            ? _showUnbanDialog(context, userWithStatus)
-                            : _showBanDialog(context, userWithStatus),
-                  ),
-                ],
-              ),
-              isThreeLine: isBanned,
-              dense: true,
-              contentPadding:
-                  const EdgeInsets.symmetric(vertical: 6.0, horizontal: 12.0),
-            ),
-          );
-        },
+                    ),
+                  ],
+                ),
+                // 封禁/解封按钮
+                FunctionalButton(
+                  label: isBanned ? '解封' : '封禁',
+                  onPressed: _operationLoading
+                      ? null
+                      : () => isBanned
+                          ? _showUnbanDialog(context, userWithStatus)
+                          : _showBanDialog(context, userWithStatus),
+                  icon: isBanned ? Icons.lock_open : Icons.block,
+                  backgroundColor:
+                      isBanned ? Colors.orange.shade700 : Colors.red.shade700,
+                  fontSize: 12,
+                  foregroundColor: Colors.white,
+                )
+              ],
+            )
+          ],
+        ),
       ),
     );
   }

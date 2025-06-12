@@ -52,7 +52,7 @@ class LoadingWidget extends StatefulWidget {
     this.overlayCardColor,
     this.overlayTextColor,
     this.overlayCardPadding =
-        const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
+        const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
     this.overlayCardBorderRadius = 12.0,
     this.overlayCardWidth = 130.0,
   });

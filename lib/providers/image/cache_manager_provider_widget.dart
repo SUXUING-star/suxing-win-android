@@ -1,4 +1,4 @@
-// lib/widgets/providers/cache_manager_provider_widget.dart  (或者你喜欢的路径)
+// lib/widgets/providers/cache_manager_provider_widget.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';

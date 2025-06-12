@@ -4,6 +4,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 /// `GameTagItem` 类：显示游戏标签的组件，支持选中和未选中两种状态。
 ///
@@ -56,7 +57,7 @@ class GameTagItem extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
                 decoration: BoxDecoration(
-                  color: textColor.withOpacity(0.2),
+                  color: textColor.withSafeOpacity(0.2),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(

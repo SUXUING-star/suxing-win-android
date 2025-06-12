@@ -4,6 +4,7 @@ import 'package:suxingchahui/models/user/checkin_result.dart';
 import 'package:suxingchahui/models/user/checkin_status.dart';
 import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user_checkin.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -11,7 +12,7 @@ import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/effects/checkin_particle_effect.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/layout/checkin_content.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/layout/checkin_layout.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -56,7 +57,15 @@ class _CheckInScreenState extends State<CheckInScreen>
   int _consecutiveMissedDays = 0;
   bool _hasInitializedDependencies = false;
 
+  TodayCheckInList? _todayCheckInList;
+  bool _isTodayListLoading = false;
+  String? _todayListErrMsg;
+
   late AnimationController _particleController;
+
+  static const Duration _minTodayListRefreshInterval = Duration(seconds: 30);
+
+  DateTime? _lastTodayListRefreshAttemptTime;
 
   @override
   void initState() {
@@ -73,6 +82,10 @@ class _CheckInScreenState extends State<CheckInScreen>
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
+    }
+    if (_hasInitializedDependencies) {
+      _loadTodayListData();
+
       if (widget.authProvider.isLoggedIn) {
         _loadData();
       } else {
@@ -89,6 +102,45 @@ class _CheckInScreenState extends State<CheckInScreen>
   void dispose() {
     _particleController.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadTodayListData() async {
+    if (_isTodayListLoading) {
+      return;
+    }
+    final now = DateTime.now();
+    if (_lastTodayListRefreshAttemptTime != null &&
+        now.difference(_lastTodayListRefreshAttemptTime!) <
+            _minTodayListRefreshInterval) {
+      final remainingSeconds = _minTodayListRefreshInterval.inSeconds -
+          now.difference(_lastTodayListRefreshAttemptTime!).inSeconds;
+
+      AppSnackBar.showInfo(
+        '手速太快了！请 $remainingSeconds 秒后再刷新',
+        duration: const Duration(seconds: 2),
+      );
+    }
+    _lastTodayListRefreshAttemptTime = now;
+    try {
+      setState(() {
+        _isTodayListLoading = true;
+        _todayListErrMsg = null;
+      });
+      final result = await widget.checkInService.getTodayCheckInList();
+      setState(() {
+        _todayCheckInList = result;
+        _isTodayListLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _todayCheckInList = null;
+        _todayListErrMsg = e.toString();
+      });
+    } finally {
+      setState(() {
+        _isTodayListLoading = false;
+      });
+    }
   }
 
   Future<void> _loadData() async {
@@ -159,15 +211,13 @@ class _CheckInScreenState extends State<CheckInScreen>
 
       await Future.delayed(const Duration(milliseconds: 300));
       await _loadData();
+      await _loadTodayListData();
 
       if (mounted) {
         _showCheckInSuccess(result);
       }
     } catch (e) {
-
-        AppSnackBar.showError(
-             '签到失败: ${e.toString()}');
-
+      AppSnackBar.showError('签到失败: ${e.toString()}');
     } finally {
       if (mounted) {
         setState(() => _checkInLoading = false);
@@ -263,18 +313,21 @@ class _CheckInScreenState extends State<CheckInScreen>
           currentUser: _currentUser!,
           monthlyData: _monthlyData,
           selectedYear: _selectedYear,
+          todayCheckInList: _todayCheckInList,
+          isTodayListLoading: _isTodayListLoading,
+          onRefreshTodayList: () => _loadTodayListData(),
+          todayListErrMsg: _todayListErrMsg,
           selectedMonth: _selectedMonth,
           isCheckInLoading: _checkInLoading,
           hasCheckedToday: _checkInStatus!.checkedInToday,
           animationController: _particleController,
           onChangeMonth: _handleChangeMonth,
-          onCheckIn: _handleCheckIn,
+          onCheckIn: () => _handleCheckIn(),
           missedDays: _missedDays,
           consecutiveMissedDays: _consecutiveMissedDays,
         );
       },
     );
-
   }
 
   Widget _buildMainSection() {

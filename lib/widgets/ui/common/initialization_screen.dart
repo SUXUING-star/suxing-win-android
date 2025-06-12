@@ -84,7 +84,7 @@ class _InitializationScreenState extends State<InitializationScreen> {
                       begin: Alignment.centerLeft,
                       end: Alignment.centerRight,
                       colors: [
-                        ...DesktopFrameLayout.desktopBarColor
+                        ...GlobalConstants.desktopBarColor
                       ], // 使用传入或默认渐变
                     ),
                   ),

@@ -8,6 +8,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/open/open_profile_layout.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/user/user.dart';
@@ -157,8 +158,10 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
         actions: [
           // 只有在数据加载完毕且没有错误时才显示切换按钮
           if (!_isLoading && _error == null)
-            IconButton(
-              icon: Icon(_isGridView ? Icons.view_list : Icons.grid_view),
+            FunctionalIconButton(
+              iconBackgroundColor: Colors.white,
+              iconColor:_isGridView ? Colors.blue.shade500 : Colors.green.shade400,
+              icon: _isGridView ? Icons.view_list : Icons.grid_view,
               tooltip: _isGridView ? '列表视图' : '网格视图',
               onPressed: () {
                 if (mounted) {

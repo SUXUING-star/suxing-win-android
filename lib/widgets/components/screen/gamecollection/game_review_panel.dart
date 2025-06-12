@@ -167,7 +167,7 @@ class GameReviewPanel extends StatelessWidget {
                       fontWeight: FontWeight.w500),
                 ),
               ],
-            )
+            ),
           ],
         ),
       ],
@@ -255,7 +255,7 @@ class GameReviewPanel extends StatelessWidget {
               context, Icons.category_outlined, '类型', _buildCategoryTag(game)),
         if (game.tags.isNotEmpty)
           _buildGameInfoRow(context, Icons.local_offer_outlined, '标签',
-              GameTagList(tags: game.tags, maxTags: 4, isScrollable: false)),
+              GameTagsRow(tags: game.tags, maxTags: 4, isScrollable: false)),
         _buildSectionTitle(context, '游戏统计',
             icon: Icons.analytics_outlined,
             padding: const EdgeInsets.only(top: 16.0, bottom: 4.0)),

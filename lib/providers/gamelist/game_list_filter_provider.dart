@@ -1,6 +1,6 @@
 // lib/providers/gamelist/game_list_filter_provider.dart
 
-/// 该文件定义了 GameListFilterProvider，一个管理游戏列表筛选器状态的 ChangeNotifier。
+/// 该文件定义了 GameListFilterProvider，一个管理游戏列表筛选器状态
 /// GameListFilterProvider 控制游戏列表的选中标签和选中分类。
 library;
 

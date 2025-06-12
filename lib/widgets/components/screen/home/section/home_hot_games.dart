@@ -87,12 +87,13 @@ class HomeHotGames extends StatelessWidget {
     if (!isLoading && (games == null || games!.isEmpty)) {
       return SizedBox(
         height: containerHeight + 80,
-        child: FadeInSlideUpItem(
+        child: const FadeInSlideUpItem(
           child: EmptyStateWidget(
-              message: '暂无热门游戏',
-              iconData: Icons.inbox_outlined,
-              iconSize: 40,
-              iconColor: Colors.grey),
+            message: '暂无热门游戏',
+            iconData: Icons.inbox_outlined,
+            iconSize: 40,
+            iconColor: Colors.grey,
+          ),
         ),
       );
     }
@@ -155,17 +156,12 @@ class HomeHotGames extends StatelessWidget {
                         cardWidgets.add(
                           HomeGameCard(
                             game: displayGames[gameIndex],
-                            onTap: () => Navigator.pushNamed(
-                              context,
-                              AppRoutes.gameDetail,
-                              arguments: displayGames[gameIndex],
-                            ),
                           ),
                         );
                       }
                       return Container(
-                        margin: EdgeInsets.symmetric(
-                            horizontal: 8), // PageView item 的边距
+                        // PageView item 的边距
+                        margin: const EdgeInsets.symmetric(horizontal: 8),
                         child: Center(
                           child: Wrap(
                             spacing: cardMargin,
@@ -214,7 +210,7 @@ class HomeHotGames extends StatelessWidget {
                   : () {
                       if (pageController.hasClients) {
                         pageController.previousPage(
-                            duration: Duration(milliseconds: 800),
+                            duration: const Duration(milliseconds: 800),
                             curve: Curves.easeInOut);
                       }
                     },
@@ -228,8 +224,9 @@ class HomeHotGames extends StatelessWidget {
                   : () {
                       if (pageController.hasClients) {
                         pageController.nextPage(
-                            duration: Duration(milliseconds: 800),
-                            curve: Curves.easeInOut);
+                          duration: const Duration(milliseconds: 800),
+                          curve: Curves.easeInOut,
+                        );
                       }
                     },
               buttonSize: buttonSize,
@@ -248,7 +245,7 @@ class HomeHotGames extends StatelessWidget {
     required double iconSize,
   }) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 4),
       width: buttonSize,
       height: buttonSize,
       decoration: BoxDecoration(
@@ -285,38 +282,44 @@ class HomeHotGames extends StatelessWidget {
       children: [
         Container(
           padding: EdgeInsets.symmetric(vertical: 8),
-          // decoration: BoxDecoration(...) // 如果需要边框
           child: Row(
             children: [
               Container(
                 width: 6,
                 height: 22,
                 decoration: BoxDecoration(
-                    // color: theme.primaryColor, // 示例
-                    color: Color(0xFF1890FF), // 假设一个主色调
+                    color: const Color(0xFF1890FF),
                     borderRadius: BorderRadius.circular(3)),
               ),
-              SizedBox(width: 12),
-              Text(title,
-                  style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.grey[900])),
-              Spacer(),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.grey[900],
+                ),
+              ),
+              const Spacer(),
               InkWell(
-                  borderRadius: BorderRadius.circular(8),
-                  onTap: onMorePressed,
-                  child: Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      child: Row(children: [
-                        Text('更多'),
-                        SizedBox(width: 4),
-                        Icon(Icons.arrow_forward_ios, size: 14)
-                      ]))),
+                borderRadius: BorderRadius.circular(8),
+                onTap: onMorePressed,
+                child: Padding(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  child: const Row(
+                    children: [
+                      Text('更多'),
+                      SizedBox(width: 4),
+                      Icon(Icons.arrow_forward_ios, size: 14)
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         ),
-        SizedBox(height: 16),
+        const SizedBox(height: 16),
         child,
       ],
     );

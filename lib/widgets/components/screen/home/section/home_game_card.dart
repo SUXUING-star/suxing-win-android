@@ -21,11 +21,10 @@ class HomeGameCard extends BaseGameCard {
   /// 接收 game 和 onTap，然后把一堆预设好的配置喂给大哥 BaseGameCard。
   const HomeGameCard({
     super.key,
-    required Game game,
-    required VoidCallback onTap,
+    required super.game,
+    VoidCallback? onTap,
   }) : super(
     // --- 把核心数据和回调传给大哥 ---
-    game: game,
     onTapOverride: onTap, // 把自己的 onTap 传给大哥的 onTapOverride，完美对接
 
     // --- 根据 HomeGameCard 的样式，把参数写死 ---

@@ -14,7 +14,7 @@ class ActivityTargetSection extends StatelessWidget {
   final UserFollowService followService;
   final UserInfoProvider infoProvider;
   final User? currentUser;
-  final bool isDesktop;
+  final bool isDesktopLayout;
 
   const ActivityTargetSection({
     super.key,
@@ -22,7 +22,7 @@ class ActivityTargetSection extends StatelessWidget {
     required this.followService,
     required this.infoProvider,
     required this.activity,
-    required this.isDesktop,
+    required this.isDesktopLayout,
   });
 
   // --- 内部方法：构建标题栏 ---
@@ -70,7 +70,7 @@ class ActivityTargetSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktopLayout ? 20 : 16);
 
     // --- 使用 Container 实现卡片样式 ---
     return Container(
@@ -112,7 +112,7 @@ class ActivityTargetSection extends StatelessWidget {
               padding: const EdgeInsets.only(top: 12.0),
               child: SelectableText.rich(
                 TextSpan(
-                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: isDesktop ? 15 : 14),
+                  style: theme.textTheme.bodyMedium?.copyWith(fontSize: isDesktopLayout ? 15 : 14),
                   children: [
                     const TextSpan(text: "提取码: ", style: TextStyle(fontWeight: FontWeight.bold)),
                     TextSpan(

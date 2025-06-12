@@ -25,13 +25,14 @@ class BasePostCard extends StatelessWidget {
   final User? currentUser; // 当前登录用户
   final UserFollowService followService; // 用户关注服务
   final UserInfoProvider infoProvider; // 用户信息提供者
-  final double screenWidth;
+  final double availableWidth;
   final Future<void> Function(Post post)? onDeleteAction; // 删除操作回调
   final void Function(Post post)? onEditAction; // 编辑操作回调
   final Future<void> Function(String postId)? onToggleLockAction; // 切换锁定状态回调
   final bool showPinnedStatus; // 是否显示帖子的置顶状态高亮
 
-  static const double thresholdWidth = 280.0; // 宽度阈值
+  final int? contentMaxLines;
+  static const double thresholdWidth = 400.0; // 宽度阈值
   // 为标签行预留的固定高度，确保布局稳定
   static const double _tagRowHeight = 28.0;
 
@@ -46,17 +47,19 @@ class BasePostCard extends StatelessWidget {
   /// [onEditAction]：编辑回调。
   /// [onToggleLockAction]：切换锁定回调。
   /// [showPinnedStatus]：是否显示置顶状态。
+  ///  [contentMaxLines] : 显示内容的行数.
   const BasePostCard({
     super.key,
     required this.currentUser,
     required this.post,
     required this.followService,
     required this.infoProvider,
-    required this.screenWidth,
+    required this.availableWidth,
     this.onDeleteAction,
     this.onEditAction,
     this.onToggleLockAction,
     this.showPinnedStatus = false,
+    this.contentMaxLines = 2,
   });
 
   /// 构建帖子卡片。
@@ -64,186 +67,214 @@ class BasePostCard extends StatelessWidget {
   /// 该方法根据帖子数据和用户权限构建卡片 UI。
   @override
   Widget build(BuildContext context) {
-    final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+    final isDesktopLayout = DeviceUtils.isDesktopScreen(context);
     final isAndroidLayout = !isDesktopLayout;
 
-    final String? currentUserId = currentUser?.id; // 当前用户ID
-    final bool isAdmin = currentUser?.isAdmin ?? false; // 是否管理员
+    final String? currentUserId = currentUser?.id;
+    final bool isAdmin = currentUser?.isAdmin ?? false;
     final bool canPotentiallyModify =
-        (post.authorId.toString() == currentUserId) || isAdmin; // 判断用户是否有权修改此帖子
+        (post.authorId.toString() == currentUserId) || isAdmin;
+
+    final bool showContent = contentMaxLines != null &&
+        contentMaxLines! > 0 &&
+        post.content.isNotEmpty;
+
+    // 估算底部信息栏的高度，为内容区域留出足够的 padding
+    // 窄屏下是 Column，高一些；宽屏下是 Row，矮一些。取一个最大安全值。
+    const double footerHeight = 64.0;
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4), // 卡片外部间距
+      margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 4),
       decoration: BoxDecoration(
-        color: Theme.of(context).cardColor, // 卡片背景色
-        borderRadius: BorderRadius.circular(12), // 圆角
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          // 阴影
           BoxShadow(
-            color: Colors.grey.withSafeOpacity(0.2), // 阴影颜色
-            spreadRadius: 1, // 扩散半径
-            blurRadius: 3, // 模糊半径
-            offset: const Offset(0, 2), // 阴影偏移
+            color: Colors.grey.withSafeOpacity(0.2),
+            spreadRadius: 1,
+            blurRadius: 3,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Stack(
-        children: [
-          InkWell(
-            borderRadius: BorderRadius.circular(12), // InkWell 圆角
-            onTap: () async {
-              // 点击卡片导航到详情页
-              await Navigator.pushNamed(
-                context,
-                AppRoutes.postDetail, // 导航到帖子详情路由
-                arguments: post.id, // 传递帖子 ID
-              );
-            },
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
-              children: [
-                Stack(
-                  children: [
-                    // 标题区域，其 Padding 决定了 Stack 的基础尺寸和为标签预留的空间
-                    Padding(
-                      // 底部 padding 增大，为 Positioned 的标签行腾出空间
-                      padding: EdgeInsets.fromLTRB(
-                          40, 12, 12, post.tags.isNotEmpty ? _tagRowHeight : 8),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start, // 垂直顶部对齐
-                        children: [
-                          Expanded(
-                            child: Text(
-                              post.title, // 帖子标题
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600, // 字体粗细
-                                fontSize: isAndroidLayout ? 14 : 16, // 字体大小
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () async {
+            await Navigator.pushNamed(
+              context,
+              AppRoutes.postDetail,
+              arguments: post.id,
+            );
+          },
+          // 使用 Stack 布局，这是最稳妥的解决方案
+          child: Stack(
+            children: [
+              // 主要内容区域（标题 + 内容）
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 顶部：标题和标签
+                  Stack(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.fromLTRB(40, 12, 12,
+                            post.tags.isNotEmpty ? _tagRowHeight : 8),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                post.title,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: isAndroidLayout ? 14 : 16,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
                               ),
-                              maxLines: 2, // 最大行数
-                              overflow: TextOverflow.ellipsis, // 溢出显示省略号
                             ),
-                          ),
-                          _buildPopupMenu(context, canPotentiallyModify,
-                              isAdmin, currentUserId), // 操作菜单
-                        ],
-                      ),
-                    ),
-
-                    // 标签行，使用 Positioned 定位，脱离布局流
-                    if (post.tags.isNotEmpty)
-                      Positioned(
-                        bottom: 4, // 距离底部一点距离
-                        left: 12,
-                        right: 12,
-                        child: PostTagRow(
-                          tags: post.tags, // 标签列表
-                          isAndroidPortrait: isAndroidLayout, // 是否为 Android 竖屏
+                          ],
                         ),
                       ),
-                  ],
-                ),
-
-                // 底部信息栏：作者和统计数据
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 8), // 内边距
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50], // 背景色
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12), // 底部圆角
+                      if (post.tags.isNotEmpty)
+                        Positioned(
+                          bottom: 4,
+                          left: 12,
+                          right: 12,
+                          child: PostTagsRow(
+                            tags: post.tags,
+                            isAndroidPortrait: isAndroidLayout,
+                          ),
+                        ),
+                    ],
+                  ),
+                  // 内容区域
+                  if (showContent)
+                    Padding(
+                      // 底部留出空间，防止被 footer 覆盖
+                      padding:
+                          const EdgeInsets.fromLTRB(12, 8, 12, footerHeight),
+                      child: Text(
+                        post.content,
+                        maxLines: contentMaxLines,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: isAndroidLayout ? 13 : 14,
+                          color: Colors.grey[700],
+                          height: 1.5,
+                        ),
+                      ),
                     ),
+                ],
+              ),
+
+              // 底部信息栏，使用 Positioned 将其钉在底部
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[50],
                     border: Border(
                       top: BorderSide(
-                        color: Colors.grey[200]!, // 顶部边框颜色
-                        width: 1, // 顶部边框宽度
+                        color: Colors.grey[200]!,
+                        width: 1,
                       ),
                     ),
                   ),
-                  child: screenWidth >= thresholdWidth
-                      ?
-                      // 宽度大于阈值时使用 Row 布局
-                      Row(
-                          mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween, // 主轴两端对齐
+                  child: availableWidth >= thresholdWidth
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Expanded(
                               child: UserInfoBadge(
-                                targetUserId: post.authorId.toString(), // 用户ID
-                                infoProvider: infoProvider, // 用户信息提供者
-                                followService: followService, // 关注服务
-                                showFollowButton: false, // 不显示关注按钮
-                                currentUser: currentUser, // 当前用户
-                                mini: true, // 迷你模式
-                                showLevel: false, // 不显示等级
+                                targetUserId: post.authorId.toString(),
+                                infoProvider: infoProvider,
+                                followService: followService,
+                                showFollowButton: false,
+                                currentUser: currentUser,
+                                mini: true,
+                                showLevel: false,
                               ),
                             ),
-                            const SizedBox(width: 8), // 间距
+                            const SizedBox(width: 8),
                             PostStatisticsRow(
-                              replyCount: post.replyCount, // 回复数量
-                              likeCount: post.likeCount, // 点赞数量
-                              favoriteCount: post.favoriteCount, // 收藏数量
-                              isSmallScreen: screenWidth < 320, // 是否为小屏幕
+                              replyCount: post.replyCount,
+                              likeCount: post.likeCount,
+                              favoriteCount: post.favoriteCount,
+                              isSmallScreen: availableWidth < 320,
                             ),
                           ],
                         )
-                      :
-                      // 宽度小于阈值时使用 Column 布局
-                      Column(
-                          crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             UserInfoBadge(
-                              targetUserId: post.authorId.toString(), // 用户ID
-                              followService: followService, // 关注服务
-                              infoProvider: infoProvider, // 用户信息提供者
-                              showFollowButton: false, // 不显示关注按钮
-                              currentUser: currentUser, // 当前用户
-                              mini: true, // 迷你模式
-                              showLevel: false, // 不显示等级
+                              targetUserId: post.authorId.toString(),
+                              followService: followService,
+                              infoProvider: infoProvider,
+                              showFollowButton: false,
+                              currentUser: currentUser,
+                              mini: true,
+                              showLevel: false,
                             ),
-                            const SizedBox(height: 6), // 间距
+                            const SizedBox(height: 6),
                             Align(
-                              alignment: Alignment.centerRight, // 居右对齐
+                              alignment: Alignment.centerRight,
                               child: PostStatisticsRow(
-                                replyCount: post.replyCount, // 回复数量
-                                likeCount: post.likeCount, // 点赞数量
-                                favoriteCount: post.favoriteCount, // 收藏数量
-                                isSmallScreen: true, // 是否为小屏幕
+                                replyCount: post.replyCount,
+                                likeCount: post.likeCount,
+                                favoriteCount: post.favoriteCount,
+                                isSmallScreen: true,
                               ),
                             ),
                           ],
                         ),
                 ),
-              ],
-            ),
-          ),
-          if (showPinnedStatus && post.isPinned) // 条件性显示置顶图标 overlay
-            Positioned(
-              top: 0, // 顶部对齐
-              left: 0, // 左侧对齐
-              child: Container(
-                padding: const EdgeInsets.all(4), // 内边距
-                decoration: BoxDecoration(
-                    color: Colors.blue.shade400, // 背景色
-                    borderRadius: const BorderRadius.only(
-                      topRight: Radius.circular(12), // 右上角圆角
-                      bottomLeft: Radius.circular(8), // 左下角圆角
-                    ),
-                    boxShadow: [
-                      // 阴影
-                      BoxShadow(
-                        color: Colors.black.withSafeOpacity(0.2), // 阴影颜色
-                        blurRadius: 3, // 模糊半径
-                        offset: const Offset(-2, 2), // 偏移
-                      ),
-                    ]),
-                child: const Icon(
-                  Icons.push_pin, // 置顶图标
-                  size: 18, // 图标大小
-                  color: Colors.white, // 颜色
-                ),
               ),
-            ),
-        ],
+
+              // 操作菜单，放在顶层，避免被 InkWell 覆盖点击
+              Positioned(
+                top: 4,
+                right: 2,
+                child: _buildPopupMenu(
+                    context, canPotentiallyModify, isAdmin, currentUserId),
+              ),
+
+              // 置顶图标
+              if (showPinnedStatus && post.isPinned)
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                        color: Colors.blue.shade400,
+                        borderRadius: const BorderRadius.only(
+                          topRight: Radius.circular(12),
+                          bottomLeft: Radius.circular(8),
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withSafeOpacity(0.2),
+                            blurRadius: 3,
+                            offset: const Offset(-2, 2),
+                          ),
+                        ]),
+                    child: const Icon(
+                      Icons.push_pin,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

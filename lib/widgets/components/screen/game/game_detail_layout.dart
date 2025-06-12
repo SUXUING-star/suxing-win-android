@@ -55,7 +55,7 @@ class GameDetailLayout extends StatelessWidget {
   final UserFollowService followService; // 用户关注服务
   final InputStateService inputStateService; // 输入状态 Provider
   final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
-
+  final ValueChanged<bool>? onRandomSectionHover;
   /// 构造函数。
   ///
   /// [gameService]：游戏服务。
@@ -91,6 +91,7 @@ class GameDetailLayout extends StatelessWidget {
     this.initialCollectionStatus,
     this.onCollectionChanged,
     this.navigationInfo,
+    this.onRandomSectionHover,
     this.isPreviewMode = false,
   });
 
@@ -328,6 +329,7 @@ class GameDetailLayout extends StatelessWidget {
             child: RandomGamesSection(
               currentGameId: game.id, // 当前游戏 ID
               gameService: gameService, // 游戏服务
+              onHover: onRandomSectionHover,
             ),
           )
         : const SizedBox.shrink(); // 预览模式下隐藏

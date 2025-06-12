@@ -453,6 +453,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => ActivityDetailScreen(
+            windowStateProvider: windowStateProvider,
             authProvider: authProvider,
             activityService: activityService,
             followService: followService,
@@ -582,6 +583,7 @@ class AppRoutes {
         return SlideFadePageRoute(
             routeSettings: settings,
             builder: (_) => AdminDashboard(
+                  followService: followService,
                   windowStateProvider: windowStateProvider,
                   fileUpload: fileUploadService,
                   maintenanceService: maintenanceService,
@@ -591,6 +593,7 @@ class AppRoutes {
                   linkToolService: linkToolService,
                   authProvider: authProvider,
                   inputStateService: inputStateService,
+                  infoProvider: infoProvider,
                 ));
       case myGames:
         return SlideFadePageRoute(

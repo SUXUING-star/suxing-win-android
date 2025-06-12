@@ -36,44 +36,52 @@ class HomeHotPosts extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: EdgeInsets.all(16),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white.withSafeOpacity(0.9),
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withSafeOpacity(0.05),
-              blurRadius: 10,
-              offset: Offset(0, 2))
+            color: Colors.black.withSafeOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          )
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 8),
             decoration: BoxDecoration(
-                border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200, width: 1))),
+              border: Border(
+                bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+              ),
+            ),
             child: Row(
               children: [
                 Container(
-                    width: 6,
-                    height: 22,
-                    decoration: BoxDecoration(
-                        color: Theme.of(context).primaryColor,
-                        borderRadius: BorderRadius.circular(3))),
-                SizedBox(width: 12),
-                Text('热门帖子',
-                    style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.grey[900])),
-                Spacer(),
+                  width: 6,
+                  height: 22,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  '热门帖子',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.grey[900],
+                  ),
+                ),
+                const Spacer(),
               ],
             ),
           ),
-          SizedBox(height: 16),
+          const SizedBox(height: 16),
           _buildPostListArea(context), // 传递 context 和 providers
         ],
       ),
@@ -82,9 +90,12 @@ class HomeHotPosts extends StatelessWidget {
 
   Widget _buildPostListArea(BuildContext context) {
     if (isLoading && posts == null) {
-      return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 20.0),
-        child: const LoadingWidget(message: '加载热门帖子...', size: 24),
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 20.0),
+        child: LoadingWidget(
+          message: '加载热门帖子...',
+          size: 24,
+        ),
       );
     }
 
@@ -128,11 +139,12 @@ class HomeHotPosts extends StatelessWidget {
                 _buildPostListItem(ctx, post),
                 if (index < itemsToShow.length - 1)
                   Divider(
-                      height: 20,
-                      thickness: 1,
-                      indent: 16,
-                      endIndent: 16,
-                      color: Colors.grey.withSafeOpacity(0.15)),
+                    height: 20,
+                    thickness: 1,
+                    indent: 16,
+                    endIndent: 16,
+                    color: Colors.grey.withSafeOpacity(0.15),
+                  ),
               ],
             );
           },
@@ -154,7 +166,7 @@ class HomeHotPosts extends StatelessWidget {
     return BasePostCard(
       followService: followService,
       infoProvider: infoProvider,
-      screenWidth: screenWidth,
+      availableWidth: screenWidth,
       post: post,
       currentUser: currentUser,
     );

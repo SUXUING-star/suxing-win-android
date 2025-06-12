@@ -14,6 +14,7 @@ import 'package:image/image.dart' as img; // 图片处理库
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; // 功能文本按钮组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展工具
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/image/hand_drawn_crop_widget.dart';
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 SnackBar 工具
 import 'package:vector_math/vector_math_64.dart' show Vector3; // 向量数学库
@@ -580,6 +581,16 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
                   label: '取消',
                 ),
                 const SizedBox(width: 12),
+                TextButton(
+                  onPressed: (_croppedPreviewBytes != null &&
+                          _croppedPreviewBytes!.isNotEmpty)
+                      ? _debugDecodeImage // 按下时调用新的验货方法
+                      : null,
+                  child: const Text('本地解码测试'),
+                  style: TextButton.styleFrom(
+                      foregroundColor: Colors.orange), // 给个醒目的颜色
+                ),
+                const SizedBox(width: 12),
                 FunctionalButton(
                   label: '确定',
                   icon: Icons.check,
@@ -602,5 +613,61 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
         ],
       ),
     );
+  }
+
+  // 在 _CustomCropDialogContentState 类里，加这个新方法
+  Future<void> _debugDecodeImage() async {
+    if (_isProcessingConfirm || _decodedImageForProcessing == null) {
+      AppSnackBar.showWarning("正在处理或无图片，无法测试");
+      return;
+    }
+
+    // 1. 生成最终要上传的图片数据
+    final CropResult? finalResult =
+        await Future(() => _performActualCrop(forPreview: false));
+
+    if (finalResult == null || finalResult.bytes.isEmpty) {
+      AppSnackBar.showError("生成最终图片失败！");
+      return;
+    }
+
+    // 2. 核心：尝试解码刚刚生成的图片数据
+    try {
+      // 使用 image 包的 decodeImage 方法，和Go后端的 image.Decode 异曲同工
+      final decoded = img.decodeImage(finalResult.bytes);
+
+      if (decoded != null) {
+        if (mounted) {
+          await BaseInputDialog.show(
+            context: context,
+            title: "测试图片",
+            contentBuilder: (context) {
+              return Center(
+                child: Image.memory(
+                  finalResult.bytes,
+                ),
+              );
+            },
+            onConfirm: () async {
+              return;
+            },
+          );
+        }
+        // 如果能解码成功，就弹个成功的提示
+        AppSnackBar.showSuccess(
+          "本地解码成功！\n格式: ${decoded.format}, 尺寸: ${decoded.width}x${decoded.height}",
+        );
+      } else {
+        // 如果解码返回 null，说明文件格式不对或者损坏了
+        AppSnackBar.showError(
+          "本地解码失败！decodeImage返回null，文件已损坏！",
+        );
+      }
+    } catch (e) {
+      // 如果解码过程直接抛出异常，也说明文件坏了
+      AppSnackBar.showError(
+        "本地解码异常！文件已损坏！\n错误: ${e.toString()}",
+      );
+    }
   }
 }

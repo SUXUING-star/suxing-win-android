@@ -1,15 +1,16 @@
-// lib/widgets/components/screen/checkin/layout/checkin_content.dart
+// lib/widgets/components/screen/checkin/layout/checkin_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/checkin_status.dart';
 import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user_checkin.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/calendar/calendar_view.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/progress/level_progress_card.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/checkin_rules_card.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/widget/today_checkin_list.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/widget/today_checkin_list_section.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 
 class CheckInLayout extends StatelessWidget {
@@ -29,6 +30,10 @@ class CheckInLayout extends StatelessWidget {
   final VoidCallback onCheckIn;
   final int missedDays;
   final int consecutiveMissedDays;
+  final TodayCheckInList? todayCheckInList;
+  final bool isTodayListLoading;
+  final VoidCallback onRefreshTodayList;
+  final String? todayListErrMsg;
 
   const CheckInLayout({
     super.key,
@@ -46,8 +51,11 @@ class CheckInLayout extends StatelessWidget {
     required this.animationController,
     required this.onChangeMonth,
     required this.onCheckIn,
+    required this.isTodayListLoading,
+    required this.onRefreshTodayList,
+    required this.todayListErrMsg,
     this.missedDays = 0,
-    this.consecutiveMissedDays = 0,
+    this.consecutiveMissedDays = 0, this.todayCheckInList,
   });
 
   // --- Animation Parameters ---
@@ -180,9 +188,11 @@ class CheckInLayout extends StatelessWidget {
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
-      child: TodayCheckInList(
+      child: TodayCheckInListSection(
         infoProvider: infoProvider,
-        checkInService: checkInService,
+        isLoading: isTodayListLoading,
+        checkInList: todayCheckInList,
+        onRefresh: onRefreshTodayList,
         followService: followService,
         currentUser: currentUser,
         maxHeight: maxHeight, // Pass maxHeight if provided

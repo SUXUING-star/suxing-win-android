@@ -94,7 +94,7 @@ class FunctionalTextButton extends StatelessWidget {
       style: TextStyle(
         fontSize: fontSize, // 字体大小
         color: currentForegroundColor, // 字体颜色
-        fontWeight: FontWeight.w600, // 字体粗细
+        fontWeight: FontWeight.w500, // 字体粗细
       ),
     );
 

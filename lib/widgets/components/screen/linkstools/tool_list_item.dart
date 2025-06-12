@@ -31,9 +31,13 @@ class ToolListItem extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12)),
               child: const Icon(Icons.build, color: Colors.white, size: 24),
             ),
-            title: Text(tool.name,
-                style:
-                const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+            title: Text(
+              tool.name,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 4),
               child: Text(tool.description,
@@ -48,28 +52,27 @@ class ToolListItem extends StatelessWidget {
                   children: tool.downloads
                       .map(
                         (download) => Padding(
-                      padding: const EdgeInsets.only(bottom: 4, top: 4),
-                      child: ListTile(
-                        dense: true,
-                        contentPadding:
-                        const EdgeInsets.symmetric(horizontal: 0),
-                        title: Text(download.name,
-                            style: const TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500)),
-                        subtitle: Text(download.description,
-                            style: TextStyle(
-                                fontSize: 13, color: Colors.grey[600])),
-                        trailing: OpenUrlButton(
-                          url: download.url,
-                          // 这里用下载图标，覆盖 OpenUrlButton 默认的 open_with
-                          icon: Icons.download,
-                          color: Colors.blue,
-                          tooltip: '下载 ${download.name}',
+                          padding: const EdgeInsets.only(bottom: 4, top: 4),
+                          child: ListTile(
+                            dense: true,
+                            contentPadding:
+                                const EdgeInsets.symmetric(horizontal: 0),
+                            title: Text(download.name,
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.w500)),
+                            subtitle: Text(download.description,
+                                style: TextStyle(
+                                    fontSize: 13, color: Colors.grey[600])),
+                            trailing: OpenUrlButton(
+                              url: download.url,
+                              // 这里用下载图标，覆盖 OpenUrlButton 默认的 open_with
+                              icon: Icons.download,
+                              color: Colors.blue,
+                              tooltip: '下载 ${download.name}',
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                  )
+                      )
                       .toList(),
                 ),
             ],

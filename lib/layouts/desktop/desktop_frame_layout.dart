@@ -66,18 +66,12 @@ class DesktopFrameLayout extends StatelessWidget {
     this.titleIconPath,
   });
 
-  static const List<Color> desktopBarColor = [
-    Color(0x000000ff), // 桌面栏颜色列表，用于渐变
-    Color(0xFFD8FFEF),
-    Color(0x000000ff),
-  ];
-
   static const double kDesktopTitleBarHeight = 35.0; // 桌面标题栏高度
 
   static final Gradient _defaultTitleBarGradient = LinearGradient(
     begin: Alignment.centerLeft, // 默认标题栏渐变起始点
     end: Alignment.centerRight, // 默认标题栏渐变结束点
-    colors: [...desktopBarColor], // 默认标题栏渐变颜色
+    colors: [...GlobalConstants.desktopBarColor], // 默认标题栏渐变颜色
   );
 
   static const String _defaultTitleText =
@@ -107,42 +101,37 @@ class DesktopFrameLayout extends StatelessWidget {
 
     // 应用程序标题和图标组件
     Widget appTitleIconWidget = DragToMoveArea(
-      child: Container(
-        decoration: BoxDecoration(
-          gradient: titleBarGradient ?? _defaultTitleBarGradient, // 使用传入或默认渐变
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12.0),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Image.asset(
-                    titleIconPath ?? _defaultTitleIconPath, // 使用传入或默认图标
-                    height: 24.0,
-                    width: 24.0,
-                    filterQuality: FilterQuality.medium,
-                  ),
-                  const SizedBox(width: 8.0),
-                  AppText(
-                    titleText ?? _defaultTitleText, // 使用传入或默认标题
-                    color: Colors.black,
-                    fontSize: 13,
-                    maxLines: 1,
-                    type: AppTextType.title,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12.0),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset(
+                  titleIconPath ?? _defaultTitleIconPath, // 使用传入或默认图标
+                  height: 24.0,
+                  width: 24.0,
+                  filterQuality: FilterQuality.medium,
+                ),
+                const SizedBox(width: 8.0),
+                AppText(
+                  titleText ?? _defaultTitleText, // 使用传入或默认标题
+                  color: Colors.black,
+                  fontSize: 13,
+                  maxLines: 1,
+                  type: AppTextType.title,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ),
-            // 中间空白填充，确保可拖拽区域
-            Expanded(
-              child: Container(color: Colors.transparent),
-            ),
-          ],
-        ),
+          ),
+          // 中间空白填充，确保可拖拽区域
+          Expanded(
+            child: Container(color: Colors.transparent),
+          ),
+        ],
       ),
     );
 
@@ -191,24 +180,30 @@ class DesktopFrameLayout extends StatelessWidget {
           height: kDesktopTitleBarHeight, // 标题栏高度
           child: Material(
             elevation: 1.0, // 标题栏阴影
-            child: Row(
-              children: [
-                Expanded(
-                  child: appTitleIconWidget, // 标题和图标区域
-                ),
+            child: Container(
+              decoration: BoxDecoration(
+                gradient:
+                    titleBarGradient ?? _defaultTitleBarGradient, // 使用传入或默认渐变
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: appTitleIconWidget, // 标题和图标区域
+                  ),
 
-                if (showTitleBarActions) // 条件显示动作按钮区域
-                  appToolBarWidget
-                else
-                  const SizedBox(width: 8), // 不显示动作按钮时添加间距
+                  if (showTitleBarActions) // 条件显示动作按钮区域
+                    appToolBarWidget
+                  else
+                    const SizedBox(width: 8), // 不显示动作按钮时添加间距
 
-                WindowsControls(
-                  // 标准窗口控制按钮
-                  iconColor: Colors.black.withSafeOpacity(0.9),
-                  hoverColor: Colors.blue.withSafeOpacity(0.1),
-                  closeHoverColor: Colors.red.withSafeOpacity(0.8),
-                ),
-              ],
+                  WindowsControls(
+                    // 标准窗口控制按钮
+                    iconColor: Colors.black.withSafeOpacity(0.9),
+                    hoverColor: Colors.blue.withSafeOpacity(0.1),
+                    closeHoverColor: Colors.red.withSafeOpacity(0.8),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/game/card/game_collection_dialog.dart
+// lib/widgets/components/screen/game/card/game_card_collection_stats_dialog.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_collection_stat_row.dart';
@@ -6,10 +6,10 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
-class GameCollectionDialog extends StatelessWidget {
+class GameCardCollectionStatsDialog extends StatelessWidget {
   final Game game;
 
-  const GameCollectionDialog({
+  const GameCardCollectionStatsDialog({
     super.key,
     required this.game,
   });
@@ -26,14 +26,14 @@ class GameCollectionDialog extends StatelessWidget {
 
     // 计算百分比值（避免除零错误）
     final double wantToPlayPercent =
-    total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
+        total > 0 ? (game.wantToPlayCount / total) * 100 : 0;
     final double playingPercent =
-    total > 0 ? (game.playingCount / total) * 100 : 0;
+        total > 0 ? (game.playingCount / total) * 100 : 0;
     final double playedPercent =
-    total > 0 ? (game.playedCount / total) * 100 : 0;
+        total > 0 ? (game.playedCount / total) * 100 : 0;
 
     // 检查是否是桌面端
-    final bool isDesktop = DeviceUtils.isDesktop;
+    final bool isDesktop = DeviceUtils.isDesktopScreen(context);
 
     return Dialog(
       shape: RoundedRectangleBorder(
@@ -41,7 +41,7 @@ class GameCollectionDialog extends StatelessWidget {
       ),
       child: Container(
         width: isDesktop ? 320 : double.maxFinite,
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -49,7 +49,7 @@ class GameCollectionDialog extends StatelessWidget {
             BoxShadow(
               color: Colors.black.withSafeOpacity(0.1),
               blurRadius: 10,
-              offset: Offset(0, 4),
+              offset: const Offset(0, 4),
             ),
           ],
         ),
@@ -60,7 +60,7 @@ class GameCollectionDialog extends StatelessWidget {
             Row(
               children: [
                 Icon(Icons.bookmark, color: Colors.deepPurple.shade300),
-                SizedBox(width: 8),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     '《${game.title}》收藏统计',
@@ -74,13 +74,13 @@ class GameCollectionDialog extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // 总收藏数标题
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(
+                const Text(
                   '总收藏数: ',
                   style: TextStyle(
                     fontSize: 16,
@@ -97,7 +97,7 @@ class GameCollectionDialog extends StatelessWidget {
                 ),
               ],
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // 统计行
             _buildStatRow(
@@ -107,7 +107,7 @@ class GameCollectionDialog extends StatelessWidget {
               color: wantTheme.textColor,
               icon: wantTheme.icon,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
 
             _buildStatRow(
               label: playingTheme.text,
@@ -116,7 +116,7 @@ class GameCollectionDialog extends StatelessWidget {
               color: playingTheme.textColor,
               icon: playingTheme.icon,
             ),
-            SizedBox(height: 12),
+            const SizedBox(height: 12),
 
             _buildStatRow(
               label: playedTheme.text,
@@ -126,7 +126,7 @@ class GameCollectionDialog extends StatelessWidget {
               icon: playedTheme.icon,
             ),
 
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // 关闭按钮
             Align(
@@ -136,7 +136,7 @@ class GameCollectionDialog extends StatelessWidget {
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.deepPurple.shade300,
                 ),
-                child: Text('关闭'),
+                child: const Text('关闭'),
               ),
             ),
           ],
@@ -161,12 +161,4 @@ class GameCollectionDialog extends StatelessWidget {
       icon: icon,
     );
   }
-}
-
-// 显示游戏收藏对话框的便捷函数
-void showGameCollectionDialog(BuildContext context, Game game) {
-  showDialog(
-    context: context,
-    builder: (BuildContext context) => GameCollectionDialog(game: game),
-  );
 }

@@ -11,7 +11,6 @@ import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
-import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
 
 // --- 动画组件 Imports ---
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
@@ -32,6 +31,7 @@ class ActivityDetailContent extends StatelessWidget {
   final UserInfoProvider userInfoProvider; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
   final User? currentUser; // 当前登录用户
+  final bool isDesktopLayout;
   final List<ActivityComment> comments; // 评论列表
   final bool isLoadingComments; // 评论是否正在加载
   final ScrollController scrollController; // 滚动控制器
@@ -65,6 +65,7 @@ class ActivityDetailContent extends StatelessWidget {
     required this.userInfoProvider,
     required this.inputStateService,
     required this.currentUser,
+    required this.isDesktopLayout,
     required this.comments,
     required this.isLoadingComments,
     required this.scrollController,
@@ -78,13 +79,11 @@ class ActivityDetailContent extends StatelessWidget {
 
   /// 构建活动信息区域。
   ///
-  /// [isDesktop]：是否为桌面布局。
   /// [duration]：动画时长。
   /// [delay]：动画延迟。
   /// [slideOffset]：滑入偏移量。
   /// [key]：组件键。
   Widget _buildInfoSection({
-    required bool isDesktop,
     required Duration duration,
     required Duration delay,
     required double slideOffset,
@@ -102,19 +101,17 @@ class ActivityDetailContent extends StatelessWidget {
         activity: activity, // 活动数据
         onEditActivity: onEditActivity, // 编辑活动回调
         onDeleteActivity: onDeleteActivity, // 删除活动回调
-        isDesktop: isDesktop, // 是否为桌面布局
+        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
       ),
     );
   }
 
   /// 构建活动描述区域。
   ///
-  /// [isDesktop]：是否为桌面布局。
   /// [duration]：动画时长。
   /// [delay]：动画延迟。
   /// [key]：组件键。
   Widget _buildDescriptionSection({
-    required bool isDesktop,
     required Duration duration,
     required Duration delay,
     required Key key,
@@ -125,19 +122,17 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay, // 动画延迟
       child: ActivityDescriptionSection(
         activity: activity, // 活动数据
-        isDesktop: isDesktop, // 是否为桌面布局
+        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
       ),
     );
   }
 
   /// 构建活动目标区域。
   ///
-  /// [isDesktop]：是否为桌面布局。
   /// [duration]：动画时长。
   /// [delay]：动画延迟。
   /// [key]：组件键。
   Widget _buildTargetSection({
-    required bool isDesktop,
     required Duration duration,
     required Duration delay,
     required Key key,
@@ -151,20 +146,18 @@ class ActivityDetailContent extends StatelessWidget {
         infoProvider: userInfoProvider, // 用户信息 Provider
         currentUser: currentUser, // 当前用户
         activity: activity, // 活动数据
-        isDesktop: isDesktop, // 是否为桌面布局
+        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
       ),
     );
   }
 
   /// 构建活动评论区域。
   ///
-  /// [isDesktop]：是否为桌面布局。
   /// [duration]：动画时长。
   /// [delay]：动画延迟。
   /// [slideOffset]：滑入偏移量。
   /// [key]：组件键。
   Widget _buildCommentsSection({
-    required bool isDesktop,
     required Duration duration,
     required Duration delay,
     required double slideOffset,
@@ -186,7 +179,7 @@ class ActivityDetailContent extends StatelessWidget {
         onAddComment: onAddComment, // 添加评论回调
         onCommentDeleted: onCommentDeleted, // 评论删除回调
         onCommentLikeToggled: onCommentLikeToggled, // 评论点赞切换回调
-        isDesktop: isDesktop, // 是否为桌面布局
+        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
       ),
     );
   }
@@ -208,7 +201,6 @@ class ActivityDetailContent extends StatelessWidget {
     Duration fadeDuration,
   ) {
     int delayIndex = 0; // 延迟索引
-    final bool isDesktop = false; // 非桌面布局
     final NumberFormat compactFormatter = NumberFormat.compact(); // 数字格式化器
 
     final infoKey = ValueKey('info_mob_${activity.id}'); // 信息区域键
@@ -221,7 +213,6 @@ class ActivityDetailContent extends StatelessWidget {
       padding: const EdgeInsets.all(16), // 内边距
       children: [
         _buildInfoSection(
-          isDesktop: isDesktop,
           duration: slideDuration,
           delay: baseDelay + (delayIncrement * delayIndex++),
           slideOffset: slideOffset,
@@ -232,7 +223,6 @@ class ActivityDetailContent extends StatelessWidget {
         if (activity.content.isNotEmpty) ...[
           // 活动内容非空时显示描述区域
           _buildDescriptionSection(
-            isDesktop: isDesktop,
             duration: fadeDuration,
             delay: baseDelay + (delayIncrement * delayIndex++),
             key: descriptionKey,
@@ -242,7 +232,6 @@ class ActivityDetailContent extends StatelessWidget {
 
         ...[
           _buildTargetSection(
-            isDesktop: isDesktop,
             duration: fadeDuration,
             delay: baseDelay + (delayIncrement * delayIndex++),
             key: targetKey,
@@ -267,7 +256,6 @@ class ActivityDetailContent extends StatelessWidget {
         ),
 
         _buildCommentsSection(
-          isDesktop: isDesktop,
           duration: slideDuration,
           delay: baseDelay + (delayIncrement * delayIndex++),
           slideOffset: slideOffset,
@@ -297,7 +285,6 @@ class ActivityDetailContent extends StatelessWidget {
   ) {
     int leftDelayIndex = 0; // 左侧延迟索引
     int rightDelayIndex = 0; // 右侧延迟索引
-    final bool isDesktop = true; // 桌面布局
     final NumberFormat compactFormatter = NumberFormat.compact(); // 数字格式化器
 
     final infoKey = ValueKey('info_desk_${activity.id}'); // 信息区域键
@@ -310,7 +297,6 @@ class ActivityDetailContent extends StatelessWidget {
     List<Widget> leftColumnItems = [
       // 左侧列项
       _buildInfoSection(
-        isDesktop: isDesktop,
         duration: slideDuration,
         delay: baseDelay + (delayIncrement * leftDelayIndex++),
         slideOffset: slideOffset,
@@ -321,7 +307,6 @@ class ActivityDetailContent extends StatelessWidget {
       if (activity.content.isNotEmpty) ...[
         // 活动内容非空时显示描述区域
         _buildDescriptionSection(
-          isDesktop: isDesktop,
           duration: fadeDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
           key: descriptionKey,
@@ -331,7 +316,6 @@ class ActivityDetailContent extends StatelessWidget {
 
       ...[
         _buildTargetSection(
-          isDesktop: isDesktop,
           duration: fadeDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
           key: targetKey,
@@ -361,7 +345,6 @@ class ActivityDetailContent extends StatelessWidget {
       ),
 
       _buildCommentsSection(
-        isDesktop: isDesktop,
         duration: slideDuration,
         delay: baseDelay +
             (delayIncrement * rightDelayIndex++) +
@@ -400,8 +383,6 @@ class ActivityDetailContent extends StatelessWidget {
   /// 构建活动详情内容组件。
   @override
   Widget build(BuildContext context) {
-    final bool isDesktop = DeviceUtils.isDesktopScreen(context); // 判断是否为桌面屏幕
-
     const Duration slideDuration = Duration(milliseconds: 400); // 滑入动画时长
     const Duration fadeDuration = Duration(milliseconds: 350); // 淡入动画时长
     const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
@@ -411,7 +392,7 @@ class ActivityDetailContent extends StatelessWidget {
     return Padding(
       key: ValueKey('activity_detail_content_${activity.id}'), // 唯一键
       padding: EdgeInsets.zero, // 内边距
-      child: isDesktop // 根据是否为桌面布局选择构建方法
+      child: isDesktopLayout // 根据是否为桌面布局选择构建方法
           ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
               slideDuration, fadeDuration)
           : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,

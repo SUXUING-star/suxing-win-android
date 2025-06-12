@@ -264,17 +264,26 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
           return RefreshIndicator(
             onRefresh: _loadInitialGames,
-            child: MyGamesLayout(
-              myGames: _myGames,
+            child: LazyLayoutBuilder(
               windowStateProvider: widget.windowStateProvider,
-              isLoadingMore: _isFetchingMore,
-              hasMore: _currentPage < _totalPages,
-              scrollController: _scrollController,
-              onLoadMore: _loadMoreGames,
-              onAddGame: _handleAddGame,
-              onResubmit: _handleResubmit,
-              onShowReviewComment: _showReviewCommentDialog,
-              authProvider: widget.authProvider,
+              builder: (context, constraints) {
+                final screenWidth = constraints.maxWidth;
+                final isDesktopLayout =
+                    DeviceUtils.isDesktopInThisWidth(screenWidth);
+                return MyGamesLayout(
+                  myGames: _myGames,
+                  screenWidth: screenWidth,
+                  isDesktopLayout: isDesktopLayout,
+                  isLoadingMore: _isFetchingMore,
+                  hasMore: _currentPage < _totalPages,
+                  scrollController: _scrollController,
+                  onLoadMore: _loadMoreGames,
+                  onAddGame: _handleAddGame,
+                  onResubmit: _handleResubmit,
+                  onShowReviewComment: _showReviewCommentDialog,
+                  authProvider: widget.authProvider,
+                );
+              },
             ),
           );
         },

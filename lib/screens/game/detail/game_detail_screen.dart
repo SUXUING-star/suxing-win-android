@@ -75,6 +75,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   bool _isTogglingLike = false; // 新增：用于跟踪点赞操作的处理状态
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
+  bool _isPageScrollLocked = false; // 代表页面是否被锁定滚动
+
+  bool _isPerformingGamesDetailRefresh = false;
+  DateTime? _lastGamesDetailRefreshAttemptTime;
+  static const Duration _minRefreshGameDetailInterval = Duration(minutes: 1);
 
   @override
   void initState() {
@@ -89,9 +94,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _hasInitializedDependencies = true;
     }
     if (widget.gameId != null && _hasInitializedDependencies) {
-      _isLoading = true;
-      // 第一次初始化赋值，之后走下面的流程
-      _loadGameDetailsWithStatus(); // 原有的调用
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _isLoading = true;
+        _lastGamesDetailRefreshAttemptTime = DateTime.now();
+        // 第一次初始化赋值，之后走下面的流程
+        _loadGameDetailsWithStatus(); // 原有的调用
+      });
     } else {
       // 处理 null gameId (保持不变，但确保 _isLoading 最后是 false)
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -211,7 +219,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               CustomInfoDialog.show(
                 context: context,
                 title: '游戏已移除',
-                message: '抱歉，您尝试访问的游戏已被移除或不存在。\n(这里可以放补偿说明，如果需要的话)',
+                message: '抱歉，您尝试访问的游戏已被移除或不存在。',
                 iconData: Icons.delete_forever_outlined,
                 // 或者 Icons.sentiment_very_dissatisfied
                 iconColor: Colors.redAccent,
@@ -290,8 +298,31 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Future<void> _refreshGameDetails() async {
     if (!mounted || widget.gameId == null) return;
 
-    // 调用加载，forceRefresh 确保即使短时间内连续操作也会尝试重新加载
-    await _loadGameDetailsWithStatus(forceRefresh: true);
+    if (_isPerformingGamesDetailRefresh) {
+      return;
+    }
+    _isPerformingGamesDetailRefresh = true;
+    final now = DateTime.now();
+    if (_lastGamesDetailRefreshAttemptTime != null &&
+        now.difference(_lastGamesDetailRefreshAttemptTime!) <
+            _minRefreshGameDetailInterval) {
+      final remainSeconds = _minRefreshGameDetailInterval.inSeconds -
+          now.difference(_lastGamesDetailRefreshAttemptTime!).inSeconds;
+
+      AppSnackBar.showInfo("手速太快，请等待 $remainSeconds 秒后再尝试");
+    }
+    _lastGamesDetailRefreshAttemptTime = now;
+    try {
+      // 调用加载，forceRefresh 确保即使短时间内连续操作也会尝试重新加载
+      await _loadGameDetailsWithStatus(forceRefresh: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      _isPerformingGamesDetailRefresh = false;
+    }
   }
 
   Future<void> _handleCollectionStateChangedInButton(
@@ -457,6 +488,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ? 'likeButtonDesktop'
         : 'likeButtonMobile'; // 给点赞按钮也加上区分的 heroTag
 
+    final String refreshHeroTag = 'gameDetailRefresh';
+
     final Color primaryColor = Theme.of(context).colorScheme.primary;
     final Color greyColor = Colors.grey.shade600; // 用于未点赞状态的颜色（可选）
 
@@ -476,6 +509,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             spacing: 16.0, // 按钮间距
             alignment: MainAxisAlignment.end, // 底部对齐
             children: [
+              GenericFloatingActionButton(
+                onPressed: () => _refreshGameDetails(),
+                isLoading: _isPerformingGamesDetailRefresh,
+                icon: Icons.refresh,
+                tooltip: "刷新",
+                mini: true,
+                heroTag: refreshHeroTag,
+              ),
               // --- 第一个按钮：点赞按钮或占位符 ---
               if (_isLiked != null) // 确保状态已加载
                 GenericFloatingActionButton(
@@ -583,6 +624,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           child: CustomScrollView(
             controller: mobileScrollController,
             reverse: false,
+            physics: _isPageScrollLocked
+                ? const NeverScrollableScrollPhysics() // 锁死！
+                : const AlwaysScrollableScrollPhysics(), // 解锁！
             key: ValueKey(
                 'game_detail_mobile_${widget.gameId}_$_refreshCounter'),
             slivers: [
@@ -617,6 +661,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       ),
 
       body: SingleChildScrollView(
+        physics: _isPageScrollLocked
+            ? const NeverScrollableScrollPhysics() // 锁死！
+            : const AlwaysScrollableScrollPhysics(), // 解锁！
         key: ValueKey('game_detail_desktop_${widget.gameId}_$_refreshCounter'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
@@ -649,6 +696,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       onNavigate: _handleNavigate,
       navigationInfo: _navigationInfo,
       isPreviewMode: isPreview,
+      onRandomSectionHover: (isHovering) {
+        setState(() {
+          _isPageScrollLocked = isHovering;
+        });
+      },
     );
   }
 
@@ -783,6 +835,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         builder: (context, constraints) {
           final bool isDesktop =
               DeviceUtils.isDesktopInThisWidth(constraints.maxWidth);
+
           return isDesktop
               ? _buildDesktopLayout(_game!, isPending, isDesktop)
               : _buildMobileLayout(_game!, isPending, isDesktop);

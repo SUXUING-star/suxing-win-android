@@ -88,7 +88,6 @@ class _AddGameScreenState extends State<AddGameScreen> {
         if (mounted) Navigator.of(context).pop(true);
       }
     } catch (e) {
-      if (!mounted) return;
       AppSnackBar.showError(
         '添加失败: ${e.toString()}',
       );

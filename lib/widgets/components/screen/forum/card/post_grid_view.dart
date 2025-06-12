@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
-import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart';
@@ -18,7 +17,6 @@ class PostGridView extends StatelessWidget {
   final List<Post> posts;
   final User? currentUser;
   final UserFollowService followService;
-  final WindowStateProvider windowStateProvider;
   final ScrollController? scrollController;
   final bool isLoading; // 用于显示加载更多指示器
   final bool hasMoreData; // 是否还有更多数据可加载
@@ -27,17 +25,16 @@ class PostGridView extends StatelessWidget {
   final void Function(Post post)? onEditAction;
   final Future<void> Function(String postId)? onToggleLockAction;
   final bool isDesktopLayout;
-  final double screenWidth;
+  final double availableWidth;
 
   const PostGridView({
     super.key,
     required this.posts,
     required this.currentUser,
     required this.followService,
-    required this.windowStateProvider,
     required this.infoProvider,
     required this.isDesktopLayout,
-    required this.screenWidth,
+    required this.availableWidth,
     this.scrollController,
     this.isLoading = false,
     this.hasMoreData = false,
@@ -50,7 +47,7 @@ class PostGridView extends StatelessWidget {
   Widget build(BuildContext context) {
     final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(
       context,
-      directAvailableWidth: screenWidth,
+      directAvailableWidth: availableWidth,
     );
 
     // 准备要显示的所有项目
@@ -76,7 +73,7 @@ class PostGridView extends StatelessWidget {
             currentUser: currentUser,
             infoProvider: infoProvider,
             followService: followService,
-            screenWidth: screenWidth,
+            availableWidth: availableWidth,
             post: item,
             onDeleteAction: onDeleteAction,
             onEditAction: onEditAction,

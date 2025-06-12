@@ -219,11 +219,14 @@ class GameReviewSectionState extends State<GameReviewSection> {
           ),
         ),
         const SizedBox(width: 8),
-        Text('玩家动态',
-            style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[850])),
+        Text(
+          '玩家动态',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.grey[850],
+          ),
+        ),
       ],
     );
   }
@@ -249,40 +252,57 @@ class GameReviewSectionState extends State<GameReviewSection> {
                 TextSpan(
                   children: [
                     TextSpan(
-                        text: game.rating.toStringAsFixed(1),
-                        style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87)),
+                      text: game.rating.toStringAsFixed(1),
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
                     TextSpan(
-                        text: ' / 10',
-                        style:
-                            TextStyle(fontSize: 14, color: Colors.grey[600])),
+                      text: ' / 10',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey[600],
+                      ),
+                    ),
                   ],
                 ),
               )
             else
-              Text('暂无评分',
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[600],
-                      fontStyle: FontStyle.italic)),
+              Text(
+                '暂无评分',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
           ],
         ),
         Column(
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             if (hasGameRating)
-              Text('共有 ${game.ratingCount} 份评分',
-                  style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+              Text(
+                '共有 ${game.ratingCount} 份评分',
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
             if (hasReviewsToShow &&
                 !(_isLoading && _page == 1 && _reviews.isEmpty))
               Padding(
                 padding: EdgeInsets.only(top: hasGameRating ? 4.0 : 0),
                 // 如果 paginationData 可用，显示 total，否则显示当前已加载的 reviews 数量
                 child: Text(
-                    '${_paginationData != null ? _paginationData!.total : _reviews.length} 条动态',
-                    style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  '${_paginationData != null ? _paginationData!.total : _reviews.length} 条动态',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
               ),
           ],
         ),

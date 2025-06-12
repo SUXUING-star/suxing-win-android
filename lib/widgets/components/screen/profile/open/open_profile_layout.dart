@@ -32,6 +32,9 @@ class OpenProfileLayout extends StatelessWidget {
   final VoidCallback onFollowChanged; // 关注状态变化后的回调
   final bool isDesktop;
 
+  static const desktopLeftFlex = 1;
+  static const desktopRightFlex = 2;
+
   const OpenProfileLayout({
     super.key,
     required this.targetUser,
@@ -62,7 +65,7 @@ class OpenProfileLayout extends StatelessWidget {
       key: animationKey,
       children: [
         Expanded(
-          flex: 1,
+          flex: desktopLeftFlex,
           child: SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.all(16),
@@ -78,10 +81,9 @@ class OpenProfileLayout extends StatelessWidget {
           ),
         ),
         Expanded(
-          flex: 2,
+          flex: desktopRightFlex,
           child: _buildContentSection(
             context,
-            isDesktop: isDesktop,
           ),
         ),
       ],
@@ -99,7 +101,6 @@ class OpenProfileLayout extends StatelessWidget {
         Expanded(
           child: _buildContentSection(
             context,
-            isDesktop: isDesktop,
           ),
         ),
       ],
@@ -107,12 +108,12 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildUserHeader(BuildContext context) {
-    final double avatarRadius = isDesktop ? 50.0 : 38.0;
+    final double avatarRadius = isDesktop ? 36.0 : 24.0;
     final EdgeInsets cardMargin = isDesktop
         ? const EdgeInsets.all(12)
         : const EdgeInsets.symmetric(horizontal: 10, vertical: 8);
     final EdgeInsets cardPadding =
-        isDesktop ? const EdgeInsets.all(16) : const EdgeInsets.all(12);
+        isDesktop ? const EdgeInsets.all(8) : const EdgeInsets.all(6);
     final double verticalSpacingSmall = isDesktop ? 8.0 : 4.0;
     final double verticalSpacingMedium = isDesktop ? 12.0 : 8.0;
     final TextStyle? usernameStyle = isDesktop
@@ -123,7 +124,7 @@ class OpenProfileLayout extends StatelessWidget {
         : Theme.of(context)
             .textTheme
             .titleMedium
-            ?.copyWith(fontWeight: FontWeight.bold, fontSize: 18);
+            ?.copyWith(fontWeight: FontWeight.bold, fontSize: 14);
     final TextStyle xpStyle = isDesktop
         ? TextStyle(fontSize: 14, color: Colors.grey[600])
         : TextStyle(fontSize: 12, color: Colors.grey[600]);
@@ -275,7 +276,7 @@ class OpenProfileLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildContentSection(BuildContext context, {required bool isDesktop}) {
+  Widget _buildContentSection(BuildContext context) {
     final tabTextStyle = TextStyle(fontSize: isDesktop ? null : 12.5);
     final iconSize = isDesktop ? null : 20.0;
 
@@ -341,7 +342,7 @@ class OpenProfileLayout extends StatelessWidget {
     }
     return SingleChildScrollView(
       padding: EdgeInsets.all(isDesktop ? 16 : 12),
-      child: _buildPostsList(context),
+      child: _buildPostsGridOrList(context),
     );
   }
 
@@ -364,9 +365,27 @@ class OpenProfileLayout extends StatelessWidget {
   }
 
   Widget _buildGamesGrid(BuildContext context) {
-    final crossAxisCount =
-        DeviceUtils.calculateGameCardsInGameListPerRow(context);
-    final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth =
+          screenWidth * desktopRightFlex / (desktopRightFlex + desktopLeftFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
+
+    final crossAxisCount = DeviceUtils.calculateGameCardsInGameListPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+      isCompact: true,
+    );
+    final cardRatio = DeviceUtils.calculateGameCardRatio(
+      context,
+      directAvailableWidth: availableWidth,
+    );
+
+    if (publishedGames == null || publishedGames!.isEmpty) {
+      return const EmptyStateWidget(message: "没有任何发表");
+    }
 
     return AnimatedContentGrid<Game>(
       items: publishedGames!,
@@ -386,10 +405,33 @@ class OpenProfileLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildPostsList(BuildContext context) {
-    return AnimatedListView<Post>(
+  Widget _buildPostsGridOrList(BuildContext context) {
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth =
+          screenWidth * desktopRightFlex / (desktopRightFlex + desktopLeftFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
+
+    final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(
+      context,
+      directAvailableWidth: availableWidth,
+    );
+    final cardRatio = DeviceUtils.calculatePostCardRatio(
+      context,
+      directAvailableWidth: availableWidth,
+    );
+    if (recentPosts == null || recentPosts!.isEmpty) {
+      return const EmptyStateWidget(message: "没有任何发表");
+    }
+    return AnimatedContentGrid<Post>(
       items: recentPosts!,
       shrinkWrap: true,
+      crossAxisCount: crossAxisCount,
+      childAspectRatio: cardRatio,
+      crossAxisSpacing: 16,
+      mainAxisSpacing: 16,
       physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.zero,
       itemBuilder: (context, index, post) {
@@ -398,7 +440,7 @@ class OpenProfileLayout extends StatelessWidget {
           child: BasePostCard(
             post: post,
             followService: followService,
-            screenWidth: screenWidth,
+            availableWidth: screenWidth,
             currentUser: authProvider.currentUser,
             infoProvider: infoProvider,
           ),

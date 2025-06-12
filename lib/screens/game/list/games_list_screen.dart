@@ -35,12 +35,12 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart'; // 导入基础游戏卡片
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
-import 'package:suxingchahui/widgets/components/screen/gamelist/tag/tag_bar.dart'; // 导入标签栏
+import 'package:suxingchahui/widgets/components/screen/game/tag/tag_bar.dart'; // 导入标签栏
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
-import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_left_panel.dart'; // 导入游戏左侧面板
-import 'package:suxingchahui/widgets/components/screen/gamelist/panel/game_right_panel.dart'; // 导入游戏右侧面板
+import 'package:suxingchahui/widgets/components/screen/game/panel/game_left_panel.dart'; // 导入游戏左侧面板
+import 'package:suxingchahui/widgets/components/screen/game/panel/game_right_panel.dart'; // 导入游戏右侧面板
 
 /// `GamesListScreen` 类：游戏列表屏幕。
 ///
@@ -110,6 +110,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   String? _currentCategory; // 当前选中的分类
 
   List<GameTag> _availableTags = []; // 可用的游戏标签列表
+  bool _isTagsLoading = false;
   final List<String> _availableCategories =
       GameConstants.defaultGameCategory; // 可用的游戏分类列表
   StreamSubscription<BoxEvent>? _cacheSubscription; // 缓存订阅器
@@ -154,9 +155,8 @@ class _GamesListScreenState extends State<GamesListScreen>
       _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
-      final screenWidth = DeviceUtils.getScreenWidth(context);
-      _isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-      _screenWidth = screenWidth;
+      _screenWidth = DeviceUtils.getScreenWidth(context);
+      _isDesktop = DeviceUtils.isDesktopInThisWidth(_screenWidth);
       _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
     }
   }
@@ -252,6 +252,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         _initializeCurrentTag(); // 初始化当前标签
         _loadTags(); // 加载可用标签列表
         _loadGames(pageToFetch: 1, isInitialLoad: true); // 初始加载游戏
+        _lastRefreshAttemptTime = DateTime.now();
       } else if (_needsRefresh) {
         // 需要刷新时
         _refreshDataIfNeeded(reason: "变为可见且需要刷新"); // 刷新数据
@@ -315,6 +316,12 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// 加载标签。
   Future<void> _loadTags() async {
+    if (_isTagsLoading) {
+      return;
+    }
+    setState(() {
+      _isTagsLoading = true;
+    });
     try {
       final tags = await widget.gameService.getAllTags(); // 获取所有标签
       if (mounted) setState(() => _availableTags = tags); // 更新可用标签列表
@@ -322,6 +329,10 @@ class _GamesListScreenState extends State<GamesListScreen>
       if (mounted) {
         setState(() => _availableTags = []); // 错误时清空标签列表
       }
+    } finally {
+      setState(() {
+        _isTagsLoading = false;
+      });
     }
   }
 
@@ -996,26 +1007,27 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// 构建屏幕 UI。
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(), // AppBar
-      body: VisibilityDetector(
-        key: const ValueKey('games_list_visibility_detector'), // 可见性检测器 Key
-        onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
-        child: LazyLayoutBuilder(
-          windowStateProvider: widget.windowStateProvider,
-          builder: (context, constraints) {
-            final screenWidth = constraints.maxWidth;
-            // 注这个screenWidth就是指整个屏幕的宽度
-            final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
-            // 要用这个值去判断这个实际宽度
-            _screenWidth = screenWidth;
-            _isDesktop = isDesktop;
-            return _buildBodyContent(); // 主体内容
-          },
-        ),
-      ),
-      floatingActionButton: _buildFabGroup(), // 悬浮动作按钮组
-      bottomNavigationBar: _buildFloatingPaginationControlsIfNeeded(), // 悬浮分页控件
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        // 注这个screenWidth就是指整个屏幕的宽度
+        final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        // 要用这个值去判断这个实际宽度
+        _screenWidth = screenWidth;
+        _isDesktop = isDesktop;
+        return Scaffold(
+          appBar: _buildAppBar(), // AppBar
+          body: VisibilityDetector(
+            key: const ValueKey('games_list_visibility_detector'), // 可见性检测器 Key
+            onVisibilityChanged: _handleVisibilityChange, // 可见性变化回调
+            child: _buildBodyContent(), // 主体内容
+          ),
+          floatingActionButton: _buildFabGroup(), // 悬浮动作按钮组
+          bottomNavigationBar:
+              _buildFloatingPaginationControlsIfNeeded(), // 悬浮分页控件
+        );
+      },
     );
   }
 
@@ -1030,23 +1042,21 @@ class _GamesListScreenState extends State<GamesListScreen>
       // 有标签时显示标签标题
       title = '标签: $_currentTag';
     }
-    final theme = Theme.of(context); // 当前主题
-    final appBarColor =
-        theme.appBarTheme.backgroundColor ?? theme.primaryColor; // AppBar 背景色
-    final secondaryColor = theme.colorScheme.secondary; // 次要颜色
     final canShowLeftPanelBasedOnWidth =
         _screenWidth >= _hideLeftPanelThreshold; // 是否可显示左侧面板
     final canShowRightPanelBasedOnWidth =
         _screenWidth >= _hideRightPanelThreshold; // 是否可显示右侧面板
-    final defaultAppBarIconColor =
-        ThemeData.estimateBrightnessForColor(appBarColor) ==
-                Brightness.dark // 默认 AppBar 图标颜色
-            ? Colors.white
-            : Colors.black;
 
     return CustomAppBar(
       title: title, // 标题
       actions: [
+        if (_isDesktop) const SizedBox(width: 8), // 间距
+        if (_isDesktop)
+          FunctionalIconButton(
+            buttonBackgroundColor: Colors.white,
+            onPressed: () => _refreshData(needCheck: true),
+            icon: Icons.refresh_outlined,
+          ),
         // 动作按钮
         if (_isDesktop) const SizedBox(width: 8), // 桌面平台间距
         if (_isDesktop) // 桌面平台左侧面板切换按钮
@@ -1112,34 +1122,37 @@ class _GamesListScreenState extends State<GamesListScreen>
         ),
         if (_currentCategory != null) const SizedBox(width: 8), // 清除分类按钮间距
         if (_currentCategory != null) // 清除分类按钮
-          IconButton(
-            icon: Icon(AppBarAction.clearCategoryFilter.icon),
-            color: AppBarAction.clearCategoryFilter.defaultIconColor,
+          FunctionalIconButton(
+            icon: AppBarAction.clearCategoryFilter.icon,
+            iconColor: AppBarAction.clearCategoryFilter.defaultIconColor,
+            iconBackgroundColor: Colors.white,
             onPressed: _isLoadingData ? null : _clearCategoryFilter,
             tooltip: '清除分类筛选 ($_currentCategory)',
           ),
         if (_currentTag != null) const SizedBox(width: 8), // 清除标签按钮间距
         if (_currentTag != null) // 清除标签按钮
-          IconButton(
-            icon: Icon(AppBarAction.clearTagFilter.icon),
-            color: AppBarAction.clearTagFilter.defaultIconColor,
+          FunctionalIconButton(
+            icon: AppBarAction.clearTagFilter.icon,
+            iconColor: AppBarAction.clearTagFilter.defaultIconColor,
+            iconBackgroundColor: Colors.white,
             onPressed: _isLoadingData ? null : _clearTagFilter,
             tooltip: '清除标签筛选 ($_currentTag)',
           ),
         if (!_isDesktop) const SizedBox(width: 8), // 移动端间距
         if (!_isDesktop) // 移动端标签栏切换按钮
-          IconButton(
-            icon: Icon(AppBarAction.toggleMobileTagBar.icon),
+          FunctionalIconButton(
+            icon: AppBarAction.toggleMobileTagBar.icon,
             tooltip: _showMobileTagBar ? '隐藏标签栏' : '显示标签栏',
-            color: _showMobileTagBar ? secondaryColor : defaultAppBarIconColor,
+            iconColor: _showMobileTagBar ? Colors.grey : Colors.amber,
+            iconBackgroundColor: Colors.white,
             onPressed: () =>
                 setState(() => _showMobileTagBar = !_showMobileTagBar),
           ),
       ],
-      bottom: (!DeviceUtils.isDesktop &&
+      bottom: (!_isDesktop &&
               _showMobileTagBar &&
               _availableTags.isNotEmpty) // 底部标签栏
-          ? TagBar(
+          ? MobileTagBar(
               tags: _availableTags,
               selectedTag: _currentTag,
               onTagSelected: _handleTagBarSelected,
@@ -1270,7 +1283,6 @@ class _GamesListScreenState extends State<GamesListScreen>
               child: const FadeInItem(
                 // 全屏加载组件
                 child: LoadingWidget(
-                  isOverlay: true,
                   message: "正在等待加载...",
                   overlayOpacity: 0.4,
                   size: 36,
@@ -1281,7 +1293,9 @@ class _GamesListScreenState extends State<GamesListScreen>
         if (_isLoadingData &&
             _gamesList.isEmpty &&
             _errorMessage == null) // 加载中且列表为空时显示加载组件
-          const LoadingWidget(message: '正在加载游戏...'),
+          const LoadingWidget(
+            message: '正在加载游戏...',
+          ),
       ],
     );
   }
@@ -1521,14 +1535,14 @@ class _GamesListScreenState extends State<GamesListScreen>
         onPressed: _handleAddGame, // 点击添加游戏
         icon: AppBarAction.addGame.icon,
         tooltip: '添加游戏',
-        heroTag: 'games_list_fab',
+        heroTag: 'games_list_add_game_fab',
       ),
       GenericFloatingActionButton(
         onPressed: () =>
             NavigationUtils.pushNamed(context, AppRoutes.myGames), // 点击导航到我的游戏
         icon: AppBarAction.myGames.icon,
         tooltip: '我的游戏',
-        heroTag: 'games_list_fab',
+        heroTag: 'games_list_my_games_fab',
       ),
     ];
   }
@@ -1550,7 +1564,9 @@ class _GamesListScreenState extends State<GamesListScreen>
     if (!_isInitialized) {
       return null; // 未初始化时不显示
     }
-
+    if (_isLoadingData) {
+      return const LoadingWidget();
+    }
     return PaginationControls(
       currentPage: _currentPage, // 当前页码
       totalPages: _totalPages, // 总页数

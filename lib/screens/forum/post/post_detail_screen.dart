@@ -70,6 +70,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isTogglingPin = false; // 标记是否正在切换置顶状态
   bool _hasInitializedDependencies = false;
 
+  late bool _isDesktop;
+
   @override
   void initState() {
     super.initState();
@@ -84,6 +86,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
     if (_hasInitializedDependencies) {
       _loadPostDetails();
+      final screenWidth = DeviceUtils.getScreenWidth(context);
+      final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+      _isDesktop = isDesktop;
     }
   }
 
@@ -402,8 +407,11 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
   void _handleFilterTagSelect(BuildContext context, String newTagString) {
     widget.postListFilterProvider.setTag(newTagString);
-    NavigationUtils.navigateToHome(widget.sidebarProvider, context,
-        tabIndex: 2);
+    NavigationUtils.navigateToHome(
+      widget.sidebarProvider,
+      context,
+      tabIndex: 2,
+    );
   }
 
   // *** 构建界面 ***
@@ -434,8 +442,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           // notFound 的情况因为有弹窗，这里可以显示一个基础的错误界面
           // 或者直接返回一个空的 Scaffold，因为弹窗会覆盖整个屏幕
           return Scaffold(
-              appBar: const CustomAppBar(title: '帖子详情'),
-              body: Container()); // 空白页，等待用户关闭弹窗
+            appBar: const CustomAppBar(title: '帖子详情'),
+            body: Container(),
+          ); // 空白页，等待用户关闭弹窗
 
         // 你可以为其他特定错误码添加 case，比如网络错误
         case BackendApiErrorCodes.networkNoConnection:
@@ -507,6 +516,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final isDesktop = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        _isDesktop = isDesktop;
         return PostDetailLayout(
           isDesktop: isDesktop,
           authProvider: widget.authProvider,
@@ -544,8 +554,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         final String deleteHeroTag = 'postDeleteFab_${post.id}';
         final String lockHeroTag = 'postLockFab_${post.id}';
         final String pinHeroTag = 'postPinFab_${post.id}';
-        final double bottomPadding =
-            DeviceUtils.isDesktop ? 16.0 : 80.0; // 调整移动端底部间距
+        final double bottomPadding = _isDesktop ? 16.0 : 80.0; // 调整移动端底部间距
         return Padding(
           padding: EdgeInsets.only(bottom: bottomPadding, right: 16.0),
           child: FloatingActionButtonGroup(
@@ -624,4 +633,4 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       },
     );
   }
-} // End of _PostDetailScreenState
+}

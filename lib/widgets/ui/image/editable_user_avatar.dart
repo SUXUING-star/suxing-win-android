@@ -10,8 +10,8 @@ import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:path_provider/path_provider.dart'; // 导入路径提供程序库
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 导入安全缓存图片组件
 import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'custom_crop_dialog.dart'; // 导入自定义裁剪对话框
 
@@ -22,7 +22,6 @@ class EditableUserAvatar extends StatelessWidget {
   final User user; // 当前用户模型
   final double radius; // 头像半径
   final RateLimitedFileUpload fileUpload; // 文件上传服务实例
-  final Function(bool isLoading) onUploadStateChanged; // 上传状态变化回调
   final Function(String avatarUrl) onUploadSuccess; // 上传成功回调，返回新头像 URL
   final double iconSizeRatio; // 编辑图标大小与头像半径的比例
   final Color iconColor; // 编辑图标颜色
@@ -35,7 +34,6 @@ class EditableUserAvatar extends StatelessWidget {
   /// [user]：用户。
   /// [radius]：半径。
   /// [fileUpload]：文件上传服务。
-  /// [onUploadStateChanged]：上传状态变化回调。
   /// [onUploadSuccess]：上传成功回调。
   /// [iconSizeRatio]：图标大小比例。
   /// [iconColor]：图标颜色。
@@ -47,7 +45,6 @@ class EditableUserAvatar extends StatelessWidget {
     required this.user,
     required this.radius,
     required this.fileUpload,
-    required this.onUploadStateChanged,
     required this.onUploadSuccess,
     this.iconSizeRatio = 0.3,
     this.iconColor = Colors.white,
@@ -70,8 +67,6 @@ class EditableUserAvatar extends StatelessWidget {
     }
 
     if (!context.mounted) return; // 上下文未挂载时返回
-
-    onUploadStateChanged(true); // 通知上传开始
 
     File? tempFileToDelete; // 临时文件对象，用于清理
 
@@ -105,12 +100,7 @@ class EditableUserAvatar extends StatelessWidget {
           AppSnackBar.showError("操作失败,${e.toString()}");
         }
       }
-      if (context.mounted) {
-        // 检查上下文挂载状态
-        onUploadStateChanged(false); // 通知上传结束（失败）
-      }
     } finally {
-      // 确保执行清理操作
       if (tempFileToDelete != null) {
         // 存在临时文件时
         try {
@@ -129,8 +119,8 @@ class EditableUserAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final iconSize = radius * iconSizeRatio; // 计算编辑图标大小
-    final bool hasValidAvatar =
-        user.avatar != null && user.avatar!.trim().isNotEmpty; // 判断是否存在有效头像 URL
+    final devicePixelRatio = MediaQuery.of(context).devicePixelRatio;
+    final int calculatedMemCacheSize = (radius * 2 * devicePixelRatio).round();
 
     return GestureDetector(
       onTap: () => _handleAvatarUpdate(context), // 点击时触发头像更新流程
@@ -153,24 +143,16 @@ class EditableUserAvatar extends StatelessWidget {
               ],
             ),
             child: ClipOval(
-              // 裁剪为圆形
-              child: hasValidAvatar // 根据是否存在有效头像显示不同内容
-                  ? SafeCachedImage(
-                      key: ValueKey(user.avatar!), // 图片键
-                      imageUrl: user.avatar!, // 图片 URL
-                      width: radius * 2, // 图片宽度
-                      height: radius * 2, // 图片高度
-                      fit: BoxFit.cover, // 图片填充模式
-                    )
-                  : Center(
-                      // 占位符
-                      child: Icon(
-                        placeholderIcon, // 占位符图标
-                        size: radius, // 占位符图标大小
-                        color: placeholderColor, // 占位符图标颜色
-                      ),
-                    ),
-            ),
+                // 裁剪为圆形
+                child: SafeUserAvatar(
+              userId: user.id,
+              avatarUrl: user.avatar,
+              username: user.username,
+              radius: radius,
+              enableNavigation: false,
+              memCacheWidth: calculatedMemCacheSize,
+              memCacheHeight: calculatedMemCacheSize,
+            )),
           ),
           Positioned(
             bottom: 0, // 底部对齐

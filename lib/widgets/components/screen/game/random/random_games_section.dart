@@ -1,22 +1,35 @@
 // lib/widgets/components/screen/game/random/random_games_section.dart
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/services/main/game/game_service.dart';
 
+/// 一个横向滚动的“猜你喜欢”游戏推荐区域。
+///
+/// 功能特性:
+/// - 在移动端，支持手指左右滑动。
+/// - 在桌面端，当鼠标悬停在此区域时：
+///   1. 响应鼠标滚轮的上下滚动，并将其转换为列表的横向滚动。
+///   2. 通过 [onHover] 回调，通知父组件锁定或解锁其自身的垂直滚动，以避免冲突。
 class RandomGamesSection extends StatefulWidget {
   final String currentGameId;
   final GameService gameService;
+
+  /// 当鼠标进入或离开此组件区域时触发的回调。
+  /// `true` 表示进入，`false` 表示离开。
+  final ValueChanged<bool>? onHover;
 
   const RandomGamesSection({
     super.key,
     required this.currentGameId,
     required this.gameService,
+    this.onHover,
   });
 
   @override
@@ -24,52 +37,33 @@ class RandomGamesSection extends StatefulWidget {
 }
 
 class _RandomGamesSectionState extends State<RandomGamesSection> {
+  final ScrollController _scrollController = ScrollController();
   List<Game> _randomGames = [];
   bool _isLoading = true;
-  bool _hasInitializedDependencies = false;
-  late String _currentGameId;
   String? _errMsg;
 
   @override
   void initState() {
     super.initState();
-    _errMsg = null;
-    _currentGameId = widget.currentGameId;
+    _loadRandomGames();
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    if (!_hasInitializedDependencies) {
-      _hasInitializedDependencies = true;
-    }
-    if (_hasInitializedDependencies) {
+  void didUpdateWidget(covariant RandomGamesSection oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.currentGameId != oldWidget.currentGameId) {
       _loadRandomGames();
     }
   }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
-    _errMsg = null;
-  }
-
-  @override
-  void didUpdateWidget(covariant RandomGamesSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (_currentGameId != widget.currentGameId ||
-        oldWidget.currentGameId != widget.currentGameId) {
-      setState(() {
-        _currentGameId = widget.currentGameId;
-      });
-      _loadRandomGames();
-    }
   }
 
   Future<void> _loadRandomGames() async {
-    // 使用内建的 mounted 属性
-    if (!mounted) return; // 检查是否挂载
-
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _errMsg = null;
@@ -79,54 +73,37 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
       final games = await widget.gameService.getRandomGames(
         excludeId: widget.currentGameId,
       );
-
-      if (!mounted) return; // 在 await 后、setState 前检查
-
+      if (!mounted) return;
       setState(() {
         _randomGames = games;
         _isLoading = false;
-        _errMsg = null;
       });
     } catch (e) {
-      if (!mounted) return; // 在 catch 块内的 setState 前检查
-
+      if (!mounted) return;
       setState(() {
         _isLoading = false;
         _errMsg = e.toString();
       });
-      // print('Error loading random games: $e');
     }
-  }
-
-  void _handleRetry() {
-    if (!mounted) return;
-
-    _loadRandomGames();
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const LoadingWidget(
-        size: 24,
-      );
+      return const LoadingWidget(size: 24);
     }
     if (_errMsg != null) {
       return InlineErrorWidget(
-        onRetry: () => _handleRetry(),
+        onRetry: _loadRandomGames,
         retryText: "尝试重试",
         errorMessage: _errMsg,
       );
     }
-
     if (_randomGames.isEmpty) {
       return const EmptyStateWidget(message: "暂无推荐");
     }
 
-    // 获取屏幕宽度以计算卡片宽度
     final isDesktop = DeviceUtils.isDesktopScreen(context);
-
-    // 调整卡片宽度和边距
     final double cardWidth = isDesktop ? 160.0 : 140.0;
     final double cardMargin = 12.0;
     final double sectionHeight = isDesktop ? 200.0 : 180.0;
@@ -173,24 +150,54 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
           ),
           const SizedBox(height: 16),
 
-          // 游戏列表 - 固定高度
+          // --- 核心实现区域 ---
           SizedBox(
             height: sectionHeight,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              itemCount: _randomGames.length,
-              physics: const BouncingScrollPhysics(),
-              padding: EdgeInsets.zero,
-              itemBuilder: (context, index) {
-                return Container(
-                  width: cardWidth,
-                  margin: EdgeInsets.only(
-                      right: index < _randomGames.length - 1 ? cardMargin : 0),
-                  child: CommonGameCard(
-                    game: _randomGames[index],
+            // 1. MouseRegion 捕获鼠标进出事件，用于通知父组件
+            child: MouseRegion(
+              onEnter: (_) => widget.onHover?.call(true),
+              onExit: (_) => widget.onHover?.call(false),
+              // 2. Listener 捕获鼠标滚轮事件，并将其转换为横向滚动
+              child: Listener(
+                onPointerSignal: (pointerSignal) {
+                  if (pointerSignal is PointerScrollEvent) {
+                    final double scrollOffset =
+                        pointerSignal.scrollDelta.dy.abs() >
+                                pointerSignal.scrollDelta.dx.abs()
+                            ? pointerSignal.scrollDelta.dy
+                            : pointerSignal.scrollDelta.dx;
+
+                    _scrollController.jumpTo(
+                      _scrollController.offset + scrollOffset,
+                    );
+                  }
+                },
+                // 3. 内部的 ListView 正常处理触摸滑动
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  scrollbarOrientation: ScrollbarOrientation.bottom,
+                  child: ListView.builder(
+                    controller: _scrollController,
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _randomGames.length,
+                    padding: EdgeInsets.zero,
+                    itemBuilder: (context, index) {
+                      return Container(
+                        width: cardWidth,
+                        margin: EdgeInsets.only(
+                            right: index < _randomGames.length - 1
+                                ? cardMargin
+                                : 0),
+                        child: CommonGameCard(
+                          game: _randomGames[index],
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
+                ),
+              ),
             ),
           ),
         ],

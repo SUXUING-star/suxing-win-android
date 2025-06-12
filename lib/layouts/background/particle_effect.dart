@@ -40,7 +40,12 @@ class Particle {
 }
 
 /// `ParticleShape` 枚举：定义粒子的形状。
-enum ParticleShape { circle, heart, star, bubble }
+enum ParticleShape {
+  circle,
+  heart,
+  star,
+  bubble,
+}
 
 /// `ParticlesPainter` 类：粒子绘制器。
 ///

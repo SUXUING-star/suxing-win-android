@@ -1,9 +1,12 @@
-// lib/widgets/components/screen/game/dialog/collection_dialog.dart
+// lib/widgets/components/screen/game/dialog/game_collection_dialog.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_collection_form_data.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/game_collection/collection_form.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 
 class GameCollectionDialog extends StatelessWidget {
   final String gameId;
@@ -31,7 +34,8 @@ class GameCollectionDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEditing = currentStatus != null && currentStatus!.isNotEmpty;
     final title = isEditing ? '编辑收藏' : '添加收藏';
-    final isDesktop = MediaQuery.of(context).size.width >= 1024;
+    final screenSize = DeviceUtils.getScreenSize(context);
+    final isDesktop = DeviceUtils.isDesktopInThisWidth(screenSize.width);
 
     return Center(
       // 1. 使用 Center 包裹，让对话框居中
@@ -39,7 +43,7 @@ class GameCollectionDialog extends StatelessWidget {
         // 2. 使用 ConstrainedBox 限制对话框大小
         constraints: BoxConstraints(
           maxWidth: isDesktop ? 500 : 400,
-          maxHeight: MediaQuery.of(context).size.height * 0.8, // 高度可以自适应内容，不需要限制最大高度
+          maxHeight: screenSize.height * 0.8, // 高度可以自适应内容，不需要限制最大高度
           minWidth: 280, //  添加最小宽度，和 CustomConfirmDialog 保持一致
         ),
         child: Material(
@@ -90,17 +94,23 @@ class GameCollectionDialog extends StatelessWidget {
                           onCancel: () => NavigationUtils.of(context).pop(),
                           onRemove: () {
                             NavigationUtils.of(context).pop({
-                              'action': 'remove',
+                              GameCollectionFormData(
+                                action:
+                                    CollectionActionType.removeCollectionAction,
+                              ),
                             });
                           },
+
                           onSubmit: (status, notes, review, rating) {
-                            // Make sure this function accepts review
                             NavigationUtils.of(context).pop({
-                              'action': 'set',
-                              'status': status,
-                              'notes': notes,
-                              'review': review, // Include review in result
-                              'rating': rating,
+                              GameCollectionFormData(
+                                action:
+                                    CollectionActionType.setCollectionAction,
+                                status: status,
+                                notes: notes,
+                                review: review,
+                                rating: rating,
+                              )
                             });
                           },
                         ),

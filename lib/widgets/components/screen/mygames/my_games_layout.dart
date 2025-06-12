@@ -2,7 +2,6 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart'; // Ensure GameStatus enum is here
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
@@ -12,7 +11,6 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 enum GameStatType {
   views,
@@ -30,7 +28,8 @@ class MyGamesLayout extends StatelessWidget {
   final Function(Game) onResubmit;
   final Function(String) onShowReviewComment;
   final AuthProvider authProvider;
-  final WindowStateProvider windowStateProvider;
+  final bool isDesktopLayout;
+  final double screenWidth;
 
   static const int desktopStatsFlex = 1;
   static const int desktopGameListFlex = 4;
@@ -50,7 +49,8 @@ class MyGamesLayout extends StatelessWidget {
     required this.onResubmit,
     required this.onShowReviewComment,
     required this.authProvider,
-    required this.windowStateProvider,
+    required this.screenWidth,
+    required this.isDesktopLayout,
   });
 
   @override
@@ -67,22 +67,15 @@ class MyGamesLayout extends StatelessWidget {
       );
     }
 
-    return LazyLayoutBuilder(
-      windowStateProvider: windowStateProvider,
-      builder: (context, constraints) {
-        final screenWidth = constraints.maxWidth;
-        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
-        return isDesktopLayout
-            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
-            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
-      },
-    );
+    return isDesktopLayout
+        ? _buildDesktopLayout(
+            context,
+          )
+        : _buildMobileLayout(context);
   }
 
   Widget _buildDesktopLayout(
     BuildContext context,
-    bool isDesktopLayout,
-    double screenWidth,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -93,7 +86,6 @@ class MyGamesLayout extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
             child: _buildMyGamesStatistics(
               context,
-              isDesktopLayout,
             ),
           ),
         ),
@@ -102,8 +94,6 @@ class MyGamesLayout extends StatelessWidget {
           flex: desktopGameListFlex,
           child: _buildGamesContent(
             context,
-            isDesktopLayout,
-            screenWidth,
           ),
         ),
       ],
@@ -112,8 +102,6 @@ class MyGamesLayout extends StatelessWidget {
 
   Widget _buildMobileLayout(
     BuildContext context,
-    bool isDesktopLayout,
-    double screenWidth,
   ) {
     return Column(
       children: [
@@ -126,14 +114,11 @@ class MyGamesLayout extends StatelessWidget {
           ),
           child: _buildMyGamesStatistics(
             context,
-            isDesktopLayout,
           ),
         ),
         Expanded(
           child: _buildGamesContent(
             context,
-            isDesktopLayout,
-            screenWidth,
           ),
         ),
       ],
@@ -142,7 +127,6 @@ class MyGamesLayout extends StatelessWidget {
 
   Widget _buildMyGamesStatistics(
     BuildContext context,
-    bool isDesktop,
   ) {
     final int totalGames = myGames.length;
     final int pendingGames = myGames
@@ -155,7 +139,7 @@ class MyGamesLayout extends StatelessWidget {
         .where((game) => game.approvalStatus == GameStatus.rejected)
         .length;
 
-    if (isDesktop) {
+    if (isDesktopLayout) {
       final cardPadding = const EdgeInsets.all(16);
       final titleStyle = TextStyle(
         fontSize: 18,
@@ -379,11 +363,9 @@ class MyGamesLayout extends StatelessWidget {
 
   Widget _buildGamesContent(
     BuildContext context,
-    bool isDesktop,
-    double screenWidth,
   ) {
     double availableWidth;
-    if (isDesktop) {
+    if (isDesktopLayout) {
       availableWidth = (screenWidth - desktopDividerWidth) *
           desktopGameListFlex /
           (desktopStatsFlex + desktopGameListFlex);
@@ -394,20 +376,22 @@ class MyGamesLayout extends StatelessWidget {
       context,
       directAvailableWidth: availableWidth,
     );
-    final cardRatio = DeviceUtils.calculateSimpleGameCardRatio(context);
-
+    final cardRatio = DeviceUtils.calculateGameCardRatio(
+      context,
+      directAvailableWidth: availableWidth,
+    );
 
     return ListView(
       key: ValueKey<int>(myGames.length),
       controller: scrollController,
-      padding: EdgeInsets.all(isDesktop ? 16 : 8),
+      padding: EdgeInsets.all(isDesktopLayout ? 16 : 8),
       children: [
         AnimatedContentGrid<Game>(
           items: myGames,
           crossAxisCount: cardsPerRow,
           childAspectRatio: cardRatio,
           crossAxisSpacing: 8,
-          mainAxisSpacing: isDesktop ? 16 : 8,
+          mainAxisSpacing: isDesktopLayout ? 16 : 8,
           padding: EdgeInsets.zero,
           // 外部 ListView 已有 padding
           shrinkWrap: true,

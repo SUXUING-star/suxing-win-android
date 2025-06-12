@@ -75,7 +75,7 @@ class HistoryPostGridView extends StatelessWidget {
                 infoProvider: infoProvider,
                 followService: followService,
                 post: post,
-                screenWidth: availableWidth, // 把这里的 screenWidth 也换成 availableWidth
+                availableWidth: availableWidth, // 把这里的 screenWidth 也换成 availableWidth
                 onDeleteAction: null,
                 onEditAction: null,
                 onToggleLockAction: null,

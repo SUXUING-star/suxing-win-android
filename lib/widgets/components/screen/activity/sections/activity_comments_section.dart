@@ -24,7 +24,7 @@ class ActivityCommentsSection extends StatelessWidget {
   final Function(String) onAddComment;
   final FutureOr<void> Function(ActivityComment comment) onCommentDeleted;
   final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled;
-  final bool isDesktop;
+  final bool isDesktopLayout;
 
   const ActivityCommentsSection({
     super.key,
@@ -38,20 +38,20 @@ class ActivityCommentsSection extends StatelessWidget {
     required this.onAddComment,
     required this.onCommentDeleted,
     required this.onCommentLikeToggled,
-    required this.isDesktop,
+    required this.isDesktopLayout,
   });
 
   @override
   Widget build(BuildContext context) {
     // final theme = Theme.of(context);
-    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktopLayout ? 20 : 16);
 
     final commentInput = Padding(
-      padding: EdgeInsets.only(bottom: isDesktop ? 16 : 0), // 调整padding
+      padding: EdgeInsets.only(bottom: isDesktopLayout ? 16 : 0), // 调整padding
       child: Column(
         // crossAxisAlignment: CrossAxisAlignment.start, // 移除以使分割线居中
         children: [
-          if (!isDesktop) ...[
+          if (!isDesktopLayout) ...[
             const SizedBox(height: 10),
             const Divider(),
             const SizedBox(height: 10)
@@ -63,7 +63,7 @@ class ActivityCommentsSection extends StatelessWidget {
             isAlternate: false,
             hintText: '添加你的看法...',
           ),
-          if (isDesktop) ...[
+          if (isDesktopLayout) ...[
             const SizedBox(height: 20),
             const Divider(),
             const SizedBox(height: 16)
@@ -136,7 +136,7 @@ class ActivityCommentsSection extends StatelessWidget {
     }
 
     // --- 根据 isDesktop 决定输入框和列表的顺序 ---
-    List<Widget> childrenInOrder = isDesktop
+    List<Widget> childrenInOrder = isDesktopLayout
         ? [
             commentInput, // 输入框 (包含其下的分割线)
             // --- 桌面评论列表区域 ---

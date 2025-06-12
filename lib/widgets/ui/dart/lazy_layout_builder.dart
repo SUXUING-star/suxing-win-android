@@ -1,3 +1,5 @@
+// lib/widgets/ui/dart/lazy_layout_builder.dart
+
 /// 定义了 LazyLayoutBuilder 组件。
 library;
 

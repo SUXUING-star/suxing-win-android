@@ -871,9 +871,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     if (_error.isNotEmpty && _activities.isEmpty) {
       // 发生错误且活动列表为空时显示错误组件
       return CustomErrorWidget(
-          errorMessage: _error,
-          onRetry: () =>
-              _loadActivities(isRefresh: true, pageToLoad: 1)); // 提供重试按钮
+        errorMessage: _error,
+        onRetry: () => _loadActivities(isRefresh: true, pageToLoad: 1),
+      ); // 提供重试按钮
     }
 
     Widget topActionBar = _buildTopActionBar(); // 构建顶部动作栏

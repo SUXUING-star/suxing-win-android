@@ -3,7 +3,8 @@
 /// 该文件定义了全局常量，包含应用链接、技术栈信息、默认图片资源、UI 尺寸和颜色等。
 library;
 
-import 'package:flutter/material.dart'; // Flutter UI 框架
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // Flutter UI 框架
 
 /// `GlobalConstants` 类：定义全局常量。
 ///
@@ -23,6 +24,8 @@ class GlobalConstants {
   static const String appNameAndroid = '$appName（安卓版）'; // 安卓版应用名称
   static const String appNameWindows = '$appName（Windows）'; // Windows 版应用名称
   static const String appIcon = 'assets/images/icons/app_icon.jpg'; // 应用图标路径
+
+  static const String aboutImage = 'assets/images/other/bg-3.png';
 
   /// 技术栈信息列表。
   static const List<Map<String, dynamic>> techStacks = [
@@ -54,8 +57,11 @@ class GlobalConstants {
   static const String initScreenGifSecond =
       'assets/images/menu/cappo1.gif'; // 初始化屏幕 GIF 2
 
-  static const String defaultBannerImage =
-      'assets/images/banner/banner_colorful.png'; // 默认 Banner 图片
+  static const String bannerImageFirst =
+      'assets/images/banner/banner_colorful.png'; // Banner 图片 1
+
+  static const String bannerImageSecond =
+      'assets/images/banner/banner_colorful1.png'; //  Banner 图片 2
 
   /// 默认导航页面颜色列表。
   static const List<Color> defaultNavPageColors = [
@@ -69,16 +75,42 @@ class GlobalConstants {
   /// 默认侧边栏导航项列表。
   static List<Map<String, dynamic>> defaultSideBarNavItems() {
     return [
-      {'icon': Icons.home_rounded, 'label': '首页', 'index': 0},
-      {'icon': Icons.games_rounded, 'label': '游戏', 'index': 1},
-      {'icon': Icons.forum_rounded, 'label': '论坛', 'index': 2},
-      {'icon': Icons.rocket_launch, 'label': '动态', 'index': 3},
-      {'icon': Icons.link_rounded, 'label': '外部', 'index': 4},
+      {
+        'icon': Icons.home_rounded,
+        'label': '首页',
+        'index': 0,
+      },
+      {
+        'icon': Icons.games_rounded,
+        'label': '游戏',
+        'index': 1,
+      },
+      {
+        'icon': Icons.forum_rounded,
+        'label': '论坛',
+        'index': 2,
+      },
+      {
+        'icon': Icons.rocket_launch,
+        'label': '动态',
+        'index': 3,
+      },
+      {
+        'icon': Icons.link_rounded,
+        'label': '外部',
+        'index': 4,
+      },
     ];
   }
 
   /// 默认侧边栏颜色列表。
-  static const List<Color> defaultSideBarColors = [
+  static List<Color> defaultSideBarColors = [
+    Color(0xFFD8FFEF),
+    Color(0x000000ff),
+  ];
+
+  static const List<Color> desktopBarColor = [
+    Color(0x000000ff), // 桌面栏颜色列表，用于渐变
     Color(0xFFD8FFEF),
     Color(0x000000ff),
   ];
@@ -109,8 +141,7 @@ class GlobalConstants {
 
   /// 默认 AppBar 颜色列表。
   static const List<Color> defaultAppBarColors = [
-    Color(0x000000FF),
-    Color(0xFFD8FFEF),
-    Color(0x000000FF),
+    Color(0xFF6AB7F0),
+    Color(0xFF4E9DE3),
   ];
 }

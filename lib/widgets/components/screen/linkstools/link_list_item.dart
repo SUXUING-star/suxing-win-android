@@ -25,25 +25,38 @@ class LinkListItem extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         child: ListTile(
           contentPadding:
-          const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
           leading: Container(
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-                color: Color(int.parse(link.color.replaceFirst('#', '0xFF'))),
+                color: Color(
+                  int.parse(link.color.replaceFirst('#', '0xFF')),
+                ),
                 borderRadius: BorderRadius.circular(12)),
-            child: const Icon(Icons.link, color: Colors.white, size: 24),
+            child: const Icon(
+              Icons.link,
+              color: Colors.white,
+              size: 24,
+            ),
           ),
-          title: Text(link.title,
-              style:
-              const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+          title: Text(
+            link.title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           subtitle: Padding(
             padding: const EdgeInsets.only(top: 4),
             child: Text(
               link.description,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[600],
+              ),
             ),
           ),
           trailing: Row(
@@ -57,7 +70,10 @@ class LinkListItem extends StatelessWidget {
               ),
               if (isAdmin)
                 IconButton(
-                  icon: Icon(Icons.edit, color: Colors.grey[600]),
+                  icon: Icon(
+                    Icons.edit,
+                    color: Colors.grey[600],
+                  ),
                   onPressed: onEdit,
                 ),
             ],

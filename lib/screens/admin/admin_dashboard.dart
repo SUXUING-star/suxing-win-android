@@ -2,12 +2,14 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/services/main/maintenance/maintenance_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -30,7 +32,9 @@ class AdminDashboard extends StatefulWidget {
   final MaintenanceService maintenanceService;
   final AnnouncementService announcementService;
   final WindowStateProvider windowStateProvider;
+  final UserFollowService followService;
   final RateLimitedFileUpload fileUpload;
+  final UserInfoProvider infoProvider;
   const AdminDashboard({
     super.key,
     required this.authProvider,
@@ -41,7 +45,9 @@ class AdminDashboard extends StatefulWidget {
     required this.linkToolService,
     required this.maintenanceService,
     required this.fileUpload,
+    required this.followService,
     required this.announcementService,
+    required this.infoProvider,
   });
 
   @override
@@ -108,8 +114,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
         ...commonPages,
         UserManagement(
           currentUser: currentUser,
+          windowStateProvider: widget.windowStateProvider,
           inputStateService: widget.inputStateService,
           userService: widget.userService,
+          followService: widget.followService,
+          infoProvider: widget.infoProvider,
         ),
         AnnouncementManagement(
           fileUpload: widget.fileUpload,

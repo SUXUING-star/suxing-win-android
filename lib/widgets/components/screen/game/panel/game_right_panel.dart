@@ -1,4 +1,5 @@
-// lib/widgets/components/screen/gamelist/panel/game_right_panel.dart
+// lib/widgets/components/screen/game/panel/game_right_panel.dart
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -7,7 +8,6 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/stats/category_stat.dart';
 import 'package:suxingchahui/models/stats/tag_stat.dart';
 import 'package:suxingchahui/services/main/game/game_stats_service.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameRightPanel extends StatelessWidget {
   final double panelWidth;

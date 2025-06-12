@@ -10,7 +10,7 @@ import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart'; // 
 /// `GameTagList` 类：显示游戏标签列表的组件。
 ///
 /// 该组件展示指定数量的游戏标签，并根据配置决定是否可水平滚动。
-class GameTagList extends StatelessWidget {
+class GameTagsRow extends StatelessWidget {
   final List<String> tags; // 标签列表
   final int maxTags; // 最大显示标签数量
   final bool isScrollable; // 是否可水平滚动
@@ -25,7 +25,7 @@ class GameTagList extends StatelessWidget {
   /// [tags]：标签列表。
   /// [maxTags]：最大标签数。
   /// [isScrollable]：是否可滚动。
-  const GameTagList({
+  const GameTagsRow({
     super.key,
     required this.tags,
     required this.maxTags,

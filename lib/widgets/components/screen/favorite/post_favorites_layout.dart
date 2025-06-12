@@ -32,6 +32,9 @@ class PostFavoritesLayout extends StatefulWidget {
   final UserInfoProvider userInfoProvider;
   final UserFollowService userFollowService;
 
+  static const int leftFlex = 1;
+  static const int rightFlex = 3;
+
   const PostFavoritesLayout({
     super.key,
     required this.favoritePosts,
@@ -102,14 +105,15 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
       );
     }
 
+    // 这是她妈的获取屏幕的宽度
     return LazyLayoutBuilder(
       windowStateProvider: widget.windowStateProvider,
       builder: (context, constraints) {
         final screenWidth = constraints.maxWidth;
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return isDesktopLayout
-            ? _buildDesktopLayout(context, isDesktopLayout)
-            : _buildMobileLayout(context, isDesktopLayout);
+            ? _buildDesktopLayout(context, isDesktopLayout, screenWidth)
+            : _buildMobileLayout(context, isDesktopLayout, screenWidth);
       },
     );
   }
@@ -117,12 +121,13 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
   Widget _buildDesktopLayout(
     BuildContext context,
     bool isDesktopLayout,
+    double screenWidth,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(
-          flex: 1,
+          flex: PostFavoritesLayout.leftFlex,
           child: SingleChildScrollView(
             padding: const EdgeInsets.fromLTRB(16, 16, 8, 16),
             child: _buildPostFavoritesStatistics(context,
@@ -131,17 +136,22 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
         ),
         const VerticalDivider(width: 1, thickness: 0.5),
         Expanded(
-          flex: 3,
+          flex: PostFavoritesLayout.rightFlex,
           child: _buildFavoritesContent(
             context,
             isDesktop: isDesktopLayout,
+            screenWidth: screenWidth,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMobileLayout(BuildContext context, bool isDesktopLayout) {
+  Widget _buildMobileLayout(
+    BuildContext context,
+    bool isDesktopLayout,
+    double screenWidth,
+  ) {
     return Column(
       children: [
         Padding(
@@ -155,6 +165,7 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
           child: _buildFavoritesContent(
             context,
             isDesktop: isDesktopLayout,
+            screenWidth: screenWidth,
           ),
         ),
       ],
@@ -241,8 +252,11 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
     );
   }
 
-  Widget _buildFavoritesContent(BuildContext context,
-      {required bool isDesktop}) {
+  Widget _buildFavoritesContent(
+    BuildContext context, {
+    required bool isDesktop,
+    required double screenWidth,
+  }) {
     // 准备要显示的所有项目
     final List<Object> displayItems = [...widget.favoritePosts];
     if (widget.isLoadingMore) {
@@ -251,12 +265,22 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
       displayItems.add(const _LoadMoreButtonPlaceholder());
     }
 
-    final thisWidth = MediaQuery.of(context).size.width;
+    // 这是她妈的手动计算,实际的网格布局的实际的宽度
+    double availableWidth;
+    if (isDesktop) {
+      availableWidth = screenWidth *
+          PostFavoritesLayout.rightFlex /
+          (PostFavoritesLayout.leftFlex + PostFavoritesLayout.rightFlex);
+    } else {
+      availableWidth = screenWidth;
+    }
     final crossAxisCount = DeviceUtils.calculatePostCardsPerRow(
       context,
-      directAvailableWidth: thisWidth,
+      directAvailableWidth: availableWidth,
     );
-    final cardRatio = DeviceUtils.calculatePostCardRatio(context);
+
+    final cardRatio = DeviceUtils.calculatePostCardRatio(context,
+        directAvailableWidth: availableWidth);
     return AnimatedContentGrid<Object>(
       items: displayItems,
       crossAxisCount: crossAxisCount,
@@ -269,7 +293,7 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
         if (item is Post) {
           return _buildPostCard(
             item,
-            thisWidth,
+            availableWidth,
             isDesktop,
           );
         }
@@ -310,7 +334,7 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
         BasePostCard(
           post: postItem,
           currentUser: widget.currentUser,
-          screenWidth: postListWidth,
+          availableWidth: postListWidth,
           infoProvider: widget.userInfoProvider,
           followService: widget.userFollowService,
           onDeleteAction: null,

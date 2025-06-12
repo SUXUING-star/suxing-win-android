@@ -5,9 +5,11 @@
 library;
 
 import 'dart:async'; // 导入异步操作所需，如 Timer
+import 'dart:math';
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
 import 'package:rxdart/rxdart.dart'; // 导入 RxDart，用于流的 debounceTime
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
@@ -119,11 +121,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
 
   late double _screenWidth;
 
+  late String _bannerImage;
+
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 添加应用生命周期观察者
     _hotGamesPageController = PageController(); // 初始化 PageController
+    _bannerImage = Random().nextBool()
+        ? GlobalConstants.bannerImageFirst
+        : GlobalConstants.bannerImageSecond;
   }
 
   @override
@@ -142,9 +149,6 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   @override
   void didUpdateWidget(covariant HomeScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    setState(() {
-      _screenWidth = DeviceUtils.getScreenWidth(context);
-    });
 
     if (_currentUserId != oldWidget.authProvider.currentUserId ||
         _currentUserId != widget.authProvider.currentUserId) {
@@ -678,8 +682,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             _isHotPostsLoading ||
             !_hasInitializedDependencies)) {
       // 首次加载时显示骨架屏或加载动画
-      return Scaffold(
-        body: const FadeInItem(
+      return const Scaffold(
+        body: FadeInItem(
           // 全屏加载组件
           child: LoadingWidget(
             isOverlay: true,
@@ -726,9 +730,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.stretch, // 水平拉伸
             children: [
               FadeInSlideUpItemCanPlay(
-                  play: currentPlaySectionEntryAnimation, // 播放动画
-                  delay: initialDelay, // 延迟
-                  child: const HomeBanner()), // 首页 Banner
+                play: currentPlaySectionEntryAnimation, // 播放动画
+                delay: initialDelay, // 延迟
+                child: HomeBanner(
+                  bannerImagePath: _bannerImage,
+                ),
+              ), // 首页 Banner
               const SizedBox(height: 16), // 间距
 
               FadeInSlideUpItemCanPlay(

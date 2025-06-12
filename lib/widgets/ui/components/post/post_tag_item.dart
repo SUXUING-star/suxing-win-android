@@ -1,30 +1,32 @@
 // lib/widgets/ui/components/post/post_tag_item.dart
 
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart';
-import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart'; // 卧槽，必须引入这个牛逼的基类
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+/// 该文件定义了 PostTagItem 组件，用于显示可点击的帖子标签。
+/// PostTagItem 根据标签字符串、选中状态和模式，渲染不同样式的标签。
+library;
 
-/// 可复用的帖子标签项 Widget。
+import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:suxingchahui/constants/post/post_constants.dart'; // 帖子常量
+import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart'; // 基础标签视图组件
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
+
+/// `PostTagItem` 类：可复用的帖子标签项组件。
 ///
-/// 现在这个b玩意儿内部调用了 BaseTagView，代码干净得一逼。
-/// 它只负责处理业务逻辑（比如颜色转换、点击事件），显示的事儿全权交给 BaseTagView。
+/// 该组件处理标签的业务逻辑，并将其显示交给 `BaseTagView`。
 class PostTagItem extends StatelessWidget {
-  /// 要显示的标签字符串 (来自 Post 模型的 tags 列表)
-  final String tagString;
+  final String tagString; // 要显示的标签字符串
+  final int? count; // 标签的计数值
+  final bool isSelected; // 是否被选中
+  final ValueChanged<PostTag?>? onTap; // 点击回调
+  final bool isMini; // 是否使用迷你模式
 
-  /// 标签的计数值 (可选, 来自统计)
-  final int? count;
-
-  /// 是否被选中 (由父组件控制)
-  final bool isSelected;
-
-  /// 点击回调 (传递 PostTag?, 类型安全)
-  final ValueChanged<PostTag?>? onTap;
-
-  /// 是否使用迷你模式
-  final bool isMini;
-
+  /// 构造函数。
+  ///
+  /// [key]：Widget 的 Key。
+  /// [tagString]：要显示的标签字符串。
+  /// [count]：标签的计数值。
+  /// [isSelected]：是否被选中。
+  /// [onTap]：点击回调。
+  /// [isMini]：是否使用迷你模式。
   const PostTagItem({
     super.key,
     required this.tagString,
@@ -34,40 +36,36 @@ class PostTagItem extends StatelessWidget {
     this.isMini = false,
   });
 
+  /// 构建 Widget。
+  ///
+  /// 根据标签字符串确定基础颜色，并构建可点击的 `BaseTagView`。
   @override
   Widget build(BuildContext context) {
-    // 1. 字符串转枚举，'全部' 特殊处理
+    // 1. 字符串转枚举，'全部' 特殊处理。
     final PostTag? tagEnum =
         (tagString == '全部') ? null : PostTagsUtils.tagFromString(tagString);
 
-    // 2. 确定基础颜色。这颜色就是传给 BaseTagView 的核心参数
-    final Color baseColor = (tagEnum == null) // 如果是 "全部"
-        ? Theme.of(context).colorScheme.secondary // 用主题色
-        : tagEnum.color; // 否则用枚举对应的颜色
+    // 2. 确定基础颜色。
+    final Color baseColor = (tagEnum == null) // 如果是 "全部" 标签
+        ? Theme.of(context).colorScheme.secondary // 使用主题的次级颜色
+        : tagEnum.color; // 否则使用枚举对应的颜色
 
-    // 3. 准备好点击时要回传的数据
+    // 3. 准备点击时回传的数据。
     final PostTag? tagToPassOnClick = tagEnum;
 
-    // --- 视图渲染层 ---
-    // 把所有样式计算全扔了，直接用 InkWell 包裹 BaseTagView
-
+    // 视图渲染层。
     return InkWell(
-      // 点击事件直接绑定，清爽
-      onTap: onTap != null ? () => onTap!(tagToPassOnClick) : null,
-      // 圆角直接用 BaseTagView 里的常量，保证水波纹和背景的圆角他妈的完全一致
+      onTap: onTap != null ? () => onTap!(tagToPassOnClick) : null, // 绑定点击事件
       borderRadius: BorderRadius.circular(
-          isMini ? BaseTagView.miniRadius : BaseTagView.normalRadius),
-      splashColor: baseColor.withSafeOpacity(0.3),
-      highlightColor: baseColor.withSafeOpacity(0.2),
+          isMini ? BaseTagView.miniRadius : BaseTagView.normalRadius), // 设置圆角
+      splashColor: baseColor.withSafeOpacity(0.3), // 水波纹颜色
+      highlightColor: baseColor.withSafeOpacity(0.2), // 高亮颜色
       child: BaseTagView(
-        // 把计算好的数据喂给 BaseTagView 就完事了
-        text: tagString,
-        baseColor: baseColor,
-        isMini: isMini,
-        count: count,
-        // 选中时 (isSelected=true)，我们要实心效果，所以 isFrosted=false。
-        // 未选中时 (isSelected=false)，我们要磨砂效果，所以 isFrosted=true。
-        isFrosted: !isSelected,
+        text: tagString, // 标签文本
+        baseColor: baseColor, // 基础颜色
+        isMini: isMini, // 是否迷你模式
+        count: count, // 计数
+        isFrosted: !isSelected, // 根据选中状态设置磨砂效果
       ),
     );
   }

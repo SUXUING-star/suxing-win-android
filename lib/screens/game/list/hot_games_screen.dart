@@ -28,7 +28,6 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
   String? _error;
   bool _hasInitializedDependencies = false;
 
-
   @override
   void initState() {
     super.initState();
@@ -84,28 +83,29 @@ class _HotGamesScreenState extends State<HotGamesScreen> {
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final User? currentUser = authSnapshot.data;
-          return CommonGameListScreen(
-            key: ValueKey('hot_games_${_hotGames.length}_$_isLoading$_error'),
-            title: '热门游戏',
-            currentUser: currentUser,
-            games: _hotGames,
-            isLoading: _isLoading,
-            error: _error,
-            onRefreshTriggered: _handleRefresh,
-            windowStateProvider: widget.windowStateProvider,
-            // 传递刷新回调
-            onDeleteGameAction: null,
-            emptyStateMessage: '暂无热门游戏',
-            emptyStateIcon:
-                Icon(Icons.local_fire_department, size: 48, color: Colors.grey),
-            useScaffold: true,
-            showAddButton: false,
-            showSortOptions: false,
-          );
-        });
+      stream: widget.authProvider.currentUserStream,
+      initialData: widget.authProvider.currentUser,
+      builder: (context, authSnapshot) {
+        final User? currentUser = authSnapshot.data;
+        return CommonGameListScreen(
+          key: ValueKey('hot_games_${_hotGames.length}_$_isLoading$_error'),
+          title: '热门游戏',
+          currentUser: currentUser,
+          games: _hotGames,
+          isLoading: _isLoading,
+          error: _error,
+          onRefreshTriggered: _handleRefresh,
+          windowStateProvider: widget.windowStateProvider,
+          // 传递刷新回调
+          onDeleteGameAction: null,
+          emptyStateMessage: '暂无热门游戏',
+          emptyStateIcon:
+              Icon(Icons.local_fire_department, size: 48, color: Colors.grey),
+          useScaffold: true,
+          showAddButton: false,
+          showSortOptions: false,
+        );
+      },
+    );
   }
 }

@@ -31,7 +31,7 @@ class ActivityInfoSection extends StatelessWidget {
   final VoidCallback? onDeleteActivity;
 
   /// 是否为桌面布局 (影响内边距等)。
-  final bool isDesktop;
+  final bool isDesktopLayout;
 
   const ActivityInfoSection({
     super.key,
@@ -41,7 +41,7 @@ class ActivityInfoSection extends StatelessWidget {
     required this.activity,
     this.onEditActivity,
     this.onDeleteActivity,
-    required this.isDesktop,
+    required this.isDesktopLayout,
   });
 
   @override
@@ -51,10 +51,10 @@ class ActivityInfoSection extends StatelessWidget {
     final NumberFormat compactFormatter =
         NumberFormat.compact(locale: 'zh_CN'); // 指定中文区域设置
     // 根据布局调整间距
-    final double headerBottomMargin = isDesktop ? 16 : 12;
-    final double metaInfoGap = isDesktop ? 16 : 12;
+    final double headerBottomMargin = isDesktopLayout ? 16 : 12;
+    final double metaInfoGap = isDesktopLayout ? 16 : 12;
     // 根据布局调整内边距
-    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktopLayout ? 20 : 16);
 
     return Container(
       padding: sectionPadding,

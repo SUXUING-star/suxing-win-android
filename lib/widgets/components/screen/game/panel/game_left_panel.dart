@@ -1,4 +1,5 @@
-// lib/widgets/components/screen/gamelist/panel/game_left_panel.dart
+// lib/widgets/components/screen/game/panel/game_left_panel.dart
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_tag.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -21,25 +22,26 @@ class GameLeftPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 整体容器和标题栏样式保持不变
     return Container(
       width: panelWidth,
-      margin: EdgeInsets.all(8),
+      margin: const EdgeInsets.all(8),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          color: Colors.white.withSafeOpacity(0.8), // 背景色可以按需调整
+          color: Colors.white.withSafeOpacity(0.8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // 标题栏
               Container(
-                padding: EdgeInsets.all(12),
+                padding: const EdgeInsets.all(12),
                 color: Theme.of(context).primaryColor,
                 child: Row(
                   children: [
-                    Icon(Icons.label, color: Colors.white, size: 16),
-                    SizedBox(width: 8),
-                    Text(
+                    const Icon(Icons.label, color: Colors.white, size: 16),
+                    const SizedBox(width: 8),
+                    const Text(
                       '热门标签',
                       style: TextStyle(
                         color: Colors.white,
@@ -47,19 +49,18 @@ class GameLeftPanel extends StatelessWidget {
                         fontSize: 14,
                       ),
                     ),
-                    Spacer(), // <--- 使用 Spacer 把清除按钮推到最右边
+                    const Spacer(),
                     if (selectedTag != null)
                       InkWell(
-                        // onTap: () => onTagSelected(selectedTag!), // 旧逻辑
-                        onTap: () => onTagSelected(null), // <--- 点击清除按钮时传递 null
+                        onTap: () => onTagSelected(null), // 点击清除
                         child: Container(
-                          padding:
-                              EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.white.withSafeOpacity(0.3),
                             borderRadius: BorderRadius.circular(12),
                           ),
-                          child: Row(
+                          child: const Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(Icons.close, size: 12, color: Colors.white),
@@ -82,8 +83,9 @@ class GameLeftPanel extends StatelessWidget {
               // 标签区域
               Expanded(
                 child: SingleChildScrollView(
-                  padding: EdgeInsets.all(12),
-                  child: _buildTagsGrid(context),
+                  padding: const EdgeInsets.all(12),
+                  // 调用新的 _buildTagsWrap 方法
+                  child: _buildTagsWrap(context),
                 ),
               ),
             ],
@@ -93,7 +95,8 @@ class GameLeftPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildTagsGrid(BuildContext context) {
+  /// 使用 Wrap 布局来构建标签列表，自动换行，更灵活。
+  Widget _buildTagsWrap(BuildContext context) {
     if (tags.isEmpty) {
       return InlineErrorWidget(
         errorMessage: '加载标签发生错误',
@@ -103,49 +106,25 @@ class GameLeftPanel extends StatelessWidget {
       );
     }
 
-    // --- 参数可以调 ---
-    final double itemAspectRatio = 3.0; // 宽高比，可能还要调
-    final double cornerRadius = 12.0; // <--- 加大圆角！整个标签区域用这个圆角
-    final double gridSpacing = 1;
-
-    return GridView.builder(
-      shrinkWrap: true,
-      physics: NeverScrollableScrollPhysics(),
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        childAspectRatio: itemAspectRatio,
-        crossAxisSpacing: gridSpacing,
-        mainAxisSpacing: gridSpacing,
-      ),
-      itemCount: tags.length,
-      itemBuilder: (context, index) {
-        final tag = tags[index];
+    // --- 核心修改：用 Wrap 替换 GridView ---
+    return Wrap(
+      spacing: 8.0, // 标签之间的水平间距
+      runSpacing: 8.0, // 标签之间的垂直间距
+      children: tags.map((tag) {
         final isSelected = selectedTag == tag.name;
 
-        // 用 ClipRRect 来强制圆角，InkWell 的水波纹也会是圆角的
-        return ClipRRect(
-          borderRadius: BorderRadius.circular(cornerRadius), // <--- 用统一的大圆角
-          child: InkWell(
-            onTap: () => onTagSelected(tag.name),
-            child: Container(
-              color: isSelected
-                  ? Theme.of(context)
-                      .primaryColor
-                      .withSafeOpacity(0.1) // 选中时淡主色背景
-                  : Colors.transparent,
-
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: 8.0, vertical: 2.0),
-                child: GameTagItem(
-                  tag: tag.name,
-                  count: tag.count,
-                  isSelected: isSelected,
-                ),
-              ),
-            ),
+        // 使用 InkWell 包裹 GameTagItem 来添加点击事件和水波纹效果
+        // GameTagItem 本身只负责显示，不处理点击
+        return InkWell(
+          onTap: () => onTagSelected(tag.name),
+          borderRadius: BorderRadius.circular(16.0), // 匹配 GameTagItem 的圆角
+          child: GameTagItem(
+            tag: tag.name,
+            count: tag.count,
+            isSelected: isSelected,
           ),
         );
-      },
+      }).toList(),
     );
   }
 }

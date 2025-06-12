@@ -5,12 +5,12 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityDescriptionSection extends StatelessWidget {
   final UserActivity activity;
-  final bool isDesktop;
+  final bool isDesktopLayout;
 
   const ActivityDescriptionSection({
     super.key,
     required this.activity,
-    required this.isDesktop,
+    required this.isDesktopLayout,
   });
 
   // --- 内部方法：构建标题栏 ---
@@ -44,7 +44,7 @@ class ActivityDescriptionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktop ? 20 : 16);
+    final EdgeInsets sectionPadding = EdgeInsets.all(isDesktopLayout ? 20 : 16);
 
     // --- 使用 Container 实现卡片样式 ---
     return Container(
@@ -73,7 +73,7 @@ class ActivityDescriptionSection extends StatelessWidget {
             style: theme.textTheme.bodyMedium?.copyWith(
               height: 1.6,
               color: Colors.black87,
-              fontSize: isDesktop ? 15 : 14,
+              fontSize: isDesktopLayout ? 15 : 14,
             ),
           ),
         ],
