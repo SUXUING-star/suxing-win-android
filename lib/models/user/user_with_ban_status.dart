@@ -32,7 +32,7 @@ class UserWithBanStatus {
   /// 转换为 JSON Map。
   Map<String, dynamic> toJson() {
     // 先把 user 转成 map
-    final data = user.toJson();
+    final data = user.toSafeJson();
     // 如果有 banInfo，再把它加进去
     if (banInfo != null) {
       data['banInfo'] = banInfo!.toJson();

@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; /
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart'; // 导入分页控件
@@ -90,12 +90,14 @@ class _PostListScreenState extends State<PostListScreen>
 
   int _currentPage = 1; // 当前页码
   int _totalPages = 1; // 总页数
-  final int _postListLimit = PostService.postListLimit; // 每页帖子数量限制
+  int _cacheUpdateCount = 0;
+  int _postListLimit = PostService.postListLimit; // 每页帖子数量限制
 
   String? _currentUserId; // 当前用户ID
 
   bool _isVisible = false; // Widget 是否可见
   bool _isLoadingData = false; // 是否正在执行数据加载操作
+  DateTime? _lastLoadingTime;
   bool _isInitialized = false; // 是否已尝试过首次加载
   bool _needsRefresh = false; // 是否需要在变为可见或后台恢复时刷新
 
@@ -119,6 +121,8 @@ class _PostListScreenState extends State<PostListScreen>
   DateTime? _lastForumRefreshAttemptTime; // 上次尝试论坛下拉刷新的时间戳
   static const Duration _minForumRefreshInterval =
       Duration(seconds: 30); // 最小刷新间隔
+  static const Duration _maxLoadingDuration = Duration(seconds: 10);
+
   static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 800); // Provider 检查防抖时长
@@ -219,16 +223,10 @@ class _PostListScreenState extends State<PostListScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    if (!mounted) return;
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
     if (state == AppLifecycleState.resumed) {
-      // 应用从后台恢复时
-      if (widget.authProvider.currentUserId != _currentUserId) {
-        // 用户ID变化时
-        if (mounted) {
-          setState(() {
-            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-          });
-        }
-      }
       if (_isVisible) {
         // 屏幕可见时
         _checkProviderAndApplyFilterIfNeeded(
@@ -237,8 +235,6 @@ class _PostListScreenState extends State<PostListScreen>
           // 需要刷新时
           _refreshDataIfNeeded(reason: "应用恢复且需要刷新"); // 刷新数据
           _needsRefresh = false; // 重置刷新标记
-        } else {
-          _refreshDataIfNeeded(reason: "应用恢复"); // 刷新数据
         }
       } else {
         // 屏幕不可见时
@@ -247,6 +243,77 @@ class _PostListScreenState extends State<PostListScreen>
     } else if (state == AppLifecycleState.paused) {
       // 应用暂停时
       _needsRefresh = true; // 标记需要刷新
+    }
+  }
+
+  /// 处理可见性变化。
+  ///
+  /// [visibilityInfo]：可见性信息。
+  void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
+    final bool currentlyVisible =
+        visibilityInfo.visibleFraction > 0; // 判断当前是否可见
+
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
+
+    if (currentlyVisible != _isVisible) {
+      // 可见性状态变化时
+      if (mounted) {
+        setState(() {
+          _isVisible = currentlyVisible; // 更新可见性状态
+        });
+      }
+
+      if (_isVisible) {
+        // 变为可见时
+        _checkProviderAndApplyFilterIfNeeded(
+            reason: "变为可见"); // 检查 Provider 并应用筛选
+
+        if (!_isInitialized) {
+          // 未初始化时
+          _triggerInitialLoad(); // 触发初始加载
+        }
+        _startOrUpdateWatchingCache(); // 启动或更新缓存监听
+        if (_needsRefresh) {
+          // 需要刷新时
+          _refreshDataIfNeeded(reason: "变为可见且需要刷新"); // 刷新数据
+          _needsRefresh = false; // 重置刷新标记
+        } else if (_isInitialized && _posts == null && !_isLoadingData) {
+          // 已初始化但无数据且未加载数据时
+          _loadPosts(page: _currentPage, isRefresh: true); // 加载帖子数据
+        }
+      } else {
+        // 变为不可见时
+        _stopWatchingCache(); // 停止监听缓存
+        _refreshDebounceTimer?.cancel(); // 取消刷新防抖计时器
+        _checkProviderDebounceTimer?.cancel(); // 取消 Provider 检查防抖计时器
+      }
+    }
+  }
+
+  void _checkAuthStateChange() {
+    if (!mounted) return;
+    if (widget.authProvider.currentUserId != _currentUserId) {
+      // 用户ID变化时
+      if (mounted) {
+        setState(() {
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
+        });
+      }
+    }
+  }
+
+  void _checkLoadingTimeout() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    // 超过最大时长直接关闭
+    if (_isLoadingData &&
+        _lastLoadingTime != null &&
+        now.difference(_lastLoadingTime!) > _maxLoadingDuration) {
+      setState(() {
+        _lastLoadingTime = null;
+        _isLoadingData = false;
+      });
     }
   }
 
@@ -291,32 +358,6 @@ class _PostListScreenState extends State<PostListScreen>
     });
   }
 
-  /// 处理帖子卡片的锁定/解锁请求。
-  ///
-  /// [postId]：要操作的帖子 ID。
-  Future<void> _handleToggleLockFromCard(String postId) async {
-    if (!widget.authProvider.isLoggedIn) {
-      // 用户未登录时提示登录
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
-    if (!_checkCanLockPost()) {
-      // 无权限时提示错误
-      AppSnackBar.showPermissionDenySnackBar();
-      return;
-    }
-    try {
-      await widget.postService.togglePostLock(postId); // 调用切换帖子锁定状态服务
-      if (!mounted) return; // 组件未挂载时返回
-      AppSnackBar.showSuccess('帖子状态已切换'); // 提示状态已切换
-      await _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据
-    } catch (e) {
-      AppSnackBar.showError("操作失败,${e.toString()}");
-    } finally {
-      // routeObserver?.hideLoading(); // 隐藏加载状态
-    }
-  }
-
   /// 加载帖子数据。
   ///
   /// [page]：要加载的页码。
@@ -329,6 +370,7 @@ class _PostListScreenState extends State<PostListScreen>
     bool isRefresh = false,
     bool forceRefresh = false,
   }) async {
+    if (_lastLoadingTime != null) _lastLoadingTime = null;
     if (_isLoadingData && !isRefresh) {
       // 正在加载数据且非刷新时返回
       return;
@@ -339,6 +381,7 @@ class _PostListScreenState extends State<PostListScreen>
 
     setState(() {
       _isLoadingData = true; // 设置加载状态
+      _lastLoadingTime = DateTime.now();
       _errorMessage = null; // 清空错误消息
       if (isInitialLoad || isRefresh || _posts == null) {
         // 初始加载、刷新或 _posts 为空时清空帖子
@@ -351,7 +394,6 @@ class _PostListScreenState extends State<PostListScreen>
       final PostListPagination result = await widget.postService.getPostsPage(
         tag: tagParam, // 标签
         page: page, // 页码
-        limit: _postListLimit, // 限制
         forceRefresh: forceRefresh, // 强制刷新
       );
 
@@ -360,12 +402,14 @@ class _PostListScreenState extends State<PostListScreen>
       final List<Post> fetchedPosts = result.posts; // 获取帖子列表
       final PaginationData pagination = result.pagination; // 获取分页信息
       final int serverPage = pagination.page; // 服务器返回的页码
+      final int serverPageSize = pagination.limit;
       final int serverTotalPages = pagination.pages; // 服务器返回的总页数
 
       setState(() {
         _posts = fetchedPosts; // 更新帖子列表
         _currentPage = serverPage; // 更新当前页码
         _totalPages = serverTotalPages; // 更新总页数
+        _postListLimit = serverPageSize;
         _errorMessage = null; // 清空错误消息
       });
 
@@ -385,6 +429,8 @@ class _PostListScreenState extends State<PostListScreen>
       if (mounted) {
         setState(() {
           _isLoadingData = false; // 重置加载状态
+          _lastLoadingTime = null;
+          _cacheUpdateCount = 0;
         });
         if (isRefresh) _refreshController.refreshCompleted(); // 刷新完成
       }
@@ -418,6 +464,8 @@ class _PostListScreenState extends State<PostListScreen>
         _refreshController.refreshCompleted(); // 刷新完成
         return;
       }
+    } else {
+      _lastForumRefreshAttemptTime = now;
     }
 
     _isPerformingForumRefresh = true; // 设置正在执行刷新标记
@@ -553,8 +601,14 @@ class _PostListScreenState extends State<PostListScreen>
       if (_isLoadingData) {
         // 正在加载数据时
         if (isCacheUpdated) {
-          // 如果是缓存更新触发
-          return;
+          if (_cacheUpdateCount < 2) {
+            _needsRefresh = true; // 标记需要刷新
+            _cacheUpdateCount++;
+            return;
+          } else {
+            _cacheUpdateCount++;
+            return;
+          }
         } else {
           _needsRefresh = true; // 标记需要刷新
           return;
@@ -730,7 +784,7 @@ class _PostListScreenState extends State<PostListScreen>
         try {
           await widget.postService.deletePost(post); // 调用删除帖子服务
           AppSnackBar.showSuccess('帖子已删除'); // 提示删除成功
-          _refreshData(); // 刷新数据
+          _refreshData(needCheck: false); // 刷新数据
         } catch (e) {
           AppSnackBar.showError("操作失败,${e.toString()}");
         }
@@ -764,6 +818,32 @@ class _PostListScreenState extends State<PostListScreen>
     }
   }
 
+  /// 处理帖子卡片的锁定/解锁请求。
+  ///
+  /// [postId]：要操作的帖子 ID。
+  Future<void> _handleToggleLockFromCard(String postId) async {
+    if (!widget.authProvider.isLoggedIn) {
+      // 用户未登录时提示登录
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    if (!_checkCanLockPost()) {
+      // 无权限时提示错误
+      AppSnackBar.showPermissionDenySnackBar();
+      return;
+    }
+    try {
+      await widget.postService.togglePostLock(postId); // 调用切换帖子锁定状态服务
+      if (!mounted) return; // 组件未挂载时返回
+      AppSnackBar.showSuccess('帖子状态已切换'); // 提示状态已切换
+      await _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据
+    } catch (e) {
+      AppSnackBar.showError("操作失败,${e.toString()}");
+    } finally {
+      // routeObserver?.hideLoading(); // 隐藏加载状态
+    }
+  }
+
   /// 检查是否可锁定帖子。
   ///
   /// 返回 true 表示可锁定，否则返回 false。
@@ -779,57 +859,6 @@ class _PostListScreenState extends State<PostListScreen>
     return widget.authProvider.isAdmin // 管理员可操作
         ? true
         : widget.authProvider.currentUserId == post.authorId; // 或当前用户是作者
-  }
-
-  /// 处理可见性变化。
-  ///
-  /// [visibilityInfo]：可见性信息。
-  void _handleVisibilityChange(VisibilityInfo visibilityInfo) {
-    final bool currentlyVisible =
-        visibilityInfo.visibleFraction > 0; // 判断当前是否可见
-
-    if (widget.authProvider.currentUserId != _currentUserId) {
-      // 用户ID变化时
-      if (mounted) {
-        setState(() {
-          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-        });
-      }
-    }
-
-    if (currentlyVisible != _isVisible) {
-      // 可见性状态变化时
-      if (mounted) {
-        setState(() {
-          _isVisible = currentlyVisible; // 更新可见性状态
-        });
-      }
-
-      if (_isVisible) {
-        // 变为可见时
-        _checkProviderAndApplyFilterIfNeeded(
-            reason: "变为可见"); // 检查 Provider 并应用筛选
-
-        if (!_isInitialized) {
-          // 未初始化时
-          _triggerInitialLoad(); // 触发初始加载
-        }
-        _startOrUpdateWatchingCache(); // 启动或更新缓存监听
-        if (_needsRefresh) {
-          // 需要刷新时
-          _refreshDataIfNeeded(reason: "变为可见且需要刷新"); // 刷新数据
-          _needsRefresh = false; // 重置刷新标记
-        } else if (_isInitialized && _posts == null && !_isLoadingData) {
-          // 已初始化但无数据且未加载数据时
-          _loadPosts(page: _currentPage, isRefresh: true); // 加载帖子数据
-        }
-      } else {
-        // 变为不可见时
-        _stopWatchingCache(); // 停止监听缓存
-        _refreshDebounceTimer?.cancel(); // 取消刷新防抖计时器
-        _checkProviderDebounceTimer?.cancel(); // 取消 Provider 检查防抖计时器
-      }
-    }
   }
 
   /// 构建屏幕 UI。

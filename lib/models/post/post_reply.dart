@@ -1,11 +1,14 @@
 // lib/models/post/post_reply.dart
+import 'package:meta/meta.dart';
 import 'package:mongo_dart/mongo_dart.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 enum PostReplyStatus {
   active,
   deleted,
 }
 
+@immutable
 class PostReply {
   final String id;
   final String postId;
@@ -16,7 +19,7 @@ class PostReply {
   final DateTime updateTime;
   final PostReplyStatus status;
 
-  PostReply({
+  const PostReply({
     required this.id,
     required this.postId,
     required this.content,
@@ -28,20 +31,15 @@ class PostReply {
   });
 
   factory PostReply.fromJson(Map<String, dynamic> json) {
-    String replyId = json['_id']?.toString() ?? json['id']?.toString() ?? '';
-
     return PostReply(
-      id: replyId,
-      postId: json['postId']?.toString() ?? '',
-      content: json['content'] ?? '',
-      authorId: json['authorId']?.toString() ?? '',
-      parentId: json['parentId']?.toString(),
-      createTime: json['createTime'] is DateTime
-          ? json['createTime']
-          : DateTime.parse(json['createTime']),
-      updateTime: json['updateTime'] is DateTime
-          ? json['updateTime']
-          : DateTime.parse(json['updateTime']),
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      postId: UtilJson.parseId(json['postId']),
+      content: UtilJson.parseStringSafely(json['content']),
+      authorId: UtilJson.parseId(json['authorId']),
+      parentId: UtilJson.parseNullableId(json['parentId']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseDateTime(json['updateTime']),
+      // 业务逻辑: 从字符串安全解析枚举类型，如果匹配失败则使用默认值 PostReplyStatus.active
       status: PostReplyStatus.values.firstWhere(
         (e) => e.toString().split('.').last == json['status'],
         orElse: () => PostReplyStatus.active,

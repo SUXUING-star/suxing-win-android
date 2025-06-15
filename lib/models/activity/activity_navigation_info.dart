@@ -1,91 +1,47 @@
 // lib/models/activity/activity_navigation_info.dart
 
-import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
-@immutable
 class ActivityNavigationInfo {
-  final String? previousId;
-  final String? previousTitle;
+  final String feedType;
+  final String? prevId;
+  final UserActivity? prevActivity;
+  final int? prevPageNum;
   final String? nextId;
-  final String? nextTitle;
+  final int? nextPageNum;
+  final UserActivity? nextActivity;
 
-  const ActivityNavigationInfo({
-    this.previousId,
-    this.previousTitle,
+  ActivityNavigationInfo({
+    required this.feedType,
+    this.prevId,
+    this.prevActivity,
+    this.prevPageNum,
     this.nextId,
-    this.nextTitle,
+    this.nextActivity,
+    this.nextPageNum,
   });
+  Map<String, dynamic> toJson() {
+    return {
+      'feedType': feedType,
+      'prevId': prevId,
+      'prevActivity': prevActivity,
+      'prevPageNum': prevPageNum,
+      'nextId': nextId,
+      'nextActivity': nextActivity,
+      'nextPageNum': nextPageNum,
+    };
+  }
 
   factory ActivityNavigationInfo.fromJson(Map<String, dynamic> json) {
-    String? getString(dynamic value) {
-      if (value == null) return null;
-      if (value is String) {
-        if (value.isEmpty || value.toLowerCase() == "null") {
-          return null;
-        }
-        return value;
-      }
-      return value.toString();
-    }
-
     return ActivityNavigationInfo(
-      previousId: getString(json['previousId']),
-      previousTitle: getString(json['previousTitle']),
-      nextId: getString(json['nextId']),
-      nextTitle: getString(json['nextTitle']),
+      feedType: UtilJson.parseStringSafely(json['feedType']),
+      prevId: UtilJson.parseId(json['prevId']),
+      prevActivity: UserActivity.fromJson(json['prevActivity']),
+      prevPageNum: UtilJson.parseIntSafely(json['prevPageNum']),
+      nextId: UtilJson.parseId(json['nextId']),
+      nextActivity: UserActivity.fromJson(json['nextActivity']),
+      nextPageNum: UtilJson.parseIntSafely(json['nextPageNum']),
     );
   }
-
-  Map<String, dynamic> toJson() {
-    final map = <String, dynamic>{};
-    if (previousId != null) map['previousId'] = previousId;
-    if (previousTitle != null) map['previousTitle'] = previousTitle;
-    if (nextId != null) map['nextId'] = nextId;
-    if (nextTitle != null) map['nextTitle'] = nextTitle;
-    return map;
-  }
-
-  ActivityNavigationInfo copyWith({
-    ValueGetter<String?>? previousId,
-    ValueGetter<String?>? previousTitle,
-    ValueGetter<String?>? nextId,
-    ValueGetter<String?>? nextTitle,
-  }) {
-    return ActivityNavigationInfo(
-      previousId: previousId != null ? previousId() : this.previousId,
-      previousTitle:
-          previousTitle != null ? previousTitle() : this.previousTitle,
-      nextId: nextId != null ? nextId() : this.nextId,
-      nextTitle: nextTitle != null ? nextTitle() : this.nextTitle,
-    );
-  }
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is ActivityNavigationInfo &&
-          runtimeType == other.runtimeType &&
-          previousId == other.previousId &&
-          previousTitle == other.previousTitle &&
-          nextId == other.nextId &&
-          nextTitle == other.nextTitle;
-
-  @override
-  int get hashCode =>
-      previousId.hashCode ^
-      previousTitle.hashCode ^
-      nextId.hashCode ^
-      nextTitle.hashCode;
-
-  @override
-  String toString() {
-    return 'ActivityNavigationInfo{previousId: $previousId, previousTitle: $previousTitle, nextId: $nextId, nextTitle: $nextTitle}';
-  }
-
-  bool get isEmpty =>
-      previousId == null &&
-      previousTitle == null &&
-      nextId == null &&
-      nextTitle == null;
-  bool get isNotEmpty => !isEmpty;
 }

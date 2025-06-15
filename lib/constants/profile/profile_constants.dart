@@ -10,7 +10,7 @@ import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由常量
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
 
 /// `ProfileConstants` 类：定义用户个人中心界面的常量。
 ///
@@ -49,21 +49,30 @@ class ProfileConstants {
         },
       ),
       ProfileMenuItem(
-          icon: Icons.games_outlined,
-          title: '我的游戏',
-          route: AppRoutes.myGames), // 我的游戏
+        icon: Icons.games_outlined,
+        title: '我的游戏',
+        route: AppRoutes.myGames,
+      ), // 我的游戏
       ProfileMenuItem(
-          icon: Icons.forum_outlined,
-          title: '我的帖子',
-          route: AppRoutes.myPosts), // 我的帖子
+        icon: Icons.forum_outlined,
+        title: '我的帖子',
+        route: AppRoutes.myPosts,
+      ), // 我的帖子
       ProfileMenuItem(
-          icon: Icons.collections_bookmark_outlined,
-          title: '我的收藏',
-          route: AppRoutes.myCollections), // 我的收藏
+        icon: Icons.collections_bookmark_outlined,
+        title: '我的收藏',
+        route: AppRoutes.myCollections,
+      ), // 我的收藏
       ProfileMenuItem(
-          icon: Icons.favorite_border,
-          title: '我的喜欢',
-          route: AppRoutes.favorites), // 我的喜欢
+        icon: Icons.favorite_border,
+        title: '我的喜欢',
+        route: AppRoutes.favorites,
+      ), // 我的喜欢
+      ProfileMenuItem(
+        icon: Icons.monetization_on,
+        title: '我投币过的游戏',
+        route: AppRoutes.coinedGames,
+      ), // 我的喜欢
       ProfileMenuItem(
         icon: Icons.rocket_launch_outlined,
         title: '我的动态',
@@ -134,9 +143,13 @@ class ProfileConstants {
       'background': Colors.white.withSafeOpacity(0.9),
       'icon': Color(0xFFFF7F50),
     },
+    "我投币过的游戏": {
+      'background': Colors.white.withSafeOpacity(0.9),
+      'icon': Colors.amber,
+    },
     '我的动态': {
       'background': Colors.white.withSafeOpacity(0.9),
-      'icon': Color(0xFF43C2F9),
+      'icon': const Color(0xFF43C2F9),
     },
     '签到': {
       'background': Colors.white.withSafeOpacity(0.9),

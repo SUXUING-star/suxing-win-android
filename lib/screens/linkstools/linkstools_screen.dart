@@ -1,4 +1,6 @@
 // lib/screens/linkstools/linkstools_screen.dart
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -10,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dar
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
@@ -53,10 +55,13 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   bool _isInitialized = false;
   bool _hasInitializedDependencies = false;
   bool _isVisible = false;
-  bool _isLoadingData = false; // 这个状态仍然控制加载指示器
+  bool _isLoadingData = false;
+  DateTime? _lastLoadingTime;
+  Timer? _refreshDebounceTimer;
+  bool _needsRefresh = false; // 是否需要在变为可见或后台恢复时刷新
+  static const Duration _maxLoadingDuration = Duration(seconds: 10);
 
-  late final LinkToolService _linkToolService;
-  late final AuthProvider _authProvider;
+  static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
 
   String? _currentUserId;
 
@@ -70,10 +75,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   void didChangeDependencies() {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
-      _linkToolService = widget.linkToolService;
-
-      _authProvider = widget.authProvider;
-      _currentUserId = _authProvider.currentUserId;
+      _currentUserId = widget.authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
   }
@@ -82,28 +84,30 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return;
-
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
     if (state == AppLifecycleState.resumed) {
-      if (_currentUserId != _authProvider.currentUserId) {
-        setState(() {
-          _currentUserId = _authProvider.currentUserId;
-        });
+      if (_isVisible) {
+        if (_needsRefresh) {
+          // 需要刷新时
+          _refreshDataIfNeeded(reason: "应用恢复且需要刷新"); // 刷新数据
+          _needsRefresh = false; // 重置刷新标记
+        }
+      } else {
+        // 屏幕不可见时
+        _needsRefresh = true; // 标记，等可见时刷新
       }
-      _loadData();
+    } else if (state == AppLifecycleState.paused) {
+      // 应用暂停时
+      _needsRefresh = true; // 标记需要刷新
     }
   }
 
   @override
   void didUpdateWidget(covariant LinksToolsScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != _authProvider.currentUserId) {
-      if (mounted) {
-        setState(() {
-          _currentUserId = _authProvider.currentUserId;
-        });
-      }
-    }
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
   }
 
   @override
@@ -112,7 +116,60 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     WidgetsBinding.instance.removeObserver(this);
   }
 
-  // --- 核心：触发首次数据加载  ---
+  void _handleVisibilityChange(VisibilityInfo info) {
+    if (!mounted) return;
+    final bool currentlyVisible = info.visibleFraction > 0;
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
+    if (currentlyVisible != _isVisible) {
+      Future.microtask(() {
+        if (mounted) {
+          setState(() => _isVisible = currentlyVisible);
+        } else {
+          _isVisible = currentlyVisible;
+        }
+        if (_isVisible) {
+          if (!_isInitialized) {
+            _triggerInitialLoad(); // 内部调用 _loadData()
+          } else {
+            if (_needsRefresh) {
+              // 需要刷新时
+              _refreshDataIfNeeded(reason: "应用恢复且需要刷新"); // 刷新数据
+              _needsRefresh = false; // 重置刷新标记
+            }
+          }
+        } else {
+          // 屏幕不可见时
+          _needsRefresh = true; // 标记，等可见时刷新
+        }
+      });
+    }
+  }
+
+  void _checkAuthStateChange() {
+    if (!mounted) return;
+    if (_currentUserId != widget.authProvider.currentUserId) {
+      setState(() {
+        _currentUserId = widget.authProvider.currentUserId;
+      });
+    }
+  }
+
+  void _checkLoadingTimeout() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    // 超过最大时长直接关闭
+    if (_isLoadingData &&
+        _lastLoadingTime != null &&
+        now.difference(_lastLoadingTime!) > _maxLoadingDuration) {
+      setState(() {
+        _lastLoadingTime = null;
+        _isLoadingData = false;
+      });
+    }
+  }
+
+  // --- 触发首次数据加载  ---
   void _triggerInitialLoad() {
     // 逻辑完全不变
     if (_isVisible && !_isInitialized && mounted) {
@@ -121,18 +178,51 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     }
   }
 
+  /// 刷新数据，带防抖控制。
+  ///
+  /// [reason]：刷新原因。
+  /// [isCacheUpdated]：是否因缓存更新触发。
+  void _refreshDataIfNeeded({
+    required String reason,
+    bool isCacheUpdated = false,
+  }) {
+    if (!mounted) return; // 组件未挂载时返回
+    _refreshDebounceTimer?.cancel(); // 取消旧的防抖计时器
+    _refreshDebounceTimer = Timer(_cacheDebounceDuration, () {
+      // 启动新的防抖计时器
+      if (!mounted) return; // 组件未挂载时返回
+      if (!_isVisible) {
+        // 屏幕不可见时
+        _needsRefresh = true; // 标记需要刷新
+        return;
+      }
+      if (_isLoadingData) {
+        // 正在加载数据时
+        if (isCacheUpdated) {
+          // 如果是缓存更新触发
+          return;
+        } else {
+          _needsRefresh = true; // 标记需要刷新
+          return;
+        }
+      }
+      _loadData(); // 加载帖子数据
+    });
+  }
+
   // --- 加载链接和工具数据 ---
   Future<void> _loadData() async {
+    if (_lastLoadingTime != null) _lastLoadingTime = null;
     if (_isLoadingData || !mounted) return; // 逻辑不变
     setState(() {
-      // 状态更新逻辑不变
       _isLoadingData = true;
       _errorMessage = null;
+      _lastLoadingTime = DateTime.now();
     });
     try {
       final results = await Future.wait([
-        _linkToolService.getLinks(),
-        _linkToolService.getTools(),
+        widget.linkToolService.getLinks(),
+        widget.linkToolService.getTools(),
       ]);
 
       if (!mounted) return; // 逻辑不变
@@ -152,6 +242,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
         _links = []; // 或保持旧数据？按原逻辑设为空
         _tools = [];
         _isLoadingData = false;
+        _lastLoadingTime = null;
       });
     }
   }
@@ -169,7 +260,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
             )).then((linkData) async {
       if (linkData != null) {
         try {
-          await _linkToolService.addLink(SiteLink.fromJson(linkData));
+          await widget.linkToolService.addLink(SiteLink.fromJson(linkData));
           await _loadData();
           if (!mounted) return;
           AppSnackBar.showSuccess('添加链接成功');
@@ -181,7 +272,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
   }
 
   bool _checkCanEditOrDelete() {
-    return _authProvider.isAdmin;
+    return widget.authProvider.isAdmin;
   }
 
   // --- _showAddToolDialog  ---
@@ -198,7 +289,7 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
             )).then((toolData) async {
       if (toolData != null) {
         try {
-          await _linkToolService.addTool(Tool.fromJson(toolData));
+          await widget.linkToolService.addTool(Tool.fromJson(toolData));
           if (mounted) await _loadData();
 
           AppSnackBar.showSuccess('添加工具成功');
@@ -209,36 +300,12 @@ class _LinksToolsScreenState extends State<LinksToolsScreen>
     });
   }
 
-  void _handleVisibilityChange(VisibilityInfo info) {
-    if (!mounted) return;
-    final bool currentlyVisible = info.visibleFraction > 0;
-    if (_currentUserId != _authProvider.currentUserId) {
-      setState(() {
-        _currentUserId = _authProvider.currentUserId;
-      });
-    }
-    if (currentlyVisible != _isVisible) {
-      Future.microtask(() {
-        if (mounted) {
-          setState(() => _isVisible = currentlyVisible);
-        } else {
-          _isVisible = currentlyVisible;
-        }
-        if (_isVisible) {
-          if (!_isInitialized) {
-            _triggerInitialLoad(); // 内部调用 _loadData()
-          } else {}
-        }
-      });
-    }
-  }
-
   // --- build 方法  ---
   @override
   Widget build(BuildContext context) {
     return StreamBuilder<User?>(
-        stream: _authProvider.currentUserStream,
-        initialData: _authProvider.currentUser,
+        stream: widget.authProvider.currentUserStream,
+        initialData: widget.authProvider.currentUser,
         builder: (context, authSnapshot) {
           final currentUser = authSnapshot.data;
 

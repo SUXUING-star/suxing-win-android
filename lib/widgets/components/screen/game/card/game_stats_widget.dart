@@ -60,6 +60,18 @@ class GameStatsWidget extends StatelessWidget {
 
         const SizedBox(width: 12), // 间距
 
+        if (game.coinsCount > 0) ...[
+          StatItemWidget(
+            icon: Icons.monetization_on, // 投币图标
+            value: game.coinsCount.toString(), // 投币数
+            color: Colors.orange.shade400, // 颜色
+            iconSize: 14,
+            fontSize: 12,
+            showBackground: false,
+          ),
+          const SizedBox(width: 12),
+        ],
+
         StatItemWidget(
           icon: Icons.remove_red_eye_outlined, // 查看图标
           value: game.viewCount.toString(), // 查看数
@@ -129,6 +141,19 @@ class GameStatsWidget extends StatelessWidget {
           ),
 
           const SizedBox(width: 8), // 间距
+
+          // --- 投币统计 ---
+          if (game.coinsCount > 0) ...[
+            StatItemWidget(
+              icon: Icons.monetization_on, // 投币图标
+              value: game.coinsCount.toString(), // 投币数
+              color: Colors.orange.shade500, // 颜色
+              iconSize: 10,
+              fontSize: 10,
+              showBackground: true,
+            ),
+            const SizedBox(width: 8),
+          ],
 
           StatItemWidget(
             icon: Icons.remove_red_eye_outlined, // 查看图标

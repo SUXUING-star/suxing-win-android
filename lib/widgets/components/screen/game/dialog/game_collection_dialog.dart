@@ -6,7 +6,6 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/form/game_collection/collection_form.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 
 class GameCollectionDialog extends StatelessWidget {
   final String gameId;

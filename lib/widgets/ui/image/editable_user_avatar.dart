@@ -12,7 +12,7 @@ import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'custom_crop_dialog.dart'; // 导入自定义裁剪对话框
 
 /// `EditableUserAvatar` 类：一个可编辑的用户头像组件。

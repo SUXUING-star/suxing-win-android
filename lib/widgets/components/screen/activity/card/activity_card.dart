@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/button/activity_
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart'; // 动态评论项组件
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 动态评论输入框组件
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart'; // 动态目标导航组件
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'dart:math' as math; // 导入数学函数
 
@@ -31,22 +31,22 @@ class ActivityCard extends StatefulWidget {
   final InputStateService inputStateService; // 输入状态服务
   final User? currentUser; // 当前登录用户
   final bool isAlternate; // 是否使用交替布局样式
-  final VoidCallback? onUpdated; // 动态更新后的回调
+  final Function(UserActivity activity)? onUpdated; // 动态更新后的回调
   final bool isInDetailView; // 是否在详情视图中
   final Function(UserActivity)? onActivityTap; // 动态点击回调
   final bool hasOwnBackground; // 是否拥有自己的背景样式
 
   final VoidCallback? onEdit; // 编辑动态回调
   final VoidCallback? onDelete; // 删除动态回调
-  final VoidCallback? onLike; // 点赞动态回调
-  final VoidCallback? onUnlike; // 取消点赞动态回调
+  final Future<bool> Function()? onLike; // 点赞动态回调
+  final Future<bool> Function()? onUnlike; // 取消点赞动态回调
   final FutureOr<ActivityComment?> Function(String activityId, String content)?
       onAddComment; // 添加评论回调
   final FutureOr<void> Function(String activityId, ActivityComment comment)?
       onDeleteComment; // 删除评论回调
-  final FutureOr<void> Function(String activityId, String commentId)?
+  final Future<bool> Function(String activityId, String commentId)?
       onLikeComment; // 评论点赞回调
-  final FutureOr<void> Function(String activityId, String commentId)?
+  final Future<bool> Function(String activityId, String commentId)?
       onUnlikeComment; // 评论取消点赞回调
 
   /// 构造函数。
@@ -124,12 +124,16 @@ class _ActivityCardState extends State<ActivityCard> {
   @override
   void didUpdateWidget(ActivityCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.activity.id != oldWidget.activity.id ||
-        widget.activity.updateTime != oldWidget.activity.updateTime) {
-      setState(() => _activity = widget.activity); // 更新动态数据
-    }
+
     if (widget.isAlternate != oldWidget.isAlternate) {
       setState(() => _isAlternate = widget.isAlternate); // 更新布局样式
+    }
+    if (widget.activity.id != oldWidget.activity.id ||
+        widget.activity.updateTime != oldWidget.activity.updateTime ||
+        widget.activity.commentsCount != oldWidget.activity.commentsCount ||
+        widget.activity.likesCount != oldWidget.activity.likesCount ||
+        widget.activity.isLiked != oldWidget.activity.isLiked) {
+      setState(() => _activity = widget.activity); // 更新动态数据
     }
   }
 
@@ -179,31 +183,24 @@ class _ActivityCardState extends State<ActivityCard> {
   /// 处理点赞/取消点赞操作。
   ///
   /// 触发触觉反馈，更新本地点赞状态和计数，并调用父级回调。
-  void _handleLike() {
+  Future<void> _handleLike() async {
     if (widget.onLike == null && widget.onUnlike == null) return; // 回调不存在时直接返回
     HapticFeedback.lightImpact(); // 轻微触觉反馈
-    final originalLikedState = _activity.isLiked; // 原始点赞状态
-    final originalLikesCount = _activity.likesCount; // 原始点赞计数
-    setState(() {
-      _activity.isLiked = !originalLikedState; // 切换点赞状态
-      _activity.likesCount += _activity.isLiked ? 1 : -1; // 更新点赞计数
-      if (_activity.likesCount < 0) _activity.likesCount = 0; // 确保计数不小于 0
-    });
-    try {
-      if (_activity.isLiked) {
-        widget.onLike?.call(); // 点赞时调用点赞回调
-      } else {
-        widget.onUnlike?.call(); // 取消点赞时调用取消点赞回调
-      }
-      widget.onUpdated?.call(); // 通知父级动态已更新
-    } catch (e) {
-      if (mounted) {
-        // 检查 Widget 是否已挂载
-        setState(() {
-          _activity.isLiked = originalLikedState; // 操作失败时恢复原始点赞状态
-          _activity.likesCount = originalLikesCount; // 操作失败时恢复原始点赞计数
-        });
-      }
+
+    bool? success;
+    if (_activity.isLiked) {
+      success = await widget.onUnlike?.call(); // 取消点赞时调用取消点赞回调
+    } else {
+      success = await widget.onLike?.call(); // 点赞时调用点赞回调
+    }
+    if (success != null && success) {
+      setState(() {
+        //
+      });
+    } else {
+      setState(() {
+        //
+      });
     }
   }
 
@@ -230,27 +227,15 @@ class _ActivityCardState extends State<ActivityCard> {
     HapticFeedback.lightImpact(); // 轻微触觉反馈
     setState(() => _isSubmittingComment = true); // 设置为正在提交状态
 
-    try {
-      final newComment =
-          await widget.onAddComment!(_activity.id, content); // 调用父级添加评论回调
-      if (newComment != null && mounted) {
-        // 评论成功且 Widget 已挂载
-        setState(() {
-          _activity.commentsCount += 1; // 增加评论计数
-          _showComments = true; // 展开评论区
-        });
-        widget.onUpdated?.call(); // 通知父级动态已更新
-      } else if (mounted) {
-        // 评论失败且 Widget 已挂载
-        throw Exception("添加评论失败"); // 抛出异常
-      }
-    } catch (e) {
-      AppSnackBar.showError("操作失败,${e.toString()}"); // 显示错误提示
-    } finally {
-      if (mounted) {
-        // 无论成功失败，重置提交状态
-        setState(() => _isSubmittingComment = false);
-      }
+    final newComment =
+        await widget.onAddComment!(_activity.id, content); // 调用父级添加评论回调
+    if (newComment != null && mounted) {
+      // 评论成功且 Widget 已挂载
+      setState(() {
+        _showComments = true; // 展开评论区
+      });
+    } else {
+      setState(() => _isSubmittingComment = false); // 设置为正在提交状态
     }
   }
 
@@ -422,7 +407,10 @@ class _ActivityCardState extends State<ActivityCard> {
                   activityId: _activity.id, // 动态 ID
                   isAlternate: _isAlternate, // 布局样式
                   onLike: widget.onLikeComment != null // 评论点赞回调
-                      ? () => widget.onLikeComment!(_activity.id, comment.id)
+                      ? () {
+                          return widget.onLikeComment!(
+                              _activity.id, comment.id);
+                        }
                       : null,
                   onUnlike: widget.onUnlikeComment != null // 评论取消点赞回调
                       ? () => widget.onUnlikeComment!(_activity.id, comment.id)

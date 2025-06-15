@@ -1,16 +1,19 @@
 // lib/models/post/post_list_pagination.dart
 
+import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/util_json.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 
+@immutable
 class PostListPagination {
   final List<Post> posts;
   final PaginationData pagination;
   final String? tag; // 已有
   final String? query; // 新增：用于搜索结果的查询关键词
 
-  PostListPagination({
+  const PostListPagination({
     required this.posts,
     required this.pagination,
     this.tag,
@@ -28,44 +31,42 @@ class PostListPagination {
 
   factory PostListPagination.fromJson(Map<String, dynamic> json) {
     List<Post> postsList = [];
-    if (json['posts'] != null && json['posts'] is List) {
-      postsList = (json['posts'] as List)
-          .map((postJson) => Post.fromJson(Map<String, dynamic>.from(postJson)))
+
+    // 业务逻辑: API 可能在 'posts' 或 'history' 键下返回帖子列表，优先使用 'posts'
+    dynamic rawList = json['posts'] ?? json['history'];
+
+    if (rawList is List) {
+      postsList = rawList
+          .map((item) {
+        if (item is Map<String, dynamic>) {
+          return Post.fromJson(item);
+        }
+        return null;
+      })
+          .whereType<Post>() // 过滤掉解析失败的 null 项
           .toList();
-    } else if (json['history'] != null && json['history'] is List) {
-      try {
-        postsList = (json['history'] as List)
-            .map((itemJson) =>
-                Post.fromJson(Map<String, dynamic>.from(itemJson)))
-            .toList();
-      } catch (_) {
-        // 解析失败，postsList 保持为空
-      }
     }
 
     PaginationData paginationData;
-    if (json['pagination'] != null && json['pagination'] is Map) {
-      paginationData = PaginationData.fromJson(
-          Map<String, dynamic>.from(json['pagination']));
+    if (json['pagination'] is Map<String, dynamic>) {
+      paginationData = PaginationData.fromJson(json['pagination'] as Map<String, dynamic>);
     } else {
+      // 业务逻辑: 如果后端响应中缺少分页信息，则根据返回的列表长度在前端生成一个默认的分页对象
       int totalItems = postsList.length;
-      int defaultLimit =
-          PostService.postListLimit; // 使用 PostService 中的常量或一个合理的默认值
+      int defaultLimit = PostService.postListLimit;
       paginationData = PaginationData(
         page: 1,
         limit: defaultLimit,
         total: totalItems,
-        pages: (totalItems == 0)
-            ? 0
-            : ((defaultLimit <= 0) ? 1 : (totalItems / defaultLimit).ceil()),
+        pages: totalItems == 0 ? 0 : (totalItems / defaultLimit).ceil(),
       );
     }
 
     return PostListPagination(
       posts: postsList,
       pagination: paginationData,
-      tag: json['tag'] as String?,
-      query: json['query'] as String?, // 解析可选的 query
+      tag: UtilJson.parseNullableStringSafely(json['tag']),
+      query: UtilJson.parseNullableStringSafely(json['query']),
     );
   }
 

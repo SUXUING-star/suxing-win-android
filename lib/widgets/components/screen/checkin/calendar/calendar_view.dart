@@ -26,6 +26,23 @@ class CalendarView extends StatelessWidget {
     final theme = Theme.of(context);
     final now = DateTime.now();
 
+    // 1. 判断是否可以再往后翻 (去到下个月)
+    final bool isNextMonthDisabled =
+        selectedYear == now.year && selectedMonth == now.month;
+
+    // 2. 计算允许的最早月份 (上个月)
+    int limitYear = now.year;
+    int limitMonth = now.month - 1;
+    if (limitMonth == 0) {
+      // 处理跨年
+      limitMonth = 12;
+      limitYear--;
+    }
+
+    // 3. 判断是否可以再往前翻 (去到上上个月)
+    final bool isPrevMonthDisabled =
+        selectedYear == limitYear && selectedMonth == limitMonth;
+
     // --- 直接使用父组件传入的 missedDays ---
     // 只有当查看的是当前实际年月时，才考虑显示漏签天数
     final int displayMissedDays =
@@ -87,15 +104,17 @@ class CalendarView extends StatelessWidget {
                           children: [
                             IconButton(
                               icon: const Icon(Icons.chevron_left),
-                              onPressed: () {
-                                int newMonth = selectedMonth - 1;
-                                int newYear = selectedYear;
-                                if (newMonth < 1) {
-                                  newMonth = 12;
-                                  newYear--;
-                                }
-                                onChangeMonth(newYear, newMonth);
-                              },
+                              onPressed: isPrevMonthDisabled
+                                  ? null
+                                  : () {
+                                      int newMonth = selectedMonth - 1;
+                                      int newYear = selectedYear;
+                                      if (newMonth < 1) {
+                                        newMonth = 12;
+                                        newYear--;
+                                      }
+                                      onChangeMonth(newYear, newMonth);
+                                    },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               iconSize: 22,
@@ -117,15 +136,17 @@ class CalendarView extends StatelessWidget {
                             const SizedBox(width: 4),
                             IconButton(
                               icon: const Icon(Icons.chevron_right),
-                              onPressed: () {
-                                int newMonth = selectedMonth + 1;
-                                int newYear = selectedYear;
-                                if (newMonth > 12) {
-                                  newMonth = 1;
-                                  newYear++;
-                                }
-                                onChangeMonth(newYear, newMonth);
-                              },
+                              onPressed: isNextMonthDisabled
+                                  ? null
+                                  : () {
+                                      int newMonth = selectedMonth + 1;
+                                      int newYear = selectedYear;
+                                      if (newMonth > 12) {
+                                        newMonth = 1;
+                                        newYear++;
+                                      }
+                                      onChangeMonth(newYear, newMonth);
+                                    },
                               padding: EdgeInsets.zero,
                               constraints: const BoxConstraints(),
                               iconSize: 22,
@@ -142,7 +163,7 @@ class CalendarView extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             monthlyData == null
-                ?  const LoadingWidget() // 数据加载中显示 Loading
+                ? const LoadingWidget() // 数据加载中显示 Loading
                 : _buildCalendarGrid(context),
           ],
         ),

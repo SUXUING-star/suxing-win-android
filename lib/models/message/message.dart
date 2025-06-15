@@ -1,21 +1,25 @@
 // lib/models/message/message.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/models/util_json.dart';
 import 'package:suxingchahui/routes/app_routes.dart'; // 确保路径正确
 import 'message_type.dart';
 
 /// 封装导航所需的信息
+@immutable
 class MessageNavigationInfo {
   final String routeName;
   final Object? arguments;
 
-  MessageNavigationInfo({
+  const MessageNavigationInfo({
     required this.routeName,
     this.arguments,
   });
 }
 
 /// 消息数据模型
+
+@immutable
 class Message {
   final String id;
   final String senderId;
@@ -30,7 +34,7 @@ class Message {
   final String? postId; // 关联的帖子ID
   final String? sourceItemId; // 新增: 关联的源项目ID (例如被回复的评论ID，被回复的回复ID等)
   final int? groupCount; // 分组消息数量 (如果 > 1)
-  final List<String>? references; // 相关引用ID或摘要
+  final List<String> references;
   final String? lastContent; // 分组消息的最新内容摘要
 
   /// 解析后的消息类型枚举 (在构造函数中初始化)
@@ -50,9 +54,9 @@ class Message {
     this.postId,
     this.sourceItemId, // 新增
     this.groupCount,
-    this.references,
+    List<String>? references,
     this.lastContent,
-  }) {
+  }) : references = references ?? [] {
     // 在构造函数中解析并缓存 MessageType
     messageType = MessageTypeInfo.fromString(type);
     // 可以在这里添加一些断言或日志，帮助调试类型解析
@@ -63,104 +67,23 @@ class Message {
 
   /// 从 JSON 数据创建 Message 实例
   factory Message.fromJson(Map<String, dynamic> json) {
-    // --- 安全解析函数 ---
-    String safeParseId(dynamic value) {
-      if (value == null) return '';
-      if (value is String) return value;
-      // 尝试处理 MongoDB ObjectId Map ({$oid: "..."})
-      if (value is Map && value.containsKey('\$oid')) {
-        return value['\$oid']?.toString() ?? '';
-      }
-      // 尝试处理类似 ObjectId("...") 的字符串
-      final idStr = value.toString();
-      final matches = RegExp(r'ObjectId\("([a-f0-9]{24})"\)').firstMatch(idStr);
-      if (matches != null && matches.groupCount >= 1) {
-        return matches.group(1) ?? '';
-      }
-      // 如果已经是24位hex字符串
-      if (RegExp(r'^[a-f0-9]{24}$').hasMatch(idStr)) {
-        return idStr;
-      }
-      // if (kDebugMode) print('Warning: Could not parse ID ($value) as ObjectId, returning raw string.');
-      return idStr; // 最后手段
-    }
-
-    DateTime? safeParseOptionalDateTime(dynamic value) {
-      if (value == null) return null;
-      if (value is String) {
-        try {
-          return DateTime.parse(value).toLocal(); // 转换为本地时间
-        } catch (e) {
-          // if (kDebugMode) print('Error parsing datetime string ($value): $e');
-          return null;
-        }
-      }
-      // 处理MongoDB BSON日期 (通常是 {$date: "ISO_STRING"} 或 {$date: {$numberLong: "EPOCH_MS"}})
-      if (value is Map && value.containsKey('\$date')) {
-        final dateVal = value['\$date'];
-        if (dateVal is String) {
-          try {
-            return DateTime.parse(dateVal).toLocal();
-          } catch (e) {/* ... */}
-        } else if (dateVal is Map && dateVal.containsKey('\$numberLong')) {
-          final ms = int.tryParse(dateVal['\$numberLong'].toString());
-          if (ms != null) {
-            return DateTime.fromMillisecondsSinceEpoch(ms, isUtc: true)
-                .toLocal();
-          }
-        } else if (dateVal is int) {
-          // 有时可能直接是 epoch ms
-          return DateTime.fromMillisecondsSinceEpoch(dateVal, isUtc: true)
-              .toLocal();
-        }
-      }
-      // if (kDebugMode) print('Could not parse optional datetime ($value)');
-      return null;
-    }
-
-    DateTime safeParseRequiredDateTime(
-        dynamic value, String fieldNameForError) {
-      final dt = safeParseOptionalDateTime(value);
-      if (dt != null) return dt;
-      // if (kDebugMode) print('Error: Required datetime field "$fieldNameForError" is null or invalid ($value), using DateTime.now().');
-      return DateTime.now(); // 必填字段的备用值
-    }
-
-    List<String>? safeParseReferences(dynamic value) {
-      if (value == null) return null;
-      if (value is List) {
-        // 确保列表中的每个元素都是字符串，并过滤掉空字符串 (如果需要)
-        return value
-            .map((item) => item.toString())
-            .where((s) => s.isNotEmpty)
-            .toList();
-      }
-      return null;
-    }
-    // --- 安全解析结束 ---
-
-    String rawType = json['type']?.toString() ?? ''; // 获取原始类型字符串
-
     return Message(
-      id: safeParseId(json['_id'] ?? json['id']), // 兼容 _id 和 id
-      senderId: safeParseId(json['senderId']),
-      recipientId: safeParseId(json['recipientId']),
-      content: json['content']?.toString() ?? '',
-      type: rawType, // 存储原始字符串
-      isRead: json['isRead'] as bool? ?? false,
-      createTime: safeParseRequiredDateTime(json['createTime'], 'createTime'),
-      updateTime: safeParseOptionalDateTime(json['updateTime']),
-      readTime: safeParseOptionalDateTime(json['readTime']),
-      gameId: json['gameId'] != null ? safeParseId(json['gameId']) : null,
-      postId: json['postId'] != null ? safeParseId(json['postId']) : null,
-      sourceItemId: json['sourceItemId'] != null
-          ? safeParseId(json['sourceItemId'])
-          : null, // 新增
-      groupCount: json['groupCount'] is int
-          ? json['groupCount'] as int
-          : (int.tryParse(json['groupCount']?.toString() ?? '')),
-      references: safeParseReferences(json['references']),
-      lastContent: json['lastContent']?.toString(),
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      senderId: UtilJson.parseId(json['senderId']),
+      recipientId: UtilJson.parseId(json['recipientId']),
+      content: UtilJson.parseStringSafely(json['content']),
+      type: UtilJson.parseStringSafely(json['type']),
+      isRead: json['isRead'] as bool? ?? false, // Dart 原生解析 bool 最简洁
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseNullableDateTime(json['updateTime']),
+      readTime: UtilJson.parseNullableDateTime(json['readTime']),
+      gameId: UtilJson.parseNullableId(json['gameId']),
+      postId: UtilJson.parseNullableId(json['postId']),
+      sourceItemId: UtilJson.parseNullableId(json['sourceItemId']),
+      groupCount: UtilJson.parseIntSafely(json['groupCount']),
+      references: UtilJson.parseListString(
+          json['references']), // 已经改了 Message 字段为非空 List
+      lastContent: UtilJson.parseNullableStringSafely(json['lastContent']),
     );
   }
 
@@ -252,7 +175,8 @@ class Message {
       case MessageType.gameApprovedToAuthor:
       case MessageType.gameRejectedToAuthor:
       case MessageType.gameResubmitToAdmin:
-      case MessageType.gameLikedToAuthor: // 新增游戏点赞
+      case MessageType.gameCoinedToAuthor:
+      case MessageType.gameLikedToAuthor:
         if (gameId != null && gameId!.isNotEmpty) {
           return MessageNavigationInfo(
               routeName: AppRoutes.gameDetail, arguments: gameId);

@@ -3,17 +3,24 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_tag.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class GameLeftPanel extends StatelessWidget {
   final double panelWidth;
+  final String? errorMessage;
+  final bool isTagLoading;
+  final Function() refreshTags;
   final List<GameTag> tags;
   final String? selectedTag;
   final Function(String?) onTagSelected;
 
   const GameLeftPanel({
     super.key,
+    this.errorMessage,
+    required this.isTagLoading,
+    required this.refreshTags,
     required this.panelWidth,
     required this.tags,
     required this.selectedTag,
@@ -97,16 +104,22 @@ class GameLeftPanel extends StatelessWidget {
 
   /// 使用 Wrap 布局来构建标签列表，自动换行，更灵活。
   Widget _buildTagsWrap(BuildContext context) {
-    if (tags.isEmpty) {
+    if (errorMessage != null) {
       return InlineErrorWidget(
         errorMessage: '加载标签发生错误',
         icon: Icons.label_off,
         iconSize: 32,
         iconColor: Colors.grey[400],
+        onRetry: () => refreshTags(),
       );
     }
 
-    // --- 核心修改：用 Wrap 替换 GridView ---
+    if (isTagLoading) {
+      return const LoadingWidget(
+        size: 24,
+      );
+    }
+
     return Wrap(
       spacing: 8.0, // 标签之间的水平间距
       runSpacing: 8.0, // 标签之间的垂直间距

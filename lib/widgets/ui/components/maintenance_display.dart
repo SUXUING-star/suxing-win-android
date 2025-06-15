@@ -35,7 +35,7 @@ class MaintenanceDisplay extends StatelessWidget {
     }
 
     // 有 info，构建详细维护界面
-    final visuals = _getMaintenanceVisuals(maintenanceInfo!.maintenanceType);
+    final visuals = MaintenanceInfo.getMaintenanceVisuals(maintenanceInfo!.maintenanceType);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -45,7 +45,7 @@ class MaintenanceDisplay extends StatelessWidget {
             Icon(visuals['icon'], size: 64, color: visuals['color']),
             const SizedBox(height: 20),
             Text(
-              _getMaintenanceTitle(maintenanceInfo!.maintenanceType),
+              MaintenanceInfo.getMaintenanceTitle(maintenanceInfo!.maintenanceType),
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
@@ -58,7 +58,7 @@ class MaintenanceDisplay extends StatelessWidget {
             _buildTimeInfo(context, "预计结束时间:", DateTimeFormatter.formatStandard(maintenanceInfo!.endTime)),
             if (remainingMinutes > 0) ...[
               const SizedBox(height: 8),
-              _buildTimeInfo(context, "预计剩余时间:", _formatRemainingTime(remainingMinutes)),
+              _buildTimeInfo(context, "预计剩余时间:",MaintenanceInfo.formatRemainingTime(remainingMinutes)),
             ],
             const SizedBox(height: 30),
             Text(
@@ -69,31 +69,6 @@ class MaintenanceDisplay extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  // --- 辅助方法 (从 Wrapper 移过来) ---
-  Map<String, dynamic> _getMaintenanceVisuals(String maintenanceType) {
-    switch (maintenanceType) {
-      case 'emergency':
-        return {'icon': Icons.warning_amber_rounded, 'color': Colors.red};
-      case 'upgrade':
-        return {'icon': Icons.system_update_alt, 'color': Colors.blue};
-      case 'scheduled':
-      default:
-        return {'icon': Icons.schedule, 'color': Colors.orange};
-    }
-  }
-
-  String _getMaintenanceTitle(String maintenanceType) {
-    switch (maintenanceType) {
-      case 'emergency':
-        return '系统紧急维护中';
-      case 'upgrade':
-        return '系统升级维护中';
-      case 'scheduled':
-      default:
-        return '系统维护中';
-    }
   }
 
   Widget _buildTimeInfo(BuildContext context, String label, String value) {
@@ -113,17 +88,5 @@ class MaintenanceDisplay extends StatelessWidget {
     );
   }
 
-  String _formatRemainingTime(int minutes) {
-    if (minutes <= 0) return "即将结束";
-    if (minutes < 60) {
-      return "$minutes 分钟";
-    } else {
-      final hours = minutes ~/ 60;
-      final remainingMinutes = minutes % 60;
-      if (remainingMinutes == 0) {
-        return "$hours 小时";
-      }
-      return "$hours 小时 $remainingMinutes 分钟";
-    }
-  }
+
 }

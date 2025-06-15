@@ -1,16 +1,21 @@
 // lib/models/user/checkin_status.dart
+
 import 'package:intl/intl.dart';
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/user/checkin_result.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 /// 签到状态和统计信息模型
+@immutable
 class CheckInStatus {
   final bool canCheckInToday;
   final bool checkedInToday;
   final int totalCheckIn;
   final int consecutiveCheckIn;
   final int nextCheckInExp;
-  final DateTime? lastCheckInDate; // Nil 会被 Gin 序列化为 null
+  final DateTime? lastCheckInDate;
 
-  CheckInStatus({
+  const CheckInStatus({
     required this.canCheckInToday,
     required this.checkedInToday,
     required this.totalCheckIn,
@@ -20,29 +25,31 @@ class CheckInStatus {
   });
 
   factory CheckInStatus.fromJson(Map<String, dynamic> json) {
-    DateTime? parsedLastCheckInDate;
-    if (json['lastCheckInDate'] != null &&
-        json['lastCheckInDate'] is String &&
-        (json['lastCheckInDate'] as String).isNotEmpty) {
-      try {
-        // 假设日期格式为 YYYY-MM-DD
-        parsedLastCheckInDate =
-            DateFormat('yyyy-MM-dd').parse(json['lastCheckInDate']);
-      } catch (e) {
-        // print('Error parsing lastCheckInDate: ${json['lastCheckInDate']} - $e');
-        // 如果解析失败，保持为 null
-      }
-    }
-
     return CheckInStatus(
-      canCheckInToday: json['canCheckInToday'] as bool? ?? true,
-      checkedInToday: json['checkedInToday'] as bool? ?? false,
-      totalCheckIn: json['totalCheckIn'] as int? ?? 0,
-      consecutiveCheckIn: json['consecutiveCheckIn'] as int? ?? 0,
-      nextCheckInExp: json['nextCheckInExp'] as int? ?? 0,
-      lastCheckInDate: parsedLastCheckInDate,
+      // 业务逻辑: 如果后端未明确提供，则默认为可以签到
+      canCheckInToday: UtilJson.parseBoolSafely(json['canCheckInToday'], defaultValue: true),
+      checkedInToday: UtilJson.parseBoolSafely(json['checkedInToday']),
+      totalCheckIn: UtilJson.parseIntSafely(json['totalCheckIn']),
+      consecutiveCheckIn: UtilJson.parseIntSafely(json['consecutiveCheckIn']),
+      nextCheckInExp: UtilJson.parseIntSafely(json['nextCheckInExp']),
+      // UtilJson.parseNullableDateTime 能正确处理多种日期格式
+      lastCheckInDate: UtilJson.parseNullableDateTime(json['lastCheckInDate']),
     );
   }
+
+  /// 从签到成功的结果直接创建签到状态
+  factory CheckInStatus.fromCheckInResult(CheckInResult result) {
+    return CheckInStatus(
+      // 业务逻辑: 签到成功后，当天已签到，且不能再签到
+      checkedInToday: true,
+      canCheckInToday: false,
+      totalCheckIn: result.totalCheckIn,
+      consecutiveCheckIn: result.consecutiveCheckIn,
+      nextCheckInExp: result.nextCheckInExp,
+      lastCheckInDate: result.checkInDate,
+    );
+  }
+
 
   Map<String, dynamic> toJson() {
     return {

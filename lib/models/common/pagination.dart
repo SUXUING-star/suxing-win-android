@@ -1,5 +1,7 @@
 // lib/models/common/pagination.dart
 
+import 'package:suxingchahui/models/util_json.dart';
+
 class PaginationData {
   final int page;
   final int limit;
@@ -38,62 +40,61 @@ class PaginationData {
   }
 
   factory PaginationData.fromJson(Map<String, dynamic> json) {
-    int pageValue = (json['page'] as num?)?.toInt() ?? 1;
+    int page = UtilJson.parseIntSafely(json['page']);
+    int limit = UtilJson.parseIntSafely(json['limit']);
+    int total = UtilJson.parseIntSafely(json['total']);
 
-    int limitValue;
-    if (json.containsKey('limit') && json['limit'] != null) {
-      limitValue = (json['limit'] as num).toInt();
-    } else if (json.containsKey('pageSize') && json['pageSize'] != null) {
-      limitValue = (json['pageSize'] as num).toInt();
+    // 处理 limit 字段：优先 'limit'，其次 'pageSize'，最后默认 20
+    if (limit <= 0) {
+      limit = UtilJson.parseIntSafely(json['pageSize']);
+    }
+    if (limit <= 0) {
+      limit = 20; // 默认值
+    }
+
+    // 确保 total 不为负数
+    if (total < 0) {
+      total = 0;
+    }
+
+    // 计算总页数
+    int finalPages;
+    // 如果总条目为 0，总页数就是 0，优先级最高
+    if (total == 0) {
+      finalPages = 0;
     } else {
-      limitValue = 20;
-    }
-    if (limitValue <= 0) limitValue = 1;
+      // 根据总条目和每页限制计算页数
+      int calculatedPages = (total / limit).ceil();
 
-    int totalValue = (json['total'] as num?)?.toInt() ?? 0;
-    if (totalValue < 0) totalValue = 0;
-
-    int calculatedPagesBasedOnTotalAndLimit =
-        (totalValue <= 0 || limitValue <= 0)
-            ? 1
-            : (totalValue / limitValue).ceil();
-
-    int? backendProvidedTotalPages;
-    if (json.containsKey('pages') && json['pages'] != null) {
-      backendProvidedTotalPages = (json['pages'] as num).toInt();
-    } else if (json.containsKey('totalPages') && json['totalPages'] != null) {
-      backendProvidedTotalPages = (json['totalPages'] as num).toInt();
-    }
-
-    int finalTotalPages;
-    if (backendProvidedTotalPages != null) {
-      finalTotalPages =
-          backendProvidedTotalPages < calculatedPagesBasedOnTotalAndLimit
-              ? calculatedPagesBasedOnTotalAndLimit
-              : backendProvidedTotalPages;
-      if (totalValue == 0 && backendProvidedTotalPages == 0) {
-        finalTotalPages = 0;
+      // 从后端获取的页数（可能是 'pages' 或 'totalPages'）
+      int pagesFromBackend = UtilJson.parseIntSafely(json['pages']);
+      if (pagesFromBackend <= 0) {
+        pagesFromBackend = UtilJson.parseIntSafely(json['totalPages']);
       }
-    } else {
-      finalTotalPages = calculatedPagesBasedOnTotalAndLimit;
-      if (totalValue == 0) {
-        finalTotalPages = 0;
+
+      // 如果后端提供的页数有效且大于计算页数，则使用后端值，否则使用计算值
+      if (pagesFromBackend > 0 && pagesFromBackend > calculatedPages) {
+        finalPages = pagesFromBackend;
+      } else {
+        finalPages = calculatedPages;
       }
     }
 
-    if (pageValue < 1) pageValue = 1;
-    if (finalTotalPages > 0 && pageValue > finalTotalPages) {
-      pageValue = finalTotalPages;
+    // 修正当前页码
+    if (page < 1) page = 1; // 页码不能小于 1
+    if (finalPages > 0 && page > finalPages) {
+      page = finalPages; // 页码不能超过总页数（如果总页数大于 0）
     }
-    if (finalTotalPages == 0 && pageValue > 1 && totalValue == 0) {
-      pageValue = 1;
+    // 如果总条目为 0 且当前页码大于 1，则重置为 1
+    if (total == 0 && page > 1) {
+      page = 1;
     }
 
     return PaginationData(
-      page: pageValue,
-      limit: limitValue,
-      total: totalValue,
-      pages: finalTotalPages,
+      page: page,
+      limit: limit,
+      total: total,
+      pages: finalPages,
     );
   }
 

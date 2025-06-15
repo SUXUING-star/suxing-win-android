@@ -1,5 +1,9 @@
 // lib/models/game/game_comment.dart
 
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
+
+@immutable
 class GameComment {
   final String id;
   final String gameId;
@@ -24,28 +28,28 @@ class GameComment {
   });
 
   factory GameComment.fromJson(Map<String, dynamic> json) {
-    // 处理嵌套的 replies
     List<GameComment> parsedReplies = [];
     if (json['replies'] is List) {
       parsedReplies = (json['replies'] as List)
           .map((replyJson) {
-        try {
-          return GameComment.fromJson(Map<String, dynamic>.from(replyJson));
-        } catch (e) { return null; } // 防错
+        if (replyJson is Map<String, dynamic>) {
+          return GameComment.fromJson(replyJson);
+        }
+        return null;
       })
           .whereType<GameComment>()
           .toList();
     }
 
     return GameComment(
-      id: json['_id']?.toString() ?? json['id']?.toString() ?? '',
-      gameId: json['gameId']?.toString() ?? '',
-      userId: json['userId']?.toString() ?? '',
-      content: json['content'] ?? '',
-      createTime: DateTime.parse(json['createTime']),
-      updateTime: DateTime.parse(json['updateTime']),
-      username: json['username'] ?? '未知用户',
-      parentId: json['parentId']?.toString(),
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      gameId: UtilJson.parseId(json['gameId']),
+      userId: UtilJson.parseId(json['userId']),
+      content: UtilJson.parseStringSafely(json['content']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseDateTime(json['updateTime']),
+      username: UtilJson.parseStringSafely(json['username']),
+      parentId: UtilJson.parseNullableStringSafely(json['parentId']),
       replies: parsedReplies,
     );
   }

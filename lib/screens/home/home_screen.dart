@@ -5,7 +5,6 @@
 library;
 
 import 'dart:async'; // 导入异步操作所需，如 Timer
-import 'dart:math';
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
 import 'package:rxdart/rxdart.dart'; // 导入 RxDart，用于流的 debounceTime
@@ -23,7 +22,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
 import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart'; // 导入最新游戏组件
@@ -95,14 +94,18 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   List<Game>? _hotGamesData; // 热门游戏数据列表
   bool _isHotGamesLoading = false; // 热门游戏是否正在加载中
   String? _hotGamesError; // 热门游戏错误消息
+  DateTime? _lastHotGamesLoadingSetTime;
+  static const Duration _maxSectionLoadingDuration = Duration(seconds: 10);
 
   List<Game>? _latestGamesData; // 最新游戏数据列表
   bool _isLatestGamesLoading = false; // 最新游戏是否正在加载中
   String? _latestGamesError; // 最新游戏错误消息
+  DateTime? _lastLatestGamesLoadingSetTime;
 
   List<Post>? _hotPostsData; // 热门帖子数据列表
   bool _isHotPostsLoading = false; // 热门帖子是否正在加载中
   String? _hotPostsError; // 热门帖子错误消息
+  DateTime? _lastHotPostsLoadingSetTime;
 
   PageController _hotGamesPageController = PageController(); // 热门游戏轮播控制器
   Timer? _hotGamesScrollTimer; // 热门游戏自动滚动计时器
@@ -128,9 +131,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this); // 添加应用生命周期观察者
     _hotGamesPageController = PageController(); // 初始化 PageController
-    _bannerImage = Random().nextBool()
-        ? GlobalConstants.bannerImageFirst
-        : GlobalConstants.bannerImageSecond;
+    _bannerImage = GlobalConstants.bannerImageFirst;
   }
 
   @override
@@ -175,19 +176,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return; // 组件未挂载时返回
 
+    _checkLoadingTimeout();
+
     if (state == AppLifecycleState.resumed) {
       setState(() {
         _screenWidth = DeviceUtils.getScreenWidth(context);
       });
       // 应用从后台恢复时
-      if (widget.authProvider.currentUserId != _currentUserId) {
-        // 用户ID变化时
-        if (mounted) {
-          setState(() {
-            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-          });
-        }
-      }
+      _checkAuthStateChange();
       _subscribeToCacheChanges(); // 订阅缓存变化
       if (_isVisible) {
         // 页面当前可见时
@@ -207,6 +203,62 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     }
   }
 
+  ///
+  ///
+  void _checkAuthStateChange() {
+    if (!mounted) return;
+    if (widget.authProvider.currentUserId != _currentUserId) {
+      // 用户ID变化时
+      if (mounted) {
+        setState(() {
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
+        });
+      }
+    }
+  }
+
+  ///
+  ///
+  void _checkLoadingTimeout() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    if (_lastHotGamesLoadingSetTime != null &&
+        _isHotGamesLoading &&
+        now.difference(_lastHotGamesLoadingSetTime!) >
+            _maxSectionLoadingDuration) {
+      if (mounted) {
+        setState(() {
+          _isHotGamesLoading = false;
+          _lastHotGamesLoadingSetTime = null;
+        });
+      }
+    }
+    // 检查 _isLatestGamesLoading 超时
+    if (_lastLatestGamesLoadingSetTime != null &&
+        _isLatestGamesLoading &&
+        now.difference(_lastLatestGamesLoadingSetTime!) >
+            _maxSectionLoadingDuration) {
+      if (mounted) {
+        setState(() {
+          _isLatestGamesLoading = false;
+          _lastLatestGamesLoadingSetTime = null;
+        });
+      }
+    }
+    // 检查 _isHotPostsLoading 超时
+    if (_lastHotPostsLoadingSetTime != null &&
+        _isHotPostsLoading &&
+        now.difference(_lastHotPostsLoadingSetTime!) >
+            _maxSectionLoadingDuration) {
+      if (mounted) {
+        setState(() {
+          _isHotPostsLoading = false;
+          _lastHotPostsLoadingSetTime = null;
+        });
+      }
+    }
+  }
+
   /// 处理可见性变化。
   ///
   /// [visibilityInfo]：可见性信息。
@@ -216,14 +268,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     final bool currentlyVisible =
         visibilityInfo.visibleFraction > 0.1; // 判断当前可见性
 
-    if (widget.authProvider.currentUserId != _currentUserId) {
-      // 用户ID变化时
-      if (mounted) {
-        setState(() {
-          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-        });
-      }
-    }
+    _checkLoadingTimeout();
+    _checkAuthStateChange();
 
     if (currentlyVisible != wasVisible) {
       // 可见性状态变化时
@@ -367,16 +413,44 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       // 设置对应板块的加载状态
       switch (type) {
         case HomeDataType.hotGames:
+          if (_lastHotGamesLoadingSetTime != null) {
+            _lastHotGamesLoadingSetTime = null;
+          }
+          if (_isHotGamesLoading) return;
+          break;
+        case HomeDataType.latestGames:
+          if (_lastLatestGamesLoadingSetTime != null) {
+            _lastLatestGamesLoadingSetTime = null;
+          }
+          if (_isLatestGamesLoading) return;
+          break;
+        case HomeDataType.hotPosts:
+          if (_lastHotPostsLoadingSetTime != null) {
+            _lastHotPostsLoadingSetTime = null;
+          }
+          if (_isHotPostsLoading) return;
+          break;
+      }
+    });
+
+    final now = DateTime.now();
+    setState(() {
+      // 设置对应板块的加载状态
+      switch (type) {
+        case HomeDataType.hotGames:
           _isHotGamesLoading = true;
+          _lastHotGamesLoadingSetTime = now;
           _hotGamesError = null;
           break;
         case HomeDataType.latestGames:
           _isLatestGamesLoading = true;
+          _lastLatestGamesLoadingSetTime = now;
           _latestGamesError = null;
           break;
         case HomeDataType.hotPosts:
           _isHotPostsLoading = true;
           _hotPostsError = null;
+          _lastHotGamesLoadingSetTime = now;
           break;
       }
     });
@@ -432,12 +506,15 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           switch (type) {
             case HomeDataType.hotGames:
               _isHotGamesLoading = false;
+              _lastHotGamesLoadingSetTime = null;
               break;
             case HomeDataType.latestGames:
               _isLatestGamesLoading = false;
+              _lastLatestGamesLoadingSetTime = null;
               break;
             case HomeDataType.hotPosts:
               _isHotPostsLoading = false;
+              _lastHotPostsLoadingSetTime = null;
               break;
           }
         });
@@ -464,10 +541,14 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         return;
       }
     }
+    if (_isPerformingHomeScreenRefresh) return;
+
     if (!_isPerformingHomeScreenRefresh) {
       // 未在刷新中时
-      _isPerformingHomeScreenRefresh = true; // 标记开始刷新
-      _lastHomeScreenRefreshAttemptTime = DateTime.now(); // 更新时间戳
+      setState(() {
+        _isPerformingHomeScreenRefresh = true; // 标记开始刷新
+        _lastHomeScreenRefreshAttemptTime = DateTime.now(); // 更新时间戳
+      });
 
       _fetchSpecificData(HomeDataType.hotGames,
           isTriggeredByRefresh: true); // 获取热门游戏

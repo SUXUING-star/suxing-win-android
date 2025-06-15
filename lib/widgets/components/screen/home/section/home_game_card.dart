@@ -1,8 +1,6 @@
 // lib/widgets/components/screen/home/section/home_game_card.dart
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
-// 废话不多说，先把大哥请过来
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
 
 /// 首页专用的游戏卡片，一个有固定尺寸的展示组件。
@@ -13,6 +11,7 @@ import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.
 class HomeGameCard extends BaseGameCard {
   /// 卡片的固定宽度
   static const double cardWidth = 160.0;
+
   /// 卡片的固定高度
   static const double cardHeight = 210;
 
@@ -24,18 +23,18 @@ class HomeGameCard extends BaseGameCard {
     required super.game,
     VoidCallback? onTap,
   }) : super(
-    // --- 把核心数据和回调传给大哥 ---
-    onTapOverride: onTap, // 把自己的 onTap 传给大哥的 onTapOverride，完美对接
+          // --- 把核心数据和回调传给大哥 ---
+          onTapOverride: onTap, // 把自己的 onTap 传给大哥的 onTapOverride，完美对接
 
-    // --- 根据 HomeGameCard 的样式，把参数写死 ---
-    isGridItem: true, // 必须是网格布局
-    showTags: true, // 首页卡片不显示那一长串标签
-    maxTags: 1,
-    showCollectionStats: true, // 封面上的统计数据要显示
-    currentUser: null, // 没用户，禁用所有编辑/删除功能
-    showNewBadge: false, // 不显示“新”徽章
-    showUpdatedBadge: false, // 不显示“更新”徽章
-  );
+          // --- 根据 HomeGameCard 的样式，把参数写死 ---
+          isGridItem: true, // 必须是网格布局
+          showTags: true, // 首页卡片不显示那一长串标签
+          maxTags: 1,
+          showCollectionStats: true, // 封面上的统计数据要显示
+          currentUser: null, // 没用户，禁用所有编辑/删除功能
+          showNewBadge: false, // 不显示“新”徽章
+          showUpdatedBadge: false, // 不显示“更新”徽章
+        );
 
   /// 重写 build 方法，这是与 CommonGameCard 唯一的不同之处。
   ///

@@ -1,12 +1,15 @@
 // lib/models/user/daily_checkin_info.dart
 
+import 'package:meta/meta.dart';
+
 /// 单日签到信息模型
+@immutable
 class DailyCheckInInfo {
   final int day;
   final bool checkedIn;
   final int exp;
 
-  DailyCheckInInfo({
+  const DailyCheckInInfo({
     required this.day,
     required this.checkedIn,
     required this.exp,

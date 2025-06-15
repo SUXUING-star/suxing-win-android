@@ -1,12 +1,14 @@
 // lib/models/linkstools/tool.dart
-import 'package:mongo_dart/mongo_dart.dart';
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
+@immutable
 class ToolDownload {
   final String name;
   final String description;
   final String url;
 
-  ToolDownload({
+  const ToolDownload({
     required this.name,
     required this.description,
     required this.url,
@@ -29,6 +31,7 @@ class ToolDownload {
   }
 }
 
+@immutable
 class Tool {
   final String id;
   final String name;
@@ -40,7 +43,7 @@ class Tool {
   final DateTime createTime;
   final bool isActive;
 
-  Tool({
+  const Tool({
     required this.id,
     required this.name,
     required this.description,
@@ -53,61 +56,31 @@ class Tool {
   });
 
   factory Tool.fromJson(Map<String, dynamic> json) {
-    // 不要递归调用Tool.fromJson，这可能是问题所在
-    // 始终确保传入的是Map<String, dynamic>而不是Tool对象
-
-    // 处理ID
-    String toolId = '';
-    var idValue = json['_id'] ?? json['id'];
-
-    if (idValue is ObjectId) {
-      toolId = idValue.oid;
-    } else if (idValue is String) {
-      toolId = idValue;
-    } else if (idValue is Map && idValue.containsKey('\$oid')) {
-      toolId = idValue['\$oid'].toString();
-    }
-
-    // 处理下载
     List<ToolDownload> downloads = [];
-    if (json['downloads'] != null && json['downloads'] is List) {
-      for (var item in json['downloads']) {
-        if (item is Map) {
-          try {
-            var downloadMap = Map<String, dynamic>.from(item);
-            downloads.add(ToolDownload.fromJson(downloadMap));
-          } catch (e) {
-            // print('Error parsing download: $e');
-          }
-        }
-      }
-    }
-
-    // 处理日期
-    DateTime createTime = DateTime.now();
-    var dateValue = json['createTime'];
-    if (dateValue != null) {
-      if (dateValue is DateTime) {
-        createTime = dateValue;
-      } else if (dateValue is String) {
-        try {
-          createTime = DateTime.parse(dateValue);
-        } catch (e) {
-          // 使用当前时间作为默认值
-        }
-      }
+    if (json['downloads'] is List) {
+      downloads = (json['downloads'] as List)
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              return ToolDownload.fromJson(item);
+            }
+            return null;
+          })
+          .whereType<ToolDownload>()
+          .toList();
     }
 
     return Tool(
-      id: toolId,
-      name: json['name']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      icon: json['icon']?.toString(),
-      color: json['color']?.toString() ?? '#19712C',
-      type: json['type']?.toString(),
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      name: UtilJson.parseStringSafely(json['name']),
+      description: UtilJson.parseStringSafely(json['description']),
+      icon: UtilJson.parseNullableStringSafely(json['icon']),
+      // 业务逻辑: 如果后端未提供颜色，默认为 '#19712C'
+      color: UtilJson.parseStringSafely(json['color'] ?? '#19712C'),
+      type: UtilJson.parseNullableStringSafely(json['type']),
       downloads: downloads,
-      createTime: createTime,
-      isActive: json['isActive'] ?? true,
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      // 业务逻辑: 如果后端未提供 isActive，默认为 true
+      isActive: UtilJson.parseBoolSafely(json['isActive'], defaultValue: true),
     );
   }
 

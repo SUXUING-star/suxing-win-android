@@ -23,12 +23,13 @@ import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
+import 'package:suxingchahui/widgets/components/form/gameform/field/game_external_links_field.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 // --- UI 和辅助组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -101,6 +102,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // --- 其他表单状态 ---
   List<GameDownloadLink> _downloadLinks = [];
+  List<GameExternalLink> _externalLinks = [];
   String? _selectedCategory;
   List<String> _selectedTags = [];
 
@@ -248,6 +250,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     _coverImageSource = null;
     _gameImagesSources = [];
     _downloadLinks = [];
+    _externalLinks = [];
     _selectedCategory = null;
     _selectedTags = [];
     _isProcessing = false;
@@ -288,6 +291,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       // 下载链接：需要深拷贝，避免引用同一个列表
       _downloadLinks = List<GameDownloadLink>.from(game.downloadLinks
           .map((link) => GameDownloadLink.fromJson(link.toJson())));
+      _externalLinks = List<GameExternalLink>.from(game.externalLinks
+          .map((link) => GameExternalLink.fromJson(link.toJson())));
       final categoriesList = game.category // <--- 新的
           .split(',')
           .map((e) => e.trim())
@@ -400,6 +405,9 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         _selectedTags = List<String>.from(draft.selectedTags);
         _downloadLinks = draft.downloadLinks
             .map((map) => GameDownloadLink.fromJson(map))
+            .toList();
+        _externalLinks = draft.externalLinks
+            .map((map) => GameExternalLink.fromJson(map))
             .toList();
 
         // --- Restore Cover Image ---
@@ -632,6 +640,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       gameImageUrls:
           gameImagesToSave, // Now contains URLs or persistent File paths
       downloadLinks: _downloadLinks.map((link) => link.toJson()).toList(),
+      externalLinks: _externalLinks.map((link) => link.toJson()).toList(),
       selectedCategory: _selectedCategory,
       selectedTags: List<String>.from(_selectedTags),
       lastSaved: DateTime.now(),
@@ -660,8 +669,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
     // 检查列表是否为空
     bool listsEmpty = _downloadLinks.isEmpty &&
-        // _selectedCategories.isEmpty && // 旧的
-        _selectedCategory == null && // <--- 新的
+        _externalLinks.isEmpty &&
+        _selectedCategory == null &&
         _selectedTags.isEmpty;
 
     return textFieldsEmpty && coverEmpty && gameImagesEmpty && listsEmpty;
@@ -737,6 +746,14 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     final initialLinksJson =
         initial.downloadLinks.map((l) => l.toJson()).toList();
     if (!eq.equals(currentLinksJson, initialLinksJson)) {
+      return true;
+    }
+    // 6. 比较外部链接 (需要深度比较 List<Map>) // <-- 新增
+    final currentExternalLinksJson =
+        _externalLinks.map((l) => l.toJson()).toList();
+    final initialExternalLinksJson =
+        initial.externalLinks.map((l) => l.toJson()).toList();
+    if (!eq.equals(currentExternalLinksJson, initialExternalLinksJson)) {
       return true;
     }
 
@@ -1027,7 +1044,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             updateTime: DateTime.now(),
             viewCount: widget.game?.viewCount ?? 0,
             likeCount: widget.game?.likeCount ?? 0,
-            likedBy: widget.game?.likedBy ?? [], // 编辑时保留
             wantToPlayCount: widget.game?.wantToPlayCount ?? 0,
             playingCount: widget.game?.playingCount ?? 0,
             playedCount: widget.game?.playedCount ?? 0,
@@ -1035,6 +1051,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
             collectionUpdateTime: DateTime.now(),
             // 下载链接
             downloadLinks: _downloadLinks,
+            externalLinks: _externalLinks,
             // 可选字段
             musicUrl: _musicUrlController.text.trim().isEmpty
                 ? null
@@ -1260,6 +1277,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
                         const SizedBox(height: 28),
                         _buildDownloadLinksField(),
                         const SizedBox(height: 28),
+                        _buildExternalLinksField(),
+                        const SizedBox(height: 28),
                         _buildMusicUrlField(),
                         const SizedBox(height: 20),
                         _buildBvidField(),
@@ -1367,6 +1386,8 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
           const SizedBox(height: 8),
           _buildDownloadLinksField(),
           const SizedBox(height: 24),
+          _buildSectionTitle('其他关联链接 (可选)'),
+          const SizedBox(height: 8),
 
           _buildSectionTitle('游戏截图 (可选)'),
           const SizedBox(height: 8),
@@ -1615,6 +1636,15 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
     );
   }
 
+  // --- 构建其他关联链接字段
+  Widget _buildExternalLinksField() {
+    return GameExternalLinksField(
+      inputStateService: widget.inputStateService,
+      externalLinks: _externalLinks,
+      onChanged: (links) => setState(() => _externalLinks = links),
+    );
+  }
+
   // 游戏截图区域
   Widget _buildGameImagesSection() {
     // GameImagesField 应该能处理 List<String or XFile or null>
@@ -1689,6 +1719,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       selectedTags: _selectedTags,
       rating: widget.game?.rating ?? 0.0, // 预览用现有评分或 0
       downloadLinks: _downloadLinks,
+      externalLinks: _externalLinks,
       musicUrlController: _musicUrlController,
       bvidController: _bvidController,
       existingGame: widget.game, // 传递原始 game 对象，预览时可能有用

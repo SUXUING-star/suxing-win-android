@@ -113,8 +113,12 @@ class PostRightPanel extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCard(BuildContext context, String title,
-      List<StatsItem> items, Color themeColor) {
+  Widget _buildStatsCard(
+    BuildContext context,
+    String title,
+    List<StatsItem> items,
+    Color themeColor,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

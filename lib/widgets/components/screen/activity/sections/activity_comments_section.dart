@@ -23,7 +23,8 @@ class ActivityCommentsSection extends StatelessWidget {
   final bool isLoadingComments;
   final Function(String) onAddComment;
   final FutureOr<void> Function(ActivityComment comment) onCommentDeleted;
-  final FutureOr<void> Function(ActivityComment comment) onCommentLikeToggled;
+  final Future<bool>  Function(ActivityComment comment) onCommentLike;
+  final Future<bool>  Function(ActivityComment comment) onCommentUnLike;
   final bool isDesktopLayout;
 
   const ActivityCommentsSection({
@@ -37,7 +38,8 @@ class ActivityCommentsSection extends StatelessWidget {
     required this.isLoadingComments,
     required this.onAddComment,
     required this.onCommentDeleted,
-    required this.onCommentLikeToggled,
+    required this.onCommentLike,
+    required this.onCommentUnLike,
     required this.isDesktopLayout,
   });
 
@@ -108,8 +110,8 @@ class ActivityCommentsSection extends StatelessWidget {
               currentUser: currentUser,
               activityId: activityId,
               isAlternate: false,
-              onLike: () => onCommentLikeToggled(comment),
-              onUnlike: () => onCommentLikeToggled(comment),
+              onLike: () => onCommentLike(comment),
+              onUnlike: () => onCommentUnLike(comment),
               onCommentDeleted: () => onCommentDeleted(comment),
             ),
           );

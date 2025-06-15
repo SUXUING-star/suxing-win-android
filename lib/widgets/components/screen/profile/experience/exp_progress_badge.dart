@@ -19,7 +19,7 @@ class ExpProgressBadge extends StatelessWidget {
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
-  final VoidCallback onRefreshExpData; // 用于重试和弹窗关闭时刷新
+  final Function(bool needCheck) onRefreshExpData; // 用于重试和弹窗关闭时刷新
 
   const ExpProgressBadge({
     super.key,
@@ -44,11 +44,6 @@ class ExpProgressBadge extends StatelessWidget {
     final List<Task> tasks = dailyProgressData!.tasks;
     final TodayProgressSummary todayProgress = dailyProgressData!.todayProgress;
 
-    // Dialog 关闭时的刷新逻辑 (使用 onRefreshExpData)
-    void refreshCallback() {
-      onRefreshExpData();
-    }
-
     BaseInputDialog.show<void>(
       context: context,
       title: '今日经验进度',
@@ -64,9 +59,8 @@ class ExpProgressBadge extends StatelessWidget {
       confirmButtonText: '关闭',
       showCancelButton: false,
       onConfirm: () async {
-        refreshCallback();
+        return;
       },
-      onCancel: refreshCallback, // 点击背景关闭时也刷新
       isDraggable: true,
       isScalable: false,
     );
@@ -88,7 +82,7 @@ class ExpProgressBadge extends StatelessWidget {
 
     if (expDataError != null || dailyProgressData == null) {
       return InkWell(
-        onTap: onRefreshExpData, // 点击重试
+        onTap: onRefreshExpData(true), // 点击重试
         child: Tooltip(
           message: expDataError ?? "加载失败，点击重试",
           child: Icon(

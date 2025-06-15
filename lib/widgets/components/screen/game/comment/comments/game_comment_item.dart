@@ -8,7 +8,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';

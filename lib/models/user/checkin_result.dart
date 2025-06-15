@@ -1,21 +1,24 @@
 // lib/models/user/checkin_result.dart
+import 'package:flutter/cupertino.dart';
 import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/util_json.dart'; // 引用
 
+@immutable
 class CheckInResult {
-  final String message;
-  final User? user; // User 对象现在由 performCheckIn 方法内部解析并设置
+  final User? user;
   final int experienceGained;
-  final int nextCheckInExp; // <<< --- 新增字段 ---
+  final int coinsGained;
+  final int nextCheckInExp;
   final int consecutiveCheckIn;
   final int totalCheckIn;
   final DateTime checkInDate;
   final bool canGetExp;
 
-  CheckInResult({
-    required this.message,
+  const CheckInResult({
     this.user,
     required this.experienceGained,
-    required this.nextCheckInExp, // <<< --- 新增字段 ---
+    required this.coinsGained,
+    required this.nextCheckInExp,
     required this.consecutiveCheckIn,
     required this.totalCheckIn,
     required this.checkInDate,
@@ -23,40 +26,26 @@ class CheckInResult {
   });
 
   factory CheckInResult.fromJson(Map<String, dynamic> json) {
-    DateTime parsedDate;
-    try {
-      parsedDate = DateTime.parse(json['checkInDate'] as String? ?? '');
-    } catch (e) {
-      parsedDate = DateTime.now();
-    }
-
-    User? parsedUser;
-    if (json['user'] != null && json['user'] is Map<String, dynamic>) {
-      try {
-        parsedUser = User.fromJson(json['user'] as Map<String, dynamic>);
-      } catch (e) {
-        // print('Error parsing user from CheckInResult: $e');
-      }
-    }
-
     return CheckInResult(
-      message: json['message'] as String? ?? '签到成功',
-      user: parsedUser, // 直接从 json['user'] 解析
-      experienceGained: json['experienceGained'] as int? ?? 0,
-      nextCheckInExp: json['nextCheckInExp'] as int? ?? 0, // <<< --- 新增字段解析 ---
-      consecutiveCheckIn: json['consecutiveCheckIn'] as int? ?? 0,
-      totalCheckIn: json['totalCheckIn'] as int? ?? 0,
-      checkInDate: parsedDate,
-      canGetExp: json['canGetExp'] as bool? ?? false,
+      user: json['user'] is Map<String, dynamic>
+          ? User.fromJson(json['user'] as Map<String, dynamic>)
+          : null,
+      experienceGained: UtilJson.parseIntSafely(json['experienceGained']),
+      coinsGained: UtilJson.parseIntSafely(json['coinsGained']),
+      nextCheckInExp: UtilJson.parseIntSafely(json['nextCheckInExp']),
+      consecutiveCheckIn: UtilJson.parseIntSafely(json['consecutiveCheckIn']),
+      totalCheckIn: UtilJson.parseIntSafely(json['totalCheckIn']),
+      checkInDate: UtilJson.parseDateTime(json['checkInDate']),
+      canGetExp: UtilJson.parseBoolSafely(json['canGetExp']),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'message': message,
-      'user': user?.toJson(),
+      'user': user?.toSafeJson(),
+      'coinsGained': coinsGained,
       'experienceGained': experienceGained,
-      'nextCheckInExp': nextCheckInExp, // <<< --- 新增字段 ---
+      'nextCheckInExp': nextCheckInExp,
       'consecutiveCheckIn': consecutiveCheckIn,
       'totalCheckIn': totalCheckIn,
       'checkInDate': checkInDate.toIso8601String(),

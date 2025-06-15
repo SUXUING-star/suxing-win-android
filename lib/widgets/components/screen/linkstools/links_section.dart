@@ -5,7 +5,7 @@ import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/linktool/link_tool_service.dart';
 import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_sliver_list.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'link_list_item.dart';
 
 class LinksSection extends StatelessWidget {

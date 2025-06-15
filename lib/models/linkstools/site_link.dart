@@ -1,7 +1,10 @@
 // lib/models/linkstools/site_link.dart
+import 'package:meta/meta.dart';
 import 'package:mongo_dart/mongo_dart.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 // 为了避免不混淆第三方库的link包
+@immutable
 class SiteLink {
   final String id;
   final String title;
@@ -13,7 +16,7 @@ class SiteLink {
   final int order;
   final bool isActive;
 
-  SiteLink({
+  const SiteLink({
     required this.id,
     required this.title,
     required this.description,
@@ -26,22 +29,18 @@ class SiteLink {
   });
 
   factory SiteLink.fromJson(Map<String, dynamic> json) {
-    String linkId = json['_id'] is ObjectId
-        ? json['_id'].toHexString()
-        : (json['_id']?.toString() ?? json['id']?.toString() ?? '');
-
     return SiteLink(
-      id: linkId,
-      title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      url: json['url']?.toString() ?? '',
-      icon: json['icon']?.toString() ?? 'IconWorld',
-      color: json['color']?.toString() ?? '#228b6e',
-      createTime: json['createTime'] is DateTime
-          ? json['createTime']
-          : DateTime.parse(json['createTime'] ?? DateTime.now().toIso8601String()),
-      order: json['order'] ?? 0,
-      isActive: json['isActive'] ?? true,
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      title: UtilJson.parseStringSafely(json['title']),
+      description: UtilJson.parseStringSafely(json['description']),
+      url: UtilJson.parseStringSafely(json['url']),
+      // 业务逻辑: 如果后端未提供图标或颜色，使用预设的默认值
+      icon: UtilJson.parseStringSafely(json['icon'] ?? 'IconWorld'),
+      color: UtilJson.parseStringSafely(json['color'] ?? '#228b6e'),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      order: UtilJson.parseIntSafely(json['order']),
+      // 业务逻辑: 如果后端未提供 isActive，默认为 true
+      isActive: UtilJson.parseBoolSafely(json['isActive'], defaultValue: true),
     );
   }
 

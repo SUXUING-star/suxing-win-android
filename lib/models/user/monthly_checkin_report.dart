@@ -2,7 +2,8 @@
 
 import 'package:intl/intl.dart';
 import 'package:meta/meta.dart';
-import 'package:suxingchahui/models/user/daily_checkin_info.dart'; // 导入DailyCheckInInfo
+import 'package:suxingchahui/models/user/daily_checkin_info.dart';
+import 'package:suxingchahui/models/util_json.dart'; // 导入DailyCheckInInfo
 
 /// 月度签到报告模型
 @immutable
@@ -29,29 +30,35 @@ class MonthlyCheckInReport {
 
   factory MonthlyCheckInReport.fromJson(Map<String, dynamic> json) {
     List<DailyCheckInInfo> parsedDays = [];
-    if (json['days'] != null && json['days'] is List) {
+    if (json['days'] is List) {
       parsedDays = (json['days'] as List)
-          .map((e) => DailyCheckInInfo.fromJson(e as Map<String, dynamic>))
+          .map((item) {
+            if (item is Map<String, dynamic>) {
+              return DailyCheckInInfo.fromJson(item);
+            }
+            return null;
+          })
+          .whereType<DailyCheckInInfo>()
           .toList();
     }
 
-    // 默认值处理，防止API返回 null 或缺失字段
-    final currentYear = json['year'] as int? ?? DateTime.now().year;
-    final currentMonth = json['month'] as int? ?? DateTime.now().month;
-    final defaultMonthName =
-        DateFormat('MMMM').format(DateTime(currentYear, currentMonth));
-    final defaultDaysInMonth =
-        DateTime(currentYear, currentMonth + 1, 0).day; // 获取当月天数
+    // 业务逻辑: 如果后端未提供 year 或 month，则使用当前年份和月份作为默认值
+    final now = DateTime.now();
+    final year = UtilJson.parseIntSafely(json['year'] ?? now.year);
+    final month = UtilJson.parseIntSafely(json['month'] ?? now.month);
 
     return MonthlyCheckInReport(
-      year: currentYear,
-      month: currentMonth,
-      monthName: json['monthName'] as String? ?? defaultMonthName,
+      year: year,
+      month: month,
+      // 业务逻辑: monthName 和 daysInMonth 都可以根据 year 和 month 在前端计算得出，减少对后端的依赖
+      monthName:
+          UtilJson.parseStringSafely(json['monthName']), // 假设后端会提供，如果没有，会是空字符串
       days: parsedDays,
-      total: json['total'] as int? ?? 0,
-      daysInMonth: json['daysInMonth'] as int? ?? defaultDaysInMonth,
-      maxConsecutive: json['maxConsecutive'] as int? ?? 0,
-      totalExp: json['totalExp'] as int? ?? 0,
+      total: UtilJson.parseIntSafely(json['total']),
+      daysInMonth: UtilJson.parseIntSafely(
+          json['daysInMonth'] ?? DateTime(year, month + 1, 0).day),
+      maxConsecutive: UtilJson.parseIntSafely(json['maxConsecutive']),
+      totalExp: UtilJson.parseIntSafely(json['totalExp']),
     );
   }
 

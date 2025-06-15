@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/user_post_actions.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class PostInteractionButtons extends StatefulWidget {
   final Post post;

@@ -1,5 +1,6 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_detail_param.dart';
 import 'package:suxingchahui/models/game/game_navigation_info.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
@@ -16,9 +17,10 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -32,9 +34,10 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 class GameDetailScreen extends StatefulWidget {
-  final String? gameId;
+  final GameDetailParam? gameDetailParam;
   final bool isNeedHistory;
   final GameCollectionService gameCollectionService;
   final AuthProvider authProvider;
@@ -47,7 +50,7 @@ class GameDetailScreen extends StatefulWidget {
   final WindowStateProvider windowStateProvider;
   const GameDetailScreen({
     super.key,
-    this.gameId,
+    this.gameDetailParam,
     this.isNeedHistory = true,
     required this.authProvider,
     required this.gameCollectionService,
@@ -66,13 +69,18 @@ class GameDetailScreen extends StatefulWidget {
 class _GameDetailScreenState extends State<GameDetailScreen> {
   late String? _currentUserId;
 
+  late final String _gameId;
   Game? _game;
   GameCollectionItem? _collectionStatus;
   GameNavigationInfo? _navigationInfo;
-  bool? _isLiked; // 父组件持有状态
+  bool? _isLiked; // 持有喜欢状态
+  bool? _isCoined; // 持有投币状态
+  int _likeCount = 0;
+  int _coinsCount = 0;
   String? _error;
   bool _isLoading = false;
-  bool _isTogglingLike = false; // 新增：用于跟踪点赞操作的处理状态
+  bool _isTogglingLike = false; // 用于跟踪点赞操作的处理状态
+  bool _isTogglingCoin = false; // 用于跟踪投币操作的处理状态
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
   bool _isPageScrollLocked = false; // 代表页面是否被锁定滚动
@@ -84,6 +92,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void initState() {
     super.initState();
+    final p = widget.gameDetailParam;
+    final g = widget.gameDetailParam?.gameId;
+    if (p == null || g == null) {
+      setState(() {
+        _error = '无效的游戏ID';
+        _isLoading = false;
+      });
+    } else {
+      _gameId = g;
+    }
   }
 
   @override
@@ -93,22 +111,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _currentUserId = widget.authProvider.currentUserId;
       _hasInitializedDependencies = true;
     }
-    if (widget.gameId != null && _hasInitializedDependencies) {
+
+    if (_error != null && _hasInitializedDependencies) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _isLoading = true;
         _lastGamesDetailRefreshAttemptTime = DateTime.now();
         // 第一次初始化赋值，之后走下面的流程
         _loadGameDetailsWithStatus(); // 原有的调用
-      });
-    } else {
-      // 处理 null gameId (保持不变，但确保 _isLoading 最后是 false)
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) {
-          setState(() {
-            _error = '无效的游戏ID';
-            _isLoading = false;
-          });
-        }
       });
     }
   }
@@ -118,7 +127,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     super.didUpdateWidget(oldWidget);
     bool didUpdate = false;
 
-    if (oldWidget.gameId != widget.gameId) {
+    if (oldWidget.gameDetailParam?.gameId != widget.gameDetailParam?.gameId) {
       didUpdate = true;
     }
     if (widget.authProvider.currentUserId != _currentUserId) {
@@ -136,24 +145,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         _collectionStatus = null;
         _navigationInfo = null;
         _isLiked = null;
+        _isCoined = null;
         _error = null;
         _isLoading = true;
         _isTogglingLike = false;
         _refreshCounter = 0; // 可以重置
       });
-      // 调用加载逻辑 (保持不变)
-      if (widget.gameId != null) {
-        _loadGameDetailsWithStatus();
-      } else {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (mounted) {
-            setState(() {
-              _error = '无效的游戏ID';
-              _isLoading = false;
-            });
-          }
-        });
-      }
+      _loadGameDetailsWithStatus();
     }
   }
 
@@ -164,17 +162,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     _game = null;
     _error = null;
     _isLiked = null;
+    _isCoined = null;
   }
 
   // --- 尝试增加游戏浏览次数 ---
   Future<void> _tryIncrementViewCount() async {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
-        widget.gameId != null &&
         _game!.approvalStatus == GameStatus.approved &&
         widget.isNeedHistory) {
       try {
-        widget.gameService.incrementGameView(widget.gameId!);
+        widget.gameService.incrementGameView(_gameId);
       } catch (e) {
         // 啥也不做
       }
@@ -185,7 +183,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   // 加载游戏详情和收藏状态
   Future<void> _loadGameDetailsWithStatus({bool forceRefresh = false}) async {
-    if (widget.gameId == null || !mounted) return;
+    if (!mounted) return;
 
     if (!_isLoading && mounted) {
       setState(() {
@@ -199,8 +197,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     bool gameWasRemoved = false; // 新增标志位
 
     try {
-      result =
-          await widget.gameService.getGameDetailsWithStatus(widget.gameId!);
+      result = await widget.gameService.getGameDetailsWithStatus(_gameId);
     } catch (e) {
       if (!mounted) return;
       if (e is ApiException) {
@@ -263,6 +260,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             _collectionStatus = result.collectionStatus;
             _navigationInfo = result.navigationInfo;
             _isLiked = result.isLiked;
+            _isCoined = result.isCoined;
+            _likeCount = result.game.likeCount;
+            _coinsCount = result.game.coinsCount;
             _error = null;
           } else {
             // 加载/刷新失败，但游戏 *并未* 被移除
@@ -270,6 +270,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               // 首次失败
               _error = errorMsg ?? '未知错误';
               _isLiked = null;
+              _isCoined = null;
             } else {
               // 刷新失败
               WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -280,6 +281,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           }
           _isLoading = false;
           _isTogglingLike = false;
+          _isTogglingCoin = false;
           _refreshCounter++;
         });
         await _tryIncrementViewCount();
@@ -289,29 +291,36 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         setState(() {
           _isLoading = false;
           _isTogglingLike = false;
+          _isTogglingCoin = false;
         });
       }
     }
   }
 
   // 刷新逻辑
-  Future<void> _refreshGameDetails() async {
-    if (!mounted || widget.gameId == null) return;
+  Future<void> _refreshGameDetails({bool needCheck = false}) async {
+    if (!mounted) return;
 
     if (_isPerformingGamesDetailRefresh) {
       return;
     }
     _isPerformingGamesDetailRefresh = true;
     final now = DateTime.now();
-    if (_lastGamesDetailRefreshAttemptTime != null &&
-        now.difference(_lastGamesDetailRefreshAttemptTime!) <
-            _minRefreshGameDetailInterval) {
-      final remainSeconds = _minRefreshGameDetailInterval.inSeconds -
-          now.difference(_lastGamesDetailRefreshAttemptTime!).inSeconds;
 
-      AppSnackBar.showInfo("手速太快，请等待 $remainSeconds 秒后再尝试");
+    if (needCheck) {
+      if (_lastGamesDetailRefreshAttemptTime != null &&
+          now.difference(_lastGamesDetailRefreshAttemptTime!) <
+              _minRefreshGameDetailInterval) {
+        final remainSeconds = _minRefreshGameDetailInterval.inSeconds -
+            now.difference(_lastGamesDetailRefreshAttemptTime!).inSeconds;
+
+        AppSnackBar.showInfo("手速太快，请等待 $remainSeconds 秒后再尝试");
+      }
+      _lastGamesDetailRefreshAttemptTime = now;
+    } else {
+      _lastGamesDetailRefreshAttemptTime = now;
     }
-    _lastGamesDetailRefreshAttemptTime = now;
+
     try {
       // 调用加载，forceRefresh 确保即使短时间内连续操作也会尝试重新加载
       await _loadGameDetailsWithStatus(forceRefresh: true);
@@ -340,7 +349,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (updatedGame != null) {
       setState(() {
         _collectionStatus = newCollectionStatus; // 更新收藏状态
-        _game = updatedGame; // *** 直接替换成后端爹给的最新 game 对象 ***
+        _game = updatedGame; // 直接替换成后端爹给的最新 game 对象
         _refreshCounter++; // 强制子组件重建，显示最新数据
       });
     } else {
@@ -353,10 +362,184 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
+  // 处理投币切换的回调函数
+  Future<void> _handleToggleCoin() async {
+    if (_isTogglingCoin || !mounted || _game == null) {
+      return;
+    }
+
+    if (!widget.authProvider.isLoggedIn) {
+      // 未登录时，不显示对话框，直接提示登录
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
+    final currentUser = widget.authProvider.currentUser;
+    if (currentUser == null) {
+      AppSnackBar.showError("无法获取用户信息，请稍后重试");
+      return;
+    }
+
+    final int userCoinCount = currentUser.coins;
+    final bool isAuthor = _game!.authorId == currentUser.id; // 判断当前用户是否为游戏作者
+
+    if (mounted) {
+      setState(() {
+        _isTogglingCoin = true; // 用于对话框关闭后UI状态的同步
+      });
+    }
+
+    String dialogTitle;
+    Widget contentDetail;
+    String confirmButtonText;
+    bool showCancelButton;
+    bool canPerformCoinAction = false; // 标记是否能真正执行投币API
+
+    if (isAuthor) {
+      // 当前用户是作者
+      dialogTitle = '操作提示';
+      contentDetail = const AppText(
+        '您是该游戏的作者，不能给自己投币哦！',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 14, color: Colors.black54),
+      );
+      confirmButtonText = '知道了';
+      showCancelButton = false;
+    } else if (_isCoined == true) {
+      // 当前用户已投币
+      dialogTitle = '操作提示';
+      contentDetail = const AppText(
+        '您已经为这个游戏投过币啦！',
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 14, color: Colors.black54),
+      );
+      confirmButtonText = '知道了';
+      showCancelButton = false;
+    } else if (userCoinCount <= 0) {
+      // 用户硬币不足
+      dialogTitle = '硬币不足';
+      contentDetail = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54),
+              children: [
+                const TextSpan(text: '您当前的硬币数量为: '),
+                TextSpan(
+                  text: '$userCoinCount',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.red.shade600,
+                  ),
+                ),
+                const TextSpan(text: ' 枚'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const AppText(
+            '快去签到获取更多硬币吧！',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.black45),
+          ),
+        ],
+      );
+      confirmButtonText = '知道了';
+      showCancelButton = false;
+    } else {
+      // 用户可以进行投币
+      dialogTitle = '确认投币';
+      contentDetail = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyLarge
+                  ?.copyWith(color: Colors.black54),
+              children: [
+                const TextSpan(text: '您当前的硬币数量为: '),
+                TextSpan(
+                  text: '$userCoinCount',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                    color: Colors.green.shade600,
+                  ),
+                ),
+                const TextSpan(text: ' 枚'),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+          const AppText(
+            '投币将消耗 1 枚硬币，此操作无法撤销。',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: Colors.black45),
+          ),
+        ],
+      );
+      confirmButtonText = '投币';
+      showCancelButton = true;
+      canPerformCoinAction = true; // 允许执行投币API调用
+    }
+
+    await BaseInputDialog.show<void>(
+      context: context,
+      title: dialogTitle,
+      iconData: Icons.monetization_on,
+      iconColor: Colors.orange.shade700,
+      showCancelButton: showCancelButton,
+      confirmButtonText: confirmButtonText,
+      contentBuilder: (dialogContext) {
+        return contentDetail;
+      },
+      onConfirm: () async {
+        if (!canPerformCoinAction) {
+          // 如果标记为不能执行投币，则确认按钮仅关闭对话框
+          return;
+        }
+
+        try {
+          final (coinSpent, updatedGame) =
+              await widget.gameService.coinGame(game: _game!); // 调用后端API执行投币
+
+          await _loadGameDetailsWithStatus();
+          if (mounted) {
+            setState(() {
+              _isCoined = true; // 更新UI状态为已投币
+              _coinsCount = _coinsCount + coinSpent;
+            });
+          }
+          AppSnackBar.showSuccess('投币成功！');
+        } catch (e) {
+          if (mounted) {
+            AppSnackBar.showError(e.toString());
+          }
+          rethrow; // 重新抛出异常，以便BaseInputDialog可以处理
+        }
+      },
+    );
+
+    if (mounted) {
+      setState(() {
+        _isTogglingCoin = false; // 结束处理状态
+      });
+    }
+  }
+
   // 处理点赞切换的回调函数
   Future<void> _handleToggleLike() async {
     // 保持前置检查
-    if (widget.gameId == null || _isTogglingLike || !mounted) return;
+    if (_isTogglingLike || !mounted) return;
 
     if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -369,16 +552,18 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 调用返回 Future<bool> 的 service 方法
-      final newIsLikedStatus = await widget.gameService.toggleLike(
-        widget.gameId!,
-        _isLiked,
+      final (newIsLikedStatus, updatedGame) =
+          await widget.gameService.toggleLike(
+        gameId: _gameId,
+        oldStatus: _isLiked,
       );
 
       if (mounted) {
-        // 异步操作后再次检查 mounted
         setState(() {
           _isLiked = newIsLikedStatus; // 直接更新点赞状态
+          _likeCount = newIsLikedStatus ? _likeCount++ : _likeCount--;
         });
+
         AppSnackBar.showSuccess(newIsLikedStatus ? '点赞成功' : '已取消点赞');
       }
     } catch (e) {
@@ -419,7 +604,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
         arguments: game.id);
     if (result == true && mounted) {
-      _refreshGameDetails(); // 强制刷新
+      _refreshGameDetails(needCheck: false); // 强制刷新
     }
   }
 
@@ -488,7 +673,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         ? 'likeButtonDesktop'
         : 'likeButtonMobile'; // 给点赞按钮也加上区分的 heroTag
 
-    final String refreshHeroTag = 'gameDetailRefresh';
+    final String coinHeroTag =
+        isDesktop ? 'coinButtonDesktop' : 'coinButtonMobile';
+
+    const String refreshHeroTag = 'gameDetailRefresh';
 
     final Color primaryColor = Theme.of(context).colorScheme.primary;
     final Color greyColor = Colors.grey.shade600; // 用于未点赞状态的颜色（可选）
@@ -500,6 +688,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         final User? currentUser = currentUserSnapshot.data;
         if (currentUser == null) return const SizedBox.shrink();
         final bool isAdmin = currentUser.isAdmin;
+        final bool isAuthor = game.authorId == currentUser.id;
         final bool canEdit = isAdmin ? true : currentUser.id == game.authorId;
         return Padding(
           // 给整个按钮组添加统一的外边距
@@ -520,7 +709,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
               // --- 第一个按钮：点赞按钮或占位符 ---
               if (_isLiked != null) // 确保状态已加载
                 GenericFloatingActionButton(
-                  key: ValueKey('like_fab_${widget.gameId}'),
+                  key: ValueKey('like_fab_$_gameId'),
                   // 使用 FAB 特定的 Key
                   heroTag: likeHeroTag,
                   backgroundColor: Colors.white,
@@ -531,11 +720,36 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                   mini: true,
                   foregroundColor: _isLiked! ? primaryColor : greyColor,
                   onPressed: _handleToggleLike,
-                  // 点击回调保持不变
                   isLoading: _isTogglingLike, // 把加载状态传递给通用 FAB
                 )
               else
                 // 加载占位符 (保持不变)
+                const SizedBox(
+                  width: 56,
+                  height: 56,
+                  child: LoadingWidget(),
+                ),
+
+              // --- 新增：投币按钮或占位符 ---
+              if (_isCoined != null)
+                GenericFloatingActionButton(
+                  key: ValueKey('coin_fab_$_gameId'),
+                  heroTag: coinHeroTag,
+                  backgroundColor: Colors.white,
+                  tooltip: (_isCoined! || isAuthor)
+                      ? (isAuthor ? '作者不能投币' : '已投币')
+                      : '投币',
+                  icon: Icons.monetization_on, // 投币图标
+                  mini: true,
+                  // 如果已投币改变颜色
+                  foregroundColor: (_isCoined! || isAuthor)
+                      ? Colors.orange.shade700
+                      : greyColor,
+                  onPressed: _isCoined! ? null : _handleToggleCoin,
+                  isLoading: _isTogglingCoin,
+                )
+              else
+                // 加载占位符
                 const SizedBox(
                   width: 56,
                   height: 56,
@@ -627,8 +841,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             physics: _isPageScrollLocked
                 ? const NeverScrollableScrollPhysics() // 锁死！
                 : const AlwaysScrollableScrollPhysics(), // 解锁！
-            key: ValueKey(
-                'game_detail_mobile_${widget.gameId}_$_refreshCounter'),
+            key: ValueKey('game_detail_mobile_${_gameId}_$_refreshCounter'),
             slivers: [
               CustomSliverAppBar(
                 titleText: game.title,
@@ -646,7 +859,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           ),
         ),
       ),
-      // --- 直接调用辅助方法构建 FAB 组 ---
       floatingActionButton: _buildActionButtonsGroup(context, game, isDesktop),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat, // 保持位置
@@ -664,13 +876,17 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         physics: _isPageScrollLocked
             ? const NeverScrollableScrollPhysics() // 锁死！
             : const AlwaysScrollableScrollPhysics(), // 解锁！
-        key: ValueKey('game_detail_desktop_${widget.gameId}_$_refreshCounter'),
+        key: ValueKey('game_detail_desktop_${_gameId}_$_refreshCounter'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: _buildGameContent(game, isPending, isDesktop),
         ),
       ),
-      floatingActionButton: _buildActionButtonsGroup(context, game, isDesktop),
+      floatingActionButton: _buildActionButtonsGroup(
+        context,
+        game,
+        isDesktop,
+      ),
       floatingActionButtonLocation:
           FloatingActionButtonLocation.endFloat, // 指定位置
     );
@@ -701,6 +917,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           _isPageScrollLocked = isHovering;
         });
       },
+      isLiked: _isLiked,
+      isCoined: _isCoined,
+      isTogglingLike: _isTogglingLike,
+      isTogglingCoin: _isTogglingCoin,
+      onToggleLike: _handleToggleLike,
+      onToggleCoin: _handleToggleCoin,
     );
   }
 
@@ -718,7 +940,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
             children: [
               Icon(Icons.hourglass_empty_rounded,
                   size: 64, color: Colors.orange.shade700),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 '游戏正在审核中',
                 style: Theme.of(context)
@@ -727,13 +949,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                     ?.copyWith(fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
-              SizedBox(height: 12),
+              const SizedBox(height: 12),
               Text(
                 '该游戏内容尚未对公众开放，或者您没有权限查看。请等待审核通过后再试。',
                 textAlign: TextAlign.center,
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               FunctionalButton(
                 // 或者 ElevatedButton
                 onPressed: () => NavigationUtils.pop(context),
@@ -750,7 +972,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   Widget build(BuildContext context) {
     // 初始 ID 检查
-    if (widget.gameId == null) {
+    if (widget.gameDetailParam == null) {
       return const CustomErrorWidget(
         errorMessage: '无效的游戏 ID',
         title: "发生错误",

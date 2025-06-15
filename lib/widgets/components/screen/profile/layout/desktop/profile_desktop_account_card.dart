@@ -21,7 +21,7 @@ class ProfileDesktopAccountCard extends StatelessWidget {
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
-  final VoidCallback onRefreshExpData;
+  final Function(bool) onRefreshExpData;
 
   const ProfileDesktopAccountCard({
     super.key,
@@ -107,6 +107,26 @@ class ProfileDesktopAccountCard extends StatelessWidget {
                 ),
                 textAlign: TextAlign.center,
                 overflow: TextOverflow.ellipsis, // 超长时显示省略号
+              ),
+
+              const SizedBox(height: 12),
+              Chip(
+                avatar: Icon(Icons.monetization_on,
+                    color: Colors.orange.shade700, size: 18),
+                label: Text(
+                  '${user.coins} 硬币', // 直接用 user.coins
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Colors.orange.shade800,
+                  ),
+                ),
+                backgroundColor: Colors.orange.withOpacity(0.1),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                  side: BorderSide(color: Colors.orange.withOpacity(0.2)),
+                ),
               ),
 
               if (hasSignature) ...[

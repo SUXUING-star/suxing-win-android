@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/checkin_status.dart';
 import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/user/user_checkin.dart';
+import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';

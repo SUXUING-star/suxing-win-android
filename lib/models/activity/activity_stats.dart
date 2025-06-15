@@ -1,5 +1,6 @@
 // lib/models/activity/activity_stats.dart
 import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 /// 单个活动类型的统计数据。
 @immutable
@@ -33,22 +34,23 @@ class ActivityStats {
   });
 
   /// 从 JSON Map 创建 [ActivityStats] 实例。
-  ///
-  /// 负责把后端返回的 `countsByType` Map 转换成 `List<ActivityTypeCount>`。
   factory ActivityStats.fromJson(Map<String, dynamic> json) {
-    final List<ActivityTypeCount> countsList = [];
+    List<ActivityTypeCount> countsList = [];
 
-    if (json['countsByType'] is Map) {
-      final countsMap = json['countsByType'] as Map;
-      countsMap.forEach((key, value) {
-        if (key is String && value is int) {
-          countsList.add(ActivityTypeCount(type: key, count: value));
-        }
-      });
+    // 业务逻辑: 后端返回的 `countsByType` 是一个 Map<String, int> 结构，
+    // 这里需要遍历并转换为强类型的 List<ActivityTypeCount> 供前端使用。
+    if (json['countsByType'] is Map<String, dynamic>) {
+      countsList = (json['countsByType'] as Map<String, dynamic>)
+          .entries
+          .map((entry) => ActivityTypeCount(
+                type: entry.key, // key is the activity type string
+                count: UtilJson.parseIntSafely(entry.value),
+              ))
+          .toList();
     }
 
     return ActivityStats(
-      totalActivities: (json['totalActivities'] as num?)?.toInt() ?? 0,
+      totalActivities: UtilJson.parseIntSafely(json['totalActivities']),
       countsByType: countsList,
     );
   }

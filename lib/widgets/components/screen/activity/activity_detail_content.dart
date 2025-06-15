@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:intl/intl.dart'; // 导入国际化数字格式化
+import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
@@ -17,6 +18,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 
 // --- Section 组件 Imports ---
+import 'navigation/activity_detail_navigation.dart';
 import 'sections/activity_info_section.dart'; // 导入活动信息区域组件
 import 'sections/activity_description_section.dart'; // 导入活动描述区域组件
 import 'sections/activity_target_section.dart'; // 导入活动目标区域组件
@@ -27,9 +29,11 @@ import 'sections/activity_comments_section.dart'; // 导入活动评论区域组
 /// 该组件负责将活动信息、描述、目标和评论区域组织成可滚动的布局，并支持动画效果。
 class ActivityDetailContent extends StatelessWidget {
   final UserActivity activity; // 用户活动数据
+  final ActivityNavigationInfo? navigationInfo;
   final UserFollowService userFollowService; // 用户关注服务
   final UserInfoProvider userInfoProvider; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
+
   final User? currentUser; // 当前登录用户
   final bool isDesktopLayout;
   final List<ActivityComment> comments; // 评论列表
@@ -37,7 +41,8 @@ class ActivityDetailContent extends StatelessWidget {
   final ScrollController scrollController; // 滚动控制器
   final Function(String) onAddComment; // 添加评论回调
   final Function(ActivityComment) onCommentDeleted; // 评论删除回调
-  final Function(ActivityComment) onCommentLikeToggled; // 评论点赞切换回调
+  final Future<bool> Function(ActivityComment) onCommentLike; // 评论点赞切换回调
+  final Future<bool> Function(ActivityComment) onCommentUnLike; // 评论点赞切换回调
   final VoidCallback onActivityUpdated; // 活动更新回调
   final VoidCallback? onEditActivity; // 编辑活动回调
   final VoidCallback? onDeleteActivity; // 删除活动回调
@@ -60,6 +65,7 @@ class ActivityDetailContent extends StatelessWidget {
   /// [onDeleteActivity]：删除活动回调。
   const ActivityDetailContent({
     super.key,
+    required this.navigationInfo,
     required this.activity,
     required this.userFollowService,
     required this.userInfoProvider,
@@ -71,7 +77,8 @@ class ActivityDetailContent extends StatelessWidget {
     required this.scrollController,
     required this.onAddComment,
     required this.onCommentDeleted,
-    required this.onCommentLikeToggled,
+    required this.onCommentLike,
+    required this.onCommentUnLike,
     required this.onActivityUpdated,
     this.onEditActivity,
     this.onDeleteActivity,
@@ -178,8 +185,30 @@ class ActivityDetailContent extends StatelessWidget {
         isLoadingComments: isLoadingComments, // 评论是否加载中
         onAddComment: onAddComment, // 添加评论回调
         onCommentDeleted: onCommentDeleted, // 评论删除回调
-        onCommentLikeToggled: onCommentLikeToggled, // 评论点赞切换回调
+        onCommentLike: onCommentLike, // 评论点赞切换回调
+        onCommentUnLike: onCommentUnLike,
         isDesktopLayout: isDesktopLayout, // 是否为桌面布局
+      ),
+    );
+  }
+
+  /// 构建导航区域。
+  ///
+  /// [duration]：动画时长。
+  ///  [delay]：动画延迟。
+  ///  [key]：组件键。
+  Widget _buildNavigationSection({
+    required Duration duration,
+    required Duration delay,
+    required Key key,
+  }) {
+    return FadeInItem(
+      key: key, // 组件键
+      duration: duration, // 动画时长
+      delay: delay, // 动画延迟
+      child: ActivityDetailNavigation(
+        navigationInfo: navigationInfo!,
+        isDesktopLayout: isDesktopLayout, // 桌面布局
       ),
     );
   }
@@ -206,6 +235,7 @@ class ActivityDetailContent extends StatelessWidget {
     final infoKey = ValueKey('info_mob_${activity.id}'); // 信息区域键
     final descriptionKey = ValueKey('desc_mob_${activity.id}'); // 描述区域键
     final targetKey = ValueKey('target_mob_${activity.id}'); // 目标区域键
+    final navKey = ValueKey('nav_mob_${activity.id}'); // 导航区域键
     final commentsKey = ValueKey('comments_mob_${activity.id}'); // 评论区域键
 
     return ListView(
@@ -262,7 +292,18 @@ class ActivityDetailContent extends StatelessWidget {
           key: commentsKey,
         ),
 
-        const SizedBox(height: 80), // 底部留白
+        if (navigationInfo != null &&
+            (navigationInfo!.prevActivity != null ||
+                navigationInfo!.nextActivity != null)) ...[
+          const SizedBox(height: 32), // 加个间距，和评论区隔开
+          _buildNavigationSection(
+            duration: fadeDuration,
+            delay: baseDelay + (delayIncrement * delayIndex++),
+            key: navKey,
+          ),
+        ],
+
+        const SizedBox(height: 24),
       ],
     );
   }
@@ -290,6 +331,7 @@ class ActivityDetailContent extends StatelessWidget {
     final infoKey = ValueKey('info_desk_${activity.id}'); // 信息区域键
     final descriptionKey = ValueKey('desc_desk_${activity.id}'); // 描述区域键
     final targetKey = ValueKey('target_desk_${activity.id}'); // 目标区域键
+    final navKey = ValueKey('nav_desk_${activity.id}'); // 导航区域键
     final commentsKey = ValueKey('comments_desk_${activity.id}'); // 评论区域键
     final commentsTitleKey =
         ValueKey('comments_title_desk_${activity.id}'); // 评论标题键
@@ -319,6 +361,17 @@ class ActivityDetailContent extends StatelessWidget {
           duration: fadeDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
           key: targetKey,
+        ),
+      ],
+
+      if (navigationInfo != null &&
+          (navigationInfo!.prevActivity != null ||
+              navigationInfo!.nextActivity != null)) ...[
+        const SizedBox(height: 48), // 加个大点的间距
+        _buildNavigationSection(
+          duration: fadeDuration,
+          delay: baseDelay + (delayIncrement * leftDelayIndex++),
+          key: navKey,
         ),
       ],
     ];

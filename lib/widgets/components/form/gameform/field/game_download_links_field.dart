@@ -8,6 +8,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class GameDownloadLinksField extends StatelessWidget {
   final List<GameDownloadLink> downloadLinks;
@@ -28,9 +29,8 @@ class GameDownloadLinksField extends StatelessWidget {
     final String? clipboardText = clipboardData?.text;
 
     if (clipboardText == null || clipboardText.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('剪贴板内容为空')),
-      );
+      AppSnackBar.showInfo('剪贴板内容为空');
+
       return;
     }
 
@@ -63,15 +63,11 @@ class GameDownloadLinksField extends StatelessWidget {
       ));
       onChanged(newLinks);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('已从剪贴板添加: $title')),
-        );
+        AppSnackBar.showSuccess('已从剪贴板添加: $title');
       }
     } else {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('未能从剪贴板解析有效链接')),
-        );
+        AppSnackBar.showWarning('未能从剪贴板解析有效链接');
       }
     }
   }
@@ -179,12 +175,7 @@ class GameDownloadLinksField extends StatelessWidget {
           return;
         } else {
           if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('链接标题和链接地址不能为空！'),
-                behavior: SnackBarBehavior.floating,
-              ),
-            );
+            AppSnackBar.showWarning('链接标题和链接地址不能为空！');
           }
           throw Exception('输入校验失败');
         }

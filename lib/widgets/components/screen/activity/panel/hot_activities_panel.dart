@@ -73,7 +73,6 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     });
 
     try {
-      // 并行加载数据
       final hotActivities = await widget.activityService.getHotActivities();
       final typeStats = await widget.activityService.getActivityTypeStats();
 

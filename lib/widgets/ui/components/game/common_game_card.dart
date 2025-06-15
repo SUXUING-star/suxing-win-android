@@ -15,6 +15,7 @@ class CommonGameCard extends BaseGameCard {
   const CommonGameCard({
     super.key,
     required super.game,
+    super.param,
     super.isGridItem,
     super.adaptForPanels,
     super.showTags,

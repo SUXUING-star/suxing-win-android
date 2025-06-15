@@ -1,6 +1,8 @@
 // lib/models/announcement/announcement.dart
 
 // 简化版公告模型（用于列表显示）
+import 'package:suxingchahui/models/util_json.dart';
+
 class Announcement {
   final String id;
   final String title;
@@ -25,31 +27,18 @@ class Announcement {
   });
 
   factory Announcement.fromJson(Map<String, dynamic> json) {
-    // 处理日期字段
-    DateTime parseDate(dynamic dateValue) {
-      if (dateValue == null) return DateTime.now();
-
-      if (dateValue is String) {
-        try {
-          return DateTime.parse(dateValue);
-        } catch (e) {
-          // print('日期解析错误: $e');
-          return DateTime.now();
-        }
-      }
-      return DateTime.now();
-    }
-
     return Announcement(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      type: json['type'] ?? 'info',
-      imageUrl: json['imageUrl'],
-      actionUrl: json['actionUrl'],
-      actionText: json['actionText'],
-      date: parseDate(json['date']),
-      priority: json['priority'] ?? 1,
+      id: UtilJson.parseId(json['id']),
+      title: UtilJson.parseStringSafely(json['title']),
+      content: UtilJson.parseStringSafely(json['content']),
+      // 业务逻辑: 如果后端未提供类型，默认为 'info'
+      type: UtilJson.parseStringSafely(json['type'] ?? 'info'),
+      imageUrl: UtilJson.parseNullableStringSafely(json['imageUrl']),
+      actionUrl: UtilJson.parseNullableStringSafely(json['actionUrl']),
+      actionText: UtilJson.parseNullableStringSafely(json['actionText']),
+      date: UtilJson.parseDateTime(json['date']),
+      // 业务逻辑: 如果后端未提供优先级，默认为 1
+      priority: UtilJson.parseIntSafely(json['priority'] ?? 1),
     );
   }
 
@@ -103,42 +92,26 @@ class AnnouncementFull {
   });
 
   factory AnnouncementFull.fromJson(Map<String, dynamic> json) {
-    // 处理日期字段
-    DateTime parseDate(dynamic dateValue) {
-      if (dateValue == null) return DateTime.now();
-
-      if (dateValue is String) {
-        try {
-          return DateTime.parse(dateValue);
-        } catch (e) {
-          // print('日期解析错误: $e');
-          return DateTime.now();
-        }
-      }
-      return DateTime.now();
-    }
-
-    // 处理目标用户
-    List<String>? targetUsers;
-    if (json['targetUsers'] != null) {
-      targetUsers = List<String>.from(json['targetUsers']);
-    }
-
     return AnnouncementFull(
-      id: json['id'] ?? '',
-      title: json['title'] ?? '',
-      content: json['content'] ?? '',
-      type: json['type'] ?? 'info',
-      imageUrl: json['imageUrl'],
-      actionUrl: json['actionUrl'],
-      actionText: json['actionText'],
-      createdAt: parseDate(json['createdAt']),
-      priority: json['priority'] ?? 1,
-      isActive: json['isActive'] ?? false,
-      startDate: parseDate(json['startDate']),
-      endDate: parseDate(json['endDate']),
-      targetUsers: targetUsers,
-      createdBy: json['createdBy'] ?? '',
+      id: UtilJson.parseId(json['id']),
+      title: UtilJson.parseStringSafely(json['title']),
+      content: UtilJson.parseStringSafely(json['content']),
+      // 业务逻辑: 如果后端未提供类型，默认为 'info'
+      type: UtilJson.parseStringSafely(json['type'] ?? 'info'),
+      imageUrl: UtilJson.parseNullableStringSafely(json['imageUrl']),
+      actionUrl: UtilJson.parseNullableStringSafely(json['actionUrl']),
+      actionText: UtilJson.parseNullableStringSafely(json['actionText']),
+      createdAt: UtilJson.parseDateTime(json['createdAt']),
+      // 业务逻辑: 如果后端未提供优先级，默认为 1
+      priority: UtilJson.parseIntSafely(json['priority'] ?? 1),
+      isActive: UtilJson.parseBoolSafely(json['isActive']),
+      startDate: UtilJson.parseDateTime(json['startDate']),
+      endDate: UtilJson.parseDateTime(json['endDate']),
+      // 业务逻辑: targetUsers 是一个字符串列表，可能为 null
+      targetUsers: json['targetUsers'] is List
+          ? UtilJson.parseListString(json['targetUsers'])
+          : null,
+      createdBy: UtilJson.parseId(json['createdBy']),
     );
   }
 
@@ -179,6 +152,7 @@ class AnnouncementFull {
       createdBy: '',
     );
   }
+
 // 添加 copyWith 方法
   AnnouncementFull copyWith({
     String? id,

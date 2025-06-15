@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/components/screen/gamecollection/game_colle
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -52,7 +52,6 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
-  // 新增：用于在桌面端显示 Review 的状态
   GameWithCollection? _selectedGameForReview;
 
   @override
@@ -259,7 +258,8 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
 
     if (_lastForcedRefreshTime != null &&
         now.difference(_lastForcedRefreshTime!) < _minForcedRefreshInterval) {
-      if (context.mounted) AppSnackBar.showWarning('操作太快了，请稍后再试');
+      AppSnackBar.showWarning('操作太快了，请稍后再试');
+
       return;
     }
 

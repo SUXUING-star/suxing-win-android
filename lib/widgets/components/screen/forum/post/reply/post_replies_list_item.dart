@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'post_reply_item.dart';

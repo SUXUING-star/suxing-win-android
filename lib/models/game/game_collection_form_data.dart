@@ -1,5 +1,7 @@
 // lib/models/game/game_collection_form_data.dart
 
+import 'package:meta/meta.dart';
+
 import 'game_collection.dart';
 
 class CollectionActionType {
@@ -7,6 +9,7 @@ class CollectionActionType {
   static const String removeCollectionAction = "remove";
 }
 
+@immutable
 class GameCollectionFormData {
   final String action;
   final String status;
@@ -14,7 +17,7 @@ class GameCollectionFormData {
   final String? review;
   final double? rating;
 
-  GameCollectionFormData({
+  const GameCollectionFormData({
     required this.action,
     this.status = GameCollectionStatus.wantToPlay,
     this.notes,

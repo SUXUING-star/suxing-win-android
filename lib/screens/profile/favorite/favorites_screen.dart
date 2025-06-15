@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/components/screen/favorite/game_likes_layou
 import 'package:suxingchahui/widgets/components/screen/favorite/post_favorites_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -238,7 +238,8 @@ class _FavoritesScreenState extends State<FavoritesScreen>
 
   Future<void> _toggleGameLike(String gameId) async {
     try {
-      await widget.gameService.toggleLike(gameId, true); // 妈的，传递旧状态为 true
+      await widget.gameService
+          .toggleLike(gameId: gameId, oldStatus: true); // 妈的，传递旧状态为 true
       await _fetchGames(isRefresh: true);
     } catch (e) {
       AppSnackBar.showError('取消收藏失败: ${e.toString()}');

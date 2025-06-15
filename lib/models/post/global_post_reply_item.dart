@@ -1,13 +1,17 @@
 // lib/models/post/global_post_reply_item.dart
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
+
+@immutable
 class GlobalPostReplyItem {
   final String id;
   final String postId;
-  String? postTitle;
+  final String? postTitle;
   final String content;
   final String authorId;
   final DateTime createTime;
 
-  GlobalPostReplyItem({
+  const GlobalPostReplyItem({
     required this.id,
     required this.postId,
     required this.postTitle,
@@ -38,14 +42,12 @@ class GlobalPostReplyItem {
 
   factory GlobalPostReplyItem.fromJson(Map<String, dynamic> json) {
     return GlobalPostReplyItem(
-      id: json['id'],
-      postId: json['postId'],
-      postTitle: json['postTitle'],
-      content: json['content'],
-      authorId: json['authorId'],
-      createTime: json['createTime'] is String
-          ? DateTime.parse(json['createTime'])
-          : json['createTime'],
+      id: UtilJson.parseId(json['id']),
+      postId: UtilJson.parseId(json['postId']),
+      postTitle: UtilJson.parseNullableStringSafely(json['postTitle']),
+      content: UtilJson.parseStringSafely(json['content']),
+      authorId: UtilJson.parseId(json['authorId']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
     );
   }
 

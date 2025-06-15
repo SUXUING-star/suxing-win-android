@@ -25,7 +25,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; /
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart'; // 导入悬浮动作按钮组
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 导入通用悬浮动作按钮
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart'; // 导入个人资料菜单项常量
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
@@ -88,11 +88,15 @@ class _ProfileScreenState extends State<ProfileScreen>
   final visibilityKey =
       const Key('profile_screen_visibility_detector'); // 可见性检测器键
   DateTime? _lastRefreshTime; // 上次刷新时间
+  DateTime? _lastRefreshingTime; // 最新一次被挂起加载的时间
   static const Duration _minRefreshInterval = Duration(seconds: 30); // 最小刷新间隔
+  static const Duration _maxRefreshingDuration = Duration(seconds: 10);
+  static const Duration _maxLoadingExpDataDuration = Duration(seconds: 10);
   String? _currentUserId; // 当前用户ID
 
   DailyProgressData? _dailyProgressData; // 每日经验进度数据
   bool _isLoadingExpData = false; // 经验数据是否正在加载
+  DateTime? _lastLoadingExpDataTime;
   String? _expDataError; // 经验数据错误消息
   bool _expDataLoadedOnce = false; // 经验数据是否已加载至少一次
 
@@ -125,6 +129,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return; // 组件未挂载时返回
+    _checkAuthStateChange();
+    _checkLoadingTimeout();
 
     if (state == AppLifecycleState.resumed) {
       // 应用从后台恢复时
@@ -168,14 +174,9 @@ class _ProfileScreenState extends State<ProfileScreen>
   void _handleVisibilityChange(VisibilityInfo info) {
     final bool currentlyVisible = info.visibleFraction > 0; // 判断当前是否可见
 
-    if (_currentUserId != widget.authProvider.currentUserId) {
-      // 用户ID变化时
-      if (mounted) {
-        setState(() {
-          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-        });
-      }
-    }
+    _checkLoadingTimeout();
+    _checkAuthStateChange();
+
     if (currentlyVisible != _isVisible) {
       // 可见性状态变化时
       Future.microtask(() {
@@ -199,6 +200,43 @@ class _ProfileScreenState extends State<ProfileScreen>
     }
   }
 
+  ///
+  ///
+  void _checkAuthStateChange() {
+    if (_currentUserId != widget.authProvider.currentUserId) {
+      // 用户ID变化时
+      if (mounted) {
+        setState(() {
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
+        });
+      }
+    }
+  }
+
+  ///
+  ///
+  void _checkLoadingTimeout() {
+    // 不管是可视变化还是什么时候
+    final now = DateTime.now();
+    // 超过最大时长直接关闭
+    if (_lastRefreshingTime != null &&
+        now.difference(_lastRefreshingTime!) > _maxRefreshingDuration) {
+      setState(() {
+        _lastRefreshingTime = null;
+        _isRefreshing = false;
+      });
+    }
+
+    // 超过最大时长直接关闭
+    if (_lastLoadingExpDataTime != null &&
+        now.difference(_lastLoadingExpDataTime!) > _maxLoadingExpDataDuration) {
+      setState(() {
+        _lastLoadingExpDataTime = null;
+        _isLoadingExpData = false;
+      });
+    }
+  }
+
   /// 加载每日经验进度数据。
   ///
   /// [forceRefresh]：是否强制刷新。
@@ -215,6 +253,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       }
       return; // 返回
     }
+    if (_lastLoadingExpDataTime != null) _lastLoadingExpDataTime = null;
     if (_isLoadingExpData && !forceRefresh) return; // 正在加载且非强制刷新时返回
     if (_expDataLoadedOnce &&
         _dailyProgressData != null &&
@@ -227,6 +266,7 @@ class _ProfileScreenState extends State<ProfileScreen>
     if (mounted) {
       setState(() {
         _isLoadingExpData = true; // 设置加载状态
+        _lastLoadingExpDataTime = DateTime.now();
         _expDataError = null; // 清空错误
         if (forceRefresh) _dailyProgressData = null; // 强制刷新时清除旧数据
       });
@@ -239,6 +279,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _dailyProgressData = data; // 更新数据
           _isLoadingExpData = false; // 结束加载
+          _lastLoadingExpDataTime = null;
           _expDataLoadedOnce = true; // 标记已加载
         });
       }
@@ -248,6 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           _expDataError = "经验数据加载失败"; // 设置错误消息
           _isLoadingExpData = false; // 结束加载
           _expDataLoadedOnce = true; // 标记已加载
+          _lastLoadingExpDataTime = null;
         });
       }
     }
@@ -277,7 +319,8 @@ class _ProfileScreenState extends State<ProfileScreen>
   /// 刷新个人资料。
   ///
   /// [needCheck]：是否需要进行时间间隔检查。
-  Future<void> _refreshProfile({bool needCheck = true}) async {
+  Future<void> _refreshData({bool needCheck = true}) async {
+    if (_lastRefreshingTime != null) _lastRefreshTime = null;
     if (_isRefreshing) return; // 正在刷新时返回
 
     final now = DateTime.now();
@@ -317,10 +360,11 @@ class _ProfileScreenState extends State<ProfileScreen>
     setState(() {
       _isRefreshing = true; // 设置刷新状态
       _error = null; // 清空错误
+      _lastRefreshingTime = DateTime.now();
     });
 
     try {
-      await widget.authProvider.refreshUserState(); // 刷新用户状态
+      await widget.authProvider.refreshUserState(forceRefresh: true); // 刷新用户状态
       if (mounted && widget.authProvider.isLoggedIn) {
         // 组件挂载且已登录时
         await _loadDailyExperienceProgress(forceRefresh: true); // 强制刷新经验数据
@@ -338,6 +382,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         setState(() {
           _isRefreshing = false;
           _lastRefreshTime = DateTime.now(); // 记录刷新时间
+          _lastRefreshingTime = null;
         });
       }
     }
@@ -548,10 +593,6 @@ class _ProfileScreenState extends State<ProfileScreen>
       );
 
       await widget.authProvider.refreshUserState(); // 刷新用户状态
-      if (mounted && widget.authProvider.isLoggedIn) {
-        // 组件挂载且已登录时
-        await _loadDailyExperienceProgress(forceRefresh: true); // 强制刷新经验数据
-      }
 
       AppSnackBar.showSuccess('用户信息已刷新'); // 显示成功提示
     } catch (e) {
@@ -578,7 +619,7 @@ class _ProfileScreenState extends State<ProfileScreen>
         backgroundColor: Colors.transparent, // 背景透明
         appBar: const CustomAppBar(title: '个人中心', actions: []), // AppBar
         body: RefreshIndicator(
-          onRefresh: () => _refreshProfile(), // 下拉刷新回调
+          onRefresh: () => _refreshData(needCheck: true), // 下拉刷新回调
           child: _buildProfileContent(), // 个人资料内容
         ),
         floatingActionButton: _buildFloatButtons(context), // 悬浮按钮
@@ -598,12 +639,18 @@ class _ProfileScreenState extends State<ProfileScreen>
         alignment: MainAxisAlignment.end, // 对齐方式
         children: [
           GenericFloatingActionButton(
+            icon: Icons.refresh_outlined, // 图标
+            onPressed: () => _refreshData(needCheck: true),
+            heroTag: "profile_refresh_fab", // Hero 标签
+            tooltip: "刷新", // 提示
+          ),
+          GenericFloatingActionButton(
             icon: Icons.settings_outlined, // 图标
             onPressed: () => NavigationUtils.pushNamed(
                 context, AppRoutes.settingPage), // 点击导航到设置页面
             heroTag: "profile_setting_fab", // Hero 标签
             tooltip: "设置", // 提示
-          )
+          ),
         ],
       ),
     );
@@ -637,8 +684,8 @@ class _ProfileScreenState extends State<ProfileScreen>
                 dailyProgressData: _dailyProgressData, // 每日进度数据
                 isLoadingExpData: _isLoadingExpData, // 经验数据是否加载中
                 expDataError: _expDataError, // 经验数据错误
-                onRefreshExpData: () => _loadDailyExperienceProgress(
-                    forceRefresh: true), // 刷新经验数据回调
+                onRefreshExpData: (needCheck) =>
+                    _refreshData(needCheck: needCheck), // 刷新经验数据回调
               ),
             ),
           ),
@@ -684,8 +731,8 @@ class _ProfileScreenState extends State<ProfileScreen>
             dailyProgressData: _dailyProgressData, // 每日进度数据
             isLoadingExpData: _isLoadingExpData, // 经验数据是否加载中
             expDataError: _expDataError, // 经验数据错误
-            onRefreshExpData: () =>
-                _loadDailyExperienceProgress(forceRefresh: true), // 刷新经验数据回调
+            onRefreshExpData: (needCheck) =>
+                _refreshData(needCheck: needCheck), // 刷新经验数据回调
           ),
         ),
         FadeInSlideUpItem(
@@ -759,7 +806,7 @@ class _ProfileScreenState extends State<ProfileScreen>
             // 有错误时显示错误组件
             return Center(
                 child: CustomErrorWidget(
-                    errorMessage: _error!, onRetry: () => _refreshProfile()));
+                    errorMessage: _error!, onRetry: () => _refreshData()));
           }
           final menuItems = ProfileConstants.getProfileMenuItems(
             // 获取菜单项

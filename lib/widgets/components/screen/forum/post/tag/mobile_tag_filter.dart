@@ -6,7 +6,6 @@ import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // 
 
 /// 移动端帖子标签筛选器组件
 class MobileTagFilter extends StatelessWidget {
-  /// 待显示的标签字符串列表，例如 ['全部', '原创', '转载']
   final List<String> tags;
 
   /// 当前选中的标签（PostTag 枚举），如果选择的是 "全部"，则为 null

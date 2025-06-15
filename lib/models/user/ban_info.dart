@@ -1,8 +1,12 @@
 // lib/models/user/ban_info.dart
 
-import 'package:flutter/foundation.dart';
 
 /// 用户封禁信息模型。
+library;
+
+
+import 'package:meta/meta.dart';
+
 @immutable
 class BanInfo {
   final String reason;

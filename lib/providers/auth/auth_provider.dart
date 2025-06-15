@@ -7,7 +7,6 @@
 /// AuthProvider 依赖 UserService 执行认证相关的API调用和本地数据存储。
 library;
 
-
 import 'package:suxingchahui/events/app_events.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
@@ -232,7 +231,7 @@ class AuthProvider {
   /// 未初始化时执行初始化流程。
   /// 否则，从 UserService 获取最新的用户数据。
   /// 获取失败时清除认证数据。
-  Future<void> refreshUserState() async {
+  Future<void> refreshUserState({bool forceRefresh = false}) async {
     if (_isInitializing || _isRefreshing) return; // 阻止重复刷新
     if (!_initialized) {
       // 未初始化时执行初始化流程
@@ -248,7 +247,8 @@ class AuthProvider {
       User? refreshedUser; // 刷新后的用户对象
       if (savedUserId != null && savedUserId.isNotEmpty) {
         try {
-          refreshedUser = await _userService.getCurrentUser(); // 尝试获取最新的用户数据
+          refreshedUser = await _userService.getCurrentUser(
+              forceRefresh: forceRefresh); // 尝试获取最新的用户数据
         } catch (e) {
           // 获取用户失败
           refreshedUser = null;
@@ -264,6 +264,17 @@ class AuthProvider {
       _updateCurrentUser(null); // 清除用户状态
     } finally {
       _setIsRefreshing(false); // 设置为非刷新中状态
+    }
+  }
+
+  ///
+  ///
+  ///
+  Future<void> updateUserCoins({required int amount}) async {
+    try {
+      await _userService.reduceUserCoins(reduceAmount: amount);
+    } catch (e) {
+      rethrow;
     }
   }
 

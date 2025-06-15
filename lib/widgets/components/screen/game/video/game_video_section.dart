@@ -1,88 +1,112 @@
 // lib/widgets/components/screen/game/video/game_video_section.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 引入你的 LoadingWidget
 
+/// 该文件定义了 GameVideoSection 组件，用于显示游戏的相关视频。
+/// GameVideoSection 根据 bvid 动态加载并显示 Bilibili 视频播放器。
+library;
+
+import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 功能按钮组件
+import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart'; // 内嵌 WebView 组件
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载指示器组件
+
+/// `GameVideoSection` 类：游戏相关视频板块组件。
+///
+/// 该组件根据提供的 Bilibili 视频 ID，先显示一个加载按钮，
+/// 用户点击后加载并显示内嵌的视频播放器，并处理加载中和错误状态。
 class GameVideoSection extends StatefulWidget {
-  final String? bvid; // 改为 nullable，因为不是所有游戏都有
+  final String? bvid; // 视频的 Bilibili bvid
 
+  /// 构造函数。
+  ///
+  /// [key]：Widget 的 Key。
+  /// [bvid]：要加载的视频的 bvid。
   const GameVideoSection({
     super.key,
-    required this.bvid, // 接收 bvid
+    required this.bvid,
   });
 
   @override
   State<GameVideoSection> createState() => _GameVideoSectionState();
 }
 
+/// `_GameVideoSectionState` 类：`GameVideoSection` 的状态管理。
 class _GameVideoSectionState extends State<GameVideoSection> {
-  bool _shouldLoadVideo = false; // 状态：用户是否点击了加载按钮
-  bool _isLoadingVideo = false; // 状态：WebView 是否正在加载页面
-  String? _loadingError; // 状态：记录加载错误信息
+  bool _shouldLoadVideo = false; // 用户是否点击了加载按钮
+  bool _isLoadingVideo = false; // WebView 是否正在加载页面
+  String? _loadingError; // 记录加载错误信息
 
-  // 根据 bvid 构建嵌入式播放器 URL
+  /// 根据 bvid 构建嵌入式播放器 URL。
+  ///
+  /// 如果 bvid 无效，返回 null。
   String? get _embedUrl {
     if (widget.bvid == null || widget.bvid!.isEmpty) {
+      // 检查 bvid 是否有效
       return null;
     }
-    // 只用 bvid 通常就够了，B站 player 会自己处理
-    return 'https://player.bilibili.com/player.html?bvid=${widget.bvid}'; // 加个 autoplay=0 避免自动播放（虽然 WebView 可能不遵守）
+    return 'https://player.bilibili.com/player.html?bvid=${widget.bvid}'; // 构建 Bilibili 嵌入式播放器 URL
   }
 
+  /// 当 Widget 的配置发生变化时调用。
+  ///
+  /// 如果 bvid 发生变化，重置视频加载状态。
   @override
   void didUpdateWidget(covariant GameVideoSection oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 如果 bvid 变了，重置状态，回到按钮界面
     if (widget.bvid != oldWidget.bvid) {
+      // 检查 bvid 是否发生变化
       if (mounted) {
-        // 确保组件还在树上
+        // 检查组件是否已挂载
         setState(() {
-          _shouldLoadVideo = false;
-          _isLoadingVideo = false;
-          _loadingError = null;
+          _shouldLoadVideo = false; // 重置加载状态
+          _isLoadingVideo = false; // 重置加载中状态
+          _loadingError = null; // 清除错误信息
         });
       }
     }
   }
 
+  /// 启动视频加载。
+  ///
+  /// 设置加载状态为 true，并清除之前的错误信息。
   void _startLoadingVideo() {
     if (_embedUrl != null && mounted) {
-      // 检查 URL 有效且组件挂载
+      // 检查 URL 有效且组件已挂载
       setState(() {
-        _shouldLoadVideo = true;
-        _isLoadingVideo = true; // 开始加载，显示 Loading
-        _loadingError = null; // 清除之前的错误
+        _shouldLoadVideo = true; // 设置为需要加载视频
+        _isLoadingVideo = true; // 设置为正在加载
+        _loadingError = null; // 清除错误信息
       });
     }
   }
 
+  /// 构建 Widget。
+  ///
+  /// 根据 bvid 和加载状态渲染标题和视频区域。
   @override
   Widget build(BuildContext context) {
-    final currentEmbedUrl = _embedUrl; // 先获取当前 URL
+    final currentEmbedUrl = _embedUrl; // 获取当前嵌入 URL
 
-    // 如果 bvid 无效，直接不显示任何东西
     if (currentEmbedUrl == null) {
+      // 如果 URL 无效，不显示任何东西
       return const SizedBox.shrink();
     }
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴对齐
       children: [
-        // 1. 标题 (保持不变)
         Row(
           children: [
             Container(
               width: 4,
               height: 20,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary,
-                borderRadius: BorderRadius.circular(2),
+                color: Theme.of(context).colorScheme.primary, // 主题色
+                borderRadius: BorderRadius.circular(2), // 圆角
               ),
             ),
-            SizedBox(width: 8),
+            SizedBox(width: 8), // 间距
             Text(
-              '相关视频',
+              '相关视频', // 标题文本
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -91,22 +115,18 @@ class _GameVideoSectionState extends State<GameVideoSection> {
             ),
           ],
         ),
-
-        // 2. 视频区域 (核心变化)
         AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: 16 / 9, // 固定宽高比
           child: Container(
-            // 给个背景色，避免加载时是透明的
             decoration: BoxDecoration(
-              color: Theme.of(context)
-                  .colorScheme
-                  .surfaceContainerLowest, // 用一个柔和的背景色
-              borderRadius: BorderRadius.circular(12),
+              color:
+                  Theme.of(context).colorScheme.surfaceContainerLowest, // 背景色
+              borderRadius: BorderRadius.circular(12), // 圆角
             ),
-            clipBehavior: Clip.antiAlias, // 确保子 Widget 不会超出圆角
+            clipBehavior: Clip.antiAlias, // 裁剪超出部分
             child: AnimatedSwitcher(
-              // 使用 AnimatedSwitcher 实现平滑过渡
-              duration: const Duration(milliseconds: 300),
+              // 动画切换器
+              duration: const Duration(milliseconds: 300), // 动画时长
               child: _buildContent(currentEmbedUrl), // 根据状态构建内容
             ),
           ),
@@ -115,113 +135,107 @@ class _GameVideoSectionState extends State<GameVideoSection> {
     );
   }
 
-  // 根据状态构建内容的辅助方法
+  /// 根据状态构建内容的辅助方法。
+  ///
+  /// [currentEmbedUrl]：当前的嵌入 URL。
+  /// 根据错误、加载和初始状态返回不同的 Widget。
   Widget _buildContent(String currentEmbedUrl) {
-    // Key 很重要，确保 AnimatedSwitcher 能识别内容变化
     if (_loadingError != null) {
-      // --- C. 显示错误状态 ---
+      // 显示错误状态
       return _buildErrorState();
     } else if (_shouldLoadVideo) {
-      // --- B. 显示 WebView 和 Loading ---
-      // 使用 Stack 将 Loading 覆盖在 WebView 上
+      // 显示 WebView 和加载指示器
       return Stack(
-        key: ValueKey('video_stack_${widget.bvid}'), // 给 Stack 一个 Key
-        alignment: Alignment.center, // 让 Loading 居中
+        key: ValueKey('video_stack_${widget.bvid}'), // Key
+        alignment: Alignment.center, // 居中对齐
         children: [
-          // WebView 层 (总是在 Stack 底部)
           EmbeddedWebView(
-            // 当 URL 变化时，WebView 需要重建，Key 包含 URL
-            key: ValueKey('webview_$currentEmbedUrl'),
-            initialUrl: currentEmbedUrl,
+            key: ValueKey('webview_$currentEmbedUrl'), // Key
+            initialUrl: currentEmbedUrl, // 初始 URL
             onPageStarted: (url) {
               if (mounted && !_isLoadingVideo) {
-                // 避免重复设置
                 setState(() {
-                  _isLoadingVideo = true; // 页面开始加载时也确保是 loading 状态
-                  _loadingError = null; // 清除可能残留的错误
+                  _isLoadingVideo = true; // 页面开始加载时设置加载状态
+                  _loadingError = null; // 清除错误信息
                 });
               }
             },
             onPageFinished: (url) {
-              // 页面加载完成，取消 Loading 状态
               if (mounted) {
                 setState(() {
-                  _isLoadingVideo = false;
+                  _isLoadingVideo = false; // 页面加载完成时取消加载状态
                 });
               }
             },
             onWebResourceError: (error) {
-              // 加载出错，取消 Loading 并记录错误
-              // print("WebView Error in GameVideoSection: $error");
               if (mounted) {
                 setState(() {
-                  _isLoadingVideo = false;
-                  _loadingError =
-                      '视频加载失败，请稍后重试。\n错误: ${error.toString().substring(0, 100)}...'; // 显示错误信息
+                  _isLoadingVideo = false; // 加载出错时取消加载状态
+                  _loadingError = '视频加载失败，请稍后重试。'; // 设置错误信息
                 });
               }
             },
           ),
-
-          // Loading 层 (仅在 _isLoadingVideo 为 true 时显示)
-          // 使用 AnimatedOpacity 实现 Loading 的淡入淡出
           AnimatedOpacity(
-            opacity: _isLoadingVideo ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
+            opacity: _isLoadingVideo ? 1.0 : 0.0, // 根据加载状态设置透明度
+            duration: const Duration(milliseconds: 200), // 动画时长
             child: _isLoadingVideo
                 ? const LoadingWidget(
-                    // 使用你的内联 Loading
+                    // 加载时显示加载指示器
                     message: '加载中...',
-                    size: 32.0, // 可以调整大小
+                    size: 32.0,
                   )
-                : const SizedBox.shrink(), // 不加载时占位
+                : const SizedBox.shrink(), // 不加载时显示空 Widget
           ),
         ],
       );
     } else {
-      // --- A. 显示初始按钮 ---
-      return _buildPlaceholderButton();
+      return _buildPlaceholderButton(); // 显示初始按钮
     }
   }
 
-  // 构建占位按钮的辅助方法
+  /// 构建占位按钮的辅助方法。
+  ///
+  /// 返回一个居中的功能按钮。
   Widget _buildPlaceholderButton() {
     return Center(
-      // 让按钮在 AspectRatio 区域内居中
-      key: const ValueKey('placeholder_button'), // 给按钮一个 Key
+      key: const ValueKey('placeholder_button'), // Key
       child: FunctionalButton(
-        icon: Icons.play_circle_outline_rounded,
+        icon: Icons.play_circle_outline_rounded, // 图标
         iconSize: 32,
         fontSize: 20,
-        label: '观看视频',
+        label: '观看视频', // 文本
         hasBorder: true,
-
         onPressed: _startLoadingVideo, // 点击时触发加载
       ),
     );
   }
 
-  // 构建错误状态的辅助方法
+  /// 构建错误状态的辅助方法。
+  ///
+  /// 返回一个包含错误信息和重试按钮的 Widget。
   Widget _buildErrorState() {
     return Center(
-      key: const ValueKey('error_state'), // 给错误状态一个 Key
+      key: const ValueKey('error_state'), // Key
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(16.0), // 内边距
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.min, // 最小尺寸
           children: [
-            Icon(Icons.error_outline_rounded,
-                color: Colors.redAccent, size: 40),
-            const SizedBox(height: 12),
+            Icon(Icons.error_outline_rounded, // 错误图标
+                color: Colors.redAccent,
+                size: 40),
+            const SizedBox(height: 12), // 间距
             Text(
-              _loadingError ?? '加载视频时发生未知错误',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
+              _loadingError ?? '加载视频时发生未知错误', // 错误信息
+              textAlign: TextAlign.center, // 文本居中
+              style:
+                  TextStyle(color: Theme.of(context).colorScheme.error), // 文本样式
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 16), // 间距
             TextButton(
-              onPressed: _startLoadingVideo, // 提供重试按钮
-              child: const Text('点击重试'),
+              onPressed: _startLoadingVideo, // 点击时触发加载
+              child: const Text('点击重试'), // 重试按钮
             ),
           ],
         ),

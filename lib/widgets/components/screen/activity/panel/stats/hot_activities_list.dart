@@ -6,10 +6,13 @@ library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; // 错列动画库
+import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
+import 'package:suxingchahui/screens/activity/activity_detail_screen.dart';
+import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
@@ -105,8 +108,15 @@ class HotActivitiesList extends StatelessWidget {
         onTap: () {
           // 点击回调
           NavigationUtils.pushNamed(
-              context, AppRoutes.activityDetail, // 导航到动态详情页
-              arguments: activity.id); // 传递动态 ID
+            context,
+            AppRoutes.activityDetail,
+            arguments: ActivityDetailParam(
+              activity: activity,
+              activityId: activity.id,
+              listPageNum: 1,
+              feedType: ActivitiesFeedType.hot,
+            ),
+          ); // 传递动态 ID
         },
         borderRadius: BorderRadius.circular(12), // 点击区域圆角
         child: Padding(
@@ -130,7 +140,7 @@ class HotActivitiesList extends StatelessWidget {
 
               if (activity.content.isNotEmpty) ...[
                 // 活动内容不为空时显示
-                SizedBox(height: 8), // 间距
+                const SizedBox(height: 8), // 间距
                 Text(
                   activity.content, // 动态内容文本
                   maxLines: 2, // 最大行数
@@ -138,13 +148,13 @@ class HotActivitiesList extends StatelessWidget {
                 ),
               ],
 
-              SizedBox(height: 8), // 间距
+              const SizedBox(height: 8), // 间距
               Row(
                 mainAxisSize: MainAxisSize.min, // 最小尺寸
                 children: [
                   Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 内边距
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4), // 内边距
                     decoration: BoxDecoration(
                       color: typeColor, // 背景颜色
                       borderRadius: BorderRadius.circular(12), // 圆角
@@ -152,16 +162,16 @@ class HotActivitiesList extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min, // 最小尺寸
                       children: [
-                        Icon(Icons.favorite, size: 14), // 点赞图标
-                        SizedBox(width: 4), // 间距
+                        const Icon(Icons.favorite, size: 14), // 点赞图标
+                        const SizedBox(width: 4), // 间距
                         Text('${activity.likesCount}'), // 点赞计数
                       ],
                     ),
                   ),
-                  SizedBox(width: 8), // 间距
+                  const SizedBox(width: 8), // 间距
                   Container(
-                    padding:
-                        EdgeInsets.symmetric(horizontal: 8, vertical: 4), // 内边距
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 4), // 内边距
                     decoration: BoxDecoration(
                       color: Colors.blue.shade100, // 背景颜色
                       borderRadius: BorderRadius.circular(12), // 圆角
@@ -169,8 +179,8 @@ class HotActivitiesList extends StatelessWidget {
                     child: Row(
                       mainAxisSize: MainAxisSize.min, // 最小尺寸
                       children: [
-                        Icon(Icons.comment, size: 14), // 评论图标
-                        SizedBox(width: 4), // 间距
+                        const Icon(Icons.comment, size: 14), // 评论图标
+                        const SizedBox(width: 4), // 间距
                         Text('${activity.commentsCount}'), // 评论计数
                       ],
                     ),

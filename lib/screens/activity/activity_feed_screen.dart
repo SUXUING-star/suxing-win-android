@@ -8,6 +8,8 @@ import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
+import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
@@ -26,7 +28,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 
 /// `ActivityFeedScreen` 类：用户动态流显示屏幕。
@@ -87,26 +89,33 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   List<UserActivity> _activities = []; // 活动列表数据
   PaginationData? _pagination; // 分页数据
+  int _pageSize = ActivityService.publicActivitiesLimit;
   String _error = ''; // 错误消息
   int _currentPage = 1; // 当前页码
+  late String _feedType;
 
   bool _isInitialized = false; // 是否已初始化数据
   bool _isVisible = false; // 屏幕是否可见
   bool _isLoadingData = false; // 是否正在加载数据
+  DateTime? _lastLoadingTime;
+  DateTime? _lastLoadingMoreTime;
   bool _isLoadingMore = false; // 是否正在加载更多数据
   bool _needsRefresh = false; // 是否需要刷新
+  int _cacheUpdateCount = 0;
 
   StreamSubscription<BoxEvent>? _cacheSubscription; // 缓存订阅器
   String _currentWatchIdentifier = ''; // 当前缓存监听标识符
   Timer? _refreshDebounceTimer; // 刷新防抖计时器
 
   DateTime? _lastRefreshTime; // 上次刷新时间
-  final Duration _minUiRefreshInterval =
-      const Duration(seconds: 10); // 最小 UI 刷新间隔
-  final Duration _refreshDebounceTime =
-      const Duration(milliseconds: 800); // 刷新防抖时间
+  static const Duration _minUiRefreshInterval =
+      Duration(seconds: 30); // 最小 UI 刷新间隔
+  static const Duration _maxLoadingDuration = Duration(seconds: 10);
+  static const Duration _maxLoadingMoreDuration = Duration(seconds: 10);
+  static const Duration _refreshDebounceTime =
+      Duration(milliseconds: 800); // 刷新防抖时间
 
-  static const double desktopBreakpoint = 720.0; // 桌面布局断点'
+  static const double desktopBreakpoint = 720.0; // 桌面布局断点
 
   bool _hasInitializedDependencies = false; // 依赖是否已初始化
   String? _currentUserId; // 当前用户ID
@@ -114,6 +123,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   @override
   void initState() {
     super.initState();
+    _feedType = ActivitiesFeedType.public;
     _useAlternatingLayout = widget.useAlternatingLayout; // 初始化布局模式
     _showHotActivities = widget.showHotActivities; // 初始化热门活动面板显示状态
 
@@ -162,25 +172,93 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _checkLoadingTimeout();
+    _checkAuthStateChange();
     if (state == AppLifecycleState.resumed) {
-      // 应用从后台恢复时
-      if (_currentUserId != widget.authProvider.currentUserId) {
-        _needsRefresh = true; // 标记需要刷新
-
-        if (mounted) {
-          setState(() {
-            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-          });
-        }
-      }
-
       if (_isVisible && _needsRefresh) {
         // 屏幕可见且需要刷新时
         _refreshCurrentPageData(reason: "应用恢复且需要刷新"); // 刷新数据
         _needsRefresh = false; // 重置刷新标记
       } else if (_isVisible) {
-        // 屏幕可见时
-        _refreshCurrentPageData(reason: "应用恢复且可见检查"); // 刷新数据
+        _needsRefresh = true;
+      }
+    } else if (state == AppLifecycleState.paused) {
+      _needsRefresh = true;
+    }
+  }
+
+  ///
+  ///
+  void _checkAuthStateChange() {
+    if (!mounted) return;
+    // 应用从后台恢复时
+    if (_currentUserId != widget.authProvider.currentUserId) {
+      _needsRefresh = true; // 标记需要刷新
+
+      if (mounted) {
+        setState(() {
+          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
+        });
+      }
+    }
+  }
+
+  ///
+  ///
+  void _checkLoadingTimeout() {
+    if (!mounted) return;
+    final now = DateTime.now();
+    // 超过最大时长直接关闭
+    if (_isLoadingData &&
+        _lastLoadingTime != null &&
+        now.difference(_lastLoadingTime!) > _maxLoadingDuration) {
+      setState(() {
+        _lastLoadingTime = null;
+        _isLoadingData = false;
+      });
+    }
+    // 超过最大时长直接关闭
+    if (_isLoadingMore &&
+        _lastLoadingMoreTime != null &&
+        now.difference(_lastLoadingMoreTime!) > _maxLoadingMoreDuration) {
+      setState(() {
+        _lastLoadingMoreTime = null;
+        _isLoadingMore = false;
+      });
+    }
+  }
+
+  /// 处理可见性变化。
+  ///
+  /// [info]：可见性信息。
+  void _handleVisibilityChange(VisibilityInfo info) {
+    final bool currentlyVisible = info.visibleFraction > 0.8; // 认为屏幕可见
+
+    _checkLoadingTimeout();
+    _checkAuthStateChange();
+    if (currentlyVisible != _isVisible) {
+      // 可见性状态发生变化时
+      if (_currentUserId != widget.authProvider.currentUserId) {
+        // 用户ID变化时
+        _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
+        _needsRefresh = true; // 标记需要刷新
+        if (mounted) {
+          setState(() {});
+        }
+      }
+
+      final bool wasVisible = _isVisible; // 记录旧的可见性状态
+      _isVisible = currentlyVisible; // 更新当前可见性状态
+      if (_isVisible) {
+        // 如果变为可见
+        _triggerInitialLoad(); // 触发初始加载
+        _startOrUpdateWatchingCache(); // 开始监听缓存
+        if (!wasVisible) {
+          _refreshCurrentPageData(reason: "变为可见"); // 如果刚变为可见，刷新数据
+        }
+      } else {
+        // 如果变为不可见
+        _stopWatchingCache(); // 停止监听缓存
       }
     }
   }
@@ -189,9 +267,8 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   ///
   /// 该方法监听指定动态流的缓存变化，并在数据删除时触发刷新。
   void _startOrUpdateWatchingCache() {
-    const String feedTypeStr = 'public'; // 动态流类型为公开
     final String newWatchIdentifier =
-        "${feedTypeStr}_p${_currentPage}_l20"; // 新的监听标识符
+        "${_feedType}_p${_currentPage}_l20"; // 新的监听标识符
 
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
@@ -205,9 +282,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     try {
       _cacheSubscription = widget.activityService
           .watchActivityFeedChanges(
-        feedType: feedTypeStr,
+        feedType: _feedType,
         page: _currentPage,
-        limit: 20,
+        limit: _pageSize,
       )
           .listen(
         (BoxEvent event) {
@@ -253,16 +330,11 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   ///
   /// [reason]：刷新原因。
   /// [isCacheUpdated]：是否因缓存更新触发。
-  void _refreshCurrentPageData(
-      {required String reason, bool isCacheUpdated = false}) {
+  void _refreshCurrentPageData({
+    required String reason,
+    bool isCacheUpdated = false,
+  }) {
     if (_isLoadingData || _isLoadingMore || !mounted) return; // 正在加载或组件未挂载时返回
-
-    final now = DateTime.now();
-    if (_lastRefreshTime != null &&
-        now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      // 节流控制
-      return;
-    }
 
     _refreshDebounceTimer?.cancel(); // 取消旧的防抖计时器
     _refreshDebounceTimer = Timer(_refreshDebounceTime, () {
@@ -278,7 +350,14 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         // 正在加载数据或更多时
         if (isCacheUpdated) {
           // 如果是缓存更新触发
-          return;
+          if (_cacheUpdateCount < 2) {
+            _needsRefresh = true; // 标记需要刷新
+            _cacheUpdateCount++;
+            return;
+          } else {
+            _cacheUpdateCount++;
+            return;
+          }
         } else {
           _needsRefresh = true; // 标记需要刷新
           return;
@@ -315,36 +394,39 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     if (_isLoadingMore && isRefresh) return; // 正在加载更多且刷新时返回
     if (!mounted) return; // 组件未挂载时返回
 
-    const String feedTypeStr = 'public'; // 动态流类型为公开
     final String newWatchIdentifier =
-        "${feedTypeStr}_p${pageToLoad}_l20"; // 新的监听标识符
+        "${_feedType}_p${pageToLoad}_l20"; // 新的监听标识符
     if (_currentWatchIdentifier != newWatchIdentifier) {
       // 监听标识符变化时停止旧监听
       _stopWatchingCache();
     }
 
+    final now = DateTime.now();
     setState(() {
-      _isLoadingData = true; // 设置加载状态
-      _error = ''; // 清空错误消息
+      _isLoadingData = true;
+      _lastRefreshTime = now;
+      _error = '';
+      _lastLoadingTime = now;
       if (isRefresh || isInitialLoad) {
-        // 刷新或初始加载时
-        _currentPage = pageToLoad; // 更新当前页码
+        _currentPage = pageToLoad;
+
         if (isInitialLoad || _activities.isEmpty) {
-          // 初始加载或活动列表为空时清空活动
           _activities = [];
         }
-        _pagination = null; // 清空分页数据
+        _pagination = null;
       }
     });
+
     if (isRefresh && pageToLoad == 1) {
       // 刷新第一页时启动刷新动画
       _refreshAnimationController.forward(from: 0.0);
     }
 
     try {
-      const int limit = 20; // 每页限制
       final result = await widget.activityService.getPublicActivities(
-          page: pageToLoad, limit: limit, forceRefresh: forceRefresh); // 获取公开活动
+        page: pageToLoad,
+        forceRefresh: forceRefresh,
+      ); // 获取公开活动
 
       if (!mounted) return; // 组件未挂载时返回
 
@@ -360,6 +442,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         _currentPage = pageToLoad; // 更新当前页码
         _isLoadingData = false; // 重置加载状态
         _error = ''; // 清空错误消息
+        _pageSize = fetchedPagination.limit;
         _lastRefreshTime = DateTime.now(); // 记录刷新时间
       });
       _startOrUpdateWatchingCache(); // 启动或更新缓存监听
@@ -374,12 +457,17 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
           AppSnackBar.showError('刷新动态失败: $e');
         }
         _isLoadingData = false; // 重置加载状态
+        _lastLoadingTime = null;
       });
       _stopWatchingCache(); // 停止缓存监听
     } finally {
       if (mounted && _isLoadingData) {
         // 确保加载状态重置
-        setState(() => _isLoadingData = false);
+        setState(() {
+          _isLoadingData = false;
+          _cacheUpdateCount = 0;
+          _lastLoadingTime = null;
+        });
       }
       if (mounted) {
         _refreshAnimationController.reset(); // 重置刷新动画
@@ -396,40 +484,34 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     final now = DateTime.now();
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      // 节流控制
+      final remainSeconds = _minUiRefreshInterval.inSeconds -
+          now.difference(_lastRefreshTime!).inSeconds;
+      AppSnackBar.showInfo("手速太快了,等待$remainSeconds 秒");
       await Future.delayed(const Duration(milliseconds: 300)); // 延迟以提供视觉反馈
       return;
     }
 
     _stopWatchingCache(); // 停止监听缓存
-    setState(() {
-      _currentPage = 1; // 重置为第一页
-      _error = ''; // 清空错误消息
-    });
+    if (mounted) {
+      setState(() {
+        _activities = []; // 先清空列表
+        _currentPage = 1; // 重置页码
+        _error = ''; // 清空错误
+      });
+      // 给UI一点反应时间
+      await Future.delayed(const Duration(milliseconds: 50));
+    }
     await _loadActivities(
-        isRefresh: true,
-        pageToLoad: 1,
-        forceRefresh: forceRefresh); // 加载第一页活动数据
+      isRefresh: true,
+      pageToLoad: 1,
+      forceRefresh: forceRefresh,
+    ); // 加载第一页活动数据
   }
 
   /// 处理刷新按钮点击。
   void _handleRefreshButtonPress() {
-    if (_isLoadingData || _isLoadingMore || !mounted) return; // 正在加载或组件未挂载时返回
-
-    final now = DateTime.now();
-    if (_lastRefreshTime != null &&
-        now.difference(_lastRefreshTime!) < _minUiRefreshInterval) {
-      // 节流控制
-      return;
-    }
-
-    _refreshDebounceTimer?.cancel(); // 取消旧的防抖计时器
-    _refreshDebounceTimer = Timer(_refreshDebounceTime, () {
-      // 启动新的防抖计时器
-      if (mounted && !_isLoadingData && !_isLoadingMore) {
-        _refreshData(forceRefresh: true); // 强制刷新数据
-      }
-    });
+    HapticFeedback.lightImpact();
+    _refreshData(forceRefresh: true);
   }
 
   /// 加载更多活动数据。
@@ -447,12 +529,14 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
     final nextPage = _currentPage + 1; // 下一页页码
     _stopWatchingCache(); // 停止监听当前页缓存
-    setState(() => _isLoadingMore = true); // 设置加载更多状态
+    setState(() {
+      _isLoadingMore = true;
+      _lastLoadingMoreTime = DateTime.now();
+    }); // 设置加载更多状态
 
     try {
-      const int limit = 20; // 每页限制
       final result = await widget.activityService
-          .getPublicActivities(page: nextPage, limit: limit); // 获取下一页公开活动
+          .getPublicActivities(page: nextPage); // 获取下一页公开活动
 
       if (!mounted) return; // 组件未挂载时返回
 
@@ -471,13 +555,19 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       if (mounted) {
         // 捕获错误时
         AppSnackBar.showError('加载更多失败: $e'); // 显示错误提示
-        setState(() => _isLoadingMore = false); // 重置加载更多状态
+        setState(() {
+          _isLoadingMore = false;
+          _lastLoadingMoreTime = null;
+        });
       }
       _startOrUpdateWatchingCache(); // 尝试重新监听缓存
     } finally {
       if (mounted && _isLoadingMore) {
         // 确保加载状态重置
-        setState(() => _isLoadingMore = false);
+        setState(() {
+          _isLoadingMore = false;
+          _lastLoadingMoreTime = null;
+        });
       }
     }
   }
@@ -516,39 +606,19 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
             FeedCollapseMode.values.length]); // 循环切换折叠模式
   }
 
-  /// 获取当前折叠模式的显示文本。
-  String _getCollapseModeText() {
-    switch (_collapseMode) {
-      case FeedCollapseMode.none:
-        return '标准视图';
-      case FeedCollapseMode.byUser:
-        return '按用户折叠';
-      case FeedCollapseMode.byType:
-        return '按类型折叠';
-    }
-  }
-
-  /// 获取当前折叠模式的图标。
-  IconData _getCollapseModeIcon() {
-    switch (_collapseMode) {
-      case FeedCollapseMode.none:
-        return Icons.view_agenda_outlined;
-      case FeedCollapseMode.byUser:
-        return Icons.people_outline;
-      case FeedCollapseMode.byType:
-        return Icons.category_outlined;
-    }
-  }
-
   /// 导航到活动详情屏幕。
   ///
   /// [activity]：要导航到的活动。
   void _navigateToActivityDetail(UserActivity activity) {
     _stopWatchingCache(); // 导航时暂停监听缓存
-    NavigationUtils.pushNamed(context, AppRoutes.activityDetail, arguments: {
-      'activityId': activity.id,
-      'activity': activity,
-    }).then((_) {
+    _needsRefresh = true;
+    NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
+        arguments: ActivityDetailParam(
+          activityId: activity.id,
+          activity: activity,
+          listPageNum: _currentPage,
+          feedType: _feedType,
+        )).then((_) {
       // 从详情页返回时
       if (mounted) {
         _startOrUpdateWatchingCache(); // 恢复监听缓存
@@ -597,8 +667,10 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         // 确认删除回调
         try {
-          final success =
-              await widget.activityService.deleteActivity(activity); // 调用删除活动服务
+          final success = await widget.activityService.deleteActivity(
+            activity,
+            feedType: _feedType,
+          ); // 调用删除活动服务
           if (success && mounted) {
             // 删除成功且组件挂载时
             AppSnackBar.showSuccess('动态已删除'); // 提示删除成功
@@ -618,7 +690,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
             }
           } else if (mounted) {
             // 服务报告失败时
-            throw Exception("服务未能成功删除动态");
+            throw Exception("操作失败");
           }
         } catch (e) {
           // 捕获错误时
@@ -632,34 +704,68 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// 处理点赞活动。
   ///
   /// [activityId]：活动ID。
-  Future<void> _handleLikeActivity(String activityId) async {
+  Future<bool> _handleToggleLikeActivity(
+    String activityId, {
+    required bool action,
+  }) async {
     if (!widget.authProvider.isLoggedIn) {
       // 未登录时提示登录
       AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
+      return false;
     }
 
     try {
-      await widget.activityService.likeActivity(activityId); // 调用点赞服务
-    } catch (e) {
-      AppSnackBar.showError('点赞失败: ${e.toString()}'); // 提示点赞失败
-    }
-  }
+      bool success;
+      if (action) {
+        success = await widget.activityService.likeActivity(
+          activityId,
+          feedType: _feedType,
+        ); // 调用点赞服务
+      } else {
+        success = await widget.activityService.unlikeActivity(
+          activityId,
+          feedType: _feedType,
+        ); // 调用取消点赞服务
+      }
 
-  /// 处理取消点赞活动。
-  ///
-  /// [activityId]：活动ID。
-  Future<void> _handleUnlikeActivity(String activityId) async {
-    if (!widget.authProvider.isLoggedIn) {
-      // 未登录时提示登录
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
+      if (success) {
+        UserActivity? newActivity;
+        setState(() {
+          _activities = _activities.map((UserActivity a) {
+            if (a.id == activityId) {
+              if (action) {
+                a.likesCount++;
+                a.isLiked = action;
+              }
 
-    try {
-      await widget.activityService.unlikeActivity(activityId); // 调用取消点赞服务
+              if (!action) {
+                a.likesCount--;
+                a.isLiked = action;
+              }
+
+              newActivity = a;
+            }
+            return a;
+          }).toList();
+        });
+        final updatedActivity = newActivity;
+        if (updatedActivity != null) {
+          await widget.activityService
+              .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+            updatedActivity,
+            feedType: _feedType,
+            pageNum: _currentPage,
+          );
+        }
+        AppSnackBar.showSuccess("操作成功");
+      } else {
+        AppSnackBar.showSuccess("操作失败");
+      }
+
+      return success;
     } catch (e) {
-      AppSnackBar.showError('取消点赞失败: $e'); // 提示取消点赞失败
+      AppSnackBar.showError('操作失败: ${e.toString()}'); // 提示点赞失败
+      return false;
     }
   }
 
@@ -677,17 +783,44 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       throw Exception("你没有登录");
     }
     try {
-      final comment = await widget.activityService
-          .commentOnActivity(activityId, content); // 调用添加评论服务
+      final comment = await widget.activityService.commentOnActivity(
+        activityId,
+        content,
+        feedType: _feedType,
+      ); // 调用添加评论服务
       if (comment != null) {
+        UserActivity? newActivity;
+
         // 评论成功且组件挂载时
         AppSnackBar.showSuccess('评论成功'); // 提示评论成功
+        setState(() {
+          _activities = _activities.map((UserActivity a) {
+            if (a.id == activityId) {
+              a.comments.add(comment);
+              a.commentsCount++;
+              newActivity = a;
+            }
+            return a;
+          }).toList();
+        });
+
+        final updatedActivity = newActivity;
+        if (updatedActivity != null) {
+          await widget.activityService
+              .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+            updatedActivity,
+            feedType: _feedType,
+            pageNum: _currentPage,
+          );
+        }
+
         return comment; // 返回评论对象
       } else if (mounted) {
         // 无操作
+      } else if (comment == null) {
+        AppSnackBar.showError('评论失败'); // 提示评论失败
       }
     } catch (e) {
-      // 捕获错误时
       AppSnackBar.showError('评论失败: $e'); // 提示评论失败
     }
     return null; // 返回 null 表示失败
@@ -737,10 +870,39 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       onConfirm: () async {
         // 确认删除回调
         try {
-          final success = await widget.activityService
-              .deleteComment(activityId, comment); // 调用删除评论服务
+          final success = await widget.activityService.deleteComment(
+            activityId,
+            comment,
+            feedType: _feedType,
+          ); // 调用删除评论服务
           if (success) {
             // 删除成功且组件挂载时
+            UserActivity? newActivity;
+            setState(() {
+              _activities = _activities.map((UserActivity a) {
+                // 只对匹配的 activity 进行操作
+                if (a.id == activityId) {
+                  a.comments
+                      .removeWhere((ActivityComment c) => c.id == comment.id);
+                  a.commentsCount--;
+                  if (a.commentsCount <= 0) a.commentsCount = 0;
+                  newActivity = a;
+                }
+
+                // 确保总是返回 activity 对象
+                return a;
+              }).toList();
+            });
+            final updatedActivity = newActivity;
+            if (updatedActivity != null) {
+              await widget.activityService
+                  .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+                updatedActivity,
+                feedType: _feedType,
+                pageNum: _currentPage,
+              );
+            }
+
             AppSnackBar.showSuccess('评论已删除'); // 提示评论已删除
           } else if (mounted) {
             // 服务报告失败时
@@ -755,75 +917,79 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
     );
   }
 
-  /// 处理点赞评论。
+  /// 处理点赞评论操作。
   ///
-  /// [activityId]：活动ID。
-  /// [commentId]：评论ID。
-  Future<void> _handleLikeComment(String activityId, String commentId) async {
+  /// [activityId]：评论所属动态的 ID。
+  /// [commentId]：要点赞的评论 ID。
+  /// 检查登录状态，调用服务点赞。
+  Future<bool> _handleToggleLikeComment(
+    String activityId,
+    String commentId, {
+    required bool action,
+  }) async {
     if (!widget.authProvider.isLoggedIn) {
-      // 未登录时提示登录
-      if (mounted) {
-        AppSnackBar.showLoginRequiredSnackBar(context);
-      }
-      return;
+      // 检查登录状态
+      AppSnackBar.showLoginRequiredSnackBar(context); // 显示登录提示
+      return false;
     }
     try {
-      await widget.activityService
-          .likeComment(activityId, commentId); // 调用点赞评论服务
-    } catch (e) {
-      AppSnackBar.showError('点赞评论失败: $e'); // 提示点赞失败
-    }
-  }
-
-  /// 处理取消点赞评论。
-  ///
-  /// [activityId]：活动ID。
-  /// [commentId]：评论ID。
-  Future<void> _handleUnlikeComment(String activityId, String commentId) async {
-    if (!widget.authProvider.isLoggedIn) {
-      // 未登录时提示登录
-      if (mounted) {
-        AppSnackBar.showLoginRequiredSnackBar(context);
-      }
-      return;
-    }
-    try {
-      await widget.activityService
-          .unlikeComment(activityId, commentId); // 调用取消点赞评论服务
-    } catch (e) {
-      AppSnackBar.showError('取消点赞评论失败: $e'); // 提示取消点赞失败
-    }
-  }
-
-  /// 处理可见性变化。
-  ///
-  /// [info]：可见性信息。
-  void _handleVisibilityChange(VisibilityInfo info) {
-    final bool currentlyVisible = info.visibleFraction > 0.8; // 认为屏幕可见
-    if (currentlyVisible != _isVisible) {
-      // 可见性状态发生变化时
-      if (_currentUserId != widget.authProvider.currentUserId) {
-        // 用户ID变化时
-        _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-        _needsRefresh = true; // 标记需要刷新
-        if (mounted) {
-          setState(() {});
-        }
+      bool success;
+      if (action) {
+        success = await widget.activityService.likeComment(
+          activityId,
+          commentId,
+          feedType: _feedType,
+        ); // 调用服务点赞评论
+      } else {
+        success = await widget.activityService.unlikeComment(
+          activityId,
+          commentId,
+          feedType: _feedType,
+        ); // 调用服务取消点赞评论
       }
 
-      final bool wasVisible = _isVisible; // 记录旧的可见性状态
-      _isVisible = currentlyVisible; // 更新当前可见性状态
-      if (_isVisible) {
-        // 如果变为可见
-        _triggerInitialLoad(); // 触发初始加载
-        _startOrUpdateWatchingCache(); // 开始监听缓存
-        if (!wasVisible) {
-          _refreshCurrentPageData(reason: "变为可见"); // 如果刚变为可见，刷新数据
+      if (success) {
+        UserActivity? newActivity;
+        setState(() {
+          _activities = _activities.map((a) {
+            if (a.id == activityId) {
+              final List<ActivityComment> newComments = a.comments.map((c) {
+                if (commentId == c.id) {
+                  if (action) {
+                    c.isLiked = action;
+                    c.likesCount++;
+                  } else {
+                    c.isLiked = action;
+                    c.likesCount--;
+                  }
+                }
+                return c;
+              }).toList();
+              UserActivity aCopy = a;
+              aCopy.comments = newComments;
+              newActivity = aCopy;
+            }
+            return a;
+          }).toList();
+        });
+        AppSnackBar.showSuccess("操作成功");
+        final updatedActivity = newActivity;
+        if (updatedActivity != null) {
+          await widget.activityService
+              .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+            updatedActivity,
+            feedType: _feedType,
+            pageNum: _currentPage,
+          );
         }
       } else {
-        // 如果变为不可见
-        _stopWatchingCache(); // 停止监听缓存
+        AppSnackBar.showError("操作失败");
       }
+
+      return success;
+    } catch (e) {
+      AppSnackBar.showError('操作失败: ${e.toString()}'); // 显示错误提示
+      return false;
     }
   }
 
@@ -953,16 +1119,22 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       useAlternatingLayout: _useAlternatingLayout, // 是否使用交替布局
       scrollController: _scrollController, // 滚动控制器
       onActivityTap: _navigateToActivityDetail, // 活动点击回调
-      onRefresh: _refreshData, // 刷新回调
+      onRefresh: () => _refreshData(forceRefresh: true), // 刷新回调
       onLoadMore: _loadMoreActivities, // 加载更多回调
       onDeleteActivity: _handleDeleteActivity, // 删除活动回调
-      onLikeActivity: _handleLikeActivity, // 点赞活动回调
-      onUnlikeActivity: _handleUnlikeActivity, // 取消点赞活动回调
+      onLikeActivity: (activityId) =>
+          _handleToggleLikeActivity(activityId, action: true), // 点赞活动回调
+      onUnlikeActivity: (activityId) =>
+          _handleToggleLikeActivity(activityId, action: false), // 取消点赞活动回调
       onAddComment: _handleAddComment, // 添加评论回调
       onDeleteComment: _handleDeleteComment, // 删除评论回调
-      onLikeComment: _handleLikeComment, // 点赞评论回调
-      onUnlikeComment: _handleUnlikeComment, // 取消点赞评论回调
-      onEditActivity: null, // 编辑功能未实现
+      onLikeComment: (activityId, commentId) => _handleToggleLikeComment(
+          activityId, commentId,
+          action: true), // 点赞评论回调
+      onUnlikeComment: (activityId, commentId) => _handleToggleLikeComment(
+          activityId, commentId,
+          action: false), // 取消点赞评论回调
+      onEditActivity: null,
     );
   }
 
@@ -995,12 +1167,16 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                   mainAxisSize: MainAxisSize.min, // 行主轴尺寸最小化
                   mainAxisAlignment: MainAxisAlignment.center, // 居中对齐
                   children: [
-                    Icon(_getCollapseModeIcon(), // 图标
+                    Icon(
+                        ActivityTypeUtils.getCollapseModeIcon(
+                            _collapseMode), // 图标
                         size: 18,
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer),
                     const SizedBox(width: 6), // 间距
-                    Text(_getCollapseModeText(), // 文本
+                    Text(
+                        ActivityTypeUtils.getCollapseModeText(
+                            _collapseMode), // 文本
                         style: TextStyle(
                           color:
                               Theme.of(context).colorScheme.onPrimaryContainer,

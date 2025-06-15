@@ -2,6 +2,7 @@
 
 import 'package:meta/meta.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class CheckInActivityDetails {
@@ -17,27 +18,14 @@ class CheckInActivityDetails {
 
   factory CheckInActivityDetails.fromMetadata(
       Map<String, dynamic> metadataMap) {
-    List<DateTime> parsedRecentCheckIns = [];
-    if (metadataMap['recentCheckIns'] != null &&
-        metadataMap['recentCheckIns'] is List) {
-      for (var item in (metadataMap['recentCheckIns'] as List)) {
-        if (item is String) {
-          try {
-            parsedRecentCheckIns.add(DateTime.parse(item).toLocal());
-          } catch (e) {
-            // print(
-            //     "Error parsing recentCheckIn date string from metadata: '$item'. Error: $e");
-          }
-        }
-      }
-    }
     return CheckInActivityDetails(
-      consecutiveDays: metadataMap['consecutiveDays'] as int? ?? 0,
-      expGained: metadataMap['expGained'] as int? ?? 0,
-      recentCheckIns: parsedRecentCheckIns,
+      consecutiveDays: UtilJson.parseIntSafely(metadataMap['consecutiveDays']),
+      expGained: UtilJson.parseIntSafely(metadataMap['expGained']),
+      recentCheckIns: UtilJson.parseListDateTime(metadataMap['recentCheckIns']),
     );
   }
 }
+
 
 class UserActivity {
   final String id;
@@ -54,7 +42,7 @@ class UserActivity {
   int commentsCount;
   final bool isPublic;
   bool isLiked;
-  final Map<String, dynamic>? metadata; // <--- 这个保留，信息从这里取
+  final Map<String, dynamic>? metadata;
 
   List<ActivityComment> comments;
 
@@ -74,63 +62,44 @@ class UserActivity {
     required this.isPublic,
     this.isLiked = false,
     this.metadata,
-    // this.target, // <--- *** 从构造函数删除 ***
     this.comments = const [],
   });
 
   factory UserActivity.fromJson(Map<String, dynamic> json) {
-    // 日期解析逻辑保持不变
-    DateTime parseDateTime(String? dateString) {
-      if (dateString == null || dateString.isEmpty) {
-        return DateTime(1970); // 返回一个明确的默认值，而不是 now()
-      }
-      try {
-        return DateTime.parse(dateString).toLocal(); // 确保转为本地时间
-      } catch (e) {
-        // print("Error parsing date: $dateString. Error: $e");
-        return DateTime(1970); // 解析失败也返回默认值
-      }
+    List<ActivityComment> comments = [];
+    if (json['comments'] is List) {
+      comments = (json['comments'] as List)
+          .map((comment) {
+            if (comment is Map<String, dynamic>) {
+              return ActivityComment.fromJson(comment);
+            }
+            return null;
+          })
+          .whereType<ActivityComment>()
+          .toList();
     }
 
-    List<ActivityComment> comments = [];
-    if (json['comments'] != null && json['comments'] is List) {
-      // 增加类型检查
-      try {
-        // 添加 try-catch 处理评论解析错误
-        comments = (json['comments'] as List)
-            .map((comment) => ActivityComment.fromJson(
-                comment as Map<String, dynamic>)) // 确保类型转换
-            .toList();
-      } catch (e) {
-        // print("Error parsing comments: ${json['comments']}. Error: $e");
-        // 解析评论列表失败，返回空列表，避免整个活动解析失败
-      }
-    }
+    final createTime = UtilJson.parseDateTime(json['createTime']);
 
     return UserActivity(
-      id: json['id'] ?? '', // 提供默认空字符串防止 null
-      userId: json['userId'] ?? '',
-      type: json['type'] ?? '',
-      sourceId: json['sourceId'] ?? '',
-      targetId: json['targetId'] ?? '',
-      targetType: json['targetType'] ?? '',
-      content: json['content'] ?? '',
-      createTime: parseDateTime(json['createTime']),
-      // updateTime 可能不存在，需要更安全的处理
-      updateTime: json['updateTime'] == null || json['updateTime'] == ""
-          ? parseDateTime(
-              json['createTime']) // 如果 updateTime 为空或不存在，用 createTime
-          : parseDateTime(json['updateTime']),
-      isEdited: json['isEdited'] ?? false,
-      likesCount: json['likesCount'] ?? 0,
-      commentsCount: json['commentsCount'] ?? 0,
-      isPublic: json['isPublic'] ?? true, // 默认公开
-      isLiked: json['isLiked'] ?? false,
-      metadata:
-          json['metadata'] != null && json['metadata'] is Map<String, dynamic>
-              ? Map<String, dynamic>.from(json['metadata']) // 确保是 Map
-              : null,
-      // target: json['target'], // <--- *** 从 fromJson 删除 ***
+      id: UtilJson.parseId(json['id']),
+      userId: UtilJson.parseId(json['userId']),
+      type: UtilJson.parseStringSafely(json['type']),
+      sourceId: UtilJson.parseId(json['sourceId']),
+      targetId: UtilJson.parseId(json['targetId']),
+      targetType: UtilJson.parseStringSafely(json['targetType']),
+      content: UtilJson.parseStringSafely(json['content']),
+      createTime: createTime,
+      updateTime:
+          UtilJson.parseNullableDateTime(json['updateTime']) ?? createTime,
+      isEdited: UtilJson.parseBoolSafely(json['isEdited']),
+      likesCount: UtilJson.parseIntSafely(json['likesCount']),
+      commentsCount: UtilJson.parseIntSafely(json['commentsCount']),
+      isPublic: UtilJson.parseBoolSafely(json['isPublic'], defaultValue: true),
+      isLiked: UtilJson.parseBoolSafely(json['isLiked']),
+      metadata: json['metadata'] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json['metadata'])
+          : null,
       comments: comments,
     );
   }

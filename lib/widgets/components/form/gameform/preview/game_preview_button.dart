@@ -11,7 +11,7 @@ import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'game_preview_screen.dart';
@@ -37,6 +37,7 @@ class GamePreviewButton extends StatelessWidget {
   final List<String> selectedTags;
   final double rating;
   final List<GameDownloadLink> downloadLinks;
+  final List<GameExternalLink> externalLinks;
   final TextEditingController? musicUrlController;
   final TextEditingController? bvidController;
   final Game? existingGame;
@@ -62,6 +63,7 @@ class GamePreviewButton extends StatelessWidget {
     required this.selectedTags,
     required this.rating,
     required this.downloadLinks,
+    required this.externalLinks,
     this.musicUrlController,
     this.bvidController,
     this.existingGame,
@@ -116,8 +118,8 @@ class GamePreviewButton extends StatelessWidget {
       createTime: existingGame?.createTime ?? DateTime.now(),
       updateTime: DateTime.now(),
       likeCount: existingGame?.likeCount ?? 0,
-      likedBy: existingGame?.likedBy ?? [],
       downloadLinks: downloadLinks,
+      externalLinks: externalLinks,
       bvid: bvid,
 
       musicUrl: musicUrl, // musicUrl 的判断保持原样

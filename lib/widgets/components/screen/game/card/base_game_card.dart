@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/models/game/game_detail_param.dart';
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 导入自定义菜单按钮
@@ -25,6 +26,7 @@ import 'game_card_collection_stats_dialog.dart'; // 导入游戏收藏对话框
 class BaseGameCard extends StatelessWidget {
   final User? currentUser; // 当前用户
   final Game game; // 游戏数据
+  final GameDetailParam? param;
   final bool isGridItem; // 是否为网格项布局
   final bool adaptForPanels; // 是否适应面板布局
   final bool showTags; // 是否显示标签
@@ -55,6 +57,7 @@ class BaseGameCard extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.game,
+    this.param,
     this.isGridItem = true,
     this.adaptForPanels = false,
     this.showTags = true,
@@ -422,7 +425,11 @@ class BaseGameCard extends StatelessWidget {
         Navigator.pushNamed(
           context,
           AppRoutes.gameDetail, // 导航到游戏详情路由
-          arguments: game, // 传递游戏数据
+          arguments: param ??
+              GameDetailParam(
+                gameId: game.id,
+                filterData: null,
+              ), // 传递游戏数据
         );
   }
 

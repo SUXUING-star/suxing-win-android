@@ -7,7 +7,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/models/user/user_checkin.dart';
+import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 // 直接改成 StatelessWidget

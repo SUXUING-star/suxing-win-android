@@ -1,12 +1,14 @@
+import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/user/user_with_ban_status.dart';
 
 /// 用户列表分页数据模型。
+@immutable
 class UserListPagination {
   final List<UserWithBanStatus> users;
   final PaginationData pagination;
 
-  UserListPagination({
+  const UserListPagination({
     required this.users,
     required this.pagination,
   });

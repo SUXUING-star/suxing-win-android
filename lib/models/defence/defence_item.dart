@@ -1,6 +1,7 @@
 // lib/models/defence/defence_item.dart
 
 import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 /// 表示防护列表（如黑名单、白名单）中的一个条目。
 @immutable
@@ -21,12 +22,12 @@ class DefenceItem {
     required this.expiresAt,
   });
 
-  /// 从 JSON (Map<String, dynamic>) 创建一个 [DefenceItem] 实例。
+  /// 从 JSON 创建一个 [DefenceItem] 实例。
   factory DefenceItem.fromJson(Map<String, dynamic> json) {
     return DefenceItem(
-      ip: json['ip'] as String,
-      createdAt: DateTime.parse(json['created_at'] as String),
-      expiresAt: DateTime.parse(json['expires_at'] as String),
+      ip: UtilJson.parseStringSafely(json['ip']),
+      createdAt: UtilJson.parseDateTime(json['created_at']),
+      expiresAt: UtilJson.parseDateTime(json['expires_at']),
     );
   }
 

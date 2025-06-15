@@ -1,5 +1,6 @@
 // lib/models/game/game_navigation_info.dart
 import 'package:flutter/foundation.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class GameNavigationInfo {
@@ -16,22 +17,13 @@ class GameNavigationInfo {
   });
 
   factory GameNavigationInfo.fromJson(Map<String, dynamic> json) {
-    String? getString(dynamic value) {
-      if (value == null) return null;
-      if (value is String) {
-        if (value.isEmpty || value.toLowerCase() == "null") {
-          return null;
-        }
-        return value;
-      }
-      return value.toString();
-    }
-
     return GameNavigationInfo(
-      previousId: getString(json['previousId']),
-      previousTitle: getString(json['previousTitle']),
-      nextId: getString(json['nextId']),
-      nextTitle: getString(json['nextTitle']),
+      // ID 字段可能是 ObjectId，使用 parseNullableId 处理
+      previousId: UtilJson.parseNullableId(json['previousId']),
+      // 标题字段，如果为 null 或空字符串，则解析为 null
+      previousTitle: UtilJson.parseNullableStringSafely(json['previousTitle']),
+      nextId: UtilJson.parseNullableId(json['nextId']),
+      nextTitle: UtilJson.parseNullableStringSafely(json['nextTitle']),
     );
   }
 

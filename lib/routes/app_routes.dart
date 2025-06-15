@@ -1,6 +1,9 @@
 // lib/routes/app_routes.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/activity/activity_detail_param.dart';
+import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/game/game_detail_param.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/slide_fade_page_route.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -11,6 +14,7 @@ import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
 import 'package:suxingchahui/screens/message/message_screen.dart';
+import 'package:suxingchahui/screens/profile/coined_games/coined_games_screen.dart';
 import 'package:suxingchahui/screens/search/search_game_screen.dart';
 import 'package:suxingchahui/screens/search/search_post_screen.dart';
 import 'package:suxingchahui/screens/webview/webview_screen.dart';
@@ -41,8 +45,6 @@ import 'package:suxingchahui/screens/game/collection/game_collection_list_screen
 import 'package:suxingchahui/screens/game/edit/add_game_screen.dart';
 import 'package:suxingchahui/screens/game/edit/edit_game_screen.dart';
 import 'package:suxingchahui/screens/profile/open/open_profile_screen.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/screens/forum/post/post_detail_screen.dart';
 import 'package:suxingchahui/screens/forum/post/create_post_screen.dart';
 import 'package:suxingchahui/screens/forum/post/edit_post_screen.dart';
@@ -87,6 +89,7 @@ class AppRoutes {
   static const String allCollections = '/collections/all';
   static const String myCollections = '/my-collections';
   static const String myGames = '/my-games';
+  static const String coinedGames = '/coined-games';
   static const String forum = '/forum';
   static const String postDetail = '/forum/post';
   static const String createPost = '/forum/post/create';
@@ -192,16 +195,19 @@ class AppRoutes {
 
       case gameDetail:
         final arguments = settings.arguments;
-        String? gameId;
+        GameDetailParam? param;
 
-        if (arguments is String) {
-          gameId = arguments;
-        } else if (arguments is Game) {
-          gameId = arguments.id;
+        if (arguments is GameDetailParam) {
+          param = arguments;
+        } else if (arguments is Map<String, dynamic>) {
+          param = GameDetailParam.fromJson(arguments);
+        } else if (arguments is String) {
+          param = GameDetailParam(
+            gameId: arguments,
+          );
         }
 
-        // 如果 gameId 为空，返回错误页面
-        if (gameId == null || gameId.isEmpty) {
+        if (param == null) {
           return SlideFadePageRoute(
             routeSettings: settings,
             builder: (context) => RouteErrorScreen.invalidId(
@@ -215,7 +221,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => GameDetailScreen(
-            gameId: gameId,
+            gameDetailParam: param,
             windowStateProvider: windowStateProvider,
             inputStateService: inputStateService,
             sidebarProvider: sidebarProvider,
@@ -405,48 +411,23 @@ class AppRoutes {
 
       case activityDetail:
         final arguments = settings.arguments;
-        String? activityId;
-        UserActivity? activity;
-
-        if (arguments is String) {
-          activityId = arguments;
+        ActivityDetailParam activityDetailParam;
+        if (arguments is ActivityDetailParam) {
+          activityDetailParam = arguments;
         } else if (arguments is Map<String, dynamic>) {
-          final id = arguments['activityId'];
-          if (id is String) {
-            activityId = id;
-          } else {
-            // 如果ID不是String类型，返回错误页面
-            return SlideFadePageRoute(
-              routeSettings: settings,
-              builder: (context) => RouteErrorScreen.invalidId(
-                sidebarProvider,
-                resourceType: '动态',
-                onAction: () =>
-                    NavigationUtils.pushNamed(context, activityFeed),
-              ),
-            );
-          }
-          activity = arguments['activity'] as UserActivity?;
-        } else {
-          // 如果参数类型不正确，返回错误页面
-          return SlideFadePageRoute(
-            routeSettings: settings,
-            builder: (context) => RouteErrorScreen.missingParameter(
-              sidebarProvider,
-              paramName: '动态ID',
-              onAction: () => NavigationUtils.pushNamed(context, activityFeed),
-            ),
+          activityDetailParam = ActivityDetailParam.fromJson(arguments);
+        } else if (arguments is UserActivity) {
+          activityDetailParam = ActivityDetailParam(
+            activity: arguments,
+            activityId: arguments.id,
           );
-        }
-
-        // 如果 activityId 为空，返回错误页面
-        if (activityId.isEmpty) {
+        } else {
           return SlideFadePageRoute(
             routeSettings: settings,
             builder: (context) => RouteErrorScreen.invalidId(
               sidebarProvider,
-              resourceType: '动态',
-              onAction: () => NavigationUtils.pushNamed(context, activityFeed),
+              resourceType: '动态详情',
+              onAction: () => NavigationUtils.pop(context),
             ),
           );
         }
@@ -460,8 +441,7 @@ class AppRoutes {
             followService: followService,
             inputStateService: inputStateService,
             infoProvider: infoProvider,
-            activityId: activityId.toString(),
-            activity: activity,
+            activityDetailParam: activityDetailParam,
           ),
         );
 
@@ -598,12 +578,22 @@ class AppRoutes {
                 ));
       case myGames:
         return SlideFadePageRoute(
-            routeSettings: settings,
-            builder: (_) => MyGamesScreen(
-                  gameService: gameService,
-                  windowStateProvider: windowStateProvider,
-                  authProvider: authProvider,
-                ));
+          routeSettings: settings,
+          builder: (_) => MyGamesScreen(
+            gameService: gameService,
+            windowStateProvider: windowStateProvider,
+            authProvider: authProvider,
+          ),
+        );
+      case coinedGames:
+        return SlideFadePageRoute(
+          routeSettings: settings,
+          builder: (_) => CoinedGamesScreen(
+            gameService: gameService,
+            windowStateProvider: windowStateProvider,
+            authProvider: authProvider,
+          ),
+        );
       case userFollows:
         if (settings.arguments is! Map<String, dynamic>) {
           return SlideFadePageRoute(

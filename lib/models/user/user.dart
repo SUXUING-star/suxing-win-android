@@ -1,6 +1,7 @@
 // lib/models/user/user.dart
 
 import 'package:flutter/cupertino.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class User {
@@ -17,6 +18,7 @@ class User {
   final int level; // 等级
   final int? consecutiveCheckIn;
   final int? totalCheckIn;
+  final int coins;
   final DateTime? lastCheckInDate;
   final List<String> following; // 关注列表 (ID 字符串)
   final List<String> followers; // 粉丝列表 (ID 字符串)
@@ -38,6 +40,7 @@ class User {
     this.isSuperAdmin = false,
     this.experience = 0,
     this.level = 1,
+    this.coins = 0,
     this.consecutiveCheckIn,
     this.totalCheckIn,
     this.lastCheckInDate,
@@ -53,199 +56,32 @@ class User {
 
   // --- 完整的 fromJson 工厂方法 ---
   factory User.fromJson(Map<String, dynamic> json) {
-    // 安全地解析 ID
-    String idFromJson = '';
-    if (json['id'] is String) {
-      idFromJson = json['id'];
-    } else if (json['_id'] is String) {
-      // 兼容 _id
-      idFromJson = json['_id'];
-    }
-
-    // 安全地解析 email
-    String emailFromJson = json['email'] ?? '';
-
-    // 安全地解析 createTime
-    DateTime createTimeFromJson = DateTime.now(); // 默认当前时间
-    if (json['createTime'] is String) {
-      try {
-        createTimeFromJson = DateTime.parse(json['createTime']);
-      } catch (_) {} // 解析失败则使用默认值
-    } else if (json['createTime'] is DateTime) {
-      // 如果直接是 DateTime 类型
-      createTimeFromJson = json['createTime'];
-    } else if (json['createTime'] is Map &&
-        json['createTime']['\$date'] is String) {
-      // 处理 MongoDB BSON Date 格式
-      try {
-        createTimeFromJson = DateTime.parse(json['createTime']['\$date']);
-      } catch (_) {}
-    }
-
-    // 解析关注/粉丝列表
-    List<String> followingList = [];
-    if (json['following'] is List) {
-      // 确保列表内元素是 String
-      followingList = List<String>.from(
-          (json['following'] as List).map((item) => item.toString()));
-    }
-    List<String> followersList = [];
-    if (json['followers'] is List) {
-      followersList = List<String>.from(
-          (json['followers'] as List).map((item) => item.toString()));
-    }
-
-    // 安全地解析 experience
-    int experienceFromJson = 0;
-    if (json['experience'] is int) {
-      experienceFromJson = json['experience'];
-    } else if (json['experience'] != null) {
-      experienceFromJson = int.tryParse(json['experience'].toString()) ?? 0;
-    }
-
-    // 安全地解析 level
-    int levelFromJson = 0;
-    if (json['level'] is int) {
-      levelFromJson = json['level'];
-    } else if (json['level'] != null) {
-      levelFromJson = int.tryParse(json['level'].toString()) ?? 0;
-    }
-
-    // 安全地解析 currentLevelExp
-    int currentLevelExpFromJson = 0;
-    if (json['currentLevelExp'] is int) {
-      currentLevelExpFromJson = json['currentLevelExp'];
-    } else if (json['currentLevelExp'] != null) {
-      currentLevelExpFromJson =
-          int.tryParse(json['currentLevelExp'].toString()) ?? 0;
-    }
-
-    // 安全地解析 nextLevelExp
-    int nextLevelExpFromJson =
-        levelFromJson > 0 ? currentLevelExpFromJson + 1 : 1000; // 提供一个更合理的默认值
-    if (json['nextLevelExp'] is int) {
-      nextLevelExpFromJson = json['nextLevelExp'];
-    } else if (json['nextLevelExp'] != null) {
-      nextLevelExpFromJson =
-          int.tryParse(json['nextLevelExp'].toString()) ?? nextLevelExpFromJson;
-    }
-
-    // 安全地解析 expToNextLevel
-    int expToNextLevelFromJson =
-        nextLevelExpFromJson - experienceFromJson; // 默认计算
-    if (json['expToNextLevel'] is int) {
-      expToNextLevelFromJson = json['expToNextLevel'];
-    } else if (json['expToNextLevel'] != null) {
-      expToNextLevelFromJson =
-          int.tryParse(json['expToNextLevel'].toString()) ??
-              expToNextLevelFromJson;
-    }
-    // 确保非负
-    if (expToNextLevelFromJson < 0) expToNextLevelFromJson = 0;
-
-    // 安全地解析 levelProgress (处理 int, double, String)
-    double levelProgressFromJson = 0.0;
-    if (json['levelProgress'] is double) {
-      levelProgressFromJson = json['levelProgress'];
-    } else if (json['levelProgress'] is int) {
-      levelProgressFromJson = (json['levelProgress'] as int).toDouble();
-    } else if (json['levelProgress'] is String) {
-      levelProgressFromJson = double.tryParse(json['levelProgress']) ?? 0.0;
-    }
-    levelProgressFromJson =
-        levelProgressFromJson.clamp(0.0, 100.0); // 确保在 0-100 范围
-
-    // 安全地解析 isMaxLevel
-    bool isMaxLevelFromJson = json['isMaxLevel'] ?? false;
-
-    // 安全地解析签到日期
-    DateTime? lastCheckInDateFromJson;
-    if (json['lastCheckInDate'] is String) {
-      try {
-        lastCheckInDateFromJson = DateTime.parse(json['lastCheckInDate']);
-      } catch (_) {}
-    } else if (json['lastCheckInDate'] is DateTime) {
-      lastCheckInDateFromJson = json['lastCheckInDate'];
-    } else if (json['lastCheckInDate'] is Map &&
-        json['lastCheckInDate']['\$date'] is String) {
-      try {
-        lastCheckInDateFromJson =
-            DateTime.parse(json['lastCheckInDate']['\$date']);
-      } catch (_) {}
-    }
-
-    DateTime? parseDateTime(dynamic dateValue) {
-      if (dateValue is String) {
-        return DateTime.tryParse(dateValue);
-      } else if (dateValue is Map && dateValue['\$date'] is String) {
-        // MongoDB BSON Date
-        return DateTime.tryParse(dateValue['\$date']);
-      }
-      return null;
-    }
-
     return User(
-      id: idFromJson,
-      username: json['username'] ?? '',
-      email: emailFromJson,
-      avatar: json['avatar'],
-      createTime: createTimeFromJson,
-      updateTime: parseDateTime(json['updateTime']),
-      signature: json['signature'] as String?,
-      isAdmin: json['isAdmin'] ?? false,
-      isSuperAdmin: json['isSuperAdmin'] ?? false,
-      experience: experienceFromJson,
-      level: levelFromJson,
-      consecutiveCheckIn: json['consecutiveCheckIn'] is int
-          ? json['consecutiveCheckIn']
-          : (json['consecutiveCheckIn'] != null
-              ? int.tryParse(json['consecutiveCheckIn'].toString())
-              : null),
-      totalCheckIn: json['totalCheckIn'] is int
-          ? json['totalCheckIn']
-          : (json['totalCheckIn'] != null
-              ? int.tryParse(json['totalCheckIn'].toString())
-              : null),
-      lastCheckInDate: lastCheckInDateFromJson,
-      following: followingList,
-      followers: followersList,
-      // 赋值新增字段
-      currentLevelExp: currentLevelExpFromJson,
-      nextLevelExp: nextLevelExpFromJson,
-      expToNextLevel: expToNextLevelFromJson,
-      levelProgress: levelProgressFromJson,
-      isMaxLevel: isMaxLevelFromJson,
+      // 业务逻辑: ID 字段兼容 '_id' 和 'id'
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      username: UtilJson.parseStringSafely(json['username']),
+      email: UtilJson.parseStringSafely(json['email']),
+      avatar: UtilJson.parseNullableStringSafely(json['avatar']),
+      signature: UtilJson.parseNullableStringSafely(json['signature']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseNullableDateTime(json['updateTime']),
+      isAdmin: UtilJson.parseBoolSafely(json['isAdmin']),
+      isSuperAdmin: UtilJson.parseBoolSafely(json['isSuperAdmin']),
+      experience: UtilJson.parseIntSafely(json['experience']),
+      level: UtilJson.parseIntSafely(json['level']),
+      coins: UtilJson.parseIntSafely(json['coins']),
+      consecutiveCheckIn:
+          UtilJson.parseNullableIntSafely(json['consecutiveCheckIn']),
+      totalCheckIn: UtilJson.parseNullableIntSafely(json['totalCheckIn']),
+      lastCheckInDate: UtilJson.parseNullableDateTime(json['lastCheckInDate']),
+      following: UtilJson.parseListString(json['following']),
+      followers: UtilJson.parseListString(json['followers']),
+      currentLevelExp: UtilJson.parseIntSafely(json['currentLevelExp']),
+      nextLevelExp: UtilJson.parseIntSafely(json['nextLevelExp']),
+      expToNextLevel: UtilJson.parseIntSafely(json['expToNextLevel']),
+      levelProgress: UtilJson.parseDoubleSafely(json['levelProgress']),
+      isMaxLevel: UtilJson.parseBoolSafely(json['isMaxLevel']),
     );
-  }
-
-  // --- 完整的 toJson 方法 ---
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id, // 或者用 '_id': id, 看你的后端和缓存习惯
-      'username': username,
-      'email': email,
-      // 通常不序列化 hash 和 salt
-      // 'hash': hash,
-      // 'salt': salt,
-      'avatar': avatar,
-      'createTime': createTime.toIso8601String(), // 序列化为 ISO 字符串
-      'signature': signature,
-      'updateTime': updateTime?.toIso8601String(),
-      'isAdmin': isAdmin,
-      'isSuperAdmin': isSuperAdmin,
-      'experience': experience,
-      'level': level,
-      'consecutiveCheckIn': consecutiveCheckIn,
-      'totalCheckIn': totalCheckIn,
-      'lastCheckInDate': lastCheckInDate?.toIso8601String(), // 序列化为 ISO 字符串
-      'following': following, // 直接序列化列表
-      'followers': followers, // 直接序列化列表
-      'currentLevelExp': currentLevelExp,
-      'nextLevelExp': nextLevelExp,
-      'expToNextLevel': expToNextLevel,
-      'levelProgress': levelProgress,
-      'isMaxLevel': isMaxLevel,
-    };
   }
 
   // --- 完整的 toSafeJson 方法 ---
@@ -254,8 +90,8 @@ class User {
     return {
       'id': id,
       'username': username,
-      // 'email': email, // SafeJson 通常也不包含 email，除非特定场景需要
       'avatar': avatar,
+      'coins': coins,
       'signature': signature,
       'createTime': createTime.toIso8601String(),
       'updateTime': updateTime?.toIso8601String(),
@@ -276,7 +112,6 @@ class User {
       'expToNextLevel': expToNextLevel,
       'levelProgress': levelProgress,
       'isMaxLevel': isMaxLevel,
-      // --- 结束添加 ---
     };
   }
 
@@ -295,18 +130,17 @@ class User {
     bool? isSuperAdmin,
     int? experience,
     int? level,
+    int? coins,
     int? consecutiveCheckIn,
     int? totalCheckIn,
     DateTime? lastCheckInDate,
     List<String>? following,
     List<String>? followers,
-    // --- 新字段 ---
     int? currentLevelExp,
     int? nextLevelExp,
     int? expToNextLevel,
     double? levelProgress,
     bool? isMaxLevel,
-    // --- 结束 ---
     bool clearLastCheckInDate = false, // 用于特殊情况清空日期
   }) {
     return User(
@@ -321,6 +155,7 @@ class User {
       isSuperAdmin: isSuperAdmin ?? this.isSuperAdmin,
       experience: experience ?? this.experience,
       level: level ?? this.level,
+      coins: coins ?? this.coins,
       consecutiveCheckIn: consecutiveCheckIn ?? this.consecutiveCheckIn,
       totalCheckIn: totalCheckIn ?? this.totalCheckIn,
       lastCheckInDate: clearLastCheckInDate
@@ -328,13 +163,11 @@ class User {
           : (lastCheckInDate ?? this.lastCheckInDate),
       following: following ?? this.following,
       followers: followers ?? this.followers,
-      // --- 新字段赋值 ---
       currentLevelExp: currentLevelExp ?? this.currentLevelExp,
       nextLevelExp: nextLevelExp ?? this.nextLevelExp,
       expToNextLevel: expToNextLevel ?? this.expToNextLevel,
       levelProgress: levelProgress ?? this.levelProgress,
       isMaxLevel: isMaxLevel ?? this.isMaxLevel,
-      // --- 结束 ---
     );
   }
 
@@ -429,13 +262,13 @@ class User {
       isAdmin: false,
       isSuperAdmin: false,
       experience: 0,
+      coins: 0,
       level: 0, // 等级通常从 1 开始，但占位符用 0 或 1 都可以
       consecutiveCheckIn: 0,
       totalCheckIn: 0,
       lastCheckInDate: null,
       following: [], // 空列表
       followers: [], // 空列表
-      // --- 所有新增等级相关字段的默认值 ---
       currentLevelExp: 0,
       nextLevelExp: 0, // 或者一个基础值如 1000
       expToNextLevel: 0, // 或者基础值

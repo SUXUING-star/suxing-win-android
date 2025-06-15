@@ -12,6 +12,7 @@ enum MessageType {
   gameRejectedToAuthor, // 后端: "game_rejected_to_author" - 游戏审核拒绝
   gameResubmitToAdmin, // 后端: "game_resubmit_to_admin" - 游戏重新进入审核状态
   gameLikedToAuthor, // 后端: "game_liked_to_author" - 游戏被点赞
+  gameCoinedToAuthor, // game_coined_to_author
   unknown, // 未知类型
 }
 
@@ -37,7 +38,9 @@ extension MessageTypeInfo on MessageType {
       case MessageType.gameResubmitToAdmin:
         return '游戏已重新提交审核';
       case MessageType.gameLikedToAuthor:
-        return '游戏被点赞';
+        return '游戏收到了点赞';
+      case MessageType.gameCoinedToAuthor:
+        return '游戏收到了投币';
       case MessageType.unknown:
         // 确保总有一个返回值
         return '系统消息';
@@ -63,6 +66,8 @@ extension MessageTypeInfo on MessageType {
         return Icons.hourglass_top_outlined; // 之前是 game_review_pending
       case MessageType.gameLikedToAuthor:
         return Icons.favorite_border_outlined;
+      case MessageType.gameCoinedToAuthor:
+        return Icons.monetization_on;
       case MessageType.unknown:
         return Icons.notifications_outlined;
     }
@@ -87,6 +92,8 @@ extension MessageTypeInfo on MessageType {
         return Colors.yellow[200]!;
       case MessageType.gameLikedToAuthor:
         return Colors.pink[100]!;
+      case MessageType.gameCoinedToAuthor:
+        return Colors.amber[100]!;
       case MessageType.unknown:
         return Colors.grey[200]!;
     }
@@ -111,6 +118,8 @@ extension MessageTypeInfo on MessageType {
         return Colors.yellow[900]!;
       case MessageType.gameLikedToAuthor:
         return Colors.pink[700]!;
+      case MessageType.gameCoinedToAuthor:
+        return Colors.amber[700]!;
       case MessageType.unknown:
         return Colors.grey[800]!;
     }
@@ -140,6 +149,8 @@ extension MessageTypeInfo on MessageType {
         return MessageType.gameResubmitToAdmin;
       case "game_liked_to_author":
         return MessageType.gameLikedToAuthor;
+      case "game_coined_to_author":
+        return MessageType.gameCoinedToAuthor;
       default:
         // if (kDebugMode) { // 仅在调试模式下打印未知类型警告
         //   print("警告: 未能将字符串 '$typeString' 匹配到任何 MessageType 枚举值, 返回 MessageType.unknown");

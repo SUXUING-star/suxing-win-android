@@ -20,7 +20,7 @@ class ProfileMobileHeader extends StatelessWidget {
   final DailyProgressData? dailyProgressData;
   final bool isLoadingExpData;
   final String? expDataError;
-  final VoidCallback onRefreshExpData;
+  final Function(bool needCheck) onRefreshExpData;
 
   const ProfileMobileHeader({
     super.key,
@@ -68,10 +68,10 @@ class ProfileMobileHeader extends StatelessWidget {
                 iconColor: Colors.black54,
               ),
 
-              // 经验进度徽章 (位置可能需要微调)
+              // 经验进度徽章
               Positioned(
-                top: 0, // 示例位置，可能需要你根据实际效果调整
-                right: 0, // 示例位置，可能需要你根据实际效果调整
+                top: 0,
+                right: 0,
                 child: ExpProgressBadge(
                   currentUser: user,
                   size: badgeSize,
@@ -96,6 +96,24 @@ class ProfileMobileHeader extends StatelessWidget {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: 8),
+          Chip(
+            avatar: Icon(Icons.monetization_on,
+                color: Colors.orange.shade700, size: 16),
+            label: Text(
+              '${user.coins} 硬币',
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 12,
+                color: Colors.orange.shade800,
+              ),
+            ),
+            backgroundColor: Colors.orange.withSafeOpacity(0.1),
+            padding: const EdgeInsets.symmetric(horizontal: 6.0, vertical: 2.0),
+            materialTapTargetSize:
+                MaterialTapTargetSize.shrinkWrap, // 让 Chip 更紧凑
+          ),
+
           const SizedBox(height: 4), // 名字和邮箱间距缩小
           AppText(
             user.email, // 再次提醒，邮箱隐私

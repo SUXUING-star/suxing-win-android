@@ -56,6 +56,15 @@ class GameDetailLayout extends StatelessWidget {
   final InputStateService inputStateService; // 输入状态 Provider
   final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
   final ValueChanged<bool>? onRandomSectionHover;
+  final bool? isLiked;
+  final bool? isCoined;
+  final int coinsCount;
+  final int likeCount;
+  final bool isTogglingLike;
+  final bool isTogglingCoin;
+  final VoidCallback? onToggleLike;
+  final VoidCallback? onToggleCoin;
+
   /// 构造函数。
   ///
   /// [gameService]：游戏服务。
@@ -74,6 +83,12 @@ class GameDetailLayout extends StatelessWidget {
   /// [onCollectionChanged]：收藏状态改变回调。
   /// [navigationInfo]：导航信息。
   /// [isPreviewMode]：是否预览模式。
+  /// [isLiked]: 喜欢状态
+  /// [isCoined]: 投币状态
+  /// [onToggleLike]: 喜欢
+  /// [onToggleCoin]: 投币
+  /// [isTogglingLike]: 是否操作
+  /// [isTogglingCoin]: 是否操作
   const GameDetailLayout({
     super.key,
     required this.gameService,
@@ -93,6 +108,14 @@ class GameDetailLayout extends StatelessWidget {
     this.navigationInfo,
     this.onRandomSectionHover,
     this.isPreviewMode = false,
+    this.isLiked,
+    this.isCoined,
+    this.coinsCount = 0,
+    this.likeCount = 0,
+    this.onToggleLike,
+    this.onToggleCoin,
+    this.isTogglingLike = false,
+    this.isTogglingCoin = false,
   });
 
   /// 构建游戏详情布局。
@@ -111,10 +134,24 @@ class GameDetailLayout extends StatelessWidget {
       key: ValueKey('game_detail_content_${game.id}'), // 唯一键，用于重建触发动画
       padding: EdgeInsets.all(isDesktop ? 0 : 16.0), // 内边距
       child: isDesktop // 根据是否为桌面布局选择构建方法
-          ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
-              slideDuration, fadeDuration, scaleDuration)
-          : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,
-              slideDuration, fadeDuration, scaleDuration),
+          ? _buildDesktopLayout(
+              context,
+              baseDelay,
+              delayIncrement,
+              slideOffset,
+              slideDuration,
+              fadeDuration,
+              scaleDuration,
+            )
+          : _buildMobileLayout(
+              context,
+              baseDelay,
+              delayIncrement,
+              slideOffset,
+              slideDuration,
+              fadeDuration,
+              scaleDuration,
+            ),
     );
   }
 
@@ -137,10 +174,22 @@ class GameDetailLayout extends StatelessWidget {
         currentUser: currentUser, // 当前用户
         followService: followService, // 关注服务
         infoProvider: infoProvider, // 用户信息 Provider
-        onClickFilterGameTag: (context, tag) =>
-            _filterTag(context, tag), // 标签点击回调
-        onClickFilterGameCategory: (context, category) =>
-            _filterCategory(context, category), // 分类点击回调
+        onClickFilterGameTag: (context, tag) => _filterTag(
+          context,
+          tag,
+        ), // 标签点击回调
+        onClickFilterGameCategory: (context, category) => _filterCategory(
+          context,
+          category,
+        ),
+        isLiked: isLiked,
+        isCoined: isCoined,
+        likeCount: likeCount,
+        coinsCount: coinsCount,
+        isTogglingLike: isTogglingLike,
+        isTogglingCoin: isTogglingCoin,
+        onToggleLike: onToggleLike,
+        onToggleCoin: onToggleCoin, // 分类点击回调
       ),
     );
   }
@@ -151,8 +200,11 @@ class GameDetailLayout extends StatelessWidget {
   /// [category]：要筛选的分类。
   void _filterCategory(BuildContext context, String category) {
     gameListFilterProvider.setCategory(category); // 设置游戏列表筛选分类
-    NavigationUtils.navigateToHome(sidebarProvider, context,
-        tabIndex: 1); // 导航到游戏列表页
+    NavigationUtils.navigateToHome(
+      sidebarProvider,
+      context,
+      tabIndex: 1,
+    ); // 导航到游戏列表页
   }
 
   /// 筛选标签。
@@ -161,8 +213,11 @@ class GameDetailLayout extends StatelessWidget {
   /// [tag]：要筛选的标签。
   void _filterTag(BuildContext context, String tag) {
     gameListFilterProvider.setTag(tag); // 设置游戏列表筛选标签
-    NavigationUtils.navigateToHome(sidebarProvider, context,
-        tabIndex: 1); // 导航到游戏列表页
+    NavigationUtils.navigateToHome(
+      sidebarProvider,
+      context,
+      tabIndex: 1,
+    ); // 导航到游戏列表页
   }
 
   /// 构建游戏描述区域。

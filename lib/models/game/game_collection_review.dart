@@ -1,5 +1,9 @@
 // lib/models/game/game_collection_review.dart
 
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
+
+@immutable
 class GameCollectionReviewEntry {
   final String userId;
   final String gameId;
@@ -10,7 +14,7 @@ class GameCollectionReviewEntry {
   final DateTime createTime;
   final DateTime updateTime;
 
-  GameCollectionReviewEntry({
+  const GameCollectionReviewEntry({
     required this.userId,
     required this.gameId,
     required this.status,
@@ -22,56 +26,28 @@ class GameCollectionReviewEntry {
   });
 
   factory GameCollectionReviewEntry.fromJson(Map<String, dynamic> json) {
-    String parsedUserId = json['userId']?.toString() ?? 'unknown_user_id';
-    String parsedGameId = json['gameId']?.toString() ?? 'unknown_game_id';
-    String parsedStatus = json['status'] ?? 'unknown';
-
-    double? parsedRating;
-    final rawRating = json['rating'];
-    if (rawRating is num) {
-      parsedRating = rawRating.toDouble();
-    } else if (rawRating is String) {
-      parsedRating = double.tryParse(rawRating);
-    }
-
-    DateTime parsedCreateTime = DateTime.now();
-    if (json['createTime'] is String) {
-      try {
-        parsedCreateTime = DateTime.parse(json['createTime']).toLocal();
-      } catch (e) {
-        // print("Warning: Failed to parse createTime ('${json['createTime']}'), using default. Error: $e");
-      }
-    }
-
-    DateTime parsedUpdateTime = DateTime.now();
-    if (json['updateTime'] is String) {
-      try {
-        parsedUpdateTime = DateTime.parse(json['updateTime']).toLocal();
-      } catch (e) {
-        // print("Warning: Failed to parse updateTime ('${json['updateTime']}'), using default. Error: $e");
-      }
-    }
-
     return GameCollectionReviewEntry(
-      userId: parsedUserId,
-      gameId: parsedGameId,
-      status: parsedStatus,
-      reviewContent: json['review'],
-      rating: parsedRating,
-      notes: json['notes'],
-      createTime: parsedCreateTime,
-      updateTime: parsedUpdateTime,
+      // 业务逻辑: userId 和 gameId 是 ObjectId
+      userId: UtilJson.parseId(json['userId']),
+      gameId: UtilJson.parseId(json['gameId']),
+      status: UtilJson.parseStringSafely(json['status']),
+      // 业务逻辑: json 里的键是 'review', 对应模型的 'reviewContent'
+      reviewContent: UtilJson.parseNullableStringSafely(json['review']),
+      rating: UtilJson.parseNullableDoubleSafely(json['rating']),
+      notes: UtilJson.parseNullableStringSafely(json['notes']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseDateTime(json['updateTime']),
     );
   }
 
   Map<String, dynamic> toJson() => {
-    'userId': userId,
-    'gameId': gameId,
-    'status': status,
-    'review': reviewContent,
-    'rating': rating,
-    'notes': notes,
-    'createTime': createTime.toUtc().toIso8601String(),
-    'updateTime': updateTime.toUtc().toIso8601String(),
-  };
+        'userId': userId,
+        'gameId': gameId,
+        'status': status,
+        'review': reviewContent,
+        'rating': rating,
+        'notes': notes,
+        'createTime': createTime.toUtc().toIso8601String(),
+        'updateTime': updateTime.toUtc().toIso8601String(),
+      };
 }

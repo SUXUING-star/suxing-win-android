@@ -5,7 +5,9 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 框架
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/user_activity.dart';
+
+import '../../widgets/components/screen/activity/feed/collapsible_activity_feed.dart'; // 用户动态模型
 
 /// `ActivityTypeDisplay` 类：活动类型相关的显示信息。
 ///
@@ -144,6 +146,30 @@ class ActivityTypeUtils {
       textColor: textColor,
       icon: icon,
     );
+  }
+
+  /// Gets the display text for the current collapse mode.
+  static String getCollapseModeText(FeedCollapseMode collapseMode) {
+    switch (collapseMode) {
+      case FeedCollapseMode.none:
+        return '标准视图';
+      case FeedCollapseMode.byType:
+        return '按类型折叠';
+      default:
+        return '标准视图'; // Fallback
+    }
+  }
+
+  /// Gets the icon for the current collapse mode.
+  static IconData getCollapseModeIcon(FeedCollapseMode collapseMode) {
+    switch (collapseMode) {
+      case FeedCollapseMode.none:
+        return Icons.view_agenda_outlined; // Use outlined icons for consistency
+      case FeedCollapseMode.byType:
+        return Icons.category_outlined;
+      default:
+        return Icons.view_agenda_outlined; // Fallback
+    }
   }
 
   /// 根据活动类型获取图标。

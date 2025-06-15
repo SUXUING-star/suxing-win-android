@@ -12,7 +12,7 @@ import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
@@ -88,9 +88,7 @@ class _AddGameScreenState extends State<AddGameScreen> {
         if (mounted) Navigator.of(context).pop(true);
       }
     } catch (e) {
-      AppSnackBar.showError(
-        '添加失败: ${e.toString()}',
-      );
+      AppSnackBar.showError('添加失败: ${e.toString()}');
     }
   }
 

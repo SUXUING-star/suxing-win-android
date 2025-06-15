@@ -7,7 +7,6 @@ import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
 
 class ActivityCommentItem extends StatefulWidget {
   final ActivityComment comment;
@@ -16,8 +15,8 @@ class ActivityCommentItem extends StatefulWidget {
   final User? currentUser;
   final String activityId;
   final bool isAlternate;
-  final VoidCallback? onLike;
-  final VoidCallback? onUnlike;
+  final Future<bool> Function()? onLike;
+  final Future<bool> Function()? onUnlike;
   final VoidCallback? onCommentDeleted;
 
   const ActivityCommentItem({
@@ -66,60 +65,21 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
     }
   }
 
-  // --- 点赞/取消点赞 (前端补偿 + 调用回调) ---
-  void _handleLike() {
+  // --- 点赞/取消点赞 ---
+  Future<void> _handleLike() async {
     // 改为同步方法，异步由父级处理
     HapticFeedback.lightImpact();
-    final originalLikedState = _comment.isLiked;
-    final originalLikesCount = _comment.likesCount;
 
-    // 前端补偿
-    setState(() {
-      _comment.isLiked = !originalLikedState;
-      _comment.likesCount = _comment.isLiked
-          ? originalLikesCount + 1
-          : (originalLikesCount > 0 ? originalLikesCount - 1 : 0);
-    });
-
-    // 调用父级回调
-    try {
-      if (_comment.isLiked) {
-        widget.onLike?.call();
-      } else {
-        widget.onUnlike?.call();
-      }
-    } catch (e) {
-      debugPrint("Error calling like/unlike callback: $e");
-      // 回滚补偿
-      if (mounted) {
-        setState(() {
-          _comment.isLiked = originalLikedState;
-          _comment.likesCount = originalLikesCount;
-        });
-        AppSnackBar.showError("操作失败,${e.toString()}");
-      }
+    if (_comment.isLiked) {
+      await widget.onLike?.call();
+    } else {
+      await widget.onUnlike?.call();
     }
   }
 
   // --- 处理删除 (调用回调) ---
   void _handleDelete() {
-    // 改为同步方法
-    // 直接调用父级回调，父级处理确认和 Service 调用
     widget.onCommentDeleted?.call();
-    // if (widget.onCommentDeleted == null && mounted) {
-    //   AppSnackBar.showError(context, '无法执行删除操作');
-    // }
-  }
-
-  // --- 判断是否是评论所有者或管理员 (更完整) ---
-  Future<bool> _canDeleteComment() async {
-    if (widget.currentUser == null) return false; // 未登录不能删
-    final String? currentUserId = widget.currentUser?.id;
-    final bool isAdmin = widget.currentUser?.isAdmin ?? false;
-    final String commentUserId = _comment.userId; // 直接用 comment 的 userId
-
-    // 管理员或评论所有者可以删除
-    return isAdmin || (currentUserId != null && commentUserId == currentUserId);
   }
 
   @override
@@ -161,30 +121,18 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
           ),
           const SizedBox(width: 4), // 时间和删除按钮间距
 
-          // --- 删除按钮 (FutureBuilder 判断权限) ---
-          FutureBuilder<bool>(
-            future: _canDeleteComment(), // 使用更新后的权限检查
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.done &&
-                  snapshot.hasData &&
-                  snapshot.data == true) {
-                return InkWell(
-                  onTap: _handleDelete,
-                  borderRadius: BorderRadius.circular(10),
-                  child: Padding(
-                    padding: const EdgeInsets.all(4.0),
-                    child: Icon(
-                      Icons.delete_outline,
-                      size: 16,
-                      color: Colors.grey.shade600,
-                      semanticLabel: '删除评论', // 增加语义标签
-                    ),
-                  ),
-                );
-              }
-              // 加载中或无权限时返回空 SizedBox
-              return const SizedBox(width: 16); // 保持占位，避免布局跳动
-            },
+          InkWell(
+            onTap: _handleDelete,
+            borderRadius: BorderRadius.circular(10),
+            child: Padding(
+              padding: const EdgeInsets.all(4.0),
+              child: Icon(
+                Icons.delete_outline,
+                size: 16,
+                color: Colors.grey.shade600,
+                semanticLabel: '删除评论', // 增加语义标签
+              ),
+            ),
           ),
         ],
       );

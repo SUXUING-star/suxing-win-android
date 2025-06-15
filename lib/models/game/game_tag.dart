@@ -1,17 +1,21 @@
-// lib/models/tag/game_tag_item.dart
+// lib/models/game/game_tag.dart
+import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
+
+@immutable
 class GameTag {
   final String name;
   final int count;
 
-  GameTag({
+  const GameTag({
     required this.name,
     required this.count,
   });
 
   factory GameTag.fromJson(Map<String, dynamic> json) {
     return GameTag(
-      name: json['tag'] as String,
-      count: json['count'] as int,
+      name: UtilJson.parseStringSafely(json['tag']),
+      count: UtilJson.parseIntSafely(json['count']),
     );
   }
 

@@ -4,11 +4,10 @@
 /// 该类支持在应用内或外部浏览器打开网页链接。
 library;
 
-
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart'; // 应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 SnackBar 工具
 import 'package:url_launcher/url_launcher.dart'; // URL 启动器库
 
 /// `OpenWebUrlUtils` 类：提供打开网页链接的实用方法。

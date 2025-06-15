@@ -49,16 +49,15 @@ class CollapsibleActivityFeed extends StatefulWidget {
   final ScrollController scrollController; // 滚动控制器
   final FutureOr<void> Function(UserActivity activity)?
       onDeleteActivity; // 删除活动回调
-  final FutureOr<void> Function(String activityId)? onLikeActivity; // 点赞活动回调
-  final FutureOr<void> Function(String activityId)?
-      onUnlikeActivity; // 取消点赞活动回调
+  final Future<bool> Function(String activityId)? onLikeActivity; // 点赞活动回调
+  final Future<bool> Function(String activityId)? onUnlikeActivity; // 取消点赞活动回调
   final FutureOr<ActivityComment?> Function(String activityId, String content)?
       onAddComment; // 添加评论回调
   final FutureOr<void> Function(String activityId, ActivityComment comment)?
       onDeleteComment; // 删除评论回调
-  final FutureOr<void> Function(String activityId, String commentId)?
+  final Future<bool> Function(String activityId, String commentId)?
       onLikeComment; // 点赞评论回调
-  final FutureOr<void> Function(String activityId, String commentId)?
+  final Future<bool> Function(String activityId, String commentId)?
       onUnlikeComment; // 取消点赞评论回调
   final VoidCallback? Function(UserActivity activity)? onEditActivity; // 编辑活动回调
 
@@ -256,10 +255,11 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     if (widget.error.isNotEmpty && widget.activities.isEmpty) {
       // 有错误且活动列表为空时显示错误状态
       return Center(
-          child: ActivityEmptyState(
-              message: widget.error,
-              icon: Icons.error_outline,
-              onRefresh: widget.onRefresh));
+        child: ActivityEmptyState(
+            message: widget.error,
+            icon: Icons.error_outline,
+            onRefresh: widget.onRefresh),
+      );
     }
     if (widget.activities.isEmpty) {
       // 活动列表为空时显示空状态
@@ -304,7 +304,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
           horizontalOffset: isAlternate ? 50.0 : -50.0, // 水平偏移
           child: ActivityCard(
             // 活动卡片
-            key: ValueKey(activity.id), activity: activity,
+            key: ValueKey(activity.id),
+            activity: activity,
             currentUser: widget.currentUser,
             infoProvider: widget.infoProvider,
             followService: widget.followService,
@@ -439,8 +440,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                   Text(
                     '共${activities.length}条动态', // 动态数量文本
                     style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white.withSafeOpacity(0.8)), // 文本样式
+                      fontSize: 12,
+                      color: Colors.white.withSafeOpacity(0.8),
+                    ), // 文本样式
                   ),
                 ],
               ),
@@ -453,8 +455,11 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                   shape: BoxShape.circle, // 形状为圆形
                 ),
                 padding: const EdgeInsets.all(4), // 内边距
-                child: const Icon(Icons.keyboard_arrow_down,
-                    color: Colors.white, size: 24), // 图标
+                child: const Icon(
+                  Icons.keyboard_arrow_down,
+                  color: Colors.white,
+                  size: 24,
+                ), // 图标
               ),
             ),
           ],

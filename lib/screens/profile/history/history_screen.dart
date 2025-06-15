@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/history/game_history_layout.dart';
 import 'package:suxingchahui/widgets/components/screen/history/post_history_layout.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -172,7 +172,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       }
 
       final gameListResult = await widget.gameService
-          .getGameHistoryWithDetails(_gameHistoryPage, 15);
+          .getGameHistoryWithDetails(page: _gameHistoryPage);
 
       if (!mounted) return;
       setState(() {
@@ -191,7 +191,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _isLoadingGameHistory = false;
         _gameHistoryError = '加载游戏历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError( '加载游戏历史失败');
+      AppSnackBar.showError('加载游戏历史失败');
     }
   }
 
@@ -216,7 +216,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       }
 
       final gameListResult = await widget.gameService
-          .getGameHistoryWithDetails(_gameHistoryPage, 15);
+          .getGameHistoryWithDetails(page: _gameHistoryPage);
 
       if (!mounted) return;
       setState(() {
@@ -232,7 +232,7 @@ class _HistoryScreenState extends State<HistoryScreen>
         _gameHistoryError =
             '加载更多游戏历史失败: ${e.toString().split(':').last.trim()}';
       });
-      AppSnackBar.showError( '加载更多游戏历史失败');
+      AppSnackBar.showError('加载更多游戏历史失败');
     }
   }
 
@@ -259,7 +259,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       }
 
       final postListResult = await widget.postService
-          .getPostHistoryWithDetails(_postHistoryPage, 10);
+          .getPostHistoryWithDetails(page: _postHistoryPage);
 
       if (!mounted) return;
       setState(() {
@@ -303,7 +303,7 @@ class _HistoryScreenState extends State<HistoryScreen>
       }
 
       final postListResult = await widget.postService
-          .getPostHistoryWithDetails(_postHistoryPage, 10);
+          .getPostHistoryWithDetails(page: _postHistoryPage);
 
       if (!mounted) return;
       setState(() {

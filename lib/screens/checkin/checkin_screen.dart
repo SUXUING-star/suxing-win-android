@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/user/checkin_result.dart';
 import 'package:suxingchahui/models/user/checkin_status.dart';
 import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/user/user_checkin.dart';
+import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -21,7 +21,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class CheckInScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -104,23 +104,28 @@ class _CheckInScreenState extends State<CheckInScreen>
     super.dispose();
   }
 
-  Future<void> _loadTodayListData() async {
+  Future<void> _loadTodayListData({bool needCheck = true}) async {
     if (_isTodayListLoading) {
       return;
     }
     final now = DateTime.now();
-    if (_lastTodayListRefreshAttemptTime != null &&
-        now.difference(_lastTodayListRefreshAttemptTime!) <
-            _minTodayListRefreshInterval) {
-      final remainingSeconds = _minTodayListRefreshInterval.inSeconds -
-          now.difference(_lastTodayListRefreshAttemptTime!).inSeconds;
+    if (needCheck) {
+      if (_lastTodayListRefreshAttemptTime != null &&
+          now.difference(_lastTodayListRefreshAttemptTime!) <
+              _minTodayListRefreshInterval) {
+        final remainingSeconds = _minTodayListRefreshInterval.inSeconds -
+            now.difference(_lastTodayListRefreshAttemptTime!).inSeconds;
 
-      AppSnackBar.showInfo(
-        '手速太快了！请 $remainingSeconds 秒后再刷新',
-        duration: const Duration(seconds: 2),
-      );
+        AppSnackBar.showInfo(
+          '手速太快了！请 $remainingSeconds 秒后再刷新',
+          duration: const Duration(seconds: 2),
+        );
+      }
+      _lastTodayListRefreshAttemptTime = now;
+    } else {
+      _lastTodayListRefreshAttemptTime = now;
     }
-    _lastTodayListRefreshAttemptTime = now;
+
     try {
       setState(() {
         _isTodayListLoading = true;
@@ -157,7 +162,7 @@ class _CheckInScreenState extends State<CheckInScreen>
     });
 
     try {
-      final stats = await widget.checkInService.getCheckInStats();
+      final stats = await widget.checkInService.getCheckInStatus();
       final monthlyData = await widget.checkInService.getMonthlyCheckInData(
         year: _selectedYear,
         month: _selectedMonth,
@@ -211,7 +216,7 @@ class _CheckInScreenState extends State<CheckInScreen>
 
       await Future.delayed(const Duration(milliseconds: 300));
       await _loadData();
-      await _loadTodayListData();
+      await _loadTodayListData(needCheck: false);
 
       if (mounted) {
         _showCheckInSuccess(result);
@@ -229,10 +234,12 @@ class _CheckInScreenState extends State<CheckInScreen>
     final int expGained = result.experienceGained;
     final int consecutiveDays = result.consecutiveCheckIn;
     final int totalCheckInDays = result.totalCheckIn;
+    final int coinsGained = result.coinsGained;
 
     final String message = '恭喜您完成今日签到！\n'
         '${totalCheckInDays > 0 ? '今天是第$totalCheckInDays天签到！\n' : ''}'
         '${expGained > 0 ? '获得 +$expGained 经验值\n' : ''}'
+        '${coinsGained > 0 ? '获得$coinsGained硬币！\n' : ''}'
         '当前连续签到: $consecutiveDays 天';
 
     CustomConfirmDialog.show(

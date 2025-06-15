@@ -1,6 +1,7 @@
 // lib/models/post/user_post_actions.dart
 
 import 'package:flutter/cupertino.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class UserPostActions {
@@ -10,7 +11,7 @@ class UserPostActions {
   final String postId;
   final String userId;
 
-  UserPostActions({
+  const UserPostActions({
     required this.postId,
     required this.userId,
     this.liked = false,
@@ -25,13 +26,12 @@ class UserPostActions {
 
   factory UserPostActions.fromJson(Map<String, dynamic> json) {
     return UserPostActions(
-      // 通常 postId 和 userId 不会直接在 action 数据里，调用者需要提供
-      // 这里假设 API 返回的结构可能包含，或者调用者组装
-      postId: json['postId'] ?? '',
-      userId: json['userId'] ?? '',
-      liked: json['liked'] ?? false,
-      agreed: json['agreed'] ?? false,
-      favorited: json['favorited'] ?? false,
+      // 业务逻辑: postId 和 userId 可能不在 action 的直接响应中，但为保持模型完整性而解析
+      postId: UtilJson.parseId(json['postId']),
+      userId: UtilJson.parseId(json['userId']),
+      liked: UtilJson.parseBoolSafely(json['liked']),
+      agreed: UtilJson.parseBoolSafely(json['agreed']),
+      favorited: UtilJson.parseBoolSafely(json['favorited']),
     );
   }
 

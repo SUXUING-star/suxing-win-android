@@ -1,7 +1,6 @@
 // lib/models/game/game.dart
 import 'package:flutter/cupertino.dart'; // Flutter UI 库
-import 'package:mongo_dart/mongo_dart.dart'
-    show ObjectId, Timestamp; // MongoDB BSON ObjectId 和 Timestamp 类型
+import 'package:suxingchahui/models/util_json.dart'; // MongoDB BSON ObjectId 和 Timestamp 类型
 
 // GameStatus 类：定义游戏审批状态常量
 @immutable
@@ -10,7 +9,6 @@ class GameStatus {
   static const String rejected = "rejected";
   static const String pending = "pending";
 }
-
 
 class Game {
   final String id;
@@ -31,8 +29,9 @@ class Game {
   final DateTime updateTime;
   final int viewCount;
   final int likeCount;
-  final List<String> likedBy;
+  final int coinsCount;
   final List<GameDownloadLink> downloadLinks;
+  final List<GameExternalLink> externalLinks;
   final String? musicUrl; // 游戏音乐URL
   final String? bvid; // 关联B站视频ID
   final DateTime? lastViewedAt; // 游戏本身最后查看时间
@@ -69,8 +68,9 @@ class Game {
     required this.updateTime, // 更新时间通常必须有
     this.viewCount = 0, // 后端生成，给默认值
     this.likeCount = 0, // 后端生成，给默认值
-    List<String>? likedBy, // 后端生成，给默认值
+    this.coinsCount = 0,
     List<GameDownloadLink>? downloadLinks, // 可能为空
+    List<GameExternalLink>? externalLinks,
     this.musicUrl,
     this.bvid,
     this.lastViewedAt,
@@ -85,133 +85,48 @@ class Game {
     this.reviewedAt, // 后端生成，可空
     this.reviewedBy, // 后端生成，可空
   })  : tags = tags ?? [],
-        likedBy = likedBy ?? [],
-        downloadLinks = downloadLinks ?? [];
+        downloadLinks = downloadLinks ?? [],
+        externalLinks = externalLinks ?? [];
 
   factory Game.fromJson(Map<String, dynamic> json) {
-    // 解析ID字段，处理 ObjectId 和普通字符串
-    String parseId(dynamic idValue) {
-      if (idValue == null) return '';
-      return idValue is ObjectId ? idValue.oid : idValue.toString();
-    }
-
-    // 解析下载链接列表
-    List<GameDownloadLink> parseDownloadLinks(dynamic links) {
-      if (links == null || links is! List) return [];
-      return links
-          .map((link) => link is Map<String, dynamic>
-              ? GameDownloadLink.fromJson(link)
-              : null)
-          .whereType<GameDownloadLink>()
-          .toList();
-    }
-
-    // 解析标签列表
-    List<String> parseTags(dynamic tags) {
-      if (tags == null) return [];
-      if (tags is List) {
-        return tags.map((tag) => tag.toString()).toList();
-      }
-      if (tags is String) {
-        return tags.split(',').map((tag) => tag.trim()).toList();
-      }
-      return [];
-    }
-
-    // 安全解析 DateTime
-    DateTime parseDateTime(dynamic dateValue) {
-      if (dateValue == null) {
-        return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true); // 默认值
-      }
-      if (dateValue is DateTime) return dateValue;
-      if (dateValue is Timestamp) {
-        return DateTime.fromMillisecondsSinceEpoch(dateValue.seconds * 1000,
-            isUtc: true);
-      }
-      try {
-        return DateTime.parse(dateValue.toString()).toLocal(); // 解析为本地时间
-      } catch (e) {
-        final millis = int.tryParse(dateValue.toString());
-        if (millis != null) {
-          return DateTime.fromMillisecondsSinceEpoch(millis, isUtc: true)
-              .toLocal(); // 解析毫秒为本地时间
-        }
-        return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true); // 错误回退
-      }
-    }
-
-    // 安全解析可空 DateTime
-    DateTime? parseNullableDateTime(dynamic dateValue) {
-      if (dateValue == null) return null;
-      try {
-        // Go的time.Time零值处理为null
-        if (dateValue is String &&
-            (dateValue == "0001-01-01T00:00:00Z" ||
-                dateValue.startsWith("0001-01-01"))) {
-          return null;
-        }
-        return parseDateTime(dateValue);
-      } catch (_) {
-        return null;
-      }
-    }
-
-    // 安全解析 int
-    int parseIntSafely(dynamic value) {
-      if (value == null) return 0;
-      if (value is int) return value;
-      if (value is double) return value.toInt();
-      return int.tryParse(value.toString()) ?? 0;
-    }
-
-    // 安全解析 double
-    double parseDoubleSafely(dynamic value) {
-      if (value == null) return 0.0;
-      if (value is double) return value;
-      if (value is int) return value.toDouble();
-      return double.tryParse(value.toString()) ?? 0.0;
-    }
-
     return Game(
-      id: parseId(json['_id'] ?? json['id']),
-      authorId: parseId(json['authorId']),
-      title: json['title']?.toString() ?? '',
-      summary: json['summary']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      coverImage: json['coverImage']?.toString() ?? '',
-      images: (json['images'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      category: json['category']?.toString() ?? '',
-      tags: parseTags(json['tags']),
-      rating: parseDoubleSafely(json['rating']),
-      totalRatingSum: parseDoubleSafely(json['totalRatingSum']),
-      ratingCount: parseIntSafely(json['ratingCount']),
-      ratingUpdateTime: parseNullableDateTime(json['ratingUpdateTime']),
-      createTime: parseDateTime(json['createTime']),
-      updateTime: parseDateTime(json['updateTime']),
-      viewCount: parseIntSafely(json['viewCount']),
-      likeCount: parseIntSafely(json['likeCount']),
-      likedBy: (json['likedBy'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-          [],
-      downloadLinks: parseDownloadLinks(json['downloadLinks']),
-      musicUrl: json['musicUrl']?.toString(),
-      bvid: json['bvid']?.toString(),
-      lastViewedAt: parseNullableDateTime(json['lastViewedAt']),
+      id: UtilJson.parseId(json['_id'] ?? json['id']),
+      authorId: UtilJson.parseId(json['authorId']),
+      title: UtilJson.parseStringSafely(json['title']),
+      summary: UtilJson.parseStringSafely(json['summary']),
+      description: UtilJson.parseStringSafely(json['description']),
+      coverImage: UtilJson.parseStringSafely(json['coverImage']),
+      images: UtilJson.parseListString(json['images']),
+      category: UtilJson.parseStringSafely(json['category']),
+      tags: UtilJson.parseListString(json['tags']),
+      rating: UtilJson.parseDoubleSafely(json['rating']),
+      totalRatingSum: UtilJson.parseDoubleSafely(json['totalRatingSum']),
+      ratingCount: UtilJson.parseIntSafely(json['ratingCount']),
+      ratingUpdateTime:
+          UtilJson.parseNullableDateTime(json['ratingUpdateTime']),
+      createTime: UtilJson.parseDateTime(json['createTime']),
+      updateTime: UtilJson.parseDateTime(json['updateTime']),
+      viewCount: UtilJson.parseIntSafely(json['viewCount']),
+      likeCount: UtilJson.parseIntSafely(json['likeCount']),
+      coinsCount: UtilJson.parseIntSafely(json['coinsCount']),
+      downloadLinks: UtilJson.parseGameDownloadLinks(json['downloadLinks']),
+      externalLinks: UtilJson.parseGameExternalLinks(json['externalLinks']),
+      musicUrl: UtilJson.parseNullableStringSafely(json['musicUrl']),
+      bvid: UtilJson.parseNullableStringSafely(json['bvid']),
+      lastViewedAt: UtilJson.parseNullableDateTime(json['lastViewedAt']),
       currentUserLastViewTime:
-          parseNullableDateTime(json['currentUserLastViewTime']), // 前端特有字段
-      wantToPlayCount: parseIntSafely(json['wantToPlayCount']),
-      playingCount: parseIntSafely(json['playingCount']),
-      playedCount: parseIntSafely(json['playedCount']),
-      totalCollections: parseIntSafely(json['totalCollections']),
-      collectionUpdateTime: parseNullableDateTime(json['collectionUpdateTime']),
-      approvalStatus: json['approvalStatus']?.toString(),
-      reviewComment: json['reviewComment']?.toString(),
-      reviewedAt: parseNullableDateTime(json['reviewedAt']),
-      reviewedBy: parseId(json['reviewedBy']),
+          UtilJson.parseNullableDateTime(json['currentUserLastViewTime']),
+      wantToPlayCount: UtilJson.parseIntSafely(json['wantToPlayCount']),
+      playingCount: UtilJson.parseIntSafely(json['playingCount']),
+      playedCount: UtilJson.parseIntSafely(json['playedCount']),
+      totalCollections: UtilJson.parseIntSafely(json['totalCollections']),
+      collectionUpdateTime:
+          UtilJson.parseNullableDateTime(json['collectionUpdateTime']),
+      approvalStatus:
+          UtilJson.parseNullableStringSafely(json['approvalStatus']),
+      reviewComment: UtilJson.parseNullableStringSafely(json['reviewComment']),
+      reviewedAt: UtilJson.parseNullableDateTime(json['reviewedAt']),
+      reviewedBy: UtilJson.parseId(json['reviewedBy']),
     );
   }
 
@@ -235,8 +150,9 @@ class Game {
       'updateTime': updateTime.toIso8601String(),
       'viewCount': viewCount,
       'likeCount': likeCount,
-      'likedBy': likedBy,
+      "coinsCount": coinsCount,
       'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
+      'externalLinks': externalLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl,
       'bvid': bvid,
       'lastViewedAt': lastViewedAt?.toIso8601String(),
@@ -269,6 +185,7 @@ class Game {
       'category': category,
       'tags': tags,
       'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
+      'externalLinks': externalLinks.map((link) => link.toJson()).toList(),
       'musicUrl': musicUrl ?? "", // String?
       'bvid': bvid ?? "", // String?
       // 'rating' 等统计字段由后端计算，'createTime', 'updateTime' 由后端管理
@@ -296,8 +213,9 @@ class Game {
       updateTime: DateTime.fromMillisecondsSinceEpoch(0),
       viewCount: 0,
       likeCount: 0,
-      likedBy: [],
+      coinsCount: 0,
       downloadLinks: [],
+      externalLinks: [],
       musicUrl: null,
       bvid: null,
       lastViewedAt: null,
@@ -333,8 +251,9 @@ class Game {
     DateTime? updateTime,
     int? viewCount,
     int? likeCount,
-    List<String>? likedBy,
+    int? coinsCount,
     List<GameDownloadLink>? downloadLinks,
+    List<GameExternalLink>? externalLinks,
     String? musicUrl,
     ValueGetter<String?>? bvid,
     DateTime? lastViewedAt,
@@ -367,8 +286,9 @@ class Game {
       updateTime: updateTime ?? this.updateTime,
       viewCount: viewCount ?? this.viewCount,
       likeCount: likeCount ?? this.likeCount,
-      likedBy: likedBy ?? this.likedBy,
+      coinsCount: coinsCount ?? this.coinsCount,
       downloadLinks: downloadLinks ?? this.downloadLinks,
+      externalLinks: externalLinks ?? this.externalLinks,
       musicUrl: musicUrl ?? this.musicUrl,
       bvid: bvid != null ? bvid() : this.bvid,
       lastViewedAt: lastViewedAt ?? this.lastViewedAt,
@@ -388,13 +308,14 @@ class Game {
 }
 
 // 游戏下载链接模型
+@immutable
 class GameDownloadLink {
   final String id;
   final String title;
   final String description;
   final String url;
 
-  GameDownloadLink({
+  const GameDownloadLink({
     required this.id,
     required this.title,
     required this.description,
@@ -404,10 +325,10 @@ class GameDownloadLink {
   // 从 JSON 解析 GameDownloadLink
   factory GameDownloadLink.fromJson(Map<String, dynamic> json) {
     return GameDownloadLink(
-      id: json['id']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      description: json['description']?.toString() ?? '',
-      url: json['url']?.toString() ?? '',
+      id: UtilJson.parseStringSafely(json['id']),
+      title: UtilJson.parseStringSafely(json['title']),
+      description: UtilJson.parseStringSafely(json['description']),
+      url: UtilJson.parseStringSafely(json['url']),
     );
   }
 
@@ -427,6 +348,42 @@ class GameDownloadLink {
       id: '',
       title: '',
       description: '',
+      url: '',
+    );
+  }
+}
+
+// 游戏关联链接模型
+@immutable
+class GameExternalLink {
+  final String title;
+  final String url;
+
+  const GameExternalLink({
+    required this.title,
+    required this.url,
+  });
+
+  // 从 JSON 解析 GameDownloadLink
+  factory GameExternalLink.fromJson(Map<String, dynamic> json) {
+    return GameExternalLink(
+      title: UtilJson.parseStringSafely(json['title']),
+      url: UtilJson.parseStringSafely(json['url']),
+    );
+  }
+
+  // 将 GameDownloadLink 转换为 JSON 格式
+  Map<String, dynamic> toJson() {
+    return {
+      'title': title,
+      'url': url,
+    };
+  }
+
+  // 创建一个空的 GameDownloadLink 对象
+  static GameExternalLink empty() {
+    return GameExternalLink(
+      title: '',
       url: '',
     );
   }

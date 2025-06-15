@@ -50,7 +50,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   bool _hasInitializedDependencies = false;
 
   int _currentPage = 1;
-  final int _pageSize = 15; // 每页加载数量
 
   @override
   void initState() {
@@ -170,7 +169,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
         final results = await widget.gameService.searchGames(
           query: trimmedQuery,
           page: _currentPage,
-          pageSize: _pageSize,
         );
         if (!mounted) return;
 
@@ -210,7 +208,6 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
       final results = await widget.gameService.searchGames(
         query: _searchController.text.trim(),
         page: _currentPage,
-        pageSize: _pageSize,
       );
       if (!mounted) return;
 

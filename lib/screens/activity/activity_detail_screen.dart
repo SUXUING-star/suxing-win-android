@@ -1,6 +1,8 @@
 // lib/screens/activity/activity_detail_screen.dart
 
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/activity/activity_detail_param.dart';
+import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/user/user_info_provider.dart';
@@ -18,11 +20,10 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackbar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
 
 class ActivityDetailScreen extends StatefulWidget {
-  final String activityId;
-  final UserActivity? activity;
+  final ActivityDetailParam? activityDetailParam;
   final AuthProvider authProvider;
   final ActivityService activityService;
   final UserFollowService followService;
@@ -32,14 +33,13 @@ class ActivityDetailScreen extends StatefulWidget {
 
   const ActivityDetailScreen({
     super.key,
-    required this.activityId,
+    this.activityDetailParam,
     required this.activityService,
     required this.followService,
     required this.authProvider,
     required this.inputStateService,
     required this.infoProvider,
     required this.windowStateProvider,
-    this.activity,
   });
 
   @override
@@ -48,12 +48,15 @@ class ActivityDetailScreen extends StatefulWidget {
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   late UserActivity _activity;
+  late String _activityId;
+  late ActivityNavigationInfo? _navigationInfo;
+  late String _feedType;
+  late int _listPageNum;
   bool _isLoading = true;
   final bool _isLoadingComments = false;
   String _error = '';
   final ScrollController _scrollController = ScrollController();
   int _refreshCounter = 0;
-
   bool _hasInitializedDependencies = false;
 
   @override
@@ -61,9 +64,18 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     super.initState();
     _scrollController.addListener(_scrollListener);
 
-    if (widget.activity != null) {
-      _activity = widget.activity!;
-      _isLoading = false; // 标记为非加载状态
+    final activityDetailParam = widget.activityDetailParam;
+    if (activityDetailParam != null) {
+      _activity = activityDetailParam.activity;
+      _listPageNum = activityDetailParam.listPageNum;
+      _feedType = activityDetailParam.feedType;
+      _activityId = activityDetailParam.activityId;
+      _initNavigationInfo();
+    }
+
+    if (activityDetailParam == null) {
+      _error = '无法找到该活动记录';
+      _navigationInfo = null;
     }
   }
 
@@ -73,10 +85,25 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
     }
-    if (_hasInitializedDependencies) {
+    if (_hasInitializedDependencies && _error == '') {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _initializeActivity();
       });
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant ActivityDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.activityDetailParam?.activityId !=
+        oldWidget.activityDetailParam?.activityId) {
+      final activityDetailParam = widget.activityDetailParam;
+      if (activityDetailParam != null) {
+        _activity = activityDetailParam.activity;
+        _listPageNum = activityDetailParam.listPageNum;
+        _feedType = activityDetailParam.feedType;
+        _activityId = activityDetailParam.activityId;
+      }
     }
   }
 
@@ -87,11 +114,22 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     super.dispose();
   }
 
+  Future<void> _initNavigationInfo() async {
+    _navigationInfo = await widget.activityService.getActivityNavInfoFromCache(
+      currentActivityId: _activityId,
+      feedType: _feedType,
+      currentPageNum: _listPageNum,
+    );
+  }
+
   // 封装初始化逻辑
   void _initializeActivity() {
-    if (widget.activity != null) {
+    final activityDetailParam = widget.activityDetailParam;
+    if (activityDetailParam != null) {
       setStateIfMounted(() {
-        _activity = widget.activity!;
+        _activity = activityDetailParam.activity;
+        _listPageNum = activityDetailParam.listPageNum;
+        _feedType = activityDetailParam.feedType;
         _isLoading = false;
       });
     } else {
@@ -119,8 +157,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
       _error = '';
     });
     try {
-      final activity =
-          await widget.activityService.getActivityDetail(widget.activityId);
+      // 这行根本就不会进行的
+      final activity = await widget.activityService.getActivityDetail(
+        _activityId,
+      );
       if (activity == null) {
         _error = '未能加载活动详情';
       } else {
@@ -141,34 +181,44 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     await _loadActivity();
   }
 
-  Future<void> _handleLike() async {
+  Future<bool> _handleLike() async {
     if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
+      return false;
     }
     HapticFeedback.lightImpact();
     final bool currentlyLiked = _activity.isLiked;
     final int currentLikesCount = _activity.likesCount;
-    setStateIfMounted(() {
-      _activity.isLiked = !currentlyLiked;
-      _activity.likesCount =
-          currentlyLiked ? currentLikesCount - 1 : currentLikesCount + 1;
-    });
+
     try {
       bool success = currentlyLiked
-          ? await widget.activityService.unlikeActivity(_activity.id)
-          : await widget.activityService.likeActivity(_activity.id);
+          ? await widget.activityService.unlikeActivity(
+              _activity.id,
+              feedType: _feedType,
+            )
+          : await widget.activityService.likeActivity(
+              _activity.id,
+              feedType: _feedType,
+            );
       if (!success) {
-        throw Exception('发生异常报错'); // 抛出异常以便 catch 处理回滚
+        AppSnackBar.showError('操作失败'); // 抛出异常以便 catch 处理回滚
+      } else {
+        setStateIfMounted(() {
+          _activity.isLiked = !currentlyLiked;
+          _activity.likesCount =
+              currentlyLiked ? currentLikesCount - 1 : currentLikesCount + 1;
+        });
       }
+      await widget.activityService
+          .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+        _activity,
+        feedType: _feedType,
+        pageNum: _listPageNum,
+      );
+      return success;
     } catch (e) {
-      setStateIfMounted(() {
-        // 回滚 UI
-        _activity.isLiked = currentlyLiked;
-        _activity.likesCount = currentLikesCount;
-      });
-
       AppSnackBar.showError('操作失败，请稍后重试');
+      return false;
     }
   }
 
@@ -179,18 +229,25 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
     if (content.trim().isEmpty) return;
     try {
-      final comment =
-          await widget.activityService.commentOnActivity(_activity.id, content);
+      final comment = await widget.activityService.commentOnActivity(
+        _activity.id,
+        content,
+        feedType: _feedType,
+      );
       if (comment != null) {
         setStateIfMounted(() {
           _activity.comments.insert(0, comment);
           _activity.commentsCount += 1;
           _refreshCounter++; // 强制刷新
         });
-        // 滚动逻辑 (可选)
-        // if (_scrollController.hasClients) { ... }
+        await widget.activityService
+            .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+          _activity,
+          feedType: _feedType,
+          pageNum: _listPageNum,
+        );
       } else {
-        throw Exception('Comment creation failed');
+        AppSnackBar.showError("操作失败");
       }
     } catch (e) {
       if (mounted) {
@@ -225,8 +282,11 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         iconColor: Colors.red,
         onConfirm: () async {
           try {
-            final success = await widget.activityService
-                .deleteComment(_activity.id, comment);
+            final success = await widget.activityService.deleteComment(
+              _activity.id,
+              comment,
+              feedType: _feedType,
+            );
             if (success && mounted) {
               // --- 从本地列表移除评论并更新计数 ---
               setStateIfMounted(() {
@@ -234,8 +294,16 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 _activity.commentsCount = _activity.comments.length;
                 _refreshCounter++; // 强制 UI 刷新
               });
+              await widget.activityService
+                  .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+                _activity,
+                feedType: _feedType,
+                pageNum: _listPageNum,
+              );
               AppSnackBar.showSuccess('评论已删除');
             } else if (mounted) {
+              throw Exception("删除评论失败");
+            } else if (!success) {
               throw Exception("删除评论失败");
             }
           } catch (e) {
@@ -245,21 +313,55 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         });
   }
 
-  void _handleCommentLikeToggled(ActivityComment updatedComment) {
-    if (!widget.authProvider.isLoggedIn) {
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
-    setStateIfMounted(() {
-      // 在 _activity!.comments 中找到对应的评论并替换
-      final index =
-          _activity.comments.indexWhere((c) => c.id == updatedComment.id);
-      if (index != -1) {
-        _activity.comments[index] = updatedComment; // 使用更新后的对象替换旧的
-        // 不需要强制刷新计数器了，因为 Service 调用 -> 缓存失效 -> 监听器刷新 会处理
-        // _refreshCounter++;
+  Future<bool> _handleCommentLikeToggled(
+    ActivityComment updatedComment,
+    bool action,
+  ) async {
+    try {
+      if (!widget.authProvider.isLoggedIn) {
+        AppSnackBar.showLoginRequiredSnackBar(context);
+        return false;
       }
-    });
+      bool success;
+      if (action) {
+        success = await widget.activityService.likeComment(
+          _activity.id,
+          updatedComment.id,
+          feedType: _feedType,
+        );
+      } else {
+        success = await widget.activityService.unlikeComment(
+          _activity.id,
+          updatedComment.id,
+          feedType: _feedType,
+        );
+      }
+
+      if (success) {
+        AppSnackBar.showSuccess("操作成功");
+      } else {
+        AppSnackBar.showError("操作失败");
+      }
+
+      setStateIfMounted(() {
+        // 在 _activity!.comments 中找到对应的评论并替换
+        final index =
+            _activity.comments.indexWhere((c) => c.id == updatedComment.id);
+        if (index != -1) {
+          _activity.comments[index] = updatedComment; // 使用更新后的对象替换旧的
+        }
+      });
+      await widget.activityService
+          .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+        _activity,
+        feedType: _feedType,
+        pageNum: _listPageNum,
+      );
+      return success;
+    } catch (e) {
+      AppSnackBar.showError("操作失败,${e.toString()}");
+      return false;
+    }
   }
 
   // --- 编辑活动处理 ---
@@ -293,16 +395,23 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
 
           try {
             // 调用服务更新活动
-            final success = await widget.activityService
-                .updateActivity(_activity, newText, _activity.metadata);
+            final (success, updatedActivity) =
+                await widget.activityService.updateActivity(
+              _activity,
+              newText,
+              _activity.metadata,
+              feedType: _feedType,
+            );
 
             if (success) {
+              UserActivity updatedActivityForCache;
               // 更新本地状态
-              setStateIfMounted(() {
+              // 创建一个新的 UserActivity 实例，复制旧数据并更新字段
+              if (updatedActivity != null) {
+                updatedActivityForCache = updatedActivity;
+              } else {
                 final currentActivity = _activity;
-                // 创建一个新的 UserActivity 实例，复制旧数据并更新字段
-
-                _activity = UserActivity(
+                updatedActivityForCache = UserActivity(
                   id: currentActivity.id,
                   userId: currentActivity.userId,
                   type: currentActivity.type,
@@ -320,7 +429,17 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                   metadata: currentActivity.metadata, // 复制旧值
                   comments: currentActivity.comments, // 复制旧值
                 );
-                _refreshCounter++; // 强制刷新UI
+              }
+              await widget.activityService
+                  .tryCacheActivitiesAfterUpdateActivityNotChangePagination(
+                updatedActivityForCache,
+                feedType: _feedType,
+                pageNum: _listPageNum,
+              );
+              setStateIfMounted(() {
+                _refreshCounter++;
+                _activity = updatedActivityForCache;
+                // 强制刷新UI
               });
               if (mounted) {
                 AppSnackBar.showSuccess('动态更新成功');
@@ -378,8 +497,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         onConfirm: () async {
           // onConfirm 是异步的
           try {
-            final success =
-                await widget.activityService.deleteActivity(_activity);
+            final success = await widget.activityService.deleteActivity(
+              _activity,
+              feedType: _feedType,
+            );
             if (success) {
               if (mounted) {
                 // 删除成功后，关闭当前页面
@@ -434,8 +555,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           windowStateProvider: widget.windowStateProvider,
           builder: (context, constraints) {
             final screenWidth = constraints.maxWidth;
-            final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+            final isDesktopLayout =
+                DeviceUtils.isDesktopInThisWidth(screenWidth);
             return ActivityDetailContent(
+              navigationInfo: _navigationInfo,
               inputStateService: widget.inputStateService,
               key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
               currentUser: widget.authProvider.currentUser,
@@ -448,7 +571,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               scrollController: _scrollController,
               onAddComment: _addComment,
               onCommentDeleted: _handleCommentDeleted,
-              onCommentLikeToggled: _handleCommentLikeToggled,
+              onCommentLike: (comment) =>
+                  _handleCommentLikeToggled(comment, true),
+              onCommentUnLike: (comment) =>
+                  _handleCommentLikeToggled(comment, false),
               onActivityUpdated: _handleActivityUpdated, // 传递更新回调
               onEditActivity: _handleEditActivity, // 传递编辑回调
               onDeleteActivity: _handleDeleteActivity, // 传递删除回调

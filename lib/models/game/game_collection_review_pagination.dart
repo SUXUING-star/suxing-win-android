@@ -71,19 +71,19 @@ class GameCollectionReviewPagination {
 
   Map<String, dynamic> toJson() {
     return {
-      'reviews': reviews.map((entry) => entry.toJson()).toList(),
+      'reviews': reviews.map((r) => r.toJson()).toList(),
       'pagination': pagination.toJson(),
       'gameId': gameId,
     };
   }
 
   GameCollectionReviewPagination copyWith({
-    List<GameCollectionReviewEntry>? entries,
+    List<GameCollectionReviewEntry>? reviews,
     PaginationData? pagination,
     String? gameId,
   }) {
     return GameCollectionReviewPagination(
-      reviews: entries ?? reviews,
+      reviews: reviews ?? this.reviews,
       pagination: pagination ?? this.pagination,
       gameId: gameId ?? this.gameId,
     );

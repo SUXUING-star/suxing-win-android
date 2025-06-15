@@ -1,32 +1,50 @@
 // lib/widgets/components/screen/game/image/game_images.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/screens/game/detail/image_preview_screen.dart';
-import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 
+/// 该文件定义了 GameImages 组件，用于显示游戏截图列表。
+/// GameImages 在水平滚动视图中展示游戏截图，并支持点击预览大图。
+library;
+
+import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
+import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
+import 'package:suxingchahui/screens/game/detail/image_preview_screen.dart'; // 图片预览屏幕
+import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 安全缓存图片组件
+
+/// `GameImages` 类：游戏截图显示组件。
+///
+/// 该组件负责在卡片中显示游戏截图列表，并提供点击预览功能。
 class GameImages extends StatelessWidget {
-  final Game game;
+  final Game game; // 游戏数据
 
+  /// 构造函数。
+  ///
+  /// [key]：Widget 的 Key。
+  /// [game]：要显示截图的游戏数据。
   const GameImages({
     super.key,
     required this.game,
   });
 
+  /// 构建 Widget。
+  ///
+  /// 如果游戏截图列表为空，返回空 Widget。
+  /// 否则，显示“游戏截图”标题和水平滚动的截图列表。
   @override
   Widget build(BuildContext context) {
     if (game.images.isEmpty) {
-      return const SizedBox.shrink();
+      // 游戏截图列表为空时
+      return const SizedBox.shrink(); // 返回空 Widget
     }
 
     return Container(
-      margin: const EdgeInsets.symmetric(vertical: 16),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.symmetric(vertical: 16), // 垂直外边距
+      padding: const EdgeInsets.all(16), // 内边距
       decoration: BoxDecoration(
-        color: Colors.white.withSafeOpacity(0.9),
-        borderRadius: BorderRadius.circular(12),
+        color: Colors.white.withSafeOpacity(0.9), // 背景颜色
+        borderRadius: BorderRadius.circular(12), // 圆角
         boxShadow: [
+          // 阴影
           BoxShadow(
             color: Colors.black.withSafeOpacity(0.05),
             blurRadius: 10,
@@ -35,7 +53,7 @@ class GameImages extends StatelessWidget {
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴对齐
         children: [
           Row(
             children: [
@@ -43,13 +61,13 @@ class GameImages extends StatelessWidget {
                 width: 4,
                 height: 20,
                 decoration: BoxDecoration(
-                  color: Theme.of(context).primaryColor,
-                  borderRadius: BorderRadius.circular(2),
+                  color: Theme.of(context).primaryColor, // 主题色
+                  borderRadius: BorderRadius.circular(2), // 圆角
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 8), // 间距
               Text(
-                '游戏截图',
+                '游戏截图', // 标题文本
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -58,14 +76,15 @@ class GameImages extends StatelessWidget {
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 12), // 间距
           SizedBox(
-            height: 180,
+            height: 180, // 固定高度
             child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: EdgeInsets.symmetric(horizontal: 12),
-              itemCount: game.images.length,
-              itemBuilder: (context, index) => _buildImageItem(context, index),
+              scrollDirection: Axis.horizontal, // 水平滚动
+              padding: const EdgeInsets.symmetric(horizontal: 12), // 水平内边距
+              itemCount: game.images.length, // 列表项数量
+              itemBuilder: (context, index) =>
+                  _buildImageItem(context, index), // 构建图片项
             ),
           ),
         ],
@@ -73,12 +92,18 @@ class GameImages extends StatelessWidget {
     );
   }
 
+  /// 构建单个游戏截图项。
+  ///
+  /// [context]：Build 上下文。
+  /// [index]：截图索引。
+  /// 返回一个包含缓存图片和阴影的 GestureDetector Widget。
   Widget _buildImageItem(BuildContext context, int index) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: 4),
+      margin: const EdgeInsets.symmetric(horizontal: 4), // 水平外边距
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(12), // 圆角
         boxShadow: [
+          // 阴影
           BoxShadow(
             color: Colors.black.withSafeOpacity(0.1),
             blurRadius: 8,
@@ -87,19 +112,21 @@ class GameImages extends StatelessWidget {
         ],
       ),
       child: GestureDetector(
-        onTap: () => _showImagePreview(context, index),
+        onTap: () => _showImagePreview(context, index), // 点击时显示图片预览
         child: Hero(
-          tag: 'game_image_$index',
+          // Hero 动画
+          tag: 'game_image_$index', // 动画标签
           child: ClipRRect(
+            // 圆角裁剪
             borderRadius: BorderRadius.circular(12),
             child: SafeCachedImage(
-              imageUrl: game.images[index],
-              width: 280,
-              height: 180,
-              fit: BoxFit.cover,
-              memCacheWidth: 560, // 2倍于显示宽度
+              imageUrl: game.images[index], // 图片 URL
+              width: 280, // 宽度
+              height: 180, // 高度
+              fit: BoxFit.cover, // 填充模式
+              memCacheWidth: 560, // 内存缓存宽度（2倍于显示宽度）
               onError: (url, error) {
-                // print('游戏截图加载失败: $url, 错误: $error');
+                // 图片加载错误回调
               },
             ),
           ),
@@ -108,13 +135,19 @@ class GameImages extends StatelessWidget {
     );
   }
 
+  /// 显示图片预览。
+  ///
+  /// [context]：Build 上下文。
+  /// [initialIndex]：初始显示图片的索引。
+  /// 导航到 `ImagePreviewScreen`。
   void _showImagePreview(BuildContext context, int initialIndex) {
     NavigationUtils.push(
+      // 导航到新路由
       context,
       MaterialPageRoute(
         builder: (_) => ImagePreviewScreen(
-          images: game.images,
-          initialIndex: initialIndex,
+          images: game.images, // 图片列表
+          initialIndex: initialIndex, // 初始索引
         ),
       ),
     );

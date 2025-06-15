@@ -1,5 +1,9 @@
 // lib/models/user/account.dart
 
+
+import 'package:meta/meta.dart';
+
+@immutable
 class SavedAccount {
   final String email;
   final String password;
