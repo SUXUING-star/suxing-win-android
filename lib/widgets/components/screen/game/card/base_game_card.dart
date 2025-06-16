@@ -76,11 +76,6 @@ class BaseGameCard extends StatelessWidget {
   /// 根据游戏审核状态和布局类型选择构建不同样式的卡片。
   @override
   Widget build(BuildContext context) {
-    if (game.approvalStatus == GameStatus.pending ||
-        game.approvalStatus == GameStatus.rejected) {
-      // 游戏处于待审核或已拒绝状态时
-      return const SizedBox.shrink(); // 返回空组件
-    }
     return isGridItem
         ? _buildGridCard(context)
         : _buildListCard(context); // 根据是否为网格项选择构建方法

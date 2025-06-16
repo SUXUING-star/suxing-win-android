@@ -105,7 +105,10 @@ class _EditGameScreenState extends State<EditGameScreen> {
     if (!mounted) return;
 
     try {
-      await widget.gameService.updateGame(gameDataFromForm);
+      final oldGame = _game;
+      if (oldGame == null) return;
+      await widget.gameService
+          .updateGame(updateGame: gameDataFromForm, oldGame: oldGame);
 
       // API 调用成功
       if (!mounted) return;

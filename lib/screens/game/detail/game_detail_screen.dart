@@ -1007,13 +1007,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         );
       }
       // --- 统一处理所有网络相关的错误 ---
-      const networkErrors = {
-        BackendApiErrorCodes.networkNoConnection,
-        BackendApiErrorCodes.networkTimeout,
-        BackendApiErrorCodes.networkHostLookupFailed,
-        BackendApiErrorCodes.networkGenericError,
-      };
-      if (networkErrors.contains(_error)) {
+
+      if (BackendApiErrorCodes.networkErrors.contains(_error)) {
         return NetworkErrorWidget(
           onRetry: () => _loadGameDetailsWithStatus(forceRefresh: true),
           useScaffold: true,

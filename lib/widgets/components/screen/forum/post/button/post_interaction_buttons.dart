@@ -185,7 +185,7 @@ class _PostInteractionButtonsState extends State<PostInteractionButtons> {
         );
 
         // --- 调用 Service 写入缓存 ---
-        await widget.postService.cacheNewPostData(newPost, newActions);
+        await widget.postService.cacheNewPostDataAndPostActionData(newPost, newActions);
 
         // --- 更新本地 UI 计数为最终确认的值 ---
         // （如果 API 返回的状态与乐观更新不符，这里会修正计数的显示）

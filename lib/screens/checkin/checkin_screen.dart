@@ -208,6 +208,10 @@ class _CheckInScreenState extends State<CheckInScreen>
 
     try {
       final result = await widget.checkInService.performCheckIn();
+      final currentUserId = _currentUser?.id;
+      if (currentUserId != null) {
+        await widget.infoProvider.refreshUserInfo(currentUserId);
+      }
 
       if (mounted) {
         _particleController.reset();

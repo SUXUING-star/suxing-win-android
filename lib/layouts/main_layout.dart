@@ -190,6 +190,7 @@ class _MainLayoutState extends State<MainLayout> {
         inputStateService: widget.inputStateService,
         fileUpload: widget.fileUpload,
         windowStateProvider: widget.windowStateProvider,
+        infoProvider: widget.infoProvider,
       ),
     ];
   }

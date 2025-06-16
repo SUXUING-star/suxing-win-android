@@ -75,7 +75,6 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
 
   Future<void> _handlePullToRefresh() async {
     _loadTargetUserData(forceRefresh: true);
-    widget.authProvider.refreshUserState(); // 使用正确的函数名
   }
 
   @override

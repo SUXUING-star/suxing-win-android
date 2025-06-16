@@ -23,7 +23,7 @@ class PostGridView extends StatelessWidget {
   final UserInfoProvider infoProvider;
   final Future<void> Function(Post post)? onDeleteAction;
   final void Function(Post post)? onEditAction;
-  final Future<void> Function(String postId)? onToggleLockAction;
+  final Future<void> Function(Post post)? onToggleLockAction;
   final bool isDesktopLayout;
   final double availableWidth;
 

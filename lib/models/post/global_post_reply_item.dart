@@ -1,5 +1,6 @@
 // lib/models/post/global_post_reply_item.dart
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/post/post_reply.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
@@ -60,5 +61,17 @@ class GlobalPostReplyItem {
       'authorId': authorId,
       'createTime': createTime.toIso8601String(),
     };
+  }
+
+  factory GlobalPostReplyItem.fromReply(
+      GlobalPostReplyItem originalGlobalReply, PostReply newReply) {
+    return GlobalPostReplyItem(
+      id: originalGlobalReply.id,
+      postId: originalGlobalReply.id,
+      postTitle: originalGlobalReply.postTitle,
+      content: newReply.content,
+      authorId: originalGlobalReply.authorId,
+      createTime: originalGlobalReply.createTime,
+    );
   }
 }

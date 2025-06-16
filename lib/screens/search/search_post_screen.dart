@@ -361,19 +361,19 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     });
   }
 
-  Future<void> _handleToggleLockAction(String postId) async {
+  Future<void> _handleToggleLockAction(Post post) async {
     if (!mounted) return;
     if (!widget.authProvider.isAdmin) {
       AppSnackBar.showPermissionDenySnackBar();
       return;
     }
     try {
-      await widget.postService.togglePostLock(postId);
+      await widget.postService.togglePostLock(post);
       if (!mounted) return;
       AppSnackBar.showSuccess('帖子状态已切换');
       // 更新列表中的状态
       setState(() {
-        final index = _searchResults.indexWhere((p) => p.id == postId);
+        final index = _searchResults.indexWhere((p) => p.id == post.id);
         if (index != -1) {
           final oldPost = _searchResults[index];
           final newStatus = oldPost.status == PostStatus.locked

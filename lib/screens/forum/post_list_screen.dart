@@ -821,7 +821,7 @@ class _PostListScreenState extends State<PostListScreen>
   /// 处理帖子卡片的锁定/解锁请求。
   ///
   /// [postId]：要操作的帖子 ID。
-  Future<void> _handleToggleLockFromCard(String postId) async {
+  Future<void> _handleToggleLockFromCard(Post post) async {
     if (!widget.authProvider.isLoggedIn) {
       // 用户未登录时提示登录
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -833,7 +833,7 @@ class _PostListScreenState extends State<PostListScreen>
       return;
     }
     try {
-      await widget.postService.togglePostLock(postId); // 调用切换帖子锁定状态服务
+      await widget.postService.togglePostLock(post); // 调用切换帖子锁定状态服务
       if (!mounted) return; // 组件未挂载时返回
       AppSnackBar.showSuccess('帖子状态已切换'); // 提示状态已切换
       await _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据

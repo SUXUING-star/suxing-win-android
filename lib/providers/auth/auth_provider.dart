@@ -155,11 +155,11 @@ class AuthProvider {
 
       User? determinedUser; // 最终确定的用户对象
       try {
-        final String? token = await _userService.getToken(); // 获取本地存储的认证 Token
+        final String? token = _userService.getAuthToken(); // 获取本地存储的认证 Token
         if (token == null) {
           determinedUser = null; // 无 Token，则无用户
         } else {
-          final savedUserId = await _userService.currentUserId; // 获取本地存储的用户ID
+          final savedUserId = _userService.currentUserId; // 获取本地存储的用户ID
           if (savedUserId != null && savedUserId.isNotEmpty) {
             try {
               determinedUser =
@@ -281,8 +281,8 @@ class AuthProvider {
   /// 获取当前用户的认证 Token。
   ///
   /// 从 UserService 获取 Token。
-  Future<String?> getAuthToken() {
-    return _userService.getToken();
+  String? getAuthToken() {
+    return _userService.getAuthToken();
   }
 
   /// 清理资源。

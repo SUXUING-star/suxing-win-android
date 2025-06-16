@@ -28,7 +28,7 @@ class BasePostCard extends StatelessWidget {
   final double availableWidth;
   final Future<void> Function(Post post)? onDeleteAction; // 删除操作回调
   final void Function(Post post)? onEditAction; // 编辑操作回调
-  final Future<void> Function(String postId)? onToggleLockAction; // 切换锁定状态回调
+  final Future<void> Function(Post post)? onToggleLockAction; // 切换锁定状态回调
   final bool showPinnedStatus; // 是否显示帖子的置顶状态高亮
 
   final int? contentMaxLines;
@@ -385,7 +385,7 @@ class BasePostCard extends StatelessWidget {
       final callback = onToggleLockAction;
       if (callback != null) {
         try {
-          await callback(post.id.toString()); // 执行切换锁定回调
+          await callback(post); // 执行切换锁定回调
         } catch (e) {
           // 错误处理
         }

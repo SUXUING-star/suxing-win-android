@@ -333,7 +333,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       _isTogglingLock = true;
     });
     try {
-      await widget.postService.togglePostLock(widget.postId);
+      await widget.postService.togglePostLock(_post!);
       if (!mounted) return;
       AppSnackBar.showSuccess('帖子状态已切换');
       _hasInteraction = true;
@@ -370,7 +370,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
     try {
       // 调用 Service 方法
-      await widget.postService.togglePostPin(widget.postId);
+      await widget.postService.togglePostPin(_post!);
 
       if (!mounted) return;
       // 更新本地状态
