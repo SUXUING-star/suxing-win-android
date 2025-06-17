@@ -15,7 +15,7 @@ class GameComment {
   final String? parentId;
   final List<GameComment> replies; // 注意：嵌套回复的处理
 
-  GameComment({
+  const GameComment({
     required this.id,
     required this.gameId,
     required this.userId,

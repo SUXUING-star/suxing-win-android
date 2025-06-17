@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 
 class ActivityCommentItem extends StatefulWidget {
   final ActivityComment comment;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final UserFollowService userFollowService;
   final User? currentUser;
   final String activityId;
@@ -22,7 +22,7 @@ class ActivityCommentItem extends StatefulWidget {
   const ActivityCommentItem({
     super.key,
     required this.comment,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.userFollowService,
     required this.currentUser,
     required this.activityId,
@@ -99,7 +99,7 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
           // 将 UserInfoBadge 放在 Expanded 里，允许名字过长时换行或省略
           Expanded(
             child: UserInfoBadge(
-              infoProvider: widget.userInfoProvider,
+              infoService: widget.userInfoService,
               followService: widget.userFollowService,
               currentUser: widget.currentUser,
               targetUserId: _comment.userId,

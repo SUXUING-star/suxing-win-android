@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/user/user_with_ban_status.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/services/main/user/user_ban_service.dart';
 import 'package:intl/intl.dart';
@@ -26,7 +26,7 @@ class UserManagement extends StatefulWidget {
   final UserService userService;
   final InputStateService inputStateService;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
 
   const UserManagement({
@@ -35,7 +35,7 @@ class UserManagement extends StatefulWidget {
     required this.userService,
     required this.inputStateService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -422,7 +422,7 @@ class _UserManagementState extends State<UserManagement> {
             // 用户信息徽章
             Expanded(
               child: UserInfoBadge(
-                infoProvider: widget.infoProvider,
+                infoService: widget.infoService,
                 followService: widget.followService,
                 targetUserId: targetUser.id,
                 currentUser: _currentUser,

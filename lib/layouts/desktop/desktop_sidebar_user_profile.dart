@@ -120,25 +120,22 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                   alignment: Alignment.center, // 堆栈内容居中
                   children: [
                     Container(
-                      width: 40, // 宽度
-                      height: 40, // 高度
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle, // 形状为圆形
-                        border:
-                            Border.all(color: Colors.white, width: 1.5), // 边框
-                      ),
-                      child: user.avatar != null // 根据是否有头像 URL 显示不同内容
-                          ? SafeUserAvatar(
-                              userId: user.id, // 用户ID
-                              avatarUrl: user.avatar, // 头像 URL
-                              username: user.username, // 用户名
-                              radius: 50, // 半径
-                              enableNavigation: false, // 禁用导航
-                              memCacheWidth: calculatedMemCacheSize, // 内存缓存宽度
-                              memCacheHeight: calculatedMemCacheSize, // 内存缓存高度
-                            )
-                          : _fallbackAvatar(user.username), // 备用头像
-                    ),
+                        width: 40, // 宽度
+                        height: 40, // 高度
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle, // 形状为圆形
+                          border:
+                              Border.all(color: Colors.white, width: 1.5), // 边框
+                        ),
+                        child: SafeUserAvatar(
+                          userId: user.id, // 用户ID
+                          avatarUrl: user.avatar, // 头像 URL
+                          username: user.username, // 用户名
+                          radius: 50, // 半径
+                          enableNavigation: false, // 禁用导航
+                          memCacheWidth: calculatedMemCacheSize, // 内存缓存宽度
+                          memCacheHeight: calculatedMemCacheSize, // 内存缓存高度
+                        )),
                     Positioned(
                       right: 0, // 右侧对齐
                       bottom: 0, // 底部对齐
@@ -183,33 +180,6 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  /// 构建备用头像。
-  ///
-  /// [username]：用户名。
-  /// 当无法加载网络头像或用户没有设置头像时，显示默认头像。
-  Widget _fallbackAvatar(String? username) {
-    return Container(
-      width: 40, // 宽度
-      height: 40, // 高度
-      decoration: BoxDecoration(
-        shape: BoxShape.circle, // 形状为圆形
-        color: Colors.white.withSafeOpacity(0.2), // 背景色
-      ),
-      child: Center(
-        child: Text(
-          (username != null && username.isNotEmpty)
-              ? username[0].toUpperCase() // 显示用户名首字母大写
-              : '?', // 无用户名时显示问号
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-            color: Colors.white,
           ),
         ),
       ),

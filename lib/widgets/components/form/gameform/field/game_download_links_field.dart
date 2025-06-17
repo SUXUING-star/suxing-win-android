@@ -8,7 +8,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class GameDownloadLinksField extends StatelessWidget {
   final List<GameDownloadLink> downloadLinks;

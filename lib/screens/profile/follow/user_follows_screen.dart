@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
@@ -21,8 +20,7 @@ class UserFollowsScreen extends StatefulWidget {
   final bool initialShowFollowing;
   final UserFollowService followService;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
-  final UserService userService;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
 
   const UserFollowsScreen({
@@ -31,8 +29,7 @@ class UserFollowsScreen extends StatefulWidget {
     required this.username,
     required this.authProvider,
     required this.followService,
-    required this.infoProvider,
-    required this.userService,
+    required this.infoService,
     required this.windowStateProvider,
     this.initialShowFollowing = true,
   });
@@ -61,7 +58,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
   void _loadTargetUserData({bool forceRefresh = false}) {
     if (_targetUserFuture == null || forceRefresh) {
       setState(() {
-        _targetUserFuture = widget.userService
+        _targetUserFuture = widget.infoService
             .getUserInfoById(widget.userId, forceRefresh: forceRefresh);
       });
     }
@@ -147,7 +144,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
                   viewingUserId: widget.userId,
                   tabController: _tabController,
                   followService: widget.followService,
-                  infoProvider: widget.infoProvider,
+                  infoService: widget.infoService,
                   followingsIDs: followingIDsForLayout,
                   followersIDs: followerIDsForLayout,
                   isLoadingTargetUser: targetUserSnapshot.connectionState ==

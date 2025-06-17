@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
 import 'package:suxingchahui/widgets/components/screen/game/category/game_category_tag.dart'; // 游戏分类标签组件
@@ -25,7 +25,7 @@ class GameHeader extends StatelessWidget {
   final bool isDesktop; // 是否为桌面平台
   final Game game; // 游戏数据
   final User? currentUser; // 当前登录用户
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final UserFollowService followService; // 用户关注服务
   final Function(BuildContext context, String category)?
       onClickFilterGameCategory; // 点击游戏分类的回调
@@ -61,7 +61,7 @@ class GameHeader extends StatelessWidget {
     required this.isDesktop,
     required this.game,
     required this.currentUser,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     this.onClickFilterGameCategory,
     this.onClickFilterGameTag,
@@ -271,7 +271,7 @@ class GameHeader extends StatelessWidget {
           children: [
             UserInfoBadge(
               // 用户信息徽章
-              infoProvider: infoProvider,
+              infoService: infoService,
               followService: followService,
               targetUserId: game.authorId,
               currentUser: currentUser,

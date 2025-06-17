@@ -8,7 +8,7 @@ import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 void showAnnouncementDialog(
   BuildContext context,

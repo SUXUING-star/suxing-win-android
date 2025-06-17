@@ -12,7 +12,7 @@ import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
 import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart'; // 导入最新游戏组件
@@ -39,7 +39,7 @@ class HomeScreen extends StatefulWidget {
   final GameService gameService; // 游戏服务
   final PostService postService; // 帖子服务
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
 
   final WindowStateProvider windowStateProvider;
 
@@ -56,7 +56,7 @@ class HomeScreen extends StatefulWidget {
     required this.gameService,
     required this.postService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -895,7 +895,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       currentUser: widget.authProvider.currentUser, // 当前用户
       followService: widget.followService, // 关注服务
       screenWidth: _screenWidth,
-      infoProvider: widget.infoProvider, // 用户信息 Provider
+      infoService: widget.infoService, // 用户信息 Provider
       posts: _hotPostsData, // 帖子数据
       isLoading: _isHotPostsLoading, // 是否加载中
       errorMessage: _hotPostsError, // 错误消息

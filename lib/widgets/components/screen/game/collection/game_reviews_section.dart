@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
 import 'package:suxingchahui/models/game/game_collection_review_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -14,21 +14,21 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/review/game_review_item.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class GameReviewSection extends StatefulWidget {
   final Game game;
   final User? currentUser;
   final GameCollectionService gameCollectionService;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   const GameReviewSection({
     super.key,
     required this.game,
     required this.currentUser,
     required this.followService,
     required this.gameCollectionService,
-    required this.infoProvider,
+    required this.infoService,
   });
   @override
   GameReviewSectionState createState() => GameReviewSectionState();
@@ -340,7 +340,7 @@ class GameReviewSectionState extends State<GameReviewSection> {
             review: _reviews[index],
             currentUser: widget.currentUser,
             followService: widget.followService,
-            infoProvider: widget.infoProvider,
+            infoService: widget.infoService,
           );
         });
   }

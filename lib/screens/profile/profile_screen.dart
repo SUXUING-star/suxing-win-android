@@ -11,7 +11,7 @@ import 'package:suxingchahui/constants/profile/profile_constants.dart'; // 导�
 import 'package:suxingchahui/models/user/daily_progress.dart'; // 导入每日进度模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/services/main/user/user_service.dart'; // 导入用户服务
@@ -26,7 +26,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; /
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart'; // 导入悬浮动作按钮组
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 导入通用悬浮动作按钮
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart'; // 导入个人资料菜单项常量
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
@@ -49,7 +49,7 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入�
 class ProfileScreen extends StatefulWidget {
   final AuthProvider authProvider; // 认证 Provider
   final UserService userService; // 用户服务
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService; // 输入状态服务
   final SidebarProvider sidebarProvider; // 侧边栏 Provider
   final RateLimitedFileUpload fileUpload; // 限速文件上传服务
@@ -65,7 +65,7 @@ class ProfileScreen extends StatefulWidget {
   const ProfileScreen({
     super.key,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
     required this.userService,
     required this.inputStateService,
@@ -368,9 +368,7 @@ class _ProfileScreenState extends State<ProfileScreen>
 
     try {
       await widget.authProvider.refreshUserState(forceRefresh: true); // 刷新用户状态
-      if (_currentUserId != null) {
-        await widget.infoProvider.refreshUserInfo(_currentUserId!);
-      }
+      if (_currentUserId != null) {}
       if (mounted && widget.authProvider.isLoggedIn) {
         // 组件挂载且已登录时
         await _loadDailyExperienceProgress(forceRefresh: true); // 强制刷新经验数据
@@ -508,7 +506,7 @@ class _ProfileScreenState extends State<ProfileScreen>
           return false;
         }
 
-        await widget.userService.updateUserProfile(
+        await widget.userService.updateCurrentUserProfile(
           username: usernameChanged ? newUsername : null, // 更新用户名
           signature: signatureChanged ? newSignature : null, // 更新个性签名
         );
@@ -594,7 +592,7 @@ class _ProfileScreenState extends State<ProfileScreen>
       BuildContext context, String avatarUrl) async {
     if (!mounted) return; // 组件未挂载时返回
     try {
-      await widget.userService.updateUserProfile(
+      await widget.userService.updateCurrentUserProfile(
         avatar: avatarUrl, // 更新用户头像
       );
 

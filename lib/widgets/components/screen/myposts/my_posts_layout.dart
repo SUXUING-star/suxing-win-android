@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -29,7 +29,7 @@ class MyPostsLayout extends StatelessWidget {
   final String? errorMessage;
   final VoidCallback onRetry;
   final User? currentUser;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
   final int totalPostCount;
   final bool isDesktopLayout;
@@ -54,7 +54,7 @@ class MyPostsLayout extends StatelessWidget {
     this.errorMessage,
     required this.onRetry,
     required this.currentUser,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.totalPostCount,
     required this.isDesktopLayout,
@@ -365,7 +365,7 @@ class MyPostsLayout extends StatelessWidget {
       availableWidth: availableWidth,
       isDesktopLayout: isDesktopLayout,
       currentUser: currentUser,
-      infoProvider: infoProvider,
+      infoService: infoService,
       followService: followService,
       scrollController: scrollController,
       isLoading: isLoadingMore,

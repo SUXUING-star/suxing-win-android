@@ -14,7 +14,7 @@ import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用�
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 导入活动服务
@@ -28,7 +28,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 
 /// `ActivityFeedScreen` 类：用户动态流显示屏幕。
@@ -39,7 +39,7 @@ class ActivityFeedScreen extends StatefulWidget {
   final AuthProvider authProvider; // 认证 Provider
   final ActivityService activityService; // 活动服务
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
   final String title; // 屏幕标题
   final bool useAlternatingLayout; // 是否使用交替布局
@@ -63,7 +63,7 @@ class ActivityFeedScreen extends StatefulWidget {
     required this.activityService,
     required this.followService,
     required this.windowStateProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     this.title = '动态广场',
     this.useAlternatingLayout = true,
@@ -1081,7 +1081,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                       child: HotActivitiesPanel(
                         screenWidth: screenWidth,
                         activityService: widget.activityService,
-                        userInfoProvider: widget.infoProvider,
+                        userInfoService: widget.infoService,
                         followService: widget.followService,
                         currentUser: widget.authProvider.currentUser,
                       ),
@@ -1110,7 +1110,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       currentUser: widget.authProvider.currentUser, // 当前用户
       followService: widget.followService, // 关注服务
       inputStateService: widget.inputStateService, // 输入状态服务
-      infoProvider: widget.infoProvider, // 用户信息 Provider
+      infoService: widget.infoService, // 用户信息 Provider
       activities: _activities, // 活动列表
       isLoading: _isLoadingData && _activities.isEmpty, // 是否加载中
       isLoadingMore: _isLoadingMore, // 是否加载更多

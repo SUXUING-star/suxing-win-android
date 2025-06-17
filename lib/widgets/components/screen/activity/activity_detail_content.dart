@@ -10,7 +10,7 @@ import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 
 // --- 动画组件 Imports ---
@@ -31,7 +31,7 @@ class ActivityDetailContent extends StatelessWidget {
   final UserActivity activity; // 用户活动数据
   final ActivityNavigationInfo? navigationInfo;
   final UserFollowService userFollowService; // 用户关注服务
-  final UserInfoProvider userInfoProvider; // 用户信息 Provider
+  final UserInfoService userInfoService; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
 
   final User? currentUser; // 当前登录用户
@@ -68,7 +68,7 @@ class ActivityDetailContent extends StatelessWidget {
     required this.navigationInfo,
     required this.activity,
     required this.userFollowService,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.inputStateService,
     required this.currentUser,
     required this.isDesktopLayout,
@@ -102,7 +102,7 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay, // 动画延迟
       slideOffset: slideOffset, // 滑入偏移量
       child: ActivityInfoSection(
-        infoProvider: userInfoProvider, // 用户信息 Provider
+        infoService: userInfoService, // 用户信息 Provider
         followService: userFollowService, // 关注服务
         currentUser: currentUser, // 当前用户
         activity: activity, // 活动数据
@@ -150,7 +150,7 @@ class ActivityDetailContent extends StatelessWidget {
       delay: delay, // 动画延迟
       child: ActivityTargetSection(
         followService: userFollowService, // 关注服务
-        infoProvider: userInfoProvider, // 用户信息 Provider
+        infoService: userInfoService, // 用户信息 Provider
         currentUser: currentUser, // 当前用户
         activity: activity, // 活动数据
         isDesktopLayout: isDesktopLayout, // 是否为桌面布局
@@ -177,7 +177,7 @@ class ActivityDetailContent extends StatelessWidget {
       slideOffset: slideOffset, // 滑入偏移量
       child: ActivityCommentsSection(
         inputStateService: inputStateService, // 输入状态 Provider
-        userInfoProvider: userInfoProvider, // 用户信息 Provider
+        userInfoService: userInfoService, // 用户信息 Provider
         userFollowService: userFollowService, // 用户关注服务
         currentUser: currentUser, // 当前用户
         activityId: activity.id, // 活动 ID

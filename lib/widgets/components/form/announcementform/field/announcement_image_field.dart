@@ -5,7 +5,7 @@ import 'dart:io';
 
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class AnnouncementImageField extends StatelessWidget {
   final dynamic imageSource;

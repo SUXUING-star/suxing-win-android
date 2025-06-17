@@ -4,7 +4,7 @@ import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/activity_stats.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'hot_activities_full_panel.dart';
@@ -12,14 +12,14 @@ import 'hot_activities_full_panel.dart';
 class HotActivitiesPanel extends StatefulWidget {
   final User? currentUser;
   final double screenWidth;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final ActivityService activityService;
   final UserFollowService followService;
   const HotActivitiesPanel({
     required this.currentUser,
     required this.screenWidth,
     required this.activityService,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.followService,
     super.key,
   });
@@ -103,7 +103,7 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
         widget.screenWidth < 600 ? widget.screenWidth * 0.9 : 300.0;
 
     return HotActivitiesFullPanel(
-      userInfoProvider: widget.userInfoProvider,
+      userInfoService: widget.userInfoService,
       userFollowService: widget.followService,
       currentUser: widget.currentUser,
       hotActivities: _hotActivities,

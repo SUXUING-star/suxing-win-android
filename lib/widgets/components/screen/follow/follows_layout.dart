@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/follow/follows_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -19,7 +19,7 @@ class FollowsLayout extends StatelessWidget {
   final User? currentUser;
 
   /// 用户信息提供者。
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
 
   /// 用户关注服务。
   final UserFollowService followService;
@@ -56,7 +56,7 @@ class FollowsLayout extends StatelessWidget {
 
   const FollowsLayout({
     super.key,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.currentUser,
     required this.tabController,
@@ -310,7 +310,7 @@ class FollowsLayout extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             UserInfoBadge(
-                infoProvider: infoProvider,
+                infoService: infoService,
                 followService: followService,
                 targetUserId: targetUserId,
                 currentUser: currentUser,

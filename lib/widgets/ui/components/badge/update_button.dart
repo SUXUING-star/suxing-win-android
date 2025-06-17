@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 确认对话框
 import 'package:url_launcher/url_launcher.dart'; // URL 启动器
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 Snackbar
 import 'package:suxingchahui/config/app_config.dart'; // 应用配置
 
 /// `UpdateButton` 类：应用更新按钮。

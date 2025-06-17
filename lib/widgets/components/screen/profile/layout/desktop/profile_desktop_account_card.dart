@@ -120,12 +120,12 @@ class ProfileDesktopAccountCard extends StatelessWidget {
                     color: Colors.orange.shade800,
                   ),
                 ),
-                backgroundColor: Colors.orange.withOpacity(0.1),
+                backgroundColor: Colors.orange.withSafeOpacity(0.1),
                 padding:
                     const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
-                  side: BorderSide(color: Colors.orange.withOpacity(0.2)),
+                  side: BorderSide(color: Colors.orange.withSafeOpacity(0.2)),
                 ),
               ),
 

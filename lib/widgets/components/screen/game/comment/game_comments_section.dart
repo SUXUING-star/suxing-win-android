@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'dart:async';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误提示 Widget
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载 Widget
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // SnackBar 提示
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // SnackBar 提示
 
 class GameCommentsSection extends StatefulWidget {
   final GameService gameService;
@@ -23,7 +23,7 @@ class GameCommentsSection extends StatefulWidget {
   final User? currentUser;
   final AuthProvider authProvider;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService;
 
   const GameCommentsSection({
@@ -33,7 +33,7 @@ class GameCommentsSection extends StatefulWidget {
     required this.currentUser,
     required this.gameId,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
   });
   @override
@@ -384,7 +384,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
           currentUser: _currentUser,
           authProvider: widget.authProvider,
           inputStateService: widget.inputStateService,
-          infoProvider: widget.infoProvider,
+          infoService: widget.infoService,
           followService: widget.followService,
           comments: commentsToDisplay,
           onUpdateComment: _handleUpdateComment, // 传递更新处理

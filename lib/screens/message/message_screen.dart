@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/models/message/message.dart';
 import 'package:suxingchahui/models/message/message_type.dart'; // 需要 MessageTypeInfo

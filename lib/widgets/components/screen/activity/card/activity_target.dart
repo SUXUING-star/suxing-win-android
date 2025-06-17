@@ -8,7 +8,7 @@ import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 动态类型常量
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
 import 'dart:math' as math; // 数学函数
@@ -20,7 +20,7 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 安全
 class ActivityTarget extends StatelessWidget {
   final UserActivity activity; // 动态数据
   final User? currentUser; // 当前登录用户
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final UserFollowService followService; // 用户关注服务
   final bool isAlternate; // 是否使用交替布局样式
   final double cardHeight; // 卡片高度因子
@@ -39,7 +39,7 @@ class ActivityTarget extends StatelessWidget {
     required this.activity,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     this.isAlternate = false,
     this.cardHeight = 1.0,
   });
@@ -189,7 +189,7 @@ class ActivityTarget extends StatelessWidget {
           key: ValueKey('target_badge_$targetUserId'), // Key
           currentUser: currentUser, // 当前登录用户
           targetUserId: targetUserId, // 目标用户 ID
-          infoProvider: infoProvider, // 用户信息 Provider
+          infoService: infoService, // 用户信息 Provider
           followService: followService, // 用户关注服务
           showFollowButton: true, // 显示关注按钮
           showLevel: true, // 显示用户等级
@@ -219,7 +219,7 @@ class ActivityTarget extends StatelessWidget {
           key: ValueKey('default_$userId'), // Key
           currentUser: currentUser, // 当前登录用户
           targetUserId: userId, // 目标用户 ID
-          infoProvider: infoProvider, // 用户信息 Provider
+          infoService: infoService, // 用户信息 Provider
           followService: followService, // 用户关注服务
           showFollowButton: true, // 显示关注按钮
           showLevel: true, // 显示用户等级

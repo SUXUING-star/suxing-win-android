@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
@@ -14,7 +14,7 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 class TodayCheckInListSection extends StatelessWidget {
   final User? currentUser;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final double? maxHeight;
   final bool showTitle;
   final bool isLoading;
@@ -26,7 +26,7 @@ class TodayCheckInListSection extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     this.maxHeight,
     this.showTitle = true,
     this.errMsg,
@@ -170,7 +170,7 @@ class TodayCheckInListSection extends StatelessWidget {
                 Expanded(
                   child: UserInfoBadge(
                     currentUser: currentUser,
-                    infoProvider: infoProvider,
+                    infoService: infoService,
                     followService: followService,
                     targetUserId: userId,
                     showFollowButton: true,

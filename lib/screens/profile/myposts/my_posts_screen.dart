@@ -5,7 +5,7 @@ import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -20,14 +20,14 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
 class MyPostsScreen extends StatefulWidget {
   final UserFollowService followService;
   final PostService postService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final AuthProvider authProvider;
   final WindowStateProvider windowStateProvider;
   const MyPostsScreen({
@@ -35,7 +35,7 @@ class MyPostsScreen extends StatefulWidget {
     required this.authProvider,
     required this.postService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -371,7 +371,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                     screenWidth: screenWidth,
                     onRetry: () => _fetchPosts(isRefresh: true),
                     currentUser: currentUser,
-                    infoProvider: widget.infoProvider,
+                    infoService: widget.infoService,
                     followService: widget.followService,
                     totalPostCount: _paginationData?.total ?? _posts.length,
                   );

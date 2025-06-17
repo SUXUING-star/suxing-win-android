@@ -6,11 +6,10 @@ import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class SettingsScreen extends StatefulWidget {
   final GameService gameService;
@@ -79,11 +78,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      const FadeInItem(
+      FadeInItem(
         // 全屏加载组件
         child: LoadingWidget(
           isOverlay: true,
-          message: "少女正在祈祷中...",
+          message: _loadingMessage,
           overlayOpacity: 0.4,
           size: 36,
         ),

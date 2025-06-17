@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/error/api_error_definitions.dart';
 import 'package:suxingchahui/services/error/api_exception.dart';
@@ -20,7 +20,7 @@ import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
@@ -42,7 +42,7 @@ class GameDetailScreen extends StatefulWidget {
   final GameCollectionService gameCollectionService;
   final AuthProvider authProvider;
   final GameService gameService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
   final InputStateService inputStateService;
   final GameListFilterProvider gameListFilterProvider;
@@ -54,7 +54,7 @@ class GameDetailScreen extends StatefulWidget {
     this.isNeedHistory = true,
     required this.authProvider,
     required this.gameCollectionService,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     required this.gameService,
     required this.gameListFilterProvider,
@@ -112,7 +112,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _hasInitializedDependencies = true;
     }
 
-    if (_error != null && _hasInitializedDependencies) {
+    if (_error == null && _hasInitializedDependencies) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _isLoading = true;
         _lastGamesDetailRefreshAttemptTime = DateTime.now();
@@ -904,7 +904,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       gameCollectionService: widget.gameCollectionService,
       game: game,
       isDesktop: isDesktop,
-      infoProvider: widget.infoProvider,
+      infoService: widget.infoService,
       followService: widget.followService,
       currentUser: widget.authProvider.currentUser,
       initialCollectionStatus: _collectionStatus,

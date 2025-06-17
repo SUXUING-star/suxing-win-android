@@ -4,7 +4,7 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 导入自定义弹出菜单按钮
 
@@ -24,7 +24,7 @@ class BasePostCard extends StatelessWidget {
   final Post post; // 要展示的帖子数据模型
   final User? currentUser; // 当前登录用户
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息提供者
+  final UserInfoService infoService; // 用户信息提供者
   final double availableWidth;
   final Future<void> Function(Post post)? onDeleteAction; // 删除操作回调
   final void Function(Post post)? onEditAction; // 编辑操作回调
@@ -53,7 +53,7 @@ class BasePostCard extends StatelessWidget {
     required this.currentUser,
     required this.post,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.availableWidth,
     this.onDeleteAction,
     this.onEditAction,
@@ -193,7 +193,7 @@ class BasePostCard extends StatelessWidget {
                             Expanded(
                               child: UserInfoBadge(
                                 targetUserId: post.authorId.toString(),
-                                infoProvider: infoProvider,
+                                infoService: infoService,
                                 followService: followService,
                                 showFollowButton: false,
                                 currentUser: currentUser,
@@ -216,7 +216,7 @@ class BasePostCard extends StatelessWidget {
                             UserInfoBadge(
                               targetUserId: post.authorId.toString(),
                               followService: followService,
-                              infoProvider: infoProvider,
+                              infoService: infoService,
                               showFollowButton: false,
                               currentUser: currentUser,
                               mini: true,

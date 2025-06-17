@@ -8,7 +8,7 @@ import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 导入活动服务
@@ -47,7 +47,7 @@ class MainLayout extends StatefulWidget {
   final LinkToolService linkToolService; // 链接工具服务
   final UserFollowService followService; // 用户关注服务
   final AnnouncementService announcementService; // 公告服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
   final UserCheckInService checkInService; // 用户签到服务
   final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
@@ -85,7 +85,7 @@ class MainLayout extends StatefulWidget {
     required this.gameService,
     required this.userService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.announcementService,
     required this.inputStateService,
     required this.checkInService,
@@ -153,7 +153,7 @@ class _MainLayoutState extends State<MainLayout> {
         gameService: widget.gameService,
         postService: widget.postService,
         followService: widget.followService,
-        infoProvider: widget.infoProvider,
+        infoService: widget.infoService,
       ),
       GamesListScreen(
         authProvider: widget.authProvider,
@@ -165,7 +165,7 @@ class _MainLayoutState extends State<MainLayout> {
         authProvider: widget.authProvider,
         postService: widget.postService,
         followService: widget.followService,
-        infoProvider: widget.infoProvider,
+        infoService: widget.infoService,
         postListFilterProvider: widget.postListFilterProvider,
         windowStateProvider: widget.windowStateProvider,
       ),
@@ -173,7 +173,7 @@ class _MainLayoutState extends State<MainLayout> {
         authProvider: widget.authProvider,
         activityService: widget.activityService,
         followService: widget.followService,
-        infoProvider: widget.infoProvider,
+        infoService: widget.infoService,
         inputStateService: widget.inputStateService,
         windowStateProvider: widget.windowStateProvider,
       ),
@@ -190,7 +190,7 @@ class _MainLayoutState extends State<MainLayout> {
         inputStateService: widget.inputStateService,
         fileUpload: widget.fileUpload,
         windowStateProvider: widget.windowStateProvider,
-        infoProvider: widget.infoProvider,
+        infoService: widget.infoService,
       ),
     ];
   }

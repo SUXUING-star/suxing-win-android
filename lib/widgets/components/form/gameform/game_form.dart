@@ -15,7 +15,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/form/game_form_cache_service.dart';
@@ -29,7 +29,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 // --- UI 和辅助组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -53,7 +53,7 @@ class GameForm extends StatefulWidget {
   final GameListFilterProvider gameListFilterProvider;
   final AuthProvider authProvider;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService;
   final Game? game; // 编辑时传入的游戏对象
   final User? currentUser;
@@ -68,7 +68,7 @@ class GameForm extends StatefulWidget {
     required this.followService,
     required this.inputStateService,
     required this.fileUpload,
-    required this.infoProvider,
+    required this.infoService,
     required this.gameService,
     required this.gameListFilterProvider,
     required this.gameCollectionService,
@@ -1706,7 +1706,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       gameCollectionService: widget.gameCollectionService,
       authProvider: widget.authProvider,
       gameService: widget.gameService,
-      infoProvider: widget.infoProvider,
+      infoService: widget.infoService,
       inputStateService: widget.inputStateService,
       followService: widget.followService,
       currentUser: widget.currentUser,

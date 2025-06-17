@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -28,7 +28,7 @@ class PostHistoryLayout extends StatefulWidget {
   final ScrollController scrollController;
   final User? currentUser;
   final WindowStateProvider windowStateProvider;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final UserFollowService userFollowService;
 
   // 定义 flex 和 divider 宽度为 static const
@@ -48,7 +48,7 @@ class PostHistoryLayout extends StatefulWidget {
     required this.scrollController,
     required this.currentUser,
     required this.windowStateProvider,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.userFollowService,
   });
 
@@ -343,7 +343,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
     return HistoryPostGridView(
       posts: widget.postHistoryItems,
       currentUser: widget.currentUser,
-      infoProvider: widget.userInfoProvider,
+      infoService: widget.userInfoService,
       followService: widget.userFollowService,
       scrollController: widget.scrollController,
       isLoading: widget.isLoadingMore,

@@ -2,6 +2,7 @@
 
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 class ActivityListPagination {
   final List<UserActivity> activities;
@@ -20,34 +21,16 @@ class ActivityListPagination {
   }
 
   factory ActivityListPagination.fromJson(Map<String, dynamic> json) {
-    List<UserActivity> activitiesList = [];
-    if (json['activities'] is List) {
-      activitiesList = (json['activities'] as List)
-          .map((item) {
-        // 确保列表中的每个元素都是 Map 类型再进行解析
-        if (item is Map<String, dynamic>) {
-          return UserActivity.fromJson(item);
-        }
-        return null;
-      })
-          .whereType<UserActivity>() // 过滤掉解析失败的 null 项
-          .toList();
-    }
+    final activitiesList = UtilJson.parseObjectList<UserActivity>(
+      json['activities'], // 传入原始的 list 数据
+      (itemJson) =>
+          UserActivity.fromJson(itemJson), // 告诉它怎么把一个 item 的 json 转成 Game 对象
+    );
 
-    PaginationData paginationData;
-    if (json['pagination'] is Map<String, dynamic>) {
-      paginationData = PaginationData.fromJson(json['pagination'] as Map<String, dynamic>);
-    } else {
-      // 业务逻辑: 如果后端响应中缺少分页信息，则根据返回的列表长度在前端生成一个默认的分页对象
-      int totalItems = activitiesList.length;
-      int defaultLimit = 20; // 动态列表的默认每页数量
-      paginationData = PaginationData(
-        page: 1,
-        limit: defaultLimit,
-        total: totalItems,
-        pages: totalItems == 0 ? 0 : (totalItems / defaultLimit).ceil(),
-      );
-    }
+    final paginationData = UtilJson.parsePaginationData(
+      json,
+      listForFallback: activitiesList, // 把游戏列表传进去，用于计算兜底分页
+    );
 
     return ActivityListPagination(
       activities: activitiesList,

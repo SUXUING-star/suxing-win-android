@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/global_post_reply_item.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -13,21 +13,21 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class RecentGlobalReplies extends StatefulWidget {
   final int limit;
   final Post post;
   final User? currentUser;
   final PostService postService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
 
   const RecentGlobalReplies({
     super.key,
     this.limit = 5,
     required this.post,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.postService,
     required this.currentUser,
@@ -274,7 +274,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                     targetUserId: userId,
                     showFollowButton: false,
                     currentUser: widget.currentUser,
-                    infoProvider: widget.infoProvider,
+                    infoService: widget.infoService,
                     followService: widget.followService,
                     mini: true,
                   ),

@@ -8,7 +8,7 @@ import 'package:flutter/material.dart'; // Flutter UI 框架
 import 'package:suxingchahui/constants/game/game_constants.dart'; // 游戏常量
 import 'package:suxingchahui/models/game/game_collection_review.dart'; // 游戏收藏评论模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章
@@ -22,7 +22,7 @@ class GameReviewItemWidget extends StatelessWidget {
   final User? currentUser; // 当前登录用户
   final GameCollectionReviewEntry review; // 游戏评论条目
   final UserFollowService followService; // 用户关注服务实例
-  final UserInfoProvider infoProvider; // 用户信息 Provider 实例
+  final UserInfoService infoService; // 用户信息 Provider 实例
 
   /// 构造函数。
   ///
@@ -36,7 +36,7 @@ class GameReviewItemWidget extends StatelessWidget {
     required this.currentUser,
     required this.review,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
   });
 
   /// 构建游戏评论项 UI。
@@ -74,7 +74,7 @@ class GameReviewItemWidget extends StatelessWidget {
                   child: UserInfoBadge(
                       // 用户信息徽章
                       followService: followService,
-                      infoProvider: infoProvider,
+                      infoService: infoService,
                       currentUser: currentUser,
                       targetUserId: userId,
                       showFollowButton: false,

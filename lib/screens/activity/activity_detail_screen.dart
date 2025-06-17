@@ -5,7 +5,7 @@ import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -20,7 +20,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/edit_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class ActivityDetailScreen extends StatefulWidget {
   final ActivityDetailParam? activityDetailParam;
@@ -28,7 +28,7 @@ class ActivityDetailScreen extends StatefulWidget {
   final ActivityService activityService;
   final UserFollowService followService;
   final InputStateService inputStateService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
 
   const ActivityDetailScreen({
@@ -38,7 +38,7 @@ class ActivityDetailScreen extends StatefulWidget {
     required this.followService,
     required this.authProvider,
     required this.inputStateService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -562,7 +562,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
               inputStateService: widget.inputStateService,
               key: ValueKey(_refreshCounter), // 使用 Key 强制刷新
               currentUser: widget.authProvider.currentUser,
-              userInfoProvider: widget.infoProvider,
+              userInfoService: widget.infoService,
               userFollowService: widget.followService,
               activity: _activity,
               isDesktopLayout: isDesktopLayout,

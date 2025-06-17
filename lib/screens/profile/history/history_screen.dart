@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -15,13 +15,13 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/history/game_history_layout.dart';
 import 'package:suxingchahui/widgets/components/screen/history/post_history_layout.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
   final PostService postService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
   final WindowStateProvider windowStateProvider;
   const HistoryScreen({
@@ -29,7 +29,7 @@ class HistoryScreen extends StatefulWidget {
     required this.gameService,
     required this.authProvider,
     required this.postService,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.windowStateProvider,
   });
@@ -403,7 +403,7 @@ class _HistoryScreenState extends State<HistoryScreen>
                         errorMessage: _postHistoryError,
                         scrollController: _postScrollController,
                         currentUser: _currentUser,
-                        userInfoProvider: widget.infoProvider,
+                        userInfoService: widget.infoService,
                         windowStateProvider: widget.windowStateProvider,
                         userFollowService: widget.followService,
                       ),

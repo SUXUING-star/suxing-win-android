@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dar
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 import 'package:suxingchahui/models/linkstools/site_link.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';

@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart';
@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 class ActivityCommentsSection extends StatelessWidget {
   final String activityId;
   final UserFollowService userFollowService;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final InputStateService inputStateService;
   final User? currentUser;
   final List<ActivityComment> comments;
@@ -31,7 +31,7 @@ class ActivityCommentsSection extends StatelessWidget {
     super.key,
     required this.activityId,
     required this.userFollowService,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.inputStateService,
     required this.currentUser,
     required this.comments,
@@ -105,7 +105,7 @@ class ActivityCommentsSection extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 16.0), // 评论项之间的间距增大一些
             child: ActivityCommentItem(
               userFollowService: userFollowService,
-              userInfoProvider: userInfoProvider,
+              userInfoService: userInfoService,
               comment: comment,
               currentUser: currentUser,
               activityId: activityId,

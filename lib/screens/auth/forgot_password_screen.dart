@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'dart:async'; // 导入 Timer
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
@@ -18,7 +18,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/services/main/email/email_service.dart'; // 导入邮箱服务
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart'; // 导入自定义 AppBar
@@ -29,7 +29,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入�
 /// 该屏幕提供邮箱输入、验证码发送和验证功能，以引导用户重置密码。
 class ForgotPasswordScreen extends StatefulWidget {
   final InputStateService inputStateService; // 输入状态服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final EmailService emailService; // 邮箱服务
   final AuthProvider authProvider; // 认证 Provider
   /// 构造函数。
@@ -42,7 +42,7 @@ class ForgotPasswordScreen extends StatefulWidget {
     super.key,
     required this.inputStateService,
     required this.emailService,
-    required this.infoProvider,
+    required this.infoService,
     required this.authProvider,
   });
 

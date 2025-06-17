@@ -9,7 +9,7 @@ import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart'; // 动态头部组件
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart'; // 动态目标组件
@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/button/activity_
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart'; // 动态评论项组件
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 动态评论输入框组件
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart'; // 动态目标导航组件
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 Snackbar
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'dart:math' as math; // 导入数学函数
 
@@ -26,7 +26,7 @@ import 'dart:math' as math; // 导入数学函数
 /// 该组件展示一条用户动态的完整信息，包括发布者、内容、相关目标、互动操作和评论区。
 class ActivityCard extends StatefulWidget {
   final UserActivity activity; // 要显示的动态数据
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final UserFollowService followService; // 用户关注服务
   final InputStateService inputStateService; // 输入状态服务
   final User? currentUser; // 当前登录用户
@@ -76,7 +76,7 @@ class ActivityCard extends StatefulWidget {
     required this.inputStateService,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     this.isAlternate = false,
     this.onUpdated,
     this.isInDetailView = false,
@@ -266,7 +266,7 @@ class _ActivityCardState extends State<ActivityCard> {
       children: [
         ActivityHeader(
           userId: _activity.userId,
-          infoProvider: widget.infoProvider,
+          infoService: widget.infoService,
           followService: widget.followService,
           currentUser: widget.currentUser,
           createTime: _activity.createTime,
@@ -295,7 +295,7 @@ class _ActivityCardState extends State<ActivityCard> {
           SizedBox(height: 12 * _cardHeight), // 间距
           ActivityTarget(
               currentUser: widget.currentUser,
-              infoProvider: widget.infoProvider,
+              infoService: widget.infoService,
               followService: widget.followService,
               activity: _activity,
               isAlternate: _isAlternate,
@@ -402,7 +402,7 @@ class _ActivityCardState extends State<ActivityCard> {
                   key: ValueKey(comment.id), // Key
                   comment: comment, // 评论数据
                   userFollowService: widget.followService, // 用户关注服务
-                  userInfoProvider: widget.infoProvider, // 用户信息 Provider
+                  userInfoService: widget.infoService, // 用户信息 Provider
                   currentUser: widget.currentUser, // 当前用户
                   activityId: _activity.id, // 动态 ID
                   isAlternate: _isAlternate, // 布局样式

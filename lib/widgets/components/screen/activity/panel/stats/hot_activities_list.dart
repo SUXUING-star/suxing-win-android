@@ -9,9 +9,8 @@ import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
-import 'package:suxingchahui/screens/activity/activity_detail_screen.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
@@ -24,7 +23,7 @@ class HotActivitiesList extends StatelessWidget {
   final List<UserActivity> hotActivities; // 热门动态列表
   final User? currentUser; // 当前登录用户
   final UserFollowService userFollowService; // 用户关注服务
-  final UserInfoProvider userInfoProvider; // 用户信息 Provider
+  final UserInfoService userInfoService; // 用户信息 Provider
   final String Function(String) getActivityTypeName; // 获取活动类型名称的函数
   final Color Function(String) getActivityTypeColor; // 获取活动类型颜色的函数
 
@@ -41,7 +40,7 @@ class HotActivitiesList extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.userFollowService,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.hotActivities,
     required this.getActivityTypeName,
     required this.getActivityTypeColor,
@@ -129,7 +128,7 @@ class HotActivitiesList extends StatelessWidget {
                   UserInfoBadge(
                     // 用户信息徽章
                     followService: userFollowService, // 用户关注服务
-                    infoProvider: userInfoProvider, // 用户信息 Provider
+                    infoService: userInfoService, // 用户信息 Provider
                     currentUser: currentUser, // 当前登录用户
                     targetUserId: activity.userId, // 目标用户 ID
                     showFollowButton: false, // 不显示关注按钮

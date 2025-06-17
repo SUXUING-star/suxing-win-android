@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post_reply.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 使用已修改的 CommentInputField
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
@@ -20,7 +20,7 @@ class PostReplyItem extends StatelessWidget {
   final User? currentUser;
   final AuthProvider authProvider;
   final PostReply reply;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService;
   final UserFollowService followService;
   final String postId;
@@ -32,7 +32,7 @@ class PostReplyItem extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     required this.followService,
     required this.postService,
@@ -231,7 +231,7 @@ class PostReplyItem extends StatelessWidget {
               child: UserInfoBadge(
                 currentUser: currentUser,
                 followService: followService,
-                infoProvider: infoProvider,
+                infoService: infoService,
                 targetUserId: reply.authorId,
                 showFollowButton: false,
                 mini: true,

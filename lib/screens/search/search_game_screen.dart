@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/services/main/user/cache/search_history_cache_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';
 import 'dart:async';
 
 // Services
 import 'package:suxingchahui/services/main/game/game_service.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 
 // Widgets
@@ -20,12 +20,12 @@ import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class SearchGameScreen extends StatefulWidget {
   final GameService gameService;
-  final UserService userService;
+  final SearchHistoryCacheService searchHistoryCacheService;
   final WindowStateProvider windowStateProvider;
   const SearchGameScreen({
     super.key,
     required this.gameService,
-    required this.userService,
+    required this.searchHistoryCacheService,
     required this.windowStateProvider,
   });
 
@@ -80,7 +80,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   Future<void> _loadSearchHistory() async {
     if (!mounted) return;
     try {
-      final history = await widget.userService.loadLocalSearchHistory();
+      final history = await widget.searchHistoryCacheService.loadLocalHistory();
       if (!mounted) return;
       setState(() {
         _searchHistory = history;
@@ -99,7 +99,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
   Future<void> _saveSearchHistory() async {
     if (!mounted) return;
     try {
-      await widget.userService.saveLocalSearchHistory(_searchHistory);
+      await widget.searchHistoryCacheService.saveLocalHistory(_searchHistory);
     } catch (e) {
       // Local save error, usually minor
     }
@@ -437,7 +437,7 @@ class _SearchGameScreenState extends State<SearchGameScreen> {
                 if (item is _LoadingIndicatorPlaceholder) {
                   if (_isLoadingMore) {
                     return const Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 16.0),
+                      padding: EdgeInsets.symmetric(vertical: 16.0),
                       child: LoadingWidget(message: "加载中..."),
                     );
                   }

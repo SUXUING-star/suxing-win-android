@@ -11,7 +11,7 @@ import 'package:suxingchahui/constants/post/post_constants.dart'; // 导入帖�
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
 import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入帖子列表分页模型
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -20,9 +20,10 @@ import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dar
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart'; // 导入功能图标按钮
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/components/pagination_controls.dart'; // 导入分页控件
@@ -47,7 +48,7 @@ class PostListScreen extends StatefulWidget {
   final AuthProvider authProvider; // 认证 Provider
   final PostService postService; // 帖子服务
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final PostListFilterProvider postListFilterProvider; // 帖子列表筛选 Provider
   final WindowStateProvider windowStateProvider;
 
@@ -65,7 +66,7 @@ class PostListScreen extends StatefulWidget {
     required this.authProvider,
     required this.postService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.postListFilterProvider,
     required this.windowStateProvider,
   });
@@ -1052,11 +1053,8 @@ class _PostListScreenState extends State<PostListScreen>
 
     if (!_isLoadingData && _posts != null && _posts!.isEmpty) {
       // 全屏加载组件
-      return const LoadingWidget(
-        isOverlay: true,
-        message: "啥也没有哇...",
-        overlayOpacity: 0.4,
-        size: 36,
+      return const CustomErrorWidget(
+        errorMessage: "啥也没有哇...",
       ); //
     }
 
@@ -1186,7 +1184,7 @@ class _PostListScreenState extends State<PostListScreen>
       post: post, // 帖子数据
       availableWidth: _screenWidth,
       showPinnedStatus: true, // 显示置顶状态
-      infoProvider: widget.infoProvider, // 用户信息 Provider
+      infoService: widget.infoService, // 用户信息 Provider
       followService: widget.followService, // 关注服务
       onDeleteAction: _handleDeletePostFromCard, // 删除回调
       onEditAction: _handleEditPostFromCard, // 编辑回调

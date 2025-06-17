@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -21,11 +21,11 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class CheckInScreen extends StatefulWidget {
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
   final UserCheckInService checkInService;
   final WindowStateProvider windowStateProvider;
@@ -33,7 +33,7 @@ class CheckInScreen extends StatefulWidget {
   const CheckInScreen({
     super.key,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.checkInService,
     required this.windowStateProvider,
@@ -209,9 +209,6 @@ class _CheckInScreenState extends State<CheckInScreen>
     try {
       final result = await widget.checkInService.performCheckIn();
       final currentUserId = _currentUser?.id;
-      if (currentUserId != null) {
-        await widget.infoProvider.refreshUserInfo(currentUserId);
-      }
 
       if (mounted) {
         _particleController.reset();
@@ -317,7 +314,7 @@ class _CheckInScreenState extends State<CheckInScreen>
         final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
         return CheckInLayout(
           isDesktop: isDesktopLayout,
-          infoProvider: widget.infoProvider,
+          infoService: widget.infoService,
           checkInService: widget.checkInService,
           followService: widget.followService,
           checkInStatus: _checkInStatus!,

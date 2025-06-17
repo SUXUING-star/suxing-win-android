@@ -30,37 +30,15 @@ class PostListPagination {
   }
 
   factory PostListPagination.fromJson(Map<String, dynamic> json) {
-    List<Post> postsList = [];
+    final postsList = UtilJson.parseObjectList<Post>(
+      json['posts'] ?? json['history'], // 传入原始的 list 数据
+      (itemJson) => Post.fromJson(itemJson), // 告诉它怎么把一个 item 的 json 转成 Game 对象
+    );
 
-    // 业务逻辑: API 可能在 'posts' 或 'history' 键下返回帖子列表，优先使用 'posts'
-    dynamic rawList = json['posts'] ?? json['history'];
-
-    if (rawList is List) {
-      postsList = rawList
-          .map((item) {
-        if (item is Map<String, dynamic>) {
-          return Post.fromJson(item);
-        }
-        return null;
-      })
-          .whereType<Post>() // 过滤掉解析失败的 null 项
-          .toList();
-    }
-
-    PaginationData paginationData;
-    if (json['pagination'] is Map<String, dynamic>) {
-      paginationData = PaginationData.fromJson(json['pagination'] as Map<String, dynamic>);
-    } else {
-      // 业务逻辑: 如果后端响应中缺少分页信息，则根据返回的列表长度在前端生成一个默认的分页对象
-      int totalItems = postsList.length;
-      int defaultLimit = PostService.postListLimit;
-      paginationData = PaginationData(
-        page: 1,
-        limit: defaultLimit,
-        total: totalItems,
-        pages: totalItems == 0 ? 0 : (totalItems / defaultLimit).ceil(),
-      );
-    }
+    final paginationData = UtilJson.parsePaginationData(
+      json,
+      listForFallback: postsList, // 把游戏列表传进去，用于计算兜底分页
+    );
 
     return PostListPagination(
       posts: postsList,

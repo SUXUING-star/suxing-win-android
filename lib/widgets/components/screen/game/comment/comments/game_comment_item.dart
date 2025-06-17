@@ -3,12 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/comment/replies/game_reply_input.dart';
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
@@ -18,7 +18,7 @@ import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 class GameCommentItem extends StatefulWidget {
   final User? currentUser;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService;
   final UserFollowService followService;
   final GameComment comment;
@@ -33,7 +33,7 @@ class GameCommentItem extends StatefulWidget {
     super.key,
     required this.currentUser,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     required this.followService,
     required this.comment,
@@ -340,7 +340,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
             children: [
               Expanded(
                 child: UserInfoBadge(
-                  infoProvider: widget.infoProvider,
+                  infoService: widget.infoService,
                   followService: widget.followService,
                   targetUserId: reply.userId,
                   currentUser: widget.currentUser,
@@ -393,7 +393,7 @@ class _GameCommentItemState extends State<GameCommentItem> {
               children: [
                 Expanded(
                   child: UserInfoBadge(
-                    infoProvider: widget.infoProvider,
+                    infoService: widget.infoService,
                     followService: widget.followService,
                     currentUser: widget.currentUser,
                     targetUserId: widget.comment.userId,

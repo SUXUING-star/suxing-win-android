@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/models/game/game_comment.dart';
@@ -12,7 +12,7 @@ import 'game_comment_item.dart';
 class GameCommentList extends StatelessWidget {
   final User? currentUser;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserFollowService followService;
   final InputStateService inputStateService;
   final List<GameComment> comments;
@@ -27,7 +27,7 @@ class GameCommentList extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.inputStateService,
     required this.comments,
@@ -62,7 +62,7 @@ class GameCommentList extends StatelessWidget {
               currentUser: authSnapshot.data,
               authProvider: authProvider,
               comment: comment,
-              infoProvider: infoProvider,
+              infoService: infoService,
               inputStateService: inputStateService,
               followService: followService,
               onUpdateComment: onUpdateComment,

@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/history/history_post_grid_view.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -22,7 +22,7 @@ class HistoryPostGridView extends StatelessWidget {
   final ScrollController? scrollController;
   final bool isLoading;
   final bool hasMoreData;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final bool isDesktopLayout;
   final double availableWidth; // 核心改动：直接接收可用宽度
 
@@ -31,7 +31,7 @@ class HistoryPostGridView extends StatelessWidget {
     required this.posts,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.isDesktopLayout,
     required this.availableWidth, // 核心改动：变为必传参数
     this.scrollController,
@@ -72,7 +72,7 @@ class HistoryPostGridView extends StatelessWidget {
             children: [
               BasePostCard(
                 currentUser: currentUser,
-                infoProvider: infoProvider,
+                infoService: infoService,
                 followService: followService,
                 post: post,
                 availableWidth: availableWidth, // 把这里的 screenWidth 也换成 availableWidth

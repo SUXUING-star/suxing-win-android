@@ -4,14 +4,14 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'game_preview_screen.dart';
@@ -21,7 +21,7 @@ class GamePreviewButton extends StatelessWidget {
   final GameService gameService;
   final WindowStateProvider windowStateProvider;
   final GameCollectionService gameCollectionService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final GameListFilterProvider gameListFilterProvider;
   final SidebarProvider sidebarProvider;
   final AuthProvider authProvider;
@@ -48,7 +48,7 @@ class GamePreviewButton extends StatelessWidget {
     required this.sidebarProvider,
     required this.windowStateProvider,
     required this.gameListFilterProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.authProvider,
     required this.inputStateService,
     required this.gameService,
@@ -136,7 +136,7 @@ class GamePreviewButton extends StatelessWidget {
             gameCollectionService: gameCollectionService,
             authProvider: authProvider,
             inputStateService: inputStateService,
-            infoProvider: infoProvider,
+            infoService: infoService,
             followService: followService,
             gameService: gameService,
             game: previewGame,

@@ -13,7 +13,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/game/game_collection_service.dart'; // 导入游戏收藏服务
 import 'package:suxingchahui/services/main/game/game_service.dart'; // 导入游戏服务
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
@@ -48,7 +48,7 @@ class GameDetailLayout extends StatelessWidget {
   final GameNavigationInfo? navigationInfo; // 游戏导航信息
   final bool isPreviewMode; // 是否为预览模式
   final SidebarProvider sidebarProvider; // 侧边栏 Provider
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final GameService gameService; // 游戏服务
   final GameCollectionService gameCollectionService; // 游戏收藏服务
   final AuthProvider authProvider; // 认证 Provider
@@ -96,7 +96,7 @@ class GameDetailLayout extends StatelessWidget {
     required this.gameCollectionService,
     required this.gameListFilterProvider,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.game,
     required this.isDesktop,
@@ -173,7 +173,7 @@ class GameDetailLayout extends StatelessWidget {
         game: game, // 游戏数据
         currentUser: currentUser, // 当前用户
         followService: followService, // 关注服务
-        infoProvider: infoProvider, // 用户信息 Provider
+        infoService: infoService, // 用户信息 Provider
         onClickFilterGameTag: (context, tag) => _filterTag(
           context,
           tag,
@@ -281,7 +281,7 @@ class GameDetailLayout extends StatelessWidget {
               gameCollectionService: gameCollectionService, // 游戏收藏服务
               currentUser: currentUser, // 当前用户
               game: game, // 游戏数据
-              infoProvider: infoProvider, // 用户信息 Provider
+              infoService: infoService, // 用户信息 Provider
               followService: followService, // 关注服务
             ),
           )
@@ -359,7 +359,7 @@ class GameDetailLayout extends StatelessWidget {
               authProvider: authProvider, // 认证 Provider
               inputStateService: inputStateService, // 输入状态 Provider
               followService: followService, // 关注服务
-              infoProvider: infoProvider, // 用户信息 Provider
+              infoService: infoService, // 用户信息 Provider
               gameId: game.id, // 游戏 ID
               gameService: gameService, // 游戏服务
               currentUser: currentUser, // 当前用户

@@ -2,6 +2,7 @@
 
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/game/game_collection_review.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 class GameCollectionReviewPagination {
   final List<GameCollectionReviewEntry> reviews;
@@ -25,42 +26,16 @@ class GameCollectionReviewPagination {
   }
 
   factory GameCollectionReviewPagination.fromJson(Map<String, dynamic> json) {
-    List<GameCollectionReviewEntry> reviewsList = [];
-    if (json['reviews'] != null && json['reviews'] is List) {
-      reviewsList = (json['reviews'] as List)
-          .map((r) {
-            try {
-              return GameCollectionReviewEntry.fromJson(
-                  Map<String, dynamic>.from(r));
-            } catch (e) {
-              // print('Error parsing GameCollectionReview from JSON: $entryJson, error: $e');
-              return null; // 解析失败则返回 null
-            }
-          })
-          .whereType<GameCollectionReviewEntry>() // 过滤掉解析失败的 null
-          .toList();
-    }
+    final reviewsList = UtilJson.parseObjectList<GameCollectionReviewEntry>(
+      json['reviews'], // 传入原始的 list 数据
+      (itemJson) => GameCollectionReviewEntry.fromJson(
+          itemJson), // 告诉它怎么把一个 item 的 json 转成 Game 对象
+    );
 
-    PaginationData paginationData;
-    if (json['pagination'] != null && json['pagination'] is Map) {
-      paginationData = PaginationData.fromJson(
-          Map<String, dynamic>.from(json['pagination']));
-    } else {
-      // 如果 API 未返回 pagination，则根据当前 entries 数量构建一个默认的
-      // 这在后端未完全实现分页时可能有用，但理想情况是后端总是返回 pagination
-      int totalItems = reviewsList.length;
-      int limit = json['limit'] as int? ??
-          (reviewsList.isNotEmpty ? reviewsList.length : 10); // 尝试从json获取limit
-      int page = json['page'] as int? ?? 1; // 尝试从json获取page
-
-      paginationData = PaginationData(
-        page: page,
-        limit: limit,
-        total: totalItems, // 此时只能知道当前页的数量作为total
-        pages: (totalItems == 0 || limit == 0) ? 0 : (page), // 只能假设当前是最后一页或唯一一页
-      );
-      // log.warning("GameCollectionReviewList.fromJson: Pagination data missing or invalid from API, using default based on current entries.");
-    }
+    final paginationData = UtilJson.parsePaginationData(
+      json,
+      listForFallback: reviewsList, // 把游戏列表传进去，用于计算兜底分页
+    );
 
     return GameCollectionReviewPagination(
       reviews: reviewsList,

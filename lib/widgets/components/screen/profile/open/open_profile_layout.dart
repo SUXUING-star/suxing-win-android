@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
@@ -28,7 +28,7 @@ class OpenProfileLayout extends StatelessWidget {
   final AuthProvider authProvider; // 传递 authProvider 用于 FollowUserButton
   final double screenWidth;
   final UserFollowService followService; // 传递 followService
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final VoidCallback onFollowChanged; // 关注状态变化后的回调
   final bool isDesktop;
 
@@ -44,7 +44,7 @@ class OpenProfileLayout extends StatelessWidget {
     required this.tabController,
     required this.authProvider,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.onFollowChanged,
     required this.screenWidth,
     required this.isDesktop,
@@ -442,7 +442,7 @@ class OpenProfileLayout extends StatelessWidget {
             followService: followService,
             availableWidth: screenWidth,
             currentUser: authProvider.currentUser,
-            infoProvider: infoProvider,
+            infoService: infoService,
           ),
         );
       },

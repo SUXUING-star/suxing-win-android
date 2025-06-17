@@ -9,7 +9,7 @@ import 'package:flutter/material.dart'; // Flutter UI 框架
 import 'package:suxingchahui/models/announcement/announcement.dart'; // 公告模型
 import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart'; // 公告对话框
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 Snackbar
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart'; // 公告服务
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 认证 Provider
 

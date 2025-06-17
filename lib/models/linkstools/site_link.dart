@@ -1,6 +1,5 @@
 // lib/models/linkstools/site_link.dart
 import 'package:meta/meta.dart';
-import 'package:mongo_dart/mongo_dart.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
 // 为了避免不混淆第三方库的link包

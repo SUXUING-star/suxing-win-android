@@ -37,7 +37,7 @@ import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
 import 'package:suxingchahui/widgets/components/screen/game/tag/tag_bar.dart'; // 导入标签栏
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/game/panel/game_left_panel.dart'; // 导入游戏左侧面板
 import 'package:suxingchahui/widgets/components/screen/game/panel/game_right_panel.dart'; // 导入游戏右侧面板
@@ -360,7 +360,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       _lastTagsLoadingTime = DateTime.now();
     });
     try {
-      final tags = await widget.gameService.getAllTags(); // 获取所有标签
+      final tags = await widget.gameService.getAllGameTags(); // 获取所有标签
       if (mounted) setState(() => _availableTags = tags); // 更新可用标签列表
     } catch (e) {
       if (mounted) {
@@ -444,7 +444,6 @@ class _GamesListScreenState extends State<GamesListScreen>
           forceRefresh: forceRefresh,
         );
       }
-
 
       if (!mounted) return; // 组件未挂载时返回
 
@@ -1611,6 +1610,15 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// 构建登录提示悬浮动作按钮组。
   List<Widget> _toLoginFab() {
     return [
+      GenericFloatingActionButton(
+        onPressed: () async {
+          final gameList = await widget.gameService
+              .getFallbackAllGamesPaginated(
+                  page: _currentPage, sortBy: _currentSortBy);
+          print(gameList?.toJson());
+        },
+        icon: Icons.real_estate_agent_sharp,
+      ),
       GenericFloatingActionButton(
         onPressed: () => NavigationUtils.navigateToLogin(context), // 点击导航到登录页
         icon: Icons.login,

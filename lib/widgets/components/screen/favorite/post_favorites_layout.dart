@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
@@ -25,11 +25,10 @@ class PostFavoritesLayout extends StatefulWidget {
   final String? errorMessage;
   final VoidCallback onRetryInitialLoad;
   final VoidCallback onLoadMore;
-  final Function(String postId) onToggleFavorite;
   final ScrollController scrollController;
   final User? currentUser;
   final WindowStateProvider windowStateProvider;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final UserFollowService userFollowService;
 
   static const int leftFlex = 1;
@@ -44,11 +43,10 @@ class PostFavoritesLayout extends StatefulWidget {
     this.errorMessage,
     required this.onRetryInitialLoad,
     required this.onLoadMore,
-    required this.onToggleFavorite,
     required this.scrollController,
     required this.currentUser,
     required this.windowStateProvider,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.userFollowService,
   });
 
@@ -335,7 +333,7 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
           post: postItem,
           currentUser: widget.currentUser,
           availableWidth: postListWidth,
-          infoProvider: widget.userInfoProvider,
+          infoService: widget.userInfoService,
           followService: widget.userFollowService,
           onDeleteAction: null,
           onEditAction: null,
@@ -347,7 +345,7 @@ class _PostFavoritesLayoutState extends State<PostFavoritesLayout>
           child: IconButton(
             icon: Icon(Icons.favorite, color: Colors.red),
             iconSize: isDesktop ? 20 : 24,
-            onPressed: () => widget.onToggleFavorite(postItem.id),
+            onPressed: null,
             style: IconButton.styleFrom(
               backgroundColor: Colors.black.withSafeOpacity(0.4),
               minimumSize: Size.zero,

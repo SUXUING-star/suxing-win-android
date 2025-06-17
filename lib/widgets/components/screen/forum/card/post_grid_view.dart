@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/forum/card/post_grid_view.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart';
@@ -20,7 +20,7 @@ class PostGridView extends StatelessWidget {
   final ScrollController? scrollController;
   final bool isLoading; // 用于显示加载更多指示器
   final bool hasMoreData; // 是否还有更多数据可加载
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final Future<void> Function(Post post)? onDeleteAction;
   final void Function(Post post)? onEditAction;
   final Future<void> Function(Post post)? onToggleLockAction;
@@ -32,7 +32,7 @@ class PostGridView extends StatelessWidget {
     required this.posts,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.isDesktopLayout,
     required this.availableWidth,
     this.scrollController,
@@ -71,7 +71,7 @@ class PostGridView extends StatelessWidget {
         if (item is Post) {
           return BasePostCard(
             currentUser: currentUser,
-            infoProvider: infoProvider,
+            infoService: infoService,
             followService: followService,
             availableWidth: availableWidth,
             post: item,

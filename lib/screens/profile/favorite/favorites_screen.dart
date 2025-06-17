@@ -7,7 +7,7 @@ import 'package:suxingchahui/models/game/game_list_pagination.dart'; // 导入 g
 import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入 post_list_pagination
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
@@ -22,14 +22,14 @@ import 'package:suxingchahui/widgets/components/screen/favorite/game_likes_layou
 import 'package:suxingchahui/widgets/components/screen/favorite/post_favorites_layout.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class FavoritesScreen extends StatefulWidget {
   final AuthProvider authProvider;
   final GameService gameService;
   final PostService postService;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
   const FavoritesScreen({
     super.key,
@@ -37,7 +37,7 @@ class FavoritesScreen extends StatefulWidget {
     required this.gameService,
     required this.postService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -331,15 +331,6 @@ class _FavoritesScreenState extends State<FavoritesScreen>
     }
   }
 
-  Future<void> _togglePostFavorite(String postId) async {
-    try {
-      await widget.postService.togglePostLike(postId);
-      await _fetchPosts(isRefresh: true);
-    } catch (e) {
-      AppSnackBar.showError('取消收藏失败: ${e.toString()}');
-    }
-  }
-
   Future<void> _refreshCurrentFavorites() async {
     final currentTab = _tabController.index;
     if (!widget.authProvider.isLoggedIn) {
@@ -506,11 +497,10 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   errorMessage: _postError,
                   onRetryInitialLoad: () => _fetchPosts(isRefresh: true),
                   onLoadMore: _loadMorePosts,
-                  onToggleFavorite: _togglePostFavorite,
                   scrollController: _postScrollController,
                   currentUser: _currentUser,
                   windowStateProvider: widget.windowStateProvider,
-                  userInfoProvider: widget.infoProvider,
+                  userInfoService: widget.infoService,
                   userFollowService: widget.followService,
                 ),
               ],

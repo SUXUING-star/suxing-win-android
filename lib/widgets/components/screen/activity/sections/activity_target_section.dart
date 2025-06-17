@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart';
@@ -12,7 +12,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 class ActivityTargetSection extends StatelessWidget {
   final UserActivity activity;
   final UserFollowService followService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final User? currentUser;
   final bool isDesktopLayout;
 
@@ -20,7 +20,7 @@ class ActivityTargetSection extends StatelessWidget {
     super.key,
     required this.currentUser,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.activity,
     required this.isDesktopLayout,
   });
@@ -96,7 +96,7 @@ class ActivityTargetSection extends StatelessWidget {
           // --- 原有的内容 ---
           ActivityTarget(
             currentUser: currentUser,
-            infoProvider: infoProvider,
+            infoService: infoService,
             followService: followService,
             activity: activity,
             isAlternate: false, // 注意：isAlternate

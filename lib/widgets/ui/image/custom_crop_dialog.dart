@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载�
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展工具
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/image/hand_drawn_crop_widget.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 SnackBar 工具
 import 'package:vector_math/vector_math_64.dart' show Vector3; // 向量数学库
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 功能按钮组件
 import 'package:path/path.dart' as p; // 路径处理库
@@ -586,9 +586,9 @@ class _CustomCropDialogContentState extends State<CustomCropDialogContent> {
                           _croppedPreviewBytes!.isNotEmpty)
                       ? _debugDecodeImage // 按下时调用新的验货方法
                       : null,
-                  child: const Text('本地解码测试'),
                   style: TextButton.styleFrom(
-                      foregroundColor: Colors.orange), // 给个醒目的颜色
+                      foregroundColor: Colors.orange),
+                  child: const Text('本地解码测试'), // 给个醒目的颜色
                 ),
                 const SizedBox(width: 12),
                 FunctionalButton(

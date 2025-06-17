@@ -55,18 +55,11 @@ class GroupedGameCollections {
 
   factory GroupedGameCollections.fromJson(Map<String, dynamic> json) {
     List<GameWithCollection> parseList(dynamic listData) {
-      if (listData is List) {
-        return listData
-            .map((item) {
-              if (item is Map<String, dynamic>) {
-                return GameWithCollection.fromJson(item);
-              }
-              return null;
-            })
-            .whereType<GameWithCollection>()
-            .toList();
-      }
-      return [];
+      return UtilJson.parseObjectList<GameWithCollection>(
+        listData, // 传入原始的 list 数据
+        (itemJson) => GameWithCollection.fromJson(
+            itemJson), // 告诉它怎么把一个 item 的 json 转成 Game 对象
+      );
     }
 
     // 明确指定空 Map 的类型为 <String, dynamic>，以确保类型推断正确

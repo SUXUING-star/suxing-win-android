@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 动态类型常量
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
 import 'dart:math' as math; // 数学函数
@@ -22,7 +22,7 @@ class ActivityHeader extends StatelessWidget {
   final String userId; // 活动创建者/所有者的用户 ID
   final User? currentUser; // 当前登录用户
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final DateTime createTime; // 活动创建时间
   final DateTime? updateTime; // 活动最后更新时间
   final bool isEdited; // 活动是否被编辑过
@@ -51,7 +51,7 @@ class ActivityHeader extends StatelessWidget {
     super.key,
     required this.userId,
     required this.currentUser,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.createTime,
     this.updateTime,
@@ -95,7 +95,7 @@ class ActivityHeader extends StatelessWidget {
               child: UserInfoBadge(
                 targetUserId: userId, // 目标用户 ID
                 currentUser: currentUser, // 当前用户
-                infoProvider: infoProvider, // 用户信息 Provider
+                infoService: infoService, // 用户信息 Provider
                 followService: followService, // 用户关注服务
                 showFollowButton: false, // 不显示关注按钮
                 mini: true, // 使用紧凑模式

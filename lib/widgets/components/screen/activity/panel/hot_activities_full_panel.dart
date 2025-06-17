@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/activity_stats.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'stats/activity_stats_card.dart';
@@ -11,7 +11,7 @@ import 'stats/hot_activities_list.dart';
 
 class HotActivitiesFullPanel extends StatelessWidget {
   final UserFollowService userFollowService;
-  final UserInfoProvider userInfoProvider;
+  final UserInfoService userInfoService;
   final List<UserActivity> hotActivities;
   final User? currentUser;
   final ActivityStats activityStats;
@@ -26,7 +26,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
   const HotActivitiesFullPanel({
     super.key,
     required this.userFollowService,
-    required this.userInfoProvider,
+    required this.userInfoService,
     required this.hotActivities,
     required this.currentUser,
     required this.activityStats,
@@ -98,7 +98,7 @@ class HotActivitiesFullPanel extends StatelessWidget {
                         ? Center(child: Text(errorMessage))
                         : HotActivitiesList(
                             userFollowService: userFollowService,
-                            userInfoProvider: userInfoProvider,
+                            userInfoService: userInfoService,
                             currentUser: currentUser,
                             hotActivities: hotActivities,
                             getActivityTypeName: getActivityTypeName,

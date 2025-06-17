@@ -1,30 +1,25 @@
 // lib/widgets/ui/utils/network_error_listener_widget.dart
 
-/// 该文件定义了 NetworkErrorListenerWidget，一个用于监听网络错误的 StatefulWidget。
-/// NetworkErrorListenerWidget 在检测到网络连接异常时，显示重试对话框。
+/// 定义了 [NetworkErrorListenerWidget]，一个使用浮动卡片和动画高效展示网络错误的组件。
 library;
 
-import 'dart:async'; // 异步操作所需
-import 'package:flutter/material.dart'; // Flutter UI 组件
-import 'package:suxingchahui/services/main/network/network_manager.dart'; // 网络管理器
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载指示器组件
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
-import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart'; // 基础输入对话框
-import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 应用文本组件
-import 'package:suxingchahui/app.dart'; // 导入主应用入口，获取 NavigatorKey
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/services/main/network/network_manager.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-/// `NetworkErrorListenerWidget` 类：网络错误监听器。
+/// 网络错误监听器。
 ///
-/// 该 Widget 负责监听网络连接状态，并在网络断开时显示错误对话框。
-class NetworkErrorListenerWidget extends StatefulWidget {
-  final NetworkManager networkManager; // 网络管理器实例
-  final Widget child; // 子 Widget
+/// 该 Widget 使用 [Stack] 将子内容与一个条件性显示的错误横幅分层。
+/// [StreamBuilder] 和 [AnimatedSwitcher] 结合，仅在网络状态变化时，
+/// 以平滑的动画效果显示或隐藏一个自定义的浮动错误卡片，确保主内容 [child] 绝不重建。
+class NetworkErrorListenerWidget extends StatelessWidget {
+  /// 网络管理器实例。
+  final NetworkManager networkManager;
 
-  /// 构造函数。
-  ///
-  /// [key]：Widget 的 Key。
-  /// [child]：要渲染的子 Widget。
-  /// [networkManager]：网络管理器实例。
+  /// 子 Widget，代表应用的主要内容。
+  final Widget child;
+
+  /// 创建一个 [NetworkErrorListenerWidget] 实例。
   const NetworkErrorListenerWidget({
     super.key,
     required this.child,
@@ -32,150 +27,107 @@ class NetworkErrorListenerWidget extends StatefulWidget {
   });
 
   @override
-  State<NetworkErrorListenerWidget> createState() =>
-      _NetworkErrorListenerWidgetState();
-}
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        // --- Layer 1: 应用的主要内容 (永远不会重建) ---
+        child,
 
-/// `_NetworkErrorListenerWidgetState` 类：`NetworkErrorListenerWidget` 的状态管理。
-class _NetworkErrorListenerWidgetState
-    extends State<NetworkErrorListenerWidget> {
-  bool _isDialogShowing = false; // 标记网络错误对话框是否正在显示
+        // --- Layer 2: 动画切换的错误横幅 ---
+        StreamBuilder<bool>(
+          stream: networkManager.connectionStatusStream,
+          initialData: networkManager.isConnected,
+          builder: (context, snapshot) {
+            final bool isConnected = snapshot.data!;
 
-  StreamSubscription<bool>? _networkSubscription; // 网络连接状态变化的订阅器
-
-  /// 依赖项发生变化时调用。
-  ///
-  /// 订阅网络连接状态 Stream，根据连接状态显示或隐藏对话框。
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _networkSubscription ??= // 如果订阅器为空，则进行订阅
-        widget.networkManager.connectionStatusStream.listen((isConnected) {
-      if (!mounted) return; // Widget 未挂载时直接返回
-
-      if (!isConnected && !_isDialogShowing) {
-        // 网络断开且对话框未显示
-        _showNetworkErrorDialog(); // 显示网络错误对话框
-      } else if (isConnected && _isDialogShowing) {
-        // 网络恢复且对话框已显示
-        _hideNetworkErrorDialog(); // 隐藏网络错误对话框
-      }
-    });
-  }
-
-  /// 销毁状态。
-  ///
-  /// 取消网络订阅。
-  @override
-  void dispose() {
-    _networkSubscription?.cancel(); // 取消网络订阅
-    super.dispose(); // 调用父类销毁方法
-  }
-
-  /// 显示网络错误对话框。
-  ///
-  /// 该方法在网络断开时调用，显示一个可重试的提示对话框。
-  void _showNetworkErrorDialog() {
-    if (_isDialogShowing || // 对话框已显示
-        !mounted || // Widget 未挂载
-        mainNavigatorKey.currentContext == null) {
-      // 导航器上下文为空
-      return;
-    }
-
-    _isDialogShowing = true; // 标记对话框正在显示
-    final ValueNotifier<bool> isRetryingNotifier =
-        ValueNotifier<bool>(false); // 重试状态通知器
-
-    BaseInputDialog.show<void>(
-      context: mainNavigatorKey.currentContext!, // 对话框上下文
-      title: "网络连接异常", // 对话框标题
-      contentBuilder: (dialogContext) {
-        // 内容构建器
-        return ValueListenableBuilder<bool>(
-          valueListenable: isRetryingNotifier, // 监听重试状态变化
-          builder: (context, isRetrying, child) {
-            return Column(
-              mainAxisSize: MainAxisSize.min, // 垂直方向最小尺寸
-              children: [
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 16.0), // 底部内边距
-                  child: AppText(
-                    isRetrying
-                        ? "正在尝试重新连接..."
-                        : "无法连接到服务器，请检查您的网络连接或稍后重试。", // 根据重试状态显示不同消息
-                    textAlign: TextAlign.center, // 文本居中
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Theme.of(context)
-                            .textTheme
-                            .bodyMedium
-                            ?.color
-                            ?.withSafeOpacity(0.8)), // 文本样式
-                  ),
-                ),
-                if (isRetrying) // 重试时显示加载指示器
-                  const LoadingWidget(
-                    size: 32.0, // 加载指示器尺寸
-                  ),
-              ],
+            // 使用 AnimatedSwitcher 来实现平滑的出现和消失动画
+            return AnimatedSwitcher(
+              duration: const Duration(milliseconds: 350),
+              transitionBuilder: (Widget child, Animation<double> animation) {
+                // 定义从上向下滑入的动画效果
+                final offsetAnimation = Tween<Offset>(
+                  begin: const Offset(0.0, -1.5), // 从屏幕外顶部开始
+                  end: Offset.zero,
+                ).animate(CurvedAnimation(
+                  parent: animation,
+                  curve: Curves.easeInOutCubic,
+                ));
+                return SlideTransition(
+                  position: offsetAnimation,
+                  child: FadeTransition(opacity: animation, child: child),
+                );
+              },
+              // 根据网络状态切换子 Widget
+              child: isConnected
+                  ? const SizedBox.shrink(key: Key('connected_placeholder'))
+                  : _buildFloatingErrorBanner(context), // 构建自定义的浮动横幅
             );
           },
-        );
-      },
-      confirmButtonText: "重试", // 确认按钮文本
-      confirmButtonColor: Theme.of(mainNavigatorKey.currentContext!)
-          .colorScheme
-          .primary, // 确认按钮颜色
-      onConfirm: () async {
-        // 确认按钮点击回调
-        if (isRetryingNotifier.value) {
-          // 正在重试时阻止重复操作
-          return;
-        }
-
-        isRetryingNotifier.value = true; // 设置为正在重试
-        await widget.networkManager.reconnect(); // 尝试重新连接
-
-        if (mounted) {
-          // Widget 挂载时重置重试状态
-          isRetryingNotifier.value = false;
-        }
-      },
-      showCancelButton: false, // 不显示取消按钮
-      barrierDismissible: false, // 强制用户交互
-    ).then((_) {
-      // 对话框关闭后的回调
-      if (mounted) {
-        // Widget 挂载时重置对话框状态和销毁通知器
-        _isDialogShowing = false;
-        isRetryingNotifier.dispose();
-      }
-    });
+        ),
+      ],
+    );
   }
 
-  /// 隐藏网络错误对话框。
-  ///
-  /// 当网络恢复时调用，通过导航器关闭对话框。
-  void _hideNetworkErrorDialog() {
-    if (!mounted || // Widget 未挂载
-        mainNavigatorKey.currentContext == null || // 导航器上下文为空
-        !_isDialogShowing) {
-      // 对话框未显示
-      return;
-    }
-
-    if (Navigator.canPop(mainNavigatorKey.currentContext!)) {
-      // 导航器可以弹出时
-      Navigator.pop(mainNavigatorKey.currentContext!); // 弹出对话框
-    }
-  }
-
-  /// 构建 Widget。
-  ///
-  /// 返回 Widget 的子 Widget。
-  @override
-  Widget build(BuildContext context) {
-    return widget.child; // 渲染子 Widget
+  /// 构建一个自定义的、浮动的、非侵入式的错误横幅。
+  Widget _buildFloatingErrorBanner(BuildContext context) {
+    // 使用 Key 来帮助 AnimatedSwitcher 识别 Widget
+    return Align(
+      key: const Key('disconnected_banner'),
+      alignment: Alignment.topCenter,
+      // 使用 SafeArea 确保横幅不会与系统UI（如状态栏）重叠
+      child: SafeArea(
+        child: Container(
+          // 横向边距，使其不接触屏幕边缘
+          margin: const EdgeInsets.only(top: 12.0, left: 16.0, right: 16.0),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
+            color: Colors.red[700]?.withSafeOpacity(0.95),
+            borderRadius: BorderRadius.circular(12.0), // 圆角
+            boxShadow: const [
+              BoxShadow(
+                color: Colors.black26,
+                blurRadius: 10.0,
+                offset: Offset(0, 4),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min, // 内容决定宽度
+            children: [
+              const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
+              const SizedBox(width: 12),
+              const Flexible(
+                child: Text(
+                  '网络连接已断开',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500),
+                ),
+              ),
+              const SizedBox(width: 8),
+              // 分隔符
+              Container(
+                height: 16,
+                width: 1,
+                color: Colors.white.withSafeOpacity(0.3),
+                margin: const EdgeInsets.symmetric(horizontal: 8),
+              ),
+              GestureDetector(
+                onTap: networkManager.reconnect,
+                child: const Text(
+                  '重试',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 }

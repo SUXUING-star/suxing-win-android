@@ -9,7 +9,8 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/image/cache_manager_provider_widget.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/cache/search_history_cache_service.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/slide_fade_page_route.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
@@ -90,7 +91,8 @@ class _MainAppState extends State<MainApp> {
   late final ActivityService _activityService;
   late final LinkToolService _linkToolService;
   late final AnnouncementService _announcementService;
-  late final UserInfoProvider _infoProvider;
+  late final UserInfoService _infoService;
+  late final SearchHistoryCacheService _searchHistoryCacheService;
   late final GameListFilterProvider _gameListFilterProvider;
   late final InputStateService _inputStateService;
   late final EmailService _emailService;
@@ -130,7 +132,8 @@ class _MainAppState extends State<MainApp> {
       _linkToolService = context.read<LinkToolService>();
       _emailService = context.read<EmailService>();
       _checkInService = context.read<UserCheckInService>();
-      _infoProvider = context.read<UserInfoProvider>();
+      _infoService = context.read<UserInfoService>();
+      _searchHistoryCacheService = context.read<SearchHistoryCacheService>();
       _inputStateService = context.read<InputStateService>();
       _hasInitializedProviders = true;
     }
@@ -161,7 +164,7 @@ class _MainAppState extends State<MainApp> {
       _linkToolService,
       _messageService,
       _gameCollectionService,
-      _infoProvider,
+      _infoService,
       _inputStateService,
       _emailService,
       _checkInService,
@@ -172,6 +175,7 @@ class _MainAppState extends State<MainApp> {
       _postListFilterProvider,
       _fileUploadService,
       _windowStateProvider,
+      _searchHistoryCacheService,
     );
   }
 
@@ -191,7 +195,7 @@ class _MainAppState extends State<MainApp> {
       linkToolService: _linkToolService,
       activityService: _activityService,
       followService: _followService,
-      infoProvider: _infoProvider,
+      infoService: _infoService,
       windowStateProvider: _windowStateProvider,
       postListFilterProvider: _postListFilterProvider,
       fileUpload: _fileUploadService,

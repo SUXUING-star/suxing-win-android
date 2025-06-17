@@ -14,7 +14,7 @@ import 'package:suxingchahui/models/common/pagination.dart'; // 分页数据模�
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart'; // 窗口状态 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 动态服务
@@ -28,7 +28,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart'; // 登
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 懒加载布局构建器
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 确认对话框
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 SnackBar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 SnackBar
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具
 
 /// `MyActivityFeedScreen` 类：显示指定用户动态的界面。
@@ -41,7 +41,7 @@ class MyActivityFeedScreen extends StatefulWidget {
   final ActivityService activityService; // 动态服务实例
   final UserFollowService followService; // 用户关注服务实例
   final InputStateService inputStateService; // 输入状态服务实例
-  final UserInfoProvider infoProvider; // 用户信息 Provider 实例
+  final UserInfoService infoService; // 用户信息 Provider 实例
   final WindowStateProvider windowStateProvider; // 窗口状态 Provider 实例
 
   /// 构造函数。
@@ -55,7 +55,7 @@ class MyActivityFeedScreen extends StatefulWidget {
     required this.activityService,
     required this.followService,
     required this.inputStateService,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
     this.title = 'TA的动态',
   });
@@ -787,7 +787,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
               'my_feed_${widget.userId}_${_collapseMode.index}'), // 唯一键
           activities: _activities, // 动态列表
           inputStateService: widget.inputStateService, // 输入状态服务
-          infoProvider: widget.infoProvider, // 用户信息 Provider
+          infoService: widget.infoService, // 用户信息 Provider
           followService: widget.followService, // 关注服务
           currentUser: currentUser, // 当前用户
           isLoading: _isLoading && _activities.isEmpty, // 加载状态

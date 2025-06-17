@@ -11,7 +11,7 @@ import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 导
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart'; // 导入活动卡片组件
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart'; // 导入活动空状态组件
@@ -34,7 +34,7 @@ enum FeedCollapseMode {
 class CollapsibleActivityFeed extends StatefulWidget {
   final List<UserActivity> activities; // 用户活动列表
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
   final User? currentUser; // 当前登录用户
   final bool isLoading; // 是否正在加载数据
@@ -89,7 +89,7 @@ class CollapsibleActivityFeed extends StatefulWidget {
     super.key,
     required this.activities,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     required this.currentUser,
     this.isLoading = false,
@@ -307,7 +307,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
             key: ValueKey(activity.id),
             activity: activity,
             currentUser: widget.currentUser,
-            infoProvider: widget.infoProvider,
+            infoService: widget.infoService,
             followService: widget.followService,
             inputStateService: widget.inputStateService,
             isAlternate: isAlternate, // 是否交替布局
@@ -417,7 +417,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                     UserInfoBadge(
                       key: ValueKey("badge_$groupKey"), // 唯一键
                       targetUserId: groupKey, // 目标用户ID
-                      infoProvider: widget.infoProvider, // 用户信息 Provider
+                      infoService: widget.infoService, // 用户信息 Provider
                       followService: widget.followService, // 关注服务
                       currentUser: widget.currentUser, // 当前用户
                       mini: true, // 迷你模式
@@ -565,7 +565,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
           child: ActivityCard(
             key: ValueKey(activity.id), activity: activity,
             currentUser: widget.currentUser,
-            infoProvider: widget.infoProvider,
+            infoService: widget.infoService,
             inputStateService: widget.inputStateService,
             followService: widget.followService,
             isAlternate: isAlternate, // 是否交替布局

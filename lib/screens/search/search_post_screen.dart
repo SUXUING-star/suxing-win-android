@@ -6,7 +6,8 @@ import 'dart:async';
 // Models
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/post/post_list_pagination.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/cache/search_history_cache_service.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 
 // Services
@@ -25,26 +26,26 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 // Utils & Routes
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
-  final UserService userService;
+  final SearchHistoryCacheService searchHistoryCacheService;
   final PostService postService;
   final UserFollowService followService;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
   const SearchPostScreen({
     super.key,
     required this.postService,
-    required this.userService,
+    required this.searchHistoryCacheService,
     required this.followService,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.windowStateProvider,
   });
 
@@ -125,7 +126,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 这个搜索记录不需要登录！！！！！！！！
     // 完全本地共享
     try {
-      final history = await widget.userService.loadLocalSearchHistory();
+      final history = await widget.searchHistoryCacheService.loadLocalHistory();
       if (!mounted) return;
       setState(() {
         _searchHistory = history;
@@ -148,7 +149,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     // 这个搜索记录不需要登录！！！！！！！！
     // 完全本地共享
     try {
-      await widget.userService.saveLocalSearchHistory(_searchHistory);
+      await widget.searchHistoryCacheService.saveLocalHistory(_searchHistory);
     } catch (e) {
       // print("SearchPostScreen: Error saving search history: $e");
     }
@@ -588,7 +589,7 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
                   currentUser: widget.authProvider.currentUser,
                   post: item,
                   followService: widget.followService,
-                  infoProvider: widget.infoProvider,
+                  infoService: widget.infoService,
                   onDeleteAction: _handleDeletePostAction,
                   onEditAction: _handleEditPostAction,
                   onToggleLockAction: _handleToggleLockAction,

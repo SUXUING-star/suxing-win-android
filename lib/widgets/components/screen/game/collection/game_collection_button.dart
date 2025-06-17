@@ -10,7 +10,7 @@ import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/widgets/components/screen/game/dialog/game_collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class GameCollectionButton extends StatefulWidget {
   final Game game;

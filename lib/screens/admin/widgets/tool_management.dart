@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/linkstools/tool.dart';
 import 'package:suxingchahui/widgets/components/form/toolform/tool_form_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class ToolManagement extends StatefulWidget {
   final LinkToolService linkToolService;

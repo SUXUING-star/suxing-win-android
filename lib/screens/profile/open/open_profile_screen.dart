@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -22,22 +22,21 @@ import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class OpenProfileScreen extends StatefulWidget {
   final String userId;
-  final UserService userService;
+
   final AuthProvider authProvider;
   final UserFollowService followService;
   final PostService postService;
   final GameService gameService;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final WindowStateProvider windowStateProvider;
 
   const OpenProfileScreen({
     super.key,
-    required this.userService,
     required this.gameService,
     required this.authProvider,
     required this.postService,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     required this.userId,
     required this.windowStateProvider,
   });
@@ -121,7 +120,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
         _targetUser = currentUser;
       } else {
         // 这个用户不是你
-        _targetUser = await widget.userService.getUserInfoById(widget.userId);
+        _targetUser = await widget.infoService.getUserInfoById(widget.userId);
       }
 
       // 加载用户帖子
@@ -216,7 +215,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
           authProvider: widget.authProvider,
           isDesktop: isDesktop,
           screenWidth: screenWidth,
-          infoProvider: widget.infoProvider,
+          infoService: widget.infoService,
           followService: widget.followService,
           // 传入 UserFollowService
           onFollowChanged: _handleFollowChanged, // 传入关注变化的回调

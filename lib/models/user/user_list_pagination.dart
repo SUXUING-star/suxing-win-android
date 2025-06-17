@@ -1,6 +1,7 @@
 import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/models/user/user_with_ban_status.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
 /// 用户列表分页数据模型。
 @immutable
@@ -24,14 +25,18 @@ class UserListPagination {
   /// 从 JSON Map 创建实例。
   factory UserListPagination.fromJson(Map<String, dynamic> json) {
     final usersList = (json['users'] as List? ?? [])
-        .map((userJson) => UserWithBanStatus.fromJson(Map<String, dynamic>.from(userJson)))
+        .map((userJson) =>
+            UserWithBanStatus.fromJson(Map<String, dynamic>.from(userJson)))
         .toList();
+
+    final paginationData = UtilJson.parsePaginationData(
+      json,
+      listForFallback: usersList, // 把游戏列表传进去，用于计算兜底分页
+    );
 
     return UserListPagination(
       users: usersList,
-      pagination: json['pagination'] != null
-          ? PaginationData.fromJson(Map<String, dynamic>.from(json['pagination']))
-          : PaginationData.fromItemList(usersList, 1), // 如果没有分页信息，就自己算一个
+      pagination: paginationData,
     );
   }
 

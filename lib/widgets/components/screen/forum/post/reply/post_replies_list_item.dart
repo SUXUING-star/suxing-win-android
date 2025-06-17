@@ -7,7 +7,7 @@ import 'package:suxingchahui/models/post/post_reply_pagination.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'post_reply_item.dart';
@@ -24,7 +24,7 @@ import 'post_reply_item.dart';
 class PostRepliesListItem extends StatefulWidget {
   final User? currentUser;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final InputStateService inputStateService;
   final UserFollowService followService;
   final PostService postService;
@@ -35,7 +35,7 @@ class PostRepliesListItem extends StatefulWidget {
     super.key,
     required this.currentUser,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.inputStateService,
     required this.followService,
     required this.postService,
@@ -348,7 +348,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
                           inputStateService: widget.inputStateService,
                           authProvider: widget.authProvider,
                           followService: widget.followService,
-                          infoProvider: widget.infoProvider,
+                          infoService: widget.infoService,
                           currentUser: authSnapshot.data,
                           postService: widget.postService,
                           reply: topReply,
@@ -376,7 +376,7 @@ class _PostRepliesListItemState extends State<PostRepliesListItem> {
                                     postService: widget.postService,
                                     reply: nestedReply,
                                     followService: widget.followService,
-                                    infoProvider: widget.infoProvider,
+                                    infoService: widget.infoService,
                                     floor: 0,
                                     postId: widget.postId,
                                     onActionSuccess: () =>

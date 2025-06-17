@@ -10,7 +10,7 @@ import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由常量
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 Snackbar
 
 /// `ProfileConstants` 类：定义用户个人中心界面的常量。
 ///

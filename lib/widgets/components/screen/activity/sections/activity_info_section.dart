@@ -4,7 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保导入模型
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
@@ -20,7 +20,7 @@ class ActivityInfoSection extends StatelessWidget {
 
   final UserFollowService followService;
 
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
 
   final User? currentUser;
 
@@ -36,7 +36,7 @@ class ActivityInfoSection extends StatelessWidget {
   const ActivityInfoSection({
     super.key,
     required this.currentUser,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.activity,
     this.onEditActivity,
@@ -76,7 +76,7 @@ class ActivityInfoSection extends StatelessWidget {
             userId: activity.userId,
             currentUser: currentUser,
             followService: followService,
-            infoProvider: infoProvider,
+            infoService: infoService,
             createTime: activity.createTime,
             updateTime: activity.updateTime,
             isEdited: activity.isEdited,

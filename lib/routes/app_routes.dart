@@ -11,7 +11,8 @@ import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/cache/search_history_cache_service.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/screens/game/collection/game_collection_screen.dart';
 import 'package:suxingchahui/screens/message/message_screen.dart';
 import 'package:suxingchahui/screens/profile/coined_games/coined_games_screen.dart';
@@ -115,7 +116,7 @@ class AppRoutes {
     LinkToolService linkToolService,
     MessageService messageService,
     GameCollectionService gameCollectionService,
-    UserInfoProvider infoProvider,
+    UserInfoService infoService,
     InputStateService inputStateService,
     EmailService emailService,
     UserCheckInService checkInService,
@@ -126,6 +127,7 @@ class AppRoutes {
     PostListFilterProvider postListFilterProvider,
     RateLimitedFileUpload fileUploadService,
     WindowStateProvider windowStateProvider,
+    SearchHistoryCacheService searchHistoryCacheService,
   ) {
     String routeName = settings.name ?? '/'; // 默认路由，防止 settings.name 为 null
 
@@ -159,7 +161,7 @@ class AppRoutes {
             builder: (_) => ForgotPasswordScreen(
                   authProvider: authProvider,
                   inputStateService: inputStateService,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   emailService: emailService,
                 ));
       case resetPassword:
@@ -186,12 +188,13 @@ class AppRoutes {
                 ));
       case searchGame:
         return SlideFadePageRoute(
-            routeSettings: settings,
-            builder: (_) => SearchGameScreen(
-                  gameService: gameService,
-                  windowStateProvider: windowStateProvider,
-                  userService: userService,
-                ));
+          routeSettings: settings,
+          builder: (_) => SearchGameScreen(
+            gameService: gameService,
+            windowStateProvider: windowStateProvider,
+            searchHistoryCacheService: searchHistoryCacheService,
+          ),
+        );
 
       case gameDetail:
         final arguments = settings.arguments;
@@ -227,7 +230,7 @@ class AppRoutes {
             sidebarProvider: sidebarProvider,
             gameListFilterProvider: gameListFilterProvider,
             authProvider: authProvider,
-            infoProvider: infoProvider,
+            infoService: infoService,
             gameService: gameService,
             followService: followService,
             gameCollectionService: gameCollectionService,
@@ -269,8 +272,7 @@ class AppRoutes {
             builder: (_) => OpenProfileScreen(
                   userId: userId,
                   windowStateProvider: windowStateProvider,
-                  infoProvider: infoProvider,
-                  userService: userService,
+                  infoService: infoService,
                   authProvider: authProvider,
                   gameService: gameService,
                   postService: postService,
@@ -285,7 +287,7 @@ class AppRoutes {
                   inputStateService: inputStateService,
                   fileUpload: fileUploadService,
                   sidebarProvider: sidebarProvider,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   gameCollectionService: gameCollectionService,
                   authProvider: authProvider,
                   gameListFilterProvider: gameListFilterProvider,
@@ -316,7 +318,7 @@ class AppRoutes {
             authProvider: authProvider,
             gameService: gameService,
             followService: followService,
-            infoProvider: infoProvider,
+            infoService: infoService,
             gameCollectionService: gameCollectionService,
             gameListFilterProvider: gameListFilterProvider,
           ),
@@ -327,7 +329,7 @@ class AppRoutes {
             builder: (_) => CheckInScreen(
                   windowStateProvider: windowStateProvider,
                   checkInService: checkInService,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   followService: followService,
                   authProvider: authProvider,
                 ));
@@ -337,7 +339,7 @@ class AppRoutes {
             builder: (_) => FavoritesScreen(
                   windowStateProvider: windowStateProvider,
                   authProvider: authProvider,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   gameService: gameService,
                   followService: followService,
                   postService: postService,
@@ -348,7 +350,7 @@ class AppRoutes {
             builder: (_) => HistoryScreen(
                   windowStateProvider: windowStateProvider,
                   followService: followService,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   authProvider: authProvider,
                   gameService: gameService,
                   postService: postService,
@@ -358,7 +360,7 @@ class AppRoutes {
             routeSettings: settings,
             builder: (_) => MyPostsScreen(
                   windowStateProvider: windowStateProvider,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   authProvider: authProvider,
                   postService: postService,
                   followService: followService,
@@ -398,7 +400,7 @@ class AppRoutes {
         return SlideFadePageRoute(
           routeSettings: settings,
           builder: (_) => MyActivityFeedScreen(
-            infoProvider: infoProvider,
+            infoService: infoService,
             windowStateProvider: windowStateProvider,
             inputStateService: inputStateService,
             authProvider: authProvider,
@@ -440,7 +442,7 @@ class AppRoutes {
             activityService: activityService,
             followService: followService,
             inputStateService: inputStateService,
-            infoProvider: infoProvider,
+            infoService: infoService,
             activityDetailParam: activityDetailParam,
           ),
         );
@@ -498,11 +500,11 @@ class AppRoutes {
             routeSettings: settings,
             builder: (_) => SearchPostScreen(
                   windowStateProvider: windowStateProvider,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   authProvider: authProvider,
                   followService: followService,
                   postService: postService,
-                  userService: userService,
+                  searchHistoryCacheService: searchHistoryCacheService,
                 ));
 
       case postDetail:
@@ -525,7 +527,7 @@ class AppRoutes {
                   postListFilterProvider: postListFilterProvider,
                   sidebarProvider: sidebarProvider,
                   inputStateService: inputStateService,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                   authProvider: authProvider,
                   postService: postService,
                   windowStateProvider: windowStateProvider,
@@ -574,7 +576,7 @@ class AppRoutes {
                   linkToolService: linkToolService,
                   authProvider: authProvider,
                   inputStateService: inputStateService,
-                  infoProvider: infoProvider,
+                  infoService: infoService,
                 ));
       case myGames:
         return SlideFadePageRoute(
@@ -624,8 +626,7 @@ class AppRoutes {
           routeSettings: settings,
           builder: (_) => UserFollowsScreen(
             windowStateProvider: windowStateProvider,
-            userService: userService,
-            infoProvider: infoProvider,
+            infoService: infoService,
             authProvider: authProvider,
             followService: followService,
             userId: args['userId'],

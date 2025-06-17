@@ -9,7 +9,7 @@ import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/models/post/user_post_actions.dart'; // 导入用户帖子操作模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 导入用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息服务
 import 'package:suxingchahui/services/main/forum/post_service.dart'; // 导入帖子服务
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/widgets/components/screen/forum/post/section/community_guidelines.dart'; // 导入社区指南组件
@@ -23,44 +23,84 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 ///
 /// 该组件根据桌面或移动端布局，组织帖子内容、社区指南、最新全局回复和帖子回复列表。
 class PostDetailLayout extends StatelessWidget {
-  final bool isDesktop; // 是否为桌面布局
-  final Post post; // 帖子数据
-  final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
-  final Function(BuildContext context, String tagString)? onTagTap; // 标签点击回调
-  final InputStateService inputStateService; // 输入状态 Provider
-  final PostService postService; // 帖子服务
-  final AuthProvider authProvider; // 认证 Provider
-  final UserPostActions userActions; // 用户帖子操作
-  final String postId; // 帖子 ID
-  final Function(Post, UserPostActions) onPostUpdated; // 帖子更新回调
+  /// 是否为桌面布局。
+  final bool isDesktop;
+
+  /// 帖子数据。
+  final Post post;
+
+  /// 帖子服务。
+  final PostService postService;
+
+  /// 用户关注服务。
+  final UserFollowService followService;
+
+  /// 用户信息服务。
+  final UserInfoService infoService;
+
+  /// 标签点击回调。
+  final Function(BuildContext context, String tagString)? onTagTap;
+
+  /// 输入状态服务。
+  final InputStateService inputStateService;
+
+  /// 认证服务。
+  final AuthProvider authProvider;
+
+  /// 用户帖子操作状态。
+  final UserPostActions userActions;
+
+  /// 帖子 ID。
+  final String postId;
+
+  /// 点赞操作是否正在进行。
+  final bool isLiking;
+
+  /// 赞同操作是否正在进行。
+  final bool isAgreeing;
+
+  /// 收藏操作是否正在进行。
+  final bool isFavoriting;
+
+  /// 点击“点赞”按钮的回调。
+  final VoidCallback onToggleLike;
+
+  /// 点击“赞同”按钮的回调。
+  final VoidCallback onToggleAgree;
+
+  /// 点击“收藏”按钮的回调。
+  final VoidCallback onToggleFavorite;
 
   /// 构造函数。
   ///
   /// [isDesktop]：是否桌面。
   /// [post]：帖子数据。
   /// [followService]：关注服务。
-  /// [infoProvider]：用户信息 Provider。
+  /// [infoService]：用户信息服务。
   /// [onTagTap]：标签点击回调。
-  /// [inputStateService]：输入状态 Provider。
+  /// [inputStateService]：输入状态服务。
   /// [postService]：帖子服务。
-  /// [authProvider]：认证 Provider。
+  /// [authProvider]：认证服务。
   /// [userActions]：用户操作。
   /// [postId]：帖子ID。
-  /// [onPostUpdated]：帖子更新回调。
   const PostDetailLayout({
     super.key,
+    required this.postService,
     required this.isDesktop,
     required this.post,
     required this.followService,
-    required this.infoProvider,
+    required this.infoService,
     this.onTagTap,
     required this.inputStateService,
-    required this.postService,
     required this.authProvider,
     required this.userActions,
     required this.postId,
-    required this.onPostUpdated,
+    required this.isLiking,
+    required this.isAgreeing,
+    required this.isFavoriting,
+    required this.onToggleLike,
+    required this.onToggleAgree,
+    required this.onToggleFavorite,
   });
 
   /// 构建帖子内容区域。
@@ -75,13 +115,17 @@ class PostDetailLayout extends StatelessWidget {
       delay: delay, // 动画延迟
       child: PostContent(
         onTagTap: onTagTap, // 标签点击回调
-        postService: postService, // 帖子服务
-        infoProvider: infoProvider, // 用户信息 Provider
+        infoService: infoService, // 用户信息服务
         followService: followService, // 关注服务
         currentUser: authProvider.currentUser, // 当前用户
         userActions: userActions, // 用户操作
         post: post, // 帖子数据
-        onPostUpdated: onPostUpdated, // 帖子更新回调
+        isAgreeing: isAgreeing,
+        onToggleAgree: onToggleAgree,
+        isFavoriting: isFavoriting,
+        onToggleFavorite: onToggleFavorite,
+        isLiking: isLiking,
+        onToggleLike: onToggleLike,
       ),
     );
   }
@@ -113,7 +157,7 @@ class PostDetailLayout extends StatelessWidget {
       duration: duration, // 动画时长
       delay: delay, // 动画延迟
       child: RecentGlobalReplies(
-        infoProvider: infoProvider, // 用户信息 Provider
+        infoService: infoService, // 用户信息服务
         followService: followService, // 关注服务
         limit: 5, // 限制数量
         post: post, // 帖子数据
@@ -136,12 +180,12 @@ class PostDetailLayout extends StatelessWidget {
       duration: duration, // 动画时长
       delay: delay, // 动画延迟
       child: PostRepliesListItem(
-        inputStateService: inputStateService, // 输入状态 Provider
+        inputStateService: inputStateService, // 输入状态服务
         currentUser: authProvider.currentUser, // 当前用户
         followService: followService, // 关注服务
-        infoProvider: infoProvider, // 用户信息 Provider
+        infoService: infoService, // 用户信息服务
         postService: postService, // 帖子服务
-        authProvider: authProvider, // 认证 Provider
+        authProvider: authProvider, // 认证服务
         postId: postId, // 帖子 ID
         isScrollableInternally: isScrollableInternally, // 是否内部可滚动
       ),
@@ -152,7 +196,7 @@ class PostDetailLayout extends StatelessWidget {
   ///
   /// [context]：Build 上下文。
   /// [keyPrefix]：键前缀。
-  /// 根据 [isDesktop] 参数选择构建桌面或移动端布局。
+  /// 根据 [isDesktop] 参数构建桌面或移动端布局。
   @override
   Widget build(BuildContext context) {
     final String keyPrefix = 'post_detail_layout_${post.id}'; // 统一键前缀
@@ -169,12 +213,12 @@ class PostDetailLayout extends StatelessWidget {
   /// [context]：Build 上下文。
   /// [keyPrefix]：键前缀。
   Widget _buildDesktopLayout(BuildContext context, String keyPrefix) {
-    const Duration primaryDuration = Duration(milliseconds: 400); // 主要动画时长
-    const Duration secondaryDuration = Duration(milliseconds: 350); // 次要动画时长
-    const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
-    const Duration incrementDelay = Duration(milliseconds: 75); // 延迟增量
-    int leftDelayIndex = 0; // 左侧延迟索引
-    int rightDelayIndex = 0; // 右侧延迟索引
+    const Duration primaryDuration = Duration(milliseconds: 400);
+    const Duration secondaryDuration = Duration(milliseconds: 350);
+    const Duration baseDelay = Duration(milliseconds: 50);
+    const Duration incrementDelay = Duration(milliseconds: 75);
+    int leftDelayIndex = 0;
+    int rightDelayIndex = 0;
 
     final postContentKey = ValueKey('${keyPrefix}_post_content_desk'); // 帖子内容键
     final guidelinesKey = ValueKey('${keyPrefix}_guidelines_desk'); // 指南键
@@ -218,7 +262,7 @@ class PostDetailLayout extends StatelessWidget {
             flex: 6, // 比例
             child: Column(
               children: [
-                const SizedBox(height: 16), // 占位符
+                const SizedBox(height: 16), // 顶部间距
                 Expanded(
                   child: _buildPostReplyListSection(
                     secondaryDuration,
@@ -242,10 +286,10 @@ class PostDetailLayout extends StatelessWidget {
   /// [context]：Build 上下文。
   /// [keyPrefix]：键前缀。
   Widget _buildMobileLayout(BuildContext context, String keyPrefix) {
-    const Duration contentDuration = Duration(milliseconds: 400); // 内容动画时长
-    const Duration replyListDuration = Duration(milliseconds: 350); // 回复列表动画时长
-    const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
-    const Duration replyDelay = Duration(milliseconds: 150); // 回复列表延迟
+    const Duration contentDuration = Duration(milliseconds: 400);
+    const Duration replyListDuration = Duration(milliseconds: 350);
+    const Duration baseDelay = Duration(milliseconds: 50);
+    const Duration replyDelay = Duration(milliseconds: 150);
 
     final postContentKey = ValueKey('${keyPrefix}_post_content_mob'); // 帖子内容键
     final replyListKey = ValueKey('${keyPrefix}_reply_list_mob'); // 回复列表键

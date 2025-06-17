@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/models/post/post.dart'; // 帖子模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
-import 'package:suxingchahui/providers/user/user_info_provider.dart'; // 用户信息 Provider
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart'; // 基础帖子卡片组件
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart'; // 动画列表视图
@@ -23,7 +23,7 @@ class HomeHotPosts extends StatelessWidget {
   final List<Post>? posts; // 热门帖子列表
   final User? currentUser; // 当前登录用户
   final UserFollowService followService; // 用户关注服务
-  final UserInfoProvider infoProvider; // 用户信息 Provider
+  final UserInfoService infoService; // 用户信息 Provider
   final double screenWidth; // 屏幕宽度
   final bool isLoading; // 是否正在加载
   final String? errorMessage; // 错误消息
@@ -44,7 +44,7 @@ class HomeHotPosts extends StatelessWidget {
     super.key,
     required this.posts,
     required this.currentUser,
-    required this.infoProvider,
+    required this.infoService,
     required this.followService,
     required this.isLoading,
     required this.screenWidth,
@@ -201,7 +201,7 @@ class HomeHotPosts extends StatelessWidget {
   ) {
     return BasePostCard(
       followService: followService, // 用户关注服务
-      infoProvider: infoProvider, // 用户信息 Provider
+      infoService: infoService, // 用户信息 Provider
       availableWidth: screenWidth, // 可用宽度
       post: post, // 帖子数据
       currentUser: currentUser, // 当前用户

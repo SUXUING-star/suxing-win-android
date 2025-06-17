@@ -22,7 +22,7 @@ class GameCollectionItem {
   final DateTime createTime;
   final DateTime updateTime;
 
-  GameCollectionItem({
+  const GameCollectionItem({
     required this.gameId,
     required this.status,
     this.notes,

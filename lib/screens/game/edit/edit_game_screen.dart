@@ -5,7 +5,7 @@ import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
@@ -21,7 +21,7 @@ import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snack_bar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
 class EditGameScreen extends StatefulWidget {
   final String gameId;
@@ -30,7 +30,7 @@ class EditGameScreen extends StatefulWidget {
   final RateLimitedFileUpload fileUpload;
   final GameService gameService;
   final AuthProvider authProvider;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final GameListFilterProvider gameListFilterProvider;
   final SidebarProvider sidebarProvider;
   final InputStateService inputStateService;
@@ -44,7 +44,7 @@ class EditGameScreen extends StatefulWidget {
     required this.gameService,
     required this.followService,
     required this.authProvider,
-    required this.infoProvider,
+    required this.infoService,
     required this.gameListFilterProvider,
     required this.windowStateProvider,
     required this.sidebarProvider,
@@ -227,7 +227,7 @@ class _EditGameScreenState extends State<EditGameScreen> {
                 authProvider: widget.authProvider,
                 gameService: widget.gameService,
                 followService: widget.followService,
-                infoProvider: widget.infoProvider,
+                infoService: widget.infoService,
                 currentUser: widget.authProvider.currentUser,
                 game: _game!, // _game 在这里保证非空
                 onSubmit: _handleGameFormSubmit,

@@ -3,6 +3,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
+
+
 @immutable
 class UserPostActions {
   final bool liked;
@@ -18,6 +20,11 @@ class UserPostActions {
     this.agreed = false,
     this.favorited = false,
   });
+
+  static const String agreeAction = 'agree';
+  static const String favoriteAction = 'favorite';
+  static const String likeAction = 'like';
+
 
   // 提供一个默认的 "无交互" 状态
   factory UserPostActions.defaultActions(String postId, String userId) {

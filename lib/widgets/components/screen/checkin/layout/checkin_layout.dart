@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/user/checkin_status.dart';
 import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/calendar/calendar_view.dart';
@@ -17,7 +17,7 @@ class CheckInLayout extends StatelessWidget {
   final CheckInStatus checkInStatus;
   final User currentUser;
   final bool isDesktop;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   final UserCheckInService checkInService;
   final UserFollowService followService;
   final MonthlyCheckInReport? monthlyData;
@@ -40,7 +40,7 @@ class CheckInLayout extends StatelessWidget {
     required this.checkInStatus,
     required this.currentUser,
     required this.isDesktop,
-    required this.infoProvider,
+    required this.infoService,
     required this.checkInService,
     required this.followService,
     required this.monthlyData,
@@ -189,7 +189,7 @@ class CheckInLayout extends StatelessWidget {
       delay: delay,
       slideOffset: _slideOffset,
       child: TodayCheckInListSection(
-        infoProvider: infoProvider,
+        infoService: infoService,
         isLoading: isTodayListLoading,
         checkInList: todayCheckInList,
         onRefresh: onRefreshTodayList,

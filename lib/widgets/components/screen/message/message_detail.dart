@@ -65,8 +65,7 @@ class MessageDetail extends StatelessWidget {
             SizedBox(height: 24),
             // 如果是分组消息且有引用内容，显示引用区域
             if (message.isGrouped &&
-                message.references != null &&
-                message.references!.isNotEmpty)
+                message.references.isNotEmpty)
               _buildReferencesSection(),
             // SizedBox(height: 16), // 底部留白由 Scaffold padding 控制或 body padding 控制
           ],

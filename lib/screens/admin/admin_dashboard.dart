@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/providers/user/user_info_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
@@ -34,7 +34,7 @@ class AdminDashboard extends StatefulWidget {
   final WindowStateProvider windowStateProvider;
   final UserFollowService followService;
   final RateLimitedFileUpload fileUpload;
-  final UserInfoProvider infoProvider;
+  final UserInfoService infoService;
   const AdminDashboard({
     super.key,
     required this.authProvider,
@@ -47,7 +47,7 @@ class AdminDashboard extends StatefulWidget {
     required this.fileUpload,
     required this.followService,
     required this.announcementService,
-    required this.infoProvider,
+    required this.infoService,
   });
 
   @override
@@ -118,7 +118,7 @@ class _AdminDashboardState extends State<AdminDashboard> {
           inputStateService: widget.inputStateService,
           userService: widget.userService,
           followService: widget.followService,
-          infoProvider: widget.infoProvider,
+          infoService: widget.infoService,
         ),
         AnnouncementManagement(
           fileUpload: widget.fileUpload,

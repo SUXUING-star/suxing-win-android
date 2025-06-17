@@ -1,7 +1,6 @@
 // lib/models/post/post.dart
 
 // PostStatus 枚举：定义帖子状态
-import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
 enum PostStatus {
@@ -10,7 +9,6 @@ enum PostStatus {
   deleted // 删除
 }
 
-@immutable
 class Post {
   final String id;
   final String title;
@@ -31,7 +29,7 @@ class Post {
   // 前端特定字段：当前用户最后浏览时间，用于历史记录展示
   final DateTime? currentUserLastViewTime;
 
-  const Post({
+  Post({
     required this.id,
     required this.title,
     required this.content,

@@ -10,7 +10,7 @@ class TodayCheckInList {
   final List<String> users;
   final int count;
 
-  TodayCheckInList({
+  const TodayCheckInList({
     required this.date,
     required this.users, // <-- 修改这里
     required this.count,
