@@ -1,32 +1,46 @@
 // lib/widgets/components/screen/game/collection/game_collection_section.dart
-import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/services/main/game/game_collection_service.dart';
-import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_button.dart';
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
+/// 该文件定义了 GameCollectionSection 组件，用于显示游戏的收藏和评分信息。
+/// GameCollectionSection 包含收藏按钮和各项统计数据。
+library;
+
+import 'package:flutter/material.dart'; // Flutter UI 组件所需
+import 'package:intl/intl.dart'; // 国际化格式化所需
+import 'package:suxingchahui/constants/game/game_constants.dart'; // 游戏常量所需
+import 'package:suxingchahui/models/game/game.dart'; // 游戏模型所需
+import 'package:suxingchahui/models/game/game_collection_item.dart'; // 游戏收藏项模型所需
+import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider 所需
+import 'package:suxingchahui/services/main/game/game_collection_service.dart'; // 游戏收藏服务所需
+import 'package:suxingchahui/widgets/components/screen/game/collection/game_collection_button.dart'; // 游戏收藏按钮组件所需
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法所需
+
+/// `GameCollectionSection` 类：显示游戏收藏和评分信息的 StatelessWidget。
+///
+/// 该组件展示游戏的收藏数量、评分以及提供收藏操作按钮。
 class GameCollectionSection extends StatelessWidget {
-  final Game game;
-  final InputStateService inputStateService;
-  final GameCollectionService gameCollectionService;
-  final User? currentUser;
-  final GameCollectionItem? initialCollectionStatus;
-  final bool isPreviewMode;
-  final Function(GameCollectionItem?, Game?)? onCollectionChanged;
+  final Game game; // 游戏数据
+  final InputStateService inputStateService; // 输入状态服务
+  final GameCollectionService gameCollectionService; // 游戏收藏服务
+  final User? currentUser; // 当前登录用户
+  final GameCollectionItem? collectionStatus; // 初始收藏状态
+  /// 收藏按钮是否处于加载状态。
+  final bool? isCollectionLoading;
 
+  /// 收藏按钮被点击时的回调。
+  final VoidCallback? onCollectionButtonPressed;
+  final bool isPreviewMode; // 是否为预览模式
+
+  /// 构造函数。
   const GameCollectionSection({
     super.key,
     required this.game,
     required this.inputStateService,
     required this.gameCollectionService,
     required this.currentUser,
-    this.initialCollectionStatus,
-    this.onCollectionChanged,
+    this.collectionStatus,
+    this.isCollectionLoading,
+    this.onCollectionButtonPressed,
     this.isPreviewMode = false,
   });
 
@@ -34,16 +48,16 @@ class GameCollectionSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final wantToPlayCount = game.wantToPlayCount;
-    final playingCount = game.playingCount;
-    final playedCount = game.playedCount;
-    final totalCollections = game.totalCollections;
-    final rating = game.rating;
-    final ratingCount = game.ratingCount;
+    final wantToPlayCount = game.wantToPlayCount; // 想玩数量
+    final playingCount = game.playingCount; // 正在玩数量
+    final playedCount = game.playedCount; // 已玩数量
+    final totalCollections = game.totalCollections; // 总收藏数量
+    final rating = game.rating; // 评分
+    final ratingCount = game.ratingCount; // 评分人数
 
     final formattedRating = rating > 0
         ? NumberFormat('0.0').format(rating)
-        : (ratingCount > 0 ? '0.0' : '暂无');
+        : (ratingCount > 0 ? '0.0' : '暂无'); // 格式化后的评分
 
     return Container(
       margin: const EdgeInsets.symmetric(vertical: 8),
@@ -83,14 +97,11 @@ class GameCollectionSection extends StatelessWidget {
                 ),
               ),
               const Spacer(),
-              if (!isPreviewMode)
+              if (!isPreviewMode) // 预览模式下不显示收藏按钮
                 GameCollectionButton(
-                  gameCollectionService: gameCollectionService,
-                  inputStateService: inputStateService,
-                  game: game,
-                  currentUser: currentUser,
-                  initialCollectionStatus: initialCollectionStatus,
-                  onCollectionChanged: onCollectionChanged,
+                  collectionStatus: collectionStatus,
+                  isLoading: isCollectionLoading ?? false,
+                  onPressed: onCollectionButtonPressed ?? () {},
                   compact: false,
                   isPreview: isPreviewMode,
                 ),
@@ -134,7 +145,7 @@ class GameCollectionSection extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 16),
-          Divider(color: Colors.grey[200]),
+          Divider(color: Colors.grey[200]), // 分割线
           const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -158,7 +169,12 @@ class GameCollectionSection extends StatelessWidget {
     );
   }
 
-  // 构建单个统计信息展示块，使用传入的主题和数值
+  /// 构建单个统计信息展示块。
+  ///
+  /// [context]：Build 上下文。
+  /// [theme]：收藏状态主题。
+  /// [value]：统计数值。
+  /// 返回一个包含图标、文本和数值的容器。
   Widget _buildStatContainer(
     BuildContext context,
     GameCollectionStatusTheme theme,
@@ -182,17 +198,17 @@ class GameCollectionSection extends StatelessWidget {
                       blurRadius: 4,
                       offset: const Offset(0, 2))
                 ]),
-            child: Icon(theme.icon, color: theme.textColor, size: 24),
+            child: Icon(theme.icon, color: theme.textColor, size: 24), // 状态图标
           ),
           const SizedBox(height: 8),
-          Text(theme.text,
+          Text(theme.text, // 状态文本
               style: TextStyle(
                   color: theme.textColor,
                   fontWeight: FontWeight.bold,
                   fontSize: 14),
               overflow: TextOverflow.ellipsis),
           const SizedBox(height: 4),
-          Text(value.toString(),
+          Text(value.toString(), // 统计数值
               style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,

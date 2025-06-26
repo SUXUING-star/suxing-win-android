@@ -55,6 +55,31 @@ class UtilJson {
     }
   }
 
+  /// 安全地从动态值中解析出月份中的“日”。
+  ///
+  /// 此方法可以处理以下情况：
+  /// - `int` 类型的值 (例如 `26`)
+  /// - `String` 类型的值，格式为 'YYYY-MM-DD' (例如 `'2023-10-26'`)
+  /// - `String` 类型的值，只包含一个数字 (例如 `'26'`)
+  ///
+  /// 如果解析失败或值为 null，则返回 0。
+  static int parseDayOfMonthSafely(dynamic value) {
+    if (value == null) return 0;
+    if (value is int) return value;
+    if (value is String) {
+      try {
+        // 检查是否是 'YYYY-MM-DD' 格式，如果是，则取最后一部分。
+        // 否则，直接尝试解析整个字符串。
+        final dayString = value.contains('-') ? value.split('-').last : value;
+        return int.tryParse(dayString) ?? 0;
+      } catch (_) {
+        // 如果 split 或其他操作失败，返回 0
+        return 0;
+      }
+    }
+    return 0; // 其他类型，返回 0
+  }
+
   // 安全解析 int
   static int parseIntSafely(dynamic value) {
     if (value == null) return 0;

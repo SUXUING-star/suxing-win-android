@@ -15,23 +15,23 @@ import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart'; // 信息对�
 ///
 /// 该 Widget 负责监听 `UnauthorizedAccessEvent` 事件，并在收到该事件时，
 /// 阻止重复弹窗，然后显示一个强制用户重新登录的对话框。
-class GlobalApiErrorListener extends StatefulWidget {
+class NoAuthorlizedListener extends StatefulWidget {
   final Widget child; // 子 Widget
   /// 构造函数。
   ///
   /// [key]：Widget 的 Key。
   /// [child]：要渲染的子 Widget。
-  const GlobalApiErrorListener({
+  const NoAuthorlizedListener({
     super.key,
     required this.child,
   });
 
   @override
-  State<GlobalApiErrorListener> createState() => _GlobalApiErrorListenerState();
+  State<NoAuthorlizedListener> createState() => _NoAuthorlizedListenerState();
 }
 
 /// `_GlobalApiErrorListenerState` 类：`GlobalApiErrorListener` 的状态管理。
-class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
+class _NoAuthorlizedListenerState extends State<NoAuthorlizedListener> {
   StreamSubscription? _unauthorizedSubscription; // 未授权事件的订阅器
 
   DateTime? _lastUnauthorizedTimestamp; // 上一次未授权事件发生的时间戳
@@ -96,7 +96,7 @@ class _GlobalApiErrorListenerState extends State<GlobalApiErrorListener> {
     CustomInfoDialog.show(
       context: navigatorContext, // 对话框上下文
       title: '认证失效', // 对话框标题
-      message: event.message ?? '您的登录状态已过期或无效，请重新登录以继续操作。', // 对话框消息
+      message: '您的登录状态已过期或无效，请重新登录以继续操作。', // 对话框消息
       iconData: Icons.lock_person_outlined, // 对话框图标
       iconColor: Colors.orangeAccent, // 图标颜色
       closeButtonText: '前往登录', // 关闭按钮文本

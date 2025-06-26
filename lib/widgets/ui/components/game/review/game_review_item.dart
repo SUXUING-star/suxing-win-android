@@ -13,7 +13,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // �
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
-import 'package:suxingchahui/models/game/game_collection.dart'; // 游戏收藏模型
+import 'package:suxingchahui/models/game/game_collection_item.dart'; // 游戏收藏模型
 
 /// `GameReviewItemWidget` 类：游戏评论项组件。
 ///
@@ -103,8 +103,7 @@ class GameReviewItemWidget extends StatelessWidget {
                   style: TextStyle(color: Colors.grey[600], fontSize: 12)),
             ],
           ),
-          if (status == GameCollectionStatus.played &&
-              rating != null) // 已玩状态且有评分时
+          if (status == GameCollectionItem.statusPlayed && rating != null) // 已玩状态且有评分时
             Padding(
               // 评分星级
               padding: const EdgeInsets.only(top: 8.0, bottom: 4.0),

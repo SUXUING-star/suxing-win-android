@@ -3,7 +3,7 @@
 /// 该文件定义了 GameDetailParam 模型，用于在导航到游戏详情页时传递参数。
 library;
 
-import 'package:suxingchahui/models/common/filter.dart';
+import 'package:suxingchahui/models/common/query_param_data.dart';
 import 'package:suxingchahui/models/util_json.dart'; // --- 操，必须引进来 ---
 
 /// `GameDetailParam` 类：游戏详情页导航参数模型。
@@ -14,7 +14,7 @@ class GameDetailParam {
   final String gameId;
 
   /// 关联的筛选和分页数据（可选）。
-  final FilterData? filterData;
+  final QueryParamData? filterData;
 
   /// 构造函数。
   const GameDetailParam({
@@ -30,7 +30,7 @@ class GameDetailParam {
       gameId: UtilJson.parseId(json['gameId']),
       // 安全地处理可空的 filterData
       filterData: json['filterData'] != null
-          ? FilterData.fromJson(json['filterData'])
+          ? QueryParamData.fromJson(json['filterData'])
           : null,
     );
   }
@@ -52,7 +52,7 @@ class GameDetailParam {
   /// 创建一个新的 `GameDetailParam` 实例，并根据提供的参数进行更新。
   GameDetailParam copyWith({
     String? gameId,
-    FilterData? filterData,
+    QueryParamData? filterData,
   }) {
     return GameDetailParam(
       gameId: gameId ?? this.gameId,

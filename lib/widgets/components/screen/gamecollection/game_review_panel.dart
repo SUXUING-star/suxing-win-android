@@ -4,13 +4,13 @@ import 'package:suxingchahui/constants/game/game_constants.dart';
 import 'dart:ui';
 
 import 'package:suxingchahui/models/game/game_with_collection.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
-import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart';
+import 'package:suxingchahui/widgets/ui/components/game/game_tags_row.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -177,7 +177,7 @@ class GameReviewPanel extends StatelessWidget {
   // 构建我的评分部分
   Widget _buildMyRating(
       BuildContext context, GameCollectionItem collectionItem) {
-    if (collectionItem.status != GameCollectionStatus.played ||
+    if (collectionItem.status != GameCollectionItem.statusPlayed ||
         collectionItem.rating == null ||
         collectionItem.rating! <= 0) {
       return const SizedBox.shrink();

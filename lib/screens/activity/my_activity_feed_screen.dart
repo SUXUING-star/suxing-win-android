@@ -8,6 +8,7 @@ import 'dart:async'; // 异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 活动常量
+import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 分页数据模型
@@ -28,7 +29,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart'; // 登
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 懒加载布局构建器
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 确认对话框
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 SnackBar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 应用 SnackBar
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具
 
 /// `MyActivityFeedScreen` 类：显示指定用户动态的界面。

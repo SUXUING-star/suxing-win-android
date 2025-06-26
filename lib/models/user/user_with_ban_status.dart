@@ -7,6 +7,9 @@ import 'package:suxingchahui/models/user/user.dart';
 /// 包含用户及其封禁状态的组合模型。
 @immutable
 class UserWithBanStatus {
+  static const String jsonKeyBanInfo = 'banInfo';
+  static const String jsonKeyUser = 'user';
+
   final User user;
   final BanInfo? banInfo;
 
@@ -21,10 +24,11 @@ class UserWithBanStatus {
   factory UserWithBanStatus.fromJson(Map<String, dynamic> json) {
     return UserWithBanStatus(
       // 直接用整个 json 去创建 User 对象
-      user: User.fromJson(json),
+      user: User.fromJson(json[jsonKeyUser]),
       // 如果 json 里有 banInfo，就用它来创建 BanInfo 对象
-      banInfo: json['banInfo'] != null
-          ? BanInfo.fromJson(Map<String, dynamic>.from(json['banInfo']))
+      // 使用常量
+      banInfo: json[jsonKeyBanInfo] != null
+          ? BanInfo.fromJson(Map<String, dynamic>.from(json[jsonKeyBanInfo]))
           : null,
     );
   }
@@ -32,10 +36,14 @@ class UserWithBanStatus {
   /// 转换为 JSON Map。
   Map<String, dynamic> toJson() {
     // 先把 user 转成 map
-    final data = user.toSafeJson();
+    final Map<String, dynamic> data = {
+      jsonKeyUser: user.toSafeJson(),
+    };
+
     // 如果有 banInfo，再把它加进去
     if (banInfo != null) {
-      data['banInfo'] = banInfo!.toJson();
+      // 使用常量
+      data[jsonKeyBanInfo] = banInfo!.toJson();
     }
     return data;
   }

@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart'; //
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart'; // 导入表单文本输入框组件
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart'; // 导入应用文本类型
 import 'package:suxingchahui/services/main/user/cache/account_cache_service.dart'; // 导入账号缓存服务
@@ -62,10 +62,12 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLoading = false; // 登录加载状态
   String? _errorMessage; // 错误消息
 
+  List<SavedAccount>? _accounts;
+
   static const String emailSlotName = 'login_email'; // 邮箱输入框槽名称
   static const String passwordSlotName = 'login_password'; // 密码输入框槽名称
 
-  late final AccountCacheService _accountCache; // 账号缓存服务实例
+  late final AccountCacheService _accountCacheService; // 账号缓存服务实例
 
   bool _hasInitializedDependencies = false; // 依赖初始化标记
 
@@ -79,8 +81,8 @@ class _LoginScreenState extends State<LoginScreen> {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       // 依赖未初始化时
-      _accountCache = Provider.of<AccountCacheService>(context,
-          listen: false); // 从 Provider 获取账号缓存服务
+      _accountCacheService =
+          context.read<AccountCacheService>(); // 从 Provider 获取账号缓存服务
       _hasInitializedDependencies = true; // 标记为已初始化
     }
     if (_hasInitializedDependencies) {
@@ -93,8 +95,9 @@ class _LoginScreenState extends State<LoginScreen> {
   ///
   /// 如果存在已保存账号，则延迟显示账号气泡菜单。
   Future<void> _checkSavedAccounts() async {
-    final accounts = _accountCache.getAllAccounts(); // 获取所有已保存账号
-    if (accounts.isNotEmpty) {
+    _accounts = await _accountCacheService.getAllAccounts();
+    final accounts = _accounts;
+    if (accounts != null && accounts.isNotEmpty) {
       // 账号列表不为空时
       Future.delayed(const Duration(milliseconds: 300), () {
         if (mounted) {
@@ -109,8 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
   ///
   /// 从邮箱输入框位置弹出菜单，供用户选择已保存的账号。
   void _showAccountBubbleMenu() {
-    final accounts = _accountCache.getAllAccounts(); // 获取所有已保存账号
-    if (accounts.isEmpty) return; // 账号列表为空时返回
+    final accounts = _accounts;
+    if (accounts == null && accounts!.isEmpty) return; // 账号列表为空时返回
     final RenderBox? renderBox = _emailFieldKey.currentContext
         ?.findRenderObject() as RenderBox?; // 获取邮箱输入框的渲染盒
     if (renderBox == null) return; // 渲染盒为空时返回
@@ -147,7 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
       widget.inputStateService.getController(passwordSlotName).text =
           account.password; // 填充密码
     } catch (e) {
-      AppSnackBar.showError( "无法自动填充账号信息"); // 显示错误提示
+      AppSnackBar.showError("无法自动填充账号信息"); // 显示错误提示
       return; // 无法更新时返回
     }
 
@@ -183,7 +186,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const String successMessage = "登录成功~🎉"; // 成功消息
         NavigationUtils.navigateToHome(widget.sidebarProvider, context,
             tabIndex: 0); // 导航到首页
-        AppSnackBar.showSuccess( successMessage); // 显示成功提示
+        AppSnackBar.showSuccess(successMessage); // 显示成功提示
       }
     } catch (e) {
       // 捕获登录失败异常
@@ -238,13 +241,14 @@ class _LoginScreenState extends State<LoginScreen> {
       decoration: InputDecoration(
         labelText: '邮箱', // 标签文本
         prefixIcon: const Icon(Icons.email), // 前缀图标
-        suffixIcon: _accountCache.getAllAccounts().isNotEmpty // 存在已保存账号时显示后缀图标
-            ? IconButton(
-                icon: const Icon(Icons.account_circle_outlined), // 图标
-                tooltip: '选择已保存的账号', // 提示
-                onPressed: _showAccountBubbleMenu, // 点击回调
-              )
-            : null,
+        suffixIcon:
+            (_accounts != null && _accounts!.isNotEmpty) // 存在已保存账号时显示后缀图标
+                ? IconButton(
+                    icon: const Icon(Icons.account_circle_outlined), // 图标
+                    tooltip: '选择已保存的账号', // 提示
+                    onPressed: _showAccountBubbleMenu, // 点击回调
+                  )
+                : null,
       ),
       keyboardType: TextInputType.emailAddress, // 键盘类型为邮箱
       textInputAction: TextInputAction.next, // 文本输入动作为下一项

@@ -1,10 +1,18 @@
 // lib/models/post/global_post_reply_item.dart
 import 'package:meta/meta.dart';
-import 'package:suxingchahui/models/post/post_reply.dart';
+import 'package:suxingchahui/models/post/post_reply.dart'; // 确认此引入是否仍必要，如果fromReply不再需要PostReply作为参数，则可能不需要
 import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class GlobalPostReplyItem {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyPostId = 'postId';
+  static const String jsonKeyPostTitle = 'postTitle';
+  static const String jsonKeyContent = 'content';
+  static const String jsonKeyAuthorId = 'authorId';
+  static const String jsonKeyCreateTime = 'createTime';
+
   final String id;
   final String postId;
   final String? postTitle;
@@ -20,6 +28,7 @@ class GlobalPostReplyItem {
     required this.authorId,
     required this.createTime,
   });
+
   GlobalPostReplyItem copyWith({
     String? id,
     String? postId,
@@ -27,9 +36,10 @@ class GlobalPostReplyItem {
     String? content,
     String? authorId,
     DateTime? createTime,
-    String? parentId,
-    DateTime? updateTime,
-    String? status,
+    // 以下字段在原始 copyWith 中不存在，但在此处也保留（以防未来需要）
+    // String? parentId,
+    // DateTime? updateTime,
+    // String? status,
   }) {
     return GlobalPostReplyItem(
       id: id ?? this.id,
@@ -43,23 +53,24 @@ class GlobalPostReplyItem {
 
   factory GlobalPostReplyItem.fromJson(Map<String, dynamic> json) {
     return GlobalPostReplyItem(
-      id: UtilJson.parseId(json['id']),
-      postId: UtilJson.parseId(json['postId']),
-      postTitle: UtilJson.parseNullableStringSafely(json['postTitle']),
-      content: UtilJson.parseStringSafely(json['content']),
-      authorId: UtilJson.parseId(json['authorId']),
-      createTime: UtilJson.parseDateTime(json['createTime']),
+      id: UtilJson.parseId(json[jsonKeyId]), // 使用常量
+      postId: UtilJson.parseId(json[jsonKeyPostId]), // 使用常量
+      postTitle:
+          UtilJson.parseNullableStringSafely(json[jsonKeyPostTitle]), // 使用常量
+      content: UtilJson.parseStringSafely(json[jsonKeyContent]), // 使用常量
+      authorId: UtilJson.parseId(json[jsonKeyAuthorId]), // 使用常量
+      createTime: UtilJson.parseDateTime(json[jsonKeyCreateTime]), // 使用常量
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'postId': postId,
-      'postTitle': postTitle,
-      'content': content,
-      'authorId': authorId,
-      'createTime': createTime.toIso8601String(),
+      jsonKeyId: id, // 使用常量
+      jsonKeyPostId: postId, // 使用常量
+      jsonKeyPostTitle: postTitle, // 使用常量
+      jsonKeyContent: content, // 使用常量
+      jsonKeyAuthorId: authorId, // 使用常量
+      jsonKeyCreateTime: createTime.toIso8601String(), // 使用常量
     };
   }
 
@@ -67,7 +78,7 @@ class GlobalPostReplyItem {
       GlobalPostReplyItem originalGlobalReply, PostReply newReply) {
     return GlobalPostReplyItem(
       id: originalGlobalReply.id,
-      postId: originalGlobalReply.id,
+      postId: originalGlobalReply.postId,
       postTitle: originalGlobalReply.postTitle,
       content: newReply.content,
       authorId: originalGlobalReply.authorId,

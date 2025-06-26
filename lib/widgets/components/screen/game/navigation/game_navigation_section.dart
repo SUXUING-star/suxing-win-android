@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/game/navigation/game_navigation_section.dart
 
-/// 该文件定义了 GameNavigationSection 组件，用于显示游戏的上一篇/下一篇导航。
-/// GameNavigationSection 负责渲染导航按钮，并处理导航逻辑。
+/// 该文件定义了 [GameNavigationSection] 组件，用于显示游戏的上一篇/下一篇导航。
+/// [GameNavigationSection] 负责渲染导航按钮，并处理导航逻辑。
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
@@ -9,7 +9,7 @@ import 'package:suxingchahui/models/game/game_navigation_info.dart'; // 游戏�
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 
-/// `GameNavigationSection` 类：游戏导航板块组件。
+/// [GameNavigationSection] 类：游戏导航板块组件。
 ///
 /// 该组件显示用于在游戏详情页之间切换的“上一篇”和“下一篇”按钮。
 class GameNavigationSection extends StatelessWidget {

@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 class ForceUpdateDialog {
   static Future<void> show({

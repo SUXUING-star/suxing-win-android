@@ -11,7 +11,7 @@ import 'package:suxingchahui/models/announcement/announcement.dart';
 import 'package:suxingchahui/services/main/announcement/announcement_service.dart';
 import 'package:suxingchahui/widgets/components/dialogs/announcement/announcement_dialog.dart';
 import 'package:suxingchahui/widgets/components/form/announcementform/announcement_form.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 class AnnouncementManagement extends StatefulWidget {
   final AnnouncementService announcementService;

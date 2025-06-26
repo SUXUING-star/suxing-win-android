@@ -6,6 +6,7 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:intl/intl.dart'; // 导入国际化数字格式化
+import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型

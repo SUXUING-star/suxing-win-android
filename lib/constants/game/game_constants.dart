@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart'; // Flutter UI 框架
 import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
-import 'package:suxingchahui/models/game/game_collection.dart'; // 游戏收藏模型
+import 'package:suxingchahui/models/game/game_collection_item.dart'; // 游戏收藏模型
 
 /// `GameCollectionStatusTheme` 类：定义游戏收藏状态相关的显示属性结构。
 ///
@@ -84,11 +84,11 @@ class GameCollectionStatusUtils {
   /// 返回对应的 `GameCollectionStatusTheme`。
   static GameCollectionStatusTheme getTheme(String? status) {
     switch (status) {
-      case GameCollectionStatus.wantToPlay:
+      case GameCollectionItem.statusWantToPlay:
         return wantToPlayTheme;
-      case GameCollectionStatus.playing:
+      case GameCollectionItem.statusPlaying:
         return playingTheme;
-      case GameCollectionStatus.played:
+      case GameCollectionItem.statusPlayed:
         return playedTheme;
       default:
         return unknownTheme;
@@ -98,42 +98,23 @@ class GameCollectionStatusUtils {
 
 /// `GameConstants` 类：定义游戏相关的常量。
 class GameConstants {
-  /// 默认游戏分类列表。
-  static const List<String> defaultGameCategory = [
-    categoryOriginal,
-    categoryTranslated
-  ];
-
-  /// 默认筛选选项 Map。
-  static const Map<String, String> defaultFilter = {
-    'createTime': '最新发布',
-    'viewCount': '最多浏览',
-    'rating': '最高评分'
-  };
-
-  /// 汉化分类常量。
-  static const String categoryTranslated = '汉化';
-
-  /// 生肉分类常量。
-  static const String categoryOriginal = '生肉';
-
   /// 获取游戏状态的显示属性。
   ///
   /// [approvalStatus]：审核状态字符串。
   /// 返回包含文本和颜色的 Map。
   static Map<String, dynamic> getGameStatusDisplay(String? approvalStatus) {
     switch (approvalStatus?.toLowerCase()) {
-      case GameStatus.pending:
+      case Game.gameStatusPending:
         return {
           'text': '审核中',
           'color': Colors.orange,
         };
-      case GameStatus.approved:
+      case Game.gameStatusApproved:
         return {
           'text': '已通过',
           'color': Colors.green,
         };
-      case GameStatus.rejected:
+      case Game.gameStatusRejected:
         return {
           'text': '已拒绝',
           'color': Colors.red,
@@ -155,9 +136,9 @@ class GameCategoryUtils {
   /// 返回对应的颜色。
   static Color getCategoryColor(String category) {
     switch (category) {
-      case (GameConstants.categoryTranslated):
+      case (Game.categoryTranslated):
         return Colors.blue.shade300;
-      case (GameConstants.categoryOriginal):
+      case (Game.categoryOriginal):
         return Colors.green.shade300;
       default:
         return Colors.grey.shade200;

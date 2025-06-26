@@ -8,6 +8,15 @@ import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class Task {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyType = 'type';
+  static const String jsonKeyName = 'name';
+  static const String jsonKeyDescription = 'description';
+  static const String jsonKeyUsed = 'used';
+  static const String jsonKeyLimit = 'limit';
+  static const String jsonKeyExpPerTask = 'expPerTask';
+  static const String jsonKeyCompleted = 'completed';
+
   final String type;
   final String name;
   final String description;
@@ -31,26 +40,24 @@ class Task {
 
   factory Task.fromJson(Map<String, dynamic> json) {
     return Task(
-      type: UtilJson.parseStringSafely(json['type']),
-      name: UtilJson.parseStringSafely(json['name']),
-      description: UtilJson.parseStringSafely(json['description']),
-      used: UtilJson.parseIntSafely(json['used']),
-      limit: UtilJson.parseIntSafely(json['limit']),
-      expPerTask: UtilJson.parseIntSafely(json['expPerTask']),
-      completed: UtilJson.parseBoolSafely(json['completed']),
+      type: UtilJson.parseStringSafely(json[jsonKeyType]),
+      name: UtilJson.parseStringSafely(json[jsonKeyName]),
+      description: UtilJson.parseStringSafely(json[jsonKeyDescription]),
+      used: UtilJson.parseIntSafely(json[jsonKeyUsed]),
+      limit: UtilJson.parseIntSafely(json[jsonKeyLimit]),
+      expPerTask: UtilJson.parseIntSafely(json[jsonKeyExpPerTask]),
+      completed: UtilJson.parseBoolSafely(json[jsonKeyCompleted]),
     );
   }
 
-  // **** 添加 toJson 方法 ****
   Map<String, dynamic> toJson() => {
-        'type': type,
-        'name': name,
-        'description': description,
-        'used': used,
-        'limit': limit,
-        'expPerTask': expPerTask,
-        'completed': completed,
-        // 'style' 不需要序列化回 JSON
+        jsonKeyType: type,
+        jsonKeyName: name,
+        jsonKeyDescription: description,
+        jsonKeyUsed: used,
+        jsonKeyLimit: limit,
+        jsonKeyExpPerTask: expPerTask,
+        jsonKeyCompleted: completed,
       };
 
   double get progress =>
@@ -60,13 +67,20 @@ class Task {
 }
 
 // 今日进度汇总模型
+@immutable
 class TodayProgressSummary {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyEarnedToday = 'earnedToday';
+  static const String jsonKeyPossibleToday = 'possibleToday';
+  static const String jsonKeyRemainingToday = 'remainingToday';
+  static const String jsonKeyCompletionPercentage = 'completionPercentage';
+
   final int earnedToday;
   final int possibleToday;
   final int remainingToday;
   final double completionPercentage;
 
-  TodayProgressSummary({
+  const TodayProgressSummary({
     required this.earnedToday,
     required this.possibleToday,
     required this.remainingToday,
@@ -75,75 +89,69 @@ class TodayProgressSummary {
 
   factory TodayProgressSummary.fromJson(Map<String, dynamic> json) {
     return TodayProgressSummary(
-      earnedToday: UtilJson.parseIntSafely(json['earnedToday']),
-      possibleToday: UtilJson.parseIntSafely(json['possibleToday']),
-      remainingToday: UtilJson.parseIntSafely(json['remainingToday']),
+      earnedToday: UtilJson.parseIntSafely(json[jsonKeyEarnedToday]),
+      possibleToday: UtilJson.parseIntSafely(json[jsonKeyPossibleToday]),
+      remainingToday: UtilJson.parseIntSafely(json[jsonKeyRemainingToday]),
       completionPercentage:
-          UtilJson.parseDoubleSafely(json['completionPercentage']),
+          UtilJson.parseDoubleSafely(json[jsonKeyCompletionPercentage]),
     );
   }
 
-  // **** 添加 toJson 方法 ****
   Map<String, dynamic> toJson() => {
-        'earnedToday': earnedToday,
-        'possibleToday': possibleToday,
-        'remainingToday': remainingToday,
-        'completionPercentage': completionPercentage,
+        jsonKeyEarnedToday: earnedToday,
+        jsonKeyPossibleToday: possibleToday,
+        jsonKeyRemainingToday: remainingToday,
+        jsonKeyCompletionPercentage: completionPercentage,
       };
 }
 
 // 完整的每日经验进度数据模型
+@immutable
 class DailyProgressData {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyTotalExperience = 'totalExperience';
+  static const String jsonKeyTodayProgress = 'todayProgress';
+  static const String jsonKeyTasks = 'tasks';
+
   final int totalExperience;
   final TodayProgressSummary todayProgress;
   final List<Task> tasks;
 
-  DailyProgressData({
+  const DailyProgressData({
     required this.totalExperience,
     required this.todayProgress,
     required this.tasks,
   });
 
   factory DailyProgressData.fromJson(Map<String, dynamic> json) {
-    List<Task> parsedTasks = [];
-    if (json['tasks'] is List) {
-      parsedTasks = (json['tasks'] as List)
-          .map((item) {
-            if (item is Map<String, dynamic>) {
-              return Task.fromJson(item);
-            }
-            return null;
-          })
-          .whereType<Task>()
-          .toList();
-    }
+    // 使用 UtilJson.parseObjectList 来安全地解析 'tasks' 列表
+    final parsedTasks = UtilJson.parseObjectList<Task>(
+      json[jsonKeyTasks],
+      (itemJson) => Task.fromJson(itemJson),
+    );
 
     // 确保 todayProgress 字段是 Map，如果不是或为 null 则使用空 Map
-    final todayProgressData = json['todayProgress'] is Map<String, dynamic>
-        ? json['todayProgress'] as Map<String, dynamic>
+    final todayProgressData = json[jsonKeyTodayProgress] is Map<String, dynamic>
+        ? json[jsonKeyTodayProgress] as Map<String, dynamic>
         : <String, dynamic>{};
 
     return DailyProgressData(
-      totalExperience: UtilJson.parseIntSafely(json['totalExperience']),
+      totalExperience: UtilJson.parseIntSafely(json[jsonKeyTotalExperience]),
       todayProgress: TodayProgressSummary.fromJson(todayProgressData),
       tasks: parsedTasks,
     );
   }
 
-  // **** 添加 toJson 方法 ****
   Map<String, dynamic> toJson() => {
-        'totalExperience': totalExperience,
-        // 调用嵌套对象的 toJson
-        'todayProgress': todayProgress.toJson(),
-        // 对列表中的每个对象调用 toJson
-        'tasks': tasks.map((task) => task.toJson()).toList(),
+        jsonKeyTotalExperience: totalExperience,
+        jsonKeyTodayProgress: todayProgress.toJson(),
+        jsonKeyTasks: tasks.map((task) => task.toJson()).toList(),
       };
 
-  // 可以添加一个空的构造函数或静态方法，用于错误处理时返回默认值
   static DailyProgressData empty() {
     return DailyProgressData(
       totalExperience: 0,
-      todayProgress: TodayProgressSummary(
+      todayProgress: const TodayProgressSummary(
           earnedToday: 0,
           possibleToday: 0,
           remainingToday: 0,

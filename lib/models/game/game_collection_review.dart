@@ -1,6 +1,7 @@
 // lib/models/game/game_collection_review.dart
 
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
@@ -50,4 +51,23 @@ class GameCollectionReviewEntry {
         'createTime': createTime.toUtc().toIso8601String(),
         'updateTime': updateTime.toUtc().toIso8601String(),
       };
+
+
+  factory GameCollectionReviewEntry.fromGameCollectionItem(
+      {required GameCollectionItem item,
+      required String userId,
+      required String gameId,
+      }){
+    return GameCollectionReviewEntry(
+      // 构建新的或更新的评价条目
+      userId: userId,
+      gameId: gameId,
+      status: item.status,
+      createTime: item.createTime,
+      updateTime: item.updateTime,
+      reviewContent: item.review,
+      notes: item.notes,
+      rating: item.rating,
+    );
+  }
 }

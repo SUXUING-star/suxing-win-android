@@ -8,7 +8,7 @@ import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/screens/game/list/common_game_list_screen.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart';
@@ -200,7 +200,7 @@ class _GameManagementState extends State<GameManagement>
       final result = await widget.gameService.getGamesPaginatedWithInfo(
         page: 1,
         sortBy: 'createTime',
-        descending: true,
+        sortDesc: true,
       );
       return result.games;
     } catch (e) {
@@ -343,10 +343,10 @@ class _GameManagementState extends State<GameManagement>
   Widget build(BuildContext context) {
     // --- 在 build 方法里过滤数据 ---
     final pendingGames = _reviewQueueGames
-        .where((g) => g.approvalStatus == GameStatus.pending)
+        .where((g) => g.approvalStatus == Game.gameStatusPending)
         .toList();
     final rejectedGames = _reviewQueueGames
-        .where((g) => g.approvalStatus == GameStatus.rejected)
+        .where((g) => g.approvalStatus == Game.gameStatusRejected)
         .toList();
 
     return Column(

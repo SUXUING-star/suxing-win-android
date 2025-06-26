@@ -5,6 +5,36 @@ import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class User {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyMongoId = '_id';
+  static const String jsonKeyUsername = 'username';
+  static const String jsonKeyEmail = 'email';
+  static const String jsonKeyAvatar = 'avatar';
+  static const String jsonKeyCreateTime = 'createTime';
+  static const String jsonKeyUpdateTime = 'updateTime';
+  static const String jsonKeySignature = 'signature';
+  static const String jsonKeyIsAdmin = 'isAdmin';
+  static const String jsonKeyIsSuperAdmin = 'isSuperAdmin';
+  static const String jsonKeyExperience = 'experience';
+  static const String jsonKeyLevel = 'level';
+  static const String jsonKeyConsecutiveCheckIn = 'consecutiveCheckIn';
+  static const String jsonKeyTotalCheckIn = 'totalCheckIn';
+  static const String jsonKeyCoins = 'coins';
+  static const String jsonKeyLastCheckInDate = 'lastCheckInDate';
+  static const String jsonKeyFollowing = 'following';
+  static const String jsonKeyFollowers = 'followers';
+  static const String jsonKeyCurrentLevelExp = 'currentLevelExp';
+  static const String jsonKeyNextLevelExp = 'nextLevelExp';
+  static const String jsonKeyExpToNextLevel = 'expToNextLevel';
+  static const String jsonKeyLevelProgress = 'levelProgress';
+  static const String jsonKeyIsMaxLevel = 'isMaxLevel';
+
+  // 为 toSafeJson 中额外添加的字段也定义常量
+  static const String jsonKeyFollowingCount = 'followingCount';
+  static const String jsonKeyFollowersCount = 'followersCount';
+  static const String jsonKeyCheckedInToday = 'checkedInToday';
+
   final String id;
   final String username;
   final String email;
@@ -58,29 +88,30 @@ class User {
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
       // 业务逻辑: ID 字段兼容 '_id' 和 'id'
-      id: UtilJson.parseId(json['_id'] ?? json['id']),
-      username: UtilJson.parseStringSafely(json['username']),
-      email: UtilJson.parseStringSafely(json['email']),
-      avatar: UtilJson.parseNullableStringSafely(json['avatar']),
-      signature: UtilJson.parseNullableStringSafely(json['signature']),
-      createTime: UtilJson.parseDateTime(json['createTime']),
-      updateTime: UtilJson.parseNullableDateTime(json['updateTime']),
-      isAdmin: UtilJson.parseBoolSafely(json['isAdmin']),
-      isSuperAdmin: UtilJson.parseBoolSafely(json['isSuperAdmin']),
-      experience: UtilJson.parseIntSafely(json['experience']),
-      level: UtilJson.parseIntSafely(json['level']),
-      coins: UtilJson.parseIntSafely(json['coins']),
+      id: UtilJson.parseId(json[jsonKeyMongoId] ?? json[jsonKeyId]),
+      username: UtilJson.parseStringSafely(json[jsonKeyUsername]),
+      email: UtilJson.parseStringSafely(json[jsonKeyEmail]),
+      avatar: UtilJson.parseNullableStringSafely(json[jsonKeyAvatar]),
+      signature: UtilJson.parseNullableStringSafely(json[jsonKeySignature]),
+      createTime: UtilJson.parseDateTime(json[jsonKeyCreateTime]),
+      updateTime: UtilJson.parseNullableDateTime(json[jsonKeyUpdateTime]),
+      isAdmin: UtilJson.parseBoolSafely(json[jsonKeyIsAdmin]),
+      isSuperAdmin: UtilJson.parseBoolSafely(json[jsonKeyIsSuperAdmin]),
+      experience: UtilJson.parseIntSafely(json[jsonKeyExperience]),
+      level: UtilJson.parseIntSafely(json[jsonKeyLevel]),
+      coins: UtilJson.parseIntSafely(json[jsonKeyCoins]),
       consecutiveCheckIn:
-          UtilJson.parseNullableIntSafely(json['consecutiveCheckIn']),
-      totalCheckIn: UtilJson.parseNullableIntSafely(json['totalCheckIn']),
-      lastCheckInDate: UtilJson.parseNullableDateTime(json['lastCheckInDate']),
-      following: UtilJson.parseListString(json['following']),
-      followers: UtilJson.parseListString(json['followers']),
-      currentLevelExp: UtilJson.parseIntSafely(json['currentLevelExp']),
-      nextLevelExp: UtilJson.parseIntSafely(json['nextLevelExp']),
-      expToNextLevel: UtilJson.parseIntSafely(json['expToNextLevel']),
-      levelProgress: UtilJson.parseDoubleSafely(json['levelProgress']),
-      isMaxLevel: UtilJson.parseBoolSafely(json['isMaxLevel']),
+          UtilJson.parseNullableIntSafely(json[jsonKeyConsecutiveCheckIn]),
+      totalCheckIn: UtilJson.parseNullableIntSafely(json[jsonKeyTotalCheckIn]),
+      lastCheckInDate:
+          UtilJson.parseNullableDateTime(json[jsonKeyLastCheckInDate]),
+      following: UtilJson.parseListString(json[jsonKeyFollowing]),
+      followers: UtilJson.parseListString(json[jsonKeyFollowers]),
+      currentLevelExp: UtilJson.parseIntSafely(json[jsonKeyCurrentLevelExp]),
+      nextLevelExp: UtilJson.parseIntSafely(json[jsonKeyNextLevelExp]),
+      expToNextLevel: UtilJson.parseIntSafely(json[jsonKeyExpToNextLevel]),
+      levelProgress: UtilJson.parseDoubleSafely(json[jsonKeyLevelProgress]),
+      isMaxLevel: UtilJson.parseBoolSafely(json[jsonKeyIsMaxLevel]),
     );
   }
 
@@ -88,30 +119,30 @@ class User {
   // 用于 UI 显示，可以包含一些计算字段，不含敏感信息
   Map<String, dynamic> toSafeJson() {
     return {
-      'id': id,
-      'username': username,
-      'avatar': avatar,
-      'coins': coins,
-      'signature': signature,
-      'createTime': createTime.toIso8601String(),
-      'updateTime': updateTime?.toIso8601String(),
-      'isAdmin': isAdmin,
-      'isSuperAdmin': isSuperAdmin,
-      'experience': experience,
-      'level': level,
-      'consecutiveCheckIn': consecutiveCheckIn,
-      'totalCheckIn': totalCheckIn,
-      'lastCheckInDate': lastCheckInDate?.toIso8601String(),
-      'following': following,
-      'followers': followers,
-      'followingCount': following.length, // 添加计数
-      'followersCount': followers.length, // 添加计数
-      'checkedInToday': hasCheckedInToday, // 添加今日签到状态
-      'currentLevelExp': currentLevelExp,
-      'nextLevelExp': nextLevelExp,
-      'expToNextLevel': expToNextLevel,
-      'levelProgress': levelProgress,
-      'isMaxLevel': isMaxLevel,
+      jsonKeyId: id,
+      jsonKeyUsername: username,
+      jsonKeyAvatar: avatar,
+      jsonKeyCoins: coins,
+      jsonKeySignature: signature,
+      jsonKeyCreateTime: createTime.toIso8601String(),
+      jsonKeyUpdateTime: updateTime?.toIso8601String(),
+      jsonKeyIsAdmin: isAdmin,
+      jsonKeyIsSuperAdmin: isSuperAdmin,
+      jsonKeyExperience: experience,
+      jsonKeyLevel: level,
+      jsonKeyConsecutiveCheckIn: consecutiveCheckIn,
+      jsonKeyTotalCheckIn: totalCheckIn,
+      jsonKeyLastCheckInDate: lastCheckInDate?.toIso8601String(),
+      jsonKeyFollowing: following,
+      jsonKeyFollowers: followers,
+      jsonKeyFollowingCount: following.length, // 添加计数
+      jsonKeyFollowersCount: followers.length, // 添加计数
+      jsonKeyCheckedInToday: hasCheckedInToday, // 添加今日签到状态
+      jsonKeyCurrentLevelExp: currentLevelExp,
+      jsonKeyNextLevelExp: nextLevelExp,
+      jsonKeyExpToNextLevel: expToNextLevel,
+      jsonKeyLevelProgress: levelProgress,
+      jsonKeyIsMaxLevel: isMaxLevel,
     };
   }
 

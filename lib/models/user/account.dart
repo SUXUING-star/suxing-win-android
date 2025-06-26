@@ -1,6 +1,5 @@
 // lib/models/user/account.dart
 
-
 import 'package:meta/meta.dart';
 
 @immutable
@@ -53,5 +52,27 @@ class SavedAccount {
       'userId': userId,
       'lastLogin': lastLogin.toIso8601String(),
     };
+  }
+
+  SavedAccount copyWith({
+    String? email,
+    String? password,
+    String? username,
+    String? avatarUrl,
+    int? level,
+    int? experience,
+    String? userId,
+    DateTime? lastLogin,
+  }) {
+    return SavedAccount(
+      email: email ?? this.email,
+      password: password ?? this.password,
+      username: username ?? this.username,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
+      level: level ?? this.level,
+      experience: experience ?? this.experience,
+      userId: userId ?? this.userId,
+      lastLogin: lastLogin ?? this.lastLogin,
+    );
   }
 }

@@ -12,7 +12,6 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/post/post.dart';
@@ -132,7 +131,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
           await widget.gameService.getGamesPaginatedWithInfo(
         page: 1,
         sortBy: 'createTime',
-        descending: true,
+        sortDesc: true,
         authorId: widget.userId,
       );
 

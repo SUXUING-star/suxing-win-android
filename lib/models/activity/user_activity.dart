@@ -1,33 +1,36 @@
 // lib/models/activity/user_activity.dart
 
-import 'package:meta/meta.dart';
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/activity/activity_comment.dart';
+import 'package:suxingchahui/models/activity/check_in_meta_detail.dart';
 import 'package:suxingchahui/models/util_json.dart';
 
-@immutable
-class CheckInActivityDetails {
-  final int consecutiveDays;
-  final int expGained;
-  final List<DateTime> recentCheckIns;
-
-  const CheckInActivityDetails({
-    required this.consecutiveDays,
-    required this.expGained,
-    required this.recentCheckIns,
-  });
-
-  factory CheckInActivityDetails.fromMetadata(
-      Map<String, dynamic> metadataMap) {
-    return CheckInActivityDetails(
-      consecutiveDays: UtilJson.parseIntSafely(metadataMap['consecutiveDays']),
-      expGained: UtilJson.parseIntSafely(metadataMap['expGained']),
-      recentCheckIns: UtilJson.parseListDateTime(metadataMap['recentCheckIns']),
-    );
-  }
-}
-
-
 class UserActivity {
+  // --- JSON 字段键常量 ---
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyUserId = 'userId';
+  static const String jsonKeyType = 'type';
+  static const String jsonKeySourceId = 'sourceId';
+  static const String jsonKeyTargetId = 'targetId';
+  static const String jsonKeyTargetType = 'targetType';
+  static const String jsonKeyContent = 'content';
+  static const String jsonKeyCreateTime = 'createTime';
+  static const String jsonKeyUpdateTime = 'updateTime';
+  static const String jsonKeyIsEdited = 'isEdited';
+  static const String jsonKeyLikesCount = 'likesCount';
+  static const String jsonKeyCommentsCount = 'commentsCount';
+  static const String jsonKeyIsPublic = 'isPublic';
+  static const String jsonKeyIsLiked = 'isLiked';
+  static const String jsonKeyMetadata = 'metadata';
+  static const String jsonKeyComments = 'comments';
+
+  // --- Metadata 内部字段键常量 ---
+  static const String metadataKeyGameTitle = 'gameTitle';
+  static const String metadataKeyGameCoverImage = 'gameCoverImage';
+  static const String metadataKeyPostTitle = 'postTitle';
+  static const String metadataKeyTargetUsername = 'targetUsername';
+  static const String metadataKeyUserRelationshipAction = 'action';
+
   final String id;
   final String userId;
   final String type;
@@ -65,40 +68,40 @@ class UserActivity {
     this.comments = const [],
   });
 
-  factory UserActivity.fromJson(Map<String, dynamic> json) {
-    List<ActivityComment> comments = [];
-    if (json['comments'] is List) {
-      comments = (json['comments'] as List)
-          .map((comment) {
-            if (comment is Map<String, dynamic>) {
-              return ActivityComment.fromJson(comment);
-            }
-            return null;
-          })
-          .whereType<ActivityComment>()
-          .toList();
+  static List<UserActivity> fromListJson(dynamic json) {
+    if (json is! List) {
+      return [];
     }
 
-    final createTime = UtilJson.parseDateTime(json['createTime']);
+    return UtilJson.parseObjectList<UserActivity>(
+        json, (listJson) => UserActivity.fromJson(listJson));
+  }
+
+  factory UserActivity.fromJson(Map<String, dynamic> json) {
+    List<ActivityComment> comments =
+        ActivityComment.fromListJson(json[jsonKeyComments]);
+
+    final createTime = UtilJson.parseDateTime(json[jsonKeyCreateTime]);
 
     return UserActivity(
-      id: UtilJson.parseId(json['id']),
-      userId: UtilJson.parseId(json['userId']),
-      type: UtilJson.parseStringSafely(json['type']),
-      sourceId: UtilJson.parseId(json['sourceId']),
-      targetId: UtilJson.parseId(json['targetId']),
-      targetType: UtilJson.parseStringSafely(json['targetType']),
-      content: UtilJson.parseStringSafely(json['content']),
+      id: UtilJson.parseId(json[jsonKeyId]),
+      userId: UtilJson.parseId(json[jsonKeyUserId]),
+      type: UtilJson.parseStringSafely(json[jsonKeyType]),
+      sourceId: UtilJson.parseId(json[jsonKeySourceId]),
+      targetId: UtilJson.parseId(json[jsonKeyTargetId]),
+      targetType: UtilJson.parseStringSafely(json[jsonKeyTargetType]),
+      content: UtilJson.parseStringSafely(json[jsonKeyContent]),
       createTime: createTime,
       updateTime:
-          UtilJson.parseNullableDateTime(json['updateTime']) ?? createTime,
-      isEdited: UtilJson.parseBoolSafely(json['isEdited']),
-      likesCount: UtilJson.parseIntSafely(json['likesCount']),
-      commentsCount: UtilJson.parseIntSafely(json['commentsCount']),
-      isPublic: UtilJson.parseBoolSafely(json['isPublic'], defaultValue: true),
-      isLiked: UtilJson.parseBoolSafely(json['isLiked']),
-      metadata: json['metadata'] is Map<String, dynamic>
-          ? Map<String, dynamic>.from(json['metadata'])
+          UtilJson.parseNullableDateTime(json[jsonKeyUpdateTime]) ?? createTime,
+      isEdited: UtilJson.parseBoolSafely(json[jsonKeyIsEdited]),
+      likesCount: UtilJson.parseIntSafely(json[jsonKeyLikesCount]),
+      commentsCount: UtilJson.parseIntSafely(json[jsonKeyCommentsCount]),
+      isPublic:
+          UtilJson.parseBoolSafely(json[jsonKeyIsPublic], defaultValue: true),
+      isLiked: UtilJson.parseBoolSafely(json[jsonKeyIsLiked]),
+      metadata: json[jsonKeyMetadata] is Map<String, dynamic>
+          ? Map<String, dynamic>.from(json[jsonKeyMetadata])
           : null,
       comments: comments,
     );
@@ -107,31 +110,32 @@ class UserActivity {
   // toJson 方法保持不变，只是没有 target 了
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'userId': userId,
-      'type': type,
-      'sourceId': sourceId,
-      'targetId': targetId,
-      'targetType': targetType,
-      'content': content,
-      'createTime': createTime.toIso8601String(),
-      'updateTime': updateTime.toIso8601String(),
-      'isEdited': isEdited,
-      'likesCount': likesCount,
-      'commentsCount': commentsCount,
-      'isPublic': isPublic,
-      'isLiked': isLiked,
-      'metadata': metadata,
-      'comments': comments.map((comment) => comment.toJson()).toList(),
+      jsonKeyId: id,
+      jsonKeyUserId: userId,
+      jsonKeyType: type,
+      jsonKeySourceId: sourceId,
+      jsonKeyTargetId: targetId,
+      jsonKeyTargetType: targetType,
+      jsonKeyContent: content,
+      jsonKeyCreateTime: createTime.toIso8601String(),
+      jsonKeyUpdateTime: updateTime.toIso8601String(),
+      jsonKeyIsEdited: isEdited,
+      jsonKeyLikesCount: likesCount,
+      jsonKeyCommentsCount: commentsCount,
+      jsonKeyIsPublic: isPublic,
+      jsonKeyIsLiked: isLiked,
+      jsonKeyMetadata: metadata,
+      jsonKeyComments: comments.map((comment) => comment.toJson()).toList(),
     };
   }
 
   // --- 添加 Helper 方法从 metadata 获取信息 ---
-  String? get gameTitle => metadata?['gameTitle'] as String?;
-  String? get gameCoverImage => metadata?['gameCoverImage'] as String?;
-  String? get postTitle => metadata?['postTitle'] as String?;
-  String? get targetUsername =>
-      metadata?['targetUsername'] as String?; // 如果关注用户时存了
+  String? get gameTitle => metadata?[metadataKeyGameTitle] as String?;
+  String? get gameCoverImage => metadata?[metadataKeyGameCoverImage] as String?;
+  String? get postTitle => metadata?[metadataKeyPostTitle] as String?;
+  String? get targetUsername => metadata?[metadataKeyTargetUsername] as String?;
+  String? get userRelationshipAction =>
+      metadata?[metadataKeyUserRelationshipAction] as String?;
 
   CheckInActivityDetails? get checkInDetails {
     if (type == ActivityTypeConstants.checkIn && metadata != null) {
@@ -145,59 +149,65 @@ class UserActivity {
     }
     return null;
   }
-}
 
-class ActivityComment {
-  final String id;
-  final String userId; // <--- 直接用这个
-  final String content;
-  final DateTime createTime;
-  int likesCount;
-  bool isLiked;
-
-  ActivityComment({
-    required this.id,
-    required this.userId,
-    required this.content,
-    required this.createTime,
-    required this.likesCount,
-    this.isLiked = false,
-  });
-
-  factory ActivityComment.fromJson(Map<String, dynamic> json) {
-    // 日期解析逻辑保持不变
-    DateTime parseDateTime(String? dateString) {
-      if (dateString == null || dateString.isEmpty) return DateTime(1970);
-      try {
-        return DateTime.parse(dateString).toLocal();
-      } catch (e) {
-        // print("Error parsing comment date: $dateString. Error: $e");
-        return DateTime(1970);
-      }
-    }
-
-    // --- *** 直接从顶层获取 userId *** ---
-    String extractedUserId =
-        json['userId'] as String? ?? ''; // 如果后端保证有，可以去掉 ?? ''
-
-    return ActivityComment(
-      id: json['id'] ?? '',
-      userId: extractedUserId, // <--- 使用顶层 userId
-      content: json['content'] ?? '',
-      createTime: parseDateTime(json['createTime']),
-      likesCount: json['likesCount'] ?? 0,
-      isLiked: json['isLiked'] ?? false,
+  /// 创建一个空的 UserActivity 对象。
+  static UserActivity empty() {
+    return UserActivity(
+      id: '',
+      userId: '',
+      type: '',
+      sourceId: '',
+      targetId: '',
+      targetType: '',
+      content: '',
+      createTime: DateTime.fromMillisecondsSinceEpoch(0),
+      updateTime: DateTime.fromMillisecondsSinceEpoch(0),
+      isEdited: false,
+      likesCount: 0,
+      commentsCount: 0,
+      isPublic: true,
+      isLiked: false,
+      metadata: null,
+      comments: [],
     );
   }
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'userId': userId,
-      'content': content,
-      'createTime': createTime.toIso8601String(),
-      'likesCount': likesCount,
-      'isLiked': isLiked,
-    };
+  /// 复制并更新 UserActivity 对象部分字段。
+  UserActivity copyWith({
+    String? id,
+    String? userId,
+    String? type,
+    String? sourceId,
+    String? targetId,
+    String? targetType,
+    String? content,
+    DateTime? createTime,
+    DateTime? updateTime,
+    bool? isEdited,
+    int? likesCount,
+    int? commentsCount,
+    bool? isPublic,
+    bool? isLiked,
+    Map<String, dynamic>? metadata,
+    List<ActivityComment>? comments,
+  }) {
+    return UserActivity(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      type: type ?? this.type,
+      sourceId: sourceId ?? this.sourceId,
+      targetId: targetId ?? this.targetId,
+      targetType: targetType ?? this.targetType,
+      content: content ?? this.content,
+      createTime: createTime ?? this.createTime,
+      updateTime: updateTime ?? this.updateTime,
+      isEdited: isEdited ?? this.isEdited,
+      likesCount: likesCount ?? this.likesCount,
+      commentsCount: commentsCount ?? this.commentsCount,
+      isPublic: isPublic ?? this.isPublic,
+      isLiked: isLiked ?? this.isLiked,
+      metadata: metadata ?? this.metadata,
+      comments: comments ?? this.comments,
+    );
   }
 }

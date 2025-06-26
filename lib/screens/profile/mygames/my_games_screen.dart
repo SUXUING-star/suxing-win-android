@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -183,7 +183,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   }
 
   Future<void> _executeResubmit(Game game) async {
-    if (game.approvalStatus != GameStatus.rejected) return;
+    if (game.approvalStatus != Game.gameStatusRejected) return;
 
     try {
       await widget.gameService.resubmitGame(game);

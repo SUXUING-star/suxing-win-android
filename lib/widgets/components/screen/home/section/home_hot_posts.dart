@@ -27,7 +27,7 @@ class HomeHotPosts extends StatelessWidget {
   final double screenWidth; // 屏幕宽度
   final bool isLoading; // 是否正在加载
   final String? errorMessage; // 错误消息
-  final VoidCallback? onRetry; // 重试回调
+  final Function(bool) onRetry; // 重试回调
 
   /// 构造函数。
   ///
@@ -49,7 +49,7 @@ class HomeHotPosts extends StatelessWidget {
     required this.isLoading,
     required this.screenWidth,
     this.errorMessage,
-    this.onRetry,
+    required this.onRetry,
   });
 
   /// 构建 Widget。
@@ -134,7 +134,7 @@ class HomeHotPosts extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 20.0), // 垂直内边距
         child: InlineErrorWidget(
           errorMessage: errorMessage!,
-          onRetry: onRetry,
+          onRetry: () => onRetry(true),
         ),
       );
     }
@@ -144,11 +144,12 @@ class HomeHotPosts extends StatelessWidget {
       // 空状态时
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 20.0), // 垂直内边距
-        child: EmptyStateWidget(
-          message: '暂无热门帖子',
-          iconData: Icons.forum_outlined,
+        child: InlineErrorWidget(
+          errorMessage: '暂无热门帖子',
+          icon: Icons.forum_outlined,
           iconSize: 30,
           iconColor: Colors.grey[400],
+          onRetry: () => onRetry(true),
         ),
       );
     }

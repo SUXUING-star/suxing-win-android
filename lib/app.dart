@@ -28,7 +28,6 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/utils/navigation/sidebar_updater_observer.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/utils/network_error_listener_widget.dart';
 import 'wrapper/initialization_wrapper.dart';
 import 'providers/theme/theme_provider.dart';
 import './layouts/main_layout.dart';
@@ -208,32 +207,30 @@ class _MainAppState extends State<MainApp> {
     List<Color> backgroundGradientColor,
     Widget? materialAppGeneratedChild,
   ) {
-    return NetworkErrorListenerWidget(
-      networkManager: _networkManager,
-      child: GlobalApiErrorListener(
-        child: MaintenanceWrapper(
-          maintenanceService: _maintenanceService,
-          authProvider: _authProvider,
-          child: AppBackgroundEffect(
-            backgroundGradientColor: backgroundGradientColor,
-            particleColor: particleColor,
-            windowStateProvider: _windowStateProvider,
-            child: Navigator(
-              key: rootNavigatorKey,
-              onGenerateRoute: (settings) {
-                return SlideFadePageRoute(
-                  routeSettings: settings,
-                  builder: (_) => PlatformWrapper(
-                    checkInService: _checkInService,
-                    messageService: _messageService,
-                    sidebarProvider: _sidebarProvider,
-                    authProvider: _authProvider,
-                    announcementService: _announcementService,
-                    child: materialAppGeneratedChild ?? Container(),
-                  ),
-                );
-              },
-            ),
+    return NoAuthorlizedListener(
+      child: MaintenanceNetworkWrapper(
+        networkManager: _networkManager,
+        maintenanceService: _maintenanceService,
+        authProvider: _authProvider,
+        child: AppBackgroundEffect(
+          backgroundGradientColor: backgroundGradientColor,
+          particleColor: particleColor,
+          windowStateProvider: _windowStateProvider,
+          child: Navigator(
+            key: rootNavigatorKey,
+            onGenerateRoute: (settings) {
+              return SlideFadePageRoute(
+                routeSettings: settings,
+                builder: (_) => PlatformWrapper(
+                  checkInService: _checkInService,
+                  messageService: _messageService,
+                  sidebarProvider: _sidebarProvider,
+                  authProvider: _authProvider,
+                  announcementService: _announcementService,
+                  child: materialAppGeneratedChild ?? Container(),
+                ),
+              );
+            },
           ),
         ),
       ),

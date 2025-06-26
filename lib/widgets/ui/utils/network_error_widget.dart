@@ -1,70 +1,61 @@
-// lib/widgets/ui/utils/network_error_listener_widget.dart
+// lib/widgets/ui/utils/network_error_widget.dart
 
-/// 定义了 [NetworkErrorListenerWidget]，一个使用浮动卡片和动画高效展示网络错误的组件。
+/// 定义了 [NetworkErrorWidget]，一个使用浮动卡片和动画高效展示网络错误的组件。
 library;
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/services/main/network/network_manager.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
+import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 
 /// 网络错误监听器。
 ///
 /// 该 Widget 使用 [Stack] 将子内容与一个条件性显示的错误横幅分层。
 /// [StreamBuilder] 和 [AnimatedSwitcher] 结合，仅在网络状态变化时，
 /// 以平滑的动画效果显示或隐藏一个自定义的浮动错误卡片，确保主内容 [child] 绝不重建。
-class NetworkErrorListenerWidget extends StatelessWidget {
+class NetworkErrorWidget extends StatelessWidget {
   /// 网络管理器实例。
   final NetworkManager networkManager;
 
-  /// 子 Widget，代表应用的主要内容。
-  final Widget child;
-
-  /// 创建一个 [NetworkErrorListenerWidget] 实例。
-  const NetworkErrorListenerWidget({
+  /// 创建一个 [NetworkErrorWidget] 实例。
+  const NetworkErrorWidget({
     super.key,
-    required this.child,
     required this.networkManager,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // --- Layer 1: 应用的主要内容 (永远不会重建) ---
-        child,
-
+    return
         // --- Layer 2: 动画切换的错误横幅 ---
         StreamBuilder<bool>(
-          stream: networkManager.connectionStatusStream,
-          initialData: networkManager.isConnected,
-          builder: (context, snapshot) {
-            final bool isConnected = snapshot.data!;
+      stream: networkManager.connectionStatusStream,
+      initialData: networkManager.isConnected,
+      builder: (context, snapshot) {
+        final bool isConnected = snapshot.data!;
 
-            // 使用 AnimatedSwitcher 来实现平滑的出现和消失动画
-            return AnimatedSwitcher(
-              duration: const Duration(milliseconds: 350),
-              transitionBuilder: (Widget child, Animation<double> animation) {
-                // 定义从上向下滑入的动画效果
-                final offsetAnimation = Tween<Offset>(
-                  begin: const Offset(0.0, -1.5), // 从屏幕外顶部开始
-                  end: Offset.zero,
-                ).animate(CurvedAnimation(
-                  parent: animation,
-                  curve: Curves.easeInOutCubic,
-                ));
-                return SlideTransition(
-                  position: offsetAnimation,
-                  child: FadeTransition(opacity: animation, child: child),
-                );
-              },
-              // 根据网络状态切换子 Widget
-              child: isConnected
-                  ? const SizedBox.shrink(key: Key('connected_placeholder'))
-                  : _buildFloatingErrorBanner(context), // 构建自定义的浮动横幅
+        // 使用 AnimatedSwitcher 来实现平滑的出现和消失动画
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 350),
+          transitionBuilder: (Widget child, Animation<double> animation) {
+            // 定义从上向下滑入的动画效果
+            final offsetAnimation = Tween<Offset>(
+              begin: const Offset(0.0, -1.5), // 从屏幕外顶部开始
+              end: Offset.zero,
+            ).animate(CurvedAnimation(
+              parent: animation,
+              curve: Curves.easeInOutCubic,
+            ));
+            return SlideTransition(
+              position: offsetAnimation,
+              child: FadeTransition(opacity: animation, child: child),
             );
           },
-        ),
-      ],
+          // 根据网络状态切换子 Widget
+          child: isConnected
+              ? const SizedBox.shrink(key: Key('connected_placeholder'))
+              : _buildFloatingErrorBanner(context), // 构建自定义的浮动横幅
+        );
+      },
     );
   }
 
@@ -97,7 +88,7 @@ class NetworkErrorListenerWidget extends StatelessWidget {
               const Icon(Icons.wifi_off_rounded, color: Colors.white, size: 20),
               const SizedBox(width: 12),
               const Flexible(
-                child: Text(
+                child: AppText(
                   '网络连接已断开',
                   style: TextStyle(
                       color: Colors.white,
@@ -115,7 +106,7 @@ class NetworkErrorListenerWidget extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: networkManager.reconnect,
-                child: const Text(
+                child: const AppText(
                   '重试',
                   style: TextStyle(
                     color: Colors.white,

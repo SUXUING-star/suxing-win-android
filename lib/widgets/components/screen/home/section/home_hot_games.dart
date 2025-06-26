@@ -6,7 +6,6 @@ library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 动画组件
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
@@ -23,7 +22,7 @@ class HomeHotGames extends StatelessWidget {
   final bool isLoading; // 是否正在加载
   final double screenWidth; // 屏幕宽度
   final String? errorMessage; // 错误消息
-  final VoidCallback? onRetry; // 重试回调
+  final Function(bool) onRetry; // 重试回调
   final PageController pageController; // 页面控制器
   final int currentPage; // 当前页码
   final ValueChanged<int> onPageChanged; // 页面变化回调
@@ -49,7 +48,7 @@ class HomeHotGames extends StatelessWidget {
     required this.isLoading,
     required this.screenWidth,
     this.errorMessage,
-    this.onRetry,
+    required this.onRetry,
     required this.pageController,
     required this.currentPage,
     required this.onPageChanged,
@@ -84,8 +83,9 @@ class HomeHotGames extends StatelessWidget {
   /// [gamesList]：游戏列表。
   /// 返回总页数。
   static int getTotalPages(int cardsPerPage, List<Game>? gamesList) {
-    if (gamesList == null || gamesList.isEmpty || cardsPerPage <= 0)
+    if (gamesList == null || gamesList.isEmpty || cardsPerPage <= 0) {
       return 0; // 无数据或无效参数时返回 0
+    }
     return (gamesList.length / cardsPerPage).ceil(); // 计算总页数
   }
 
@@ -110,7 +110,7 @@ class HomeHotGames extends StatelessWidget {
             child: InlineErrorWidget(
           // 显示错误组件
           errorMessage: errorMessage!,
-          onRetry: onRetry,
+          onRetry: () => onRetry(true),
         )),
       );
     }
@@ -119,13 +119,14 @@ class HomeHotGames extends StatelessWidget {
       // 空状态时
       return SizedBox(
         height: containerHeight + 80, // 固定高度
-        child: const FadeInSlideUpItem(
-          child: EmptyStateWidget(
+        child: FadeInSlideUpItem(
+          child: InlineErrorWidget(
             // 显示空状态组件
-            message: '暂无热门游戏',
-            iconData: Icons.inbox_outlined,
+            errorMessage: '暂无热门游戏',
+            icon: Icons.inbox_outlined,
             iconSize: 40,
             iconColor: Colors.grey,
+            onRetry: () => onRetry(true),
           ),
         ),
       );
@@ -181,8 +182,9 @@ class HomeHotGames extends StatelessWidget {
                     itemCount: totalGamePages, // 页面数量
                     onPageChanged: onPageChanged, // 页面变化回调
                     itemBuilder: (context, pageIndex) {
-                      if (!context.mounted)
-                        return const SizedBox.shrink(); // 未挂载时返回空 Widget
+                      if (!context.mounted) {
+                        return const SizedBox.shrink(); // 未挂载时返回空 Widget}
+                      }
                       final startIndex =
                           pageIndex * cardsCountPerPage; // 当前页的起始索引
                       List<Widget> cardWidgets = []; // 卡片 Widget 列表

@@ -9,6 +9,7 @@ import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
 import 'package:suxingchahui/constants/activity/activity_constants.dart';
+import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
@@ -28,7 +29,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart'; // 导入确认对话框
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 
 /// `ActivityFeedScreen` 类：用户动态流显示屏幕。

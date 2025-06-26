@@ -1,13 +1,24 @@
 // lib/widgets/components/screen/game/music/game_music_section.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/utils/device/device_utils.dart'; // 确保导入
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
+/// 该文件定义了 GameMusicSection 组件，用于显示游戏的音乐播放器。
+/// GameMusicSection 负责解析音乐链接并嵌入网页播放器。
+library;
+
+import 'package:flutter/material.dart'; // Flutter UI 组件所需
+import 'package:suxingchahui/utils/device/device_utils.dart'; // 设备工具类所需
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法所需
+import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart'; // 嵌入式 WebView 组件所需
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件所需
+
+/// [GameMusicSection] 类：显示游戏相关音乐的 StatefulWidget。
+///
+/// 该组件处理音乐 URL 的解析、嵌入式 WebView 的显示和加载状态。
 class GameMusicSection extends StatefulWidget {
-  final String? musicUrl;
+  final String? musicUrl; // 音乐链接
 
+  /// 构造函数。
+  ///
+  /// [musicUrl]：音乐链接。
   const GameMusicSection({
     super.key,
     required this.musicUrl,
@@ -18,68 +29,76 @@ class GameMusicSection extends StatefulWidget {
 }
 
 class _GameMusicSectionState extends State<GameMusicSection> {
-  String? _embedUrl;
-  bool _isLoading = true; // true: 初始解析URL时 / WebView加载页面时
-  String? _loadingError;
-  bool _showWebView = false; // 新增：控制是否显示 WebView
+  String? _embedUrl; // 嵌入式播放器 URL
+  bool _isLoading = true; // 加载状态，用于URL解析和WebView加载
+  String? _loadingError; // 加载错误信息
+  bool _showWebView = false; // 控制 WebView 的显示状态
 
   @override
   void initState() {
-    super.initState();
-    _parseAndSetEmbedUrl();
+    super.initState(); // 调用父类 initState
+    _parseAndSetEmbedUrl(); // 解析并设置嵌入式 URL
   }
 
   @override
   void didUpdateWidget(covariant GameMusicSection oldWidget) {
-    super.didUpdateWidget(oldWidget);
+    super.didUpdateWidget(oldWidget); // 调用父类 didUpdateWidget
     if (widget.musicUrl != oldWidget.musicUrl) {
-      _parseAndSetEmbedUrl();
+      // 音乐 URL 变化时
+      _parseAndSetEmbedUrl(); // 重新解析并设置嵌入式 URL
     }
   }
 
+  /// 解析原始音乐 URL 并设置嵌入式 URL。
+  ///
+  /// 该方法更新加载状态，并根据解析结果设置嵌入式 URL 和错误信息。
   void _parseAndSetEmbedUrl() {
     setState(() {
-      _isLoading = true; // 开始解析，显示加载
-      _loadingError = null;
-      _embedUrl = null; // 先清空，避免旧的URL残留
-      _showWebView = false; // 重要：URL变化时，重置WebView的显示状态，需要用户重新点击播放
+      _isLoading = true; // 设置为加载中状态
+      _loadingError = null; // 清除错误信息
+      _embedUrl = null; // 清空嵌入式 URL
+      _showWebView = false; // 重置 WebView 显示状态，要求用户重新点击播放
     });
 
-    final newEmbedUrl = _buildEmbedUrl(widget.musicUrl);
+    final newEmbedUrl = _buildEmbedUrl(widget.musicUrl); // 构建新的嵌入式 URL
 
-    // 延迟一点更新，让Loading有机会显示
+    // 延迟更新，以显示加载状态
     Future.delayed(const Duration(milliseconds: 50), () {
-      if (!mounted) return;
+      if (!mounted) return; // 组件未挂载时退出
       setState(() {
-        _embedUrl = newEmbedUrl;
+        _embedUrl = newEmbedUrl; // 设置嵌入式 URL
         if (_embedUrl == null &&
             widget.musicUrl != null &&
             widget.musicUrl!.isNotEmpty) {
-          _loadingError = '无法解析有效的网易云音乐 ID 或链接格式不受支持';
+          _loadingError = '无法解析有效的网易云音乐 ID 或链接格式不受支持'; // 设置错误信息
         }
-        _isLoading = false; // URL解析完成（无论成功与否）
+        _isLoading = false; // 清除加载中状态
       });
     });
   }
 
+  /// 从原始 URL 构建网易云音乐嵌入式 URL。
+  ///
+  /// [originalUrl]：原始音乐 URL。
+  /// 返回解析后的嵌入式 URL，或 null 表示解析失败。
   String? _buildEmbedUrl(String? originalUrl) {
-    if (originalUrl == null || originalUrl.isEmpty) return null;
+    if (originalUrl == null || originalUrl.isEmpty)
+      return null; // 原始 URL 无效时返回 null
     try {
-      final uri = Uri.parse(originalUrl);
+      final uri = Uri.parse(originalUrl); // 解析 URL
       if (uri.host.contains('music.163.com')) {
+        // 检查是否为网易云音乐域名
         String? songId;
-        // 匹配 https://music.163.com/#/song?id=xxxx
-        // 匹配 https://music.163.com/song?id=xxxx
-        // 匹配 https://music.163.com/song/xxxx/
-        // 匹配 https://y.music.163.com/m/song?id=xxxx (移动版分享)
         if (uri.queryParameters.containsKey('id')) {
+          // 从查询参数中提取歌曲 ID
           songId = uri.queryParameters['id'];
         } else if (uri.fragment.contains('song?id=')) {
+          // 从片段中提取歌曲 ID
           final fragmentUri = Uri.parse('dummy://dummy${uri.fragment}');
           songId = fragmentUri.queryParameters['id'];
         } else if (uri.pathSegments.length >= 2 &&
             uri.pathSegments.first == 'song') {
-          // 尝试从路径中提取ID，例如 /song/12345/
+          // 从路径段中提取歌曲 ID
           final potentialId = uri.pathSegments[1];
           if (RegExp(r'^\d+$').hasMatch(potentialId)) {
             songId = potentialId;
@@ -87,34 +106,33 @@ class _GameMusicSectionState extends State<GameMusicSection> {
         }
 
         if (songId != null && songId.isNotEmpty) {
+          // 歌曲 ID 有效时构建嵌入式 URL
           return 'https://music.163.com/outchain/player?type=2&id=$songId&auto=0&height=86';
         }
       }
     } catch (e) {
-      // print("Error parsing music URL '$originalUrl': $e");
+      // 捕获 URL 解析异常
       return null;
     }
-    // print("Could not extract song ID from music URL: $originalUrl");
-    return null;
+    return null; // 未能提取歌曲 ID 时返回 null
   }
 
   @override
   Widget build(BuildContext context) {
-    final isPortrait = DeviceUtils.isPortrait(context);
+    final isPortrait = DeviceUtils.isPortrait(context); // 判断是否为竖屏
 
-    // 阶段1: URL 正在解析或解析失败
     if (_isLoading && _embedUrl == null && !_showWebView) {
-      // _isLoading 为true表示正在解析URL
+      // URL 正在解析或解析失败时显示加载
       return Column(
         key: const ValueKey('music_initial_loading'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTitleRow(context),
-          const SizedBox(height: 12),
+          _buildTitleRow(context), // 构建标题行
+          const SizedBox(height: 12), // 垂直间距
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 24.0),
             child: LoadingWidget(
-              message: '解析乐谱链接中...',
+              message: '解析乐谱链接中',
               size: 24.0,
             ),
           ),
@@ -122,41 +140,42 @@ class _GameMusicSectionState extends State<GameMusicSection> {
       );
     }
 
-    // 阶段2: URL 解析完成，但 embedUrl 为空 (无效URL或解析错误)
     if (_embedUrl == null) {
+      // URL 解析完成但嵌入式 URL 为空
       if (_loadingError != null) {
+        // 存在错误信息时显示错误
         return Column(
             key: const ValueKey('music_url_error'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTitleRow(context),
-              const SizedBox(height: 12),
-              _buildErrorWidget(_loadingError!) // 传入具体的错误信息
+              _buildTitleRow(context), // 构建标题行
+              const SizedBox(height: 12), // 垂直间距
+              _buildErrorWidget(_loadingError!) // 构建错误信息 Widget
             ]);
       } else if (widget.musicUrl != null && widget.musicUrl!.isNotEmpty) {
-        // 有 musicUrl 但解析不出 embedUrl，且没有特定错误（可能是不支持的格式）
+        // 有原始 URL 但无法解析
         return Column(
             key: const ValueKey('music_url_invalid_format'),
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildTitleRow(context),
-              const SizedBox(height: 12),
-              _buildErrorWidget('无法识别的音乐链接格式，请检查链接是否正确。')
+              _buildTitleRow(context), // 构建标题行
+              const SizedBox(height: 12), // 垂直间距
+              _buildErrorWidget('无法识别的音乐链接格式，请检查链接是否正确。') // 构建错误信息 Widget
             ]);
       } else {
-        return const SizedBox.shrink(); // musicUrl 为空，不显示任何东西
+        return const SizedBox.shrink(); // 原始 URL 为空时隐藏组件
       }
     }
 
-    // 阶段3: URL 解析成功，embedUrl 有效
     if (isPortrait) {
+      // 竖屏模式
       return Column(
         key: const ValueKey('music_portrait_layout'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTitleRow(context),
-          const SizedBox(height: 12),
-          _buildPortraitPrompt(),
+          _buildTitleRow(context), // 构建标题行
+          const SizedBox(height: 12), // 垂直间距
+          _buildPortraitPrompt(), // 构建竖屏提示
         ],
       );
     } else {
@@ -165,17 +184,21 @@ class _GameMusicSectionState extends State<GameMusicSection> {
         key: const ValueKey('music_landscape_layout'),
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildTitleRow(context),
-          const SizedBox(height: 12),
-          if (_showWebView) // 如果用户点击了播放，则显示WebView
+          _buildTitleRow(context), // 构建标题行
+          const SizedBox(height: 12), // 垂直间距
+          if (_showWebView) // 显示 WebView
             _buildLandscapeWebViewContainer()
-          else // 否则显示“点击播放”的提示
+          else // 显示“点击播放”提示
             _buildPlayInitiatorWidget(),
         ],
       );
     }
   }
 
+  /// 构建标题行。
+  ///
+  /// [context]：Build 上下文。
+  /// 返回包含标题和装饰的 Row Widget。
   Widget _buildTitleRow(BuildContext context) {
     return Row(
       children: [
@@ -186,7 +209,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
               color: Theme.of(context).colorScheme.primary,
               borderRadius: BorderRadius.circular(2)),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 8), // 间距
         Text(
           '相关音乐',
           style: TextStyle(
@@ -199,6 +222,9 @@ class _GameMusicSectionState extends State<GameMusicSection> {
     );
   }
 
+  /// 构建竖屏提示 Widget。
+  ///
+  /// 返回一个提示用户旋转屏幕以播放音乐的容器。
   Widget _buildPortraitPrompt() {
     return Container(
       key: const ValueKey('portrait_prompt_widget'),
@@ -216,7 +242,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
             size: 32,
             color: Colors.grey[600],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 12), // 垂直间距
           Text(
             '请旋转至横屏以播放音乐',
             textAlign: TextAlign.center,
@@ -230,14 +256,15 @@ class _GameMusicSectionState extends State<GameMusicSection> {
     );
   }
 
-  // 新增：构建“点击播放”的占位符/按钮
+  /// 构建“点击播放”的占位符或按钮 Widget。
+  ///
+  /// 返回一个用户点击后显示 WebView 的交互式 Widget。
   Widget _buildPlayInitiatorWidget() {
     return InkWell(
       key: const ValueKey('play_initiator_widget'),
       onTap: () {
         setState(() {
-          _showWebView = true;
-          // _isLoading = true; // WebView即将开始加载，它的onPageStarted会处理
+          _showWebView = true; // 点击后显示 WebView
         });
       },
       borderRadius: BorderRadius.circular(8),
@@ -255,7 +282,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
           children: [
             Icon(Icons.play_circle_outline_rounded,
                 size: 32, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 8),
+            const SizedBox(height: 8), // 垂直间距
             Text(
               '点击播放音乐',
               textAlign: TextAlign.center,
@@ -270,12 +297,12 @@ class _GameMusicSectionState extends State<GameMusicSection> {
     );
   }
 
-  // 修改：原 _buildLandscapeWebView 改名为 _buildLandscapeWebViewContainer
-  // 它现在只负责构建 WebView 及其容器，前提是 _showWebView 为 true
+  /// 构建横屏模式下的 WebView 容器。
+  ///
+  /// 该方法构建 WebView 及其容器，仅当 `_showWebView` 为 true 时有效。
   Widget _buildLandscapeWebViewContainer() {
-    // 如果 _embedUrl 在这里仍然是 null (理论上不应该，因为外层已经判断过)
-    // 但作为防御性编程，可以再检查一下
-    if (_embedUrl == null) return _buildErrorWidget("内部错误：无法加载音乐播放器");
+    if (_embedUrl == null)
+      return _buildErrorWidget("内部错误：无法加载音乐播放器"); // 嵌入式 URL 无效时显示错误
 
     return SizedBox(
       key: const ValueKey('landscape_webview_container'),
@@ -289,16 +316,15 @@ class _GameMusicSectionState extends State<GameMusicSection> {
         child: Stack(
           alignment: Alignment.center,
           children: [
-            // WebView现在只有在_showWebView为true时才会被构建
             EmbeddedWebView(
               key: ValueKey(
-                  'music_webview_$_embedUrl'), // 使用ValueKey确保URL变化时WebView重建
-              initialUrl: _embedUrl!,
+                  'music_webview_$_embedUrl'), // 使用唯一键确保 URL 变化时 WebView 重建
+              initialUrl: _embedUrl!, // 初始加载 URL
               onPageStarted: (url) {
                 if (mounted) {
                   setState(() {
                     _isLoading = true; // WebView 开始加载页面
-                    _loadingError = null;
+                    _loadingError = null; // 清除错误信息
                   });
                 }
               },
@@ -312,30 +338,25 @@ class _GameMusicSectionState extends State<GameMusicSection> {
               onWebResourceError: (error) {
                 if (mounted) {
                   setState(() {
-                    _isLoading = false;
-                    // 这里不直接隐藏 WebView，而是显示错误信息在 WebView 区域内
-                    // 或者也可以考虑设置 _showWebView = false 并显示一个通用的错误提示
-                    _loadingError = '音乐播放器加载失败: ${error.description}';
-                    // 如果遇到错误，可以考虑让用户能重试，比如显示一个重试按钮
-                    // 或者简单地提示错误，用户可能需要刷新整个页面或检查网络
+                    _isLoading = false; // 清除加载状态
+                    _loadingError = '音乐播放器加载失败: ${error.description}'; // 设置错误信息
                   });
                 }
               },
             ),
-            // 这个 LoadingWidget 和错误提示是针对 WebView 加载过程的
-            if (_isLoading) // WebView 正在加载页面时显示
+            if (_isLoading) // WebView 正在加载页面时显示加载指示器
               Positioned.fill(
                 child: Container(
                   color: Theme.of(context)
                       .colorScheme
                       .surfaceContainerLowest
                       .withSafeOpacity(0.8),
-                  child: const LoadingWidget(message: '播放器加载中...', size: 24.0),
+                  child: const LoadingWidget(message: '播放器加载中', size: 24.0),
                 ),
               ),
             if (!_isLoading &&
                 _loadingError != null &&
-                _showWebView) // WebView 加载完成但有错误
+                _showWebView) // WebView 加载完成但有错误时显示错误信息
               Positioned.fill(
                 child: Container(
                   color: Theme.of(context).colorScheme.surfaceContainerLowest,
@@ -346,7 +367,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                     children: [
                       Icon(Icons.error_outline,
                           color: Theme.of(context).colorScheme.error, size: 24),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 4), // 垂直间距
                       Text(
                         _loadingError!,
                         textAlign: TextAlign.center,
@@ -356,7 +377,7 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 4), // 垂直间距
                       TextButton(
                         style: TextButton.styleFrom(
                             padding: EdgeInsets.zero,
@@ -364,15 +385,13 @@ class _GameMusicSectionState extends State<GameMusicSection> {
                             visualDensity: VisualDensity.compact,
                             textStyle: const TextStyle(fontSize: 11)),
                         onPressed: () {
-                          // 简单的重试：重新加载WebView
                           setState(() {
-                            _loadingError = null;
-                            _isLoading = true; // 触发WebView重新加载的loading
-                            _embedUrl =
-                                _embedUrl!; // 技巧：稍微改变URL（如加个空串）或改变Key来强制刷新
+                            _loadingError = null; // 清除错误信息
+                            _isLoading = true; // 触发 WebView 重新加载
+                            _embedUrl = _embedUrl!; // 强制更新 URL 以触发 WebView 重建
                           });
                         },
-                        child: const Text("重试"),
+                        child: const Text("重试"), // 重试按钮
                       )
                     ],
                   ),
@@ -384,6 +403,10 @@ class _GameMusicSectionState extends State<GameMusicSection> {
     );
   }
 
+  /// 构建错误信息 Widget。
+  ///
+  /// [errorMessage]：要显示的错误消息。
+  /// 返回一个显示错误信息和重试按钮的容器。
   Widget _buildErrorWidget(String errorMessage) {
     return Container(
       key: const ValueKey('music_error_widget'),
@@ -399,18 +422,18 @@ class _GameMusicSectionState extends State<GameMusicSection> {
         children: [
           Icon(Icons.error_outline_rounded,
               color: Theme.of(context).colorScheme.error, size: 24),
-          const SizedBox(height: 6),
+          const SizedBox(height: 6), // 垂直间距
           Text(
-            errorMessage, // 使用传入的错误信息
+            errorMessage, // 错误消息
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: Theme.of(context).colorScheme.error, fontSize: 12),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 8), // 垂直间距
           TextButton(
             style: TextButton.styleFrom(
                 padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
-            onPressed: _parseAndSetEmbedUrl, // 点击重试解析URL
+            onPressed: _parseAndSetEmbedUrl, // 点击重试解析 URL
             child: const Text('重试解析', style: TextStyle(fontSize: 12)),
           ),
         ],

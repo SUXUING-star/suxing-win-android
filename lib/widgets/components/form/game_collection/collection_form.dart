@@ -4,7 +4,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 
 class GameCollectionForm extends StatefulWidget {
   final String gameId;
@@ -54,13 +54,13 @@ class _GameCollectionFormState extends State<GameCollectionForm> {
   void initState() {
     super.initState();
     _selectedStatus = widget.initialStatus.isEmpty
-        ? GameCollectionStatus.wantToPlay
+        ? GameCollectionItem.statusWantToPlay
         : widget.initialStatus;
     _notesController = TextEditingController(text: widget.initialNotes ?? '');
     _reviewController = TextEditingController(text: widget.initialReview ?? '');
     _rating = widget.initialRating;
-    _showRating = _selectedStatus == GameCollectionStatus.played;
-    _showReview = _selectedStatus == GameCollectionStatus.played;
+    _showRating = _selectedStatus == GameCollectionItem.statusPlayed;
+    _showReview = _selectedStatus == GameCollectionItem.statusPlayed;
     _isSubmitting = false; // 初始化提交状态
   }
 
@@ -131,17 +131,17 @@ class _GameCollectionFormState extends State<GameCollectionForm> {
           child: Row(
             children: [
               _buildStatusOption(
-                GameCollectionStatus.wantToPlay,
+                GameCollectionItem.statusWantToPlay,
                 '想玩',
                 Icons.watch_later_outlined,
               ),
               _buildStatusOption(
-                GameCollectionStatus.playing,
+                GameCollectionItem.statusPlaying,
                 '在玩',
                 Icons.gamepad_outlined,
               ),
               _buildStatusOption(
-                GameCollectionStatus.played,
+                GameCollectionItem.statusPlayed,
                 '玩过',
                 Icons.task_alt_outlined,
               ),
@@ -159,8 +159,8 @@ class _GameCollectionFormState extends State<GameCollectionForm> {
         onTap: () {
           setState(() {
             _selectedStatus = status;
-            _showRating = status == GameCollectionStatus.played;
-            _showReview = status == GameCollectionStatus.played;
+            _showRating = status == GameCollectionItem.statusPlayed;
+            _showReview = status == GameCollectionItem.statusPlayed;
           });
         },
         child: Container(

@@ -2,12 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <application
         android:label="宿星茶会(安卓版)"
         android:name=".MainApplication"
         android:icon="@mipmap/icon"
         android:hardwareAccelerated="true"
         android:usesCleartextTraffic="true"
+        android:requestLegacyExternalStorage="true"
         >
 
         <!-- 启动页Activity -->

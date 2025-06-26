@@ -69,7 +69,7 @@ class GamePreviewScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildGameContent(BuildContext context,bool isDesktop) {
+  Widget _buildGameContent(BuildContext context, bool isDesktop) {
     return GameDetailLayout(
       sidebarProvider: sidebarProvider,
       gameListFilterProvider: gameListFilterProvider,
@@ -98,8 +98,8 @@ class GamePreviewScreen extends StatelessWidget {
           Container(
             width: double.infinity,
             color: Colors.amber.withSafeOpacity(0.2),
-            padding: EdgeInsets.symmetric(vertical: 12),
-            child: Center(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: const Center(
               child: AppText(
                 '预览模式 - 这是您保存后的游戏详情页效果预览',
                 style: TextStyle(
@@ -114,7 +114,7 @@ class GamePreviewScreen extends StatelessWidget {
           Expanded(
             child: SingleChildScrollView(
               child: Padding(
-                padding: EdgeInsets.all(24.0),
+                padding: const EdgeInsets.all(24.0),
                 child: _buildGameContent(context, isDesktop),
               ),
             ),

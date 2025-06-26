@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 
-import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -81,13 +81,13 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       String status;
       switch (widget.collectionType) {
         case 'wantToPlay':
-          status = GameCollectionStatus.wantToPlay;
+          status = GameCollectionItem.statusWantToPlay;
           break;
         case 'playing':
-          status = GameCollectionStatus.playing;
+          status = GameCollectionItem.statusPlaying;
           break;
         case 'played':
-          status = GameCollectionStatus.played;
+          status = GameCollectionItem.statusPlayed;
           break;
         case 'all':
           status = 'all'; // Consider a more robust way to handle "all"

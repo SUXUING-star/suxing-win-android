@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/game/random/random_game_card.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -190,7 +191,7 @@ class _RandomGamesSectionState extends State<RandomGamesSection> {
                             right: index < _randomGames.length - 1
                                 ? cardMargin
                                 : 0),
-                        child: CommonGameCard(
+                        child: RandomGameCard(
                           game: _randomGames[index],
                         ),
                       );

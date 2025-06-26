@@ -1,28 +1,44 @@
 // lib/widgets/components/screen/forum/post/section/recent_global_replies.dart
-import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/post/global_post_reply_item.dart';
-import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/services/main/user/user_info_service.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/services/main/forum/post_service.dart';
-import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
-import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
 
+/// 该文件定义了 RecentGlobalReplies 组件，用于显示最新活跃的全局回复列表。
+/// RecentGlobalReplies 负责加载和展示近期回复，并提供刷新功能。
+library;
+
+import 'package:flutter/material.dart'; // Flutter UI 组件所需
+import 'package:suxingchahui/models/post/global_post_reply_item.dart'; // 全局帖子回复项模型所需
+import 'package:suxingchahui/models/post/post.dart'; // 帖子模型所需
+import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息服务所需
+import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由所需
+import 'package:suxingchahui/services/main/forum/post_service.dart'; // 帖子服务所需
+import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务所需
+import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具所需
+import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类所需
+import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件所需
+import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态组件所需
+import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件所需
+import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件所需
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 提示条组件所需
+
+/// `RecentGlobalReplies` 类：显示最新活跃回复列表的 StatefulWidget。
+///
+/// 该组件加载和展示近期回复，并提供刷新功能。
 class RecentGlobalReplies extends StatefulWidget {
-  final int limit;
-  final Post post;
-  final User? currentUser;
-  final PostService postService;
-  final UserInfoService infoService;
-  final UserFollowService followService;
+  final int limit; // 回复数量限制
+  final Post post; // 相关的帖子对象
+  final User? currentUser; // 当前登录用户
+  final PostService postService; // 帖子服务实例
+  final UserInfoService infoService; // 用户信息服务实例
+  final UserFollowService followService; // 用户关注服务实例
 
+  /// 构造函数。
+  ///
+  /// [limit]：回复数量限制。
+  /// [post]：相关的帖子对象。
+  /// [infoService]：用户信息服务实例。
+  /// [followService]：用户关注服务实例。
+  /// [postService]：帖子服务实例。
+  /// [currentUser]：当前登录用户。
   const RecentGlobalReplies({
     super.key,
     this.limit = 5,
@@ -38,95 +54,93 @@ class RecentGlobalReplies extends StatefulWidget {
 }
 
 class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
-  // 把 Stream 换成 Future
-  Future<List<GlobalPostReplyItem>>? _repliesFuture;
-  User? _currentUser;
-  bool _isRefreshing = false; // 标记是否正在执行刷新操作
-  DateTime? _lastRefreshTime; // 上次刷新的时间戳
-  // 定义最小刷新间隔 (例如：3秒)
-  static const Duration _minRefreshInterval = Duration(seconds: 15);
+  Future<List<GlobalPostReplyItem>>? _repliesFuture; // 存储获取全局回复的异步操作
+  User? _currentUser; // 当前用户实例
+  bool _isRefreshing = false; // 刷新操作进行中标记
+  DateTime? _lastRefreshTime; // 上次刷新时间
+  static const Duration _minRefreshInterval = Duration(seconds: 15); // 最小刷新间隔
 
-  bool _hasInit = false;
+  bool _hasInit = false; // 初始化标记
 
   @override
   void initState() {
-    super.initState();
-    _currentUser = widget.currentUser;
+    super.initState(); // 调用父类 initState
+    _currentUser = widget.currentUser; // 初始化当前用户
   }
 
   @override
   void didUpdateWidget(covariant RecentGlobalReplies oldWidget) {
-    super.didUpdateWidget(oldWidget);
+    super.didUpdateWidget(oldWidget); // 调用父类 didUpdateWidget
     if (_currentUser != widget.currentUser ||
         oldWidget.currentUser != widget.currentUser) {
       setState(() {
-        _currentUser = widget.currentUser;
+        _currentUser = widget.currentUser; // 更新当前用户
       });
     }
   }
 
   @override
   void didChangeDependencies() {
-    super.didChangeDependencies();
+    super.didChangeDependencies(); // 调用父类 didChangeDependencies
     if (!_hasInit) {
-      _hasInit = true;
+      _hasInit = true; // 标记依赖已初始化
     }
     if (_hasInit) {
-      _loadReplies();
+      _loadReplies(); // 加载回复
     }
   }
 
-  // 封装加载逻辑，方便复用
+  /// 封装加载回复的逻辑。
+  ///
+  /// 该方法将获取全局回复的 Future 赋值给 `_repliesFuture`。
   void _loadReplies() {
-    // 注意这里直接赋值给 Future 变量，不需要 setState
     _repliesFuture =
         widget.postService.getRecentGlobalReplies(limit: widget.limit);
   }
 
   @override
   void dispose() {
-    // Future 不需要像 Stream 那样手动关闭
-    super.dispose();
+    super.dispose(); // 调用父类 dispose
   }
 
-  // 主动刷新的方法
-  // --- 主动刷新的方法 (加入节流逻辑) ---
+  /// 处理主动刷新操作。
+  ///
+  /// [forceRefresh]：是否强制刷新，忽略时间间隔限制。
+  /// 该方法包含节流逻辑，防止短时间内重复刷新。
   void _handleRefresh({bool forceRefresh = false}) {
-    // 1. 防止重复触发：如果已经在刷新中，直接返回
     if (_isRefreshing) {
+      // 刷新操作进行中时阻止
       return;
     }
 
-    final now = DateTime.now();
+    final now = DateTime.now(); // 获取当前时间
 
-    // 2. 检查时间间隔：判断离上次刷新是否足够久
     if (_lastRefreshTime != null &&
         now.difference(_lastRefreshTime!) < _minRefreshInterval) {
-      AppSnackBar.showWarning('操作太快了，请稍后再试');
-
-      return; // 时间不够，直接返回
+      // 检查是否达到最小刷新间隔
+      AppSnackBar.showWarning('操作太快了，请稍后再试'); // 显示警告信息
+      return;
     }
 
-    // 3. 时间足够 或 首次刷新 -> 执行刷新逻辑
     if (mounted) {
+      // 检查组件是否挂载
       setState(() {
-        _isRefreshing = true; // 开始刷新
-        _lastRefreshTime = now; // 更新上次刷新的时间
+        _isRefreshing = true; // 设置刷新状态
+        _lastRefreshTime = now; // 更新上次刷新时间
 
-        // 调用实际的刷新方法
         _repliesFuture = widget.postService.getRecentGlobalReplies(
           limit: widget.limit,
           forceRefresh: forceRefresh,
-        );
+        ); // 调用服务获取最新回复
       });
     }
 
-    // 4. 刷新结束后清除状态 (使用 Future 的 whenComplete 回调)
-    //    注意：这里假设 forceRefreshRecentGlobalReplies 返回的 Future 完成时代表刷新操作结束
     _repliesFuture?.whenComplete(() {
+      // 刷新操作完成后执行
       if (mounted) {
+        // 检查组件是否挂载
         setState(() {
-          _isRefreshing = false; // 结束刷新
+          _isRefreshing = false; // 清除刷新状态
         });
       }
     });
@@ -135,17 +149,17 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(top: 16),
+      margin: const EdgeInsets.only(top: 16), // 顶部外边距
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.grey[200]!),
+        color: Colors.white, // 背景色
+        borderRadius: BorderRadius.circular(12), // 圆角
+        border: Border.all(color: Colors.grey[200]!), // 边框
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(16), // 内边距
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -159,7 +173,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 8), // 间距
                     Text(
                       '最新活跃',
                       style: TextStyle(
@@ -171,55 +185,52 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                   ],
                 ),
                 IconButton(
-                  icon: Icon(Icons.refresh, size: 20, color: Colors.grey[600]),
-                  onPressed: _handleRefresh, // 刷新按钮现在能用了
-                  tooltip: '刷新最新活跃',
+                  icon: Icon(Icons.refresh,
+                      size: 20, color: Colors.grey[600]), // 刷新图标
+                  onPressed: _handleRefresh, // 刷新按钮点击回调
+                  tooltip: '刷新最新活跃', // 工具提示
                 ),
               ],
             ),
           ),
-          const Divider(height: 1),
-          // 把 StreamBuilder 换成 FutureBuilder
+          const Divider(height: 1), // 分割线
           FutureBuilder<List<GlobalPostReplyItem>>(
             future: _repliesFuture, // 绑定 Future
             builder: (context, snapshot) {
-              // 1. 处理加载状态
               if (snapshot.connectionState == ConnectionState.waiting) {
+                // 加载中状态
                 return const SizedBox(
-                  height: 200, // 给个固定高度防止跳动
+                  height: 200, // 固定高度
                   child: LoadingWidget(
                     size: 12,
                   ),
                 );
               }
 
-              // 2. 处理错误状态 (加载完成后)
               if (snapshot.hasError) {
-                // 确保你的 InlineErrorWidget 存在并且签名匹配
+                // 错误状态
                 return InlineErrorWidget(
-                  // 或者叫 ErrorWidget，看你实际命名
                   onRetry: _handleRefresh, // 提供重试回调
                   errorMessage: "加载失败: ${snapshot.error}", // 显示错误信息
                 );
               }
 
-              // 3. 处理成功状态 (加载完成后且无错误)
               if (snapshot.connectionState == ConnectionState.done &&
                   snapshot.hasData) {
-                final replies = snapshot.data ?? []; // 获取数据
+                // 加载完成且有数据
+                final replies = snapshot.data ?? []; // 获取回复数据
                 if (replies.isEmpty) {
                   // 数据为空
                   return const EmptyStateWidget(
                       message: "暂无回复", iconData: Icons.maps_ugc_outlined);
                 }
 
-                // 数据正常，构建列表
                 return ListView.separated(
                   shrinkWrap: true, // 在 Column 里需要
                   physics: const NeverScrollableScrollPhysics(), // 在 Column 里需要
-                  padding: const EdgeInsets.all(16),
-                  itemCount: replies.length,
-                  separatorBuilder: (_, __) => const Divider(height: 16),
+                  padding: const EdgeInsets.all(16), // 内边距
+                  itemCount: replies.length, // 回复数量
+                  separatorBuilder: (_, __) => const Divider(height: 16), // 分隔线
                   itemBuilder: (context, index) => _buildReplyItem(
                     context,
                     replies[index],
@@ -227,9 +238,8 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 );
               }
 
-              // 4. 其他情况 (理论上 FutureBuilder 主要关注 waiting 和 done)
-              // 可以返回一个初始占位符或者加载指示器
               return const SizedBox(
+                // 默认占位符
                 height: 200,
                 child: LoadingWidget(size: 12),
               );
@@ -240,30 +250,35 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
     );
   }
 
-  // _buildReplyItem
+  /// 构建单个回复项。
+  ///
+  /// [context]：Build 上下文。
+  /// [reply]：全局帖子回复项。
+  /// 返回一个表示单个回复的 Card Widget。
   Widget _buildReplyItem(
     BuildContext context,
     GlobalPostReplyItem reply,
   ) {
-    final userId = reply.authorId;
-    final postTitle = reply.postTitle;
+    final userId = reply.authorId; // 作者 ID
+    final postTitle = reply.postTitle; // 帖子标题
 
     return Card(
       elevation: 0,
-      color: Colors.grey[50],
+      color: Colors.grey[50], // 背景色
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8), // 圆角
       ),
       child: InkWell(
         onTap: () {
           if (widget.post.id != reply.postId) {
+            // 检查是否为当前帖子
             NavigationUtils.pushNamed(context, AppRoutes.postDetail,
-                arguments: reply.postId);
+                arguments: reply.postId); // 跳转到帖子详情页
           }
         },
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(8), // 圆角
         child: Padding(
-          padding: const EdgeInsets.all(12.0),
+          padding: const EdgeInsets.all(12.0), // 内边距
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -271,6 +286,7 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
                   UserInfoBadge(
+                    // 用户信息徽章
                     targetUserId: userId,
                     showFollowButton: false,
                     currentUser: widget.currentUser,
@@ -278,9 +294,9 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                     followService: widget.followService,
                     mini: true,
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 8), // 间距
                   Text(
-                    DateTimeFormatter.formatTimeAgo(reply.createTime),
+                    DateTimeFormatter.formatTimeAgo(reply.createTime), // 格式化时间
                     style: TextStyle(
                       color: Colors.grey[500],
                       fontSize: 12,
@@ -288,22 +304,22 @@ class _RecentGlobalRepliesState extends State<RecentGlobalReplies> {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 8), // 间距
               Text(
-                reply.content,
+                reply.content, // 回复内容
                 style: const TextStyle(fontSize: 14),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 2, // 最大行数
+                overflow: TextOverflow.ellipsis, // 溢出时显示省略号
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 8), // 间距
               Text(
-                postTitle == null ? '回复了帖子' : '回复了帖子 $postTitle',
+                postTitle == null ? '回复了帖子' : '回复了帖子 $postTitle', // 帖子标题或默认文本
                 style: TextStyle(
                   color: Colors.grey[600],
                   fontSize: 12,
                 ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+                maxLines: 1, // 最大行数
+                overflow: TextOverflow.ellipsis, // 溢出时显示省略号
               ),
             ],
           ),

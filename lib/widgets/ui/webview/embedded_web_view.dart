@@ -77,7 +77,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
         await _initializeAndroidWebView();
       } else if (DeviceUtils.isWindows) {
         // --- 修改 Windows 初始化，使用你版本提供的 API ---
-        await _initializeWindowsWebView_V0_2_0();
+        await _initializeWindowsWebViewV0_2_0();
       } else {
         throw UnsupportedError(
             'Platform ${Platform.operatingSystem} is not supported.');
@@ -121,7 +121,7 @@ class _EmbeddedWebViewState extends State<EmbeddedWebView> {
   }
 
   /// --- 使用 V0.2.0 API 的 Windows 初始化 ---
-  Future<void> _initializeWindowsWebView_V0_2_0() async {
+  Future<void> _initializeWindowsWebViewV0_2_0() async {
     // 清理旧订阅
     for (var s in _windowsSubscriptions) {
       s.cancel();

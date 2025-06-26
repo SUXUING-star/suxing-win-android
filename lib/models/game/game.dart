@@ -2,15 +2,87 @@
 import 'package:flutter/cupertino.dart'; // Flutter UI 库
 import 'package:suxingchahui/models/util_json.dart'; // MongoDB BSON ObjectId 和 Timestamp 类型
 
-// GameStatus 类：定义游戏审批状态常量
-@immutable
-class GameStatus {
-  static const String approved = "approved";
-  static const String rejected = "rejected";
-  static const String pending = "pending";
+enum WatchGameListScope {
+  all,
+  tag,
+  category,
+  author,
+  myGames,
 }
 
 class Game {
+  /// 汉化分类常量。
+  static const String categoryTranslated = '汉化';
+
+  /// 生肉分类常量。
+  static const String categoryOriginal = '生肉';
+
+  /// 默认游戏分类列表。
+  static const List<String> defaultGameCategory = [
+    categoryOriginal,
+    categoryTranslated
+  ];
+
+  /// 默认筛选选项 Map。
+  static const Map<String, String> defaultFilter = {
+    Game.sortByCreateTime: '最新发布',
+    Game.sortByUpdateTime: '最近更新',
+    Game.sortByViewCount: '最多浏览',
+    Game.sortByRating: '最高评分'
+  };
+
+  // 审核状态枚举
+  static const String gameStatusApproved = "approved";
+  static const String gameStatusRejected = "rejected";
+  static const String gameStatusPending = "pending";
+
+  static const String sortByCreateTime = Game.jsonKeyCreateTime;
+  static const String sortByUpdateTime = Game.jsonKeyUpdateTime;
+  static const String sortByRating = Game.jsonKeyRating;
+  static const String sortByViewCount = Game.jsonKeyViewCount;
+  static const String sortByLastViewedAt = Game.jsonKeyLastViewedAt;
+
+  // gameListScope
+  static const String gameListScopeAuthor = "author";
+  static const String gameListScopeAll = "all";
+
+  // 提取 JSON 字段名为 static const String 常量，使用驼峰命名（camelCase）
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段
+  static const String jsonKeyAuthorId = 'authorId';
+  static const String jsonKeyTitle = 'title';
+  static const String jsonKeySummary = 'summary';
+  static const String jsonKeyDescription = 'description';
+  static const String jsonKeyCoverImage = 'coverImage';
+  static const String jsonKeyImages = 'images';
+  static const String jsonKeyCategory = 'category';
+  static const String jsonKeyTags = 'tags';
+  static const String jsonKeyRating = 'rating';
+  static const String jsonKeyTotalRatingSum = 'totalRatingSum';
+  static const String jsonKeyRatingCount = 'ratingCount';
+  static const String jsonKeyRatingUpdateTime = 'ratingUpdateTime';
+  static const String jsonKeyCreateTime = 'createTime';
+  static const String jsonKeyUpdateTime = 'updateTime';
+  static const String jsonKeyViewCount = 'viewCount';
+  static const String jsonKeyLikeCount = 'likeCount';
+  static const String jsonKeyCoinsCount = 'coinsCount';
+  static const String jsonKeyDownloadLinks = 'downloadLinks';
+  static const String jsonKeyExternalLinks = 'externalLinks';
+  static const String jsonKeyMusicUrl = 'musicUrl';
+  static const String jsonKeyBvid = 'bvid';
+  static const String jsonKeyLastViewedAt = 'lastViewedAt';
+  static const String jsonKeyCurrentUserLastViewTime =
+      'currentUserLastViewTime';
+  static const String jsonKeyWantToPlayCount = 'wantToPlayCount';
+  static const String jsonKeyPlayingCount = 'playingCount';
+  static const String jsonKeyPlayedCount = 'playedCount';
+  static const String jsonKeyTotalCollections = 'totalCollections';
+  static const String jsonKeyCollectionUpdateTime = 'collectionUpdateTime';
+  static const String jsonKeyApprovalStatus = 'approvalStatus';
+  static const String jsonKeyReviewComment = 'reviewComment';
+  static const String jsonKeyReviewedAt = 'reviewedAt';
+  static const String jsonKeyReviewedBy = 'reviewedBy';
+
   final String id;
   final String authorId;
   final String title;
@@ -90,83 +162,86 @@ class Game {
 
   factory Game.fromJson(Map<String, dynamic> json) {
     return Game(
-      id: UtilJson.parseId(json['_id'] ?? json['id']),
-      authorId: UtilJson.parseId(json['authorId']),
-      title: UtilJson.parseStringSafely(json['title']),
-      summary: UtilJson.parseStringSafely(json['summary']),
-      description: UtilJson.parseStringSafely(json['description']),
-      coverImage: UtilJson.parseStringSafely(json['coverImage']),
-      images: UtilJson.parseListString(json['images']),
-      category: UtilJson.parseStringSafely(json['category']),
-      tags: UtilJson.parseListString(json['tags']),
-      rating: UtilJson.parseDoubleSafely(json['rating']),
-      totalRatingSum: UtilJson.parseDoubleSafely(json['totalRatingSum']),
-      ratingCount: UtilJson.parseIntSafely(json['ratingCount']),
+      id: UtilJson.parseId(json[jsonKeyMongoId] ?? json[jsonKeyId]),
+      authorId: UtilJson.parseId(json[jsonKeyAuthorId]),
+      title: UtilJson.parseStringSafely(json[jsonKeyTitle]),
+      summary: UtilJson.parseStringSafely(json[jsonKeySummary]),
+      description: UtilJson.parseStringSafely(json[jsonKeyDescription]),
+      coverImage: UtilJson.parseStringSafely(json[jsonKeyCoverImage]),
+      images: UtilJson.parseListString(json[jsonKeyImages]),
+      category: UtilJson.parseStringSafely(json[jsonKeyCategory]),
+      tags: UtilJson.parseListString(json[jsonKeyTags]),
+      rating: UtilJson.parseDoubleSafely(json[jsonKeyRating]),
+      totalRatingSum: UtilJson.parseDoubleSafely(json[jsonKeyTotalRatingSum]),
+      ratingCount: UtilJson.parseIntSafely(json[jsonKeyRatingCount]),
       ratingUpdateTime:
-          UtilJson.parseNullableDateTime(json['ratingUpdateTime']),
-      createTime: UtilJson.parseDateTime(json['createTime']),
-      updateTime: UtilJson.parseDateTime(json['updateTime']),
-      viewCount: UtilJson.parseIntSafely(json['viewCount']),
-      likeCount: UtilJson.parseIntSafely(json['likeCount']),
-      coinsCount: UtilJson.parseIntSafely(json['coinsCount']),
-      downloadLinks: UtilJson.parseGameDownloadLinks(json['downloadLinks']),
-      externalLinks: UtilJson.parseGameExternalLinks(json['externalLinks']),
-      musicUrl: UtilJson.parseNullableStringSafely(json['musicUrl']),
-      bvid: UtilJson.parseNullableStringSafely(json['bvid']),
-      lastViewedAt: UtilJson.parseNullableDateTime(json['lastViewedAt']),
+          UtilJson.parseNullableDateTime(json[jsonKeyRatingUpdateTime]),
+      createTime: UtilJson.parseDateTime(json[jsonKeyCreateTime]),
+      updateTime: UtilJson.parseDateTime(json[jsonKeyUpdateTime]),
+      viewCount: UtilJson.parseIntSafely(json[jsonKeyViewCount]),
+      likeCount: UtilJson.parseIntSafely(json[jsonKeyLikeCount]),
+      coinsCount: UtilJson.parseIntSafely(json[jsonKeyCoinsCount]),
+      downloadLinks:
+          UtilJson.parseGameDownloadLinks(json[jsonKeyDownloadLinks]),
+      externalLinks:
+          UtilJson.parseGameExternalLinks(json[jsonKeyExternalLinks]),
+      musicUrl: UtilJson.parseNullableStringSafely(json[jsonKeyMusicUrl]),
+      bvid: UtilJson.parseNullableStringSafely(json[jsonKeyBvid]),
+      lastViewedAt: UtilJson.parseNullableDateTime(json[jsonKeyLastViewedAt]),
       currentUserLastViewTime:
-          UtilJson.parseNullableDateTime(json['currentUserLastViewTime']),
-      wantToPlayCount: UtilJson.parseIntSafely(json['wantToPlayCount']),
-      playingCount: UtilJson.parseIntSafely(json['playingCount']),
-      playedCount: UtilJson.parseIntSafely(json['playedCount']),
-      totalCollections: UtilJson.parseIntSafely(json['totalCollections']),
+          UtilJson.parseNullableDateTime(json[jsonKeyCurrentUserLastViewTime]),
+      wantToPlayCount: UtilJson.parseIntSafely(json[jsonKeyWantToPlayCount]),
+      playingCount: UtilJson.parseIntSafely(json[jsonKeyPlayingCount]),
+      playedCount: UtilJson.parseIntSafely(json[jsonKeyPlayedCount]),
+      totalCollections: UtilJson.parseIntSafely(json[jsonKeyTotalCollections]),
       collectionUpdateTime:
-          UtilJson.parseNullableDateTime(json['collectionUpdateTime']),
+          UtilJson.parseNullableDateTime(json[jsonKeyCollectionUpdateTime]),
       approvalStatus:
-          UtilJson.parseNullableStringSafely(json['approvalStatus']),
-      reviewComment: UtilJson.parseNullableStringSafely(json['reviewComment']),
-      reviewedAt: UtilJson.parseNullableDateTime(json['reviewedAt']),
-      reviewedBy: UtilJson.parseId(json['reviewedBy']),
+          UtilJson.parseNullableStringSafely(json[jsonKeyApprovalStatus]),
+      reviewComment:
+          UtilJson.parseNullableStringSafely(json[jsonKeyReviewComment]),
+      reviewedAt: UtilJson.parseNullableDateTime(json[jsonKeyReviewedAt]),
+      reviewedBy: UtilJson.parseId(json[jsonKeyReviewedBy]),
     );
   }
 
   // 将 Game 对象转换为完整 JSON 格式 (通常用于接收后端响应或保存完整数据)
   Map<String, dynamic> toJson() {
     return {
-      '_id': id, // 匹配后端 _id 字段
-      'authorId': authorId,
-      'title': title,
-      'summary': summary,
-      'description': description,
-      'coverImage': coverImage,
-      'images': images,
-      'category': category,
-      'tags': tags,
-      'rating': rating,
-      'totalRatingSum': totalRatingSum,
-      'ratingCount': ratingCount,
-      'ratingUpdateTime': ratingUpdateTime?.toIso8601String(),
-      'createTime': createTime.toIso8601String(),
-      'updateTime': updateTime.toIso8601String(),
-      'viewCount': viewCount,
-      'likeCount': likeCount,
-      "coinsCount": coinsCount,
-      'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
-      'externalLinks': externalLinks.map((link) => link.toJson()).toList(),
-      'musicUrl': musicUrl,
-      'bvid': bvid,
-      'lastViewedAt': lastViewedAt?.toIso8601String(),
-      'currentUserLastViewTime':
+      jsonKeyMongoId: id, // 匹配后端 _id 字段
+      jsonKeyAuthorId: authorId,
+      jsonKeyTitle: title,
+      jsonKeySummary: summary,
+      jsonKeyDescription: description,
+      jsonKeyCoverImage: coverImage,
+      jsonKeyImages: images,
+      jsonKeyCategory: category,
+      jsonKeyTags: tags,
+      jsonKeyRating: rating,
+      jsonKeyTotalRatingSum: totalRatingSum,
+      jsonKeyRatingCount: ratingCount,
+      jsonKeyRatingUpdateTime: ratingUpdateTime?.toIso8601String(),
+      jsonKeyCreateTime: createTime.toIso8601String(),
+      jsonKeyUpdateTime: updateTime.toIso8601String(),
+      jsonKeyViewCount: viewCount,
+      jsonKeyLikeCount: likeCount,
+      jsonKeyCoinsCount: coinsCount,
+      jsonKeyDownloadLinks: downloadLinks.map((link) => link.toJson()).toList(),
+      jsonKeyExternalLinks: externalLinks.map((link) => link.toJson()).toList(),
+      jsonKeyMusicUrl: musicUrl,
+      jsonKeyBvid: bvid,
+      jsonKeyLastViewedAt: lastViewedAt?.toIso8601String(),
+      jsonKeyCurrentUserLastViewTime:
           currentUserLastViewTime?.toIso8601String(), // 前端特有字段
-      'wantToPlayCount': wantToPlayCount,
-      'playingCount': playingCount,
-      'playedCount': playedCount,
-      'totalCollections': totalCollections,
-      'collectionUpdateTime': collectionUpdateTime?.toIso8601String(),
-      'approvalStatus': approvalStatus,
-      'reviewComment': reviewComment,
-      'reviewedAt': reviewedAt?.toIso8601String(),
-      'reviewedBy': reviewedBy,
+      jsonKeyWantToPlayCount: wantToPlayCount,
+      jsonKeyPlayingCount: playingCount,
+      jsonKeyPlayedCount: playedCount,
+      jsonKeyTotalCollections: totalCollections,
+      jsonKeyCollectionUpdateTime: collectionUpdateTime?.toIso8601String(),
+      jsonKeyApprovalStatus: approvalStatus,
+      jsonKeyReviewComment: reviewComment,
+      jsonKeyReviewedAt: reviewedAt?.toIso8601String(),
+      jsonKeyReviewedBy: reviewedBy,
     };
   }
 
@@ -177,20 +252,29 @@ class Game {
       // id和authorId在创建时由后端生成，更新时可能通过URL参数传递，所以请求体中通常不需要
       // 'id': id, // 更新时可能需要，但通常放URL或单独字段
       // 'authorId': authorId, // 创建时前端可能已知，更新时不变
-      'title': title,
-      'summary': summary,
-      'description': description,
-      'coverImage': coverImage,
-      'images': images,
-      'category': category,
-      'tags': tags,
-      'downloadLinks': downloadLinks.map((link) => link.toJson()).toList(),
-      'externalLinks': externalLinks.map((link) => link.toJson()).toList(),
-      'musicUrl': musicUrl ?? "", // String?
-      'bvid': bvid ?? "", // String?
+      jsonKeyTitle: title,
+      jsonKeySummary: summary,
+      jsonKeyDescription: description,
+      jsonKeyCoverImage: coverImage,
+      jsonKeyImages: images,
+      jsonKeyCategory: category,
+      jsonKeyTags: tags,
+      jsonKeyDownloadLinks: downloadLinks.map((link) => link.toJson()).toList(),
+      jsonKeyExternalLinks: externalLinks.map((link) => link.toJson()).toList(),
+      jsonKeyMusicUrl: musicUrl ?? "", // String?
+      jsonKeyBvid: bvid ?? "", // String?
       // 'rating' 等统计字段由后端计算，'createTime', 'updateTime' 由后端管理
       // 'approvalStatus', 'reviewComment', 'reviewedAt', 'reviewedBy' 由管理员操作，前端普通用户提交不需要
     };
+  }
+
+  static List<Game> fromListJson(dynamic json) {
+    if (json is! List) {
+      return [];
+    }
+
+    return UtilJson.parseObjectList<Game>(
+        json, (listJson) => Game.fromJson(listJson));
   }
 
   // 创建一个空的 Game 对象
@@ -229,6 +313,16 @@ class Game {
       reviewComment: null,
       reviewedAt: null,
       reviewedBy: null,
+    );
+  }
+
+  Game afterResubmit() {
+    return copyWith(
+      approvalStatus: gameStatusPending,
+      reviewComment: '',
+      reviewedAt: null,
+      reviewedBy: null,
+      updateTime: DateTime.now(),
     );
   }
 
@@ -310,13 +404,22 @@ class Game {
 // 游戏下载链接模型
 @immutable
 class GameDownloadLink {
+  // 提取 JSON 字段名为 static const String 常量
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyTitle = 'title';
+  static const String jsonKeyDescription = 'description';
+  static const String jsonKeyUrl = 'url';
+  static const String jsonKeyUserId = 'userId';
+
   final String id;
   final String title;
   final String description;
   final String url;
+  final String userId;
 
   const GameDownloadLink({
     required this.id,
+    required this.userId,
     required this.title,
     required this.description,
     required this.url,
@@ -325,20 +428,31 @@ class GameDownloadLink {
   // 从 JSON 解析 GameDownloadLink
   factory GameDownloadLink.fromJson(Map<String, dynamic> json) {
     return GameDownloadLink(
-      id: UtilJson.parseStringSafely(json['id']),
-      title: UtilJson.parseStringSafely(json['title']),
-      description: UtilJson.parseStringSafely(json['description']),
-      url: UtilJson.parseStringSafely(json['url']),
+      id: UtilJson.parseId(json[jsonKeyId]),
+      userId: UtilJson.parseId(json[jsonKeyUserId]),
+      title: UtilJson.parseStringSafely(json[jsonKeyTitle]),
+      description: UtilJson.parseStringSafely(json[jsonKeyDescription]),
+      url: UtilJson.parseStringSafely(json[jsonKeyUrl]),
     );
   }
 
   // 将 GameDownloadLink 转换为 JSON 格式
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'url': url,
+      jsonKeyId: id,
+      jsonKeyUserId: userId,
+      jsonKeyTitle: title,
+      jsonKeyDescription: description,
+      jsonKeyUrl: url,
+    };
+  }
+
+  // 将 GameDownloadLink 转换为 JSON 格式
+  Map<String, dynamic> toRequestJson() {
+    return {
+      jsonKeyTitle: title,
+      jsonKeyDescription: description,
+      jsonKeyUrl: url,
     };
   }
 
@@ -346,6 +460,7 @@ class GameDownloadLink {
   static GameDownloadLink empty() {
     return GameDownloadLink(
       id: '',
+      userId: '',
       title: '',
       description: '',
       url: '',
@@ -356,6 +471,10 @@ class GameDownloadLink {
 // 游戏关联链接模型
 @immutable
 class GameExternalLink {
+  // 提取 JSON 字段名为 static const String 常量
+  static const String jsonKeyTitle = 'title';
+  static const String jsonKeyUrl = 'url';
+
   final String title;
   final String url;
 
@@ -367,16 +486,16 @@ class GameExternalLink {
   // 从 JSON 解析 GameDownloadLink
   factory GameExternalLink.fromJson(Map<String, dynamic> json) {
     return GameExternalLink(
-      title: UtilJson.parseStringSafely(json['title']),
-      url: UtilJson.parseStringSafely(json['url']),
+      title: UtilJson.parseStringSafely(json[jsonKeyTitle]),
+      url: UtilJson.parseStringSafely(json[jsonKeyUrl]),
     );
   }
 
   // 将 GameDownloadLink 转换为 JSON 格式
   Map<String, dynamic> toJson() {
     return {
-      'title': title,
-      'url': url,
+      jsonKeyTitle: title,
+      jsonKeyUrl: url,
     };
   }
 

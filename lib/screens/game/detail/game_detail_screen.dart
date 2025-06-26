@@ -1,7 +1,9 @@
 // lib/screens/game/detail/game_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/game/game_collection_form_data.dart';
 import 'package:suxingchahui/models/game/game_detail_param.dart';
 import 'package:suxingchahui/models/game/game_navigation_info.dart';
+import 'package:suxingchahui/models/game/game_with_collection_response.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -14,19 +16,20 @@ import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
+import 'package:suxingchahui/widgets/components/screen/game/dialog/game_collection_dialog.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
 import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/game/game_detail_layout.dart';
@@ -75,12 +78,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   GameNavigationInfo? _navigationInfo;
   bool? _isLiked; // 持有喜欢状态
   bool? _isCoined; // 持有投币状态
+
   int _likeCount = 0;
   int _coinsCount = 0;
   String? _error;
   bool _isLoading = false;
+  bool _isAddDownloadLink = false;
   bool _isTogglingLike = false; // 用于跟踪点赞操作的处理状态
   bool _isTogglingCoin = false; // 用于跟踪投币操作的处理状态
+  /// 收藏按钮是否处于加载状态。
+  bool _isCollectionLoading = false;
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
   bool _isPageScrollLocked = false; // 代表页面是否被锁定滚动
@@ -169,7 +176,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   Future<void> _tryIncrementViewCount() async {
     // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
     if (_game != null &&
-        _game!.approvalStatus == GameStatus.approved &&
+        _game!.approvalStatus == Game.gameStatusApproved &&
         widget.isNeedHistory) {
       try {
         widget.gameService.incrementGameView(_gameId);
@@ -331,6 +338,115 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       });
     } finally {
       _isPerformingGamesDetailRefresh = false;
+    }
+  }
+
+  /// 处理收藏按钮的点击事件。
+  ///
+  /// 该方法会负责弹出收藏对话框，并根据用户的操作调用相应的服务方法。
+  /// 它管理着从用户交互开始到API调用结束的整个流程，包括UI加载状态的更新。
+  Future<void> _handleCollectionButtonPressed() async {
+    // 1. 权限和数据检查
+    if (widget.authProvider.currentUser == null) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+    // 确保游戏数据已加载
+    if (_game == null) {
+      AppSnackBar.showError("游戏数据尚未加载，请稍后重试");
+      return;
+    }
+
+    // 2. 弹出收藏对话框并等待用户操作结果
+    final GameCollectionFormData? result =
+        await showGeneralDialog<GameCollectionFormData>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+      barrierColor: Colors.black54,
+      transitionDuration: const Duration(milliseconds: 350),
+      pageBuilder: (context, animation, secondaryAnimation) {
+        return GameCollectionDialog(
+          inputStateService: widget.inputStateService,
+          currentUser: widget.authProvider.currentUser,
+          gameId: _gameId,
+          gameName: _game!.title,
+          currentStatus: _collectionStatus?.status,
+          currentNotes: _collectionStatus?.notes,
+          currentReview: _collectionStatus?.review,
+          currentRating: _collectionStatus?.rating,
+        );
+      },
+      transitionBuilder: (context, animation, secondaryAnimation, child) {
+        return ScaleTransition(
+          scale: CurvedAnimation(parent: animation, curve: Curves.easeOutBack),
+          child: FadeTransition(
+            opacity: CurvedAnimation(parent: animation, curve: Curves.easeIn),
+            child: child,
+          ),
+        );
+      },
+    );
+
+    // 3. 处理对话框返回的结果
+    // 如果用户没有进行任何操作（例如点击外部关闭），则 result 为 null
+    if (result == null || !mounted) {
+      return;
+    }
+
+    // 4. 开始执行异步操作，更新UI为加载状态
+    setState(() {
+      _isCollectionLoading = true;
+    });
+
+    try {
+      // 5. 根据用户的具体操作（设置收藏或移除收藏）调用不同的服务
+      if (result.action == GameCollectionFormData.setCollectionAction) {
+        // --- 设置或更新收藏 ---
+
+        // 调用服务，并使用解构赋值将元组返回值赋给有意义的变量名
+        final (newItem, returnedStatus, updatedGame) =
+            await widget.gameCollectionService.setGameCollection(
+          _gameId,
+          result,
+          _collectionStatus, // 传递旧状态用于比较
+        );
+
+        // 检查操作是否成功
+        if (newItem != null && returnedStatus == result.status) {
+          AppSnackBar.showSuccess('收藏状态已更新');
+          // 调用状态更新方法，将新的收藏项和游戏数据传递给UI层
+          await _handleCollectionStateChangedInButton(newItem, updatedGame);
+        } else {
+          AppSnackBar.showError("操作失败");
+        }
+      } else if (result.action ==
+          GameCollectionFormData.removeCollectionAction) {
+        // --- 移除收藏 ---
+
+        // 调用服务，并使用解构赋值
+        final (success, updatedGame) =
+            await widget.gameCollectionService.removeGameCollection(_gameId);
+
+        // 检查操作是否成功
+        if (success) {
+          AppSnackBar.showSuccess('已从收藏中移除');
+          // 调用状态更新方法，收藏项为 null，并传递更新后的游戏数据
+          await _handleCollectionStateChangedInButton(null, updatedGame);
+        } else {
+          AppSnackBar.showError("操作失败");
+        }
+      }
+    } catch (e) {
+      // 捕获API调用等过程中可能发生的任何异常
+      AppSnackBar.showError("操作失败, ${e.toString()}");
+    } finally {
+      // 6. 无论成功与否，最终都结束加载状态
+      if (mounted) {
+        setState(() {
+          _isCollectionLoading = false;
+        });
+      }
     }
   }
 
@@ -579,6 +695,51 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
+  /// 处理下载链接
+  ///
+  ///
+  Future<void> _handleAddDownloadLink(GameDownloadLink newLink) async {
+    if (_game == null) return;
+    // 保持前置检查
+    if (_isAddDownloadLink || !mounted) return;
+
+    if (!widget.authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
+    setState(() {
+      _isAddDownloadLink = true; // 开始按钮 loading
+    });
+
+    try {
+      final (newLinkFromApi, updatedGame) = await widget.gameService
+          .addGameDownload(
+              oldGame: _game!, gameId: _gameId, newDownloadLink: newLink);
+      if (updatedGame != null) {
+        if (mounted) {
+          setState(() {
+            _game = updatedGame;
+          });
+
+          AppSnackBar.showSuccess('添加下载链接成功');
+        }
+      } else {
+        AppSnackBar.showError('发生异常错误');
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.showError(e.toString());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isAddDownloadLink = false;
+        });
+      }
+    }
+  }
+
   // 处理游戏导航的回调
   void _handleNavigate(String gameId) {
     NavigationUtils.pushNamed(context, AppRoutes.gameDetail, arguments: gameId);
@@ -797,6 +958,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         SafeCachedImage(
           imageUrl: game.coverImage,
           fit: BoxFit.cover,
+          allowPreview: true,
+          allowDownloadInPreview: true,
         ),
         const DecoratedBox(
           decoration: BoxDecoration(
@@ -908,7 +1071,11 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       followService: widget.followService,
       currentUser: widget.authProvider.currentUser,
       initialCollectionStatus: _collectionStatus,
-      onCollectionChanged: _handleCollectionStateChangedInButton,
+      isCollectionLoading: isPreview ? null : _isCollectionLoading,
+      onCollectionButtonPressed:
+          isPreview ? null : _handleCollectionButtonPressed,
+      isAddDownloadLink: _isAddDownloadLink,
+      onAddDownloadLink: _handleAddDownloadLink,
       onNavigate: _handleNavigate,
       navigationInfo: _navigationInfo,
       isPreviewMode: isPreview,
@@ -1031,7 +1198,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       );
     }
 
-    final bool isPending = _game!.approvalStatus == GameStatus.pending;
+    final bool isPending = _game!.approvalStatus == Game.gameStatusPending;
 
     Widget bodyContent;
     // --- 处理刷新时的 Loading 状态 (叠加 Loading 指示器) ---

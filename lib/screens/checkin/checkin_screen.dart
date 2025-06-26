@@ -21,7 +21,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 class CheckInScreen extends StatefulWidget {
   final AuthProvider authProvider;
@@ -208,7 +208,6 @@ class _CheckInScreenState extends State<CheckInScreen>
 
     try {
       final result = await widget.checkInService.performCheckIn();
-      final currentUserId = _currentUser?.id;
 
       if (mounted) {
         _particleController.reset();

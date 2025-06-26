@@ -3,72 +3,58 @@
 // 包含用户 ID 列表
 
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart'; // 引入 UtilJson
 
 @immutable
 class TodayCheckInList {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyDate = 'date';
+  static const String jsonKeyUsers = 'users';
+  static const String jsonKeyListFallback = 'list'; // 'users' 字段的备用名
+  static const String jsonKeyCount = 'count';
+
   final String date;
   final List<String> users;
   final int count;
 
   const TodayCheckInList({
     required this.date,
-    required this.users, // <-- 修改这里
+    required this.users,
     required this.count,
   });
 
   factory TodayCheckInList.fromJson(Map<String, dynamic> json) {
-    // Helper function (can be defined outside or copied here)
-    int safeInt(dynamic value, int defaultValue) {
-      if (value == null) return defaultValue;
-      if (value is int) return value;
-      if (value is double) return value.toInt();
-      if (value is String) {
-        try {
-          return int.parse(value);
-        } catch (_) {
-          return defaultValue;
-        }
-      }
-      return defaultValue;
-    }
+    // 使用 UtilJson.parseListString 来解析用户列表，同时处理备用字段 'list'
+    final userIdList = UtilJson.parseListString(
+        json[jsonKeyUsers] ?? json[jsonKeyListFallback]);
 
-    List<String> userIdList = []; // <-- 修改这里：初始化为空的 String 列表
-    if (json['users'] != null && json['users'] is List) {
-      // <-- 修改这里：检查 'users' 字段
-      userIdList = (json['users'] as List)
-          .map((item) => item?.toString() ?? '') // 将每个元素转为 String
-          .where((id) => id.isNotEmpty) // 过滤掉空的 ID
-          .toList();
-    } else if (json['list'] != null && json['list'] is List) {
-      // 兼容旧的 'list' 字段，如果后端可能返回两种格式
-      userIdList = (json['list'] as List)
-          .map((item) => item?.toString() ?? '') // 将每个元素转为 String
-          .where((id) => id.isNotEmpty) // 过滤掉空的 ID
-          .toList();
-      // print("Warning: Received 'list' field instead of 'users' for check-in list. Assuming it contains user IDs.");
-    }
+    // 业务逻辑: 'count' 优先使用后端返回的值，如果不存在，则使用列表的实际长度
+    // 使用 containsKey 判断键是否存在，避免 UtilJson.parseIntSafely 对 null 返回 0 导致逻辑错误
+    final int count = json.containsKey(jsonKeyCount)
+        ? UtilJson.parseIntSafely(json[jsonKeyCount])
+        : userIdList.length;
 
     return TodayCheckInList(
-      date: json['date']?.toString() ??
+      // 这里的默认值逻辑比较特殊，保留原样但使用常量
+      date: json[jsonKeyDate]?.toString() ??
           DateTime.now().toIso8601String().substring(0, 10),
-      users: userIdList, // <-- 修改这里：使用解析出的 userIdList
-      // count 优先使用后端返回的，其次使用列表长度
-      count: safeInt(json['count'], userIdList.length),
+      users: userIdList,
+      count: count,
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'date': date,
-      'users': users,
-      'count': count,
+      jsonKeyDate: date, // 使用常量
+      jsonKeyUsers: users, // 使用常量
+      jsonKeyCount: count, // 使用常量
     };
   }
 
   factory TodayCheckInList.empty() {
     return TodayCheckInList(
       date: DateTime.now().toIso8601String().substring(0, 10),
-      users: [], // <-- 修改这里：空列表
+      users: [],
       count: 0,
     );
   }

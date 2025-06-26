@@ -1,10 +1,14 @@
 // lib/models/activity/activity_stats.dart
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'; // @immutable 原来就有，保留
 import 'package:suxingchahui/models/util_json.dart';
 
 /// 单个活动类型的统计数据。
 @immutable
 class ActivityTypeCount {
+  // --- JSON 字段键常量 ---
+  static const String jsonKeyType = 'type';
+  static const String jsonKeyCount = 'count';
+
   /// 活动类型，保持为 [String] 以兼容现有工具类。
   final String type;
 
@@ -15,6 +19,17 @@ class ActivityTypeCount {
     required this.type,
     required this.count,
   });
+
+  /// 复制并更新 ActivityTypeCount 对象部分字段。
+  ActivityTypeCount copyWith({
+    String? type,
+    int? count,
+  }) {
+    return ActivityTypeCount(
+      type: type ?? this.type,
+      count: count ?? this.count,
+    );
+  }
 }
 
 /// 整体的活动统计数据模型。
@@ -22,6 +37,10 @@ class ActivityTypeCount {
 /// 将后端返回的 Map 结构转换为更易于在 UI 中使用的 List 结构。
 @immutable
 class ActivityStats {
+  // --- JSON 字段键常量 ---
+  static const String jsonKeyTotalActivities = 'totalActivities';
+  static const String jsonKeyCountsByType = 'countsByType';
+
   /// 总动态数。
   final int totalActivities;
 
@@ -39,8 +58,8 @@ class ActivityStats {
 
     // 业务逻辑: 后端返回的 `countsByType` 是一个 Map<String, int> 结构，
     // 这里需要遍历并转换为强类型的 List<ActivityTypeCount> 供前端使用。
-    if (json['countsByType'] is Map<String, dynamic>) {
-      countsList = (json['countsByType'] as Map<String, dynamic>)
+    if (json[jsonKeyCountsByType] is Map<String, dynamic>) {
+      countsList = (json[jsonKeyCountsByType] as Map<String, dynamic>)
           .entries
           .map((entry) => ActivityTypeCount(
                 type: entry.key, // key is the activity type string
@@ -50,7 +69,7 @@ class ActivityStats {
     }
 
     return ActivityStats(
-      totalActivities: UtilJson.parseIntSafely(json['totalActivities']),
+      totalActivities: UtilJson.parseIntSafely(json[jsonKeyTotalActivities]),
       countsByType: countsList,
     );
   }
@@ -65,8 +84,8 @@ class ActivityStats {
     };
 
     return {
-      'totalActivities': totalActivities,
-      'countsByType': countsMap,
+      jsonKeyTotalActivities: totalActivities,
+      jsonKeyCountsByType: countsMap,
     };
   }
 
@@ -75,6 +94,17 @@ class ActivityStats {
     return const ActivityStats(
       totalActivities: 0,
       countsByType: [],
+    );
+  }
+
+  /// 复制并更新 ActivityStats 对象部分字段。
+  ActivityStats copyWith({
+    int? totalActivities,
+    List<ActivityTypeCount>? countsByType,
+  }) {
+    return ActivityStats(
+      totalActivities: totalActivities ?? this.totalActivities,
+      countsByType: countsByType ?? this.countsByType,
     );
   }
 }

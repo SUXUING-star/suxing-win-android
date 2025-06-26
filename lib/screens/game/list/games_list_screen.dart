@@ -17,7 +17,6 @@ import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/services/main/game/game_service.dart'; // 导入游戏服务
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
-import 'package:suxingchahui/constants/game/game_constants.dart'; // 导入游戏常量
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart'; // 导入动画内容网格组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_lr_item.dart'; // 导入左右滑入淡入动画组件
@@ -35,9 +34,9 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart'; // 导入基础游戏卡片
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
-import 'package:suxingchahui/widgets/components/screen/game/tag/tag_bar.dart'; // 导入标签栏
+import 'package:suxingchahui/widgets/components/screen/game/tag/mobile_tag_bar.dart'; // 导入标签栏
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/game/panel/game_left_panel.dart'; // 导入游戏左侧面板
 import 'package:suxingchahui/widgets/components/screen/game/panel/game_right_panel.dart'; // 导入游戏右侧面板
@@ -108,7 +107,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   int _currentPage = 1; // 当前页码
   int _cacheUpdateCount = 0;
   int _totalPages = 1; // 总页数
-  String _currentSortBy = 'createTime'; // 当前排序字段
+  String _currentSortBy = Game.sortByCreateTime; // 当前排序字段
   bool _isDescending = true; // 是否降序
   String? _currentTag; // 当前选中的标签
   String? _currentUserId; // 当前用户ID
@@ -119,7 +118,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   int _pageSize = GameService.gamesLimit;
 
   static const List<String> _availableCategories =
-      GameConstants.defaultGameCategory; // 可用的游戏分类列表
+      Game.defaultGameCategory; // 可用的游戏分类列表
   StreamSubscription<BoxEvent>? _cacheSubscription; // 缓存订阅器
   String _currentWatchIdentifier = ''; // 当前缓存监听标识符
   Timer? _refreshDebounceTimer; // 刷新防抖计时器
@@ -127,12 +126,11 @@ class _GamesListScreenState extends State<GamesListScreen>
   static const Duration _cacheDebounceDuration = Duration(seconds: 2); // 缓存防抖时长
   static const Duration _checkProviderDebounceDuration =
       Duration(milliseconds: 500); // Provider 检查防抖时长
-  static const Map<String, String> _sortOptions =
-      GameConstants.defaultFilter; // 排序选项
+  static const Map<String, String> _sortOptions = Game.defaultFilter; // 排序选项
 
   bool _isPerformingRefresh = false; // 是否正在执行下拉刷新操作
   DateTime? _lastRefreshAttemptTime; // 上次尝试下拉刷新的时间戳
-  static const Duration _minRefreshInterval = Duration(minutes: 1); // 最小刷新间隔
+  static const Duration _minRefreshInterval = Duration(seconds: 20); // 最小刷新间隔
   static const Duration _maxLoadingDuration = Duration(seconds: 10);
   // 状态缓存
   Timer? _resizeDebounceTimer; // 防抖计时器
@@ -347,7 +345,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 加载标签。
-  Future<void> _loadTags() async {
+  Future<void> _loadTags({bool forceRefresh = false}) async {
     if (_lastTagsLoadingTime != null) {
       _lastLoadingTime = null;
     }
@@ -360,7 +358,8 @@ class _GamesListScreenState extends State<GamesListScreen>
       _lastTagsLoadingTime = DateTime.now();
     });
     try {
-      final tags = await widget.gameService.getAllGameTags(); // 获取所有标签
+      final tags = await widget.gameService
+          .getAllGameTags(forceRefresh: forceRefresh); // 获取所有标签
       if (mounted) setState(() => _availableTags = tags); // 更新可用标签列表
     } catch (e) {
       if (mounted) {
@@ -423,7 +422,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           categoryName: _currentCategory!,
           page: targetPage,
           sortBy: _currentSortBy,
-          descending: _isDescending,
+          sortDesc: _isDescending,
           forceRefresh: forceRefresh,
         );
       } else if (_currentTag != null) {
@@ -432,7 +431,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           tag: _currentTag!,
           page: targetPage,
           sortBy: _currentSortBy,
-          descending: _isDescending,
+          sortDesc: _isDescending,
           forceRefresh: forceRefresh,
         );
       } else {
@@ -440,7 +439,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         result = await widget.gameService.getGamesPaginatedWithInfo(
           page: targetPage,
           sortBy: _currentSortBy,
-          descending: _isDescending,
+          sortDesc: _isDescending,
           forceRefresh: forceRefresh,
         );
       }
@@ -491,19 +490,19 @@ class _GamesListScreenState extends State<GamesListScreen>
   ///
   /// 该方法根据当前的筛选条件和页码生成监听标识符，并监听游戏列表页的缓存变化。
   void _startOrUpdateWatchingCache() {
-    final String filterType; // 筛选类型
+    final WatchGameListScope filterType; // 筛选类型
     final String? filterValue; // 筛选值
     if (_currentCategory != null) {
       // 按分类筛选
-      filterType = 'category';
+      filterType = WatchGameListScope.category;
       filterValue = _currentCategory;
     } else if (_currentTag != null) {
       // 按标签筛选
-      filterType = 'tag';
+      filterType = WatchGameListScope.tag;
       filterValue = _currentTag;
     } else {
       // 无筛选
-      filterType = 'all';
+      filterType = WatchGameListScope.all;
       filterValue = null;
     }
     final String newWatchIdentifier =
@@ -525,7 +524,9 @@ class _GamesListScreenState extends State<GamesListScreen>
         pageSize: _pageSize,
         sortBy: _currentSortBy,
         descending: _isDescending,
-        scope: _currentTag != null ? 'tag' : 'all',
+        scope: _currentTag != null
+            ? WatchGameListScope.tag
+            : WatchGameListScope.all,
       )
           .listen((BoxEvent event) {
         if (_isVisible) {
@@ -1250,7 +1251,7 @@ class _GamesListScreenState extends State<GamesListScreen>
                               : _handleTagBarSelected,
                           isTagLoading: _isTagsLoading,
                           errorMessage: _tagsErrMsg,
-                          refreshTags: () => _loadTags(),
+                          refreshTags: (f) => _loadTags(forceRefresh: f),
                         ),
                       ),
                     Expanded(
@@ -1610,15 +1611,6 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// 构建登录提示悬浮动作按钮组。
   List<Widget> _toLoginFab() {
     return [
-      GenericFloatingActionButton(
-        onPressed: () async {
-          final gameList = await widget.gameService
-              .getFallbackAllGamesPaginated(
-                  page: _currentPage, sortBy: _currentSortBy);
-          print(gameList?.toJson());
-        },
-        icon: Icons.real_estate_agent_sharp,
-      ),
       GenericFloatingActionButton(
         onPressed: () => NavigationUtils.navigateToLogin(context), // 点击导航到登录页
         icon: Icons.login,

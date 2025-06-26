@@ -101,8 +101,6 @@ class GameCoverImageField extends StatelessWidget {
         },
       );
     } else if (source is File) {
-      // <--- 新增: 处理 File 对象
-      // print("Cover Preview: Rendering File: ${source.path}");
       imageWidget = Image.file(
         source, // <--- 直接使用 File 对象
         fit: BoxFit.cover,
@@ -120,6 +118,8 @@ class GameCoverImageField extends StatelessWidget {
       imageWidget = SafeCachedImage(
         imageUrl: displayUrl,
         fit: BoxFit.cover,
+        allowDownloadInPreview: true,
+        allowPreview: true,
       );
     } else {
       // print("Cover Preview: Unknown source type: ${source.runtimeType}");

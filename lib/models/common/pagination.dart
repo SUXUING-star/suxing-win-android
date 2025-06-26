@@ -3,6 +3,14 @@
 import 'package:suxingchahui/models/util_json.dart';
 
 class PaginationData {
+  // --- JSON 字段键常量 ---
+  static const String jsonKeyPage = 'page';
+  static const String jsonKeyLimit = 'limit';
+  static const String jsonKeyTotal = 'total';
+  static const String jsonKeyPages = 'pages';
+  static const String jsonKeyPageSize = 'pageSize'; // 用于处理后端可能的不同命名
+  static const String jsonKeyTotalPages = 'totalPages'; // 用于处理后端可能的不同命名
+
   final int page;
   final int limit;
   final int total;
@@ -40,13 +48,13 @@ class PaginationData {
   }
 
   factory PaginationData.fromJson(Map<String, dynamic> json) {
-    int page = UtilJson.parseIntSafely(json['page']);
-    int limit = UtilJson.parseIntSafely(json['limit']);
-    int total = UtilJson.parseIntSafely(json['total']);
+    int page = UtilJson.parseIntSafely(json[jsonKeyPage]);
+    int limit = UtilJson.parseIntSafely(json[jsonKeyLimit]);
+    int total = UtilJson.parseIntSafely(json[jsonKeyTotal]);
 
     // 处理 limit 字段：优先 'limit'，其次 'pageSize'，最后默认 20
     if (limit <= 0) {
-      limit = UtilJson.parseIntSafely(json['pageSize']);
+      limit = UtilJson.parseIntSafely(json[jsonKeyPageSize]);
     }
     if (limit <= 0) {
       limit = 20; // 默认值
@@ -67,9 +75,9 @@ class PaginationData {
       int calculatedPages = (total / limit).ceil();
 
       // 从后端获取的页数（可能是 'pages' 或 'totalPages'）
-      int pagesFromBackend = UtilJson.parseIntSafely(json['pages']);
+      int pagesFromBackend = UtilJson.parseIntSafely(json[jsonKeyPages]);
       if (pagesFromBackend <= 0) {
-        pagesFromBackend = UtilJson.parseIntSafely(json['totalPages']);
+        pagesFromBackend = UtilJson.parseIntSafely(json[jsonKeyTotalPages]);
       }
 
       // 如果后端提供的页数有效且大于计算页数，则使用后端值，否则使用计算值
@@ -100,10 +108,10 @@ class PaginationData {
 
   Map<String, dynamic> toJson() {
     return {
-      'page': page,
-      'limit': limit,
-      'total': total,
-      'pages': pages,
+      jsonKeyPage: page,
+      jsonKeyLimit: limit,
+      jsonKeyTotal: total,
+      jsonKeyPages: pages,
     };
   }
 
@@ -117,6 +125,7 @@ class PaginationData {
     int newLimit = limit ?? this.limit;
     int newPages = pages ?? this.pages;
 
+    // 保持原始代码的复杂逻辑
     if (pages == null && (total != null || limit != null)) {
       if (newTotal <= 0 || newLimit <= 0) {
         newPages = (newTotal == 0) ? 0 : 1;

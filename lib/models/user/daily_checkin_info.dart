@@ -1,10 +1,16 @@
 // lib/models/user/daily_checkin_info.dart
 
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart'; // 引入 UtilJson
 
 /// 单日签到信息模型
 @immutable
 class DailyCheckInInfo {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyDay = 'day';
+  static const String jsonKeyCheckedIn = 'checkedIn';
+  static const String jsonKeyExp = 'exp';
+
   final int day;
   final bool checkedIn;
   final int exp;
@@ -16,31 +22,19 @@ class DailyCheckInInfo {
   });
 
   factory DailyCheckInInfo.fromJson(Map<String, dynamic> json) {
-    // 确保 'day' 字段能够处理字符串日期（例如 '2023-10-26'）
-    int? parsedDay;
-    if (json['day'] is int) {
-      parsedDay = json['day'];
-    } else if (json['day'] is String) {
-      try {
-        parsedDay = int.parse(
-            json['day'].toString().split('-').last); // 尝试从 'YYYY-MM-DD' 中提取日期
-      } catch (e) {
-        // print('Error parsing day from string: ${json['day']} - $e');
-      }
-    }
-
     return DailyCheckInInfo(
-      day: parsedDay ?? 0, // 默认值为 0 或根据需求设定
-      checkedIn: json['checkedIn'] as bool? ?? false,
-      exp: json['exp'] as int? ?? 0,
+      // 直接调用 UtilJson 中新添加的方法来解析 'day' 字段
+      day: UtilJson.parseDayOfMonthSafely(json[jsonKeyDay]),
+      checkedIn: UtilJson.parseBoolSafely(json[jsonKeyCheckedIn]),
+      exp: UtilJson.parseIntSafely(json[jsonKeyExp]),
     );
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'day': day,
-      'checkedIn': checkedIn,
-      'exp': exp,
+      jsonKeyDay: day,
+      jsonKeyCheckedIn: checkedIn,
+      jsonKeyExp: exp,
     };
   }
 }

@@ -10,6 +10,7 @@ import 'package:provider/provider.dart';
 
 // --- 核心依赖 ---
 import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game_form_data.dart';
 import 'package:suxingchahui/models/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
@@ -29,7 +30,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 // --- UI 和辅助组件 ---
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -129,6 +130,11 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   late final GameFormCacheService _cacheService;
   User? _currentUser;
 
+  List<String> _availableTags = []; // 可用的游戏标签列表
+
+  bool _isTagsLoading = false;
+  String? _tagsErrMsg;
+
   late Size _screenSize;
   late bool _isDesktop;
 
@@ -155,6 +161,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
       WidgetsBinding.instance.addPostFrameCallback(
         (_) {
           if (mounted) {
+            _loadTags();
             // 再次检查 mounted
             _checkAndRestoreDraft(); // 检查并恢复草稿
           }
@@ -214,6 +221,32 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
         if (mounted) {
           await _saveDraftIfNecessary();
         }
+      });
+    }
+  }
+
+  /// 加载标签。
+  Future<void> _loadTags() async {
+    if (_isTagsLoading) {
+      return;
+    }
+    setState(() {
+      _isTagsLoading = true;
+      _tagsErrMsg = null;
+    });
+    try {
+      final tags = await widget.gameService.getAllAvailableGameTags(); // 获取所有标签
+      if (mounted) setState(() => _availableTags = tags); // 更新可用标签列表
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _availableTags = []; // 错误时清空标签列表
+          _tagsErrMsg = e.toString();
+        });
+      }
+    } finally {
+      setState(() {
+        _isTagsLoading = false;
       });
     }
   }
@@ -1622,8 +1655,10 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   // 标签字段
   Widget _buildTagsField() {
     return GameTagsField(
-      tags: _selectedTags,
+      selectedTags: _selectedTags,
       onChanged: (tags) => setState(() => _selectedTags = tags),
+      availableTags: _availableTags,
+      loadTagsErrMsg: _tagsErrMsg,
     );
   }
 
@@ -1631,6 +1666,7 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
   Widget _buildDownloadLinksField() {
     return GameDownloadLinksField(
       inputStateService: widget.inputStateService,
+      currentUser: widget.currentUser!,
       downloadLinks: _downloadLinks,
       onChanged: (links) => setState(() => _downloadLinks = links),
     );
@@ -1647,7 +1683,6 @@ class _GameFormState extends State<GameForm> with WidgetsBindingObserver {
 
   // 游戏截图区域
   Widget _buildGameImagesSection() {
-    // GameImagesField 应该能处理 List<String or XFile or null>
     return GameImagesField(
       gameImagesSources: _gameImagesSources,
       onChanged: _handleGameImagesChange,

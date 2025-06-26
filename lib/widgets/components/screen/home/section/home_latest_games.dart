@@ -7,7 +7,6 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart'; // 动画列表视图
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart'; // 通用游戏卡片组件
@@ -22,7 +21,7 @@ class HomeLatestGames extends StatelessWidget {
   final List<Game>? games; // 最新游戏列表
   final bool isLoading; // 是否正在加载
   final String? errorMessage; // 错误消息
-  final VoidCallback? onRetry; // 重试回调
+  final Function(bool) onRetry; // 重试回调
 
   /// 构造函数。
   ///
@@ -36,7 +35,7 @@ class HomeLatestGames extends StatelessWidget {
     required this.games,
     required this.isLoading,
     this.errorMessage,
-    this.onRetry,
+    required this.onRetry,
   });
 
   /// 构建 Widget。
@@ -151,20 +150,21 @@ class HomeLatestGames extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 20.0), // 垂直内边距
         child: InlineErrorWidget(
           errorMessage: errorMessage!,
-          onRetry: onRetry,
+          onRetry: () => onRetry(true),
         ), // 错误组件
       );
     }
     final displayGames = games ?? []; // 待显示游戏列表
     if (!isLoading && displayGames.isEmpty) {
       // 空状态时
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 20.0), // 垂直内边距
-        child: EmptyStateWidget(
-          message: '暂无最新游戏',
-          iconData: Icons.inbox_outlined,
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 20.0), // 垂直内边距
+        child: InlineErrorWidget(
+          errorMessage: '暂无最新游戏',
+          icon: Icons.inbox_outlined,
           iconSize: 40,
           iconColor: Colors.grey,
+          onRetry: () => onRetry(true),
         ), // 空状态组件
       );
     }

@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/game/video/game_video_section.dart
 
-/// 该文件定义了 GameVideoSection 组件，用于显示游戏的相关视频。
-/// GameVideoSection 根据 bvid 动态加载并显示 Bilibili 视频播放器。
+/// 该文件定义了 [GameVideoSection]组件，用于显示游戏的相关视频。
+/// [GameVideoSection] 根据 bvid 动态加载并显示 Bilibili 视频播放器。
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 功�
 import 'package:suxingchahui/widgets/ui/webview/embedded_web_view.dart'; // 内嵌 WebView 组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载指示器组件
 
-/// `GameVideoSection` 类：游戏相关视频板块组件。
+/// [GameVideoSection] 类：游戏相关视频板块组件。
 ///
 /// 该组件根据提供的 Bilibili 视频 ID，先显示一个加载按钮，
 /// 用户点击后加载并显示内嵌的视频播放器，并处理加载中和错误状态。

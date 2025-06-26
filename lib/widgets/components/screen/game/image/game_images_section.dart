@@ -1,27 +1,27 @@
-// lib/widgets/components/screen/game/image/game_images.dart
+// lib/widgets/components/screen/game/image/game_images_section.dart
 
-/// 该文件定义了 GameImages 组件，用于显示游戏截图列表。
-/// GameImages 在水平滚动视图中展示游戏截图，并支持点击预览大图。
+/// 该文件定义了 [GameImagesSection] 组件，用于显示游戏截图列表。
+/// [GameImagesSection] 在水平滚动视图中展示游戏截图，并支持点击预览大图。
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
 import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
-import 'package:suxingchahui/screens/game/detail/image_preview_screen.dart'; // 图片预览屏幕
+import 'package:suxingchahui/widgets/ui/image/images_preview_screen.dart'; // 图片预览屏幕
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 安全缓存图片组件
 
-/// `GameImages` 类：游戏截图显示组件。
+/// [GameImagesSection] 类：游戏截图显示组件。
 ///
 /// 该组件负责在卡片中显示游戏截图列表，并提供点击预览功能。
-class GameImages extends StatelessWidget {
+class GameImagesSection extends StatelessWidget {
   final Game game; // 游戏数据
 
   /// 构造函数。
   ///
   /// [key]：Widget 的 Key。
   /// [game]：要显示截图的游戏数据。
-  const GameImages({
+  const GameImagesSection({
     super.key,
     required this.game,
   });
@@ -145,9 +145,10 @@ class GameImages extends StatelessWidget {
       // 导航到新路由
       context,
       MaterialPageRoute(
-        builder: (_) => ImagePreviewScreen(
+        builder: (_) => ImagesPreviewScreen(
           images: game.images, // 图片列表
           initialIndex: initialIndex, // 初始索引
+          allowDownload: true,
         ),
       ),
     );

@@ -1,86 +1,70 @@
 // lib/widgets/components/form/gameform/field/game_download_links_field.dart
 
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
-import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+/// 该文件定义了 [GameDownloadLinksField] 组件，用于在游戏表单中管理下载链接。
+library;
 
+import 'package:flutter/material.dart';
+import 'package:mongo_dart/mongo_dart.dart' as mongo;
+import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/utils/common/clipboard_link_parser.dart';
+import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
+import 'package:suxingchahui/widgets/ui/components/dialog/add_download_link_dialog.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
+
+/// [GameDownloadLinksField] 类：一个用于在表单中添加、编辑、删除游戏下载链接的字段组件。
 class GameDownloadLinksField extends StatelessWidget {
+  /// 当前的下载链接列表。
   final List<GameDownloadLink> downloadLinks;
+
+  /// 当链接列表发生变化时的回调。
   final ValueChanged<List<GameDownloadLink>> onChanged;
+
+  /// 输入状态服务。
   final InputStateService inputStateService;
 
+  /// 当前用户。
+  final User currentUser;
+
+  /// 构造函数。
   const GameDownloadLinksField({
     super.key,
     required this.downloadLinks,
     required this.onChanged,
     required this.inputStateService,
+    required this.currentUser,
   });
 
+  /// [复用] 工具类从剪贴板快速添加链接。
   Future<void> _quickAddFromClipboard(BuildContext context) async {
-    final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
-    if (!context.mounted) return;
+    final (newLink, error) = await ClipboardLinkParser.parseFromClipboard(
+        currentUserId: currentUser.id);
 
-    final String? clipboardText = clipboardData?.text;
-
-    if (clipboardText == null || clipboardText.isEmpty) {
-      AppSnackBar.showInfo('剪贴板内容为空');
-
-      return;
-    }
-
-    final lines = clipboardText.split('\n');
-    String? title;
-    String? url;
-    String? description;
-
-    for (final line in lines) {
-      if (line.contains('链接：')) {
-        url = line.replaceAll('链接：', '').trim();
-      } else if (line.contains('提取码：')) {
-        description =
-            '${description ?? ''}${description != null && description.isNotEmpty ? '; ' : ''}提取码：${line.replaceAll('提取码：', '').trim()}';
-      } else if (title == null &&
-          line.isNotEmpty &&
-          !line.contains('http') &&
-          !line.contains('https')) {
-        title = line.trim();
-      }
-    }
-
-    if (title != null && url != null) {
+    if (newLink != null) {
       final newLinks = List<GameDownloadLink>.from(downloadLinks);
-      newLinks.add(GameDownloadLink(
-        id: mongo.ObjectId().oid,
-        title: title,
-        url: url,
-        description: description ?? '',
-      ));
+      newLinks.add(newLink);
       onChanged(newLinks);
       if (context.mounted) {
-        AppSnackBar.showSuccess('已从剪贴板添加: $title');
+        AppSnackBar.showSuccess('已从剪贴板添加: ${newLink.title}');
       }
-    } else {
+    } else if (error != null) {
       if (context.mounted) {
-        AppSnackBar.showWarning('未能从剪贴板解析有效链接');
+        AppSnackBar.showInfo(error);
       }
     }
   }
 
+  /// [完全复用] 对话框来添加新链接。
   void _addDownloadLink(BuildContext context) {
-    _showLinkDialog(
+    AddDownloadLinkDialog.show(
       context: context,
-      dialogTitle: '添加下载链接',
-      confirmButtonText: '添加',
-      onConfirmAction: (title, url, description) {
+      inputStateService: inputStateService,
+      onConfirm: ({required title, required url, required description}) {
         final newLinks = List<GameDownloadLink>.from(downloadLinks);
         newLinks.add(GameDownloadLink(
           id: mongo.ObjectId().oid,
+          userId: currentUser.id,
           title: title,
           url: url,
           description: description,
@@ -90,95 +74,23 @@ class GameDownloadLinksField extends StatelessWidget {
     );
   }
 
+  /// [完全复用] 对话框来编辑链接。
   void _editDownloadLink(BuildContext context, int index) {
-    final link = downloadLinks[index];
-    _showLinkDialog(
+    final linkToEdit = downloadLinks[index];
+    AddDownloadLinkDialog.show(
       context: context,
-      dialogTitle: '编辑下载链接',
-      initialTitle: link.title,
-      initialUrl: link.url,
-      initialDescription: link.description,
-      confirmButtonText: '保存',
-      onConfirmAction: (title, url, description) {
+      inputStateService: inputStateService,
+      existingLink: linkToEdit, // 传入已有链接，进入编辑模式
+      onConfirm: ({required title, required url, required description}) {
         final newLinks = List<GameDownloadLink>.from(downloadLinks);
         newLinks[index] = GameDownloadLink(
-          id: link.id,
+          id: linkToEdit.id,
+          userId: currentUser.id,
           title: title,
           url: url,
           description: description,
         );
         onChanged(newLinks);
-      },
-    );
-  }
-
-  void _showLinkDialog({
-    required BuildContext context,
-    required String dialogTitle,
-    String initialTitle = '',
-    String initialUrl = '',
-    String initialDescription = '',
-    required String confirmButtonText,
-    required void Function(String title, String url, String description)
-        onConfirmAction,
-  }) {
-    final titleController = TextEditingController(text: initialTitle);
-    final urlController = TextEditingController(text: initialUrl);
-    final descriptionController =
-        TextEditingController(text: initialDescription);
-
-    BaseInputDialog.show<void>(
-      context: context,
-      title: dialogTitle,
-      contentBuilder: (BuildContext dialogContext) {
-        return Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextInputField(
-              inputStateService: inputStateService,
-              controller: titleController,
-              decoration: const InputDecoration(
-                labelText: '链接标题',
-                hintText: '例如：网盘',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextInputField(
-              inputStateService: inputStateService,
-              controller: urlController,
-              decoration: const InputDecoration(
-                labelText: '下载链接（最好只放网盘的链接）',
-                hintText: 'https://',
-              ),
-            ),
-            const SizedBox(height: 12),
-            TextInputField(
-              inputStateService: inputStateService,
-              controller: descriptionController,
-              decoration: const InputDecoration(
-                labelText: '描述/提取码等',
-                hintText: '例如：提取码: abcd',
-              ),
-              maxLines: 2,
-            ),
-          ],
-        );
-      },
-      confirmButtonText: confirmButtonText,
-      onConfirm: () async {
-        final title = titleController.text.trim();
-        final url = urlController.text.trim();
-        final description = descriptionController.text.trim();
-
-        if (title.isNotEmpty && url.isNotEmpty) {
-          onConfirmAction(title, url, description);
-          return;
-        } else {
-          if (context.mounted) {
-            AppSnackBar.showWarning('链接标题和链接地址不能为空！');
-          }
-          throw Exception('输入校验失败');
-        }
       },
     );
   }

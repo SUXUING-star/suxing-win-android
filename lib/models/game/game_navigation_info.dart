@@ -4,6 +4,12 @@ import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class GameNavigationInfo {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyPreviousId = 'previousId';
+  static const String jsonKeyPreviousTitle = 'previousTitle';
+  static const String jsonKeyNextId = 'nextId';
+  static const String jsonKeyNextTitle = 'nextTitle';
+
   final String? previousId;
   final String? previousTitle;
   final String? nextId;
@@ -19,20 +25,24 @@ class GameNavigationInfo {
   factory GameNavigationInfo.fromJson(Map<String, dynamic> json) {
     return GameNavigationInfo(
       // ID 字段可能是 ObjectId，使用 parseNullableId 处理
-      previousId: UtilJson.parseNullableId(json['previousId']),
+      previousId: UtilJson.parseNullableId(json[jsonKeyPreviousId]), // 使用常量
       // 标题字段，如果为 null 或空字符串，则解析为 null
-      previousTitle: UtilJson.parseNullableStringSafely(json['previousTitle']),
-      nextId: UtilJson.parseNullableId(json['nextId']),
-      nextTitle: UtilJson.parseNullableStringSafely(json['nextTitle']),
+      previousTitle: UtilJson.parseNullableStringSafely(
+          json[jsonKeyPreviousTitle]), // 使用常量
+      nextId: UtilJson.parseNullableId(json[jsonKeyNextId]), // 使用常量
+      nextTitle:
+          UtilJson.parseNullableStringSafely(json[jsonKeyNextTitle]), // 使用常量
     );
   }
 
   Map<String, dynamic> toJson() {
     final map = <String, dynamic>{};
-    if (previousId != null) map['previousId'] = previousId;
-    if (previousTitle != null) map['previousTitle'] = previousTitle;
-    if (nextId != null) map['nextId'] = nextId;
-    if (nextTitle != null) map['nextTitle'] = nextTitle;
+    if (previousId != null) map[jsonKeyPreviousId] = previousId; // 使用常量
+    if (previousTitle != null) {
+      map[jsonKeyPreviousTitle] = previousTitle; // 使用常量
+    }
+    if (nextId != null) map[jsonKeyNextId] = nextId; // 使用常量
+    if (nextTitle != null) map[jsonKeyNextTitle] = nextTitle; // 使用常量
     return map;
   }
 

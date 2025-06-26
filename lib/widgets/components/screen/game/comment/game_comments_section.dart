@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误提示 Widget
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载 Widget
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // SnackBar 提示
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // SnackBar 提示
 
 class GameCommentsSection extends StatefulWidget {
   final GameService gameService;
@@ -326,7 +326,7 @@ class _GameCommentsSectionState extends State<GameCommentsSection> {
                     _buildCommentListSection(), // 调用下面封装的方法
                   ],
                 )
-              : LoginPromptButton(
+              : const LoginPromptButton(
                   // 未登录：显示登录提示
                   message: '登录后查看和发表评论',
                   buttonText: '去登录', // 修改按钮文字

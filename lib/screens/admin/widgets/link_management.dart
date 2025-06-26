@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/components/form/linkform/link_form_dialog.d
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 class LinkManagement extends StatefulWidget {
   final LinkToolService linkToolService;

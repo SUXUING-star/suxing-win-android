@@ -1,11 +1,16 @@
 // lib/models/defence/defence_item.dart
 
-import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart'; // 保留原始代码中的 import
 import 'package:suxingchahui/models/util_json.dart';
 
 /// 表示防护列表（如黑名单、白名单）中的一个条目。
-@immutable
+@immutable // 保留原始代码中的 @immutable
 class DefenceItem {
+  // --- JSON 字段键常量 ---
+  static const String jsonKeyIp = 'ip';
+  static const String jsonKeyCreatedAt = 'created_at';
+  static const String jsonKeyExpiresAt = 'expires_at';
+
   /// IP 地址。
   final String ip;
 
@@ -25,21 +30,43 @@ class DefenceItem {
   /// 从 JSON 创建一个 [DefenceItem] 实例。
   factory DefenceItem.fromJson(Map<String, dynamic> json) {
     return DefenceItem(
-      ip: UtilJson.parseStringSafely(json['ip']),
-      createdAt: UtilJson.parseDateTime(json['created_at']),
-      expiresAt: UtilJson.parseDateTime(json['expires_at']),
+      ip: UtilJson.parseStringSafely(json[jsonKeyIp]),
+      createdAt: UtilJson.parseDateTime(json[jsonKeyCreatedAt]),
+      expiresAt: UtilJson.parseDateTime(json[jsonKeyExpiresAt]),
     );
   }
 
-  /// 将当前的 [DefenceItem] 实例转换为 JSON (Map<String, dynamic>)。
+  /// 将当前的 [DefenceItem] 实例转换为 JSON。
   Map<String, dynamic> toJson() {
     return {
-      'ip': ip,
-      'created_at': createdAt.toIso8601String(),
-      'expires_at': expiresAt.toIso8601String(),
+      jsonKeyIp: ip,
+      jsonKeyCreatedAt: createdAt.toIso8601String(),
+      jsonKeyExpiresAt: expiresAt.toIso8601String(),
     };
   }
 
   /// 检查条目是否已过期。
   bool get isExpired => expiresAt.isBefore(DateTime.now());
+
+  /// 创建一个空的 [DefenceItem] 实例。
+  static DefenceItem empty() {
+    return DefenceItem(
+      ip: '',
+      createdAt: DateTime.fromMillisecondsSinceEpoch(0),
+      expiresAt: DateTime.fromMillisecondsSinceEpoch(0),
+    );
+  }
+
+  /// 复制当前 [DefenceItem] 实例并选择性地更新字段。
+  DefenceItem copyWith({
+    String? ip,
+    DateTime? createdAt,
+    DateTime? expiresAt,
+  }) {
+    return DefenceItem(
+      ip: ip ?? this.ip,
+      createdAt: createdAt ?? this.createdAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+    );
+  }
 }

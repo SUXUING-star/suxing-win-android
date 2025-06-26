@@ -130,13 +130,13 @@ class MyGamesLayout extends StatelessWidget {
   ) {
     final int totalGames = myGames.length;
     final int pendingGames = myGames
-        .where((game) => game.approvalStatus == GameStatus.pending)
+        .where((game) => game.approvalStatus == Game.gameStatusPending)
         .length;
     final int approvedGames = myGames
-        .where((game) => game.approvalStatus == GameStatus.approved)
+        .where((game) => game.approvalStatus == Game.gameStatusApproved)
         .length;
     final int rejectedGames = myGames
-        .where((game) => game.approvalStatus == GameStatus.rejected)
+        .where((game) => game.approvalStatus == Game.gameStatusRejected)
         .length;
 
     if (isDesktopLayout) {

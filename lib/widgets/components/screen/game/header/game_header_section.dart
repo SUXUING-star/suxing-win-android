@@ -1,7 +1,7 @@
-// lib/widgets/components/screen/game/header/game_header.dart
+// lib/widgets/components/screen/game/header/game_header_section.dart
 
-/// 该文件定义了 GameHeader 组件，用于显示游戏详情页的头部信息。
-/// GameHeader 负责展示游戏标题、简介、标签、分类和用户互动状态。
+/// 该文件定义了 [GameHeader] 组件，用于显示游戏详情页的头部信息。
+/// [GameHeader] 负责展示游戏标题、简介、标签、分类和用户互动状态。
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
@@ -11,13 +11,13 @@ import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用�
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
 import 'package:suxingchahui/widgets/components/screen/game/category/game_category_tag.dart'; // 游戏分类标签组件
-import 'package:suxingchahui/widgets/components/screen/game/tag/game_tags.dart'; // 游戏标签组件
+import 'package:suxingchahui/widgets/components/screen/game/tag/game_tags_section.dart'; // 游戏标签组件
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载指示器组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 应用文本组件
 
-/// `GameHeader` 类：游戏详情页的头部组件。
+/// [GameHeader] 类：游戏详情页的头部组件。
 ///
 /// 该组件展示游戏的标题、简介、分类、标签、作者信息、浏览量、点赞数、投币数、
 /// 收藏数、评分以及发布和更新时间。
@@ -129,7 +129,7 @@ class GameHeader extends StatelessWidget {
           if (game.tags.isNotEmpty) ...[
             // 游戏标签不为空时显示
             const SizedBox(height: 12), // 间距
-            GameTags(
+            GameTagsSection(
               onClickFilterGameTag: onClickFilterGameTag,
               game: game,
               wrap: false,

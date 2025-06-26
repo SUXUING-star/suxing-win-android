@@ -13,7 +13,6 @@ import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 // Services
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/services/main/user/user_service.dart';
 
 // Providers
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -26,7 +25,7 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 // Utils & Routes
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';

@@ -36,7 +36,7 @@ class GameApprovalStatusOverlay extends StatelessWidget {
     final statusInfo =
         GameConstants.getGameStatusDisplay(game.approvalStatus); // 获取状态显示信息
     final bool isRejected =
-        game.approvalStatus?.toLowerCase() == GameStatus.rejected; // 判断是否为被拒绝状态
+        game.approvalStatus?.toLowerCase() == Game.gameStatusRejected; // 判断是否为被拒绝状态
     final bool showComment = isRejected &&
         game.reviewComment != null &&
         game.reviewComment!.isNotEmpty; // 是否显示拒绝原因

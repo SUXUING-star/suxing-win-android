@@ -21,6 +21,24 @@ class MessageNavigationInfo {
 
 @immutable
 class Message {
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyId = 'id';
+  static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段
+  static const String jsonKeySenderId = 'senderId';
+  static const String jsonKeyRecipientId = 'recipientId';
+  static const String jsonKeyContent = 'content';
+  static const String jsonKeyType = 'type';
+  static const String jsonKeyIsRead = 'isRead';
+  static const String jsonKeyCreateTime = 'createTime';
+  static const String jsonKeyUpdateTime = 'updateTime';
+  static const String jsonKeyReadTime = 'readTime';
+  static const String jsonKeyGameId = 'gameId';
+  static const String jsonKeyPostId = 'postId';
+  static const String jsonKeySourceItemId = 'sourceItemId';
+  static const String jsonKeyGroupCount = 'groupCount';
+  static const String jsonKeyReferences = 'references';
+  static const String jsonKeyLastContent = 'lastContent';
+
   final String id;
   final String senderId;
   final String recipientId;
@@ -68,43 +86,44 @@ class Message {
   /// 从 JSON 数据创建 Message 实例
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
-      id: UtilJson.parseId(json['_id'] ?? json['id']),
-      senderId: UtilJson.parseId(json['senderId']),
-      recipientId: UtilJson.parseId(json['recipientId']),
-      content: UtilJson.parseStringSafely(json['content']),
-      type: UtilJson.parseStringSafely(json['type']),
-      isRead: json['isRead'] as bool? ?? false, // Dart 原生解析 bool 最简洁
-      createTime: UtilJson.parseDateTime(json['createTime']),
-      updateTime: UtilJson.parseNullableDateTime(json['updateTime']),
-      readTime: UtilJson.parseNullableDateTime(json['readTime']),
-      gameId: UtilJson.parseNullableId(json['gameId']),
-      postId: UtilJson.parseNullableId(json['postId']),
-      sourceItemId: UtilJson.parseNullableId(json['sourceItemId']),
-      groupCount: UtilJson.parseIntSafely(json['groupCount']),
-      references: UtilJson.parseListString(
-          json['references']), // 已经改了 Message 字段为非空 List
-      lastContent: UtilJson.parseNullableStringSafely(json['lastContent']),
+      id: UtilJson.parseId(json[jsonKeyMongoId] ?? json[jsonKeyId]), // 使用常量
+      senderId: UtilJson.parseId(json[jsonKeySenderId]), // 使用常量
+      recipientId: UtilJson.parseId(json[jsonKeyRecipientId]), // 使用常量
+      content: UtilJson.parseStringSafely(json[jsonKeyContent]), // 使用常量
+      type: UtilJson.parseStringSafely(json[jsonKeyType]), // 使用常量
+      isRead: json[jsonKeyIsRead] as bool? ?? false, // 使用常量
+      createTime: UtilJson.parseDateTime(json[jsonKeyCreateTime]), // 使用常量
+      updateTime:
+          UtilJson.parseNullableDateTime(json[jsonKeyUpdateTime]), // 使用常量
+      readTime: UtilJson.parseNullableDateTime(json[jsonKeyReadTime]), // 使用常量
+      gameId: UtilJson.parseNullableId(json[jsonKeyGameId]), // 使用常量
+      postId: UtilJson.parseNullableId(json[jsonKeyPostId]), // 使用常量
+      sourceItemId: UtilJson.parseNullableId(json[jsonKeySourceItemId]), // 使用常量
+      groupCount: UtilJson.parseIntSafely(json[jsonKeyGroupCount]), // 使用常量
+      references: UtilJson.parseListString(json[jsonKeyReferences]), // 使用常量
+      lastContent:
+          UtilJson.parseNullableStringSafely(json[jsonKeyLastContent]), // 使用常量
     );
   }
 
   /// 将 Message 实例转换为 JSON (用于本地存储或调试)
   Map<String, dynamic> toJson() {
     return {
-      'id': id, // 你可以选择用 '_id' 如果想和MongoDB字段名一致
-      'senderId': senderId,
-      'recipientId': recipientId,
-      'content': content,
-      'type': type, // 存储原始类型字符串
-      'isRead': isRead,
-      'createTime': createTime.toUtc().toIso8601String(), // 存储为UTC ISO格式
-      'updateTime': updateTime?.toUtc().toIso8601String(),
-      'readTime': readTime?.toUtc().toIso8601String(),
-      'gameId': gameId,
-      'postId': postId,
-      'sourceItemId': sourceItemId, // 新增
-      'groupCount': groupCount,
-      'references': references,
-      'lastContent': lastContent,
+      jsonKeyId: id, // 使用常量
+      jsonKeySenderId: senderId, // 使用常量
+      jsonKeyRecipientId: recipientId, // 使用常量
+      jsonKeyContent: content, // 使用常量
+      jsonKeyType: type, // 使用常量
+      jsonKeyIsRead: isRead, // 使用常量
+      jsonKeyCreateTime: createTime.toUtc().toIso8601String(), // 使用常量
+      jsonKeyUpdateTime: updateTime?.toUtc().toIso8601String(), // 使用常量
+      jsonKeyReadTime: readTime?.toUtc().toIso8601String(), // 使用常量
+      jsonKeyGameId: gameId, // 使用常量
+      jsonKeyPostId: postId, // 使用常量
+      jsonKeySourceItemId: sourceItemId, // 使用常量
+      jsonKeyGroupCount: groupCount, // 使用常量
+      jsonKeyReferences: references, // 使用常量
+      jsonKeyLastContent: lastContent, // 使用常量
     };
   }
 
@@ -139,7 +158,10 @@ class Message {
           // 如果sourceItemId是父回复的ID，你可能想把它也传过去用于定位
           return MessageNavigationInfo(
             routeName: AppRoutes.postDetail,
-            arguments: {'postId': postId, 'sourceItemId': sourceItemId}
+            arguments: {
+              jsonKeyPostId: postId,
+              jsonKeySourceItemId: sourceItemId
+            } // 使用常量
                 .removeNullValues(), // 示例
           );
         }
@@ -152,13 +174,19 @@ class Message {
         if (postId != null && postId!.isNotEmpty) {
           return MessageNavigationInfo(
             routeName: AppRoutes.postDetail,
-            arguments: {'postId': postId, 'sourceItemId': sourceItemId}
+            arguments: {
+              jsonKeyPostId: postId,
+              jsonKeySourceItemId: sourceItemId
+            } // 使用常量
                 .removeNullValues(),
           );
         } else if (gameId != null && gameId!.isNotEmpty) {
           return MessageNavigationInfo(
             routeName: AppRoutes.gameDetail,
-            arguments: {'gameId': gameId, 'sourceItemId': sourceItemId}
+            arguments: {
+              jsonKeyGameId: gameId,
+              jsonKeySourceItemId: sourceItemId
+            } // 使用常量
                 .removeNullValues(),
           );
         }

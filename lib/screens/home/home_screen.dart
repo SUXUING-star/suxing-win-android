@@ -22,7 +22,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_can_play.dart'; // 导入向上滑入淡入动画组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错误组件
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 导入应用 SnackBar 工具
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
 import 'package:suxingchahui/widgets/components/screen/home/section/home_hot_games.dart'; // 导入热门游戏组件
 import 'package:suxingchahui/widgets/components/screen/home/section/home_latest_games.dart'; // 导入最新游戏组件
@@ -404,9 +404,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   /// [type]：数据类型。
   /// [isTriggeredByCache]：是否因缓存触发。
   /// [isTriggeredByRefresh]：是否因刷新触发。
-  Future<void> _fetchSpecificData(HomeDataType type,
-      {bool isTriggeredByCache = false,
-      bool isTriggeredByRefresh = false}) async {
+  Future<void> _fetchSpecificData(
+    HomeDataType type, {
+    bool isTriggeredByCache = false,
+    bool isTriggeredByRefresh = false,
+    bool forceRefresh = false,
+  }) async {
     if (!mounted) return; // 组件未挂载时返回
 
     setState(() {
@@ -459,7 +462,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       dynamic data;
       switch (type) {
         case HomeDataType.hotGames:
-          data = await widget.gameService.getHotGames(); // 获取热门游戏
+          data = await widget.gameService
+              .getHotGames(forceRefresh: forceRefresh); // 获取热门游戏
           if (mounted) {
             setState(() {
               _hotGamesData = data; // 更新热门游戏数据
@@ -470,11 +474,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
           }
           break;
         case HomeDataType.latestGames:
-          data = await widget.gameService.getLatestGames(); // 获取最新游戏
+          data = await widget.gameService
+              .getLatestGames(forceRefresh: forceRefresh); // 获取最新游戏
           if (mounted) setState(() => _latestGamesData = data); // 更新最新游戏数据
           break;
         case HomeDataType.hotPosts:
-          data = await widget.postService.getHotPosts(); // 获取热门帖子
+          data = await widget.postService
+              .getHotPosts(forceRefresh: forceRefresh); // 获取热门帖子
           if (mounted) setState(() => _hotPostsData = data); // 更新热门帖子数据
           break;
       }
@@ -866,8 +872,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       isLoading: _isHotGamesLoading, // 是否加载中
       screenWidth: _screenWidth,
       errorMessage: _hotGamesError, // 错误消息
-      onRetry: () => _fetchSpecificData(HomeDataType.hotGames,
-          isTriggeredByRefresh: true), // 重试回调
+      onRetry: (f) => _fetchSpecificData(
+        HomeDataType.hotGames,
+        isTriggeredByRefresh: true,
+        forceRefresh: f,
+      ), // 重试回调
       pageController: _hotGamesPageController, // 页面控制器
       currentPage: _currentHotGamesPage, // 当前页码
       onPageChanged: _onHotGamesPageChanged, // 页面改变回调
@@ -899,8 +908,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       posts: _hotPostsData, // 帖子数据
       isLoading: _isHotPostsLoading, // 是否加载中
       errorMessage: _hotPostsError, // 错误消息
-      onRetry: () => _fetchSpecificData(HomeDataType.hotPosts,
-          isTriggeredByRefresh: true), // 重试回调
+      onRetry: (f) => _fetchSpecificData(
+        HomeDataType.hotPosts,
+        isTriggeredByRefresh: true,
+        forceRefresh: f,
+      ), // 重试回调
     );
 
     final Widget latestGamesWidget = HomeLatestGames(
@@ -908,8 +920,11 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       games: _latestGamesData, // 游戏数据
       isLoading: _isLatestGamesLoading, // 是否加载中
       errorMessage: _latestGamesError, // 错误消息
-      onRetry: () => _fetchSpecificData(HomeDataType.latestGames,
-          isTriggeredByRefresh: true), // 重试回调
+      onRetry: (f) => _fetchSpecificData(
+        HomeDataType.latestGames,
+        isTriggeredByRefresh: true,
+        forceRefresh: f,
+      ), // 重试回调
     );
 
     if (DeviceUtils.isDesktopInThisWidth(_screenWidth)) {

@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 import 'package:suxingchahui/services/main/user/user_ban_service.dart';
 import 'package:intl/intl.dart';
@@ -114,8 +114,8 @@ class _UserManagementState extends State<UserManagement> {
     });
     try {
       final result = await widget.userService.getAllUsersWithPagination(
-          page: isLoadMore ? _currentPage + 1 : 1,
-          pageSize: UserService.allUsersLimit);
+        page: isLoadMore ? _currentPage + 1 : 1,
+      );
       if (!mounted) return;
       setState(() {
         if (!isLoadMore) _users.clear();

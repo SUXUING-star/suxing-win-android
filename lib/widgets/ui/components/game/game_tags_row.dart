@@ -1,4 +1,4 @@
-// lib/widgets/ui/components/game/game_tag_list.dart
+// lib/widgets/ui/components/game/game_tags_row.dart
 
 /// 该文件定义了 GameTagList 组件，一个用于显示游戏标签列表的 StatelessWidget。
 /// GameTagList 展示标签，并支持限制数量和滚动。

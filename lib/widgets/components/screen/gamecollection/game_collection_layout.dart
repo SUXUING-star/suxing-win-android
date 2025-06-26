@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/game/game_with_collection.dart';
 import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/game_collection.dart';
+import 'package:suxingchahui/models/game/game_collection_item.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
@@ -180,22 +180,22 @@ class GameCollectionLayout extends StatelessWidget {
               const SizedBox(height: 16),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionStatus.wantToPlay,
+                  statusType: GameCollectionItem.statusWantToPlay,
                   value: collectionCounts!.wantToPlay.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionStatus.playing,
+                  statusType: GameCollectionItem.statusPlaying,
                   value: collectionCounts!.playing.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionStatus.played,
+                  statusType: GameCollectionItem.statusPlayed,
                   value: collectionCounts!.played.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionStatus.all,
+                  statusType: GameCollectionItem.statusAll,
                   value: collectionCounts!.total.toString()),
             ],
           ),
@@ -237,17 +237,17 @@ class GameCollectionLayout extends StatelessWidget {
           children: <Widget>[
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionStatus.wantToPlay,
+                statusType: GameCollectionItem.statusWantToPlay,
                 value: collectionCounts!.wantToPlay.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionStatus.playing,
+                statusType: GameCollectionItem.statusPlaying,
                 value: collectionCounts!.playing.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionStatus.played,
+                statusType: GameCollectionItem.statusPlayed,
                 value: collectionCounts!.played.toString()),
           ],
         ),
@@ -264,16 +264,16 @@ class GameCollectionLayout extends StatelessWidget {
     late final GameCollectionStatusTheme theme;
 
     switch (statusType) {
-      case GameCollectionStatus.wantToPlay:
+      case GameCollectionItem.statusWantToPlay:
         theme = GameCollectionStatusUtils.wantToPlayTheme;
         break;
-      case GameCollectionStatus.playing:
+      case GameCollectionItem.statusPlaying:
         theme = GameCollectionStatusUtils.playingTheme;
         break;
-      case GameCollectionStatus.played:
+      case GameCollectionItem.statusPlayed:
         theme = GameCollectionStatusUtils.playedTheme;
         break;
-      case GameCollectionStatus.all:
+      case GameCollectionItem.statusAll:
         theme = GameCollectionStatusUtils.totalTheme;
         break;
       default:

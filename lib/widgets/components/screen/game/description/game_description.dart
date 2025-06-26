@@ -6,7 +6,9 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
-import 'package:suxingchahui/widgets/components/screen/game/download/game_download_links.dart'; // 导入游戏下载链接组件
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/widgets/components/screen/game/download/game_download_links_section.dart'; // 导入游戏下载链接组件
+import 'package:suxingchahui/widgets/components/screen/game/external/game_external_links_section.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 
@@ -16,6 +18,10 @@ import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
 class GameDescription extends StatelessWidget {
   final Game game; // 游戏数据
   final User? currentUser; // 当前登录用户
+  final bool isPreview;
+  final InputStateService inputStateService;
+  final bool isAddDownloadLink;
+  final Future<void> Function(GameDownloadLink)? onAddDownloadLink;
 
   /// 构造函数。
   ///
@@ -25,6 +31,10 @@ class GameDescription extends StatelessWidget {
     super.key,
     required this.game,
     required this.currentUser,
+    required this.isPreview,
+    required this.inputStateService,
+    this.isAddDownloadLink = false,
+    this.onAddDownloadLink,
   });
 
   /// 构建游戏描述组件。
@@ -102,9 +112,43 @@ class GameDescription extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16), // 间距
-            GameDownloadLinks(
+            GameDownloadLinksSection(
               downloadLinks: game.downloadLinks, // 下载链接列表
               currentUser: currentUser, // 当前用户
+              onAddLink: onAddDownloadLink,
+              isAdd: isAddDownloadLink,
+              inputStateService: inputStateService,
+              isPreviewMode: isPreview,
+            ),
+          ],
+          if (game.externalLinks.isNotEmpty) ...[
+            const SizedBox(height: 24), // 与上一部分的间距
+            // "相关链接" 标题
+            Row(
+              children: [
+                Container(
+                  width: 4,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).primaryColor,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  '相关链接', // 使用一个更通用的标题
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.grey[800],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            // 使用新创建的组件
+            GameExternalLinks(
+              externalLinks: game.externalLinks,
             ),
           ],
         ],

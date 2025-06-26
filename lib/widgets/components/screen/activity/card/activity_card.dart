@@ -6,6 +6,7 @@ library;
 
 import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
 import 'package:suxingchahui/models/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
@@ -17,7 +18,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/button/activity_
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_item.dart'; // 动态评论项组件
 import 'package:suxingchahui/widgets/components/screen/activity/comment/activity_comment_input.dart'; // 动态评论输入框组件
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target_navigation.dart'; // 动态目标导航组件
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 Snackbar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 应用 Snackbar
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'dart:math' as math; // 导入数学函数
 

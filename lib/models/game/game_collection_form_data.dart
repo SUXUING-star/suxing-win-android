@@ -1,17 +1,27 @@
 // lib/models/game/game_collection_form_data.dart
 
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/util_json.dart';
 
-import 'game_collection.dart';
+import 'game_collection_item.dart';
 
-class CollectionActionType {
-  static const String setCollectionAction = "set";
-  static const String removeCollectionAction = "remove";
-}
+
 
 @immutable
 class GameCollectionFormData {
+  static const String setCollectionAction = "set";
+  static const String removeCollectionAction = "remove";
+
+  // 定义 JSON 字段的 static const String 常量
+  static const String jsonKeyAction = 'action';
+  static const String jsonKeyGameId = 'gameId';
+  static const String jsonKeyStatus = 'status';
+  static const String jsonKeyNotes = 'notes';
+  static const String jsonKeyReview = 'review';
+  static const String jsonKeyRating = 'rating';
+
   final String action;
+  final String gameId;
   final String status;
   final String? notes;
   final String? review;
@@ -19,65 +29,60 @@ class GameCollectionFormData {
 
   const GameCollectionFormData({
     required this.action,
-    this.status = GameCollectionStatus.wantToPlay,
+    required this.gameId,
+    this.status = GameCollectionItem.statusWantToPlay,
     this.notes,
     this.review,
     this.rating,
   });
 
   factory GameCollectionFormData.fromJson(Map<String, dynamic> json) {
-    String status;
-    if (json['status'] != null) {
-      status = json['status'] ?? '';
-    } else {
-      status = '';
-    }
-
-    // 安全解析可空字段
-    String? notes = json['notes'];
-    String? review = json['review'];
-
-    String action = json['action'] ?? 'unknown';
-
-    // 安全解析评分
-    double? rating;
-    if (json['rating'] != null) {
-      if (json['rating'] is num) {
-        rating = (json['rating'] as num).toDouble();
-      } else if (json['rating'] is String) {
-        try {
-          rating = double.parse(json['rating']);
-        } catch (e) {
-          // print('评分 "${json['rating']}" 不是有效的数字');
-        }
-      }
-    }
-
     return GameCollectionFormData(
-      action: action,
-      status: status,
-      notes: notes,
-      review: review,
-      rating: rating,
+      action: UtilJson.parseStringSafely(json[jsonKeyAction]), // 使用常量
+      gameId: UtilJson.parseId(json[jsonKeyGameId]), // 使用常量
+      status: UtilJson.parseStringSafely(json[jsonKeyStatus]), // 使用常量
+      notes: UtilJson.parseNullableStringSafely(json[jsonKeyNotes]), // 使用常量
+      review: UtilJson.parseNullableStringSafely(json[jsonKeyReview]), // 使用常量
+      rating: UtilJson.parseNullableDoubleSafely(json[jsonKeyRating]), // 使用常量
     );
   }
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
-      'action': action,
+      jsonKeyAction: action, // 使用常量
+      jsonKeyStatus: status, // 使用常量
+      jsonKeyGameId: gameId, // 使用常量
     };
 
-    data['status'] = status;
-
     if (notes != null) {
-      data['notes'] = notes;
+      data[jsonKeyNotes] = notes; // 使用常量
     }
     if (review != null) {
-      data['review'] = review;
+      data[jsonKeyReview] = review; // 使用常量
     }
 
     if (rating != null) {
-      data['rating'] = rating;
+      data[jsonKeyRating] = rating; // 使用常量
+    }
+
+    return data;
+  }
+
+  Map<String, dynamic> toRequestJson() {
+    final Map<String, dynamic> data = {
+      jsonKeyStatus: status, // 使用常量
+      jsonKeyGameId: gameId, // 使用常量
+    };
+
+    if (notes != null) {
+      data[jsonKeyNotes] = notes; // 使用常量
+    }
+    if (review != null) {
+      data[jsonKeyReview] = review; // 使用常量
+    }
+
+    if (rating != null) {
+      data[jsonKeyRating] = rating; // 使用常量
     }
 
     return data;

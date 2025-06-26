@@ -21,7 +21,7 @@ import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dar
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 通用浮动操作按钮
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 懒加载布局构建器
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart'; // 信息对话框
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart'; // 应用 SnackBar
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 应用 SnackBar
 
 import 'package:suxingchahui/models/post/post.dart'; // 帖子模型
 import 'package:suxingchahui/models/post/user_post_actions.dart'; // 用户帖子交互状态模型

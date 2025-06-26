@@ -17,7 +17,7 @@ import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 导入安全缓存图片组件
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart'; // 导入游戏分类标签视图
 import 'game_stats_widget.dart'; // 导入游戏统计组件
-import 'package:suxingchahui/widgets/ui/components/game/game_tag_list.dart'; // 导入游戏标签列表
+import 'package:suxingchahui/widgets/ui/components/game/game_tags_row.dart'; // 导入游戏标签列表
 import 'game_card_collection_stats_dialog.dart'; // 导入游戏收藏对话框
 
 /// `BaseGameCard` 类：基础游戏卡片组件。

@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/history/game_history_layout.dart';
 import 'package:suxingchahui/widgets/components/screen/history/post_history_layout.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snackBar.dart';
+import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 
 class HistoryScreen extends StatefulWidget {
   final AuthProvider authProvider;

@@ -7,8 +7,8 @@ import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/calendar/calendar_view.dart';
-import 'package:suxingchahui/widgets/components/screen/checkin/progress/level_progress_card.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/calendar/checkin_calendar_view.dart';
+import 'package:suxingchahui/widgets/components/screen/checkin/progress/checkin_level_progress_card.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/checkin_rules_card.dart';
 import 'package:suxingchahui/widgets/components/screen/checkin/widget/today_checkin_list_section.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
@@ -78,7 +78,7 @@ class CheckInLayout extends StatelessWidget {
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
-      child: LevelProgressCard(
+      child: CheckInLevelProgressCard(
         stats: checkInStatus,
         currentUser: currentUser,
         isLoading: isCheckInLoading,
@@ -207,7 +207,7 @@ class CheckInLayout extends StatelessWidget {
           _slideDuration, // Or a different animation type/duration if preferred
       delay: delay,
       slideOffset: _slideOffset,
-      child: CalendarView(
+      child: CheckInCalendarView(
         selectedYear: selectedYear,
         selectedMonth: selectedMonth,
         monthlyData: monthlyData,

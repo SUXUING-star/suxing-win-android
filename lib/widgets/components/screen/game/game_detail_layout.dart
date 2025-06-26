@@ -1,12 +1,12 @@
 // lib/widgets/components/screen/game/detail/game_detail_layout.dart
 
-/// 该文件定义了 GameDetailLayout 组件，一个用于展示游戏详情的布局。
-/// GameDetailLayout 根据桌面或移动端布局，组织游戏各类信息。
+/// 该文件定义了 [GameDetailLayout ]组件，一个用于展示游戏详情的布局。
+/// [GameDetailLayout] 根据桌面或移动端布局，组织游戏各类信息。
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
-import 'package:suxingchahui/models/game/game_collection.dart'; // 导入游戏收藏模型
+import 'package:suxingchahui/models/game/game_collection_item.dart'; // 导入游戏收藏模型
 import 'package:suxingchahui/models/game/game_navigation_info.dart'; // 导入游戏导航信息模型
 import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
@@ -23,8 +23,8 @@ import 'package:suxingchahui/widgets/components/screen/game/collection/game_revi
 import 'package:suxingchahui/widgets/components/screen/game/comment/game_comments_section.dart'; // 导入游戏评论组件
 import 'package:suxingchahui/widgets/components/screen/game/coverImage/game_cover_image.dart'; // 导入游戏封面图片组件
 import 'package:suxingchahui/widgets/components/screen/game/description/game_description.dart'; // 导入游戏描述组件
-import 'package:suxingchahui/widgets/components/screen/game/header/game_header.dart'; // 导入游戏头部组件
-import 'package:suxingchahui/widgets/components/screen/game/image/game_images.dart'; // 导入游戏图片组件
+import 'package:suxingchahui/widgets/components/screen/game/header/game_header_section.dart'; // 导入游戏头部组件
+import 'package:suxingchahui/widgets/components/screen/game/image/game_images_section.dart'; // 导入游戏图片组件
 import 'package:suxingchahui/widgets/components/screen/game/music/game_music_section.dart'; // 导入游戏音乐组件
 import 'package:suxingchahui/widgets/components/screen/game/navigation/game_navigation_section.dart'; // 导入游戏导航组件
 import 'package:suxingchahui/widgets/components/screen/game/random/random_games_section.dart'; // 导入随机游戏组件
@@ -34,7 +34,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
 import 'package:suxingchahui/widgets/ui/animation/scale_in_item.dart'; // 导入缩放淡入动画组件
 
-/// `GameDetailLayout` 类：游戏详情布局组件。
+/// [GameDetailLayout] 类：游戏详情布局组件。
 ///
 /// 该组件根据桌面或移动端布局，组织游戏封面、头部、描述、收藏、评论、图片、
 /// 音乐、视频、随机游戏和导航等各个区域。
@@ -44,7 +44,6 @@ class GameDetailLayout extends StatelessWidget {
   final User? currentUser; // 当前登录用户
   final Function(String)? onNavigate; // 导航回调
   final GameCollectionItem? initialCollectionStatus; // 初始收藏状态
-  final Function(GameCollectionItem?, Game?)? onCollectionChanged;
   final GameNavigationInfo? navigationInfo; // 游戏导航信息
   final bool isPreviewMode; // 是否为预览模式
   final SidebarProvider sidebarProvider; // 侧边栏 Provider
@@ -56,7 +55,11 @@ class GameDetailLayout extends StatelessWidget {
   final InputStateService inputStateService; // 输入状态 Provider
   final GameListFilterProvider gameListFilterProvider; // 游戏列表筛选 Provider
   final ValueChanged<bool>? onRandomSectionHover;
+  final bool? isCollectionLoading;
+  final VoidCallback? onCollectionButtonPressed;
   final bool? isLiked;
+  final Future<void> Function(GameDownloadLink)? onAddDownloadLink;
+  final bool isAddDownloadLink;
   final bool? isCoined;
   final int coinsCount;
   final int likeCount;
@@ -104,7 +107,6 @@ class GameDetailLayout extends StatelessWidget {
     required this.inputStateService,
     this.onNavigate,
     this.initialCollectionStatus,
-    this.onCollectionChanged,
     this.navigationInfo,
     this.onRandomSectionHover,
     this.isPreviewMode = false,
@@ -116,6 +118,10 @@ class GameDetailLayout extends StatelessWidget {
     this.onToggleCoin,
     this.isTogglingLike = false,
     this.isTogglingCoin = false,
+    this.isAddDownloadLink = false,
+    this.onAddDownloadLink,
+    this.isCollectionLoading, // 可选
+    this.onCollectionButtonPressed, // 可选
   });
 
   /// 构建游戏详情布局。
@@ -233,6 +239,10 @@ class GameDetailLayout extends StatelessWidget {
       child: GameDescription(
         game: game, // 游戏数据
         currentUser: currentUser, // 当前用户
+        isAddDownloadLink: isAddDownloadLink,
+        onAddDownloadLink: onAddDownloadLink,
+        inputStateService: inputStateService,
+        isPreview: isPreviewMode,
       ),
     );
   }
@@ -255,9 +265,10 @@ class GameDetailLayout extends StatelessWidget {
         inputStateService: inputStateService, // 输入状态 Provider
         game: game, // 游戏数据
         currentUser: currentUser, // 当前用户
-        initialCollectionStatus: initialCollectionStatus, // 初始收藏状态
-        onCollectionChanged: onCollectionChanged, // 收藏状态改变回调
+        collectionStatus: initialCollectionStatus, // 初始收藏状态
         isPreviewMode: isPreviewMode, // 是否为预览模式
+        isCollectionLoading: isCollectionLoading,
+        onCollectionButtonPressed: onCollectionButtonPressed,
       ),
     );
   }
@@ -298,7 +309,7 @@ class GameDetailLayout extends StatelessWidget {
       key: key, // 组件键
       duration: duration, // 动画时长
       delay: delay, // 动画延迟
-      child: GameImages(game: game), // 游戏图片组件
+      child: GameImagesSection(game: game), // 游戏图片组件
     );
   }
 

@@ -92,7 +92,7 @@ class AuthProvider {
   void _listenForUnauthorizedEvent() {
     if (_unauthorizedSubscription != null) return;
     _unauthorizedSubscription =
-        appEventBus.on<UnauthorizedAccessEvent>().listen((event) {
+        appEventBus.on<UserSignedOutEvent>().listen((event) {
       if (_currentUser != null) {
         _updateState(user: null, token: null);
       }
@@ -142,8 +142,8 @@ class AuthProvider {
   Future<void> signIn(String email, String password, bool rememberMe) async {
     try {
       final user = await _userService.signIn(email, password, rememberMe);
-      final token = await _userService.getAuthToken();
-      _updateState(user: user, token: token);
+      final authData = await _userService.getAuthToken();
+      _updateState(user: user, token: authData?.token);
     } catch (e) {
       _updateState(user: null, token: null);
       rethrow;

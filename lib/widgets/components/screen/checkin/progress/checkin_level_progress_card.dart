@@ -1,4 +1,4 @@
-// lib/widgets/components/screen/checkin/progress/level_progress_card.dart
+// lib/widgets/components/screen/checkin/progress/checkin_level_progress_card.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/models/user/checkin_status.dart';
@@ -6,7 +6,7 @@ import 'package:suxingchahui/models/user/user.dart';
 import '../checkin_button.dart';
 import 'level_progress_bar.dart';
 
-class LevelProgressCard extends StatelessWidget {
+class CheckInLevelProgressCard extends StatelessWidget {
   final CheckInStatus stats;
   final User currentUser;
   final bool isLoading; // 签到按钮的加载状态
@@ -16,7 +16,7 @@ class LevelProgressCard extends StatelessWidget {
   final int missedDays;
   final int consecutiveMissedDays; // 这个卡片会用到
 
-  const LevelProgressCard({
+  const CheckInLevelProgressCard({
     super.key,
     required this.stats,
     required this.currentUser,

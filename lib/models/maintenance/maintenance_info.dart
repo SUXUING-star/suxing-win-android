@@ -4,6 +4,10 @@ import 'package:suxingchahui/models/util_json.dart';
 
 @immutable
 class MaintenanceInfo {
+  static const String upgradeType = 'upgrade';
+  static const String emergencyType = 'emergency';
+  static const String scheduledType = 'scheduled';
+
   final bool isActive;
   final DateTime startTime;
   final DateTime endTime;
@@ -37,25 +41,46 @@ class MaintenanceInfo {
     );
   }
 
+ Map<String,dynamic> toRequestJson(){
+    return {
+      'is_active': isActive,
+      'start_time': startTime.toIso8601String(),
+      'end_time': endTime.toIso8601String(),
+      'message': message,
+      'allow_login': allowLogin,
+      'force_logout': forceLogout,
+      'maintenance_type': maintenanceType,
+    };
+  }
+
   static Map<String, dynamic> getMaintenanceVisuals(String maintenanceType) {
     switch (maintenanceType) {
-      case 'emergency':
-        return {'icon': Icons.warning_amber_rounded, 'color': Colors.red};
-      case 'upgrade':
-        return {'icon': Icons.system_update_alt, 'color': Colors.blue};
-      case 'scheduled':
+      case emergencyType:
+        return {
+          'icon': Icons.warning_amber_rounded,
+          'color': Colors.red,
+        };
+      case upgradeType:
+        return {
+          'icon': Icons.system_update_alt,
+          'color': Colors.blue,
+        };
+      case scheduledType:
       default:
-        return {'icon': Icons.schedule, 'color': Colors.orange};
+        return {
+          'icon': Icons.schedule,
+          'color': Colors.orange,
+        };
     }
   }
 
   static String getMaintenanceTitle(String maintenanceType) {
     switch (maintenanceType) {
-      case 'emergency':
+      case emergencyType:
         return '系统紧急维护中';
-      case 'upgrade':
+      case upgradeType:
         return '系统升级维护中';
-      case 'scheduled':
+      case scheduledType:
       default:
         return '系统维护中';
     }
