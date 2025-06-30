@@ -1,8 +1,9 @@
 // lib/models/post/post_reply_pagination.dart
 import 'package:meta/meta.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
 import 'package:suxingchahui/models/post/post_reply.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 @immutable
 class PostReplyPagination {
@@ -61,10 +62,8 @@ class PostReplyPagination {
   }
 
   factory PostReplyPagination.fromJson(Map<String, dynamic> json) {
-    final repliesList = UtilJson.parseObjectList<PostReply>(
+    final repliesList = PostReply.fromListJson(
       json[jsonKeyReplies], // 使用常量
-      (itemJson) =>
-          PostReply.fromJson(itemJson), // 告诉它怎么把一个 item 的 json 转成 PostReply 对象
     );
 
     final paginationData = UtilJson.parsePaginationData(
@@ -80,7 +79,7 @@ class PostReplyPagination {
 
   Map<String, dynamic> toJson() {
     return {
-      jsonKeyReplies: replies.map((reply) => reply.toJson()).toList(), // 使用常量
+      jsonKeyReplies: replies.toListJson(), // 使用常量
       jsonKeyPagination: pagination.toJson(), // 使用常量
     };
   }

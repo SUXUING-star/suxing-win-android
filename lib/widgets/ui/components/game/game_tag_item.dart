@@ -2,7 +2,9 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
 import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
@@ -11,26 +13,24 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 /// 未选中时，它使用统一的 `BaseTagView` 来渲染磨砂质感。
 /// 选中时，它渲染一个实心背景的样式。
 class GameTagItem extends StatelessWidget {
-  final String tag;
+  final EnrichGameTag enrichTag;
   final int? count;
   final bool isSelected;
 
   const GameTagItem({
     super.key,
-    required this.tag,
+    required this.enrichTag,
     this.count,
     this.isSelected = false,
   });
 
-
-
   @override
   Widget build(BuildContext context) {
+    // --- 选中状态：使用原来的实心样式，逻辑保留在此处 ---
+    final baseColor = enrichTag.backgroundColor;
+    final textColor = enrichTag.textColor;
+    final tagLabel = enrichTag.tag;
     if (isSelected) {
-      // --- 选中状态：使用原来的实心样式，逻辑保留在此处 ---
-      final baseColor = GameTagUtils.getTagColor(tag);
-      final textColor = GameTagUtils.getTextColorForBackground(baseColor);
-
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
         decoration: BoxDecoration(
@@ -42,7 +42,7 @@ class GameTagItem extends StatelessWidget {
           children: [
             Flexible(
               child: Text(
-                tag,
+                tagLabel,
                 style: TextStyle(
                   color: textColor,
                   fontWeight: FontWeight.bold,
@@ -76,8 +76,8 @@ class GameTagItem extends StatelessWidget {
     } else {
       // --- 未选中状态：直接使用纯净的 BaseTagView ---
       return BaseTagView(
-        text: tag,
-        baseColor: GameTagUtils.getTagColor(tag),
+        text: tagLabel,
+        baseColor: baseColor,
         count: count,
         isMini: true, // GameTagItem 总是 mini 模式
       );

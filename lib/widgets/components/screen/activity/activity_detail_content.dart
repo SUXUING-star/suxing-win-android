@@ -1,69 +1,48 @@
 // lib/widgets/components/screen/activity/activity_detail_content.dart
 
-/// 该文件定义了 ActivityDetailContent 组件，用于展示用户活动详情。
-/// ActivityDetailContent 将活动信息、描述、目标和评论区域组织成可滚动的布局。
+/// 该文件定义了 [ActivityDetailContent] 组件，用于展示用户活动详情。
+/// [ActivityDetailContent] 将活动信息、描述、目标和评论区域组织成可滚动的布局。
 library;
 
-import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:intl/intl.dart'; // 导入国际化数字格式化
+import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
-import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
-import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
-import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
-
-// --- 动画组件 Imports ---
-import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; // 导入向上滑入淡入动画组件
-import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件
-
-// --- Section 组件 Imports ---
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
+import 'package:suxingchahui/services/main/user/user_info_service.dart';
+import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
+import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'navigation/activity_detail_navigation.dart';
-import 'sections/activity_info_section.dart'; // 导入活动信息区域组件
-import 'sections/activity_description_section.dart'; // 导入活动描述区域组件
-import 'sections/activity_target_section.dart'; // 导入活动目标区域组件
-import 'sections/activity_comments_section.dart'; // 导入活动评论区域组件
+import 'sections/activity_info_section.dart';
+import 'sections/activity_description_section.dart';
+import 'sections/activity_target_section.dart';
+import 'sections/activity_comments_section.dart';
 
 /// `ActivityDetailContent` 类：用户活动详情内容组件。
-///
-/// 该组件负责将活动信息、描述、目标和评论区域组织成可滚动的布局，并支持动画效果。
 class ActivityDetailContent extends StatelessWidget {
-  final UserActivity activity; // 用户活动数据
+  final Activity activity;
   final ActivityNavigationInfo? navigationInfo;
-  final UserFollowService userFollowService; // 用户关注服务
-  final UserInfoService userInfoService; // 用户信息 Provider
-  final InputStateService inputStateService; // 输入状态 Provider
-
-  final User? currentUser; // 当前登录用户
+  final UserFollowService userFollowService;
+  final UserInfoService userInfoService;
+  final InputStateService inputStateService;
+  final User? currentUser;
   final bool isDesktopLayout;
-  final List<ActivityComment> comments; // 评论列表
-  final bool isLoadingComments; // 评论是否正在加载
-  final ScrollController scrollController; // 滚动控制器
-  final Function(String) onAddComment; // 添加评论回调
-  final Function(ActivityComment) onCommentDeleted; // 评论删除回调
-  final Future<bool> Function(ActivityComment) onCommentLike; // 评论点赞切换回调
-  final Future<bool> Function(ActivityComment) onCommentUnLike; // 评论点赞切换回调
-  final VoidCallback onActivityUpdated; // 活动更新回调
-  final VoidCallback? onEditActivity; // 编辑活动回调
-  final VoidCallback? onDeleteActivity; // 删除活动回调
+  final List<ActivityComment> comments;
+  final bool isLoadingComments;
+  final ScrollController scrollController;
+  final Function(String) onAddComment;
+  final Function(ActivityComment) onCommentDeleted;
+  final Future<bool> Function(ActivityComment) onCommentLike;
+  final Future<bool> Function(ActivityComment) onCommentUnLike;
+  final VoidCallback onActivityUpdated;
+  final VoidCallback? onEditActivity;
+  final VoidCallback? onDeleteActivity;
 
-  /// 构造函数。
-  ///
-  /// [activity]：活动数据。
-  /// [userFollowService]：用户关注服务。
-  /// [userInfoProvider]：用户信息 Provider。
-  /// [inputStateService]：输入状态 Provider。
-  /// [currentUser]：当前用户。
-  /// [comments]：评论列表。
-  /// [isLoadingComments]：是否加载评论。
-  /// [scrollController]：滚动控制器。
-  /// [onAddComment]：添加评论回调。
-  /// [onCommentDeleted]：评论删除回调。
-  /// [onCommentLikeToggled]：评论点赞切换回调。
-  /// [onActivityUpdated]：活动更新回调。
-  /// [onEditActivity]：编辑活动回调。
-  /// [onDeleteActivity]：删除活动回调。
+  final String deviceCtx;
+
   const ActivityDetailContent({
     super.key,
     required this.navigationInfo,
@@ -83,145 +62,111 @@ class ActivityDetailContent extends StatelessWidget {
     required this.onActivityUpdated,
     this.onEditActivity,
     this.onDeleteActivity,
-  });
+  }) : deviceCtx = isDesktopLayout ? 'desk' : 'mob';
 
-  /// 构建活动信息区域。
-  ///
-  /// [duration]：动画时长。
-  /// [delay]：动画延迟。
-  /// [slideOffset]：滑入偏移量。
-  /// [key]：组件键。
+  /// 构建一个唯一的 [ValueKey]。
+  ValueKey _makeValueKey(String mainCtx) =>
+      ValueKey('${mainCtx}_${deviceCtx}_${activity.id}');
+
+  // --- Section Builders (核心重构区) ---
+
   Widget _buildInfoSection({
     required Duration duration,
     required Duration delay,
     required double slideOffset,
-    required Key key,
   }) {
     return FadeInSlideUpItem(
-      key: key, // 组件键
-      duration: duration, // 动画时长
-      delay: delay, // 动画延迟
-      slideOffset: slideOffset, // 滑入偏移量
+      key: _makeValueKey('info'),
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
       child: ActivityInfoSection(
-        infoService: userInfoService, // 用户信息 Provider
-        followService: userFollowService, // 关注服务
-        currentUser: currentUser, // 当前用户
-        activity: activity, // 活动数据
-        onEditActivity: onEditActivity, // 编辑活动回调
-        onDeleteActivity: onDeleteActivity, // 删除活动回调
-        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
+        infoService: userInfoService,
+        followService: userFollowService,
+        currentUser: currentUser,
+        activity: activity,
+        onEditActivity: onEditActivity,
+        onDeleteActivity: onDeleteActivity,
+        isDesktopLayout: isDesktopLayout,
       ),
     );
   }
 
-  /// 构建活动描述区域。
-  ///
-  /// [duration]：动画时长。
-  /// [delay]：动画延迟。
-  /// [key]：组件键。
   Widget _buildDescriptionSection({
     required Duration duration,
     required Duration delay,
-    required Key key,
   }) {
     return FadeInItem(
-      key: key, // 组件键
-      duration: duration, // 动画时长
-      delay: delay, // 动画延迟
+      key: _makeValueKey('description'),
+      duration: duration,
+      delay: delay,
       child: ActivityDescriptionSection(
-        activity: activity, // 活动数据
-        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
+        activity: activity,
+        isDesktopLayout: isDesktopLayout,
       ),
     );
   }
 
-  /// 构建活动目标区域。
-  ///
-  /// [duration]：动画时长。
-  /// [delay]：动画延迟。
-  /// [key]：组件键。
   Widget _buildTargetSection({
     required Duration duration,
     required Duration delay,
-    required Key key,
   }) {
     return FadeInItem(
-      key: key, // 组件键
-      duration: duration, // 动画时长
-      delay: delay, // 动画延迟
+      key: _makeValueKey('target'),
+      duration: duration,
+      delay: delay,
       child: ActivityTargetSection(
-        followService: userFollowService, // 关注服务
-        infoService: userInfoService, // 用户信息 Provider
-        currentUser: currentUser, // 当前用户
-        activity: activity, // 活动数据
-        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
+        followService: userFollowService,
+        infoService: userInfoService,
+        currentUser: currentUser,
+        activity: activity,
+        isDesktopLayout: isDesktopLayout,
       ),
     );
   }
 
-  /// 构建活动评论区域。
-  ///
-  /// [duration]：动画时长。
-  /// [delay]：动画延迟。
-  /// [slideOffset]：滑入偏移量。
-  /// [key]：组件键。
   Widget _buildCommentsSection({
     required Duration duration,
     required Duration delay,
     required double slideOffset,
-    required Key key,
   }) {
     return FadeInSlideUpItem(
-      key: key, // 组件键
-      duration: duration, // 动画时长
-      delay: delay, // 动画延迟
-      slideOffset: slideOffset, // 滑入偏移量
+      key: _makeValueKey('comments'),
+      duration: duration,
+      delay: delay,
+      slideOffset: slideOffset,
       child: ActivityCommentsSection(
-        inputStateService: inputStateService, // 输入状态 Provider
-        userInfoService: userInfoService, // 用户信息 Provider
-        userFollowService: userFollowService, // 用户关注服务
-        currentUser: currentUser, // 当前用户
-        activityId: activity.id, // 活动 ID
-        comments: comments, // 评论列表
-        isLoadingComments: isLoadingComments, // 评论是否加载中
-        onAddComment: onAddComment, // 添加评论回调
-        onCommentDeleted: onCommentDeleted, // 评论删除回调
-        onCommentLike: onCommentLike, // 评论点赞切换回调
+        inputStateService: inputStateService,
+        userInfoService: userInfoService,
+        userFollowService: userFollowService,
+        currentUser: currentUser,
+        activityId: activity.id,
+        comments: comments,
+        isLoadingComments: isLoadingComments,
+        onAddComment: onAddComment,
+        onCommentDeleted: onCommentDeleted,
+        onCommentLike: onCommentLike,
         onCommentUnLike: onCommentUnLike,
-        isDesktopLayout: isDesktopLayout, // 是否为桌面布局
+        isDesktopLayout: isDesktopLayout,
       ),
     );
   }
 
-  /// 构建导航区域。
-  ///
-  /// [duration]：动画时长。
-  ///  [delay]：动画延迟。
-  ///  [key]：组件键。
   Widget _buildNavigationSection({
     required Duration duration,
     required Duration delay,
-    required Key key,
   }) {
     return FadeInItem(
-      key: key, // 组件键
-      duration: duration, // 动画时长
-      delay: delay, // 动画延迟
+      key: _makeValueKey('navigation'),
+      duration: duration,
+      delay: delay,
       child: ActivityDetailNavigation(
         navigationInfo: navigationInfo!,
-        isDesktopLayout: isDesktopLayout, // 桌面布局
+        isDesktopLayout: isDesktopLayout,
       ),
     );
   }
 
-  /// 构建移动端布局。
-  ///
-  /// [context]：Build 上下文。
-  /// [baseDelay]：基础延迟。
-  /// [delayIncrement]：延迟增量。
-  /// [slideOffset]：滑入偏移量。
-  /// [slideDuration]：滑入动画时长。
-  /// [fadeDuration]：淡入动画时长。
   Widget _buildMobileLayout(
     BuildContext context,
     Duration baseDelay,
@@ -230,93 +175,65 @@ class ActivityDetailContent extends StatelessWidget {
     Duration slideDuration,
     Duration fadeDuration,
   ) {
-    int delayIndex = 0; // 延迟索引
-    final NumberFormat compactFormatter = NumberFormat.compact(); // 数字格式化器
-
-    final infoKey = ValueKey('info_mob_${activity.id}'); // 信息区域键
-    final descriptionKey = ValueKey('desc_mob_${activity.id}'); // 描述区域键
-    final targetKey = ValueKey('target_mob_${activity.id}'); // 目标区域键
-    final navKey = ValueKey('nav_mob_${activity.id}'); // 导航区域键
-    final commentsKey = ValueKey('comments_mob_${activity.id}'); // 评论区域键
+    int delayIndex = 0;
+    final NumberFormat compactFormatter = NumberFormat.compact();
 
     return ListView(
-      controller: scrollController, // 滚动控制器
-      padding: const EdgeInsets.all(16), // 内边距
+      controller: scrollController,
+      padding: const EdgeInsets.all(16),
       children: [
         _buildInfoSection(
           duration: slideDuration,
           delay: baseDelay + (delayIncrement * delayIndex++),
           slideOffset: slideOffset,
-          key: infoKey,
         ),
-        const SizedBox(height: 16), // 间距
-
+        const SizedBox(height: 16),
         if (activity.content.isNotEmpty) ...[
-          // 活动内容非空时显示描述区域
           _buildDescriptionSection(
             duration: fadeDuration,
             delay: baseDelay + (delayIncrement * delayIndex++),
-            key: descriptionKey,
           ),
-          const SizedBox(height: 16), // 间距
+          const SizedBox(height: 16),
         ],
-
-        ...[
-          _buildTargetSection(
-            duration: fadeDuration,
-            delay: baseDelay + (delayIncrement * delayIndex++),
-            key: targetKey,
-          ),
-        ],
-
+        _buildTargetSection(
+          duration: fadeDuration,
+          delay: baseDelay + (delayIncrement * delayIndex++),
+        ),
         FadeInSlideUpItem(
-          key: ValueKey('comments_title_mob_${activity.id}'), // 独立键
+          key: _makeValueKey('comments_title'),
           duration: slideDuration,
           delay: baseDelay + (delayIncrement * delayIndex),
           slideOffset: slideOffset,
           child: Padding(
-            padding: const EdgeInsets.only(bottom: 8.0), // 底部内边距
+            padding: const EdgeInsets.only(bottom: 8.0),
             child: Text(
-              '评论 (${compactFormatter.format(activity.commentsCount)})', // 评论数量
+              '评论 (${compactFormatter.format(activity.commentsCount)})',
               style: Theme.of(context)
                   .textTheme
                   .titleLarge
-                  ?.copyWith(fontWeight: FontWeight.bold), // 文本样式
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
           ),
         ),
-
         _buildCommentsSection(
           duration: slideDuration,
           delay: baseDelay + (delayIncrement * delayIndex++),
           slideOffset: slideOffset,
-          key: commentsKey,
         ),
-
         if (navigationInfo != null &&
             (navigationInfo!.prevActivity != null ||
                 navigationInfo!.nextActivity != null)) ...[
-          const SizedBox(height: 32), // 加个间距，和评论区隔开
+          const SizedBox(height: 32),
           _buildNavigationSection(
             duration: fadeDuration,
             delay: baseDelay + (delayIncrement * delayIndex++),
-            key: navKey,
           ),
         ],
-
         const SizedBox(height: 24),
       ],
     );
   }
 
-  /// 构建桌面端布局。
-  ///
-  /// [context]：Build 上下文。
-  /// [baseDelay]：基础延迟。
-  /// [delayIncrement]：延迟增量。
-  /// [slideOffset]：滑入偏移量。
-  /// [slideDuration]：滑入动画时长。
-  /// [fadeDuration]：淡入动画时长。
   Widget _buildDesktopLayout(
     BuildContext context,
     Duration baseDelay,
@@ -325,108 +242,86 @@ class ActivityDetailContent extends StatelessWidget {
     Duration slideDuration,
     Duration fadeDuration,
   ) {
-    int leftDelayIndex = 0; // 左侧延迟索引
-    int rightDelayIndex = 0; // 右侧延迟索引
-    final NumberFormat compactFormatter = NumberFormat.compact(); // 数字格式化器
-
-    final infoKey = ValueKey('info_desk_${activity.id}'); // 信息区域键
-    final descriptionKey = ValueKey('desc_desk_${activity.id}'); // 描述区域键
-    final targetKey = ValueKey('target_desk_${activity.id}'); // 目标区域键
-    final navKey = ValueKey('nav_desk_${activity.id}'); // 导航区域键
-    final commentsKey = ValueKey('comments_desk_${activity.id}'); // 评论区域键
-    final commentsTitleKey =
-        ValueKey('comments_title_desk_${activity.id}'); // 评论标题键
+    int leftDelayIndex = 0;
+    int rightDelayIndex = 0;
+    final NumberFormat compactFormatter = NumberFormat.compact();
 
     List<Widget> leftColumnItems = [
-      // 左侧列项
       _buildInfoSection(
         duration: slideDuration,
         delay: baseDelay + (delayIncrement * leftDelayIndex++),
         slideOffset: slideOffset,
-        key: infoKey,
       ),
-      const SizedBox(height: 24), // 间距
-
+      const SizedBox(height: 24),
       if (activity.content.isNotEmpty) ...[
-        // 活动内容非空时显示描述区域
         _buildDescriptionSection(
           duration: fadeDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
-          key: descriptionKey,
         ),
         const SizedBox(height: 24),
       ],
-
-      ...[
-        _buildTargetSection(
-          duration: fadeDuration,
-          delay: baseDelay + (delayIncrement * leftDelayIndex++),
-          key: targetKey,
-        ),
-      ],
-
+      _buildTargetSection(
+        duration: fadeDuration,
+        delay: baseDelay + (delayIncrement * leftDelayIndex++),
+      ),
       if (navigationInfo != null &&
           (navigationInfo!.prevActivity != null ||
               navigationInfo!.nextActivity != null)) ...[
-        const SizedBox(height: 48), // 加个大点的间距
+        const SizedBox(height: 48),
         _buildNavigationSection(
           duration: fadeDuration,
           delay: baseDelay + (delayIncrement * leftDelayIndex++),
-          key: navKey,
         ),
       ],
     ];
 
     List<Widget> rightColumnItems = [
-      // 右侧列项
       FadeInSlideUpItem(
-        key: commentsTitleKey, // 评论标题键
+        key: _makeValueKey('comments_title'),
         duration: slideDuration,
         delay: baseDelay +
             (delayIncrement * rightDelayIndex) +
-            const Duration(milliseconds: 100), // 延迟
+            const Duration(milliseconds: 100),
         slideOffset: slideOffset,
         child: Padding(
-          padding: const EdgeInsets.only(bottom: 12.0), // 底部内边距
+          padding: const EdgeInsets.only(bottom: 12.0),
           child: Text(
-            '评论 (${compactFormatter.format(activity.commentsCount)})', // 评论数量
+            '评论 (${compactFormatter.format(activity.commentsCount)})',
             style: Theme.of(context)
                 .textTheme
                 .titleLarge
-                ?.copyWith(fontWeight: FontWeight.bold), // 文本样式
+                ?.copyWith(fontWeight: FontWeight.bold),
           ),
         ),
       ),
-
       _buildCommentsSection(
         duration: slideDuration,
         delay: baseDelay +
             (delayIncrement * rightDelayIndex++) +
-            const Duration(milliseconds: 100), // 延迟
+            const Duration(milliseconds: 100),
         slideOffset: slideOffset,
-        key: commentsKey,
       ),
     ];
 
     return SingleChildScrollView(
-      controller: scrollController, // 滚动控制器
-      padding: const EdgeInsets.all(24.0), // 内边距
+      controller: scrollController,
+      padding: const EdgeInsets.all(24.0),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start, // 交叉轴顶部对齐
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
-            flex: 5, // 左侧内容区域占比
+            flex: 5,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // 水平拉伸
-              children: leftColumnItems, // 左侧列项
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: leftColumnItems,
             ),
           ),
-          const SizedBox(width: 24), // 间距
+          const SizedBox(width: 24),
           Expanded(
-            flex: 4, // 右侧评论区占比
+            flex: 4,
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // 水平拉伸
-              children: rightColumnItems, // 右侧列项
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: rightColumnItems,
             ),
           ),
         ],
@@ -434,19 +329,18 @@ class ActivityDetailContent extends StatelessWidget {
     );
   }
 
-  /// 构建活动详情内容组件。
   @override
   Widget build(BuildContext context) {
-    const Duration slideDuration = Duration(milliseconds: 400); // 滑入动画时长
-    const Duration fadeDuration = Duration(milliseconds: 350); // 淡入动画时长
-    const Duration baseDelay = Duration(milliseconds: 50); // 基础延迟
-    const Duration delayIncrement = Duration(milliseconds: 40); // 延迟增量
-    double slideOffset = 20.0; // 滑入偏移量
+    const Duration slideDuration = Duration(milliseconds: 400);
+    const Duration fadeDuration = Duration(milliseconds: 350);
+    const Duration baseDelay = Duration(milliseconds: 50);
+    const Duration delayIncrement = Duration(milliseconds: 40);
+    const double slideOffset = 20.0;
 
     return Padding(
-      key: ValueKey('activity_detail_content_${activity.id}'), // 唯一键
-      padding: EdgeInsets.zero, // 内边距
-      child: isDesktopLayout // 根据是否为桌面布局选择构建方法
+      key: ValueKey('activity_detail_content_${activity.id}'),
+      padding: EdgeInsets.zero,
+      child: isDesktopLayout
           ? _buildDesktopLayout(context, baseDelay, delayIncrement, slideOffset,
               slideDuration, fadeDuration)
           : _buildMobileLayout(context, baseDelay, delayIncrement, slideOffset,

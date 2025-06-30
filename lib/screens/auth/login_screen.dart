@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:provider/provider.dart'; // 导入 Provider，用于访问服务
-import 'package:suxingchahui/models/user/account.dart'; // 导入账号模型
+import 'package:suxingchahui/models/user/user/account.dart'; // 导入账号模型
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/widgets/ui/components/user/account_bubble_menu.dart'; // 导入账号气泡菜单组件

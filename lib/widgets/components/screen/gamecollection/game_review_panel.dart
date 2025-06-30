@@ -1,12 +1,13 @@
 // lib/widgets/components/screen/gamecollection/game_review_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_extension.dart';
 import 'dart:ui';
 
-import 'package:suxingchahui/models/game/game_with_collection.dart';
-import 'package:suxingchahui/models/game/game_collection_item.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_with_game.dart';
+import 'package:suxingchahui/models/game/collection/collection_item.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
+import 'package:suxingchahui/models/game/game/game_extension.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
@@ -17,12 +18,12 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 
 class GameReviewPanel extends StatelessWidget {
-  final GameWithCollection gameWithCollection;
+  final CollectionItemWithGame collectionWithGame;
   final VoidCallback onClose;
 
   const GameReviewPanel({
     super.key,
-    required this.gameWithCollection,
+    required this.collectionWithGame,
     required this.onClose,
   });
 
@@ -55,9 +56,9 @@ class GameReviewPanel extends StatelessWidget {
   }
 
   // 辅助方法：构建内容展示区域卡片 (评测/笔记)
-  Widget _buildContentCard(
-      BuildContext context, String? content, String emptyMessage) {
+  Widget _buildContentCard(BuildContext context, String emptyMessage) {
     final theme = Theme.of(context);
+    final content = collectionWithGame.collectionReview;
     final bool isEmpty = content == null || content.isEmpty;
     final contentColor = theme.colorScheme.onSurface;
     final emptyContentColor =
@@ -118,17 +119,11 @@ class GameReviewPanel extends StatelessWidget {
   }
 
   // 构建我的收藏状态及更新时间部分
-  Widget _buildMyCollectionStatus(
-      BuildContext context, GameCollectionItem collectionItem) {
-    // 从统一的工具类获取主题
-    final statusTheme =
-        GameCollectionStatusUtils.getTheme(collectionItem.status);
-    final statusLabel = statusTheme.text;
-    final statusIcon = statusTheme.icon;
-    final statusColor = statusTheme.textColor;
-
+  Widget _buildMyCollectionStatus(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.textTheme;
+    final updateTime = collectionWithGame.collectionUpdateTime;
+    final textColor = collectionWithGame.collectionTextColor;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -141,33 +136,41 @@ class GameReviewPanel extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Chip(
-              avatar: Icon(statusIcon, size: 16, color: statusColor),
-              label: Text(statusLabel,
+              avatar: Icon(collectionWithGame.collectionIcon,
+                  size: 16, color: textColor),
+              label: Text(collectionWithGame.collectionTextLabel,
                   style: textTheme.labelMedium?.copyWith(
-                      color: statusColor, fontWeight: FontWeight.bold)),
+                      color: textColor, fontWeight: FontWeight.bold)),
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-              backgroundColor: statusColor.withSafeOpacity(0.12),
+              backgroundColor: textColor.withSafeOpacity(0.12),
               visualDensity: VisualDensity.comfortable,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.0),
-                  side: BorderSide(color: statusColor.withSafeOpacity(0.35))),
-            ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('上次更新',
-                    style: textTheme.labelSmall?.copyWith(
-                        color: theme.colorScheme.onSurfaceVariant
-                            .withSafeOpacity(0.6))),
-                Text(
-                  DateTimeFormatter.formatRelative(collectionItem.updateTime),
-                  style: textTheme.labelSmall?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                      fontWeight: FontWeight.w500),
+                borderRadius: BorderRadius.circular(8.0),
+                side: BorderSide(
+                  color: textColor.withSafeOpacity(0.35),
                 ),
-              ],
+              ),
             ),
+            if (updateTime != null)
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '上次更新',
+                    style: textTheme.labelSmall?.copyWith(
+                      color: theme.colorScheme.onSurfaceVariant
+                          .withSafeOpacity(0.6),
+                    ),
+                  ),
+                  Text(
+                    updateTime.formatTimeAgo(),
+                    style: textTheme.labelSmall?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w500),
+                  ),
+                ],
+              ),
           ],
         ),
       ],
@@ -175,11 +178,12 @@ class GameReviewPanel extends StatelessWidget {
   }
 
   // 构建我的评分部分
-  Widget _buildMyRating(
-      BuildContext context, GameCollectionItem collectionItem) {
-    if (collectionItem.status != GameCollectionItem.statusPlayed ||
-        collectionItem.rating == null ||
-        collectionItem.rating! <= 0) {
+  Widget _buildMyRating(BuildContext context) {
+    final rating = collectionWithGame.collectionRating;
+    if (collectionWithGame.collectionStatus !=
+            CollectionItem.statusPlayed ||
+        rating == null ||
+        rating <= 0) {
       return const SizedBox.shrink();
     }
 
@@ -195,7 +199,7 @@ class GameReviewPanel extends StatelessWidget {
         Row(
           children: [
             ...List.generate(5, (index) {
-              double starValue = collectionItem.rating! / 2.0;
+              double starValue = rating / 2.0;
               IconData iconData;
               Color starFillColor = Colors.amber.shade600;
               if (index < starValue.floor()) {
@@ -209,10 +213,13 @@ class GameReviewPanel extends StatelessWidget {
               return Icon(iconData, size: 20, color: starFillColor);
             }),
             const SizedBox(width: 8),
-            Text('(${collectionItem.rating!.toStringAsFixed(1)}/10)',
-                style: textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500))
+            Text(
+              '(${rating.toStringAsFixed(1)}/10)',
+              style: textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w500,
+              ),
+            )
           ],
         ),
       ],
@@ -225,7 +232,7 @@ class GameReviewPanel extends StatelessWidget {
       children: [
         Flexible(
           child: GameCategoryTagView(
-            category: game.category,
+            enrichCategory: game.enrichCategory,
             isMini: true,
           ),
         ),
@@ -254,8 +261,14 @@ class GameReviewPanel extends StatelessWidget {
           _buildGameInfoRow(
               context, Icons.category_outlined, '类型', _buildCategoryTag(game)),
         if (game.tags.isNotEmpty)
-          _buildGameInfoRow(context, Icons.local_offer_outlined, '标签',
-              GameTagsRow(tags: game.tags, maxTags: 4, isScrollable: false)),
+          _buildGameInfoRow(
+              context,
+              Icons.local_offer_outlined,
+              '标签',
+              GameTagsRow(
+                  enrichTags: game.enrichTags,
+                  maxTags: 4,
+                  isScrollable: false)),
         _buildSectionTitle(context, '游戏统计',
             icon: Icons.analytics_outlined,
             padding: const EdgeInsets.only(top: 16.0, bottom: 4.0)),
@@ -329,11 +342,11 @@ class GameReviewPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final collectionItem = gameWithCollection.collection;
-    final Game? game = gameWithCollection.game;
+    final collectionItem = collectionWithGame.collectionItem;
+    final Game? game = collectionWithGame.game;
     final theme = Theme.of(context);
     // final textTheme = theme.textTheme; // textTheme在辅助方法中已通过context获取
-
+    final createTime = collectionItem.createTime;
     return ClipRRect(
       // 裁剪圆角
       borderRadius: BorderRadius.circular(12.0),
@@ -413,37 +426,36 @@ class GameReviewPanel extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildMyCollectionStatus(context, collectionItem),
-                      _buildMyRating(context, collectionItem),
+                      _buildMyCollectionStatus(context),
+                      _buildMyRating(context),
                       _buildSectionTitle(context, '我的评测内容',
                           icon: Icons.rate_review_outlined),
-                      _buildContentCard(
-                          context, collectionItem.review, '尚未填写评测。'),
+                      _buildContentCard(context, '尚未填写评测。'),
                       _buildSectionTitle(context, '我的私人笔记',
                           icon: Icons.edit_note_outlined),
-                      _buildContentCard(
-                          context, collectionItem.notes, '尚未添加笔记。'),
+                      _buildContentCard(context, '尚未添加笔记。'),
 
                       if (game != null) _buildGameInfo(context, game),
 
-                      // 底部元数据
-                      Padding(
-                        padding: const EdgeInsets.only(top: 24.0, bottom: 8.0),
-                        child: Align(
-                          alignment: Alignment.centerRight,
-                          child: Text(
-                            '首次收藏: ${DateTimeFormatter.formatShort(collectionItem.createTime)}',
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                    color: theme
-                                        .colorScheme.onSurfaceVariant
-                                        .withSafeOpacity(
-                                            0.6)), // 直接获取 Theme.of(context)
+                      if (createTime != null)
+                        // 底部元数据
+                        Padding(
+                          padding:
+                              const EdgeInsets.only(top: 24.0, bottom: 8.0),
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              '首次收藏: ${createTime.formatShort()}',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant
+                                        .withSafeOpacity(0.6),
+                                  ), // 直接获取 Theme.of(context)
+                            ),
                           ),
                         ),
-                      ),
                       const SizedBox(height: 8),
 
                       // 跳转到游戏详情页按钮

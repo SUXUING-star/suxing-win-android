@@ -9,7 +9,7 @@ import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
 import 'package:rxdart/rxdart.dart'; // 导入 RxDart，用于流的 debounceTime
 import 'package:suxingchahui/constants/global_constants.dart';
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
@@ -91,11 +91,13 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   int _latestGamesKeyCounter = 0; // 最新游戏 Key 计数器
   int _hotPostsKeyCounter = 0; // 热门帖子 Key 计数器
 
+
+  static const Duration _maxSectionLoadingDuration = Duration(seconds: 10);
   List<Game>? _hotGamesData; // 热门游戏数据列表
   bool _isHotGamesLoading = false; // 热门游戏是否正在加载中
   String? _hotGamesError; // 热门游戏错误消息
   DateTime? _lastHotGamesLoadingSetTime;
-  static const Duration _maxSectionLoadingDuration = Duration(seconds: 10);
+
 
   List<Game>? _latestGamesData; // 最新游戏数据列表
   bool _isLatestGamesLoading = false; // 最新游戏是否正在加载中

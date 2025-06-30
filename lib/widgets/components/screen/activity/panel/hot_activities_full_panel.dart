@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/activity/panel/layout/desktop/hot_activities_full_panel.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/activity_stats.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -12,15 +12,13 @@ import 'stats/hot_activities_list.dart';
 class HotActivitiesFullPanel extends StatelessWidget {
   final UserFollowService userFollowService;
   final UserInfoService userInfoService;
-  final List<UserActivity> hotActivities;
+  final List<Activity> hotActivities;
   final User? currentUser;
   final ActivityStats activityStats;
   final bool isLoading;
   final bool hasError;
   final String errorMessage;
   final VoidCallback onRefresh;
-  final String Function(String) getActivityTypeName;
-  final Color Function(String) getActivityTypeColor;
   final double panelWidth;
 
   const HotActivitiesFullPanel({
@@ -34,8 +32,6 @@ class HotActivitiesFullPanel extends StatelessWidget {
     required this.hasError,
     required this.errorMessage,
     required this.onRefresh,
-    required this.getActivityTypeName,
-    required this.getActivityTypeColor,
     required this.panelWidth,
   });
 
@@ -82,8 +78,6 @@ class HotActivitiesFullPanel extends StatelessWidget {
               ActivityStatsCard(
                 activityStats: activityStats,
                 isLoading: isLoading,
-                getActivityTypeName: getActivityTypeName,
-                getActivityTypeColor: getActivityTypeColor,
               ),
 
               const SizedBox(height: 16),
@@ -101,8 +95,6 @@ class HotActivitiesFullPanel extends StatelessWidget {
                             userInfoService: userInfoService,
                             currentUser: currentUser,
                             hotActivities: hotActivities,
-                            getActivityTypeName: getActivityTypeName,
-                            getActivityTypeColor: getActivityTypeColor,
                           ),
               ),
             ],

@@ -6,7 +6,7 @@ library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
 import 'game_stat_item_widget.dart'; // 导入统计项组件
 
 /// `GameStatsWidget` 类：显示游戏统计数据的组件。

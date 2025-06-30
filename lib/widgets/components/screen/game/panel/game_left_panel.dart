@@ -5,7 +5,8 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/models/game/game_tag.dart'; // 游戏标签模型所需
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
+import 'package:suxingchahui/models/game/game/game_tag_count.dart'; // 游戏标签模型所需
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件所需
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件所需
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart'; // 游戏标签项组件所需
@@ -18,10 +19,10 @@ class GameLeftPanel extends StatelessWidget {
   final double panelWidth; // 面板宽度
   final String? errorMessage; // 错误信息
   final bool isTagLoading; // 标签加载状态
-  final Function(bool forceRefresh) refreshTags; // 刷新标签的回调
-  final List<GameTag> tags; // 游戏标签列表
+  final Function(bool neeedCheck) refreshTags; // 刷新标签的回调
+  final List<GameTagCount> tags; // 游戏标签列表
   final String? selectedTag; // 当前选中的标签
-  final Function(String?) onTagSelected; // 标签选择回调
+  final Function(EnrichGameTag?) onTagSelected; // 标签选择回调
 
   /// 构造函数。
   ///
@@ -155,13 +156,14 @@ class GameLeftPanel extends StatelessWidget {
       runSpacing: 8.0, // 标签行之间的垂直间距
       children: tags.map((tag) {
         // 遍历标签列表
-        final isSelected = selectedTag == tag.name; // 判断标签是否被选中
+        final enrichTag = tag.enrichTag;
+        final isSelected = selectedTag == tag.tagLabel; // 判断标签是否被选中
 
         return InkWell(
-          onTap: () => onTagSelected(tag.name), // 点击标签回调
+          onTap: () => onTagSelected(enrichTag), // 点击标签回调
           borderRadius: BorderRadius.circular(16.0), // 圆角
           child: GameTagItem(
-            tag: tag.name, // 标签名称
+            enrichTag: tag.enrichTag, // 标签名称
             count: tag.count, // 标签数量
             isSelected: isSelected, // 标签选中状态
           ),

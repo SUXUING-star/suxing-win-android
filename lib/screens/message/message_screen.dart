@@ -1,5 +1,8 @@
 // lib/screens/message/message_screen.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/message/message_extension.dart';
+import 'package:suxingchahui/models/message/message_navigation_Info.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 需要导航工具
@@ -15,7 +18,6 @@ import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/services/main/message/message_service.dart';
 import 'package:suxingchahui/models/message/message.dart';
-import 'package:suxingchahui/models/message/message_type.dart'; // 需要 MessageTypeInfo
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/components/screen/message/message_detail.dart';
@@ -117,11 +119,8 @@ class _MessageScreenState extends State<MessageScreen> {
       // 对消息类型进行排序 (这里按类型的显示名称排序)
       final sortedKeys = groupedMessages.keys.toList()
         ..sort((a, b) {
-          // 使用 MessageTypeInfo.fromString 将 key 转换为枚举
-          MessageType typeA = MessageTypeInfo.fromString(a);
-          MessageType typeB = MessageTypeInfo.fromString(b);
           // 按显示名称的字母顺序排序
-          return typeA.displayName.compareTo(typeB.displayName);
+          return a.compareTo(b);
         });
 
       // 初始化或保留 ExpansionTile 的展开状态
@@ -277,7 +276,7 @@ class _MessageScreenState extends State<MessageScreen> {
   void _performNavigation(Message message) {
     if (!mounted) return;
     // 从消息模型获取导航所需信息
-    final navigationInfo = message.navigationDetails;
+    final navigationInfo = message.navigationInfo;
 
     if (navigationInfo != null) {
       // 如果有导航信息，则执行导航
@@ -414,14 +413,13 @@ class _MessageScreenState extends State<MessageScreen> {
       itemBuilder: (context, index) {
         final typeKey = _sortedTypeKeys[index];
         final messagesForType = _groupedMessages[typeKey] ?? [];
-        final messageType = MessageTypeInfo.fromString(typeKey);
-        final typeDisplayName = messageType.displayName;
+        final oneMessage = messagesForType[0];
+        final textLabel = oneMessage.textLabel;
         final unreadCount = _getUnreadCountForType(typeKey);
 
         // --- 提取 ExpansionTile 的 children 构建逻辑 ---
         List<Widget> buildExpansionChildren() {
           if (messagesForType.isEmpty) {
-            // 空状态也加个简单动画
             return [
               Padding(
                   padding: const EdgeInsets.symmetric(
@@ -472,7 +470,7 @@ class _MessageScreenState extends State<MessageScreen> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Expanded(
-                  child: Text(typeDisplayName,
+                  child: Text(textLabel,
                       style:
                           TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                       overflow: TextOverflow.ellipsis)),

@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/services/error/api_exception.dart'; // 导入 API 异常

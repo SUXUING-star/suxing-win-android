@@ -1,6 +1,6 @@
 // lib/screens/collection/game_collection_list_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_with_collection.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_with_game.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -8,7 +8,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 
-import 'package:suxingchahui/models/game/game_collection_item.dart';
+import 'package:suxingchahui/models/game/collection/collection_item.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/game/game_collection_service.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
@@ -42,7 +42,7 @@ class GameCollectionListScreen extends StatefulWidget {
 }
 
 class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
-  List<GameWithCollection> _games = [];
+  List<CollectionItemWithGame> _games = [];
   bool _isLoading = true;
   String? _errorMessage;
   bool _hasInitializedDependencies = false;
@@ -81,13 +81,13 @@ class _GameCollectionListScreenState extends State<GameCollectionListScreen> {
       String status;
       switch (widget.collectionType) {
         case 'wantToPlay':
-          status = GameCollectionItem.statusWantToPlay;
+          status = CollectionItem.statusWantToPlay;
           break;
         case 'playing':
-          status = GameCollectionItem.statusPlaying;
+          status = CollectionItem.statusPlaying;
           break;
         case 'played':
-          status = GameCollectionItem.statusPlayed;
+          status = CollectionItem.statusPlayed;
           break;
         case 'all':
           status = 'all'; // Consider a more robust way to handle "all"

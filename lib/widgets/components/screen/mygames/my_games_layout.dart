@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/mygames/my_games_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart'; // Ensure GameStatus enum is here
+import 'package:suxingchahui/models/game/game/game.dart'; // Ensure GameStatus enum is here
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_status_overlay.dart';
@@ -25,7 +25,7 @@ class MyGamesLayout extends StatelessWidget {
   final ScrollController scrollController;
   final VoidCallback onLoadMore;
   final VoidCallback onAddGame;
-  final Function(Game) onResubmit;
+  final Function(Game) onEdit;
   final Function(String) onShowReviewComment;
   final AuthProvider authProvider;
   final bool isDesktopLayout;
@@ -46,7 +46,7 @@ class MyGamesLayout extends StatelessWidget {
     required this.scrollController,
     required this.onLoadMore,
     required this.onAddGame,
-    required this.onResubmit,
+    required this.onEdit,
     required this.onShowReviewComment,
     required this.authProvider,
     required this.screenWidth,
@@ -434,7 +434,7 @@ class MyGamesLayout extends StatelessWidget {
         ),
         GameApprovalStatusOverlay(
           game: game,
-          onResubmit: () => onResubmit(game),
+          onResubmit: () => onEdit(game),
           onShowReviewComment: onShowReviewComment,
         ),
       ],

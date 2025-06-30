@@ -5,12 +5,13 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/constants/user/level_constants.dart'; // 导入用户等级常量
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/user/user/user_extension.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 导入安全用户头像组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 
 /// `DesktopSidebarUserProfile` 类：桌面侧边栏用户资料组件。
 ///
@@ -28,14 +29,6 @@ class DesktopSidebarUserProfile extends StatelessWidget {
     required this.onProfileTap,
     required this.authProvider,
   });
-
-  /// 根据等级返回颜色。
-  ///
-  /// [level]：用户等级。
-  /// 返回等级颜色。
-  Color _getLevelColor(int level) {
-    return LevelUtils.getLevelColor(level);
-  }
 
   /// 构建未登录状态的用户头像和登录入口。
   ///
@@ -143,7 +136,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 4, vertical: 1), // 内边距
                         decoration: BoxDecoration(
-                          color: _getLevelColor(user.level), // 背景色
+                          color: user.enrichLevel.backgroundColor, // 背景色
                           borderRadius: BorderRadius.circular(8), // 圆角
                           border:
                               Border.all(color: Colors.white, width: 1), // 边框
@@ -173,7 +166,7 @@ class DesktopSidebarUserProfile extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${user.experience} XP', // 经验值文本
+                  '硬币 ${user.coins}', // 经验值文本
                   style: TextStyle(
                       fontSize: 10,
                       color: Colors.white.withSafeOpacity(0.8)), // 字体样式

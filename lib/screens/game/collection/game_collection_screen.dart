@@ -1,8 +1,10 @@
 // lib/screens/collection/game_collection_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/game/game_with_collection.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_extension.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_with_game.dart';
+import 'package:suxingchahui/models/game/collection/user_collection_counts.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/components/screen/gamecollection/game_collection_layout.dart';
@@ -35,9 +37,9 @@ class GameCollectionScreen extends StatefulWidget {
 }
 
 class _GameCollectionScreenState extends State<GameCollectionScreen> {
-  List<GameWithCollection> _allCollections = [];
+  List<CollectionItemWithGame> _allCollections = [];
   PaginationData? _globalPaginationData;
-  GameCollectionCounts? _collectionCounts;
+  UserCollectionCounts? _collectionCounts;
 
   bool _isLoading = true;
   String? _error;
@@ -52,7 +54,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
 
   final ScrollController _scrollController = ScrollController();
 
-  GameWithCollection? _selectedGameForReview;
+  CollectionItemWithGame? _selectedGameForReview;
 
   @override
   void initState() {
@@ -181,7 +183,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
 
       if (mounted) {
         if (groupedData != null) {
-          List<GameWithCollection> newlyFetchedItems = [];
+          List<CollectionItemWithGame> newlyFetchedItems = [];
           newlyFetchedItems.addAll(groupedData.wantToPlay);
           newlyFetchedItems.addAll(groupedData.playing);
           newlyFetchedItems.addAll(groupedData.played);
@@ -190,10 +192,9 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
             if (_currentPage == 1) {
               _allCollections = newlyFetchedItems;
             } else {
-              final existingIds =
-                  _allCollections.map((e) => e.collection.gameId).toSet();
+              final existingIds = _allCollections.map((e) => e.gameId).toSet();
               newlyFetchedItems.removeWhere(
-                  (newItem) => existingIds.contains(newItem.collection.gameId));
+                  (newItem) => existingIds.contains(newItem.gameId));
               _allCollections.addAll(newlyFetchedItems);
             }
             _globalPaginationData = groupedData.pagination;
@@ -280,12 +281,11 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
   }
 
   // 新增：处理游戏卡片点击事件（用于桌面端显示Review）
-  void _handleGameTapForReview(GameWithCollection gameWithCollection) {
+  void _handleGameTapForReview(CollectionItemWithGame gameWithCollection) {
     if (!mounted) return;
     setState(() {
       // 如果再次点击同一个游戏，则关闭 Review 面板，否则显示新的
-      if (_selectedGameForReview?.collection.gameId ==
-          gameWithCollection.collection.gameId) {
+      if (_selectedGameForReview?.gameId == gameWithCollection.gameId) {
         _selectedGameForReview = null;
       } else {
         _selectedGameForReview = gameWithCollection;
@@ -340,7 +340,7 @@ class _GameCollectionScreenState extends State<GameCollectionScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _handleRefreshFromIndicator,
+      onRefresh: () => _handleRefreshFromIndicator(),
       child: GameCollectionLayout(
         windowStateProvider: widget.windowStateProvider,
         collectionCounts: _collectionCounts,

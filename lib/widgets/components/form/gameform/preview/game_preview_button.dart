@@ -1,6 +1,8 @@
 // lib/widgets/components/form/gameform/preview/game_preview_button.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/game/game/game_download_link.dart';
+import 'package:suxingchahui/models/game/game/game_external_link.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -12,7 +14,7 @@ import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'game_preview_screen.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
@@ -121,7 +123,6 @@ class GamePreviewButton extends StatelessWidget {
       downloadLinks: downloadLinks,
       externalLinks: externalLinks,
       bvid: bvid,
-
       musicUrl: musicUrl, // musicUrl 的判断保持原样
       lastViewedAt: existingGame?.lastViewedAt,
     );

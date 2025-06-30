@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'dart:async'; // BaseInputDialog.show 返回 Future
-import 'package:suxingchahui/models/user/user_ban.dart';
+import 'package:suxingchahui/models/user/ban/user_ban.dart';
 
 class UserBanDialog {
   /// 显示用户封禁信息对话框 (定制化组件)

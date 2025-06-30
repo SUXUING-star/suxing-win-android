@@ -1,13 +1,14 @@
 // lib/widgets/components/screen/profile/open/open_profile_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/user/user_extension.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
-import 'package:suxingchahui/constants/user/level_constants.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
@@ -188,7 +189,7 @@ class OpenProfileLayout extends StatelessWidget {
                       horizontal: isDesktop ? 8 : 6,
                       vertical: isDesktop ? 2 : 1.5),
                   decoration: BoxDecoration(
-                    color: _getLevelColor(targetUser.level),
+                    color: targetUser.enrichLevel.backgroundColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
@@ -227,7 +228,7 @@ class OpenProfileLayout extends StatelessWidget {
             ],
             SizedBox(height: verticalSpacingMedium),
             Text(
-              '创建于 ${_formatDate(targetUser.createTime)}',
+              '创建于 ${targetUser.createTime.formatStandard()}',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: Colors.grey[600],
                     fontSize: createTimeFontSize,
@@ -551,14 +552,5 @@ class OpenProfileLayout extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _formatDate(DateTime? date) {
-    if (date == null) return '';
-    return DateTimeFormatter.formatStandard(date);
-  }
-
-  Color _getLevelColor(int level) {
-    return LevelUtils.getLevelColor(level);
   }
 }

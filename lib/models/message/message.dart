@@ -1,26 +1,17 @@
 // lib/models/message/message.dart
 
-import 'package:flutter/foundation.dart';
-import 'package:suxingchahui/models/util_json.dart';
-import 'package:suxingchahui/routes/app_routes.dart'; // 确保路径正确
-import 'message_type.dart';
-
-/// 封装导航所需的信息
-@immutable
-class MessageNavigationInfo {
-  final String routeName;
-  final Object? arguments;
-
-  const MessageNavigationInfo({
-    required this.routeName,
-    this.arguments,
-  });
-}
+import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/preset/common_color_theme.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/message/message_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 /// 消息数据模型
 
-@immutable
-class Message {
+class Message implements CommonColorThemeExtension {
   // 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段
@@ -55,9 +46,6 @@ class Message {
   final List<String> references;
   final String? lastContent; // 分组消息的最新内容摘要
 
-  /// 解析后的消息类型枚举 (在构造函数中初始化)
-  late final MessageType messageType;
-
   Message({
     required this.id,
     required this.senderId,
@@ -74,14 +62,7 @@ class Message {
     this.groupCount,
     List<String>? references,
     this.lastContent,
-  }) : references = references ?? [] {
-    // 在构造函数中解析并缓存 MessageType
-    messageType = MessageTypeInfo.fromString(type);
-    // 可以在这里添加一些断言或日志，帮助调试类型解析
-    if (messageType == MessageType.unknown && kDebugMode && type.isNotEmpty) {
-      // print('Debug: Message ID $id created with unknown type string: "$type"');
-    }
-  }
+  }) : references = references ?? [];
 
   /// 从 JSON 数据创建 Message 实例
   factory Message.fromJson(Map<String, dynamic> json) {
@@ -127,6 +108,18 @@ class Message {
     };
   }
 
+  @override
+  String getTextLabel() => enrichMessageType.textLabel;
+
+  @override
+  Color getTextColor() => enrichMessageType.textColor;
+
+  @override
+  IconData getIconData() => enrichMessageType.iconData;
+
+  @override
+  Color getBackgroundColor() => enrichMessageType.backgroundColor;
+
   /// 获取用于列表预览的截断内容
   String getPreviewContent({int maxLength = 47}) {
     // 后端 GetPreviewContent 有特定逻辑，这里简化处理
@@ -147,80 +140,6 @@ class Message {
   /// 获取消息用于排序和显示的最终时间 (优先使用更新时间)
   DateTime get displayTime => updateTime ?? createTime;
 
-  /// 获取此消息的导航信息 (如果可导航)
-  /// 返回 null 表示此消息类型或状态下没有关联页面可跳转
-  /// 注意: sourceItemId 如何影响导航，需要根据你的业务逻辑决定
-  MessageNavigationInfo? get navigationDetails {
-    switch (messageType) {
-      case MessageType.postReplyToPost:
-      case MessageType.postReplyToParentReply: // 假设父回复也导航到帖子详情
-        if (postId != null && postId!.isNotEmpty) {
-          // 如果sourceItemId是父回复的ID，你可能想把它也传过去用于定位
-          return MessageNavigationInfo(
-            routeName: AppRoutes.postDetail,
-            arguments: {
-              jsonKeyPostId: postId,
-              jsonKeySourceItemId: sourceItemId
-            } // 使用常量
-                .removeNullValues(), // 示例
-          );
-        }
-        break;
-
-      case MessageType.commentToParentReply: // 回复的是评论
-      case MessageType.commentToGame: // 评论的是游戏
-        // 逻辑: sourceItemId 可能是被回复的评论ID，或者被评论的游戏/帖子ID
-        // 优先判断postId，然后gameId。sourceItemId可以作为辅助参数。
-        if (postId != null && postId!.isNotEmpty) {
-          return MessageNavigationInfo(
-            routeName: AppRoutes.postDetail,
-            arguments: {
-              jsonKeyPostId: postId,
-              jsonKeySourceItemId: sourceItemId
-            } // 使用常量
-                .removeNullValues(),
-          );
-        } else if (gameId != null && gameId!.isNotEmpty) {
-          return MessageNavigationInfo(
-            routeName: AppRoutes.gameDetail,
-            arguments: {
-              jsonKeyGameId: gameId,
-              jsonKeySourceItemId: sourceItemId
-            } // 使用常量
-                .removeNullValues(),
-          );
-        }
-        // 如果只有 sourceItemId，可能需要更复杂的逻辑来确定导航目标
-        break;
-
-      case MessageType.followTargetUser:
-        if (senderId.isNotEmpty) {
-          return MessageNavigationInfo(
-              routeName: AppRoutes.openProfile, arguments: senderId);
-        }
-        break;
-
-      case MessageType.gameApprovedToAuthor:
-      case MessageType.gameRejectedToAuthor:
-      case MessageType.gameResubmitToAdmin:
-      case MessageType.gameCoinedToAuthor:
-      case MessageType.gameLikedToAuthor:
-        if (gameId != null && gameId!.isNotEmpty) {
-          return MessageNavigationInfo(
-              routeName: AppRoutes.gameDetail, arguments: gameId);
-        }
-        break;
-
-      case MessageType.unknown:
-        return null;
-    }
-
-    // if (kDebugMode && messageType != MessageType.unknown) {
-    //   // print('Debug: Message ID $id (Type: $messageType, raw: "$type") did not generate navigation details.');
-    // }
-    return null;
-  }
-
   /// 创建一个消息副本，可以覆盖某些字段
   /// 注意：当 `type` 字段被覆盖时，新实例的 `messageType` 会被重新计算
   Message copyWith({
@@ -232,10 +151,6 @@ class Message {
     bool? isRead,
     DateTime? createTime,
     DateTime? updateTime,
-    // 使用 ValueGetter 允许显式将 nullable 字段设置为 null
-    // 例如: readTime: () => null 表示设置为null
-    // readTime: () => newDateTime 表示设置为 newDateTime
-    // 如果不传 readTime，则保持不变或根据 isRead 逻辑更新
     ValueGetter<DateTime?>? readTime,
     String? gameId,
     String? postId,

@@ -24,12 +24,6 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
-import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
-
-// Utils & Routes
-import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
-import 'package:suxingchahui/routes/app_routes.dart';
 
 class SearchPostScreen extends StatefulWidget {
   final SearchHistoryCacheService searchHistoryCacheService;
@@ -288,104 +282,6 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
     await _performSearch(_searchController.text.trim(), isNewSearch: false);
   }
 
-  bool _checkCanEditOrDeletePost(Post post) {
-    return widget.authProvider.isAdmin
-        ? true
-        : widget.authProvider.currentUserId == post.authorId;
-  }
-
-  // --- PostCard 回调处理方法 (删除 Observer 相关代码) ---
-  Future<void> _handleDeletePostAction(Post post) async {
-    final postId = post.id;
-    if (!mounted) return;
-    if (!widget.authProvider.isLoggedIn) {
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
-    if (!_checkCanEditOrDeletePost(post)) {
-      AppSnackBar.showError("你没有权限操作");
-      return;
-    }
-    try {
-      await CustomConfirmDialog.show(
-        context: context,
-        title: '确认删除',
-        message: '确定要删除这篇帖子吗？此操作不可恢复。',
-        confirmButtonText: '删除',
-        confirmButtonColor: Colors.red,
-        iconData: Icons.delete_forever_outlined,
-        iconColor: Colors.red,
-        onConfirm: () async {
-          // *** 这里可以考虑加一个临时的按钮加载状态，但不影响全局 ***
-          try {
-            await widget.postService.deletePost(post);
-            if (!mounted) return;
-            setState(() {
-              _searchResults.removeWhere((p) => p.id == postId);
-            });
-            AppSnackBar.showSuccess('帖子已删除');
-          } catch (e) {
-            AppSnackBar.showError('删除失败: $e');
-            rethrow;
-          }
-        },
-      );
-    } catch (e) {
-      //print(
-      //    "SearchPostScreen: Error during delete confirmation/action for post $postId: $e");
-    }
-  }
-
-  void _handleEditPostAction(Post postToEdit) {
-    if (!mounted) return;
-    if (!widget.authProvider.isLoggedIn) {
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
-    if (!_checkCanEditOrDeletePost(postToEdit)) {
-      AppSnackBar.showPermissionDenySnackBar();
-      return;
-    }
-    NavigationUtils.pushNamed(
-      context,
-      AppRoutes.editPost,
-      arguments: postToEdit.id,
-    ).then((updated) {
-      if (updated == true && mounted) {
-        // 强制刷新当前搜索结果
-        _performSearch(_searchController.text.trim(), isNewSearch: true);
-      } else {
-        //print(
-        //    "SearchPostScreen: Returned from edit post without update signal.");
-      }
-    });
-  }
-
-  Future<void> _handleToggleLockAction(Post post) async {
-    if (!mounted) return;
-    if (!widget.authProvider.isAdmin) {
-      AppSnackBar.showPermissionDenySnackBar();
-      return;
-    }
-    try {
-      await widget.postService.togglePostLock(post);
-      if (!mounted) return;
-      AppSnackBar.showSuccess('帖子状态已切换');
-      // 更新列表中的状态
-      setState(() {
-        final index = _searchResults.indexWhere((p) => p.id == post.id);
-        if (index != -1) {
-          final oldPost = _searchResults[index];
-          final newStatus = oldPost.status == PostStatus.locked
-              ? PostStatus.active
-              : PostStatus.locked;
-          _searchResults[index] = oldPost.copyWith(status: newStatus);
-        }
-      });
-    } catch (e) {
-      AppSnackBar.showError('操作失败: ${e.toString()}');
-    }
-  }
   // --- 回调处理方法结束 ---
 
   // --- 构建 UI ---
@@ -589,9 +485,9 @@ class _SearchPostScreenState extends State<SearchPostScreen> {
                   post: item,
                   followService: widget.followService,
                   infoService: widget.infoService,
-                  onDeleteAction: _handleDeletePostAction,
-                  onEditAction: _handleEditPostAction,
-                  onToggleLockAction: _handleToggleLockAction,
+                  onDeleteAction: null,
+                  onEditAction: null,
+                  onToggleLockAction: null,
                 ),
               );
             }

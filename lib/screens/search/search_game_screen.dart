@@ -1,7 +1,7 @@
 // lib/screens/search/search_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/cache/search_history_cache_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart';

@@ -5,7 +5,9 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:flutter/services.dart';
+import 'package:suxingchahui/models/post/post_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 帖子列表筛选 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 侧边栏 Provider
@@ -15,12 +17,13 @@ import 'package:suxingchahui/services/error/api_error_definitions.dart'; // API 
 import 'package:suxingchahui/services/error/api_exception.dart'; // API 异常
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具
-import 'package:suxingchahui/widgets/components/screen/forum/post/layout/post_detail_layout.dart'; // 帖子详情布局
+import 'package:suxingchahui/widgets/components/screen/forum/post/section/post_detail_layout.dart'; // 帖子详情布局
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 淡入动画组件
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart'; // 浮动操作按钮组
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 通用浮动操作按钮
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 懒加载布局构建器
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart'; // 信息对话框
+import 'package:suxingchahui/widgets/ui/dialogs/share_confirmation_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 应用 SnackBar
 
 import 'package:suxingchahui/models/post/post.dart'; // 帖子模型
@@ -88,6 +91,13 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   bool _isToggleAgreeing = false; // 赞同操作加载状态
   bool _isToggleFavoriting = false; // 收藏操作加载状态
 
+  bool _isPerformingPostDetailRefresh = false;
+  DateTime? _lastPostDetailRefreshAttemptTime;
+  static const Duration _minRefreshGameDetailInterval = Duration(minutes: 1);
+
+  bool _isSharing = false; // 分享操作加载状态
+  bool _hasShared = false;
+
   late bool _isDesktop; // 桌面布局标记
 
   @override
@@ -134,7 +144,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   /// 加载帖子详情和用户交互状态。
   ///
   /// 该方法在组件首次构建或需要刷新时调用。
-  Future<void> _loadPostDetails() async {
+  Future<void> _loadPostDetails({
+    bool forceRefresh = false,
+  }) async {
     if (_isLoading && _post != null) {
       // 正在加载且已有旧数据时，不强制重置UI，直接进行API调用。
     } else if (!mounted) {
@@ -162,7 +174,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
 
       if (details != null) {
         // 成功获取数据
-        if (widget.needHistory && _post?.status != PostStatus.locked) {
+        if (widget.needHistory && _post != null && _post!.isActive) {
           // 记录浏览历史
           try {
             widget.postService.incrementPostView(widget.postId); // 增加帖子浏览量
@@ -241,9 +253,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     }
   }
 
-  /// 下拉刷新帖子数据。
-  Future<void> _refreshPost() async {
-    await _loadPostDetails(); // 重新加载帖子详情
+  /// 刷新逻辑
+  /// [needCheck] 需要检查节流
+  Future<void> _forceRefreshPostDetail({bool needCheck = false}) async {
+    if (!mounted) return;
+
+    if (_isPerformingPostDetailRefresh) {
+      return;
+    }
+    _isPerformingPostDetailRefresh = true;
+    final now = DateTime.now();
+
+    if (needCheck) {
+      if (_lastPostDetailRefreshAttemptTime != null &&
+          now.difference(_lastPostDetailRefreshAttemptTime!) <
+              _minRefreshGameDetailInterval) {
+        final remainSeconds = _minRefreshGameDetailInterval.inSeconds -
+            now.difference(_lastPostDetailRefreshAttemptTime!).inSeconds;
+
+        AppSnackBar.showInfo("手速太快，请等待 $remainSeconds 秒后再尝试");
+      }
+      _lastPostDetailRefreshAttemptTime = now;
+    } else {
+      _lastPostDetailRefreshAttemptTime = now;
+    }
+
+    try {
+      // 调用加载，forceRefresh 确保即使短时间内连续操作也会尝试重新加载
+      await _loadPostDetails(forceRefresh: true);
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+      });
+    } finally {
+      _isPerformingPostDetailRefresh = false;
+    }
   }
 
   /// 统一处理用户交互操作。
@@ -259,8 +304,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       AppSnackBar.showLoginRequiredSnackBar(context); // 显示登录提示
       return;
     }
-    if (_isToggleLiking || _isToggleAgreeing || _isToggleFavoriting)
+    if (_isToggleLiking || _isToggleAgreeing || _isToggleFavoriting) {
       return; // 阻止重复操作
+    }
 
     setState(() => setLoading(true)); // 设置加载状态
 
@@ -296,6 +342,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   /// 切换帖子赞同状态。
+  ///
   Future<void> _toggleAgree() async {
     if (_post == null || _userActions == null) return; // 检查数据是否存在
     await _handleInteraction(
@@ -309,6 +356,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
   }
 
   /// 切换帖子收藏状态。
+  ///
   Future<void> _toggleFavorite() async {
     if (_post == null || _userActions == null) return; // 检查数据是否存在
     await _handleInteraction(
@@ -374,6 +422,42 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     );
   }
 
+  /// 处理分享帖子操作。
+  ///
+  /// 该方法为异步操作，返回类型为 [Future<void>]。
+  Future<void> _handleSharePost() async {
+    // 1. 前置检查
+    if (_post == null || _isSharing || !mounted) return;
+
+    setState(() {
+      _isSharing = true;
+      _hasShared = true;
+    });
+
+    try {
+      // 2. 生成分享消息 (Post 模型已经有这个方法了，直接调用)
+      final shareMessage = _post!.toShareMessage();
+
+      // 3. 复制到剪贴板
+      await Clipboard.setData(ClipboardData(text: shareMessage));
+      if (!mounted) return;
+
+      // 4. 显示确认对话框 (使用我们之前封装好的通用对话框)
+      await ShareConfirmationDialog.show(
+        context: context,
+        shareableContent: shareMessage,
+        title: '帖子分享口令已生成', // 可以自定义标题
+      );
+    } finally {
+      // 5. 无论成功与否，只要组件还在，就结束加载状态
+      if (mounted) {
+        setState(() {
+          _isSharing = false;
+        });
+      }
+    }
+  }
+
   /// 处理编辑帖子操作。
   ///
   /// [context]：Build 上下文。
@@ -399,7 +483,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
     if (result == true) {
       // 编辑成功
       _hasInteraction = true; // 标记页面有过交互
-      await _refreshPost(); // 刷新页面
+      await _loadPostDetails(); // 刷新页面
     }
   }
 
@@ -426,8 +510,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       await widget.postService.togglePostLock(_post!); // 调用服务切换锁定状态
       if (!mounted) return; // 检查组件是否挂载
       AppSnackBar.showSuccess('帖子状态已切换'); // 显示成功提示
-      _hasInteraction = true; // 标记页面有过交互
-      await _refreshPost(); // 刷新获取最新状态
+      if (Navigator.canPop(this.context)) {
+        Navigator.pop(this.context, _hasInteraction); // 返回上一页
+      } else {
+        NavigationUtils.navigateToHome(
+            widget.sidebarProvider, this.context); // 导航回主页
+      }
     } catch (e) {
       AppSnackBar.showError("操作失败,${e.toString()}"); // 显示错误提示
     } finally {
@@ -480,6 +568,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       }
     }
   }
+
+  ///
+  ///
 
   /// 检查用户是否拥有锁定帖子的权限。
   ///
@@ -535,10 +626,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
       Widget errorContent; // 错误内容组件
       switch (_error) {
         case BackendApiErrorCodes.notFound: // 帖子未找到错误码
-          return Scaffold(
-            appBar: const CustomAppBar(title: '帖子详情'),
-            body: Container(), // 空白页面，等待弹窗关闭
-          );
+          return const NotFoundErrorWidget();
 
         case BackendApiErrorCodes.networkNoConnection: // 无网络连接错误码
         case BackendApiErrorCodes.networkTimeout: // 网络超时错误码
@@ -587,7 +675,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         title: '帖子详情',
       ),
       body: RefreshIndicator(
-        onRefresh: _refreshPost, // 下拉刷新回调
+        onRefresh: () => _forceRefreshPostDetail(needCheck: true), // 下拉刷新回调
         child: _buildPostDetailLayout(), // 构建帖子详情布局
       ),
       floatingActionButton:
@@ -621,6 +709,9 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
           followService: widget.followService, // 关注服务
           onTagTap: (context, newTagString) =>
               _handleFilterTagSelect(context, newTagString), // 标签点击回调
+          isSharing: _isSharing,
+          hasShared: _hasShared,
+          onShare: _handleSharePost,
           isLiking: _isToggleLiking, // 点赞加载状态
           isAgreeing: _isToggleAgreeing, // 赞同加载状态
           isFavoriting: _isToggleFavoriting, // 收藏加载状态
@@ -630,6 +721,12 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         );
       },
     );
+  }
+
+  String _makeHeroTag({required bool isDesktop, required String mainCtx}) {
+    final ctxDevice = isDesktop ? 'desktop' : 'mobile';
+    const ctxScreen = 'post_detail';
+    return '${ctxScreen}_${ctxDevice}_${mainCtx}_${widget.postId}';
   }
 
   /// 构建浮动操作按钮组。
@@ -653,11 +750,7 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
         if (!canEdit && !canLock && !canPin) {
           return const SizedBox.shrink(); // 无任何权限时不显示按钮组
         }
-        final String editHeroTag = 'postEditFab_${post.id}'; // 编辑按钮 Hero Tag
-        final String deleteHeroTag =
-            'postDeleteFab_${post.id}'; // 删除按钮 Hero Tag
-        final String lockHeroTag = 'postLockFab_${post.id}'; // 锁定按钮 Hero Tag
-        final String pinHeroTag = 'postPinFab_${post.id}'; // 置顶按钮 Hero Tag
+
         final double bottomPadding = _isDesktop ? 16.0 : 80.0; // 底部内边距
 
         return Padding(
@@ -667,9 +760,31 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
             spacing: 12.0, // 按钮间距
             alignment: MainAxisAlignment.start, // 对齐方式
             children: [
+              GenericFloatingActionButton(
+                onPressed: () => _forceRefreshPostDetail(needCheck: true),
+                isLoading: _isPerformingPostDetailRefresh,
+                icon: Icons.refresh,
+                tooltip: "刷新",
+                mini: true,
+                heroTag:
+                    _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'refresh'),
+              ),
+
+              /// 把分享按钮放在最前面，因为它是一个通用操作
+              GenericFloatingActionButton(
+                heroTag: _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'share'),
+                mini: true,
+                tooltip: '分享帖子',
+                icon: _hasShared ? Icons.share_sharp : Icons.share_outlined,
+                isLoading: _isSharing, // 关联分享加载状态
+                onPressed: () => _handleSharePost(),
+                backgroundColor: Colors.white,
+                foregroundColor: Theme.of(context).colorScheme.primary,
+              ),
+
               if (canEdit) // 编辑按钮
                 GenericFloatingActionButton(
-                  heroTag: editHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'edit'),
                   mini: true,
                   tooltip: '编辑帖子',
                   icon: Icons.edit_outlined,
@@ -681,7 +796,8 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ),
               if (canEdit) // 删除按钮
                 GenericFloatingActionButton(
-                  heroTag: deleteHeroTag,
+                  heroTag:
+                      _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'delete'),
                   mini: true,
                   tooltip: '删除帖子',
                   icon: Icons.delete_forever_outlined,
@@ -693,26 +809,26 @@ class _PostDetailScreenState extends State<PostDetailScreen> {
                 ),
               if (canLock) // 锁定/解锁按钮
                 GenericFloatingActionButton(
-                  heroTag: lockHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'lock'),
                   mini: true,
-                  tooltip: post.status == PostStatus.locked
+                  tooltip: post.isLocked
                       ? '解锁帖子'
                       : '锁定帖子', // 工具提示文本
-                  icon: post.status == PostStatus.locked
+                  icon: post.isLocked
                       ? Icons.lock_open_outlined
                       : Icons.lock_outline, // 图标
                   isLoading: _isTogglingLock, // 关联切换锁定状态
                   onPressed: (_isLoading || _isTogglingLock)
                       ? null
                       : () => _handleToggleLock(context), // 加载或锁定时禁用
-                  backgroundColor: post.status == PostStatus.locked
+                  backgroundColor: post.isLocked
                       ? Colors.grey[600]
                       : Colors.orange[600], // 背景颜色
                   foregroundColor: Colors.white,
                 ),
               if (canPin) // 置顶/取消置顶按钮
                 GenericFloatingActionButton(
-                  heroTag: pinHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: _isDesktop, mainCtx: 'pin'),
                   mini: true,
                   tooltip: post.isPinned ? '取消置顶' : '置顶帖子', // 工具提示文本
                   icon: post.isPinned

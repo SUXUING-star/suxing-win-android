@@ -1,7 +1,7 @@
 // lib/screens/forum/post/create_post_screen.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
@@ -26,7 +26,6 @@ class CreatePostScreen extends StatefulWidget {
 }
 
 class _CreatePostScreenState extends State<CreatePostScreen> {
-  final List<PostTag> _availableTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _hasInitializedDependencies = false;
 
@@ -41,7 +40,7 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   Future<void> _submitPost(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      final postTags = PostTagsUtils.tagsToStringList(data.tags);
+      final postTags = data.tags;
       await widget.postService.createPost(data.title, data.content, postTags);
       AppSnackBar.showSuccess("编辑成功");
       if (!mounted) return;
@@ -67,7 +66,6 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
           title: '发布帖子',
           currentUser: currentUser,
           inputStateService: widget.inputStateService,
-          availableTags: _availableTags,
           isSubmitting: _isSubmitting,
           onSubmit: _submitPost,
           submitButtonText: '发布帖子',

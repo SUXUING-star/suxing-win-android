@@ -7,8 +7,10 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart'; // 错列动画库
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
@@ -20,13 +22,10 @@ import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户�
 ///
 /// 该组件以列表形式展示热门用户动态，支持动画效果。
 class HotActivitiesList extends StatelessWidget {
-  final List<UserActivity> hotActivities; // 热门动态列表
+  final List<Activity> hotActivities; // 热门动态列表
   final User? currentUser; // 当前登录用户
   final UserFollowService userFollowService; // 用户关注服务
   final UserInfoService userInfoService; // 用户信息 Provider
-  final String Function(String) getActivityTypeName; // 获取活动类型名称的函数
-  final Color Function(String) getActivityTypeColor; // 获取活动类型颜色的函数
-
   /// 构造函数。
   ///
   /// [key]：Widget 的 Key。
@@ -42,8 +41,6 @@ class HotActivitiesList extends StatelessWidget {
     required this.userFollowService,
     required this.userInfoService,
     required this.hotActivities,
-    required this.getActivityTypeName,
-    required this.getActivityTypeColor,
   });
 
   /// 构建 Widget。
@@ -90,8 +87,8 @@ class HotActivitiesList extends StatelessWidget {
   /// [index]：列表项索引。
   /// 返回一个包含动态信息和统计的 Card Widget。
   Widget _buildHotActivityItem(
-      BuildContext context, UserActivity activity, int index) {
-    final typeColor = getActivityTypeColor(activity.type); // 获取活动类型颜色
+      BuildContext context, Activity activity, int index) {
+    final typeColor = activity.enrichActivityType.backgroundColor; // 获取活动类型颜色
 
     return Card(
       elevation: 0, // 无阴影

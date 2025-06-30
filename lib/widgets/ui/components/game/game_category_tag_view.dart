@@ -2,17 +2,18 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_category.dart';
 import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
 
 class GameCategoryTagView extends StatelessWidget {
-  final String category;
+  final EnrichGameCategory enrichCategory;
   final bool isMini;
   final bool isFrosted;
 
   const GameCategoryTagView({
     super.key,
-    required this.category,
+    required this.enrichCategory,
     this.isMini = true,
     this.isFrosted = true,
   });
@@ -20,8 +21,8 @@ class GameCategoryTagView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BaseTagView(
-      text: category,
-      baseColor: GameCategoryUtils.getCategoryColor(category),
+      text: enrichCategory.category,
+      baseColor: enrichCategory.textColor,
       isMini: isMini,
       isFrosted: isFrosted,
     );

@@ -5,7 +5,7 @@ library;
 
 import 'dart:async';
 import 'package:suxingchahui/events/app_events.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_service.dart';
 
 /// 管理用户认证状态的核心 Provider。
@@ -186,6 +186,7 @@ class AuthProvider {
   Future<void> updateUserCoins({required int amount}) async {
     try {
       await _userService.reduceUserCoins(reduceAmount: amount);
+      await refreshUserState();
     } catch (e) {
       rethrow;
     }

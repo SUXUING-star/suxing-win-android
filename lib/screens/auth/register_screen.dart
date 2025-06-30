@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/user/account.dart'; // 导入账号模型
+import 'package:suxingchahui/models/user/user/account.dart'; // 导入账号模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart'; // 导入淡入动画组件

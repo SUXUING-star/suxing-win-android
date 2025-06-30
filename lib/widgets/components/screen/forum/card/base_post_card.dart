@@ -3,7 +3,8 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/post/post_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 导入自定义弹出菜单按钮
@@ -143,7 +144,7 @@ class BasePostCard extends StatelessWidget {
                           left: 12,
                           right: 12,
                           child: PostTagsRow(
-                            tags: post.tags,
+                            tags: post.enrichTags,
                             isAndroidPortrait: isAndroidLayout,
                           ),
                         ),
@@ -345,16 +346,16 @@ class BasePostCard extends StatelessWidget {
             child: Row(
               children: [
                 Icon(
-                  post.status == PostStatus.locked
+                  post.isLocked
                       ? Icons.lock_open_outlined
                       : Icons.lock_outline, // 图标
                   size: 18, // 大小
-                  color: post.status == PostStatus.locked
+                  color: post.isLocked
                       ? Colors.green[700]
                       : Colors.orange[800], // 颜色
                 ),
                 const SizedBox(width: 10), // 间距
-                Text(post.status == PostStatus.locked ? '解锁' : '锁定'), // 文本
+                Text(post.isLocked ? '解锁' : '锁定'), // 文本
               ],
             ),
           ),

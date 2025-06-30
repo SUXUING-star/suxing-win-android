@@ -7,6 +7,7 @@ library;
 import 'dart:async'; // 异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
 import 'package:cached_network_image/cached_network_image.dart'; // 缓存网络图片库
+import 'package:suxingchahui/constants/global_constants.dart';
 import 'package:suxingchahui/utils/network/url_utils.dart'; // URL 工具类
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/image/images_preview_screen.dart'; // 引入图片预览屏幕
@@ -141,10 +142,8 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
       height: widget.height,
       child: Center(
         child: Image.asset(
-          'assets/images/icons/main.png',
+          GlobalConstants.imagePlaceHolder,
           fit: BoxFit.contain,
-          width: widget.width != null ? widget.width! * 0.5 : 32,
-          height: widget.height != null ? widget.height! * 0.5 : 32,
         ),
       ),
     );
@@ -154,13 +153,15 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
   void _handleTap() {
     // 如果允许预览，则优先处理预览逻辑
     if (widget.allowPreview) {
-      Navigator.of(context).push(MaterialPageRoute(
-        builder: (_) => ImagesPreviewScreen(
-          images: [widget.imageUrl], // 预览单张图片，所以放在列表里
-          initialIndex: 0,
-          allowDownload: widget.allowDownloadInPreview, // 传递是否允许下载的配置
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => ImagesPreviewScreen(
+            images: [widget.imageUrl], // 预览单张图片，所以放在列表里
+            initialIndex: 0,
+            allowDownload: widget.allowDownloadInPreview, // 传递是否允许下载的配置
+          ),
         ),
-      ));
+      );
     }
     // 即使打开了预览，也执行外部传入的 onTap 回调（如果存在）
     widget.onTap?.call();
@@ -224,7 +225,7 @@ class _SafeCachedImageState extends State<SafeCachedImage> {
       );
     }
 
-    // NEW: 根据 allowPreview 或外部 onTap 来决定是否添加 GestureDetector
+    //  根据 allowPreview 或外部 onTap 来决定是否添加 GestureDetector
     if (widget.allowPreview || widget.onTap != null) {
       imageContent = GestureDetector(
         onTap: _handleTap,

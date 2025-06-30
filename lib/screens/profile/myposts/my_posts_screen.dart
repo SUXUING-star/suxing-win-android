@@ -2,7 +2,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
@@ -54,10 +54,14 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
 
+  bool _isRefreshing = false;
+  DateTime? _lastRefreshTime;
+
+  static const Duration _minRefreshInterval = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
-    _isMounted = true;
     _scrollController.addListener(() {
       if (_isMounted &&
           _scrollController.position.pixels >=
@@ -69,7 +73,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     });
 
     if (widget.authProvider.currentUserId != null) {
-      _fetchPosts(isRefresh: true);
+      _loadPosts();
     } else {
       _isLoading = false;
     }
@@ -82,20 +86,19 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     super.dispose();
   }
 
-  Future<void> _fetchPosts({bool isRefresh = false}) async {
-    if (!_isMounted || (_isLoading && !isRefresh && _posts.isEmpty)) return;
+  Future<void> _loadPosts({
+    int pageToFetch = 1,
+    bool forceRefresh = false,
+  }) async {
+    if (!_isMounted || (_isLoading && _posts.isEmpty)) return;
 
-    if (isRefresh) {
-      _currentPage = 1;
-    }
     if (!_isMounted) return;
     setState(() {
-      if (isRefresh) {
-        _posts = [];
-        _paginationData = null;
-        _error = null;
-        _isLoading = true;
-      }
+      _posts = [];
+      _paginationData = null;
+      _error = null;
+      _isLoading = true;
+
       _isLoadingMore = false;
     });
 
@@ -113,17 +116,13 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
 
     try {
-      final postListResult = await widget.postService
+      final postList = await widget.postService
           .getUserPosts(currentUserId, page: _currentPage);
 
       if (_isMounted) {
         setState(() {
-          if (isRefresh) {
-            _posts = postListResult.posts;
-          } else {
-            _posts.addAll(postListResult.posts);
-          }
-          _paginationData = postListResult.pagination;
+          _posts = postList.posts;
+          _paginationData = postList.pagination;
           _isLoading = false;
           _error = null;
         });
@@ -180,14 +179,52 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     }
   }
 
-  Future<void> _refreshPosts() async {
+  Future<void> _refreshPosts({
+    bool needCheck = true,
+  }) async {
     if (!widget.authProvider.isLoggedIn) {
       if (mounted) {
         AppSnackBar.showLoginRequiredSnackBar(context);
       }
       return;
     }
-    await _fetchPosts(isRefresh: true);
+
+    if (!mounted || _isRefreshing) return;
+
+    final now = DateTime.now();
+
+    if (needCheck) {
+      // 需要进行时间间隔检查时
+      if (_lastRefreshTime != null &&
+          now.difference(_lastRefreshTime!) < _minRefreshInterval) {
+        // 时间间隔不足时
+        if (mounted) {
+          AppSnackBar.showWarning(
+              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
+        }
+        return; // 返回
+      }
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      _lastRefreshTime = now;
+    });
+    try {
+      await _loadPosts(
+        forceRefresh: true,
+        pageToFetch: _currentPage,
+      );
+      setState(() {
+        _isRefreshing = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
   }
 
   bool _checkCanEditOrDeletePost(Post post) {
@@ -240,7 +277,7 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
             AppSnackBar.showPostDeleteSuccessfullySnackBar();
 
             if (_posts.isEmpty && (_paginationData?.total ?? 0) > 0) {
-              _fetchPosts(isRefresh: true);
+              _loadPosts(pageToFetch: _currentPage, forceRefresh: true);
             } else if (_posts.isEmpty && (_paginationData?.total ?? 0) == 0) {
               if (_isMounted) setState(() {});
             }
@@ -276,7 +313,10 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       arguments: post.id,
     );
     if (result == true && _isMounted) {
-      _fetchPosts(isRefresh: true);
+      _loadPosts(
+        pageToFetch: _currentPage,
+        forceRefresh: false,
+      );
     }
   }
 
@@ -288,11 +328,18 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
     final result =
         await NavigationUtils.pushNamed(context, AppRoutes.createPost);
     if (result == true && _isMounted) {
-      _fetchPosts(isRefresh: true);
+      _loadPosts(forceRefresh: true);
     }
   }
 
-  Widget _buildFab() {
+  String _makeHeroTag(
+      {required bool isDesktopLayout, required String mainCtx}) {
+    final ctxDevice = isDesktopLayout ? 'desktop' : 'mobile';
+    const ctxScreen = 'my_posts';
+    return '${ctxScreen}_${ctxDevice}_${mainCtx}_${widget.authProvider.currentUserId}';
+  }
+
+  Widget _buildFab(bool isDesktopLayout) {
     if (!widget.authProvider.isLoggedIn) {
       return const SizedBox.shrink();
     }
@@ -301,15 +348,19 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
       children: [
         GenericFloatingActionButton(
           icon: Icons.refresh,
-          onPressed: _isLoading || _isLoadingMore ? null : _refreshPosts,
+          onPressed: _isLoading || _isLoadingMore
+              ? null
+              : () => _refreshPosts(needCheck: true),
           tooltip: '刷新',
-          heroTag: "刷新我的帖子",
+          heroTag: _makeHeroTag(
+              isDesktopLayout: isDesktopLayout, mainCtx: 'refresh'),
         ),
         GenericFloatingActionButton(
           onPressed: _handleAddPost,
           icon: Icons.add,
           tooltip: '发布新帖',
-          heroTag: "发布新帖我的帖子",
+          heroTag:
+              _makeHeroTag(isDesktopLayout: isDesktopLayout, mainCtx: 'add'),
         ),
       ],
     );
@@ -317,48 +368,48 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: '我的帖子'),
-      body: StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
-          final bool isLoggedIn = currentUser != null;
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return Scaffold(
+          appBar: const CustomAppBar(title: '我的帖子'),
+          body: StreamBuilder<User?>(
+            stream: widget.authProvider.currentUserStream,
+            initialData: widget.authProvider.currentUser,
+            builder: (context, authSnapshot) {
+              final currentUser = authSnapshot.data;
+              final bool isLoggedIn = currentUser != null;
 
-          if (!isLoggedIn) {
-            return const LoginPromptWidget();
-          }
+              if (!isLoggedIn) {
+                return const LoginPromptWidget();
+              }
 
-          if (_isLoading && _posts.isEmpty && _error == null) {
-            return const FadeInItem(
-              // 全屏加载组件
-              child: LoadingWidget(
-                isOverlay: true,
-                message: "少女正在祈祷中...",
-                overlayOpacity: 0.4,
-                size: 36,
-              ),
-            ); //
-          }
+              if (_isLoading && _posts.isEmpty && _error == null) {
+                return const FadeInItem(
+                  // 全屏加载组件
+                  child: LoadingWidget(
+                    isOverlay: true,
+                    message: "少女正在祈祷中...",
+                    overlayOpacity: 0.4,
+                    size: 36,
+                  ),
+                ); //
+              }
 
-          if (_error != null && _posts.isEmpty) {
-            return CustomErrorWidget(
-              onRetry: () => _fetchPosts(isRefresh: true),
-              errorMessage: _error,
-            );
-          }
+              if (_error != null && _posts.isEmpty) {
+                return CustomErrorWidget(
+                  onRetry: () => _loadPosts(forceRefresh: true),
+                  errorMessage: _error,
+                );
+              }
 
-          return RefreshIndicator(
-            onRefresh:
-                _isLoading || _isLoadingMore ? () async {} : _refreshPosts,
-            child: LazyLayoutBuilder(
-                windowStateProvider: widget.windowStateProvider,
-                builder: (context, constraints) {
-                  final screenWidth = constraints.maxWidth;
-                  final isDesktopLayout =
-                      DeviceUtils.isDesktopInThisWidth(screenWidth);
-                  return MyPostsLayout(
+              return RefreshIndicator(
+                  onRefresh: _isLoading || _isLoadingMore
+                      ? () async {}
+                      : _refreshPosts,
+                  child: MyPostsLayout(
                     posts: _posts,
                     isLoadingMore: _isLoadingMore,
                     hasMore: _paginationData?.hasNextPage() ?? false,
@@ -369,17 +420,17 @@ class _MyPostsScreenState extends State<MyPostsScreen> {
                     errorMessage: _error,
                     isDesktopLayout: isDesktopLayout,
                     screenWidth: screenWidth,
-                    onRetry: () => _fetchPosts(isRefresh: true),
+                    onRetry: () => _refreshPosts(needCheck: true),
                     currentUser: currentUser,
                     infoService: widget.infoService,
                     followService: widget.followService,
                     totalPostCount: _paginationData?.total ?? _posts.length,
-                  );
-                }),
-          );
-        },
-      ),
-      floatingActionButton: _buildFab(),
+                  ));
+            },
+          ),
+          floatingActionButton: _buildFab(isDesktopLayout),
+        );
+      },
     );
   }
 }

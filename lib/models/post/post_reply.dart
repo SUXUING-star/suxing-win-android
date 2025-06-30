@@ -1,7 +1,8 @@
 // lib/models/post/post_reply.dart
 import 'package:meta/meta.dart';
-import 'package:mongo_dart/mongo_dart.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
+
 
 enum PostReplyStatus {
   active,
@@ -9,7 +10,7 @@ enum PostReplyStatus {
 }
 
 @immutable
-class PostReply {
+class PostReply implements ToJsonExtension {
   // 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyMongoId =
@@ -59,6 +60,15 @@ class PostReply {
     );
   }
 
+  static List<PostReply> fromListJson(dynamic json) {
+    return UtilJson.parseObjectList<PostReply>(
+      json, // 使用常量
+      (itemJson) =>
+          PostReply.fromJson(itemJson), // 告诉它怎么把一个 item 的 json 转成 PostReply 对象
+    );
+  }
+
+  @override
   Map<String, dynamic> toJson() {
     return {
       jsonKeyId: id, // 使用常量，通常用于客户端表示或通用JSON序列化
@@ -70,27 +80,6 @@ class PostReply {
       jsonKeyUpdateTime: updateTime.toIso8601String(), // 使用常量
       jsonKeyStatus: status.toString().split('.').last, // 使用常量
     };
-  }
-
-  // 添加一个新方法用于转换为 MongoDB 文档
-  Map<String, dynamic> toMongoDocument() {
-    try {
-      return {
-        jsonKeyMongoId:
-            id.isEmpty ? ObjectId() : ObjectId.fromHexString(id), // 使用常量
-        jsonKeyPostId: ObjectId.fromHexString(postId), // 使用常量
-        jsonKeyContent: content, // 使用常量
-        jsonKeyAuthorId: ObjectId.fromHexString(authorId), // 使用常量
-        jsonKeyParentId:
-            parentId != null ? ObjectId.fromHexString(parentId!) : null, // 使用常量
-        jsonKeyCreateTime: createTime, // 使用常量
-        jsonKeyUpdateTime: updateTime, // 使用常量
-        jsonKeyStatus: status.toString().split('.').last, // 使用常量
-      };
-    } catch (e) {
-      // print('Error in Reply.toMongoDocument(): $e');
-      rethrow;
-    }
   }
 
   static PostReply empty() {

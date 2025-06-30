@@ -1,8 +1,10 @@
 // lib/widgets/components/screen/checkin/progress/checkin_level_progress_card.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/user/level_constants.dart';
-import 'package:suxingchahui/models/user/checkin_status.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/check_in/checkin_status.dart';
+import 'package:suxingchahui/models/user/user/enrich_level.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/user/user_extension.dart';
 import '../checkin_button.dart';
 import 'level_progress_bar.dart';
 
@@ -33,7 +35,7 @@ class CheckInLevelProgressCard extends StatelessWidget {
     final theme = Theme.of(context);
 
     // --- 直接从 currentUser 获取等级/经验信息 ---
-    final int level = currentUser.level;
+    final EnrichLevel enrichLevel = currentUser.enrichLevel;
     final int currentExp = currentUser.experience; // 用户总经验
     final int requiredExp = currentUser.nextLevelExp; // 下一级所需总经验
     // 使用后端算好的进度百分比，并确保范围
@@ -61,12 +63,12 @@ class CheckInLevelProgressCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '等级 $level', // **使用 currentUser.level**
+                      '等级 ${enrichLevel.level}', // **使用 currentUser.level**
                       style: theme.textTheme.titleSmall
                           ?.copyWith(fontWeight: FontWeight.bold), // 加粗
                     ),
                     Text(
-                      LevelUtils.getLevelDescription(level), // **使用计算出的 title**
+                      enrichLevel.textLabel, // **使用计算出的 title**
                       style: TextStyle(
                         color: theme.primaryColor,
                         fontSize: 14,
@@ -108,7 +110,7 @@ class CheckInLevelProgressCard extends StatelessWidget {
 
             // --- 等级进度条 (使用 currentUser 的数据) ---
             LevelProgressBar(
-              level: level,
+              enrichLevel: enrichLevel,
               current: currentExp, // 传递当前总经验
               total: requiredExp, // 传递下一级所需总经验
               percentage: progressPercentage, // 传递计算好的百分比

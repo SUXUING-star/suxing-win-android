@@ -2,8 +2,8 @@
 
 import 'package:flutter/cupertino.dart'; // 用于 ValueGetter
 import 'package:meta/meta.dart'; // 用于 @immutable
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户活动模型
-import 'package:suxingchahui/models/util_json.dart'; // JSON 解析工具类
+import 'package:suxingchahui/models/activity/activity.dart'; // 用户活动模型
+import 'package:suxingchahui/models/utils/util_json.dart'; // JSON 解析工具类
 import 'package:suxingchahui/services/main/activity/activity_service.dart'; // 活动流类型常量
 
 /// 活动详情页参数模型。
@@ -19,7 +19,7 @@ class ActivityDetailParam {
 
   final int listPageNum;
   final String feedType;
-  final UserActivity activity; // 完整的活动对象
+  final Activity activity; // 完整的活动对象
   final String activityId; // 活动ID
 
   /// 构造函数。
@@ -56,7 +56,7 @@ class ActivityDetailParam {
 
     return ActivityDetailParam(
       activityId: UtilJson.parseId(json[jsonKeyActivityId]),
-      activity: UserActivity.fromJson(activityJson),
+      activity: Activity.fromJson(activityJson),
       feedType: UtilJson.parseStringSafely(json[jsonKeyFeedType]),
       listPageNum: UtilJson.parseIntSafely(json[jsonKeyListPageNum]),
     );
@@ -65,7 +65,7 @@ class ActivityDetailParam {
   /// 创建一个空的 [ActivityDetailParam] 实例。
   static ActivityDetailParam empty() {
     return ActivityDetailParam(
-      activity: UserActivity.empty(),
+      activity: Activity.empty(),
       activityId: '',
       feedType: ActivitiesFeedType.public,
       listPageNum: 1,
@@ -76,7 +76,7 @@ class ActivityDetailParam {
   ActivityDetailParam copyWith({
     int? listPageNum,
     String? feedType,
-    UserActivity? activity,
+    Activity? activity,
     String? activityId,
   }) {
     return ActivityDetailParam(

@@ -5,13 +5,14 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart'; // 导入游戏标签项组件
 
 /// `GameTagList` 类：显示游戏标签列表的组件。
 ///
 /// 该组件展示指定数量的游戏标签，并根据配置决定是否可水平滚动。
 class GameTagsRow extends StatelessWidget {
-  final List<String> tags; // 标签列表
+  final List<EnrichGameTag> enrichTags; // 标签列表
   final int maxTags; // 最大显示标签数量
   final bool isScrollable; // 是否可水平滚动
 
@@ -27,7 +28,7 @@ class GameTagsRow extends StatelessWidget {
   /// [isScrollable]：是否可滚动。
   const GameTagsRow({
     super.key,
-    required this.tags,
+    required this.enrichTags,
     required this.maxTags,
     this.isCompact = false,
     this.isScrollable = false,
@@ -40,7 +41,7 @@ class GameTagsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tagWidgets =
-        tags.take(maxTags).map(_buildTagItem).toList(); // 获取指定数量的标签组件
+        enrichTags.take(maxTags).map(_buildTagItem).toList(); // 获取指定数量的标签组件
 
     if (isScrollable) {
       // 可水平滚动时
@@ -60,8 +61,8 @@ class GameTagsRow extends StatelessWidget {
 
   /// 构建单个标签项。
   ///
-  /// [tag]：标签文本。
-  Widget _buildTagItem(String tag) {
-    return GameTagItem(tag: tag); // 返回游戏标签项组件
+  /// [enrichTag]：标签文本。
+  Widget _buildTagItem(EnrichGameTag enrichTag) {
+    return GameTagItem(enrichTag: enrichTag); // 返回游戏标签项组件
   }
 }

@@ -1,15 +1,15 @@
 // lib/widgets/components/screen/history/history_post_grid_view.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_masonry_grid_view.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 
 class _LoadingIndicatorPlaceholder {
   const _LoadingIndicatorPlaceholder();
@@ -75,7 +75,8 @@ class HistoryPostGridView extends StatelessWidget {
                 infoService: infoService,
                 followService: followService,
                 post: post,
-                availableWidth: availableWidth, // 把这里的 screenWidth 也换成 availableWidth
+                availableWidth:
+                    availableWidth, // 把这里的 screenWidth 也换成 availableWidth
                 onDeleteAction: null,
                 onEditAction: null,
                 onToggleLockAction: null,
@@ -93,7 +94,7 @@ class HistoryPostGridView extends StatelessWidget {
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
-                      '上次浏览: ${DateTimeFormatter.formatShort(lastViewTime)}',
+                      '上次浏览: ${lastViewTime.formatShort()}',
                       style: TextStyle(
                         fontSize: isDesktopLayout ? 9 : 10,
                         color: Colors.white,

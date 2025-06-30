@@ -8,7 +8,7 @@ import 'dart:io'; // 导入 File 类
 import 'dart:typed_data'; // 导入 Uint8List
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:path_provider/path_provider.dart'; // 导入路径提供程序库
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart'; // 导入限速文件上传服务
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具

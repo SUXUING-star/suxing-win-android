@@ -1,15 +1,10 @@
 // lib/models/post/post.dart
 
 // PostStatus 枚举：定义帖子状态
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
-enum PostStatus {
-  active, // 活跃
-  locked, // 锁定
-  deleted // 删除
-}
-
-class Post {
+class Post implements ToJsonExtension {
   // 1. 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段
@@ -30,6 +25,10 @@ class Post {
   static const String jsonKeyCurrentUserLastViewTime =
       'currentUserLastViewTime';
 
+  static const String statusActive = 'active';
+  static const String statusLocked = 'locked';
+  static const String statusDeleted = 'deleted';
+
   final String id;
   final String title;
   final String content;
@@ -43,8 +42,9 @@ class Post {
   final int agreeCount; // 赞成数
   final int favoriteCount; // 收藏数
   final List<String> tags; // 标签
+
   final bool isPinned; // 帖子是否被置顶
-  final PostStatus status; // 状态
+  final String status; // 状态
 
   // 前端特定字段：当前用户最后浏览时间，用于历史记录展示
   final DateTime? currentUserLastViewTime;
@@ -64,9 +64,9 @@ class Post {
     this.favoriteCount = 0,
     this.tags = const [],
     required this.isPinned,
-    this.status = PostStatus.active,
+    this.status = statusActive,
     this.currentUserLastViewTime, // 前端特有字段
-  });
+  }) ;
 
   // 2. 添加一个静态的查验接口函数
   /// 检查给定的原始响应 JSON 数据（通常是 dynamic 类型）是否符合
@@ -77,14 +77,6 @@ class Post {
   ///
   /// 要求：
   /// 1. 输入 jsonResponse 必须是一个 [Map<String, dynamic>] 类型。
-  /// 2. 必须包含 'id' (或 '_id') 键，且其值为 [String] 类型。
-  /// 3. 必须包含 'title' 键，且其值为 [String] 类型。
-  /// 4. 必须包含 'content' 键，且其值为 [String] 类型。
-  /// 5. 必须包含 'authorId' 键，且其值为 [String] 类型。
-  /// 6. 必须包含 'createTime' 键，且其值为 [String] 类型。
-  /// 7. 必须包含 'updateTime' 键，且其值为 [String] 类型。
-  /// 8. 必须包含 'isPinned' 键，且其值为 [bool] 类型。
-  /// 9. 必须包含 'status' 键，且其值为 [String] 类型。
   static bool isValidJson(dynamic jsonResponse) {
     // 1. 检查输入是否为 [Map<String, dynamic>]
     if (jsonResponse is! Map<String, dynamic>) {
@@ -97,34 +89,6 @@ class Post {
     final dynamic idData = json[jsonKeyId] ?? json[jsonKeyMongoId];
     if (idData is! String) {
       // id 必须是字符串
-      return false;
-    }
-    // 标题
-    if (json[jsonKeyTitle] is! String) {
-      return false;
-    }
-    // 内容
-    if (json[jsonKeyContent] is! String) {
-      return false;
-    }
-    // 作者ID
-    if (json[jsonKeyAuthorId] is! String) {
-      return false;
-    }
-    // 创建时间
-    if (json[jsonKeyCreateTime] is! String) {
-      return false;
-    }
-    // 更新时间
-    if (json[jsonKeyUpdateTime] is! String) {
-      return false;
-    }
-    // 是否置顶
-    if (json[jsonKeyIsPinned] is! bool) {
-      return false;
-    }
-    // 状态
-    if (json[jsonKeyStatus] is! String) {
       return false;
     }
 
@@ -153,25 +117,21 @@ class Post {
       tags: UtilJson.parseListString(json[jsonKeyTags]), // 使用常量
       isPinned: UtilJson.parseBoolSafely(json[jsonKeyIsPinned]), // 使用常量
       // 业务逻辑: 从字符串安全解析枚举类型，如果匹配失败则使用默认值 PostStatus.active
-      status: PostStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == json[jsonKeyStatus], // 使用常量
-        orElse: () => PostStatus.active,
-      ),
+      status: UtilJson.parseStringSafely(json[jsonKeyStatus]),
       currentUserLastViewTime: UtilJson.parseNullableDateTime(
           json[jsonKeyCurrentUserLastViewTime]), // 使用常量
     );
   }
 
   static List<Post> fromListJson(dynamic json) {
-    if (json is! List) {
-      return [];
-    }
-
     return UtilJson.parseObjectList<Post>(
         json, (listJson) => Post.fromJson(listJson));
   }
 
+
+
   // 将 Post 对象转换为完整 JSON 格式
+  @override
   Map<String, dynamic> toJson() {
     return {
       jsonKeyId: id, // 使用常量
@@ -225,7 +185,7 @@ class Post {
       favoriteCount: 0,
       tags: [],
       isPinned: false,
-      status: PostStatus.active,
+      status: statusActive,
       currentUserLastViewTime: null, // 前端特有字段空值
     );
   }
@@ -246,7 +206,7 @@ class Post {
     int? favoriteCount,
     List<String>? tags,
     bool? isPinned,
-    PostStatus? status,
+    String? status,
     DateTime? currentUserLastViewTime,
   }) {
     return Post(

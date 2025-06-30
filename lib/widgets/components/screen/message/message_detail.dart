@@ -1,6 +1,10 @@
 // lib/widgets/components/screen/message/message_detail.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/message/message_type.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/message/message_extension.dart';
+import 'package:suxingchahui/models/message/message_navigation_Info.dart';
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/models/message/message.dart';
 
@@ -64,8 +68,7 @@ class MessageDetail extends StatelessWidget {
             _buildTimeSection(context), // 显示时间信息
             SizedBox(height: 24),
             // 如果是分组消息且有引用内容，显示引用区域
-            if (message.isGrouped &&
-                message.references.isNotEmpty)
+            if (message.isGrouped && message.references.isNotEmpty)
               _buildReferencesSection(),
             // SizedBox(height: 16), // 底部留白由 Scaffold padding 控制或 body padding 控制
           ],
@@ -79,9 +82,9 @@ class MessageDetail extends StatelessWidget {
 
   /// 构建消息类型标签
   Widget _buildTypeLabel() {
-    final typeText = message.messageType.displayName;
-    final labelColor = message.messageType.labelBackgroundColor;
-    final textColor = message.messageType.labelTextColor;
+    final textLabel = message.textLabel;
+    final labelColor = message.backgroundColor;
+    final textColor = message.textColor;
 
     return Align(
       // 确保标签靠左
@@ -93,7 +96,7 @@ class MessageDetail extends StatelessWidget {
           borderRadius: BorderRadius.circular(16), // 圆角标签
         ),
         child: Text(
-          typeText, // 使用模型提供的显示名称
+          textLabel, // 使用模型提供的显示名称
           style: TextStyle(
               color: textColor, fontWeight: FontWeight.w500), // 使用模型提供的文字颜色
         ),
@@ -233,7 +236,7 @@ class MessageDetail extends StatelessWidget {
 
   /// 构建底部的操作按钮区域
   Widget _buildActionButtons(BuildContext context) {
-    final bool canNavigate = message.navigationDetails != null;
+    final bool canNavigate = message.navigationInfo != null;
 
     return Container(
       decoration: BoxDecoration(

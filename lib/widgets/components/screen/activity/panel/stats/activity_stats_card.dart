@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 
 import 'package:suxingchahui/models/activity/activity_stats.dart';
+import 'package:suxingchahui/models/activity/activity_type_count.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 
@@ -10,15 +13,11 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 class ActivityStatsCard extends StatefulWidget {
   final ActivityStats? activityStats;
   final bool isLoading;
-  final String Function(String) getActivityTypeName;
-  final Color Function(String) getActivityTypeColor;
 
   const ActivityStatsCard({
     super.key,
     required this.activityStats,
     required this.isLoading,
-    required this.getActivityTypeName,
-    required this.getActivityTypeColor,
   });
 
   @override
@@ -34,12 +33,15 @@ class _ActivityStatsCardState extends State<ActivityStatsCard> {
       return const SizedBox(height: 50, child: LoadingWidget());
     }
 
-    if (widget.activityStats == null || widget.activityStats!.countsByType.isEmpty) {
-      return const SizedBox(height: 50, child: EmptyStateWidget(message: "暂无统计"));
+    if (widget.activityStats == null ||
+        widget.activityStats!.countsByType.isEmpty) {
+      return const SizedBox(
+          height: 50, child: EmptyStateWidget(message: "暂无统计"));
     }
 
-    final sortedCounts = List<ActivityTypeCount>.from(widget.activityStats!.countsByType)
-      ..sort((a, b) => b.count.compareTo(a.count));
+    final sortedCounts =
+        List<ActivityTypeCount>.from(widget.activityStats!.countsByType)
+          ..sort((a, b) => b.count.compareTo(a.count));
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -86,7 +88,8 @@ class _ActivityStatsCardState extends State<ActivityStatsCard> {
               child: Wrap(
                 spacing: 6.0, // 水平间距
                 runSpacing: 4.0, // 垂直间距
-                children: sortedCounts.map((item) => _buildStatChip(item)).toList(),
+                children:
+                    sortedCounts.map((item) => _buildStatChip(item)).toList(),
               ),
             ),
         ],
@@ -96,9 +99,10 @@ class _ActivityStatsCardState extends State<ActivityStatsCard> {
 
   /// 构建一个极小的、像标签一样的统计块。
   Widget _buildStatChip(ActivityTypeCount item) {
-    final typeName = widget.getActivityTypeName(item.type);
-    final bgColor = widget.getActivityTypeColor(item.type);
-    final textColor = bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
+    final typeName = item.textLabel;
+    final bgColor = item.backgroundColor;
+    final textColor =
+        bgColor.computeLuminance() > 0.5 ? Colors.black87 : Colors.white;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
@@ -116,7 +120,8 @@ class _ActivityStatsCardState extends State<ActivityStatsCard> {
           const SizedBox(width: 4),
           Text(
             '${item.count}',
-            style: TextStyle(color: textColor, fontSize: 11, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                color: textColor, fontSize: 11, fontWeight: FontWeight.bold),
           ),
         ],
       ),

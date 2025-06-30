@@ -1,7 +1,9 @@
 // lib/widgets/components/form/postform/post_form.dart
+
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/post/enrich_post_tag.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/utils/request_lock_service.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 需要 InputStateService
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
@@ -16,7 +18,7 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 class PostFormData {
   final String title;
   final String content;
-  final List<PostTag> tags;
+  final List<String> tags;
 
   PostFormData({
     required this.title,
@@ -28,9 +30,9 @@ class PostFormData {
 /// -------------------------------------------------------------------
 /// 后端payload参照
 /// var req struct {
-///		Title   string   `json:"title" binding:"required,min=2,max=100"`
-///		Content string   `json:"content" binding:"required,min=2"`
-///		Tags    []string `json:"tags"`
+///		[Title]   string   `json:"title" binding:"required,min=2,max=100"`
+///		[Content] string   `json:"content" binding:"required,min=2"`
+///		[Tags]    []string `json:"tags"`
 ///	}
 ///-------------------------------------------------------------------
 
@@ -40,8 +42,7 @@ class PostForm extends StatefulWidget {
   final String title;
   final String? initialTitle; // 从外部传入的原始值
   final String? initialContent; // 从外部传入的原始值
-  final List<PostTag> initialTags;
-  final List<PostTag> availableTags;
+  final List<EnrichPostTag> initialTags;
   final bool isSubmitting;
   final Function(PostFormData) onSubmit;
   final String submitButtonText;
@@ -57,7 +58,6 @@ class PostForm extends StatefulWidget {
     this.initialTitle,
     this.initialContent,
     this.initialTags = const [],
-    required this.availableTags,
     required this.isSubmitting,
     required this.onSubmit,
     required this.submitButtonText,
@@ -71,7 +71,9 @@ class PostForm extends StatefulWidget {
 }
 
 class _PostFormState extends State<PostForm> {
-  late List<PostTag> _selectedTags;
+  late List<String> _selectedTags;
+  static final List<EnrichPostTag> availableTags =
+      EnrichPostTag.availableEnrichTags;
   final _formKey = GlobalKey<FormState>();
   bool _hasInitializedDependencies = false;
   User? _currentUser;
@@ -318,11 +320,11 @@ class _PostFormState extends State<PostForm> {
         Wrap(
           spacing: 8,
           runSpacing: 8,
-          children: widget.availableTags.map((tag) {
-            final isSelected = _selectedTags.contains(tag);
+          children: availableTags.map((enrichTag) {
+            final isSelected = _selectedTags.contains(enrichTag.tag);
             return FilterChip(
               label: AppText(
-                tag.displayText,
+                enrichTag.textLabel,
                 style: TextStyle(
                   fontSize: 14,
                 ),
@@ -347,12 +349,12 @@ class _PostFormState extends State<PostForm> {
                       setState(() {
                         if (selected) {
                           if (_selectedTags.length < 3) {
-                            _selectedTags.add(tag);
+                            _selectedTags.add(enrichTag.tag);
                           } else {
                             AppSnackBar.showWarning('最多只能选择 3 个标签');
                           }
                         } else {
-                          _selectedTags.remove(tag);
+                          _selectedTags.remove(enrichTag.tag);
                         }
                       });
                     },

@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -48,7 +48,7 @@ class ActivityDetailScreen extends StatefulWidget {
 }
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
-  late UserActivity _activity;
+  late Activity _activity;
   late String _activityId;
   late ActivityNavigationInfo? _navigationInfo;
   late String _feedType;
@@ -405,14 +405,14 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
             );
 
             if (success) {
-              UserActivity updatedActivityForCache;
+              Activity updatedActivityForCache;
               // 更新本地状态
               // 创建一个新的 UserActivity 实例，复制旧数据并更新字段
               if (updatedActivity != null) {
                 updatedActivityForCache = updatedActivity;
               } else {
                 final currentActivity = _activity;
-                updatedActivityForCache = UserActivity(
+                updatedActivityForCache = Activity(
                   id: currentActivity.id,
                   userId: currentActivity.userId,
                   type: currentActivity.type,
@@ -462,7 +462,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
     }
   }
 
-  bool _checkCanEditOrCanDelete(UserActivity activity) {
+  bool _checkCanEditOrCanDelete(Activity activity) {
     final bool isAuthor = activity.userId == widget.authProvider.currentUserId;
     final bool isAdmin = widget.authProvider.isAdmin;
     final canEditOrDelete = isAdmin ? true : isAuthor;

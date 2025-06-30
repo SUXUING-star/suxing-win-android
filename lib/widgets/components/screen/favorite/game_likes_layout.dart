@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/favorite/game_likes_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';

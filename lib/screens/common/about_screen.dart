@@ -105,7 +105,7 @@ class AboutScreen extends StatelessWidget {
         height: double.infinity,
         errorBuilder: (context, error, stackTrace) {
           return Container(
-            color: theme.colorScheme.surfaceVariant,
+            color: theme.colorScheme.surfaceContainerHighest,
             child: const Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -135,7 +135,7 @@ class AboutScreen extends StatelessWidget {
           const SizedBox(height: 16.0),
           AppText(
             '这个app是我完全一个人制作的个人开发项目，一个专注于分享和交流Galgame的平台，为大家提供游戏下载、评论和交流的空间。',
-            color: theme.textTheme.bodyMedium?.color?.withOpacity(0.8),
+            color: theme.textTheme.bodyMedium?.color?.withSafeOpacity(0.8),
             fontSize: 14,
             textAlign: isDesktop ? TextAlign.start : TextAlign.center,
           ),

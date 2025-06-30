@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/models/user/monthly_checkin_report.dart'; // 月度签到报告模型所需
-import 'package:suxingchahui/models/user/daily_checkin_info.dart'; // 每日签到信息模型所需
+import 'package:suxingchahui/models/user/check_in/monthly_checkin_report.dart'; // 月度签到报告模型所需
+import 'package:suxingchahui/models/user/check_in/daily_checkin_info.dart'; // 每日签到信息模型所需
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件所需
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法所需
 

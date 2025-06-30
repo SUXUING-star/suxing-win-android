@@ -1,6 +1,10 @@
 // lib/widgets/components/screen/profile/layout/desktop/profile_desktop_menu_grid.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/profile/profile_constants.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
@@ -10,12 +14,14 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 class ProfileDesktopMenuGrid extends StatelessWidget {
   final double screenWidth;
   final List<ProfileMenuItem> menuItems;
+  final User? currentUser;
   final WindowStateProvider windowStateProvider;
 
   const ProfileDesktopMenuGrid({
     super.key,
     required this.screenWidth,
     required this.menuItems,
+    required this.currentUser,
     required this.windowStateProvider,
   });
 
@@ -50,7 +56,7 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
                 color: Colors.black87,
               ),
             ),
-            SizedBox(height: 8),
+            const SizedBox(height: 8),
             AppText(
               '管理您的账户和内容',
               style: TextStyle(
@@ -58,7 +64,7 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
                 fontSize: 14,
               ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             Flexible(
               child: GridView.builder(
                 gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
@@ -92,13 +98,6 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
 
     // 为每个菜单项定义独特的颜色方案
 
-    final colorScheme =
-        ProfileConstants.getProfileMenuColorScheme[item.title] ??
-            {
-              'background': Color(0xFFF0F0F0),
-              'icon': Colors.grey.shade700,
-            };
-
     return Card(
       elevation: 1,
       shape: RoundedRectangleBorder(
@@ -106,11 +105,11 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
       ),
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
-        onTap:
-            item.onTap ?? () => NavigationUtils.pushNamed(context, item.route),
+        onTap: item.onTap(context, currentUser) ??
+            () => NavigationUtils.pushNamed(context, item.route),
         child: Container(
           decoration: BoxDecoration(
-            color: colorScheme['background'],
+            color: item.backgroundColor,
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(
@@ -126,21 +125,21 @@ class ProfileDesktopMenuGrid extends StatelessWidget {
                     BoxShadow(
                       color: Colors.grey.shade300,
                       blurRadius: 4,
-                      offset: Offset(0, 2),
+                      offset: const Offset(0, 2),
                     )
                   ],
                 ),
                 child: Icon(
-                  item.icon,
-                  color: colorScheme['icon'],
+                  item.iconData,
+                  color: item.iconColor,
                   size: iconSize,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: AppText(
-                  item.title,
+                  item.textLabel,
                   style: TextStyle(
                     fontSize: fontSize,
                     fontWeight: FontWeight.w500,

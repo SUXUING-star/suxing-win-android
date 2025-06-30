@@ -1,8 +1,8 @@
 // lib/screens/profile/history/history_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/models/post/post.dart'; // 导入帖子模型
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart';

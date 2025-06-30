@@ -1,11 +1,10 @@
 // lib/widgets/components/screen/forum/panel/post_right_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/post/post_tag_stat.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/stats/tag_stat.dart';
 import 'package:suxingchahui/services/main/forum/post_stats_service.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -13,8 +12,8 @@ import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 class PostRightPanel extends StatelessWidget {
   final double panelWidth;
   final List<Post> currentPosts;
-  final PostTag? selectedTag;
-  final Function(PostTag?)? onTagSelected;
+  final String? selectedTag;
+  final Function(String?)? onTagSelected;
 
   const PostRightPanel({
     super.key,
@@ -26,7 +25,7 @@ class PostRightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<TagStat> tagStats =
+    final List<PostTagStat> tagStats =
         PostStatsService.getTagStatistics(currentPosts);
     final int uniqueTagsCount = tagStats.length;
     final int uniqueAuthorsCount =
@@ -167,7 +166,7 @@ class PostRightPanel extends StatelessWidget {
   }
 
   Widget _buildTagsStats(
-      BuildContext context, List<TagStat> tagStats, Color themeColor) {
+      BuildContext context, List<PostTagStat> tagStats, Color themeColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -231,12 +230,10 @@ class PostRightPanel extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: tagStats.map((stat) {
-                  final PostTag currentTagEnum =
-                      PostTagsUtils.tagFromString(stat.name);
-                  final bool isSelected = selectedTag == currentTagEnum;
+                  final bool isSelected = selectedTag == stat.tag;
 
                   return PostTagItem(
-                    tagString: stat.name,
+                    enrichTag: stat.enrichTag,
                     count: stat.count,
                     isSelected: isSelected,
                     onTap: onTagSelected,

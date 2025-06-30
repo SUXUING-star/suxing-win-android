@@ -1,6 +1,6 @@
 // lib/screens/profile/open/open_profile_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart';
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -11,11 +11,11 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_icon_button.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
@@ -130,8 +130,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       final GameListPagination userGamesWithPagination =
           await widget.gameService.getGamesPaginatedWithInfo(
         page: 1,
-        sortBy: 'createTime',
-        sortDesc: true,
+        sortBy: Game.sortByUpdateTime,
         authorId: widget.userId,
       );
 
@@ -158,7 +157,8 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
           if (!_isLoading && _error == null)
             FunctionalIconButton(
               iconBackgroundColor: Colors.white,
-              iconColor:_isGridView ? Colors.blue.shade500 : Colors.green.shade400,
+              iconColor:
+                  _isGridView ? Colors.blue.shade500 : Colors.green.shade400,
               icon: _isGridView ? Icons.view_list : Icons.grid_view,
               tooltip: _isGridView ? '列表视图' : '网格视图',
               onPressed: () {
@@ -195,7 +195,7 @@ class _OpenProfileScreenState extends State<OpenProfileScreen>
       );
     }
     if (_targetUser == null) {
-      return CustomErrorWidget(
+      return const CustomErrorWidget(
         errorMessage: "目标用户不存在",
       );
     }

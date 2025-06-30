@@ -2,8 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/models/game/game_detail_param.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/game/game/game_detail_param.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/slide_fade_page_route.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
@@ -418,7 +418,7 @@ class AppRoutes {
           activityDetailParam = arguments;
         } else if (arguments is Map<String, dynamic>) {
           activityDetailParam = ActivityDetailParam.fromJson(arguments);
-        } else if (arguments is UserActivity) {
+        } else if (arguments is Activity) {
           activityDetailParam = ActivityDetailParam(
             activity: arguments,
             activityId: arguments.id,

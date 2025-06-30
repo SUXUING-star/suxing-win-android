@@ -1,7 +1,8 @@
 // lib/widgets/components/screen/profile/experience/dialog/exp_dialog_content.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/models/user/user.dart'; // 导入 User 模型
+import 'package:suxingchahui/models/user/task/daily_task.dart';
+import 'package:suxingchahui/models/user/task/today_progress_summary.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入 User 模型
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
@@ -9,7 +10,7 @@ import 'exp_task_card.dart';
 
 class ExpDialogContent extends StatelessWidget {
   final TodayProgressSummary todayProgress;
-  final List<Task> tasks;
+  final List<DailyTask> tasks;
   final User currentUser;
   final bool isDesktop;
 

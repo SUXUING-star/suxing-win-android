@@ -5,13 +5,14 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
+import 'package:suxingchahui/models/post/enrich_post_tag.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // 帖子标签项组件
 
 /// `PostTagsRow` 类：显示帖子标签行的无状态组件。
 ///
 /// 该组件负责在水平滚动视图中显示帖子标签。
 class PostTagsRow extends StatelessWidget {
-  final List<String> tags; // 标签字符串列表
+  final List<EnrichPostTag> tags; // 标签字符串列表
   final bool isAndroidPortrait; // 是否为 Android 竖屏模式，控制尺寸
 
   /// 构造函数。
@@ -41,13 +42,13 @@ class PostTagsRow extends StatelessWidget {
       scrollDirection: Axis.horizontal, // 设置为水平滚动
       child: Row(
         // 行布局，用于排列标签项
-        children: tags.map((tagString) {
+        children: tags.map((t) {
           // 遍历标签字符串列表
           return Padding(
             padding: const EdgeInsets.only(right: 6.0), // 标签之间的右侧间距
             child: PostTagItem(
               // 帖子标签项组件
-              tagString: tagString, // 标签字符串
+              enrichTag: t, // 标签字符串
               isMini: true, // 使用迷你模式
               isSelected: true, // 设置为选中状态
             ),

@@ -1,7 +1,7 @@
 // lib/screens/profile/mygames/my_games_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
@@ -9,15 +9,15 @@ import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/mygames/my_games_layout.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
+import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
-import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 
@@ -48,6 +48,11 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
   String _errorMessage = '';
   bool _hasInitializedDependencies = false;
 
+  bool _isRefreshing = false;
+  DateTime? _lastRefreshTime;
+
+  static const Duration _minRefreshInterval = Duration(seconds: 30);
+
   @override
   void initState() {
     super.initState();
@@ -59,7 +64,7 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     super.didChangeDependencies();
     if (!_hasInitializedDependencies) {
       _hasInitializedDependencies = true;
-      _loadInitialGames();
+      _loadGames();
     }
   }
 
@@ -70,7 +75,12 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     super.dispose();
   }
 
-  Future<void> _loadInitialGames() async {
+  /// 加载游戏
+  ///
+  Future<void> _loadGames({
+    bool forceRefresh = false, // 这个是手动刷新
+    int pageToFetch = 1,
+  }) async {
     if (!mounted) return;
     setState(() {
       _isLoading = true;
@@ -93,7 +103,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
 
       final GameListPagination result =
           await widget.gameService.getMyGamesWithInfo(
-        page: 1,
+        page: pageToFetch,
+        forceRefresh: forceRefresh,
       );
 
       if (!mounted) return;
@@ -114,6 +125,51 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
   }
 
+  /// 手动刷新
+  ///
+  Future<void> _refreshGames({
+    bool needCheck = true,
+  }) async {
+    if (!mounted || _isRefreshing) return;
+
+    final now = DateTime.now();
+
+    if (needCheck) {
+      // 需要进行时间间隔检查时
+      if (_lastRefreshTime != null &&
+          now.difference(_lastRefreshTime!) < _minRefreshInterval) {
+        // 时间间隔不足时
+        if (mounted) {
+          AppSnackBar.showWarning(
+              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
+        }
+        return; // 返回
+      }
+    }
+
+    setState(() {
+      _isRefreshing = true;
+      _lastRefreshTime = now;
+    });
+    try {
+      await _loadGames(
+        forceRefresh: true,
+        pageToFetch: _currentPage,
+      );
+      setState(() {
+        _isRefreshing = false;
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isRefreshing = false;
+        });
+      }
+    }
+  }
+
+  /// 加载更多
+  ///
   Future<void> _loadMoreGames() async {
     if (!widget.authProvider.isLoggedIn) return;
     if (_isFetchingMore ||
@@ -158,45 +214,6 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
   }
 
-  Future<void> _handleResubmit(Game game) async {
-    if (!mounted) return;
-    if (!widget.authProvider.isLoggedIn) {
-      AppSnackBar.showLoginRequiredSnackBar(context);
-      return;
-    }
-    if (game.authorId != widget.authProvider.currentUserId) {
-      AppSnackBar.showPermissionDenySnackBar();
-      return;
-    }
-    await CustomConfirmDialog.show(
-      context: context,
-      title: '确认重新提交？',
-      message: '您确定要将《${game.title}》重新提交审核吗？',
-      confirmButtonText: '重新提交',
-      confirmButtonColor: Colors.blue,
-      iconData: Icons.help_outline,
-      iconColor: Colors.blue,
-      onConfirm: () async {
-        await _executeResubmit(game);
-      },
-    );
-  }
-
-  Future<void> _executeResubmit(Game game) async {
-    if (game.approvalStatus != Game.gameStatusRejected) return;
-
-    try {
-      await widget.gameService.resubmitGame(game);
-      if (!mounted) return;
-
-      AppSnackBar.showSuccess('《${game.title}》已重新提交审核');
-      await _loadInitialGames();
-    } catch (e) {
-      if (!mounted) return;
-      AppSnackBar.showError('重新提交失败: ${e.toString()}');
-    }
-  }
-
   void _showReviewCommentDialog(String comment) {
     CustomInfoDialog.show(
       context: context,
@@ -208,6 +225,8 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     );
   }
 
+  /// 添加游戏
+  ///
   void _handleAddGame() {
     if (!widget.authProvider.isLoggedIn) {
       AppSnackBar.showLoginRequiredSnackBar(context);
@@ -215,62 +234,104 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
     }
     NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
       if (result == true && mounted) {
-        _loadInitialGames();
+        _loadGames(pageToFetch: 1, forceRefresh: true); // 添加不知道是哪页
       }
     });
   }
 
-  Widget _buildFab() {
-    return GenericFloatingActionButton(
-      onPressed: _handleAddGame,
-      icon: Icons.add,
-      tooltip: '提交新游戏',
+  Future<void> _handleEditOrResubmit(Game game) async {
+    if (!mounted) return;
+    if (!widget.authProvider.isLoggedIn) {
+      AppSnackBar.showLoginRequiredSnackBar(context);
+      return;
+    }
+
+    // 直接跳转到 EditGameScreen，并把游戏ID传过去。
+    final result = await Navigator.of(context).pushNamed(
+      AppRoutes.editGame,
+      arguments: game.id, // 把 gameId 作为参数传递
+    );
+
+    // 从编辑页面返回后，如果返回了 true，说明有变更，需要刷新列表。
+    if (result == true && mounted) {
+      // 为了最快看到反馈，不检查刷新间隔。
+      await _loadGames(
+          pageToFetch: _currentPage, forceRefresh: true); // 编辑肯定是当前页码
+    }
+  }
+
+  String _makeHeroTag(
+      {required bool isDesktopLayout, required String mainCtx}) {
+    final ctxDevice = isDesktopLayout ? 'desktop' : 'mobile';
+    const ctxScreen = 'my_games';
+    return '${ctxScreen}_${ctxDevice}_${mainCtx}_${widget.authProvider.currentUserId}';
+  }
+
+  Widget _buildFab(bool isDesktopLayout) {
+    return FloatingActionButtonGroup(
+      toggleButtonHeroTag: 'my_games_heroTags',
+      children: [
+        GenericFloatingActionButton(
+          onPressed: _handleAddGame,
+          icon: Icons.add,
+          tooltip: '提交新游戏',
+          heroTag:
+              _makeHeroTag(isDesktopLayout: isDesktopLayout, mainCtx: 'add'),
+        ),
+        GenericFloatingActionButton(
+          isLoading: _isRefreshing,
+          onPressed: () => _refreshGames(needCheck: true),
+          icon: Icons.refresh_rounded,
+          tooltip: '刷新',
+          heroTag: _makeHeroTag(
+              isDesktopLayout: isDesktopLayout, mainCtx: 'refresh'),
+        ),
+      ],
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: const CustomAppBar(title: '我的游戏'),
-      body: StreamBuilder<User?>(
-        stream: widget.authProvider.currentUserStream,
-        initialData: widget.authProvider.currentUser,
-        builder: (context, authSnapshot) {
-          final currentUser = authSnapshot.data;
+    return LazyLayoutBuilder(
+      windowStateProvider: widget.windowStateProvider,
+      builder: (context, constraints) {
+        final screenWidth = constraints.maxWidth;
+        final isDesktopLayout = DeviceUtils.isDesktopInThisWidth(screenWidth);
+        return Scaffold(
+          appBar: const CustomAppBar(title: '我的游戏'),
+          body: StreamBuilder<User?>(
+            stream: widget.authProvider.currentUserStream,
+            initialData: widget.authProvider.currentUser,
+            builder: (context, authSnapshot) {
+              final currentUser = authSnapshot.data;
 
-          if (currentUser == null) {
-            return const LoginPromptWidget();
-          }
+              if (currentUser == null) {
+                return const LoginPromptWidget();
+              }
 
-          if (_isLoading && _myGames.isEmpty && !_hasError) {
-            return const FadeInItem(
-              // 全屏加载组件
-              child: LoadingWidget(
-                isOverlay: true,
-                message: "少女祈祷中...",
-                overlayOpacity: 0.4,
-                size: 36,
-              ),
-            ); //
-          }
+              if (_isLoading && _myGames.isEmpty && !_hasError) {
+                return const FadeInItem(
+                  // 全屏加载组件
+                  child: LoadingWidget(
+                    isOverlay: true,
+                    message: "少女祈祷中...",
+                    overlayOpacity: 0.4,
+                    size: 36,
+                  ),
+                ); //
+              }
 
-          if (_hasError && _myGames.isEmpty) {
-            return CustomErrorWidget(
-              onRetry: _loadInitialGames,
-              errorMessage:
-                  _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',
-            );
-          }
+              if (_hasError && _myGames.isEmpty) {
+                return CustomErrorWidget(
+                  onRetry: () => _loadGames(forceRefresh: true),
+                  errorMessage:
+                      _errorMessage.isNotEmpty ? _errorMessage : '加载失败，请点击重试',
+                );
+              }
 
-          return RefreshIndicator(
-            onRefresh: _loadInitialGames,
-            child: LazyLayoutBuilder(
-              windowStateProvider: widget.windowStateProvider,
-              builder: (context, constraints) {
-                final screenWidth = constraints.maxWidth;
-                final isDesktopLayout =
-                    DeviceUtils.isDesktopInThisWidth(screenWidth);
-                return MyGamesLayout(
+              return RefreshIndicator(
+                onRefresh: () => _refreshGames(needCheck: true),
+                child: MyGamesLayout(
                   myGames: _myGames,
                   screenWidth: screenWidth,
                   isDesktopLayout: isDesktopLayout,
@@ -279,16 +340,18 @@ class _MyGamesScreenState extends State<MyGamesScreen> {
                   scrollController: _scrollController,
                   onLoadMore: _loadMoreGames,
                   onAddGame: _handleAddGame,
-                  onResubmit: _handleResubmit,
+                  onEdit: _handleEditOrResubmit,
                   onShowReviewComment: _showReviewCommentDialog,
                   authProvider: widget.authProvider,
-                );
-              },
-            ),
-          );
-        },
-      ),
-      floatingActionButton: widget.authProvider.isLoggedIn ? _buildFab() : null,
+                ),
+              );
+            },
+          ),
+          floatingActionButton: widget.authProvider.isLoggedIn
+              ? _buildFab(isDesktopLayout)
+              : null,
+        );
+      },
     );
   }
 }

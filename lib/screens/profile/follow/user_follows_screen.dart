@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -137,7 +137,7 @@ class _UserFollowsScreenState extends State<UserFollowsScreen>
                 tabFollowingCount = followingIDsForLayout.length;
                 tabFollowerCount = followerIDsForLayout.length;
 
-                bodyContent = FollowsLayout(
+                bodyContent = FollowScreenLayout(
                   screenWidth: screenWidth,
                   currentUser: widget.authProvider.currentUser,
                   isDesktopLayout: isDesktopLayout,

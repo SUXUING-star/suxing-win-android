@@ -1,9 +1,8 @@
 // lib/widgets/components/screen/activity/panel/hot_activities_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/activity_stats.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/activity/activity_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -30,7 +29,7 @@ class HotActivitiesPanel extends StatefulWidget {
 
 class _HotActivitiesPanelState extends State<HotActivitiesPanel>
     with AutomaticKeepAliveClientMixin {
-  List<UserActivity> _hotActivities = [];
+  List<Activity> _hotActivities = [];
   ActivityStats _activityStats = ActivityStats.empty();
   bool _isLoading = true;
   bool _hasError = false;
@@ -112,8 +111,6 @@ class _HotActivitiesPanelState extends State<HotActivitiesPanel>
       hasError: _hasError,
       errorMessage: _errorMessage,
       onRefresh: _loadData,
-      getActivityTypeName: ActivityTypeUtils.getActivityTypeText,
-      getActivityTypeColor: ActivityTypeUtils.getActivityTypeBackgroundColor,
       panelWidth: panelWidth,
     );
   }

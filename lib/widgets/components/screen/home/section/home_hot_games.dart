@@ -9,7 +9,7 @@ import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart'; /
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
-import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
+import 'package:suxingchahui/models/game/game/game.dart'; // 游戏模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
 import 'home_game_card.dart'; // 主页游戏卡片组件
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 设备工具类

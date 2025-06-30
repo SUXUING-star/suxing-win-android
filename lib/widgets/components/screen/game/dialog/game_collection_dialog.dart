@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/models/game/game_collection_form_data.dart'; // 游戏收藏表单数据模型所需
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/models/game/collection/collection_form_data.dart'; // 游戏收藏表单数据模型所需
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型所需
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider 所需
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 设备工具类所需
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导航工具类所需
@@ -117,9 +117,9 @@ class GameCollectionDialog extends StatelessWidget {
                           onRemove: () {
                             // 移除回调
                             NavigationUtils.of(context).pop({
-                              GameCollectionFormData(
+                              CollectionFormData.remove(
                                 gameId: gameId,
-                                action: GameCollectionFormData
+                                action: CollectionFormData
                                     .removeCollectionAction,
                               ),
                             });
@@ -127,17 +127,19 @@ class GameCollectionDialog extends StatelessWidget {
 
                           onSubmit: (status, notes, review, rating) {
                             // 提交回调
-                            NavigationUtils.of(context).pop({
-                              GameCollectionFormData(
-                                gameId: gameId,
-                                action:
-                                    GameCollectionFormData.setCollectionAction,
-                                status: status,
-                                notes: notes,
-                                review: review,
-                                rating: rating,
-                              )
-                            });
+                            NavigationUtils.of(context).pop(
+                              {
+                                CollectionFormData.set(
+                                  gameId: gameId,
+                                  action: CollectionFormData
+                                      .setCollectionAction,
+                                  status: status,
+                                  notes: notes,
+                                  review: review,
+                                  rating: rating,
+                                )
+                              },
+                            );
                           },
                         ),
                       ],

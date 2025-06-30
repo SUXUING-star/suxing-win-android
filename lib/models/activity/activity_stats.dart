@@ -1,36 +1,7 @@
 // lib/models/activity/activity_stats.dart
 import 'package:flutter/foundation.dart'; // @immutable 原来就有，保留
-import 'package:suxingchahui/models/util_json.dart';
-
-/// 单个活动类型的统计数据。
-@immutable
-class ActivityTypeCount {
-  // --- JSON 字段键常量 ---
-  static const String jsonKeyType = 'type';
-  static const String jsonKeyCount = 'count';
-
-  /// 活动类型，保持为 [String] 以兼容现有工具类。
-  final String type;
-
-  /// 该类型的活动数量。
-  final int count;
-
-  const ActivityTypeCount({
-    required this.type,
-    required this.count,
-  });
-
-  /// 复制并更新 ActivityTypeCount 对象部分字段。
-  ActivityTypeCount copyWith({
-    String? type,
-    int? count,
-  }) {
-    return ActivityTypeCount(
-      type: type ?? this.type,
-      count: count ?? this.count,
-    );
-  }
-}
+import 'package:suxingchahui/models/activity/activity_type_count.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 /// 整体的活动统计数据模型。
 ///
@@ -55,16 +26,10 @@ class ActivityStats {
   /// 从 JSON Map 创建 [ActivityStats] 实例。
   factory ActivityStats.fromJson(Map<String, dynamic> json) {
     List<ActivityTypeCount> countsList = [];
-
-    // 业务逻辑: 后端返回的 `countsByType` 是一个 Map<String, int> 结构，
-    // 这里需要遍历并转换为强类型的 List<ActivityTypeCount> 供前端使用。
     if (json[jsonKeyCountsByType] is Map<String, dynamic>) {
       countsList = (json[jsonKeyCountsByType] as Map<String, dynamic>)
           .entries
-          .map((entry) => ActivityTypeCount(
-                type: entry.key, // key is the activity type string
-                count: UtilJson.parseIntSafely(entry.value),
-              ))
+          .map((entry) => ActivityTypeCount.fromJson(entry))
           .toList();
     }
 

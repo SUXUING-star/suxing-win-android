@@ -3,7 +3,8 @@
 import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 @immutable
 class PostListPagination {
@@ -90,7 +91,7 @@ class PostListPagination {
 
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
-      jsonKeyPosts: posts.map((post) => post.toJson()).toList(), // 使用常量
+      jsonKeyPosts: posts.toListJson(), // 使用常量
       jsonKeyPagination: pagination.toJson(), // 使用常量
     };
     if (tag != null) {

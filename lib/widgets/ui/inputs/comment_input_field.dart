@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态服务
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类

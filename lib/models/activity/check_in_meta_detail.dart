@@ -1,6 +1,6 @@
 // lib/models/activity/check_in_meta_detail.dart
 
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 class CheckInActivityDetails {
   // --- JSON 字段键常量 ---

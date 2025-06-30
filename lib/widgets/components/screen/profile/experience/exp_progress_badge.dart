@@ -1,8 +1,10 @@
 // lib/widgets/components/screen/profile/experience/exp_progress_badge.dart
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/task/daily_progress_data.dart';
+import 'package:suxingchahui/models/user/task/daily_task.dart';
+import 'package:suxingchahui/models/user/task/today_progress_summary.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'exp_badge_widget.dart';
@@ -41,7 +43,7 @@ class ExpProgressBadge extends StatelessWidget {
 
     final User userToShow = currentUser;
     // 从 dailyProgressData 获取 tasks 和 todayProgress
-    final List<Task> tasks = dailyProgressData!.tasks;
+    final List<DailyTask> tasks = dailyProgressData!.tasks;
     final TodayProgressSummary todayProgress = dailyProgressData!.todayProgress;
 
     BaseInputDialog.show<void>(
@@ -82,7 +84,7 @@ class ExpProgressBadge extends StatelessWidget {
 
     if (expDataError != null || dailyProgressData == null) {
       return InkWell(
-        onTap: onRefreshExpData(true), // 点击重试
+        onTap: () => onRefreshExpData(true), // 点击重试
         child: Tooltip(
           message: expDataError ?? "加载失败，点击重试",
           child: Icon(

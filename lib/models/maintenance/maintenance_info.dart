@@ -1,12 +1,25 @@
 // lib/models/maintenance/maintenance_info.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
-@immutable
 class MaintenanceInfo {
   static const String upgradeType = 'upgrade';
   static const String emergencyType = 'emergency';
   static const String scheduledType = 'scheduled';
+
+  static const List<String> maintenanceTypes = [
+    upgradeType,
+    emergencyType,
+    scheduledType,
+  ];
+
+  static const jsonKeyIsActive = 'isActive';
+  static const jsonKeyStartTime = 'startTime';
+  static const jsonKeyEndTime = 'endTime';
+  static const jsonKeyMessage = 'message';
+  static const jsonKeyAllowLogin = 'allowLogin';
+  static const jsonKeyForceLogout = 'forceLogout';
+  static const jsonKeyType = 'maintenanceType';
 
   final bool isActive;
   final DateTime startTime;
@@ -14,68 +27,76 @@ class MaintenanceInfo {
   final String message;
   final bool allowLogin;
   final bool forceLogout;
-  final String maintenanceType;
+  final String type;
+  IconData iconData;
+  Color iconColor;
+  String label;
 
-  const MaintenanceInfo({
+  MaintenanceInfo({
     required this.isActive,
     required this.startTime,
     required this.endTime,
     required this.message,
     required this.allowLogin,
     required this.forceLogout,
-    required this.maintenanceType,
-  });
+    required this.type,
+  })  : iconData = getMaintenanceIcon(type),
+        iconColor = getMaintenanceIconColor(type),
+        label = getMaintenanceTitle(type);
 
   factory MaintenanceInfo.fromJson(Map<String, dynamic> json) {
     return MaintenanceInfo(
-      isActive: UtilJson.parseBoolSafely(json['is_active']),
-      startTime: UtilJson.parseDateTime(json['start_time']),
-      endTime: UtilJson.parseDateTime(json['end_time']),
+      isActive: UtilJson.parseBoolSafely(json[jsonKeyIsActive]),
+      startTime: UtilJson.parseDateTime(json[jsonKeyStartTime]),
+      endTime: UtilJson.parseDateTime(json[jsonKeyEndTime]),
       // 业务逻辑: 如果后端未提供 message，则使用预设的默认消息
-      message: UtilJson.parseStringSafely(json['message'] ?? '系统正在维护中，请稍后再试。'),
-      allowLogin: UtilJson.parseBoolSafely(json['allow_login']),
-      forceLogout: UtilJson.parseBoolSafely(json['force_logout']),
+      message:
+          UtilJson.parseStringSafely(json[jsonKeyMessage] ?? '系统正在维护中，请稍后再试。'),
+      allowLogin: UtilJson.parseBoolSafely(json[jsonKeyAllowLogin]),
+      forceLogout: UtilJson.parseBoolSafely(json[jsonKeyForceLogout]),
       // 业务逻辑: 如果后端未提供维护类型，则默认为 'scheduled'
-      maintenanceType:
-          UtilJson.parseStringSafely(json['maintenance_type'] ?? 'scheduled'),
+      type: UtilJson.parseStringSafely(json[jsonKeyType] ?? scheduledType),
     );
   }
 
- Map<String,dynamic> toRequestJson(){
+  Map<String, dynamic> toRequestJson() {
     return {
-      'is_active': isActive,
-      'start_time': startTime.toIso8601String(),
-      'end_time': endTime.toIso8601String(),
-      'message': message,
-      'allow_login': allowLogin,
-      'force_logout': forceLogout,
-      'maintenance_type': maintenanceType,
+      jsonKeyIsActive: isActive,
+      jsonKeyStartTime: startTime.toIso8601String(),
+      jsonKeyEndTime: endTime.toIso8601String(),
+      jsonKeyMessage: message,
+      jsonKeyAllowLogin: allowLogin,
+      jsonKeyForceLogout: forceLogout,
+      jsonKeyType: type,
     };
   }
 
-  static Map<String, dynamic> getMaintenanceVisuals(String maintenanceType) {
-    switch (maintenanceType) {
+  static IconData getMaintenanceIcon(String type) {
+    switch (type) {
       case emergencyType:
-        return {
-          'icon': Icons.warning_amber_rounded,
-          'color': Colors.red,
-        };
+        return Icons.warning_amber_rounded;
       case upgradeType:
-        return {
-          'icon': Icons.system_update_alt,
-          'color': Colors.blue,
-        };
+        return Icons.system_update_alt;
       case scheduledType:
       default:
-        return {
-          'icon': Icons.schedule,
-          'color': Colors.orange,
-        };
+        return Icons.schedule;
     }
   }
 
-  static String getMaintenanceTitle(String maintenanceType) {
-    switch (maintenanceType) {
+  static Color getMaintenanceIconColor(String type) {
+    switch (type) {
+      case emergencyType:
+        return Colors.red;
+      case upgradeType:
+        return Colors.blue;
+      case scheduledType:
+      default:
+        return Colors.orange;
+    }
+  }
+
+  static String getMaintenanceTitle(String type) {
+    switch (type) {
       case emergencyType:
         return '系统紧急维护中';
       case upgradeType:

@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文�
 class LoadingWidget extends StatefulWidget {
   final String? message; // 加载消息文本
   final Color? color; // 加载指示器颜色
-  final double size; // 加载指示器大小
+  final double? size; // 加载指示器大小
   final bool isOverlay; // 是否为覆盖层加载模式
   final bool isDismissible; // 覆盖层是否可点击关闭
   final Widget? child; // 覆盖层模式下被覆盖的子组件
@@ -25,6 +25,7 @@ class LoadingWidget extends StatefulWidget {
   final EdgeInsets overlayCardPadding; // 覆盖层卡片内边距
   final double overlayCardBorderRadius; // 覆盖层卡片圆角半径
   final double overlayCardWidth; // 覆盖层卡片宽度
+  final bool isSmall;
 
   /// 构造函数。
   ///
@@ -44,8 +45,9 @@ class LoadingWidget extends StatefulWidget {
     super.key,
     this.message,
     this.color,
-    this.size = 16.0,
+    this.size,
     this.isOverlay = false,
+    this.isSmall = true,
     this.isDismissible = false,
     this.child,
     this.overlayOpacity = 0.4,
@@ -156,28 +158,34 @@ class LoadingWidget extends StatefulWidget {
 class _LoadingWidgetState extends State<LoadingWidget> {
   @override
   Widget build(BuildContext context) {
+    final double size = widget.size == null
+        ? widget.isSmall
+            ? 16.0
+            : 32.0
+        : widget.size!;
     final Color loadingColor =
         widget.color ?? Theme.of(context).primaryColor; // 获取加载指示器颜色
     if (!widget.isOverlay) {
       // 根据模式选择构建方法
-      return _buildInlineLoading(loadingColor);
+      return _buildInlineLoading(loadingColor, size);
     }
-    return _buildOverlayLoading(loadingColor);
+    return _buildOverlayLoading(loadingColor, size);
   }
 
   /// 构建内联加载组件。
   ///
   /// [loadingColor]：加载指示器颜色。
-  Widget _buildInlineLoading(Color loadingColor) {
+  Widget _buildInlineLoading(Color loadingColor, double size) {
     final Color textColor = Theme.of(context).textTheme.bodyMedium?.color ??
         Colors.grey[600]!; // 获取文本颜色
+
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min, // 列主轴尺寸最小化以适应内容
         children: [
           AppLoadingAnimation(
             // 加载动画组件
-            size: widget.size,
+            size: size,
             color: loadingColor,
           ),
           if (widget.message != null && widget.message!.isNotEmpty) ...[
@@ -201,7 +209,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
   /// 构建覆盖层加载组件。
   ///
   /// [loadingColor]：加载指示器颜色。
-  Widget _buildOverlayLoading(Color loadingColor) {
+  Widget _buildOverlayLoading(Color loadingColor, double size) {
     Widget overlayContent = Material(
       type: MaterialType.transparency, // 材料类型为透明
       child: Container(
@@ -229,7 +237,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
                   child: Opacity(
                     // 透明度
                     opacity: value, // 透明度值
-                    child: _buildLoadingCard(loadingColor), // 加载卡片内容
+                    child: _buildLoadingCard(loadingColor, size), // 加载卡片内容
                   ),
                 );
               },
@@ -254,7 +262,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
   /// 构建加载卡片。
   ///
   /// [loadingColor]：加载指示器颜色。
-  Widget _buildLoadingCard(Color loadingColor) {
+  Widget _buildLoadingCard(Color loadingColor, double size) {
     final Color cardBgColor =
         widget.overlayCardColor ?? Theme.of(context).cardColor; // 获取卡片背景色
     final Color textColor = widget.overlayTextColor ??
@@ -283,7 +291,7 @@ class _LoadingWidgetState extends State<LoadingWidget> {
         children: [
           AppLoadingAnimation(
             // 加载动画组件
-            size: widget.size,
+            size: size,
             color: loadingColor,
           ),
           if (widget.message != null && widget.message!.isNotEmpty) ...[

@@ -7,8 +7,8 @@ library;
 import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:suxingchahui/constants/common/app_bar_actions.dart'; // 导入 AppBar 动作常量
-import 'package:suxingchahui/constants/post/post_constants.dart'; // 导入帖子常量
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
+import 'package:suxingchahui/models/post/enrich_post_tag.dart';
 import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入帖子列表分页模型
 import 'package:suxingchahui/providers/post/post_list_filter_provider.dart'; // 导入帖子列表筛选 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
@@ -80,8 +80,8 @@ class PostListScreen extends StatefulWidget {
 /// 管理数据加载、筛选、分页、缓存监听和 UI 状态。
 class _PostListScreenState extends State<PostListScreen>
     with WidgetsBindingObserver {
-  final List<PostTag> _tags = PostConstants.availablePostTags; // 可用标签列表
-  PostTag? _selectedTag; // 当前选中的标签
+  final List<EnrichPostTag> _tags = EnrichPostTag.availableEnrichTags; // 可用标签列表
+  String? _selectedTag; // 当前选中的标签
   List<Post>? _posts; // 帖子列表数据
   String? _errorMessage; // 错误消息
 
@@ -147,7 +147,7 @@ class _PostListScreenState extends State<PostListScreen>
       _currentUserId = widget.authProvider.currentUserId; // 获取当前用户ID
 
       final providerTagString = widget
-          .postListFilterProvider.selectedTagString; // 获取 Provider 中的标签字符串
+          .postListFilterProvider.selectedTag; // 获取 Provider 中的标签字符串
       final providerTagWasSet =
           widget.postListFilterProvider.tagHasBeenSet; // 获取 Provider 中标签是否已设置标记
 
@@ -158,19 +158,17 @@ class _PostListScreenState extends State<PostListScreen>
         initialTagString = providerTagString; // 使用 Provider 中的标签
         widget.postListFilterProvider.resetTagFlag(); // 重置 Provider 标签标记
       } else if (widget.tag != null) {
+        if (_selectedTag != null && _selectedTag!.isAllTag) {
+          // "other" 标签特殊处理
+          _selectedTag = null; // 无效的 "other" 设为 null
+        }
         // 否则使用 widget 传入的标签
         initialTagString = widget.tag;
       }
 
       if (initialTagString != null) {
         // 初始标签字符串非空时
-        _selectedTag =
-            PostTagsUtils.tagFromString(initialTagString); // 转换为 PostTag
-        if (_selectedTag == PostTag.other &&
-            initialTagString != PostTag.other.displayText) {
-          // "other" 标签特殊处理
-          _selectedTag = null; // 无效的 "other" 设为 null
-        }
+        _selectedTag = initialTagString; // 转换为 PostTag
       } else {
         _selectedTag = null; // 否则设为 null
       }
@@ -204,14 +202,7 @@ class _PostListScreenState extends State<PostListScreen>
     }
     if (widget.tag != oldWidget.tag && // widget.tag 变化且 Provider 标签未设置时
         !widget.postListFilterProvider.tagHasBeenSet) {
-      PostTag? newTagFromWidget = widget.tag != null
-          ? PostTagsUtils.tagFromString(widget.tag!)
-          : null; // 从 widget.tag 获取新标签
-      if (newTagFromWidget == PostTag.other &&
-          widget.tag != PostTag.other.displayText) {
-        // "other" 标签特殊处理
-        newTagFromWidget = null;
-      }
+      String? newTagFromWidget = widget.tag;
       if (_selectedTag != newTagFromWidget) {
         // 选中标签变化时
         _onTagSelected(newTagFromWidget,
@@ -280,7 +271,7 @@ class _PostListScreenState extends State<PostListScreen>
           _needsRefresh = false; // 重置刷新标记
         } else if (_isInitialized && _posts == null && !_isLoadingData) {
           // 已初始化但无数据且未加载数据时
-          _loadPosts(page: _currentPage, isRefresh: true); // 加载帖子数据
+          _loadPosts(pageToFetch: _currentPage, isRefresh: true); // 加载帖子数据
         }
       } else {
         // 变为不可见时
@@ -310,10 +301,12 @@ class _PostListScreenState extends State<PostListScreen>
     if (_isLoadingData &&
         _lastLoadingTime != null &&
         now.difference(_lastLoadingTime!) > _maxLoadingDuration) {
-      setState(() {
-        _lastLoadingTime = null;
-        _isLoadingData = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lastLoadingTime = null;
+          _isLoadingData = false;
+        });
+      }
     }
   }
 
@@ -326,22 +319,20 @@ class _PostListScreenState extends State<PostListScreen>
       // 启动新的计时器
       if (!mounted || !_isVisible) return; // 组件未挂载或不可见时返回
 
-      final providerTagString =
-          widget.postListFilterProvider.selectedTagString; // 获取 Provider 中的标签
+      final providerTag =
+          widget.postListFilterProvider.selectedTag; // 获取 Provider 中的标签
       final bool providerTagWasSet =
           widget.postListFilterProvider.tagHasBeenSet; // 标签是否已设置
 
       if (providerTagWasSet) {
         // 标签已设置时
-        PostTag? newTagFromProvider; // 从 Provider 获取的新标签
-        if (providerTagString != null) {
-          // 标签字符串非空时
-          newTagFromProvider =
-              PostTagsUtils.tagFromString(providerTagString); // 转换为 PostTag
-          if (newTagFromProvider == PostTag.other &&
-              providerTagString != PostTag.other.displayText) {
-            // "other" 标签特殊处理
+        String? newTagFromProvider; // 从 Provider 获取的新标签
+        if (providerTag != null) {
+          if (providerTag.isAllTag) {
             newTagFromProvider = null;
+          } else {
+            // 标签字符串非空时
+            newTagFromProvider = providerTag; // 转换为 PostTag
           }
         } else {
           newTagFromProvider = null; // 否则设为 null
@@ -360,12 +351,12 @@ class _PostListScreenState extends State<PostListScreen>
 
   /// 加载帖子数据。
   ///
-  /// [page]：要加载的页码。
+  /// [pageToFetch]：要加载的页码。
   /// [isInitialLoad]：是否为初始加载。
   /// [isRefresh]：是否为刷新。
   /// [forceRefresh]：是否强制刷新。
   Future<void> _loadPosts({
-    required int page,
+    int pageToFetch = 1,
     bool isInitialLoad = false,
     bool isRefresh = false,
     bool forceRefresh = false,
@@ -390,10 +381,10 @@ class _PostListScreenState extends State<PostListScreen>
     });
 
     try {
-      final String? tagParam = _selectedTag?.displayText; // 标签参数
+      final String? tagParam = _selectedTag; // 标签参数
       final PostListPagination result = await widget.postService.getPostsPage(
         tag: tagParam, // 标签
-        page: page, // 页码
+        page: pageToFetch, // 页码
         forceRefresh: forceRefresh, // 强制刷新
       );
 
@@ -440,7 +431,7 @@ class _PostListScreenState extends State<PostListScreen>
   /// 刷新数据主逻辑。
   ///
   /// [needCheck]：是否需要进行时间间隔检查。
-  Future<void> _refreshData({bool needCheck = true}) async {
+  Future<void> _forceRefreshData({bool needCheck = true}) async {
     if (_isPerformingForumRefresh) {
       // 正在执行刷新时返回
       return;
@@ -489,7 +480,7 @@ class _PostListScreenState extends State<PostListScreen>
       });
 
       await _loadPosts(
-          page: 1, isRefresh: true, forceRefresh: true); // 加载第一页并强制刷新
+          pageToFetch: 1, isRefresh: true, forceRefresh: true); // 加载第一页并强制刷新
 
       if (mounted) {
         // 组件挂载时
@@ -515,10 +506,11 @@ class _PostListScreenState extends State<PostListScreen>
   void _triggerInitialLoad() {
     if (!_isInitialized && !_isLoadingData) {
       // 未初始化且未加载数据时
-      _loadPosts(page: 1, isInitialLoad: true); // 加载第一页
+      _loadPosts(pageToFetch: 1, isInitialLoad: true); // 加载第一页
     } else if (!_isLoadingData && _posts == null) {
       // 已初始化但无数据且未加载数据时
-      _loadPosts(page: 1, isInitialLoad: true, isRefresh: true); // 重新加载并刷新
+      _loadPosts(
+          pageToFetch: 1, isInitialLoad: true, isRefresh: true); // 重新加载并刷新
     }
   }
 
@@ -526,7 +518,7 @@ class _PostListScreenState extends State<PostListScreen>
   ///
   /// 该方法根据当前的筛选条件和页码生成监听标识符，并监听论坛页的缓存变化。
   void _startOrUpdateWatchingCache() {
-    final String tagKey = _selectedTag?.name ?? 'all'; // 标签键
+    final String tagKey = _selectedTag ?? EnrichPostTag.all; // 标签键
     final String newWatchIdentifier = "${tagKey}_$_currentPage"; // 新的监听标识符
     if (_cacheSubscription != null &&
         _currentWatchIdentifier == newWatchIdentifier) {
@@ -538,7 +530,7 @@ class _PostListScreenState extends State<PostListScreen>
     _currentWatchIdentifier = newWatchIdentifier; // 更新监听标识符
 
     try {
-      final String? tagParam = _selectedTag?.displayText; // 标签参数
+      final String? tagParam = _selectedTag; // 标签参数
       _cacheSubscription = widget.postService
           .watchForumPageChanges(
         tag: tagParam,
@@ -614,7 +606,7 @@ class _PostListScreenState extends State<PostListScreen>
           return;
         }
       }
-      _loadPosts(page: _currentPage, isRefresh: true); // 加载帖子数据
+      _loadPosts(pageToFetch: _currentPage, isRefresh: true); // 加载帖子数据
     });
   }
 
@@ -622,7 +614,7 @@ class _PostListScreenState extends State<PostListScreen>
   ///
   /// [newTag]：新选中的标签。
   /// [fromProvider]：是否来自 Provider。
-  void _onTagSelected(PostTag? newTag, {bool fromProvider = false}) {
+  void _onTagSelected(String? newTag, {bool fromProvider = false}) {
     if (_selectedTag == newTag || _isLoadingData) {
       // 选中标签未变化或正在加载时返回
       return;
@@ -642,8 +634,7 @@ class _PostListScreenState extends State<PostListScreen>
 
     if (!fromProvider) {
       // 非来自 Provider 时更新 Provider 状态
-      widget.postListFilterProvider
-          .setTag(newTag?.displayText); // 设置 Provider 标签
+      widget.postListFilterProvider.setTag(newTag); // 设置 Provider 标签
       widget.postListFilterProvider.resetTagFlag(); // 重置 Provider 标签标记
     }
 
@@ -667,7 +658,9 @@ class _PostListScreenState extends State<PostListScreen>
         _errorMessage = null; // 清空错误消息
       });
       _loadPosts(
-          page: _currentPage, isInitialLoad: false, isRefresh: false); // 加载新页
+          pageToFetch: _currentPage,
+          isInitialLoad: false,
+          isRefresh: false); // 加载新页
     }
   }
 
@@ -682,7 +675,7 @@ class _PostListScreenState extends State<PostListScreen>
         _errorMessage = null; // 清空错误消息
       });
       _loadPosts(
-        page: _currentPage,
+        pageToFetch: _currentPage,
         isInitialLoad: false,
         isRefresh: false,
       ); // 加载新页
@@ -708,7 +701,7 @@ class _PostListScreenState extends State<PostListScreen>
         _errorMessage = null; // 清空错误消息
       });
       _loadPosts(
-        page: pageNumber,
+        pageToFetch: pageNumber,
         isInitialLoad: false,
         isRefresh: false,
       ); // 加载指定页
@@ -749,12 +742,12 @@ class _PostListScreenState extends State<PostListScreen>
   }
 
   /// 导航到创建帖子页面。
-  void _navigateToCreatePost() async {
+  Future<void> _navigateToCreatePost() async {
     final result = await NavigationUtils.pushNamed(
         context, AppRoutes.createPost); // 导航到创建帖子页面
     if (result == true && mounted) {
       // 创建成功且组件挂载时
-      _refreshData(); // 刷新数据
+      await _forceRefreshData(); // 刷新数据
     }
   }
 
@@ -784,7 +777,7 @@ class _PostListScreenState extends State<PostListScreen>
         try {
           await widget.postService.deletePost(post); // 调用删除帖子服务
           AppSnackBar.showSuccess('帖子已删除'); // 提示删除成功
-          _refreshData(needCheck: false); // 刷新数据
+          await _loadPosts(isRefresh: true);
         } catch (e) {
           AppSnackBar.showError("操作失败,${e.toString()}");
         }
@@ -814,7 +807,7 @@ class _PostListScreenState extends State<PostListScreen>
 
     if (result == true && mounted) {
       // 编辑成功且组件挂载时
-      _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据
+      _loadPosts(pageToFetch: _currentPage, isRefresh: true); // 刷新当前页数据
     }
   }
 
@@ -836,7 +829,7 @@ class _PostListScreenState extends State<PostListScreen>
       await widget.postService.togglePostLock(post); // 调用切换帖子锁定状态服务
       if (!mounted) return; // 组件未挂载时返回
       AppSnackBar.showSuccess('帖子状态已切换'); // 提示状态已切换
-      await _loadPosts(page: _currentPage, isRefresh: true); // 刷新当前页数据
+      await _loadPosts(isRefresh: true); // 刷新当前页数据
     } catch (e) {
       AppSnackBar.showError("操作失败,${e.toString()}");
     } finally {
@@ -922,7 +915,7 @@ class _PostListScreenState extends State<PostListScreen>
                     child: FunctionalIconButton(
                       icon: AppBarAction.toggleLeftPanel.icon, // 图标
                       buttonBackgroundColor: Colors.white,
-                      onPressed: () => _refreshData(needCheck: true),
+                      onPressed: () => _forceRefreshData(needCheck: true),
                     ),
                   ),
 
@@ -969,7 +962,9 @@ class _PostListScreenState extends State<PostListScreen>
                         AppBarAction.refreshForum.defaultIconColor, // 图标颜色
                     buttonBackgroundColor:
                         AppBarAction.refreshForum.defaultBgColor, // 背景色
-                    onPressed: _isLoadingData ? null : _refreshData, // 点击回调
+                    onPressed: _isLoadingData
+                        ? null
+                        : () => _forceRefreshData(), // 点击回调
                     iconButtonPadding: EdgeInsets.zero, // 内边距
                   ),
                 ),
@@ -986,7 +981,7 @@ class _PostListScreenState extends State<PostListScreen>
                               .createForumPost.defaultIconColor, // 图标颜色
                           buttonBackgroundColor: AppBarAction
                               .createForumPost.defaultBgColor, // 背景色
-                          onPressed: _navigateToCreatePost, // 点击导航到创建帖子页面
+                          onPressed: () => _navigateToCreatePost, // 点击导航到创建帖子页面
                           iconButtonPadding: EdgeInsets.zero, // 内边距
                         ),
                       )
@@ -997,7 +992,7 @@ class _PostListScreenState extends State<PostListScreen>
               children: [
                 if (!_isDesktop) // 移动端显示标签筛选
                   MobileTagFilter(
-                    tags: PostTagsUtils.tagsToStringList(_tags), // 标签列表
+                    tags: _tags, // 标签列表
                     selectedTag: _selectedTag, // 选中标签
                     onTagSelected: _onTagSelected, // 点击标签回调
                   ),
@@ -1033,7 +1028,7 @@ class _PostListScreenState extends State<PostListScreen>
           child: CustomErrorWidget(
         errorMessage: _errorMessage!, // 错误消息
         onRetry: () =>
-            _loadPosts(page: _currentPage, isRefresh: true), // 点击重试加载
+            _loadPosts(pageToFetch: _currentPage, isRefresh: true), // 点击重试加载
         useScaffold: false, // 不使用 Scaffold
       ));
     }
@@ -1150,7 +1145,7 @@ class _PostListScreenState extends State<PostListScreen>
 
     return RefreshIndicator(
       key: ValueKey(_selectedTag), // 唯一键
-      onRefresh: _refreshData, // 下拉刷新回调
+      onRefresh: () => _forceRefreshData(), // 下拉刷新回调
       child: AnimatedContentGrid<Post>(
         items: _posts!, // 帖子列表
         crossAxisCount: cardsPerRow,

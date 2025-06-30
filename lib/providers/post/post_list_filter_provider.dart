@@ -13,7 +13,7 @@ class PostListFilterProvider {
 
   // --- 获取器 ---
   /// 获取当前选中的标签字符串。
-  String? get selectedTagString => _selectedTagString;
+  String? get selectedTag => _selectedTagString;
 
   /// 获取标签是否已被设置的标记。
   bool get tagHasBeenSet => _tagHasBeenSet;

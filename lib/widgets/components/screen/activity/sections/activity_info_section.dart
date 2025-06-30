@@ -1,12 +1,12 @@
 // lib/widgets/components/screen/activity/sections/activity_info_section.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:suxingchahui/constants/activity/activity_constants.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 确保导入模型
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/activity/activity.dart'; // 确保导入模型
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 需要时间格式化
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_header.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/sections/check_in_history_expansion.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -16,7 +16,7 @@ import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 /// 显示活动的基本信息，如作者、类型、时间、点赞/评论数等。
 class ActivityInfoSection extends StatelessWidget {
   /// 要显示的活动对象。
-  final UserActivity activity;
+  final Activity activity;
 
   final UserFollowService followService;
 
@@ -80,7 +80,7 @@ class ActivityInfoSection extends StatelessWidget {
             createTime: activity.createTime,
             updateTime: activity.updateTime,
             isEdited: activity.isEdited,
-            activityType: activity.type,
+            enrichActivityType: activity.enrichActivityType,
             isAlternate: false,
             cardHeight: 1.0,
             onEdit: onEditActivity,
@@ -111,13 +111,12 @@ class ActivityInfoSection extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(top: 6.0),
               child: Text(
-                // 安全地使用 updateTime，虽然理论上 isEdited=true 时它应该存在
-                '编辑于 ${DateTimeFormatter.formatTimeAgo(activity.updateTime)}',
+                '编辑于 ${activity.updateTime.formatTimeAgo()}',
                 style: theme.textTheme.bodySmall
                     ?.copyWith(color: Colors.grey[600]),
               ),
             ),
-          if (activity.type == ActivityTypeConstants.checkIn) // 判断是否为签到活动
+          if (activity.enrichActivityType.isCheckIn) // 判断是否为签到活动
             CheckInHistoryExpansion(activity: activity),
         ],
       ),

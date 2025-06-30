@@ -1,6 +1,6 @@
 // lib/models/common/pagination.dart
 
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 class PaginationData {
   // --- JSON 字段键常量 ---

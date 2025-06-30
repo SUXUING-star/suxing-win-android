@@ -7,33 +7,33 @@ library;
 import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
-import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 导入活动类型常量
 import 'package:suxingchahui/models/activity/activity_comment.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 导入用户活动模型
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/activity/enrich_collapse_mode.dart';
+import 'package:suxingchahui/models/activity/enrich_activity_type.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user_type.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 导入用户关注服务
+import 'package:suxingchahui/utils/dart/func_extension.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_card.dart'; // 导入活动卡片组件
 import 'package:suxingchahui/widgets/components/screen/activity/common/activity_empty_state.dart'; // 导入活动空状态组件
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 导入日期时间格式化工具
 import 'package:suxingchahui/widgets/ui/animation/animated_feed_item.dart'; // 导入动画列表项组件
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 导入用户信息徽章
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 导入加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 
-/// `FeedCollapseMode` 枚举：表示动态流的折叠模式。
-enum FeedCollapseMode {
-  none, // 不折叠
-  byUser, // 按用户折叠
-  byType // 按类型折叠
-}
-
 /// `CollapsibleActivityFeed` 类：可折叠的用户活动动态列表组件。
 ///
 /// 该组件根据指定的折叠模式分组和显示用户活动，支持加载、刷新和交互操作。
 class CollapsibleActivityFeed extends StatefulWidget {
-  final List<UserActivity> activities; // 用户活动列表
+  final List<Activity> activities; // 用户活动列表
   final UserFollowService followService; // 用户关注服务
   final UserInfoService infoService; // 用户信息 Provider
   final InputStateService inputStateService; // 输入状态 Provider
@@ -41,26 +41,25 @@ class CollapsibleActivityFeed extends StatefulWidget {
   final bool isLoading; // 是否正在加载数据
   final bool isLoadingMore; // 是否正在加载更多数据
   final String error; // 错误消息
-  final FeedCollapseMode collapseMode; // 折叠模式
+  final EnrichCollapseMode collapseMode; // 折叠模式
   final bool useAlternatingLayout; // 是否使用交替布局
-  final Function(UserActivity) onActivityTap; // 活动卡片点击回调
-  final Future<void> Function() onRefresh; // 刷新回调
-  final VoidCallback? onLoadMore; // 加载更多回调
+  final Function(Activity) onActivityTap; // 活动卡片点击回调
+  final FutureVoidCallback onRefresh; // 刷新回调
+  final FutureVoidCallback? onLoadMore; // 加载更多回调
 
   final ScrollController scrollController; // 滚动控制器
-  final FutureOr<void> Function(UserActivity activity)?
-      onDeleteActivity; // 删除活动回调
+  final Future<void> Function(Activity activity)? onDeleteActivity; // 删除活动回调
   final Future<bool> Function(String activityId)? onLikeActivity; // 点赞活动回调
   final Future<bool> Function(String activityId)? onUnlikeActivity; // 取消点赞活动回调
-  final FutureOr<ActivityComment?> Function(String activityId, String content)?
+  final Future<ActivityComment?> Function(String activityId, String content)?
       onAddComment; // 添加评论回调
-  final FutureOr<void> Function(String activityId, ActivityComment comment)?
+  final Future<void> Function(String activityId, ActivityComment comment)?
       onDeleteComment; // 删除评论回调
   final Future<bool> Function(String activityId, String commentId)?
       onLikeComment; // 点赞评论回调
   final Future<bool> Function(String activityId, String commentId)?
       onUnlikeComment; // 取消点赞评论回调
-  final VoidCallback? Function(UserActivity activity)? onEditActivity; // 编辑活动回调
+  final Future<void>? Function(Activity activity)? onEditActivity; // 编辑活动回调
 
   /// 构造函数。
   ///
@@ -96,7 +95,7 @@ class CollapsibleActivityFeed extends StatefulWidget {
     this.isLoading = false,
     this.isLoadingMore = false,
     this.error = '',
-    this.collapseMode = FeedCollapseMode.none,
+    this.collapseMode = EnrichCollapseMode.enrichAll,
     this.useAlternatingLayout = true,
     required this.onActivityTap,
     required this.onRefresh,
@@ -169,7 +168,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// [a]：旧列表。
   /// [b]：新列表。
   /// 返回 true 表示列表可能发生变化，否则返回 false。
-  bool _listPossiblyChanged(List<UserActivity> a, List<UserActivity> b) {
+  bool _listPossiblyChanged(List<Activity> a, List<Activity> b) {
     if (a.length != b.length) return true; // 长度不同则变化
     if (a.isEmpty) return false; // 均为空则无变化
     return a.first.id != b.first.id; // 首项ID不同则变化
@@ -180,7 +179,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// 清空现有状态，并根据折叠模式默认展开第一个分组。
   void _initExpandedGroups() {
     _expandedGroups.clear(); // 清空展开状态
-    if (widget.collapseMode == FeedCollapseMode.none) return; // 不折叠模式时返回
+    if (widget.collapseMode.isAll) return; // 不折叠模式时返回
     final groups = _getGroupedActivities(); // 获取分组活动
     if (groups.isNotEmpty) {
       final firstKey = groups.keys.first; // 第一个分组的键
@@ -194,14 +193,14 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// 获取分组后的活动列表。
   ///
   /// 根据折叠模式按用户或按类型分组活动。
-  Map<String, List<UserActivity>> _getGroupedActivities() {
-    if (widget.collapseMode == FeedCollapseMode.none) {
+  Map<String, List<Activity>> _getGroupedActivities() {
+    if (widget.collapseMode.isAll) {
       // 不折叠模式时返回所有活动在一个组中
-      return {'all': widget.activities};
+      return {EnrichCollapseMode.all: widget.activities};
     }
-    final Map<String, List<UserActivity>> grouped = {}; // 分组 Map
+    final Map<String, List<Activity>> grouped = {}; // 分组 Map
     for (final activity in widget.activities) {
-      String key = (widget.collapseMode == FeedCollapseMode.byUser)
+      String key = (widget.collapseMode.isByUser)
           ? (activity.userId)
           : activity.type; // 根据模式获取分组键
       grouped.putIfAbsent(key, () => []).add(activity); // 添加活动到对应分组
@@ -213,35 +212,19 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   ///
   /// [key]：分组键。
   /// 返回分组对应的图标。
-  IconData _getGroupIcon(String key) {
-    if (widget.collapseMode == FeedCollapseMode.byUser) {
-      // 按用户分组时返回人物图标
-      return Icons.person_outline;
-    }
-    return ActivityTypeUtils.getActivityTypeIcon(key); // 按类型分组时返回活动类型图标
-  }
+  IconData _getGroupIcon() => widget.collapseMode.iconData;
 
   /// 获取分组颜色。
   ///
-  /// [key]：分组键。
+  /// [key]：分组键 (可能是 [userId]，也可能是 [mode])。
   /// 返回分组对应的颜色。
   Color _getGroupColor(String key) {
-    if (widget.collapseMode == FeedCollapseMode.byUser) {
-      // 按用户分组时返回随机用户颜色
-      List<Color> userColors = [
-        Colors.blue.shade300,
-        Colors.red.shade300,
-        Colors.green.shade300,
-        Colors.purple.shade300,
-        Colors.orange.shade300,
-        Colors.teal.shade300,
-        Colors.indigo.shade300,
-        Colors.pink.shade300
-      ];
-      return userColors[key.hashCode % userColors.length];
+    if (widget.collapseMode.isByUser) {
+      return EnrichUserGroup.fromUserId(key).backgroundColor;
+    } else {
+      return EnrichActivityType.fromType(key)
+          .backgroundColor; // 按类型分组时返回活动类型背景色
     }
-    return ActivityTypeUtils.getActivityTypeBackgroundColor(
-        key); // 按类型分组时返回活动类型背景色
   }
 
   /// 构建组件。
@@ -273,7 +256,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
     final groupedActivities = _getGroupedActivities(); // 获取分组活动
     return RefreshIndicator(
       onRefresh: widget.onRefresh, // 刷新回调
-      child: widget.collapseMode == FeedCollapseMode.none // 根据折叠模式构建不同 UI
+      child: widget.collapseMode.isAll // 根据折叠模式构建不同 UI
           ? _buildStandardFeed()
           : _buildCollapsibleFeed(groupedActivities),
     );
@@ -339,8 +322,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   ///
   /// [groupedActivities]：分组后的活动列表。
   /// 显示分组后的活动，并支持折叠/展开。
-  Widget _buildCollapsibleFeed(
-      Map<String, List<UserActivity>> groupedActivities) {
+  Widget _buildCollapsibleFeed(Map<String, List<Activity>> groupedActivities) {
     return ListView.builder(
       controller: widget.scrollController, // 滚动控制器
       padding: const EdgeInsets.symmetric(vertical: 8), // 内边距
@@ -372,7 +354,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// 返回分组的头部组件，包含图标、标题和展开/折叠箭头。
   Widget _buildGroupHeader({
     required String groupKey,
-    required List<UserActivity> activities,
+    required List<Activity> activities,
     required bool isExpanded,
     required Color groupColor,
     required IconData groupIcon,
@@ -413,8 +395,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start, // 水平左对齐
                 children: [
-                  if (widget.collapseMode ==
-                      FeedCollapseMode.byUser) // 按用户分组时显示用户信息徽章
+                  if (widget.collapseMode.isByUser) // 按用户分组时显示用户信息徽章
                     UserInfoBadge(
                       key: ValueKey("badge_$groupKey"), // 唯一键
                       targetUserId: groupKey, // 目标用户ID
@@ -431,8 +412,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                     )
                   else // 否则显示活动类型文本
                     Text(
-                      ActivityTypeUtils.getActivityTypeDisplayInfo(groupKey)
-                          .text, // 活动类型显示文本
+                      widget.collapseMode.textLabel,
                       style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 15,
@@ -478,12 +458,12 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// 返回可折叠的分组组件。
   Widget _buildCollapsibleGroup(
     String groupKey,
-    List<UserActivity> activities,
+    List<Activity> activities,
     bool isExpanded,
     int groupIndex,
   ) {
     final Color groupColor = _getGroupColor(groupKey); // 分组颜色
-    final IconData groupIcon = _getGroupIcon(groupKey); // 分组图标
+    final IconData groupIcon = _getGroupIcon(); // 分组图标
 
     final Animation<double> rotationAnimation = Tween(begin: 0.0, end: 0.5)
         .animate(CurvedAnimation(
@@ -544,7 +524,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   ///
   /// [activities]：活动列表。
   /// 返回展开后的活动列表视图。
-  Widget _buildExpandedContent(List<UserActivity> activities) {
+  Widget _buildExpandedContent(List<Activity> activities) {
     return ListView.separated(
       physics: const NeverScrollableScrollPhysics(), // 禁用内部滚动
       shrinkWrap: true, // 根据内容收缩
@@ -599,8 +579,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
   /// [activities]：活动列表。
   /// [groupColor]：分组颜色。
   /// 返回一个包含最新活动简要信息和展开按钮的预览组件。
-  Widget _buildCollapsedPreview(
-      List<UserActivity> activities, Color groupColor) {
+  Widget _buildCollapsedPreview(List<Activity> activities, Color groupColor) {
     if (activities.isEmpty) return const SizedBox.shrink(); // 活动为空时返回空组件
     final latestActivity = activities.first; // 最新活动
     return InkWell(
@@ -608,10 +587,9 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
         // 点击展开分组
         setState(
           () {
-            final String groupKey =
-                (widget.collapseMode == FeedCollapseMode.byUser)
-                    ? (latestActivity.userId)
-                    : latestActivity.type; // 分组键
+            final String groupKey = (widget.collapseMode.isByUser)
+                ? (latestActivity.userId)
+                : latestActivity.type; // 分组键
             _expandedGroups[groupKey] = true; // 展开分组
           },
         );
@@ -632,8 +610,7 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                     borderRadius: BorderRadius.circular(12),
                   ), // 装饰
                   child: Text(
-                    DateTimeFormatter.formatTimeAgo(
-                        latestActivity.createTime), // 格式化时间
+                    latestActivity.createTime.formatTimeAgo(), // 格式化时间
                     style: TextStyle(
                       fontSize: 12,
                       color: groupColor,
@@ -655,8 +632,8 @@ class _CollapsibleActivityFeedState extends State<CollapsibleActivityFeed>
                       Row(
                         children: [
                           Icon(
-                            ActivityTypeUtils.getActivityTypeIcon(
-                                latestActivity.type), // 活动类型图标
+                            latestActivity
+                                .enrichActivityType.iconData, // 活动类型图标
                             size: 14,
                             color: Colors.grey.shade600,
                           ),

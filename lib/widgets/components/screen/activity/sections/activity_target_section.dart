@@ -1,8 +1,8 @@
 // lib/widgets/components/screen/activity/sections/activity_target_section.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/activity/activity_constants.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/components/screen/activity/card/activity_target.dart';
@@ -10,7 +10,7 @@ import 'package:suxingchahui/widgets/components/screen/activity/card/activity_ta
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityTargetSection extends StatelessWidget {
-  final UserActivity activity;
+  final Activity activity;
   final UserFollowService followService;
   final UserInfoService infoService;
   final User? currentUser;
@@ -28,21 +28,9 @@ class ActivityTargetSection extends StatelessWidget {
   // --- 内部方法：构建标题栏 ---
   Widget _buildSectionTitle(BuildContext context) {
     final theme = Theme.of(context);
-    // --- 根据 targetType 确定标题 ---
-    final String title;
-    switch (activity.targetType) {
-      case ActivityTargetTypeConstants.game:
-        title = '相关游戏'; // 或者 "游戏信息"
-        break;
-      case ActivityTargetTypeConstants.post:
-        title = '相关帖子'; // 或者 "下载链接"
-        break;
-      case ActivityTargetTypeConstants.user:
-        title = '相关用户'; // 或者 "下载链接"
-        break;
-      default:
-        title = '相关内容';
-    }
+
+
+
 
     return Row(
       children: [
@@ -56,7 +44,7 @@ class ActivityTargetSection extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          title,
+          activity.targetText,
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

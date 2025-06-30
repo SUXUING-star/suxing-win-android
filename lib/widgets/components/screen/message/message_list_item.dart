@@ -5,8 +5,9 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 框架
-import 'package:suxingchahui/models/message/message_type.dart'; // 消息类型模型
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展
 import 'package:suxingchahui/models/message/message.dart'; // 消息模型
 
@@ -43,8 +44,8 @@ class MessageListItem extends StatelessWidget {
     final previewText =
         message.getPreviewContent(maxLength: isCompact ? 30 : 47); // 获取消息预览文本
 
-    final displayName = message.messageType.displayName; // 获取消息类型显示名称
-    final iconData = message.messageType.iconData; // 获取消息类型图标
+    final textLabel = message.textLabel; // 获取消息类型显示名称
+    final iconData = message.iconData; // 获取消息类型图标
 
     return InkWell(
       // 可点击区域
@@ -111,7 +112,7 @@ class MessageListItem extends StatelessWidget {
                 children: [
                   Text(
                     // 消息标题
-                    displayName,
+                    textLabel,
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: message.isRead
@@ -144,7 +145,7 @@ class MessageListItem extends StatelessWidget {
               // 时间戳
               padding: const EdgeInsets.only(top: 2.0),
               child: Text(
-                DateTimeFormatter.formatTimeAgo(message.displayTime), // 格式化时间
+                message.displayTime.formatTimeAgo(), // 格式化时间
                 style: TextStyle(fontSize: 12, color: Colors.grey[500]), // 字体样式
               ),
             ),

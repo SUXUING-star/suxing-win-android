@@ -6,12 +6,11 @@ library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/models/post/post.dart'; // 帖子模型
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/components/screen/forum/card/base_post_card.dart'; // 基础帖子卡片组件
 import 'package:suxingchahui/widgets/ui/animation/animated_list_view.dart'; // 动画列表视图
-import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态组件
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法

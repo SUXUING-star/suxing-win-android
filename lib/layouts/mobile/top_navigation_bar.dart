@@ -13,12 +13,13 @@ import 'package:suxingchahui/services/main/message/message_service.dart'; // 导
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart'; // 导入用户签到服务
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/widgets/ui/components/badge/share_code_badge.dart';
 import 'package:suxingchahui/widgets/ui/components/badge/update_button.dart'; // 导入更新按钮
 import 'package:suxingchahui/widgets/ui/components/badge/message_badge.dart'; // 导入消息徽章
 import 'package:suxingchahui/widgets/ui/components/badge/announcement_indicator.dart'; // 导入公告指示器
 import 'package:suxingchahui/widgets/ui/components/badge/checkin_badge.dart'; // 导入签到徽章
-import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 导入安全用户头像组件
+import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart';
 
 /// `TopNavigationBar` 类：自定义移动端顶部导航栏组件。
 ///
@@ -88,6 +89,8 @@ class TopNavigationBar extends StatelessWidget implements PreferredSizeWidget {
       title: _buildSearchBar(context, searchBarHeight, iconSize), // 搜索栏
       titleSpacing: 8.0, // 标题间距
       actions: [
+        // ---- 分享码输入按钮 ----
+        const ShareCodeBadge(),
         // 动作按钮列表
         MouseRegion(
           cursor: SystemMouseCursors.click, // 鼠标悬停显示点击光标

@@ -1,6 +1,6 @@
 // lib/screens/game/edit/edit_game_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
@@ -17,7 +17,7 @@ import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/login_prompt_widget.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/widgets/components/form/gameform/game_form.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
@@ -104,26 +104,44 @@ class _EditGameScreenState extends State<EditGameScreen> {
   Future<void> _handleGameFormSubmit(Game gameDataFromForm) async {
     if (!mounted) return;
 
+    final oldGame = _game;
+    if (oldGame == null) {
+      return;
+    }
+
+    // 1. 显示加载状态，防止用户重复操作。
+    setState(() => _isLoading = true);
+
     try {
-      final oldGame = _game;
-      if (oldGame == null) return;
-      await widget.gameService
+      // 2. 调用业务层接口，并获取操作结果类型。
+      final String? resultType = await widget.gameService
           .updateGame(updateGame: gameDataFromForm, oldGame: oldGame);
 
-      // API 调用成功
-      if (!mounted) return;
+      // 3. 操作完成后，无论成功与否，都先关闭加载状态。
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
 
-      if (!widget.authProvider.isAdmin) {
-        // 编辑模式且非管理员
+      // 4. 根据返回的操作结果类型，执行不同的UI反馈。
+      if (resultType == Game.updateGameResultTypeResubmitted) {
+        // 当操作是“重新提交审核”时，显示一个需要用户交互的对话框。
         _showReviewNoticeDialogAfterApiSuccess();
+      } else if (resultType == Game.updateGameResultTypeEdited) {
+        // 当操作仅是“编辑”时，显示一个简单的成功提示，然后自动返回。
+        AppSnackBar.showSuccess('游戏 "${oldGame.title}" 已成功修改！');
+        if (mounted) {
+          Navigator.of(context).pop(true);
+        }
       } else {
-        // 添加模式成功，或管理员编辑成功，直接返回上一页并传递成功标记
-        if (mounted) Navigator.of(context).pop(true);
+        // 处理未知的或 null 的 resultType，提供一个通用反馈。
+        AppSnackBar.showError('操作似乎成功，但未收到明确的服务器确认。');
       }
     } catch (e) {
-      AppSnackBar.showError(
-        '操作失败: ${e.toString()}',
-      );
+      // 捕获业务层抛出的异常，并向用户显示。
+      if (mounted) {
+        setState(() => _isLoading = false);
+        AppSnackBar.showError('操作失败: ${e.toString()}');
+      }
     }
   }
 
@@ -268,8 +286,6 @@ class _EditGameScreenState extends State<EditGameScreen> {
     return Scaffold(
       appBar: CustomAppBar(
         title: appBarTitle,
-        // 如果需要，可以在这里根据 _isProcessing 状态禁用返回按钮
-        // automaticallyImplyLeading: !(_isProcessing ?? false), // 假设 GameForm 内部有处理
       ),
       body: _buildBody(), // 调用私有方法来构建 body
     );

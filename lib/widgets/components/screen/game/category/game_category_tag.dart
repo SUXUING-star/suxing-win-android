@@ -5,6 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
+import 'package:suxingchahui/models/game/game/enrich_game_category.dart';
 import 'package:suxingchahui/widgets/ui/components/base_tag_view.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart';
 
@@ -12,7 +13,7 @@ import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.d
 ///
 /// 该组件展示游戏分类，并根据配置支持点击筛选功能。
 class GameCategoryTag extends StatelessWidget {
-  final String category; // 游戏分类
+  final EnrichGameCategory enrichCategory; // 游戏分类
   final bool isMini; // 是否为迷你模式
   final bool needOnClick; // 是否需要点击功能
   final Function(BuildContext context, String category)?
@@ -20,13 +21,13 @@ class GameCategoryTag extends StatelessWidget {
 
   /// 构造函数。
   ///
-  /// [category]：分类。
+  /// [enrichCategory]：分类。
   /// [onClickFilterGameCategory]：点击筛选回调。
   /// [isMini]：是否迷你模式。
   /// [needOnClick]：是否需要点击。
   const GameCategoryTag({
     super.key,
-    required this.category,
+    required this.enrichCategory,
     this.onClickFilterGameCategory,
     this.isMini = true,
     this.needOnClick = false,
@@ -39,7 +40,7 @@ class GameCategoryTag extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget tagView = GameCategoryTagView(
-      category: category, // 分类
+      enrichCategory: enrichCategory, // 分类
       isMini: isMini, // 是否迷你模式
     );
 
@@ -52,7 +53,7 @@ class GameCategoryTag extends StatelessWidget {
         isMini ? BaseTagView.miniRadius : BaseTagView.normalRadius; // 获取圆角半径
 
     return InkWell(
-      onTap: () => onClickFilterGameCategory!(context, category), // 点击回调
+      onTap: () => onClickFilterGameCategory!(context, enrichCategory.category), // 点击回调
       borderRadius: BorderRadius.circular(inkWellRadius), // 圆角
       child: tagView, // 标签视图
     );

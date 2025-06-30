@@ -5,14 +5,15 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/models/game/game_detail_param.dart';
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/game/game/game_detail_param.dart';
+import 'package:suxingchahui/models/game/game/game_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 导入自定义菜单按钮
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文本组件
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart'; // 导入应用文本类型
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 导入安全缓存图片组件
 import 'package:suxingchahui/widgets/ui/components/game/game_category_tag_view.dart'; // 导入游戏分类标签视图
@@ -79,23 +80,6 @@ class BaseGameCard extends StatelessWidget {
     return isGridItem
         ? _buildGridCard(context)
         : _buildListCard(context); // 根据是否为网格项选择构建方法
-  }
-
-  /// 判断游戏是否为创建时间一周内的新游戏。
-  bool _isGameNew() {
-    final now = DateTime.now(); // 当前时间
-    final sevenDaysAgo = now.subtract(const Duration(days: 7)); // 七天前的时间
-    return game.createTime.isAfter(sevenDaysAgo) &&
-        game.createTime.isBefore(now); // 游戏创建时间在七天内
-  }
-
-  /// 判断游戏是否为更新时间一周内且非新游戏的更新游戏。
-  bool _isGameRecentlyUpdated() {
-    final now = DateTime.now(); // 当前时间
-    final sevenDaysAgo = now.subtract(const Duration(days: 7)); // 七天前的时间
-    if (_isGameNew()) return false; // 如果是新游戏，则不是最近更新
-    return game.updateTime.isAfter(sevenDaysAgo) &&
-        game.updateTime.isBefore(now); // 游戏更新时间在七天内
   }
 
   /// 构建统一的徽章 UI。
@@ -236,17 +220,17 @@ class BaseGameCard extends StatelessWidget {
   List<Widget> _buildShowUpdateAndCategoryRow() {
     List<Widget> rows = [];
 
-    if (showNewBadge && _isGameNew()) {
+    if (showNewBadge && game.isNewCreated) {
       isGridItem
           ? rows.add(_buildCornerBadge('新发布', Colors.red.shade700))
           : rows.add(_buildCornerBadge('更新', Colors.red.shade700));
-    } else if (showUpdatedBadge && _isGameRecentlyUpdated()) {
+    } else if (showUpdatedBadge && game.isRecentlyUpdated) {
       isGridItem
           ? rows.add(_buildCornerBadge('最近更新', Colors.blue.shade700))
           : rows.add(_buildCornerBadge('更新', Colors.blue.shade700));
     }
     rows.add(GameCategoryTagView(
-      category: game.category,
+      enrichCategory: game.enrichCategory,
       isFrosted: false,
     )); // 类别标签
     return rows;
@@ -292,7 +276,7 @@ class BaseGameCard extends StatelessWidget {
   ///  构建标签
   Widget _buildGameTagsWidget() {
     return GameTagsRow(
-      tags: game.tags,
+      enrichTags: game.enrichTags,
       maxTags: maxTags,
       isCompact: !isGridItem,
       isScrollable: isGridItem,

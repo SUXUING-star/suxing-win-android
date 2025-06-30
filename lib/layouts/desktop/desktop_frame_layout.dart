@@ -14,6 +14,7 @@ import 'package:suxingchahui/services/main/message/message_service.dart'; // 导
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart'; // 导入用户签到服务
 import 'package:suxingchahui/widgets/ui/components/badge/checkin_badge.dart'; // 导入签到徽章
 import 'package:suxingchahui/widgets/ui/components/badge/message_badge.dart'; // 导入消息徽章
+import 'package:suxingchahui/widgets/ui/components/badge/share_code_badge.dart';
 import 'package:suxingchahui/widgets/ui/components/badge/update_button.dart'; // 导入更新按钮
 import 'package:suxingchahui/widgets/ui/components/badge/announcement_indicator.dart'; // 导入公告指示器
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
@@ -145,6 +146,10 @@ class DesktopFrameLayout extends StatelessWidget {
         return Row(
           mainAxisSize: MainAxisSize.min,
           children: [
+            _buildTitleBarButtonWrapper(
+              const ShareCodeBadge(), // 桌面标题栏图标小一点
+              '使用分享口令',
+            ),
             _buildTitleBarButtonWrapper(const UpdateButton(), '检查更新'), // 更新按钮
             _buildTitleBarButtonWrapper(
                 AnnouncementIndicator(

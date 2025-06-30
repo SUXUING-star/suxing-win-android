@@ -1,10 +1,11 @@
 // lib/models/linkstools/site_link.dart
 import 'package:meta/meta.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 // 为了避免不混淆第三方库的link包
 @immutable
-class SiteLink {
+class SiteLink implements ToJsonExtension {
   // 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段，用于 fromJson
@@ -57,7 +58,11 @@ class SiteLink {
     );
   }
 
+  static List<SiteLink> fromListJson(dynamic json) =>
+      UtilJson.parseObjectList(json, (e) => SiteLink.fromJson(e));
+
   // toJson 一般用于缓存或通用数据表示，使用普通 'id' 键
+  @override
   Map<String, dynamic> toJson() {
     return {
       jsonKeyId: id, // 使用 jsonKeyId (即 'id')

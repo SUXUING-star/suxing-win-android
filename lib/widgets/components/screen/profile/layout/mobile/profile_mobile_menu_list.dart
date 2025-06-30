@@ -1,5 +1,8 @@
 // lib/widgets/components/screen/profile/layout/mobile/profile_mobile_menu_list.dart
 import 'package:flutter/material.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -8,9 +11,12 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 class ProfileMobileMenuList extends StatelessWidget {
   final List<ProfileMenuItem> menuItems;
 
+  final User? currentUser;
+
   const ProfileMobileMenuList({
     super.key,
     required this.menuItems,
+    required this.currentUser,
   });
 
   @override
@@ -44,18 +50,18 @@ class ProfileMobileMenuList extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   ListTile(
-                    leading: Icon(item.icon,
+                    leading: Icon(item.iconData,
                         color: Theme.of(context)
                             .textTheme
                             .bodyLarge
                             ?.color
                             ?.withSafeOpacity(0.8)), // 图标颜色稍微柔和点
                     title: AppText(
-                      item.title,
+                      item.textLabel,
                     ),
                     trailing: Icon(Icons.chevron_right,
                         color: Colors.grey.shade400), // 箭头颜色淡一点
-                    onTap: item.onTap ??
+                    onTap: item.onTap(context, currentUser) ??
                         () => NavigationUtils.pushNamed(context, item.route),
                     // 设置 List Tile 的内边距，可以稍微调整
                     // contentPadding: EdgeInsets.symmetric(horizontal: 16.0, vertical: 4.0),

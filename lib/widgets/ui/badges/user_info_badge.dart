@@ -4,9 +4,11 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/user/user/enrich_level.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/user/user_extension.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
-import 'package:suxingchahui/constants/user/level_constants.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
@@ -172,7 +174,7 @@ class UserInfoBadge extends StatelessWidget {
         targetUser.username.isNotEmpty ? targetUser.username : "未知用户";
     final String? avatarUrl = targetUser.avatar;
     final int experience = targetUser.experience;
-    final int level = targetUser.level;
+    final EnrichLevel enrichLevel = targetUser.enrichLevel;
     final int consecutiveDays = targetUser.consecutiveCheckIn ?? 0;
     final int totalDays = targetUser.totalCheckIn ?? 0;
     final bool checkedInToday = targetUser.hasCheckedInToday;
@@ -250,11 +252,11 @@ class UserInfoBadge extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _getLevelColor(level),
+                            color: enrichLevel.backgroundColor,
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            'Lv.$level',
+                            'Lv.${enrichLevel.level}',
                             style: TextStyle(
                               fontSize: mini ? 10 : 11,
                               color: Colors.white,
@@ -343,11 +345,6 @@ class UserInfoBadge extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// 获取用户等级对应的颜色。
-  Color _getLevelColor(int level) {
-    return LevelUtils.getLevelColor(level);
   }
 
   /// 构建错误状态的占位符。

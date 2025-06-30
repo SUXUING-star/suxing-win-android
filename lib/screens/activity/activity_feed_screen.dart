@@ -8,11 +8,13 @@ import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
-import 'package:suxingchahui/constants/activity/activity_constants.dart';
 import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 导入用户活动模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 导入用户活动模型
+import 'package:suxingchahui/models/activity/enrich_collapse_mode.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
 import 'package:suxingchahui/models/common/pagination.dart'; // 导入分页数据模型
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 导入用户信息 Provider
@@ -86,9 +88,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
   bool _useAlternatingLayout = true; // 是否使用交替布局
   bool _showHotActivities = true; // 是否显示热门活动面板
-  FeedCollapseMode _collapseMode = FeedCollapseMode.none; // 折叠模式
+  EnrichCollapseMode _collapseMode = EnrichCollapseMode.enrichAll; // 折叠模式
 
-  List<UserActivity> _activities = []; // 活动列表数据
+  List<Activity> _activities = []; // 活动列表数据
   PaginationData? _pagination; // 分页数据
   int _pageSize = ActivityService.publicActivitiesLimit;
   String _error = ''; // 错误消息
@@ -431,7 +433,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
       if (!mounted) return; // 组件未挂载时返回
 
-      final List<UserActivity> fetchedActivities = result.activities; // 获取活动列表
+      final List<Activity> fetchedActivities = result.activities; // 获取活动列表
       final PaginationData fetchedPagination = result.pagination; // 获取分页数据
 
       setState(() {
@@ -541,7 +543,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
 
       if (!mounted) return; // 组件未挂载时返回
 
-      final List<UserActivity> newActivities = result.activities; // 新加载的活动列表
+      final List<Activity> newActivities = result.activities; // 新加载的活动列表
       final PaginationData newPagination = result.pagination; // 新的分页数据
 
       setState(() {
@@ -602,15 +604,13 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// 循环切换折叠模式。
   void _toggleCollapseMode() {
     HapticFeedback.lightImpact(); // 提供触觉反馈
-    setState(() => _collapseMode = FeedCollapseMode.values[
-        (_collapseMode.index + 1) %
-            FeedCollapseMode.values.length]); // 循环切换折叠模式
+    setState(() => _collapseMode = _collapseMode.nextEnrichMode); // 循环切换折叠模式
   }
 
   /// 导航到活动详情屏幕。
   ///
   /// [activity]：要导航到的活动。
-  void _navigateToActivityDetail(UserActivity activity) {
+  void _navigateToActivityDetail(Activity activity) {
     _stopWatchingCache(); // 导航时暂停监听缓存
     _needsRefresh = true;
     NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
@@ -632,7 +632,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   ///
   /// [activity]：要检查的活动。
   /// 返回 true 表示可编辑或删除，否则返回 false。
-  bool _checkCanEditOrCanDelete(UserActivity activity) {
+  bool _checkCanEditOrCanDelete(Activity activity) {
     final bool isAuthor =
         activity.userId == widget.authProvider.currentUserId; // 是否作者
     final bool isAdmin = widget.authProvider.isAdmin; // 是否管理员
@@ -643,7 +643,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// 处理删除活动。
   ///
   /// [activity]：要删除的活动。
-  Future<void> _handleDeleteActivity(UserActivity activity) async {
+  Future<void> _handleDeleteActivity(Activity activity) async {
     final activityId = activity.id; // 活动ID
     if (!widget.authProvider.isLoggedIn) {
       // 未登录时提示登录
@@ -730,9 +730,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       }
 
       if (success) {
-        UserActivity? newActivity;
+        Activity? newActivity;
         setState(() {
-          _activities = _activities.map((UserActivity a) {
+          _activities = _activities.map((Activity a) {
             if (a.id == activityId) {
               if (action) {
                 a.likesCount++;
@@ -790,12 +790,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
         feedType: _feedType,
       ); // 调用添加评论服务
       if (comment != null) {
-        UserActivity? newActivity;
+        Activity? newActivity;
 
         // 评论成功且组件挂载时
         AppSnackBar.showSuccess('评论成功'); // 提示评论成功
         setState(() {
-          _activities = _activities.map((UserActivity a) {
+          _activities = _activities.map((Activity a) {
             if (a.id == activityId) {
               a.comments.add(comment);
               a.commentsCount++;
@@ -878,9 +878,9 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
           ); // 调用删除评论服务
           if (success) {
             // 删除成功且组件挂载时
-            UserActivity? newActivity;
+            Activity? newActivity;
             setState(() {
-              _activities = _activities.map((UserActivity a) {
+              _activities = _activities.map((Activity a) {
                 // 只对匹配的 activity 进行操作
                 if (a.id == activityId) {
                   a.comments
@@ -950,7 +950,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
       }
 
       if (success) {
-        UserActivity? newActivity;
+        Activity? newActivity;
         setState(() {
           _activities = _activities.map((a) {
             if (a.id == activityId) {
@@ -966,7 +966,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                 }
                 return c;
               }).toList();
-              UserActivity aCopy = a;
+              Activity aCopy = a;
               aCopy.comments = newComments;
               newActivity = aCopy;
             }
@@ -1107,7 +1107,7 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
   /// 构建可折叠活动动态组件。
   Widget _buildMainFeedContent() {
     return CollapsibleActivityFeed(
-      key: ValueKey('public_feed_${_collapseMode.index}'), // 唯一键
+      key: ValueKey('public_feed_${_collapseMode.mode}'), // 唯一键
       currentUser: widget.authProvider.currentUser, // 当前用户
       followService: widget.followService, // 关注服务
       inputStateService: widget.inputStateService, // 输入状态服务
@@ -1168,16 +1168,12 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen>
                   mainAxisSize: MainAxisSize.min, // 行主轴尺寸最小化
                   mainAxisAlignment: MainAxisAlignment.center, // 居中对齐
                   children: [
-                    Icon(
-                        ActivityTypeUtils.getCollapseModeIcon(
-                            _collapseMode), // 图标
+                    Icon(_collapseMode.iconData, // 图标
                         size: 18,
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer),
                     const SizedBox(width: 6), // 间距
-                    Text(
-                        ActivityTypeUtils.getCollapseModeText(
-                            _collapseMode), // 文本
+                    Text(_collapseMode.textLabel, // 文本
                         style: TextStyle(
                           color:
                               Theme.of(context).colorScheme.onPrimaryContainer,

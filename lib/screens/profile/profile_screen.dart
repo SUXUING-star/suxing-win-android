@@ -7,8 +7,7 @@ library;
 import 'dart:async'; // 导入 Timer
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:flutter/services.dart'; // 导入文本输入格式化
-import 'package:suxingchahui/constants/profile/profile_constants.dart'; // 导入个人资料常量
-import 'package:suxingchahui/models/user/daily_progress.dart'; // 导入每日进度模型
+import 'package:suxingchahui/models/user/task/daily_progress_data.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 导入输入状态 Provider
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart'; // 导入侧边栏 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
@@ -29,7 +28,7 @@ import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart'; // 导入通�
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/constants/profile/profile_menu_item.dart'; // 导入个人资料菜单项常量
-import 'package:suxingchahui/models/user/user.dart'; // 导入用户模型
+import 'package:suxingchahui/models/user/user/user.dart'; // 导入用户模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/routes/app_routes.dart'; // 导入应用路由
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
@@ -132,19 +131,10 @@ class _ProfileScreenState extends State<ProfileScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
     if (!mounted) return; // 组件未挂载时返回
-    _checkAuthStateChange();
-    _checkLoadingTimeout();
 
     if (state == AppLifecycleState.resumed) {
-      // 应用从后台恢复时
-      if (_currentUserId != widget.authProvider.currentUserId) {
-        // 用户ID变化时
-        if (mounted) {
-          setState(() {
-            _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-          });
-        }
-      }
+      _checkAuthStateChange();
+      _checkLoadingTimeout();
     } else if (state == AppLifecycleState.paused) {
       // 应用暂停时
       // 无操作
@@ -224,19 +214,23 @@ class _ProfileScreenState extends State<ProfileScreen>
     // 超过最大时长直接关闭
     if (_lastRefreshingTime != null &&
         now.difference(_lastRefreshingTime!) > _maxRefreshingDuration) {
-      setState(() {
-        _lastRefreshingTime = null;
-        _isRefreshing = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lastRefreshingTime = null;
+          _isRefreshing = false;
+        });
+      }
     }
 
     // 超过最大时长直接关闭
     if (_lastLoadingExpDataTime != null &&
         now.difference(_lastLoadingExpDataTime!) > _maxLoadingExpDataDuration) {
-      setState(() {
-        _lastLoadingExpDataTime = null;
-        _isLoadingExpData = false;
-      });
+      if (mounted) {
+        setState(() {
+          _lastLoadingExpDataTime = null;
+          _isLoadingExpData = false;
+        });
+      }
     }
   }
 
@@ -360,11 +354,13 @@ class _ProfileScreenState extends State<ProfileScreen>
       return; // 返回
     }
 
-    setState(() {
-      _isRefreshing = true; // 设置刷新状态
-      _error = null; // 清空错误
-      _lastRefreshingTime = DateTime.now();
-    });
+    if (mounted) {
+      setState(() {
+        _isRefreshing = true; // 设置刷新状态
+        _error = null; // 清空错误
+        _lastRefreshingTime = DateTime.now();
+      });
+    }
 
     try {
       await widget.authProvider.refreshUserState(forceRefresh: true); // 刷新用户状态
@@ -626,15 +622,21 @@ class _ProfileScreenState extends State<ProfileScreen>
           onRefresh: () => _refreshData(needCheck: true), // 下拉刷新回调
           child: _buildProfileContent(), // 个人资料内容
         ),
-        floatingActionButton: _buildFloatButtons(context), // 悬浮按钮
+        floatingActionButton: _buildFloatButtons(), // 悬浮按钮
       ),
     );
   }
 
+  String _makeHeroTag({required String mainCtx}) {
+    final ctxDevice =
+        DeviceUtils.isDesktopInThisWidth(_screenWidth) ? 'desktop' : 'mobile';
+    const ctxScreen = 'profile';
+    return '${ctxScreen}_${ctxDevice}_${mainCtx}_${widget.authProvider.currentUserId}';
+  }
+
   /// 构建悬浮按钮组。
   ///
-  /// [context]：Build 上下文。
-  Widget _buildFloatButtons(BuildContext context) {
+  Widget _buildFloatButtons() {
     return Padding(
       padding: const EdgeInsets.only(bottom: 16.0, right: 16.0), // 内边距
       child: FloatingActionButtonGroup(
@@ -645,14 +647,14 @@ class _ProfileScreenState extends State<ProfileScreen>
           GenericFloatingActionButton(
             icon: Icons.refresh_outlined, // 图标
             onPressed: () => _refreshData(needCheck: true),
-            heroTag: "profile_refresh_fab", // Hero 标签
+            heroTag: _makeHeroTag(mainCtx: 'refresh'), // Hero 标签
             tooltip: "刷新", // 提示
           ),
           GenericFloatingActionButton(
             icon: Icons.settings_outlined, // 图标
             onPressed: () => NavigationUtils.pushNamed(
                 context, AppRoutes.settingPage), // 点击导航到设置页面
-            heroTag: "profile_setting_fab", // Hero 标签
+            heroTag: _makeHeroTag(mainCtx: 'profile'), // Hero 标签
             tooltip: "设置", // 提示
           ),
         ],
@@ -704,6 +706,7 @@ class _ProfileScreenState extends State<ProfileScreen>
                 screenWidth: _screenWidth,
                 menuItems: menuItems,
                 windowStateProvider: widget.windowStateProvider,
+                currentUser: widget.authProvider.currentUser,
               ), // 桌面端菜单网格
             ),
           ),
@@ -742,7 +745,10 @@ class _ProfileScreenState extends State<ProfileScreen>
         FadeInSlideUpItem(
           duration: const Duration(milliseconds: 450), // 动画时长
           delay: const Duration(milliseconds: 200), // 延迟
-          child: ProfileMobileMenuList(menuItems: menuItems), // 移动端菜单列表
+          child: ProfileMobileMenuList(
+            menuItems: menuItems,
+            currentUser: widget.authProvider.currentUser,
+          ), // 移动端菜单列表
         ),
         const SizedBox(height: 80), // 底部间距
       ],
@@ -798,26 +804,27 @@ class _ProfileScreenState extends State<ProfileScreen>
             ); //
           } else if (!_isInitialized && _error == null) {
             // 未初始化且无错误时显示全屏加载
-            return const
-                // 全屏加载组件
-                LoadingWidget(
+            return const LoadingWidget(
               isOverlay: true,
               message: "少女正在祈祷中...",
               overlayOpacity: 0.4,
               size: 36,
+              // 全屏加载组件
             ); //
           } else if (_error != null) {
             // 有错误时显示错误组件
             return Center(
-                child: CustomErrorWidget(
-                    errorMessage: _error!, onRetry: () => _refreshData()));
+              child: CustomErrorWidget(
+                errorMessage: _error!,
+                onRetry: () => _refreshData(needCheck: false),
+              ),
+            );
           }
-          final menuItems = ProfileConstants.getProfileMenuItems(
-            // 获取菜单项
-            context,
+          final List<ProfileMenuItem> menuItems =
+              ProfileMenuItem.getProfileMenuItems(
             currentUser.isAdmin,
-            currentUser,
           );
+
           return Stack(
             children: [
               LazyLayoutBuilder(

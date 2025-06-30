@@ -1,7 +1,7 @@
 // lib/models/defence/defence_item.dart
 
 import 'package:flutter/foundation.dart'; // 保留原始代码中的 import
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 /// 表示防护列表（如黑名单、白名单）中的一个条目。
 @immutable // 保留原始代码中的 @immutable

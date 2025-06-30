@@ -1,10 +1,14 @@
 // lib/screens/game/detail/game_detail_screen.dart
+
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_collection_form_data.dart';
-import 'package:suxingchahui/models/game/game_detail_param.dart';
-import 'package:suxingchahui/models/game/game_navigation_info.dart';
-import 'package:suxingchahui/models/game/game_with_collection_response.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:flutter/services.dart';
+import 'package:suxingchahui/models/game/collection/collection_form_data.dart';
+import 'package:suxingchahui/models/game/game/game_detail_param.dart';
+import 'package:suxingchahui/models/game/game/game_download_link.dart';
+import 'package:suxingchahui/models/game/game/game_extension.dart';
+import 'package:suxingchahui/models/game/game/game_navigation_info.dart';
+import 'package:suxingchahui/models/game/game/game_details_response.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/providers/navigation/sidebar_provider.dart';
@@ -23,16 +27,17 @@ import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/confirm_dialog.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/info_dialog.dart';
+import 'package:suxingchahui/widgets/ui/dialogs/share_confirmation_dialog.dart';
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_sliver_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/buttons/floating_action_button_group.dart';
 import 'package:suxingchahui/widgets/ui/buttons/generic_fab.dart';
 import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_collection_item.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
+import 'package:suxingchahui/models/game/collection/collection_item.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
-import 'package:suxingchahui/widgets/components/screen/game/game_detail_layout.dart';
+import 'package:suxingchahui/widgets/components/screen/game/section/game_detail_layout.dart';
 import 'package:suxingchahui/widgets/ui/appbar/custom_app_bar.dart';
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
@@ -74,13 +79,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
   late final String _gameId;
   Game? _game;
-  GameCollectionItem? _collectionStatus;
+  CollectionItem? _collectionStatus;
   GameNavigationInfo? _navigationInfo;
   bool? _isLiked; // 持有喜欢状态
   bool? _isCoined; // 持有投币状态
 
   int _likeCount = 0;
   int _coinsCount = 0;
+  int _collectionCount = 0;
+  double _rating = 0;
   String? _error;
   bool _isLoading = false;
   bool _isAddDownloadLink = false;
@@ -90,17 +97,24 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   bool _isCollectionLoading = false;
   int _refreshCounter = 0;
   bool _hasInitializedDependencies = false;
+  bool _hasInitializedGameData = false;
   bool _isPageScrollLocked = false; // 代表页面是否被锁定滚动
 
-  bool _isPerformingGamesDetailRefresh = false;
-  DateTime? _lastGamesDetailRefreshAttemptTime;
+  bool _isPerformingGameDetailRefresh = false;
+
+  bool _isSharing = false;
+  bool _hasShared = false;
+  DateTime? _lastGameDetailRefreshAttemptTime;
   static const Duration _minRefreshGameDetailInterval = Duration(minutes: 1);
+
+  static const String _ctxScreen = 'game_detail';
 
   @override
   void initState() {
     super.initState();
     final p = widget.gameDetailParam;
     final g = widget.gameDetailParam?.gameId;
+    final d = widget.gameDetailParam?.gameDetailsResponse;
     if (p == null || g == null) {
       setState(() {
         _error = '无效的游戏ID';
@@ -108,6 +122,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       });
     } else {
       _gameId = g;
+      if (d != GameDetailsResponse.empty() && d != null) {
+        _initGameData(d);
+      }
     }
   }
 
@@ -119,10 +136,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       _hasInitializedDependencies = true;
     }
 
-    if (_error == null && _hasInitializedDependencies) {
+    if (_error == null &&
+        _hasInitializedDependencies &&
+        _game == null &&
+        !_hasInitializedGameData) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         _isLoading = true;
-        _lastGamesDetailRefreshAttemptTime = DateTime.now();
+        _lastGameDetailRefreshAttemptTime = DateTime.now();
         // 第一次初始化赋值，之后走下面的流程
         _loadGameDetailsWithStatus(); // 原有的调用
       });
@@ -148,15 +168,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (didUpdate) {
       // 这是回调更新，第二次构建的情况
       setState(() {
-        _game = null;
-        _collectionStatus = null;
-        _navigationInfo = null;
-        _isLiked = null;
-        _isCoined = null;
-        _error = null;
-        _isLoading = true;
-        _isTogglingLike = false;
-        _refreshCounter = 0; // 可以重置
+        _resetGameData();
       });
       _loadGameDetailsWithStatus();
     }
@@ -165,16 +177,13 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
   @override
   void dispose() {
     super.dispose();
-    _currentUserId = null;
-    _game = null;
-    _error = null;
-    _isLiked = null;
-    _isCoined = null;
+    _disposeGameData();
   }
 
-  // --- 尝试增加游戏浏览次数 ---
+  /// 尝试增加游戏浏览次数
+  ///
   Future<void> _tryIncrementViewCount() async {
-    // 检查游戏数据已加载、游戏ID有效、游戏状态为'approved'、且需要记录历史
+    // 检查游戏数据已加载、游戏ID有效、游戏状态为审核通过、且需要记录历史
     if (_game != null &&
         _game!.approvalStatus == Game.gameStatusApproved &&
         widget.isNeedHistory) {
@@ -183,9 +192,58 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       } catch (e) {
         // 啥也不做
       }
-
-      // 不要等待，异步进行
     }
+  }
+
+  /// 初始化游戏数据
+  ///
+  void _initGameData(GameDetailsResponse result) {
+    if (!_hasInitializedGameData) _hasInitializedGameData = true;
+    _game = result.game;
+    _collectionStatus = result.collectionStatus;
+    _navigationInfo = result.navigationInfo;
+    _isLiked = result.isLiked;
+    _isCoined = result.isCoined;
+    _rating = result.game.rating;
+    _collectionCount = result.game.totalCollections;
+    _likeCount = result.game.likeCount;
+    _coinsCount = result.game.coinsCount;
+    _error = null;
+  }
+
+  /// 销毁游戏数据
+  ///
+  void _disposeGameData() {
+    _game = null;
+    _collectionStatus = null;
+    _navigationInfo = null;
+    _isLiked = null;
+    _isCoined = null;
+    _rating = 0;
+    _collectionCount = 0;
+    _likeCount = 0;
+    _coinsCount = 0;
+    _error = null;
+    _isTogglingLike = false;
+    _isTogglingCoin = false;
+  }
+
+  /// 重置游戏数据
+  ///
+  void _resetGameData() {
+    _game = null;
+    _collectionStatus = null;
+    _navigationInfo = null;
+    _isLiked = null;
+    _isCoined = null;
+    _rating = 0;
+    _collectionCount = 0;
+    _likeCount = 0;
+    _coinsCount = 0;
+    _error = null;
+    _isTogglingLike = false;
+    _isTogglingCoin = false;
+    _refreshCounter = 0; // 可以重置
   }
 
   // 加载游戏详情和收藏状态
@@ -199,12 +257,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       });
     }
 
-    GameDetailsWithStatus? result;
+    GameDetailsResponse? result;
     String? errorMsg; // 用于 finally 块判断
     bool gameWasRemoved = false; // 新增标志位
 
     try {
-      result = await widget.gameService.getGameDetailsWithStatus(_gameId);
+      result = await widget.gameService.getGameDetailsWithStatus(
+        _gameId,
+        forceRefresh: forceRefresh,
+      );
     } catch (e) {
       if (!mounted) return;
       if (e is ApiException) {
@@ -215,7 +276,6 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         if (e.apiErrorCode == BackendApiErrorCodes.notFound) {
           gameWasRemoved = true; // 标记游戏已被移除
 
-          // *** 显示补偿/移除对话框 ***
           // 使用 addPostFrameCallback 确保在当前帧渲染完成后执行
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
@@ -258,19 +318,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         errorMsg = '加载失败: ${e.toString()}';
       }
     } finally {
-      // *** 只有在游戏未被移除时才更新状态 ***
+      // 只有在游戏未被移除时才更新状态
       if (mounted && !gameWasRemoved) {
         setState(() {
           if (errorMsg == null && result != null) {
             // 成功
-            _game = result.game;
-            _collectionStatus = result.collectionStatus;
-            _navigationInfo = result.navigationInfo;
-            _isLiked = result.isLiked;
-            _isCoined = result.isCoined;
-            _likeCount = result.game.likeCount;
-            _coinsCount = result.game.coinsCount;
-            _error = null;
+            _initGameData(result);
           } else {
             // 加载/刷新失败，但游戏 *并未* 被移除
             if (_game == null) {
@@ -304,28 +357,29 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  // 刷新逻辑
-  Future<void> _refreshGameDetails({bool needCheck = false}) async {
+  /// 刷新逻辑
+  ///
+  Future<void> _forceRefreshGameDetails({bool needCheck = false}) async {
     if (!mounted) return;
 
-    if (_isPerformingGamesDetailRefresh) {
+    if (_isPerformingGameDetailRefresh) {
       return;
     }
-    _isPerformingGamesDetailRefresh = true;
+    _isPerformingGameDetailRefresh = true;
     final now = DateTime.now();
 
     if (needCheck) {
-      if (_lastGamesDetailRefreshAttemptTime != null &&
-          now.difference(_lastGamesDetailRefreshAttemptTime!) <
+      if (_lastGameDetailRefreshAttemptTime != null &&
+          now.difference(_lastGameDetailRefreshAttemptTime!) <
               _minRefreshGameDetailInterval) {
         final remainSeconds = _minRefreshGameDetailInterval.inSeconds -
-            now.difference(_lastGamesDetailRefreshAttemptTime!).inSeconds;
+            now.difference(_lastGameDetailRefreshAttemptTime!).inSeconds;
 
         AppSnackBar.showInfo("手速太快，请等待 $remainSeconds 秒后再尝试");
       }
-      _lastGamesDetailRefreshAttemptTime = now;
+      _lastGameDetailRefreshAttemptTime = now;
     } else {
-      _lastGamesDetailRefreshAttemptTime = now;
+      _lastGameDetailRefreshAttemptTime = now;
     }
 
     try {
@@ -337,7 +391,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         _error = e.toString();
       });
     } finally {
-      _isPerformingGamesDetailRefresh = false;
+      _isPerformingGameDetailRefresh = false;
     }
   }
 
@@ -353,13 +407,12 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
     // 确保游戏数据已加载
     if (_game == null) {
-      AppSnackBar.showError("游戏数据尚未加载，请稍后重试");
       return;
     }
 
     // 2. 弹出收藏对话框并等待用户操作结果
-    final GameCollectionFormData? result =
-        await showGeneralDialog<GameCollectionFormData>(
+    final CollectionFormData? result =
+        await showGeneralDialog<CollectionFormData>(
       context: context,
       barrierDismissible: true,
       barrierLabel: MaterialLocalizations.of(context).modalBarrierDismissLabel,
@@ -401,7 +454,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
     try {
       // 5. 根据用户的具体操作（设置收藏或移除收藏）调用不同的服务
-      if (result.action == GameCollectionFormData.setCollectionAction) {
+      if (result.isSet) {
         // --- 设置或更新收藏 ---
 
         // 调用服务，并使用解构赋值将元组返回值赋给有意义的变量名
@@ -420,8 +473,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         } else {
           AppSnackBar.showError("操作失败");
         }
-      } else if (result.action ==
-          GameCollectionFormData.removeCollectionAction) {
+      } else if (result.isRemove) {
         // --- 移除收藏 ---
 
         // 调用服务，并使用解构赋值
@@ -450,8 +502,10 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
+  ///
+  ///
   Future<void> _handleCollectionStateChangedInButton(
-    GameCollectionItem? newCollectionStatus,
+    CollectionItem? newCollectionStatus,
     Game? updatedGame,
   ) async {
     // 1. 安全检查
@@ -465,7 +519,9 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     if (updatedGame != null) {
       setState(() {
         _collectionStatus = newCollectionStatus; // 更新收藏状态
-        _game = updatedGame; // 直接替换成后端爹给的最新 game 对象
+        // _game = updatedGame; // 直接替换成后端爹给的最新 game 对象
+        _collectionCount = updatedGame.totalCollections;
+        if (updatedGame.rating != _rating) _rating = updatedGame.rating;
         _refreshCounter++; // 强制子组件重建，显示最新数据
       });
     } else {
@@ -652,7 +708,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     }
   }
 
-  // 处理点赞切换的回调函数
+  /// 处理点赞切换的回调函数
+  ///
   Future<void> _handleToggleLike() async {
     // 保持前置检查
     if (_isTogglingLike || !mounted) return;
@@ -765,7 +822,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
         arguments: game.id);
     if (result == true && mounted) {
-      _refreshGameDetails(needCheck: false); // 强制刷新
+      _loadGameDetailsWithStatus();
     }
   }
 
@@ -796,14 +853,49 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           AppSnackBar.showGameDeleteSuccessfullySnackBar();
         } catch (e) {
           AppSnackBar.showError("删除游戏失败,${e.toString()}");
-          // print("删除游戏失败: $gameId, Error: $e");
         }
       },
     );
   }
 
-  // --- UI 构建方法 ---
+  /// 处理分享游戏按钮点击事件
+  Future<void> _handleShareGame() async {
+    if (_game == null || _isSharing || !mounted) return;
 
+    setState(() {
+      _isSharing = true;
+      _hasShared = true;
+    });
+
+    // 1. 生成分享消息
+    final shareMessage = _game!.toShareMessage;
+
+    // 2. 复制到剪贴板
+    await Clipboard.setData(ClipboardData(text: shareMessage));
+
+    if (!mounted) {
+      setState(() {
+        _isSharing = false;
+      });
+      return;
+    }
+
+    // 3. 直接调用抽离出去的对话框
+    await ShareConfirmationDialog.show(
+      context: context,
+      shareableContent: shareMessage,
+    );
+
+    // 对话框关闭后，如果组件还在，就更新状态
+    if (mounted) {
+      setState(() {
+        _isSharing = false;
+      });
+    }
+  }
+
+  ///  UI 构建方法
+  ///
   Widget _buildPendingApprovalBanner() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
@@ -821,24 +913,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
     );
   }
 
+  String _makeHeroTag({required bool isDesktop, required String mainCtx}) {
+    final ctxDevice = isDesktop ? 'desktop' : 'mobile';
+    return '${_ctxScreen}_${ctxDevice}_${mainCtx}_$_gameId';
+  }
+
   Widget _buildActionButtonsGroup(
     BuildContext context,
     Game game,
     bool isDesktop,
   ) {
-    final String editHeroTag =
-        isDesktop ? 'editButtonDesktop' : 'editButtonMobile';
-    final String deleteHeroTag =
-        isDesktop ? 'deleteButtonDesktop' : 'deleteButtonMobile';
-    final String likeHeroTag = isDesktop
-        ? 'likeButtonDesktop'
-        : 'likeButtonMobile'; // 给点赞按钮也加上区分的 heroTag
-
-    final String coinHeroTag =
-        isDesktop ? 'coinButtonDesktop' : 'coinButtonMobile';
-
-    const String refreshHeroTag = 'gameDetailRefresh';
-
     final Color primaryColor = Theme.of(context).colorScheme.primary;
     final Color greyColor = Colors.grey.shade600; // 用于未点赞状态的颜色（可选）
 
@@ -855,24 +939,32 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
           // 给整个按钮组添加统一的外边距
           padding: const EdgeInsets.only(bottom: 16.0, right: 16.0),
           child: FloatingActionButtonGroup(
-            toggleButtonHeroTag: "game_detail_heroTags",
+            toggleButtonHeroTag: "${_ctxScreen}_heroTags",
             spacing: 16.0, // 按钮间距
             alignment: MainAxisAlignment.end, // 底部对齐
             children: [
               GenericFloatingActionButton(
-                onPressed: () => _refreshGameDetails(),
-                isLoading: _isPerformingGamesDetailRefresh,
+                onPressed: () => _forceRefreshGameDetails(needCheck: true),
+                isLoading: _isPerformingGameDetailRefresh,
                 icon: Icons.refresh,
                 tooltip: "刷新",
                 mini: true,
-                heroTag: refreshHeroTag,
+                heroTag: _makeHeroTag(isDesktop: isDesktop, mainCtx: 'refresh'),
+              ),
+              GenericFloatingActionButton(
+                onPressed: () => _handleShareGame(),
+                isLoading: _isSharing,
+                icon: _hasShared ? Icons.share_sharp : Icons.share_outlined,
+                tooltip: "分享",
+                mini: true,
+                heroTag: _makeHeroTag(isDesktop: isDesktop, mainCtx: 'share'),
               ),
               // --- 第一个按钮：点赞按钮或占位符 ---
               if (_isLiked != null) // 确保状态已加载
                 GenericFloatingActionButton(
                   key: ValueKey('like_fab_$_gameId'),
                   // 使用 FAB 特定的 Key
-                  heroTag: likeHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: isDesktop, mainCtx: 'like'),
                   backgroundColor: Colors.white,
                   tooltip: _isLiked! ? '取消点赞' : '点赞',
                   // 根据状态显示不同提示
@@ -888,14 +980,16 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 const SizedBox(
                   width: 56,
                   height: 56,
-                  child: LoadingWidget(),
+                  child: LoadingWidget(
+                    size: 50,
+                  ),
                 ),
 
               // --- 新增：投币按钮或占位符 ---
               if (_isCoined != null)
                 GenericFloatingActionButton(
                   key: ValueKey('coin_fab_$_gameId'),
-                  heroTag: coinHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: isDesktop, mainCtx: 'coin'),
                   backgroundColor: Colors.white,
                   tooltip: (_isCoined! || isAuthor)
                       ? (isAuthor ? '作者不能投币' : '已投币')
@@ -919,7 +1013,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
 
               if (canEdit)
                 GenericFloatingActionButton(
-                  heroTag: editHeroTag,
+                  heroTag: _makeHeroTag(isDesktop: isDesktop, mainCtx: 'edit'),
                   // 使用区分后的 heroTag
                   mini: true,
                   // 统一使用 mini 尺寸，或根据需要调整
@@ -932,7 +1026,8 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
                 ),
               if (canEdit)
                 GenericFloatingActionButton(
-                  heroTag: deleteHeroTag,
+                  heroTag:
+                      _makeHeroTag(isDesktop: isDesktop, mainCtx: 'delete'),
                   // 使用区分后的 heroTag
                   mini: true,
                   // 统一使用 mini 尺寸，或根据需要调整
@@ -997,14 +1092,14 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         controller: mobileScrollController,
         thumbVisibility: true,
         child: RefreshIndicator(
-          onRefresh: _refreshGameDetails,
+          onRefresh: () => _forceRefreshGameDetails(needCheck: true),
           child: CustomScrollView(
             controller: mobileScrollController,
             reverse: false,
             physics: _isPageScrollLocked
                 ? const NeverScrollableScrollPhysics() // 锁死！
                 : const AlwaysScrollableScrollPhysics(), // 解锁！
-            key: ValueKey('game_detail_mobile_${_gameId}_$_refreshCounter'),
+            key: ValueKey('${_ctxScreen}_mobile_${_gameId}_$_refreshCounter'),
             slivers: [
               CustomSliverAppBar(
                 titleText: game.title,
@@ -1039,7 +1134,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
         physics: _isPageScrollLocked
             ? const NeverScrollableScrollPhysics() // 锁死！
             : const AlwaysScrollableScrollPhysics(), // 解锁！
-        key: ValueKey('game_detail_desktop_${_gameId}_$_refreshCounter'),
+        key: ValueKey('${_ctxScreen}_desktop_${_gameId}_$_refreshCounter'),
         child: Padding(
           padding: const EdgeInsets.all(24.0),
           child: _buildGameContent(game, isPending, isDesktop),
@@ -1070,7 +1165,7 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       infoService: widget.infoService,
       followService: widget.followService,
       currentUser: widget.authProvider.currentUser,
-      initialCollectionStatus: _collectionStatus,
+      collectionStatus: _collectionStatus,
       isCollectionLoading: isPreview ? null : _isCollectionLoading,
       onCollectionButtonPressed:
           isPreview ? null : _handleCollectionButtonPressed,
@@ -1086,8 +1181,15 @@ class _GameDetailScreenState extends State<GameDetailScreen> {
       },
       isLiked: _isLiked,
       isCoined: _isCoined,
+      likeCount: _likeCount,
+      hasShared: _hasShared,
+      isSharing: _isSharing,
+      rating: _rating,
+      collectionCount: _collectionCount,
+      coinsCount: _coinsCount,
       isTogglingLike: _isTogglingLike,
       isTogglingCoin: _isTogglingCoin,
+      onShareButtonPressed: _handleShareGame,
       onToggleLike: _handleToggleLike,
       onToggleCoin: _handleToggleCoin,
     );

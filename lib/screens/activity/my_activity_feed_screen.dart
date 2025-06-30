@@ -7,12 +7,14 @@ library;
 import 'dart:async'; // 异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
 import 'package:flutter/services.dart'; // 导入 HapticFeedback
-import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 活动常量
 import 'package:suxingchahui/models/activity/activity_comment.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/enrich_collapse_mode.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
 import 'package:suxingchahui/models/common/pagination.dart'; // 分页数据模型
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 认证 Provider
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
@@ -75,7 +77,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   late AnimationController _refreshAnimationController; // 刷新动画控制器
 
   // --- 数据状态 ---
-  List<UserActivity> _activities = []; // 动态列表数据
+  List<Activity> _activities = []; // 动态列表数据
   PaginationData? _pagination; // 分页数据
   int _currentPage = 1; // 当前页码
   late String _feedType;
@@ -86,7 +88,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   String _error = ''; // 错误消息
 
   // --- UI 模式状态 ---
-  FeedCollapseMode _collapseMode = FeedCollapseMode.none; // 动态折叠模式
+  EnrichCollapseMode _collapseMode = EnrichCollapseMode.enrichAll; // 动态折叠模式
   bool _useAlternatingLayout = true; // 动态交替布局模式
 
   // --- 刷新控制 ---
@@ -173,7 +175,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
       if (!mounted) return; // 再次检查组件是否已挂载
 
-      final List<UserActivity> fetchedActivities = result.activities; // 获取动态列表
+      final List<Activity> fetchedActivities = result.activities; // 获取动态列表
       final PaginationData fetchedPagination = result.pagination; // 获取分页数据
 
       setState(() {
@@ -227,7 +229,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
 
       if (!mounted) return; // 检查组件是否已挂载
 
-      final List<UserActivity> newActivities = result.activities; // 获取新动态列表
+      final List<Activity> newActivities = result.activities; // 获取新动态列表
       final PaginationData newPagination = result.pagination; // 获取新分页数据
 
       setState(() {
@@ -310,10 +312,10 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   void _toggleCollapseMode() {
     HapticFeedback.lightImpact(); // 轻微震动反馈
     setState(() {
-      if (_collapseMode == FeedCollapseMode.none) {
-        _collapseMode = FeedCollapseMode.byType; // 切换到按类型折叠
+      if (_collapseMode.isAll) {
+        _collapseMode = EnrichCollapseMode.enrichType; // 切换到按类型折叠
       } else {
-        _collapseMode = FeedCollapseMode.none; // 切换回不折叠
+        _collapseMode = EnrichCollapseMode.enrichAll; // 切换回不折叠
       }
     });
   }
@@ -323,7 +325,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   /// 导航到动态详情界面。
   ///
   /// [activity]：要查看详情的动态。
-  void _navigateToActivityDetail(UserActivity activity) {
+  void _navigateToActivityDetail(Activity activity) {
     NavigationUtils.pushNamed(context, AppRoutes.activityDetail,
         arguments: ActivityDetailParam(
           activityId: activity.id,
@@ -341,7 +343,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   ///
   /// [activity]：要检查的动态。
   /// 返回 true 表示拥有权限，false 表示没有权限。
-  bool _checkCanEditOrCanDelete(UserActivity activity) {
+  bool _checkCanEditOrCanDelete(Activity activity) {
     final bool isAuthor =
         activity.userId == widget.authProvider.currentUserId; // 是否为动态作者
     final bool isAdmin = widget.authProvider.isAdmin; // 是否为管理员
@@ -353,7 +355,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
   ///
   /// [activity]：要删除的动态。
   /// 显示确认对话框，确认后执行删除操作并更新 UI。
-  Future<void> _handleDeleteActivity(UserActivity activity) async {
+  Future<void> _handleDeleteActivity(Activity activity) async {
     if (!widget.authProvider.isLoggedIn) {
       // 检查登录状态
       if (mounted) {
@@ -439,9 +441,9 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       }
 
       if (success) {
-        UserActivity? newActivity;
+        Activity? newActivity;
         setState(() {
-          _activities = _activities.map((UserActivity a) {
+          _activities = _activities.map((Activity a) {
             if (a.id == activityId) {
               if (action) {
                 a.likesCount++;
@@ -499,12 +501,12 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
         feedType: _feedType,
       ); // 调用添加评论服务
       if (comment != null) {
-        UserActivity? newActivity;
+        Activity? newActivity;
 
         // 评论成功且组件挂载时
         AppSnackBar.showSuccess('评论成功'); // 提示评论成功
         setState(() {
-          _activities = _activities.map((UserActivity a) {
+          _activities = _activities.map((Activity a) {
             if (a.id == activityId) {
               a.comments.add(comment);
               a.commentsCount++;
@@ -587,9 +589,9 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
           ); // 调用删除评论服务
           if (success) {
             // 删除成功且组件挂载时
-            UserActivity? newActivity;
+            Activity? newActivity;
             setState(() {
-              _activities = _activities.map((UserActivity a) {
+              _activities = _activities.map((Activity a) {
                 // 只对匹配的 activity 进行操作
                 if (a.id == activityId) {
                   a.comments
@@ -659,7 +661,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
       }
 
       if (success) {
-        UserActivity? newActivity;
+        Activity? newActivity;
         setState(() {
           _activities = _activities.map((a) {
             if (a.id == activityId) {
@@ -675,7 +677,7 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
                 }
                 return c;
               }).toList();
-              UserActivity aCopy = a;
+              Activity aCopy = a;
               aCopy.comments = newComments;
               newActivity = aCopy;
             }
@@ -784,8 +786,8 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
         }
 
         return CollapsibleActivityFeed(
-          key: ValueKey(
-              'my_feed_${widget.userId}_${_collapseMode.index}'), // 唯一键
+          key:
+              ValueKey('my_feed_${widget.userId}_${_collapseMode.mode}'), // 唯一键
           activities: _activities, // 动态列表
           inputStateService: widget.inputStateService, // 输入状态服务
           infoService: widget.infoService, // 用户信息 Provider
@@ -845,22 +847,19 @@ class _MyActivityFeedScreenState extends State<MyActivityFeedScreen>
                   mainAxisSize: MainAxisSize.min,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(
-                        ActivityTypeUtils.getCollapseModeIcon(
-                            _collapseMode), // 获取折叠模式图标
+                    Icon(_collapseMode.iconData, // 获取折叠模式图标
                         size: 18,
                         color:
                             Theme.of(context).colorScheme.onPrimaryContainer),
                     const SizedBox(width: 6),
                     Text(
-                        ActivityTypeUtils.getCollapseModeText(
-                            _collapseMode), // 获取折叠模式文本
-                        style: TextStyle(
-                          color:
-                              Theme.of(context).colorScheme.onPrimaryContainer,
-                          fontWeight: FontWeight.w500,
-                          fontSize: 13,
-                        )),
+                      _collapseMode.textLabel, // 获取折叠模式文本
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                        fontWeight: FontWeight.w500,
+                        fontSize: 13,
+                      ),
+                    ),
                   ],
                 ),
               ),

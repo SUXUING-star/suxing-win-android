@@ -2,9 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/game/game.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/game/game_service.dart';

@@ -1,10 +1,10 @@
 // lib/widgets/components/screen/activity/sections/activity_description_section.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class ActivityDescriptionSection extends StatelessWidget {
-  final UserActivity activity;
+  final Activity activity;
   final bool isDesktopLayout;
 
   const ActivityDescriptionSection({

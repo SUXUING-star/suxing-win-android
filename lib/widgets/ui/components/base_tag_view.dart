@@ -7,7 +7,7 @@ library;
 
 import 'dart:ui';
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 /// 一个多功能的基础标签组件，支持磨砂和实心两种样式。
@@ -103,7 +103,8 @@ class BaseTagView extends StatelessWidget {
   Widget _buildSolidView(double borderRadius, double hPadding, double vPadding,
       double fSize, double cSize) {
     // 根据背景色动态计算高对比度的文本颜色，保证可读性。
-    final Color textColor = GameTagUtils.getTextColorForBackground(baseColor);
+    final Color textColor =
+        EnrichGameTag.getTagTextColorForBackground(baseColor);
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPadding, vertical: vPadding),

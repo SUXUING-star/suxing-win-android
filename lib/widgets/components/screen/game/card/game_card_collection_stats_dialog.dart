@@ -1,9 +1,12 @@
 // lib/widgets/components/screen/game/card/game_card_collection_stats_dialog.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/game/collection/enrich_collection_status.dart';
 import 'package:suxingchahui/widgets/components/screen/game/card/game_collection_stat_row.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 
 class GameCardCollectionStatsDialog extends StatelessWidget {
@@ -16,11 +19,6 @@ class GameCardCollectionStatsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 从统一的工具类获取主题
-    final wantTheme = GameCollectionStatusUtils.wantToPlayTheme;
-    final playingTheme = GameCollectionStatusUtils.playingTheme;
-    final playedTheme = GameCollectionStatusUtils.playedTheme;
-
     // 计算总收藏数
     final int total = game.totalCollections;
 
@@ -101,29 +99,23 @@ class GameCardCollectionStatsDialog extends StatelessWidget {
 
             // 统计行
             _buildStatRow(
-              label: wantTheme.text,
               count: game.wantToPlayCount,
               percent: wantToPlayPercent,
-              color: wantTheme.textColor,
-              icon: wantTheme.icon,
+              enrichStatus: EnrichCollectionStatus.wantToPlayCollection,
             ),
             const SizedBox(height: 12),
 
             _buildStatRow(
-              label: playingTheme.text,
               count: game.playingCount,
               percent: playingPercent,
-              color: playingTheme.textColor,
-              icon: playingTheme.icon,
+              enrichStatus: EnrichCollectionStatus.playingCollection,
             ),
             const SizedBox(height: 12),
 
             _buildStatRow(
-              label: playedTheme.text,
+              enrichStatus: EnrichCollectionStatus.playedCollection,
               count: game.playedCount,
               percent: playedPercent,
-              color: playedTheme.textColor,
-              icon: playedTheme.icon,
             ),
 
             const SizedBox(height: 16),
@@ -147,18 +139,16 @@ class GameCardCollectionStatsDialog extends StatelessWidget {
 
   // 创建统计行的封装方法
   Widget _buildStatRow({
-    required String label,
     required int count,
+    required EnrichCollectionStatus enrichStatus,
     required double percent,
-    required Color color,
-    required IconData icon,
   }) {
     return GameCollectionStatRow(
-      label: label,
+      label: enrichStatus.textLabel,
       count: count,
       percent: percent,
-      color: color,
-      icon: icon,
+      color: enrichStatus.textColor,
+      icon: enrichStatus.iconData,
     );
   }
 }

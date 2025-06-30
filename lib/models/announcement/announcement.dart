@@ -1,8 +1,7 @@
 // lib/models/announcement/announcement.dart
 
 // 简化版公告模型（用于列表显示）
-import 'package:flutter/cupertino.dart'; // 保留，因为 AnnouncementFull 的 copyWith 里有 bool flag，虽然现在不是 ValueGetter，但通常 copyWith 引入此 import
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 class Announcement {
   // --- JSON 字段键常量 ---

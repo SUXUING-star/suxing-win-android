@@ -1,6 +1,6 @@
 // lib/models/activity/activity_comment.dart
 
-import 'package:suxingchahui/models/util_json.dart'; // 确保导入了 util_json
+import 'package:suxingchahui/models/utils/util_json.dart'; // 确保导入了 util_json
 
 class ActivityComment {
   // --- JSON 字段键常量 ---
@@ -45,10 +45,6 @@ class ActivityComment {
   }
 
   static List<ActivityComment> fromListJson(dynamic json) {
-    if (json is! List) {
-      return [];
-    }
-
     return UtilJson.parseObjectList<ActivityComment>(
         json, (listJson) => ActivityComment.fromJson(listJson));
   }

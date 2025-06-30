@@ -11,7 +11,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组�
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart'; // 通用游戏卡片组件
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
-import 'package:suxingchahui/models/game/game.dart'; // 游戏模型
+import 'package:suxingchahui/models/game/game/game.dart'; // 游戏模型
 import 'package:suxingchahui/routes/app_routes.dart'; // 应用路由
 
 /// `HomeLatestGames` 类：主页最新发布游戏板块组件。

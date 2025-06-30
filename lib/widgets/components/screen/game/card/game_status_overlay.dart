@@ -5,8 +5,10 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/constants/game/game_constants.dart'; // 导入游戏常量
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game/game_extension.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 
 /// `GameApprovalStatusOverlay` 类：游戏审核状态叠加层组件。
@@ -33,10 +35,9 @@ class GameApprovalStatusOverlay extends StatelessWidget {
   /// 构建游戏审核状态叠加层。
   @override
   Widget build(BuildContext context) {
-    final statusInfo =
-        GameConstants.getGameStatusDisplay(game.approvalStatus); // 获取状态显示信息
-    final bool isRejected =
-        game.approvalStatus?.toLowerCase() == Game.gameStatusRejected; // 判断是否为被拒绝状态
+    final statusInfo = game.enrichStatus; // 获取状态显示信息
+    final bool isRejected = game.approvalStatus?.toLowerCase() ==
+        Game.gameStatusRejected; // 判断是否为被拒绝状态
     final bool showComment = isRejected &&
         game.reviewComment != null &&
         game.reviewComment!.isNotEmpty; // 是否显示拒绝原因
@@ -50,8 +51,7 @@ class GameApprovalStatusOverlay extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 8, vertical: 3), // 内边距
             decoration: BoxDecoration(
-                color:
-                    (statusInfo['color'] as Color).withSafeOpacity(0.85), // 背景色
+                color: statusInfo.backgroundColor.withSafeOpacity(0.85), // 背景色
                 borderRadius: BorderRadius.circular(12), // 圆角
                 boxShadow: [
                   // 阴影
@@ -62,7 +62,7 @@ class GameApprovalStatusOverlay extends StatelessWidget {
                   )
                 ]),
             child: Text(
-              statusInfo['text'], // 状态文本
+              statusInfo.textLabel, // 状态文本
               style: const TextStyle(
                 color: Colors.white, // 颜色
                 fontWeight: FontWeight.bold, // 字重
@@ -81,7 +81,8 @@ class GameApprovalStatusOverlay extends StatelessWidget {
                 heroTag: 'resubmit_overlay_${game.id}', // 唯一 Hero 标签
                 onPressed: onResubmit, // 点击回调
                 backgroundColor: Colors.blue.shade600, // 背景色
-                child: const Icon(Icons.refresh, size: 18), // 图标
+                child:
+                    const Icon(Icons.keyboard_return_rounded, size: 18), // 图标
               ),
             ),
           ),

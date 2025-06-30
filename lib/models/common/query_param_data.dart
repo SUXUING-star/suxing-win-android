@@ -4,7 +4,7 @@
 /// [QueryParamData] 用于封装 API 请求中常见的分页和排序参数。
 library;
 
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 /// [QueryParamData] 类：通用筛选和分页数据模型。
 ///

@@ -1,7 +1,7 @@
 // lib/models/activity/activity_navigation_info.dart
 
-import 'package:suxingchahui/models/activity/user_activity.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 class ActivityNavigationInfo {
   // --- JSON 字段键常量 ---
@@ -15,11 +15,11 @@ class ActivityNavigationInfo {
 
   final String feedType;
   final String? prevId;
-  final UserActivity? prevActivity;
+  final Activity? prevActivity;
   final int? prevPageNum;
   final String? nextId;
   final int? nextPageNum;
-  final UserActivity? nextActivity;
+  final Activity? nextActivity;
 
   ActivityNavigationInfo({
     required this.feedType,
@@ -48,22 +48,16 @@ class ActivityNavigationInfo {
   factory ActivityNavigationInfo.fromJson(Map<String, dynamic> json) {
     return ActivityNavigationInfo(
       feedType: UtilJson.parseStringSafely(json[jsonKeyFeedType]),
-      // 保持原始逻辑，用 UtilJson.parseId 处理 ID 字段的可空性
       prevId: UtilJson.parseId(json[jsonKeyPrevId]),
-      // 原始代码是直接 UserActivity.fromJson(json['prevActivity'])，如果为 null 会报错
-      // 这里改为安全解析，如果 json['prevActivity'] 为 null 则返回 null
       prevActivity: json[jsonKeyPrevActivity] != null &&
               json[jsonKeyPrevActivity] is Map<String, dynamic>
-          ? UserActivity.fromJson(json[jsonKeyPrevActivity])
+          ? Activity.fromJson(json[jsonKeyPrevActivity])
           : null,
       prevPageNum: UtilJson.parseIntSafely(json[jsonKeyPrevPageNum]),
-      // 保持原始逻辑，用 UtilJson.parseId 处理 ID 字段的可空性
       nextId: UtilJson.parseId(json[jsonKeyNextId]),
-      // 原始代码是直接 UserActivity.fromJson(json['nextActivity'])，如果为 null 会报错
-      // 这里改为安全解析，如果 json['nextActivity'] 为 null 则返回 null
       nextActivity: json[jsonKeyNextActivity] != null &&
               json[jsonKeyNextActivity] is Map<String, dynamic>
-          ? UserActivity.fromJson(json[jsonKeyNextActivity])
+          ? Activity.fromJson(json[jsonKeyNextActivity])
           : null,
       nextPageNum: UtilJson.parseIntSafely(json[jsonKeyNextPageNum]),
     );
@@ -86,11 +80,11 @@ class ActivityNavigationInfo {
   ActivityNavigationInfo copyWith({
     String? feedType,
     String? prevId,
-    UserActivity? prevActivity,
+    Activity? prevActivity,
     int? prevPageNum,
     String? nextId,
     int? nextPageNum,
-    UserActivity? nextActivity,
+    Activity? nextActivity,
   }) {
     return ActivityNavigationInfo(
       feedType: feedType ?? this.feedType,

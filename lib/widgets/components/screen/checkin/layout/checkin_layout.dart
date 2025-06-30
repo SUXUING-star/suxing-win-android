@@ -1,9 +1,9 @@
 // lib/widgets/components/screen/checkin/layout/checkin_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/checkin_status.dart';
-import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
+import 'package:suxingchahui/models/user/check_in/checkin_status.dart';
+import 'package:suxingchahui/models/user/check_in/monthly_checkin_report.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/check_in/user_checkIn_today_list.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_checkin_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
@@ -35,6 +35,8 @@ class CheckInLayout extends StatelessWidget {
   final VoidCallback onRefreshTodayList;
   final String? todayListErrMsg;
 
+  final String deviceCtx;
+
   const CheckInLayout({
     super.key,
     required this.checkInStatus,
@@ -55,26 +57,29 @@ class CheckInLayout extends StatelessWidget {
     required this.onRefreshTodayList,
     required this.todayListErrMsg,
     this.missedDays = 0,
-    this.consecutiveMissedDays = 0, this.todayCheckInList,
-  });
+    this.consecutiveMissedDays = 0,
+    this.todayCheckInList,
+  }) : deviceCtx = isDesktop ? 'desk' : 'mob';
 
   // --- Animation Parameters ---
   static const Duration _slideDuration = Duration(milliseconds: 400);
-  // static const Duration _fadeDuration = Duration(milliseconds: 350); // If needed for FadeInItem
   static const Duration _baseDelay = Duration(milliseconds: 100);
-  static const Duration _delayIncrement =
-      Duration(milliseconds: 100); // Stagger for vertical
-  static const Duration _horizontalStagger =
-      Duration(milliseconds: 150); // Stagger for horizontal right panel
+  static const Duration _delayIncrement = Duration(milliseconds: 100);
+  static const Duration _horizontalStagger = Duration(milliseconds: 150);
   static const Duration _horizontalInternalStagger =
-      Duration(milliseconds: 100); // Stagger within horizontal right panel
+      Duration(milliseconds: 100);
   static const double _slideOffset = 15.0;
+
+  /// 构建一个通用的、以用户ID为基础的唯一 [ValueKey]。
+  ValueKey _makeUserKey(String mainCtx) {
+    return ValueKey('${mainCtx}_${deviceCtx}_${currentUser.id}');
+  }
 
   // --- Section Builders ---
 
-  Widget _buildLevelProgressSection(Duration delay, Key key) {
+  Widget _buildLevelProgressSection(Duration delay) {
     return FadeInSlideUpItem(
-      key: key,
+      key: _makeUserKey('level_progress'),
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
@@ -91,13 +96,11 @@ class CheckInLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsSummarySection(
-      BuildContext context, Duration delay, Key key) {
+  Widget _buildStatsSummarySection(BuildContext context, Duration delay) {
     final theme = Theme.of(context);
     final continuous = checkInStatus.consecutiveCheckIn;
     final total = checkInStatus.totalCheckIn;
 
-    // Local helper to build stat item, similar to GameDetailContent's pattern
     Widget buildStatItem({
       required IconData icon,
       required String title,
@@ -129,7 +132,7 @@ class CheckInLayout extends StatelessWidget {
     }
 
     return FadeInSlideUpItem(
-      key: key,
+      key: ValueKey('stats_summary_${deviceCtx}_${checkInStatus.hashCode}'),
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
@@ -181,10 +184,9 @@ class CheckInLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildTodayCheckInSection(Duration delay, Key key,
-      {double? maxHeight}) {
+  Widget _buildTodayCheckInSection(Duration delay, {double? maxHeight}) {
     return FadeInSlideUpItem(
-      key: key,
+      key: _makeUserKey('today_list'),
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
@@ -195,16 +197,15 @@ class CheckInLayout extends StatelessWidget {
         onRefresh: onRefreshTodayList,
         followService: followService,
         currentUser: currentUser,
-        maxHeight: maxHeight, // Pass maxHeight if provided
+        maxHeight: maxHeight,
       ),
     );
   }
 
-  Widget _buildCalendarSection(Duration delay, Key key) {
+  Widget _buildCalendarSection(Duration delay) {
     return FadeInSlideUpItem(
-      key: key,
-      duration:
-          _slideDuration, // Or a different animation type/duration if preferred
+      key: ValueKey('calendar_${deviceCtx}_${selectedYear}_$selectedMonth'),
+      duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
       child: CheckInCalendarView(
@@ -217,9 +218,9 @@ class CheckInLayout extends StatelessWidget {
     );
   }
 
-  Widget _buildCheckInRulesSection(Duration delay, Key key) {
+  Widget _buildCheckInRulesSection(Duration delay) {
     return FadeInSlideUpItem(
-      key: key,
+      key: _makeUserKey('rules'),
       duration: _slideDuration,
       delay: delay,
       slideOffset: _slideOffset,
@@ -229,15 +230,12 @@ class CheckInLayout extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Unique key for the root to ensure proper rebuilds if top-level props change identity,
-    // though individual section keys handle most animation triggers.
-    // Using a combination of relevant props for the key.
     final rootKey = ValueKey(
         'check_in_content_root_${currentUser.id}_${selectedYear}_$selectedMonth');
 
     return Padding(
       key: rootKey,
-      padding: const EdgeInsets.all(0), // Padding handled by layouts
+      padding: const EdgeInsets.all(0),
       child: isDesktop
           ? _buildHorizontalLayout(context)
           : _buildVerticalLayout(context),
@@ -247,34 +245,20 @@ class CheckInLayout extends StatelessWidget {
   Widget _buildHorizontalLayout(BuildContext context) {
     int rightPanelDelayIndex = 0;
 
-    // Keys for horizontal layout
-    final calendarKey =
-        ValueKey('calendar_horiz_${selectedYear}_$selectedMonth');
-    final levelProgressKey = ValueKey('level_horiz_${currentUser.id}');
-    final statsSummaryKey =
-        ValueKey('stats_summary_horiz_${checkInStatus.hashCode}');
-    final todayListKey = ValueKey('today_list_horiz_${currentUser.id}');
-    final rulesKey = ValueKey('rules_horiz');
-
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // --- Left: Calendar ---
           Expanded(
             flex: 3,
             child: SingleChildScrollView(
-              // Keep SingleChildScrollView if calendar content can exceed flexbox space
               child: _buildCalendarSection(
                 _baseDelay,
-                calendarKey,
               ),
             ),
           ),
           const SizedBox(width: 16),
-
-          // --- Right: Info Panel ---
           Expanded(
             flex: 2,
             child: Container(
@@ -289,7 +273,6 @@ class CheckInLayout extends StatelessWidget {
                       _baseDelay +
                           _horizontalStagger +
                           (_horizontalInternalStagger * rightPanelDelayIndex++),
-                      levelProgressKey,
                     ),
                     const SizedBox(height: 16),
                     _buildStatsSummarySection(
@@ -297,14 +280,12 @@ class CheckInLayout extends StatelessWidget {
                       _baseDelay +
                           _horizontalStagger +
                           (_horizontalInternalStagger * rightPanelDelayIndex++),
-                      statsSummaryKey,
                     ),
                     const SizedBox(height: 16),
                     _buildTodayCheckInSection(
                       _baseDelay +
                           _horizontalStagger +
                           (_horizontalInternalStagger * rightPanelDelayIndex++),
-                      todayListKey,
                       maxHeight: 200,
                     ),
                     const SizedBox(height: 16),
@@ -312,7 +293,6 @@ class CheckInLayout extends StatelessWidget {
                       _baseDelay +
                           _horizontalStagger +
                           (_horizontalInternalStagger * rightPanelDelayIndex++),
-                      rulesKey,
                     ),
                   ],
                 ),
@@ -327,15 +307,6 @@ class CheckInLayout extends StatelessWidget {
   Widget _buildVerticalLayout(BuildContext context) {
     int delayIndex = 0;
 
-    // Keys for vertical layout
-    final levelProgressKey = ValueKey('level_vert_${currentUser.id}');
-    final statsSummaryKey =
-        ValueKey('stats_summary_vert_${checkInStatus.hashCode}');
-    final todayListKey = ValueKey('today_list_vert_${currentUser.id}');
-    final calendarKey =
-        ValueKey('calendar_vert_${selectedYear}_$selectedMonth');
-    final rulesKey = ValueKey('rules_vert');
-
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Column(
@@ -343,31 +314,25 @@ class CheckInLayout extends StatelessWidget {
         children: [
           _buildLevelProgressSection(
             _baseDelay + (_delayIncrement * delayIndex++),
-            levelProgressKey,
           ),
           const SizedBox(height: 16),
           _buildStatsSummarySection(
             context,
             _baseDelay + (_delayIncrement * delayIndex++),
-            statsSummaryKey,
           ),
           const SizedBox(height: 16),
           _buildTodayCheckInSection(
             _baseDelay + (_delayIncrement * delayIndex++),
-            todayListKey,
-            // maxHeight: null (let it be auto in vertical)
           ),
           const SizedBox(height: 16),
           _buildCalendarSection(
             _baseDelay + (_delayIncrement * delayIndex++),
-            calendarKey,
           ),
           const SizedBox(height: 16),
           _buildCheckInRulesSection(
             _baseDelay + (_delayIncrement * delayIndex++),
-            rulesKey,
           ),
-          const SizedBox(height: 16), // Bottom padding
+          const SizedBox(height: 16),
         ],
       ),
     );

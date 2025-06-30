@@ -25,32 +25,13 @@ class MaintenanceDialog {
       return Future.value();
     }
 
-    // --- 2. 确定图标和颜色 ---
-    IconData iconData;
-    Color iconColor;
-    switch (info.maintenanceType) {
-      case 'emergency':
-        iconData = Icons.warning_amber_rounded;
-        iconColor = Colors.red;
-        break;
-      case 'upgrade':
-        iconData = Icons.system_update_alt;
-        iconColor = Colors.blue;
-        break;
-      case 'scheduled':
-      default:
-        iconData = Icons.schedule;
-        iconColor = Colors.orange;
-        break;
-    }
-
     // --- 3. 调用 BaseInputDialog.show ---
     return BaseInputDialog.show<void>(
       // 使用 void 因为我们不关心返回值
       context: context,
       title: "系统维护通知",
-      iconData: iconData,
-      iconColor: iconColor,
+      iconData: info.iconData,
+      iconColor: info.iconColor,
       barrierDismissible: canDismiss, // 控制点击背景是否关闭
       allowDismissWhenNotProcessing: canDismiss, // 控制物理返回键/手势是否关闭
       showCancelButton: canDismiss, // 只有可关闭时才显示取消按钮
@@ -92,7 +73,7 @@ class MaintenanceDialog {
                 if (remainingMinutes > 0) ...[
                   const SizedBox(height: 8),
                   AppText(
-                    "预计剩余时间: ${_formatRemainingTimeStatic(remainingMinutes)}",
+                    "预计剩余时间: ${MaintenanceInfo.formatRemainingTime(remainingMinutes)}",
                     style: Theme.of(dialogContext).textTheme.bodySmall,
                     textAlign: TextAlign.left, // 明确左对齐
                   ),
@@ -122,20 +103,5 @@ class MaintenanceDialog {
         // print("MaintenanceDialog: '知道了' clicked.");
       },
     );
-  }
-
-  // --- 7. 辅助函数改为静态 ---
-  static String _formatRemainingTimeStatic(int minutes) {
-    if (minutes < 0) return "时间未知"; // 处理负数情况
-    if (minutes < 60) {
-      return "$minutes 分钟";
-    } else {
-      final hours = minutes ~/ 60;
-      final remainingMinutes = minutes % 60;
-      if (remainingMinutes == 0) {
-        return "$hours 小时";
-      }
-      return "$hours 小时 $remainingMinutes 分钟";
-    }
   }
 }

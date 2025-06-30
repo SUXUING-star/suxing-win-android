@@ -7,7 +7,7 @@ library;
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/activity/activity_detail_param.dart';
 import 'package:suxingchahui/models/activity/activity_navigation_info.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
 import 'package:suxingchahui/routes/app_routes.dart';
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
@@ -27,7 +27,7 @@ class ActivityDetailNavigation extends StatelessWidget {
 
   /// 导航到指定活动。
   void _navigateToActivity(BuildContext context, {required bool isNext}) {
-    final UserActivity? activity =
+    final Activity? activity =
         isNext ? navigationInfo.nextActivity : navigationInfo.prevActivity;
     final int? pageNum =
         isNext ? navigationInfo.nextPageNum : navigationInfo.prevPageNum;

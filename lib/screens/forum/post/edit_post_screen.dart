@@ -2,7 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/constants/post/post_constants.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/post/post_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/forum/post_service.dart';
@@ -34,7 +35,6 @@ class EditPostScreen extends StatefulWidget {
 }
 
 class _EditPostScreenState extends State<EditPostScreen> {
-  final List<PostTag> _availablePostTags = PostConstants.availablePostTags;
   bool _isSubmitting = false;
   bool _isLoading = true;
   bool _hasInitializedDependencies = false;
@@ -74,7 +74,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
   Future<void> _submitEdit(PostFormData data) async {
     try {
       setState(() => _isSubmitting = true);
-      final postTags = PostTagsUtils.tagsToStringList(data.tags);
+      final postTags = data.tags;
       await widget.postService
           .updatePost(_post!, data.title, data.content, postTags);
       AppSnackBar.showSuccess("编辑成功");
@@ -153,8 +153,7 @@ class _EditPostScreenState extends State<EditPostScreen> {
           currentUser: currentUser,
           initialTitle: _post!.title,
           initialContent: _post!.content,
-          initialTags: PostTagsUtils.stringsToTagList(List.from(_post!.tags)),
-          availableTags: _availablePostTags,
+          initialTags: _post!.enrichTags,
           isSubmitting: _isSubmitting,
           onSubmit: _submitEdit,
           submitButtonText: '保存修改',

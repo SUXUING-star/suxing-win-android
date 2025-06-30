@@ -1,8 +1,12 @@
 // lib/widgets/components/screen/gamecollection/game_collection_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game_with_collection.dart';
-import 'package:suxingchahui/constants/game/game_constants.dart';
-import 'package:suxingchahui/models/game/game_collection_item.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_extension.dart';
+import 'package:suxingchahui/models/game/collection/collection_item_with_game.dart';
+import 'package:suxingchahui/models/game/collection/enrich_collection_status.dart';
+import 'package:suxingchahui/models/game/collection/user_collection_counts.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
@@ -25,15 +29,15 @@ class _LoadMoreButtonPlaceholder {
 }
 
 class GameCollectionLayout extends StatelessWidget {
-  final GameCollectionCounts? collectionCounts;
-  final List<GameWithCollection> collectedGames;
+  final UserCollectionCounts? collectionCounts;
+  final List<CollectionItemWithGame> collectedGames;
   final bool isLoadingMore;
   final bool hasMore;
   final ScrollController scrollController;
   final VoidCallback onLoadMore;
   final VoidCallback onGoToDiscover;
-  final GameWithCollection? selectedGameForReview;
-  final Function(GameWithCollection) onGameTapForReview;
+  final CollectionItemWithGame? selectedGameForReview;
+  final Function(CollectionItemWithGame) onGameTapForReview;
   final VoidCallback onCloseReviewPanel;
   final WindowStateProvider windowStateProvider;
 
@@ -116,7 +120,7 @@ class GameCollectionLayout extends StatelessWidget {
           Expanded(
             flex: reviewFlex,
             child: GameReviewPanel(
-              gameWithCollection: selectedGameForReview!,
+              collectionWithGame: selectedGameForReview!,
               onClose: onCloseReviewPanel,
             ),
           ),
@@ -180,22 +184,22 @@ class GameCollectionLayout extends StatelessWidget {
               const SizedBox(height: 16),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionItem.statusWantToPlay,
+                  enrichStatus: EnrichCollectionStatus.wantToPlayCollection,
                   value: collectionCounts!.wantToPlay.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionItem.statusPlaying,
+                  enrichStatus: EnrichCollectionStatus.playingCollection,
                   value: collectionCounts!.playing.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionItem.statusPlayed,
+                  enrichStatus: EnrichCollectionStatus.playedCollection,
                   value: collectionCounts!.played.toString()),
               const Divider(height: 20, thickness: 0.5),
               _buildStatRow(context,
                   isDesktop: isDesktop,
-                  statusType: GameCollectionItem.statusAll,
+                  enrichStatus: EnrichCollectionStatus.totalCollection,
                   value: collectionCounts!.total.toString()),
             ],
           ),
@@ -237,17 +241,17 @@ class GameCollectionLayout extends StatelessWidget {
           children: <Widget>[
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionItem.statusWantToPlay,
+                enrichStatus: EnrichCollectionStatus.wantToPlayCollection,
                 value: collectionCounts!.wantToPlay.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionItem.statusPlaying,
+                enrichStatus: EnrichCollectionStatus.playingCollection,
                 value: collectionCounts!.playing.toString()),
             const Divider(height: 12, thickness: 0.3),
             _buildStatRow(context,
                 isDesktop: isDesktop,
-                statusType: GameCollectionItem.statusPlayed,
+                enrichStatus: EnrichCollectionStatus.playedCollection,
                 value: collectionCounts!.played.toString()),
           ],
         ),
@@ -258,28 +262,9 @@ class GameCollectionLayout extends StatelessWidget {
   Widget _buildStatRow(
     BuildContext context, {
     required bool isDesktop,
-    required String statusType,
+    required EnrichCollectionStatus enrichStatus,
     required String value,
   }) {
-    late final GameCollectionStatusTheme theme;
-
-    switch (statusType) {
-      case GameCollectionItem.statusWantToPlay:
-        theme = GameCollectionStatusUtils.wantToPlayTheme;
-        break;
-      case GameCollectionItem.statusPlaying:
-        theme = GameCollectionStatusUtils.playingTheme;
-        break;
-      case GameCollectionItem.statusPlayed:
-        theme = GameCollectionStatusUtils.playedTheme;
-        break;
-      case GameCollectionItem.statusAll:
-        theme = GameCollectionStatusUtils.totalTheme;
-        break;
-      default:
-        theme = GameCollectionStatusUtils.getTheme(null);
-    }
-
     final titleTextStyle = TextStyle(
         color:
             Theme.of(context).textTheme.bodyMedium?.color?.withSafeOpacity(0.7),
@@ -290,6 +275,8 @@ class GameCollectionLayout extends StatelessWidget {
         color: Theme.of(context).textTheme.bodyLarge?.color);
     final iconSize = isDesktop ? 22.0 : 20.0;
 
+    final textColor = enrichStatus.textColor;
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4.0),
       child: Row(
@@ -297,16 +284,17 @@ class GameCollectionLayout extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-                color: theme.textColor.withSafeOpacity(0.1),
+                color: textColor.withSafeOpacity(0.1),
                 borderRadius: BorderRadius.circular(8)),
-            child: Icon(theme.icon, color: theme.textColor, size: iconSize),
+            child:
+                Icon(enrichStatus.iconData, color: textColor, size: iconSize),
           ),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(theme.text, style: titleTextStyle),
+                Text(enrichStatus.textLabel, style: titleTextStyle),
                 const SizedBox(height: 2),
                 Text(value, style: valueTextStyle),
               ],
@@ -401,16 +389,10 @@ class GameCollectionLayout extends StatelessWidget {
       padding: EdgeInsets.all(isDesktop ? 16 : 12),
       itemBuilder: (context, index, item) {
         // 如果是游戏
-        if (item is GameWithCollection) {
-          final gameWithCollection = item;
-          final game = gameWithCollection.game;
+        if (item is CollectionItemWithGame) {
+          final collectionWithGame = item;
+          final game = collectionWithGame.game;
           if (game == null) return const SizedBox.shrink();
-
-          final String currentStatusString =
-              gameWithCollection.collection.status;
-
-          final GameCollectionStatusTheme statusTheme =
-              GameCollectionStatusUtils.getTheme(currentStatusString);
 
           return Stack(
             clipBehavior: Clip.none,
@@ -419,7 +401,7 @@ class GameCollectionLayout extends StatelessWidget {
                 game: game,
                 isGridItem: crossAxisCount > 1,
                 onTapOverride: isDesktop
-                    ? () => onGameTapForReview(gameWithCollection)
+                    ? () => onGameTapForReview(collectionWithGame)
                     : () => NavigationUtils.pushNamed(
                         context, AppRoutes.gameDetail,
                         arguments: game),
@@ -430,7 +412,7 @@ class GameCollectionLayout extends StatelessWidget {
                 child: Container(
                   padding: statusBadgePadding,
                   decoration: BoxDecoration(
-                    color: statusTheme.textColor,
+                    color: collectionWithGame.collectionTextColor,
                     borderRadius: BorderRadius.only(
                       topRight: statusBadgeTopRightRadius,
                       bottomLeft: statusBadgeBottomLeftRadius,
@@ -444,7 +426,7 @@ class GameCollectionLayout extends StatelessWidget {
                     ],
                   ),
                   child: Text(
-                    statusTheme.text,
+                    collectionWithGame.collectionTextLabel,
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: statusBadgeFontSize,

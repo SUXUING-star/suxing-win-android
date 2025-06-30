@@ -62,6 +62,8 @@ class GlobalConstants {
   static const String bannerImageSecond =
       'assets/images/banner/banner_colorful1.png'; //  Banner 图片 2
 
+  static const String imagePlaceHolder= 'assets/images/place_holder/jp.png';
+
   /// 默认导航页面颜色列表。
   static const List<Color> defaultNavPageColors = [
     Color(0xFF4CAF50),
@@ -143,4 +145,6 @@ class GlobalConstants {
     Color(0xFF6AB7F0),
     Color(0xFF4E9DE3),
   ];
+
+
 }

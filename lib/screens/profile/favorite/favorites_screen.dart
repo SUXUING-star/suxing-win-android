@@ -1,11 +1,11 @@
 // lib/screens/profile/favorite/favorites_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/models/post/post.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/game/game_list_pagination.dart'; // 导入 game_list_pagination
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart'; // 导入 game_list_pagination
 import 'package:suxingchahui/models/post/post_list_pagination.dart'; // 导入 post_list_pagination
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -496,7 +496,7 @@ class _FavoritesScreenState extends State<FavoritesScreen>
                   isLoadingMore: _isLoadingMorePosts,
                   errorMessage: _postError,
                   onRetryInitialLoad: () => _fetchPosts(isRefresh: true),
-                  onLoadMore: _loadMorePosts,
+                  onLoadMore: () => _loadMorePosts(),
                   scrollController: _postScrollController,
                   currentUser: _currentUser,
                   windowStateProvider: widget.windowStateProvider,

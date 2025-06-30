@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/user/user_with_ban_status.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/user/user_with_ban_status.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';

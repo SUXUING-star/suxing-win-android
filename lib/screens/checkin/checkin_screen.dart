@@ -1,10 +1,10 @@
 // lib/screens/checkin/checkin_screen.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/checkin_result.dart';
-import 'package:suxingchahui/models/user/checkin_status.dart';
-import 'package:suxingchahui/models/user/monthly_checkin_report.dart';
-import 'package:suxingchahui/models/user/user.dart';
-import 'package:suxingchahui/models/user/user_checkIn_today_list.dart';
+import 'package:suxingchahui/models/user/check_in/checkin_result.dart';
+import 'package:suxingchahui/models/user/check_in/checkin_status.dart';
+import 'package:suxingchahui/models/user/check_in/monthly_checkin_report.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
+import 'package:suxingchahui/models/user/check_in/user_checkIn_today_list.dart';
 import 'package:suxingchahui/providers/auth/auth_provider.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';

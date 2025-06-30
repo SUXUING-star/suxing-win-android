@@ -2,11 +2,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import 'package:suxingchahui/constants/activity/activity_constants.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
+import 'package:suxingchahui/models/activity/activity_extension.dart';
 
 class CheckInHistoryExpansion extends StatefulWidget {
-  final UserActivity activity;
+  final Activity activity;
 
   const CheckInHistoryExpansion({
     super.key,
@@ -25,7 +25,7 @@ class _CheckInHistoryExpansionState extends State<CheckInHistoryExpansion> {
   Widget build(BuildContext context) {
     final checkInDetails = widget.activity.checkInDetails;
 
-    if (widget.activity.type != ActivityTypeConstants.checkIn ||
+    if (!widget.activity.enrichActivityType.isCheckIn ||
         checkInDetails == null ||
         checkInDetails.recentCheckIns.isEmpty) {
       return const SizedBox.shrink();

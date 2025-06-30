@@ -7,11 +7,10 @@ library;
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
 import 'package:flutter/services.dart'; // 触觉反馈所需
 import 'package:suxingchahui/models/activity/activity_comment.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型所需
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型所需
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息服务所需
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务所需
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具所需
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件所需
 
 /// `ActivityCommentItem` 类：显示单个动态评论的 StatefulWidget。
@@ -109,7 +108,7 @@ class _ActivityCommentItemState extends State<ActivityCommentItem> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context); // 获取当前主题
     final timeAgo =
-        DateTimeFormatter.formatTimeAgo(_comment.createTime); // 格式化评论创建时间
+        _comment.createTime.formatTimeAgo(); // 格式化评论创建时间
 
     /// 构建用户信息和操作按钮区域。
     Widget buildUserInfoAndActions() {

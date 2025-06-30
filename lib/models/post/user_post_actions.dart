@@ -1,7 +1,7 @@
 // lib/models/post/user_post_actions.dart
 
 import 'package:flutter/cupertino.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 @immutable
 class UserPostActions {

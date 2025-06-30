@@ -1,18 +1,19 @@
 // lib/widgets/components/screen/forum/mobile_tag_filter.dart
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart'; // 需要 PostTag
+import 'package:suxingchahui/models/post/enrich_post_tag.dart';
+import 'package:suxingchahui/utils/dart/func_extension.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart'; // 引入你的 PostTagItem
 
 /// 移动端帖子标签筛选器组件
 class MobileTagFilter extends StatelessWidget {
-  final List<String> tags;
+  final List<EnrichPostTag> tags;
 
-  /// 当前选中的标签（PostTag 枚举），如果选择的是 "全部"，则为 null
-  final PostTag? selectedTag;
+  /// 当前选中的标签，如果选择的是 "全部"，则为 null
+  final String? selectedTag;
 
   /// 标签被选中时的回调，回传选中的 PostTag?
-  final ValueChanged<PostTag?> onTagSelected;
+  final VoidCallbackNullableString onTagSelected;
 
   const MobileTagFilter({
     super.key,
@@ -31,21 +32,22 @@ class MobileTagFilter extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         itemCount: tags.length,
         itemBuilder: (context, index) {
-          final tagString = tags[index];
+          final enrichTag = tags[index];
+          final tag = enrichTag.tag;
 
           // 判断当前标签是否被选中，这个逻辑依然需要
           bool isSelected;
-          if (tagString == '全部') {
+          if (tag == '全部') {
             isSelected = selectedTag == null;
           } else {
-            isSelected = selectedTag != null && selectedTag!.displayText == tagString;
+            isSelected = selectedTag != null && selectedTag! == tag;
           }
 
           return Padding(
             // 给每个标签之间加点间距
             padding: const EdgeInsets.only(right: 8.0),
             child: PostTagItem(
-              tagString: tagString,
+              enrichTag: enrichTag,
               isSelected: isSelected,
               // ✨ 核心改动：直接把 onTagSelected 回调传给 PostTagItem 的 onTap
               // PostTagItem 内部会处理好 "全部" -> null 和 "其他" -> PostTag 的转换

@@ -4,7 +4,7 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game_download_link.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/dialogs/base_input_dialog.dart';
 import 'package:suxingchahui/widgets/ui/inputs/text_input_field.dart';
@@ -22,20 +22,21 @@ class AddDownloadLinkDialog {
     required BuildContext context,
     required InputStateService inputStateService,
     required void Function(
-        {required String title,
-        required String url,
-        required String description})
-    onConfirm,
+            {required String title,
+            required String url,
+            required String description})
+        onConfirm,
     GameDownloadLink? existingLink, // 可选参数，用于编辑模式
   }) {
     final isEditing = existingLink != null;
     final dialogTitle = isEditing ? '编辑下载链接' : '添加下载链接';
     final confirmButtonText = isEditing ? '保存' : '添加';
 
-    final titleController = TextEditingController(text: existingLink?.title ?? '');
+    final titleController =
+        TextEditingController(text: existingLink?.title ?? '');
     final urlController = TextEditingController(text: existingLink?.url ?? '');
     final descriptionController =
-    TextEditingController(text: existingLink?.description ?? '');
+        TextEditingController(text: existingLink?.description ?? '');
 
     BaseInputDialog.show<void>(
       context: context,

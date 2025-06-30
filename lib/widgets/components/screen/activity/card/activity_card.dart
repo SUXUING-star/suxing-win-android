@@ -7,8 +7,9 @@ library;
 import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // Flutter UI 组件
 import 'package:suxingchahui/models/activity/activity_comment.dart';
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
@@ -26,15 +27,15 @@ import 'dart:math' as math; // 导入数学函数
 ///
 /// 该组件展示一条用户动态的完整信息，包括发布者、内容、相关目标、互动操作和评论区。
 class ActivityCard extends StatefulWidget {
-  final UserActivity activity; // 要显示的动态数据
+  final Activity activity; // 要显示的动态数据
   final UserInfoService infoService; // 用户信息 Provider
   final UserFollowService followService; // 用户关注服务
   final InputStateService inputStateService; // 输入状态服务
   final User? currentUser; // 当前登录用户
   final bool isAlternate; // 是否使用交替布局样式
-  final Function(UserActivity activity)? onUpdated; // 动态更新后的回调
+  final Function(Activity activity)? onUpdated; // 动态更新后的回调
   final bool isInDetailView; // 是否在详情视图中
-  final Function(UserActivity)? onActivityTap; // 动态点击回调
+  final Function(Activity)? onActivityTap; // 动态点击回调
   final bool hasOwnBackground; // 是否拥有自己的背景样式
 
   final VoidCallback? onEdit; // 编辑动态回调
@@ -99,7 +100,7 @@ class ActivityCard extends StatefulWidget {
 
 /// `_ActivityCardState` 类：`ActivityCard` 的状态管理。
 class _ActivityCardState extends State<ActivityCard> {
-  late UserActivity _activity; // 动态数据副本
+  late Activity _activity; // 动态数据副本
   bool _isAlternate = false; // 是否使用交替布局样式副本
   bool _showComments = false; // 是否显示评论区
   late double _cardHeight; // 卡片高度
@@ -273,7 +274,7 @@ class _ActivityCardState extends State<ActivityCard> {
           createTime: _activity.createTime,
           updateTime: _activity.updateTime,
           isEdited: _activity.isEdited,
-          activityType: _activity.type,
+          enrichActivityType: _activity.enrichActivityType,
           isAlternate: _isAlternate,
           cardHeight: _cardHeight,
           onEdit: widget.onEdit,

@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/favorite/post_favorites_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';

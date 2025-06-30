@@ -5,15 +5,19 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
-import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 动态类型常量
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/activity/enrich_activity_type.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
 import 'dart:math' as math; // 数学函数
 import 'package:suxingchahui/utils/datetime/date_time_formatter.dart'; // 日期时间格式化工具
-import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart'; // 样式化弹出菜单按钮
-import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法
+import 'package:suxingchahui/widgets/ui/buttons/popup/stylish_popup_menu_button.dart';
+import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 样式化弹出菜单按钮
 
 /// `ActivityHeader` 类：活动卡片或详情的头部组件。
 ///
@@ -26,7 +30,7 @@ class ActivityHeader extends StatelessWidget {
   final DateTime createTime; // 活动创建时间
   final DateTime? updateTime; // 活动最后更新时间
   final bool isEdited; // 活动是否被编辑过
-  final String activityType; // 活动类型字符串
+  final EnrichActivityType enrichActivityType; // 活动类型字符串
   final bool isAlternate; // 是否使用交替布局
   final double cardHeight; // 卡片高度因子，用于微调内部元素大小
   final VoidCallback? onEdit; // 编辑按钮的回调
@@ -42,7 +46,7 @@ class ActivityHeader extends StatelessWidget {
   /// [createTime]：活动创建时间。
   /// [updateTime]：活动最后更新时间。
   /// [isEdited]：活动是否被编辑过。
-  /// [activityType]：活动类型字符串。
+  /// [enrichActivityType]：活动类型字符串。
   /// [isAlternate]：是否使用交替布局。
   /// [cardHeight]：卡片高度因子。
   /// [onEdit]：编辑按钮的回调。
@@ -56,7 +60,7 @@ class ActivityHeader extends StatelessWidget {
     required this.createTime,
     this.updateTime,
     this.isEdited = false,
-    required this.activityType,
+    required this.enrichActivityType,
     this.isAlternate = false,
     this.cardHeight = 1.0,
     this.onEdit,
@@ -68,8 +72,7 @@ class ActivityHeader extends StatelessWidget {
   /// 根据活动信息和权限渲染头部内容。
   @override
   Widget build(BuildContext context) {
-    final String timeAgo =
-        DateTimeFormatter.formatTimeAgo(createTime); // 格式化创建时间
+    final String timeAgo = createTime.formatTimeAgo(); // 格式化创建时间
     final currentUserId = currentUser?.id; // 当前用户 ID
     final isAdmin = currentUser?.isAdmin ?? false; // 当前用户是否为管理员
     final theme = Theme.of(context); // 当前主题
@@ -146,8 +149,6 @@ class ActivityHeader extends StatelessWidget {
   ///
   /// 返回包含活动类型文本的 Container Widget。
   Widget _buildActivityTypeChip() {
-    final displayInfo = ActivityTypeUtils.getActivityTypeDisplayInfo(
-        activityType); // 获取活动类型显示信息
     double fontSize =
         math.min(math.max(10, 10 * math.sqrt(cardHeight * 0.7)), 11.5); // 字体大小
     double horizontalPadding =
@@ -163,14 +164,14 @@ class ActivityHeader extends StatelessWidget {
         vertical: verticalPadding,
       ),
       decoration: BoxDecoration(
-        color: displayInfo.backgroundColor.withSafeOpacity(0.85), // 背景颜色
+        color: enrichActivityType.backgroundColor.withSafeOpacity(0.85), // 背景颜色
         borderRadius: BorderRadius.circular(borderRadius), // 边框圆角
       ),
       child: Text(
-        displayInfo.text, // 活动类型文本
+        enrichActivityType.textLabel, // 活动类型文本
         style: TextStyle(
           fontSize: fontSize, // 字体大小
-          color: displayInfo.textColor, // 字体颜色
+          color: enrichActivityType.textColor, // 字体颜色
           fontWeight: FontWeight.w500, // 字体粗细
         ),
       ),

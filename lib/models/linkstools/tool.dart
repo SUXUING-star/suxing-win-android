@@ -1,6 +1,7 @@
 // lib/models/linkstools/tool.dart
 import 'package:meta/meta.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 @immutable
 class ToolDownload {
@@ -37,7 +38,7 @@ class ToolDownload {
 }
 
 @immutable
-class Tool {
+class Tool implements ToJsonExtension {
   // 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyMongoId = '_id'; // MongoDB 默认的 _id 字段，用于 fromJson
@@ -73,19 +74,8 @@ class Tool {
   });
 
   factory Tool.fromJson(Map<String, dynamic> json) {
-    List<ToolDownload> downloads = [];
-    if (json[jsonKeyDownloads] is List) {
-      // 使用常量
-      downloads = (json[jsonKeyDownloads] as List) // 使用常量
-          .map((item) {
-            if (item is Map<String, dynamic>) {
-              return ToolDownload.fromJson(item);
-            }
-            return null;
-          })
-          .whereType<ToolDownload>()
-          .toList();
-    }
+    List<ToolDownload> downloads = UtilJson.parseObjectList<ToolDownload>(
+        json[jsonKeyDownloads], (j) => ToolDownload.fromJson(j));
 
     return Tool(
       id: UtilJson.parseId(
@@ -105,7 +95,11 @@ class Tool {
     );
   }
 
+  static List<Tool> fromListJson(dynamic json) =>
+      UtilJson.parseObjectList(json, (e) => Tool.fromJson(e));
+
   // toJson 一般用于缓存或通用数据表示，使用普通 'id' 键
+  @override
   Map<String, dynamic> toJson() {
     return {
       jsonKeyId: id, // 使用 jsonKeyId (即 'id')

@@ -1,8 +1,9 @@
 // lib/widgets/components/screen/history/game_history_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
@@ -12,7 +13,6 @@ import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/game/common_game_card.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart';
 
 class GameHistoryLayout extends StatefulWidget {
@@ -199,7 +199,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
                   icon: Icons.calendar_today_outlined,
                   title: '最早浏览',
                   value: earliestViewTime != null
-                      ? DateTimeFormatter.formatShort(earliestViewTime)
+                      ? earliestViewTime.formatShort()
                       : '无记录',
                   color: Colors.orangeAccent),
               const Divider(height: 20, thickness: 0.5),
@@ -208,7 +208,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
                   icon: Icons.access_time_outlined,
                   title: '最近浏览',
                   value: latestViewTime != null
-                      ? DateTimeFormatter.formatShort(latestViewTime)
+                      ? latestViewTime.formatShort()
                       : '无记录',
                   color: Colors.green),
             ],
@@ -256,7 +256,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
                 icon: Icons.calendar_today_outlined,
                 title: '最早浏览',
                 value: earliestViewTime != null
-                    ? DateTimeFormatter.formatShort(earliestViewTime)
+                    ? earliestViewTime.formatShort()
                     : '无记录',
                 color: Colors.orangeAccent),
             const Divider(height: 12, thickness: 0.3),
@@ -265,7 +265,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
                 icon: Icons.access_time_outlined,
                 title: '最近浏览',
                 value: latestViewTime != null
-                    ? DateTimeFormatter.formatShort(latestViewTime)
+                    ? latestViewTime.formatShort()
                     : '无记录',
                 color: Colors.green),
           ],
@@ -410,7 +410,7 @@ class _GameHistoryLayoutState extends State<GameHistoryLayout>
                 borderRadius: BorderRadius.circular(5),
               ),
               child: Text(
-                '上次浏览: ${DateTimeFormatter.formatShort(viewTime)}',
+                '上次浏览: ${viewTime.formatShort()}',
                 style: TextStyle(
                   fontSize: isDesktop ? 9 : 10,
                   color: Colors.white,

@@ -1,15 +1,16 @@
 // lib/models/activity/activity_list_pagination.dart
 
-import 'package:suxingchahui/models/activity/user_activity.dart';
+import 'package:suxingchahui/models/activity/activity.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 class ActivityListPagination {
   // 1. 定义 JSON 字段的 static const String 常量
   static const String jsonKeyActivities = 'activities';
   static const String jsonKeyPagination = 'pagination';
 
-  final List<UserActivity> activities;
+  final List<Activity> activities;
   final PaginationData pagination;
 
   ActivityListPagination({
@@ -59,7 +60,7 @@ class ActivityListPagination {
   }
 
   factory ActivityListPagination.fromJson(Map<String, dynamic> json) {
-    final activitiesList = UserActivity.fromListJson(json[jsonKeyActivities]);
+    final activitiesList = Activity.fromListJson(json[jsonKeyActivities]);
 
     final paginationData = UtilJson.parsePaginationData(
       json,
@@ -75,14 +76,14 @@ class ActivityListPagination {
   Map<String, dynamic> toJson() {
     final Map<String, dynamic> data = {
       jsonKeyActivities:
-          activities.map((activity) => activity.toJson()).toList(), // 使用常量
+          activities.toListJson(), // 使用常量
       jsonKeyPagination: pagination.toJson(), // 使用常量
     };
     return data;
   }
 
   ActivityListPagination copyWith({
-    List<UserActivity>? activities,
+    List<Activity>? activities,
     PaginationData? pagination,
   }) {
     return ActivityListPagination(

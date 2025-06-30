@@ -5,14 +5,15 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/constants/user/level_constants.dart'; // 用户等级常量所需
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/user/user/enrich_level.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型所需
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息服务所需
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务所需
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 空状态组件所需
 import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 错误组件所需
 import 'package:suxingchahui/widgets/ui/common/loading_widget.dart'; // 加载组件所需
-import 'package:suxingchahui/models/user/user_checkIn_today_list.dart'; // 今日签到列表模型所需
+import 'package:suxingchahui/models/user/check_in/user_checkIn_today_list.dart'; // 今日签到列表模型所需
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件所需
 
 /// `TodayCheckInListSection` 类：显示今日签到名单的 StatelessWidget。
@@ -175,7 +176,7 @@ class TodayCheckInListSection extends StatelessWidget {
                   height: 24,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: LevelUtils.getLevelColor(index + 1), // 等级颜色
+                    color: EnrichLevel.fromLevel(index + 1).textColor, // 等级颜色
                     shape: BoxShape.circle, // 圆形
                   ),
                   child: Text(

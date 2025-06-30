@@ -1,6 +1,6 @@
 // lib/widgets/components/screen/follow/follows_layout.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
 import 'package:suxingchahui/widgets/ui/animation/animated_content_grid.dart';
@@ -10,11 +10,11 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
-/// `FollowsLayout` 是一个纯UI组件，负责展示关注/粉丝页面的布局。
+/// [FollowScreenLayout] 负责展示关注/粉丝页面的布局。
 ///
-/// 它接收所有需要的数据和状态，并根据 `isDesktopLayout` 和 `screenWidth`
+/// 它接收所有需要的数据和状态，并根据 [isDesktopLayout] 和 [screenWidth]
 /// 来决定渲染桌面还是移动端布局。所有业务逻辑和状态管理都在其父组件中处理。
-class FollowsLayout extends StatelessWidget {
+class FollowScreenLayout extends StatelessWidget {
   /// 当前登录用户。
   final User? currentUser;
 
@@ -54,7 +54,7 @@ class FollowsLayout extends StatelessWidget {
   /// 桌面布局下，右侧内容区域的 flex 比例。
   static const int desktopContentFlex = 3;
 
-  const FollowsLayout({
+  const FollowScreenLayout({
     super.key,
     required this.infoService,
     required this.followService,

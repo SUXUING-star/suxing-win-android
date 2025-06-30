@@ -1,15 +1,15 @@
 // lib/widgets/components/screen/forum/panel/post_left_panel.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/constants/post/post_constants.dart';
+import 'package:suxingchahui/models/post/enrich_post_tag.dart';
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart';
 import 'package:suxingchahui/widgets/ui/components/post/post_tag_item.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 
 class PostLeftPanel extends StatelessWidget {
   final double panelWidth;
-  final List<PostTag> tags;
-  final PostTag? selectedTag;
-  final Function(PostTag?) onTagSelected;
+  final List<EnrichPostTag> tags;
+  final String? selectedTag;
+  final Function(String?) onTagSelected;
 
   const PostLeftPanel({
     super.key,
@@ -82,22 +82,20 @@ class PostLeftPanel extends StatelessWidget {
   /// 使用 Wrap 布局来构建标签列表，自动换行，更灵活。
   Widget _buildTagsWrap(BuildContext context) {
     // 把 "全部" 和其他标签整合到一个列表里，方便统一处理
-    final allOptions = <PostTag?>[null, ...tags]; // null 代表 "全部"
+    final allOptions = EnrichPostTag.filterEnrichTags;
 
     return Wrap(
       spacing: 8.0, // 水平间距
       runSpacing: 8.0, // 垂直间距
-      children: allOptions.map((tagOption) {
-        // --- 核心逻辑部分 ---
-        final String tagStringToShow = tagOption?.displayText ?? '全部';
-        final bool isSelected = selectedTag == tagOption;
+      children: allOptions.map((t) {
+        final bool isSelected = selectedTag == t.tag;
 
         // 直接返回 PostTagItem，把 isSelected 状态传进去就行
         // count 不传，它自己就是 null
         return PostTagItem(
-          tagString: tagStringToShow,
+          enrichTag: t,
           isSelected: isSelected,
-          onTap: (_) => onTagSelected(tagOption), // 点击时回调，传递的是枚举本身
+          onTap: (_) => onTagSelected(t.tag), // 点击时回调，传递的是枚举本身
           isMini: false, // 左侧面板用标准大小，显得大气
         );
       }).toList(),

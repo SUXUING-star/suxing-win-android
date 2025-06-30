@@ -15,7 +15,7 @@ import 'package:suxingchahui/widgets/ui/text/app_text.dart'; // 导入应用文�
 ///
 /// 该组件管理文本输入状态、焦点、提交行为，并提供自定义上下文菜单。
 class TextInputField extends StatefulWidget {
-  final InputStateService inputStateService; // 输入状态服务实例
+  final InputStateService? inputStateService; // 输入状态服务实例
   final String? slotName; // 槽名称，用于输入状态服务管理
   final TextEditingController? controller; // 文本编辑控制器
   final String? hintText; // 提示文本
@@ -76,7 +76,7 @@ class TextInputField extends StatefulWidget {
   /// [obscureText]：是否隐藏文本。
   const TextInputField({
     super.key,
-    required this.inputStateService,
+    this.inputStateService,
     this.slotName,
     this.controller,
     this.hintText = '请输入内容...',
@@ -147,8 +147,10 @@ class _TextInputFieldState extends State<TextInputField> {
   ///
   /// 根据是否提供槽名称或外部控制器来决定创建内部控制器或使用外部控制器。
   void _initializeController() {
-    if (widget.slotName != null && widget.slotName!.isNotEmpty) {
-      _controller = widget.inputStateService
+    if (widget.slotName != null &&
+        widget.slotName!.isNotEmpty &&
+        widget.inputStateService != null) {
+      _controller = widget.inputStateService!
           .getController(widget.slotName!); // 从状态服务获取控制器
       _usesStateService = true;
       _isInternalController = false;
@@ -422,7 +424,9 @@ class _TextInputFieldState extends State<TextInputField> {
     if (widget.clearOnSubmit) {
       // 如果配置提交后清空
       if (_usesStateService) {
-        widget.inputStateService.clearText(widget.slotName!); // 通过状态服务清空文本
+        if (widget.inputStateService != null) {
+          widget.inputStateService!.clearText(widget.slotName!); // 通过状态服务清空文本
+        }
       } else {
         _controller.clear(); // 清空控制器文本
       }

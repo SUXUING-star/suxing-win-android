@@ -8,9 +8,12 @@ import 'dart:async'; // 导入异步操作所需
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
 import 'package:hive/hive.dart'; // 导入 Hive 数据库，用于监听缓存事件
 import 'package:suxingchahui/constants/common/app_bar_actions.dart'; // 导入 AppBar 动作常量
-import 'package:suxingchahui/models/game/game.dart'; // 导入游戏模型
-import 'package:suxingchahui/models/game/game_list_pagination.dart'; // 导入游戏列表分页模型
-import 'package:suxingchahui/models/game/game_tag.dart'; // 导入游戏标签模型
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_category.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
+import 'package:suxingchahui/models/game/game/game.dart'; // 导入游戏模型
+import 'package:suxingchahui/models/game/game/game_list_pagination.dart'; // 导入游戏列表分页模型
+import 'package:suxingchahui/models/game/game/game_tag_count.dart'; // 导入游戏标签模型
 import 'package:suxingchahui/providers/auth/auth_provider.dart'; // 导入认证 Provider
 import 'package:suxingchahui/providers/gamelist/game_list_filter_provider.dart'; // 导入游戏列表筛选 Provider
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
@@ -34,7 +37,7 @@ import 'package:suxingchahui/widgets/ui/common/error_widget.dart'; // 导入错�
 import 'package:suxingchahui/widgets/ui/common/empty_state_widget.dart'; // 导入空状态组件
 import 'package:suxingchahui/widgets/components/screen/game/card/base_game_card.dart'; // 导入基础游戏卡片
 import 'package:suxingchahui/utils/device/device_utils.dart'; // 导入设备工具类
-import 'package:suxingchahui/widgets/components/screen/game/tag/mobile_tag_bar.dart'; // 导入标签栏
+import 'package:suxingchahui/widgets/components/screen/game/section/tag/mobile_tag_bar.dart'; // 导入标签栏
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart'; // 导入功能按钮
 import 'package:suxingchahui/widgets/ui/snackBar/app_snack_bar.dart'; // 导入应用 SnackBar 工具
 import 'package:visibility_detector/visibility_detector.dart'; // 导入可见性检测器
@@ -90,8 +93,8 @@ class _NavigationTilePlaceholder {
 /// 管理数据加载、筛选、排序、分页、缓存监听和 UI 状态。
 class _GamesListScreenState extends State<GamesListScreen>
     with WidgetsBindingObserver {
-  bool _isLoadingData = false; // 数据是否正在加载中
-  DateTime? _lastLoadingTime;
+  bool _isLoadingGameData = false; // 数据是否正在加载中
+  DateTime? _lastLoadingGameTime;
   bool _isTagsLoading = false;
   DateTime? _lastTagsLoadingTime;
   bool _isInitialized = false; // 屏幕是否已初始化
@@ -113,12 +116,12 @@ class _GamesListScreenState extends State<GamesListScreen>
   String? _currentUserId; // 当前用户ID
   String? _currentCategory; // 当前选中的分类
 
-  List<GameTag> _availableTags = []; // 可用的游戏标签列表
+  List<GameTagCount> _availableTags = []; // 可用的游戏标签列表
 
   int _pageSize = GameService.gamesLimit;
 
-  static const List<String> _availableCategories =
-      Game.defaultGameCategory; // 可用的游戏分类列表
+  static const List<EnrichGameCategory> _availableCategories =
+      EnrichGameCategory.defaultEnrichGameCategory; // 可用的游戏分类列表
   StreamSubscription<BoxEvent>? _cacheSubscription; // 缓存订阅器
   String _currentWatchIdentifier = ''; // 当前缓存监听标识符
   Timer? _refreshDebounceTimer; // 刷新防抖计时器
@@ -128,8 +131,12 @@ class _GamesListScreenState extends State<GamesListScreen>
       Duration(milliseconds: 500); // Provider 检查防抖时长
   static const Map<String, String> _sortOptions = Game.defaultFilter; // 排序选项
 
-  bool _isPerformingRefresh = false; // 是否正在执行下拉刷新操作
-  DateTime? _lastRefreshAttemptTime; // 上次尝试下拉刷新的时间戳
+  bool _isPerformingRefreshGame = false; // 是否正在执行下拉刷新操作
+  DateTime? _lastRefreshGameAttemptTime; // 上次尝试下拉刷新的时间戳
+
+  bool _isPerformingRefreshTags = false; // 是否正在执行下拉刷新操作
+  DateTime? _lastRefreshTagsAttemptTime; // 上次尝试下拉刷新的时间戳
+
   static const Duration _minRefreshInterval = Duration(seconds: 20); // 最小刷新间隔
   static const Duration _maxLoadingDuration = Duration(seconds: 10);
   // 状态缓存
@@ -145,6 +152,8 @@ class _GamesListScreenState extends State<GamesListScreen>
   static const Duration panelAnimationDuration = Duration(milliseconds: 300);
   static const Duration leftPanelDelay = Duration(milliseconds: 50); // 左侧面板延迟
   static const Duration rightPanelDelay = Duration(milliseconds: 100); // 右侧面板延迟
+
+  static const String _ctxScreen = 'game_list';
 
   @override
   void initState() {
@@ -170,15 +179,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   @override
   void didUpdateWidget(covariant GamesListScreen oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (_currentUserId != oldWidget.authProvider.currentUserId ||
-        _currentUserId != widget.authProvider.currentUserId) {
-      // 用户ID变化时
-      if (mounted) {
-        setState(() {
-          _currentUserId = widget.authProvider.currentUserId; // 更新用户ID
-        });
-      }
-    }
+    _checkAuthStateChange();
     if (widget.selectedTag != oldWidget.selectedTag) {
       // 选中标签变化时
       if (mounted) {
@@ -219,6 +220,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
+  /// 检查登录状态是否变动
+  ///
   void _checkAuthStateChange() {
     if (!mounted) return;
     if (_currentUserId != widget.authProvider.currentUserId) {
@@ -231,16 +234,18 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
+  /// 检查加载是否超时
+  ///
   void _checkLoadingTimeout() {
     if (!mounted) return;
     final now = DateTime.now();
     // 超过最大时长直接关闭
-    if (_isLoadingData &&
-        _lastLoadingTime != null &&
-        now.difference(_lastLoadingTime!) > _maxLoadingDuration) {
+    if (_isLoadingGameData &&
+        _lastLoadingGameTime != null &&
+        now.difference(_lastLoadingGameTime!) > _maxLoadingDuration) {
       setState(() {
-        _lastLoadingTime = null;
-        _isLoadingData = false;
+        _lastLoadingGameTime = null;
+        _isLoadingGameData = false;
       });
     }
     // 超过最大时长直接关闭
@@ -255,6 +260,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 初始化当前选中的标签。
+  ///
   void _initializeCurrentTag() {
     final initialProviderTag =
         widget.gameListFilterProvider.selectedTag; // 获取 Provider 中的标签
@@ -282,7 +288,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         _initializeCurrentTag(); // 初始化当前标签
         _loadTags(); // 加载可用标签列表
         _loadGames(pageToFetch: 1, isInitialLoad: true); // 初始加载游戏
-        _lastRefreshAttemptTime = DateTime.now();
+        _lastRefreshGameAttemptTime = DateTime.now();
       } else if (_needsRefresh) {
         // 需要刷新时
         _refreshDataIfNeeded(reason: "变为可见且需要刷新"); // 刷新数据
@@ -345,9 +351,10 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 加载标签。
+  ///
   Future<void> _loadTags({bool forceRefresh = false}) async {
     if (_lastTagsLoadingTime != null) {
-      _lastLoadingTime = null;
+      _lastLoadingGameTime = null;
     }
     if (_isTagsLoading) {
       return;
@@ -376,6 +383,43 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
   }
 
+  /// 刷新标签
+  Future<void> _refreshTags({bool needCheck = true}) async {
+    if (_isPerformingRefreshTags) return;
+    final now = DateTime.now();
+    if (needCheck) {
+      // 需要进行时间间隔检查时
+      if (_lastRefreshTagsAttemptTime != null &&
+          now.difference(_lastRefreshTagsAttemptTime!) < _minRefreshInterval) {
+        // 时间间隔不足时
+        if (mounted) {
+          AppSnackBar.showWarning(
+              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshGameAttemptTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
+        }
+        return; // 返回
+      }
+    }
+    setState(() {
+      _lastRefreshTagsAttemptTime = now;
+      _isPerformingRefreshTags = true;
+    });
+
+    try {
+      await _loadTags(forceRefresh: true);
+      if (mounted) {
+        setState(() {
+          _isPerformingRefreshTags = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isPerformingRefreshTags = false;
+        });
+      }
+    }
+  }
+
   /// 加载游戏数据。
   ///
   /// [pageToFetch]：目标页码。
@@ -388,8 +432,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     bool isRefresh = false,
     bool forceRefresh = false,
   }) async {
-    if (_lastLoadingTime != null) _lastLoadingTime = null;
-    if (!mounted || _isLoadingData) return; // 组件未挂载或正在加载时返回
+    if (_lastLoadingGameTime != null) _lastLoadingGameTime = null;
+    if (!mounted || _isLoadingGameData) return; // 组件未挂载或正在加载时返回
 
     final int targetPage = pageToFetch ?? 1; // 目标页码
 
@@ -405,8 +449,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     _isInitialized = true; // 标记为已初始化
 
     setState(() {
-      _isLoadingData = true; // 设置加载状态
-      _lastLoadingTime = DateTime.now();
+      _isLoadingGameData = true; // 设置加载状态
+      _lastLoadingGameTime = DateTime.now();
       _errorMessage = null; // 清空错误消息
       if (isRefresh || isInitialLoad) {
         // 刷新或初始加载时清空游戏列表
@@ -478,8 +522,8 @@ class _GamesListScreenState extends State<GamesListScreen>
     } finally {
       if (mounted) {
         setState(() {
-          _isLoadingData = false; // 重置加载状态
-          _lastLoadingTime = null;
+          _isLoadingGameData = false; // 重置加载状态
+          _lastLoadingGameTime = null;
           _cacheUpdateCount = 0;
         });
       }
@@ -552,6 +596,7 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 停止监听缓存变化。
+  ///
   void _stopWatchingCache() {
     if (_cacheSubscription != null) {
       _cacheSubscription?.cancel(); // 取消订阅
@@ -577,7 +622,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         return;
       }
 
-      if (_isLoadingData) {
+      if (_isLoadingGameData) {
         // 正在加载数据时
         if (isCacheUpdated) {
           // 如果是缓存更新触发
@@ -602,20 +647,20 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// 刷新主逻辑。
   ///
   /// [needCheck]：是否需要进行时间间隔检查。
-  Future<void> _refreshData({bool needCheck = true}) async {
-    if (_isPerformingRefresh) {
+  Future<void> _forceRefreshGameData({bool needCheck = true}) async {
+    if (_isPerformingRefreshGame) {
       // 如果正在执行下拉刷新，则返回
       return;
     }
     final now = DateTime.now();
     if (needCheck) {
       // 需要进行时间间隔检查时
-      if (_lastRefreshAttemptTime != null &&
-          now.difference(_lastRefreshAttemptTime!) < _minRefreshInterval) {
+      if (_lastRefreshGameAttemptTime != null &&
+          now.difference(_lastRefreshGameAttemptTime!) < _minRefreshInterval) {
         // 时间间隔不足时
         if (mounted) {
           AppSnackBar.showWarning(
-              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshAttemptTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
+              '刷新太频繁啦，请 ${(_minRefreshInterval.inSeconds - now.difference(_lastRefreshGameAttemptTime!).inSeconds)} 秒后再试'); // 提示刷新频繁
         }
         return; // 返回
       }
@@ -623,13 +668,13 @@ class _GamesListScreenState extends State<GamesListScreen>
 
     if (mounted) {
       setState(() {
-        _isPerformingRefresh = true; // 设置正在执行下拉刷新标记
+        _isPerformingRefreshGame = true; // 设置正在执行下拉刷新标记
       });
     }
-    _lastRefreshAttemptTime = now; // 记录本次尝试刷新时间
+    _lastRefreshGameAttemptTime = now; // 记录本次尝试刷新时间
 
     try {
-      if (_isLoadingData) {
+      if (_isLoadingGameData) {
         // 如果其他数据加载正在进行，则返回
         return;
       }
@@ -641,15 +686,16 @@ class _GamesListScreenState extends State<GamesListScreen>
     } finally {
       if (mounted) {
         setState(() {
-          _isPerformingRefresh = false; // 清除刷新状态标记
+          _isPerformingRefreshGame = false; // 清除刷新状态标记
         });
       }
     }
   }
 
   /// 前往上一页。
+  ///
   Future<void> _goToPreviousPageInternal() async {
-    if (_currentPage > 1 && !_isLoadingData) {
+    if (_currentPage > 1 && !_isLoadingGameData) {
       // 当前页大于 1 且未加载数据时
       _stopWatchingCache(); // 停止监听缓存
       await _loadGames(pageToFetch: _currentPage - 1); // 加载上一页
@@ -659,8 +705,9 @@ class _GamesListScreenState extends State<GamesListScreen>
   }
 
   /// 前往下一页。
+  ///
   Future<void> _goToNextPageInternal() async {
-    if (_currentPage < _totalPages && !_isLoadingData) {
+    if (_currentPage < _totalPages && !_isLoadingGameData) {
       // 当前页小于总页数且未加载数据时
       _stopWatchingCache(); // 停止监听缓存
       await _loadGames(pageToFetch: _currentPage + 1); // 加载下一页
@@ -676,15 +723,15 @@ class _GamesListScreenState extends State<GamesListScreen>
     if (pageNumber >= 1 &&
         pageNumber <= _totalPages &&
         pageNumber != _currentPage &&
-        !_isLoadingData) {
+        !_isLoadingGameData) {
       // 目标页码有效且非当前页且未加载数据时
       _stopWatchingCache(); // 停止监听缓存
       await _loadGames(pageToFetch: pageNumber); // 加载指定页
     } else if (pageNumber == _currentPage && mounted) {
       // 目标页为当前页时无操作
-    } else if (!_isLoadingData && mounted) {
+    } else if (!_isLoadingGameData && mounted) {
       // 未加载数据时无操作
-    } else if (_isLoadingData) {
+    } else if (_isLoadingGameData) {
       // 正在加载数据时无操作
     }
   }
@@ -720,9 +767,12 @@ class _GamesListScreenState extends State<GamesListScreen>
                     items: [
                       const DropdownMenuItem<String?>(
                           value: null, child: Text('所有分类')),
-                      ..._availableCategories.map((category) =>
-                          DropdownMenuItem<String?>(
-                              value: category, child: Text(category))),
+                      ..._availableCategories.map(
+                        (enrichCategory) => DropdownMenuItem<String?>(
+                          value: enrichCategory.category,
+                          child: Text(enrichCategory.textLabel),
+                        ),
+                      ),
                     ],
                     onChanged: (String? newValue) {
                       setDialogState(() {
@@ -745,8 +795,8 @@ class _GamesListScreenState extends State<GamesListScreen>
                       const DropdownMenuItem<String?>(
                           value: null, child: Text('所有标签')),
                       ..._availableTags.map((tag) => DropdownMenuItem<String?>(
-                          value: tag.name,
-                          child: Text('${tag.name} (${tag.count})'))),
+                          value: tag.tagLabel,
+                          child: Text('${tag.tagLabel} (${tag.count})'))),
                     ],
                     onChanged: (String? newValue) =>
                         setDialogState(() => tempSelectedTag = newValue),
@@ -934,7 +984,8 @@ class _GamesListScreenState extends State<GamesListScreen>
   /// 处理分类选择。
   ///
   /// [category]：选中的分类。
-  void _handleCategorySelected(String? category) {
+  void _handleCategorySelected(EnrichGameCategory? enrichCategory) {
+    final category = enrichCategory?.category;
     final newCategory =
         (_currentCategory == category) ? null : category; // 切换分类
     _applyFilterAndSort(
@@ -951,11 +1002,12 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// 处理标签栏选择。
   ///
-  /// [tag]：选中的标签。
-  void _handleTagBarSelected(String? tag) {
+  /// [enrichTag]：选中的标签。
+  void _handleTagBarSelected(EnrichGameTag? enrichTag) {
+    final tag = enrichTag?.tag;
     final newTag = (_currentTag == tag) ? null : tag; // 切换标签
     _applyFilterAndSort(
-        tag: newTag,
+        tag: tag,
         category: null,
         sortBy: _currentSortBy,
         descending: _isDescending); // 应用新标签并清除分类
@@ -995,9 +1047,9 @@ class _GamesListScreenState extends State<GamesListScreen>
           await widget.gameService.deleteGame(game); // 调用删除游戏服务
           if (!mounted) return; // 组件未挂载时返回
           AppSnackBar.showSuccess("成功删除游戏"); // 提示删除成功
-          _loadGames(pageToFetch: _currentPage, isRefresh: true);
+          await _loadGames(isRefresh: true);
         } catch (e) {
-          AppSnackBar.showError("删除游戏失败"); // 提示删除失败
+          AppSnackBar.showError("删除游戏失败,${e.toString()}"); // 提示删除失败
         }
       },
     );
@@ -1031,7 +1083,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     final result = await NavigationUtils.pushNamed(context, AppRoutes.editGame,
         arguments: game.id); // 导航到编辑游戏页面
     if (result == true && mounted) {
-      _loadGames(pageToFetch: _currentPage, isRefresh: true);
+      await _loadGames(pageToFetch: _currentPage);
     }
   }
 
@@ -1042,11 +1094,11 @@ class _GamesListScreenState extends State<GamesListScreen>
       AppSnackBar.showLoginRequiredSnackBar(context);
       return;
     }
-    NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) {
+    NavigationUtils.pushNamed(context, AppRoutes.addGame).then((result) async {
       // 导航到添加游戏页面
       if (result == true && mounted) {
         // 添加成功且组件挂载时
-        _refreshData(needCheck: false); // 触发刷新
+        await _loadGames(isRefresh: true, forceRefresh: true);
         // 要加载第一页，因为新游戏在第一页，虽然普通用户看不到刚创建的游戏
       }
     });
@@ -1110,7 +1162,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         if (_isDesktop)
           FunctionalIconButton(
             buttonBackgroundColor: Colors.white,
-            onPressed: () => _refreshData(needCheck: true),
+            onPressed: () => _forceRefreshGameData(needCheck: true),
             icon: Icons.refresh_outlined,
           ),
         // 动作按钮
@@ -1143,7 +1195,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           tooltip: AppBarAction.addGame.defaultTooltip!,
           iconColor: AppBarAction.addGame.defaultIconColor,
           buttonBackgroundColor: AppBarAction.addGame.defaultBgColor,
-          onPressed: _isLoadingData ? null : _handleAddGame,
+          onPressed: _isLoadingGameData ? null : _handleAddGame,
         ),
         const SizedBox(width: 8), // 间距
         FunctionalIconButton(
@@ -1152,7 +1204,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           tooltip: AppBarAction.myGames.defaultTooltip!,
           iconColor: AppBarAction.myGames.defaultIconColor,
           buttonBackgroundColor: AppBarAction.myGames.defaultBgColor,
-          onPressed: _isLoadingData
+          onPressed: _isLoadingGameData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.myGames),
         ),
@@ -1163,7 +1215,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           tooltip: AppBarAction.searchGame.defaultTooltip!,
           iconColor: AppBarAction.searchGame.defaultIconColor,
           buttonBackgroundColor: AppBarAction.searchGame.defaultBgColor,
-          onPressed: _isLoadingData
+          onPressed: _isLoadingGameData
               ? null
               : () => NavigationUtils.pushNamed(context, AppRoutes.searchGame),
         ),
@@ -1174,7 +1226,8 @@ class _GamesListScreenState extends State<GamesListScreen>
           tooltip: AppBarAction.filterSort.defaultTooltip!,
           iconColor: AppBarAction.filterSort.defaultIconColor,
           buttonBackgroundColor: AppBarAction.filterSort.defaultBgColor,
-          onPressed: _isLoadingData ? null : () => _showFilterDialog(context),
+          onPressed:
+              _isLoadingGameData ? null : () => _showFilterDialog(context),
         ),
         if (_currentCategory != null) const SizedBox(width: 8), // 清除分类按钮间距
         if (_currentCategory != null) // 清除分类按钮
@@ -1182,7 +1235,7 @@ class _GamesListScreenState extends State<GamesListScreen>
             icon: AppBarAction.clearCategoryFilter.icon,
             iconColor: AppBarAction.clearCategoryFilter.defaultIconColor,
             iconBackgroundColor: Colors.white,
-            onPressed: _isLoadingData ? null : _clearCategoryFilter,
+            onPressed: _isLoadingGameData ? null : _clearCategoryFilter,
             tooltip: '清除分类筛选 ($_currentCategory)',
           ),
         if (_currentTag != null) const SizedBox(width: 8), // 清除标签按钮间距
@@ -1191,7 +1244,7 @@ class _GamesListScreenState extends State<GamesListScreen>
             icon: AppBarAction.clearTagFilter.icon,
             iconColor: AppBarAction.clearTagFilter.defaultIconColor,
             iconBackgroundColor: Colors.white,
-            onPressed: _isLoadingData ? null : _clearTagFilter,
+            onPressed: _isLoadingGameData ? null : _clearTagFilter,
             tooltip: '清除标签筛选 ($_currentTag)',
           ),
         if (!_isDesktop) const SizedBox(width: 8), // 移动端间距
@@ -1229,7 +1282,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     final panelWidth = DeviceUtils.getSidePanelWidthInScreenWidth(_screenWidth);
 
     return RefreshIndicator(
-      onRefresh: () => _refreshData(needCheck: true), // 下拉刷新回调
+      onRefresh: () => _forceRefreshGameData(needCheck: true), // 下拉刷新回调
       child: Stack(
         children: [
           _isDesktop // 桌面布局
@@ -1247,11 +1300,11 @@ class _GamesListScreenState extends State<GamesListScreen>
                           tags: _availableTags, // 标签列表
                           selectedTag: _currentTag, // 选中标签
                           onTagSelected: _isTagsLoading // 点击标签回调
-                              ? (String? tag) {}
+                              ? (EnrichGameTag? tag) {}
                               : _handleTagBarSelected,
                           isTagLoading: _isTagsLoading,
                           errorMessage: _tagsErrMsg,
-                          refreshTags: (f) => _loadTags(forceRefresh: f),
+                          refreshTags: (c) => _refreshTags(needCheck: c),
                         ),
                       ),
                     Expanded(
@@ -1273,12 +1326,12 @@ class _GamesListScreenState extends State<GamesListScreen>
                           currentPageGames: _gamesList, // 当前页游戏列表
                           totalGamesCount: _totalPages * _pageSize, // 总游戏数量
                           selectedTag: _currentTag, // 选中标签
-                          onTagSelected: _isLoadingData // 标签选择回调
+                          onTagSelected: _isLoadingGameData // 标签选择回调
                               ? null
                               : _handleTagBarSelected,
                           selectedCategory: _currentCategory, // 选中分类
                           availableCategories: _availableCategories, // 可用分类
-                          onCategorySelected: _isLoadingData // 分类选择回调
+                          onCategorySelected: _isLoadingGameData // 分类选择回调
                               ? null
                               : _handleCategorySelected,
                         ),
@@ -1317,7 +1370,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       ); //
     }
 
-    if (_errorMessage != null && _gamesList.isEmpty && !_isLoadingData) {
+    if (_errorMessage != null && _gamesList.isEmpty && !_isLoadingGameData) {
       // 错误且列表为空时显示错误组件
       return CustomErrorWidget(
         errorMessage: _errorMessage!,
@@ -1327,7 +1380,7 @@ class _GamesListScreenState extends State<GamesListScreen>
       );
     }
 
-    if (!_isLoadingData && _errorMessage == null && _gamesList.isEmpty) {
+    if (!_isLoadingGameData && _errorMessage == null && _gamesList.isEmpty) {
       // 无数据且无错误时显示空状态
       return _buildEmptyState();
     }
@@ -1335,7 +1388,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     return Stack(
       children: [
         _buildGameGridWithNavigation(showLeftPanel, showRightPanel), // 游戏网格和导航
-        if (_isLoadingData && _gamesList.isNotEmpty) // 加载中且列表不为空时显示半透明加载层
+        if (_isLoadingGameData && _gamesList.isNotEmpty) // 加载中且列表不为空时显示半透明加载层
           Positioned.fill(
             child: Container(
               color: Colors.black.withAlpha(240), // 半透明黑色背景
@@ -1349,11 +1402,12 @@ class _GamesListScreenState extends State<GamesListScreen>
               ), // 内联加载指示器
             ),
           ),
-        if (_isLoadingData &&
+        if (_isLoadingGameData &&
             _gamesList.isEmpty &&
             _errorMessage == null) // 加载中且列表为空时显示加载组件
           const LoadingWidget(
             message: '正在加载游戏...',
+            size: 36,
           ),
       ],
     );
@@ -1403,7 +1457,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     }
 
     return AnimatedContentGrid<Object>(
-      gridKey: ValueKey('game_grid_page_$_currentPage'),
+      gridKey: ValueKey('${_ctxScreen}_$_currentPage'),
       // 网格的 Key
       items: displayItems,
       // 显示的项目列表
@@ -1431,7 +1485,7 @@ class _GamesListScreenState extends State<GamesListScreen>
           final game = item;
 
           return BaseGameCard(
-            key: ValueKey(game.id),
+            key: ValueKey('${_ctxScreen}_${game.id}'),
             // 唯一键
             currentUser: widget.authProvider.currentUser,
             // 参数
@@ -1455,13 +1509,13 @@ class _GamesListScreenState extends State<GamesListScreen>
             maxTags: useCompactMode ? 1 : (withPanels ? 1 : 2),
             // 最大标签数
             onDeleteAction:
-                _isLoadingData && !_checkCanEditOrDeleteGame(game) // 删除回调
+                _isLoadingGameData && !_checkCanEditOrDeleteGame(game) // 删除回调
                     ? null
                     : () {
                         _handleDeleteGame(game);
                       },
             onEditAction:
-                _isLoadingData && !_checkCanEditOrDeleteGame(game) // 编辑回调
+                _isLoadingGameData && !_checkCanEditOrDeleteGame(game) // 编辑回调
                     ? null
                     : () => _handleEditGame(game),
           );
@@ -1483,7 +1537,7 @@ class _GamesListScreenState extends State<GamesListScreen>
     final String pageInfo = isPrevious // 页码信息
         ? '(${_currentPage - 1}/$_totalPages)'
         : '(${_currentPage + 1}/$_totalPages)';
-    final VoidCallback? action = (_isLoadingData || !canNavigate) // 动作回调
+    final VoidCallback? action = (_isLoadingGameData || !canNavigate) // 动作回调
         ? null
         : (isPrevious
             ? () {
@@ -1551,21 +1605,21 @@ class _GamesListScreenState extends State<GamesListScreen>
       // 当前有分类筛选时
       message = '没有找到分类为 “$_currentCategory” 的游戏';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _clearCategoryFilter, // 点击清除分类
+          onPressed: _isLoadingGameData ? null : _clearCategoryFilter, // 点击清除分类
           label: '查看全部游戏',
           icon: Icons.list_alt);
     } else if (_currentTag != null) {
       // 当前有标签筛选时
       message = '没有找到标签为 “$_currentTag” 的游戏';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _clearTagFilter, // 点击清除标签
+          onPressed: _isLoadingGameData ? null : _clearTagFilter, // 点击清除标签
           label: '查看全部游戏',
           icon: Icons.list_alt);
     } else {
       // 无筛选时
       message = '这里还没有游戏呢';
       actionButton = FunctionalButton(
-          onPressed: _isLoadingData ? null : _handleAddGame, // 点击添加游戏
+          onPressed: _isLoadingGameData ? null : _handleAddGame, // 点击添加游戏
           label: '添加一个游戏',
           icon: Icons.add);
     }
@@ -1579,15 +1633,17 @@ class _GamesListScreenState extends State<GamesListScreen>
 
   /// 构建悬浮动作按钮组。
   Widget? _buildFabGroup() {
-    if (_isLoadingData) return null; // 加载时不显示
+    if (_isLoadingGameData) return null; // 加载时不显示
 
     return FloatingActionButtonGroup(
-      toggleButtonHeroTag: "game_list_heroTags",
+      toggleButtonHeroTag: '${_ctxScreen}_heroTags',
       children: widget.authProvider.isLoggedIn
           ? _addGameFab()
           : _toLoginFab(), // 根据登录状态显示不同按钮组
     );
   }
+
+  String _makeHeroTag(String mainCtx) => '${_ctxScreen}_${_isDesktop}_$mainCtx';
 
   /// 构建添加游戏悬浮动作按钮组。
   List<Widget> _addGameFab() {
@@ -1596,14 +1652,14 @@ class _GamesListScreenState extends State<GamesListScreen>
         onPressed: _handleAddGame, // 点击添加游戏
         icon: AppBarAction.addGame.icon,
         tooltip: '添加游戏',
-        heroTag: 'games_list_add_game_fab',
+        heroTag: _makeHeroTag('add'),
       ),
       GenericFloatingActionButton(
         onPressed: () =>
             NavigationUtils.pushNamed(context, AppRoutes.myGames), // 点击导航到我的游戏
         icon: AppBarAction.myGames.icon,
         tooltip: '我的游戏',
-        heroTag: 'games_list_my_games_fab',
+        heroTag: _makeHeroTag('my'),
       ),
     ];
   }
@@ -1615,7 +1671,7 @@ class _GamesListScreenState extends State<GamesListScreen>
         onPressed: () => NavigationUtils.navigateToLogin(context), // 点击导航到登录页
         icon: Icons.login,
         tooltip: '登录后可以添加游戏',
-        heroTag: 'login_frm_games_list_fab',
+        heroTag: _makeHeroTag('login'),
       )
     ];
   }
@@ -1625,13 +1681,13 @@ class _GamesListScreenState extends State<GamesListScreen>
     if (!_isInitialized) {
       return null; // 未初始化时不显示
     }
-    if (_isLoadingData) {
+    if (_isLoadingGameData) {
       return const LoadingWidget();
     }
     return PaginationControls(
       currentPage: _currentPage, // 当前页码
       totalPages: _totalPages, // 总页数
-      isLoading: _isLoadingData, // 是否加载中
+      isLoading: _isLoadingGameData, // 是否加载中
       onPreviousPage: _goToPreviousPageInternal, // 上一页回调
       onNextPage: _goToNextPageInternal, // 下一页回调
       onPageSelected: _goToPage, // 页码选择回调

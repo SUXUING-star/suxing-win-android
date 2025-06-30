@@ -1,6 +1,7 @@
 // lib/screens/admin/widgets/maintenance_management.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:suxingchahui/models/maintenance/maintenance_info.dart';
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_button.dart';
 import 'package:suxingchahui/widgets/ui/inputs/form_text_input_field.dart';
@@ -25,7 +26,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
   bool _isActive = false;
   bool _allowLogin = false;
   bool _forceLogout = false;
-  String _maintenanceType = 'scheduled';
+  String _maintenanceType = MaintenanceInfo.scheduledType;
 
   bool _hasInitializedDependencies = false;
   String _message = '系统正在维护中，请稍后再试。';
@@ -34,12 +35,6 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
   DateTime _endTime = DateTime.now().add(const Duration(hours: 1));
 
   bool _isLoading = false;
-
-  final List<String> _maintenanceTypes = [
-    'scheduled', // 计划维护
-    'emergency', // 紧急维护
-    'upgrade' // 升级维护
-  ];
 
   @override
   void initState() {
@@ -80,7 +75,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
           _message = info.message;
           _allowLogin = info.allowLogin;
           _forceLogout = info.forceLogout;
-          _maintenanceType = info.maintenanceType;
+          _maintenanceType = info.type;
           _startTime = info.startTime;
           _endTime = info.endTime;
         });
@@ -301,29 +296,13 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                         decoration: const InputDecoration(
                           border: OutlineInputBorder(),
                         ),
-                        items: _maintenanceTypes.map((type) {
-                          String label;
-                          IconData icon;
-                          Color color;
-
-                          switch (type) {
-                            case 'emergency':
-                              label = '紧急维护';
-                              icon = Icons.warning_amber_rounded;
-                              color = Colors.red;
-                              break;
-                            case 'upgrade':
-                              label = '升级维护';
-                              icon = Icons.system_update_alt;
-                              color = Colors.blue;
-                              break;
-                            case 'scheduled':
-                            default:
-                              label = '计划维护';
-                              icon = Icons.schedule;
-                              color = Colors.orange;
-                              break;
-                          }
+                        items: MaintenanceInfo.maintenanceTypes.map((type) {
+                          final String label =
+                              MaintenanceInfo.getMaintenanceTitle(type);
+                          final IconData icon =
+                              MaintenanceInfo.getMaintenanceIcon(type);
+                          final Color color =
+                              MaintenanceInfo.getMaintenanceIconColor(type);
 
                           return DropdownMenuItem<String>(
                             value: type,
@@ -342,7 +321,7 @@ class _MaintenanceManagementState extends State<MaintenanceManagement> {
                               _maintenanceType = value;
 
                               // 紧急维护默认强制登出，不允许登录
-                              if (value == 'emergency') {
+                              if (value == MaintenanceInfo.emergencyType) {
                                 _forceLogout = true;
                                 _allowLogin = false;
                               }

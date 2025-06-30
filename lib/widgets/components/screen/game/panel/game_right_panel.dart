@@ -5,12 +5,15 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_category.dart';
+import 'package:suxingchahui/models/game/game/enrich_game_tag.dart';
 import 'package:suxingchahui/widgets/ui/components/game/game_tag_item.dart'; // 游戏标签项组件所需
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 颜色扩展方法所需
-import 'package:suxingchahui/constants/game/game_constants.dart'; // 游戏常量所需
-import 'package:suxingchahui/models/game/game.dart'; // 游戏模型所需
-import 'package:suxingchahui/models/stats/category_stat.dart'; // 分类统计模型所需
-import 'package:suxingchahui/models/stats/tag_stat.dart'; // 标签统计模型所需
+import 'package:suxingchahui/models/game/game/game.dart'; // 游戏模型所需
+import 'package:suxingchahui/models/game/game/game_category_stat.dart'; // 分类统计模型所需
+import 'package:suxingchahui/models/game/game/game_tag_stat.dart'; // 标签统计模型所需
 import 'package:suxingchahui/services/main/game/game_stats_service.dart'; // 游戏统计服务所需
 
 /// [GameRightPanel] 类：显示游戏列表右侧面板的 StatelessWidget。
@@ -21,10 +24,10 @@ class GameRightPanel extends StatelessWidget {
   final List<Game> currentPageGames; // 当前页面显示的游戏列表
   final int totalGamesCount; // 游戏总数
   final String? selectedTag; // 当前选中的标签
-  final Function(String?)? onTagSelected; // 标签选择回调
+  final Function(EnrichGameTag?)? onTagSelected; // 标签选择回调
   final String? selectedCategory; // 当前选中的分类
-  final Function(String?)? onCategorySelected; // 分类选择回调
-  final List<String> availableCategories; // 所有可用分类列表
+  final Function(EnrichGameCategory?)? onCategorySelected; // 分类选择回调
+  final List<EnrichGameCategory> availableCategories; // 所有可用分类列表
 
   /// 构造函数。
   ///
@@ -50,10 +53,10 @@ class GameRightPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final List<CategoryStat> categoryStats =
+    final List<GameCategoryStat> categoryStats =
         GameStatsService.getCategoryStatistics(
             currentPageGames); // 获取当前页的分类统计数据
-    final List<TagStat> tagStats =
+    final List<GameTagStat> tagStats =
         GameStatsService.getTagStatistics(currentPageGames); // 获取当前页的标签统计数据
     final int uniqueCategoriesCount = GameStatsService.getUniqueCategoriesCount(
         currentPageGames); // 获取当前页的唯一分类数量
@@ -196,17 +199,17 @@ class GameRightPanel extends StatelessWidget {
                   _buildFilterChip(
                     context: context,
                     label: '全部',
-                    value: null, // null 表示全部
+                    enrichCategory: null, // null 表示全部
                     isSelected: selectedCategory == null,
                     onSelected: onCategorySelected,
                   ),
-                  ...availableCategories.map((category) {
+                  ...availableCategories.map((c) {
                     // 遍历所有可用分类并构建 Chip
                     return _buildFilterChip(
                       context: context,
-                      label: category,
-                      value: category,
-                      isSelected: selectedCategory == category,
+                      label: c.category,
+                      enrichCategory: c,
+                      isSelected: selectedCategory == c.category,
                       onSelected: onCategorySelected,
                     );
                   }),
@@ -227,15 +230,16 @@ class GameRightPanel extends StatelessWidget {
   Widget _buildFilterChip({
     required BuildContext context,
     required String label,
-    required String? value,
+    required EnrichGameCategory? enrichCategory,
     required bool isSelected,
-    required Function(String?)? onSelected,
+    required Function(EnrichGameCategory?)? onSelected,
   }) {
+    final value = enrichCategory?.category;
     Color baseColor; // 基础颜色
-    if (value == null) {
+    if (enrichCategory == null) {
       baseColor = Colors.grey.shade500; // “全部”选项的颜色
     } else {
-      baseColor = GameCategoryUtils.getCategoryColor(value); // 获取特定分类的颜色
+      baseColor = enrichCategory.textColor;
     }
 
     final Color finalBgColor; // 最终背景颜色
@@ -246,8 +250,8 @@ class GameRightPanel extends StatelessWidget {
     if (isSelected) {
       // 选中状态
       finalBgColor = baseColor; // 使用基础色作为背景
-      finalTextColor =
-          GameTagUtils.getTextColorForBackground(baseColor); // 确保文字颜色高对比度
+      finalTextColor = EnrichGameCategory.getCategoryTextColorForBackground(
+          baseColor); // 确保文字颜色高对比度
       finalFontWeight = FontWeight.bold; // 字体加粗
       finalBorder = null; // 无边框
     } else {
@@ -269,15 +273,18 @@ class GameRightPanel extends StatelessWidget {
 
     final categoryStat =
         GameStatsService.getCategoryStatistics(currentPageGames).firstWhere(
-      (stat) => stat.name == value,
-      orElse: () => CategoryStat(name: value ?? '', count: 0), // 未找到时计数为 0
+      (stat) => stat.category == value,
+      orElse: () =>
+          GameCategoryStat(category: value ?? '', count: 0), // 未找到时计数为 0
     );
     final displayCount = (value == null) // 非“全部”选项且计数大于 0 时显示
         ? 0
         : categoryStat.count;
 
     return InkWell(
-      onTap: onSelected != null ? () => onSelected(value) : null, // Chip 点击回调
+      onTap: onSelected != null
+          ? () => onSelected(enrichCategory)
+          : null, // Chip 点击回调
       borderRadius: BorderRadius.circular(borderRadius), // 点击效果圆角
       splashColor: baseColor.withSafeOpacity(0.2), // 水波纹颜色
       highlightColor: baseColor.withSafeOpacity(0.1), // 高亮颜色
@@ -390,7 +397,7 @@ class GameRightPanel extends StatelessWidget {
   /// [categoryStats]：分类统计数据列表。
   /// 返回一个包含分类统计信息的条形图 Widget。
   Widget _buildCategoriesStats(
-      BuildContext context, List<CategoryStat> categoryStats) {
+      BuildContext context, List<GameCategoryStat> categoryStats) {
     final theme = Theme.of(context);
     if (categoryStats.isEmpty) {
       // 分类统计数据为空时显示提示
@@ -441,11 +448,11 @@ class GameRightPanel extends StatelessWidget {
         const SizedBox(height: 8), // 间距
         ...categoryStats.map((category) {
           // 遍历分类统计数据
-          if (category.count == 0 && category.name.isEmpty) {
+          if (category.count == 0 && category.category.isEmpty) {
             return const SizedBox.shrink(); // 空的分类不显示
           }
           final displayName =
-              category.name.isEmpty ? '(未分类)' : category.name; // 显示名称
+              category.category.isEmpty ? '(未分类)' : category.category; // 显示名称
 
           return Padding(
             padding: const EdgeInsets.only(bottom: 8.0), // 底部内边距
@@ -497,7 +504,7 @@ class GameRightPanel extends StatelessWidget {
   /// [context]：Build 上下文。
   /// [tagStats]：标签统计数据列表。
   /// 返回一个包含标签统计信息的 Wrap Widget。
-  Widget _buildTagsStats(BuildContext context, List<TagStat> tagStats) {
+  Widget _buildTagsStats(BuildContext context, List<GameTagStat> tagStats) {
     final theme = Theme.of(context);
     tagStats.sort((a, b) => b.count.compareTo(a.count)); // 按计数降序排序
     final double tagTapBorderRadius = 12.0; // 标签点击区域圆角
@@ -555,20 +562,21 @@ class GameRightPanel extends StatelessWidget {
                 runSpacing: 8, // 垂直间距
                 children: tagStats.map((stat) {
                   // 遍历标签统计数据
-                  final isSelected = selectedTag == stat.name; // 判断标签是否被选中
-                  final tagColor =
-                      GameTagUtils.getTagColor(stat.name); // 获取标签颜色
+                  final enrichGameTag = stat.enrichTag;
+                  final name = stat.enrichTag.tag;
+                  final isSelected = selectedTag == name; // 判断标签是否被选中
+                  final tagColor = stat.enrichTag.backgroundColor; // 获取标签颜色
 
                   return InkWell(
                     onTap: onTagSelected != null
-                        ? () => onTagSelected!(stat.name)
+                        ? () => onTagSelected!(enrichGameTag)
                         : null, // 标签点击回调
                     borderRadius:
                         BorderRadius.circular(tagTapBorderRadius), // 点击效果圆角
                     splashColor: tagColor.withSafeOpacity(0.2), // 水波纹颜色
                     highlightColor: tagColor.withSafeOpacity(0.1), // 高亮颜色
                     child: GameTagItem(
-                      tag: stat.name, // 标签名称
+                      enrichTag: stat.enrichTag, // 标签名称
                       count: stat.count, // 标签计数
                       isSelected: isSelected, // 标签选中状态
                     ),

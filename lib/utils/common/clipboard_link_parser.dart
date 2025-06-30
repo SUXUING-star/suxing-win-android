@@ -7,7 +7,7 @@ library;
 
 import 'package:flutter/services.dart';
 import 'package:mongo_dart/mongo_dart.dart' as mongo;
-import 'package:suxingchahui/models/game/game.dart';
+import 'package:suxingchahui/models/game/game/game_download_link.dart';
 
 /// [ClipboardLinkParser] 类：一个用于从剪贴板解析下载链接的工具类。
 class ClipboardLinkParser {
@@ -16,7 +16,7 @@ class ClipboardLinkParser {
   /// 如果解析成功，返回一个元组 `(link, null)`。
   /// 如果剪贴板为空或格式不匹配，返回一个元组 `(null, '错误信息')`。
   ///
-  /// [currentUserId]: 执行此操作的当前用户ID。
+  /// [currentUserId] : 执行此操作的当前用户ID。
   static Future<(GameDownloadLink?, String?)> parseFromClipboard(
       {required String currentUserId}) async {
     final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);

@@ -1,10 +1,11 @@
 // lib/models/post/global_post_reply_item.dart
 import 'package:meta/meta.dart';
 import 'package:suxingchahui/models/post/post_reply.dart'; // 确认此引入是否仍必要，如果fromReply不再需要PostReply作为参数，则可能不需要
-import 'package:suxingchahui/models/util_json.dart';
+import 'package:suxingchahui/models/extension/json/to_json_extension.dart';
+import 'package:suxingchahui/models/utils/util_json.dart';
 
 @immutable
-class GlobalPostReplyItem {
+class GlobalPostReplyItem implements ToJsonExtension {
   // 定义 JSON 字段的 static const String 常量
   static const String jsonKeyId = 'id';
   static const String jsonKeyPostId = 'postId';
@@ -63,6 +64,14 @@ class GlobalPostReplyItem {
     );
   }
 
+  static List<GlobalPostReplyItem> fromListJson(dynamic json) {
+    return UtilJson.parseObjectList(
+      json,
+      (e) => GlobalPostReplyItem.fromJson(e),
+    );
+  }
+
+  @override
   Map<String, dynamic> toJson() {
     return {
       jsonKeyId: id, // 使用常量

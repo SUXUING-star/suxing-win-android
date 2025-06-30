@@ -1,0 +1,42 @@
+// lib/models/extension/theme/preset/common_color_theme.dart
+
+// lib/models/extension/theme/preset/super_color_theme.dart
+
+import 'package:flutter/cupertino.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/text_label_extension.dart';
+
+import '../base/background_color_extension.dart';
+
+// 这个可以不用了，但保留
+/// [CommonColorTheme]
+/// @param [backgroundColor]
+/// @param [textColor]
+/// @param [iconData]
+/// @param [textLabel]
+class SuperColorTheme {
+  final Color backgroundColor; // 背景颜色
+  final Color textColor; // 文本颜色（用于图标和标签文本）
+  final IconData iconData; // 图标
+  final Color iconColor;
+  final String textLabel; // 标签文本
+  /// 构造函数。
+  const SuperColorTheme({
+    required this.backgroundColor,
+    required this.textColor,
+    required this.iconData,
+    required this.textLabel,
+    required this.iconColor,
+  });
+}
+
+// 开始构建基类
+abstract class SuperColorThemeExtension
+    implements
+        BackgroundColorExtension,
+        TextColorExtension,
+        TextLabelExtension,
+        IconDataExtension,
+        IconColorExtension {}

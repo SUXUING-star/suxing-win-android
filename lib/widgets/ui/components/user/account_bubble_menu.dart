@@ -5,8 +5,8 @@
 library;
 
 import 'package:flutter/material.dart'; // 导入 Flutter UI 组件
-import 'package:suxingchahui/constants/user/level_constants.dart'; // 导入用户等级常量
-import 'package:suxingchahui/models/user/account.dart'; // 导入账号模型
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/user/user/account.dart'; // 导入账号模型
 import 'package:suxingchahui/utils/navigation/navigation_utils.dart'; // 导入导航工具类
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart'; // 导入颜色扩展工具
 import 'package:suxingchahui/widgets/ui/badges/safe_user_avatar.dart'; // 导入安全用户头像组件
@@ -222,18 +222,19 @@ class AccountBubbleMenu extends StatelessWidget {
                                       ),
                                     ),
 
-                                    if (account.level != null) // 显示等级标签
+                                    if (account.enrichLevel.level >=
+                                        1) // 显示等级标签
                                       Container(
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: 8, vertical: 2), // 内边距
                                         decoration: BoxDecoration(
-                                          color: _getLevelColor(
-                                              account.level!), // 背景颜色
+                                          color: account.enrichLevel
+                                              .backgroundColor, // 背景颜色
                                           borderRadius:
                                               BorderRadius.circular(10), // 圆角
                                         ),
                                         child: Text(
-                                          'Lv.${account.level}', // 文本
+                                          'Lv.${account.enrichLevel.level}', // 文本
                                           style: const TextStyle(
                                             fontSize: 11, // 字号
                                             color: Colors.white, // 颜色
@@ -279,13 +280,5 @@ class AccountBubbleMenu extends StatelessWidget {
         ],
       ),
     );
-  }
-
-  /// 根据等级返回对应的颜色。
-  ///
-  /// [level]：用户等级。
-  /// 返回等级对应的颜色。
-  Color _getLevelColor(int level) {
-    return LevelUtils.getLevelColor(level);
   }
 }

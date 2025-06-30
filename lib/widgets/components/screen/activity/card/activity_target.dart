@@ -5,9 +5,9 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件
-import 'package:suxingchahui/constants/activity/activity_constants.dart'; // 动态类型常量
-import 'package:suxingchahui/models/activity/user_activity.dart'; // 用户动态模型
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型
+import 'package:suxingchahui/models/activity/activity.dart'; // 用户动态模型
+import 'package:suxingchahui/models/activity/activity_extension.dart';
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型
 import 'package:suxingchahui/services/main/user/user_info_service.dart'; // 用户信息 Provider
 import 'package:suxingchahui/services/main/user/user_follow_service.dart'; // 用户关注服务
 import 'package:suxingchahui/widgets/ui/badges/user_info_badge.dart'; // 用户信息徽章组件
@@ -18,7 +18,7 @@ import 'package:suxingchahui/widgets/ui/image/safe_cached_image.dart'; // 安全
 ///
 /// 该组件根据 [activity] 的 [targetType] 渲染游戏、帖子或用户等不同类型的目标信息。
 class ActivityTarget extends StatelessWidget {
-  final UserActivity activity; // 动态数据
+  final Activity activity; // 动态数据
   final User? currentUser; // 当前登录用户
   final UserInfoService infoService; // 用户信息 Provider
   final UserFollowService followService; // 用户关注服务
@@ -49,24 +49,23 @@ class ActivityTarget extends StatelessWidget {
   /// 根据 [activity] 的 [targetType] 返回对应的目标 Widget。
   @override
   Widget build(BuildContext context) {
-    Widget targetWidget;
-
     // 根据动态目标类型选择构建不同的 Widget
-    switch (activity.targetType) {
-      case ActivityTargetTypeConstants.game: // 目标类型为游戏
-        targetWidget = _buildGameTarget(context);
-        break;
-      case ActivityTargetTypeConstants.post: // 目标类型为帖子
-        targetWidget = _buildPostTarget(context);
-        break;
-      case ActivityTargetTypeConstants.user: // 目标类型为用户
-        targetWidget = _buildUserTarget(context);
-        break;
-      default: // 默认情况
-        targetWidget = _buildDefaultUser(context);
+    if (activity.isTargetGame) {
+      // 目标类型为游戏
+      return _buildGameTarget(context);
     }
 
-    return targetWidget;
+    if (activity.isTargetPost) {
+      // 目标类型为帖子
+      return _buildPostTarget(context);
+    }
+
+    if (activity.isTargetUser) {
+      // 目标类型为用户
+      return _buildUserTarget(context);
+    }
+
+    return _buildDefaultUser(context);
   }
 
   /// 构建游戏目标 Widget。
@@ -103,8 +102,7 @@ class ActivityTarget extends StatelessWidget {
                   borderRadius:
                       BorderRadius.circular(borderRadiusValue), // 图片圆角
                 )
-              : _buildPlaceholderImage(
-                  ActivityTargetTypeConstants.game), // 无封面图片时显示占位图
+              : _buildPlaceholderImage(Activity.targetGame), // 无封面图片时显示占位图
           SizedBox(width: 12 * cardHeight), // 间距
           Expanded(
             child: Text(
@@ -243,7 +241,7 @@ class ActivityTarget extends StatelessWidget {
         borderRadius: BorderRadius.circular(4 * math.sqrt(cardHeight)), // 圆角
       ),
       child: Icon(
-        type == ActivityTargetTypeConstants.game // 根据类型选择图标
+        type == Activity.targetGame // 根据类型选择图标
             ? Icons.videogame_asset_outlined
             : Icons.image_not_supported_outlined,
         size: 24 * math.sqrt(cardHeight), // 图标尺寸

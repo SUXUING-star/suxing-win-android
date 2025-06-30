@@ -5,7 +5,7 @@
 library;
 
 import 'package:flutter/material.dart'; // Flutter UI 组件所需
-import 'package:suxingchahui/models/user/user.dart'; // 用户模型所需
+import 'package:suxingchahui/models/user/user/user.dart'; // 用户模型所需
 import 'package:suxingchahui/providers/inputs/input_state_provider.dart'; // 输入状态 Provider 所需
 import 'package:suxingchahui/widgets/ui/buttons/login_prompt_button.dart'; // 登录提示按钮组件所需
 import 'package:suxingchahui/widgets/ui/inputs/comment_input_field.dart'; // 评论输入字段组件所需

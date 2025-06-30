@@ -1,13 +1,15 @@
 // lib/widgets/components/screen/profile/experience/dialog/exp_task_card.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/models/user/task_style.dart';
+import 'package:suxingchahui/models/extension/theme/base/background_color_extension.dart';
+import 'package:suxingchahui/models/extension/theme/base/icon_data_extension.dart';
+import 'package:suxingchahui/models/user/task/daily_task.dart';
+import 'package:suxingchahui/models/user/task/task_style.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text.dart';
 import 'package:suxingchahui/widgets/ui/text/app_text_type.dart';
 
 class ExpTaskCard extends StatelessWidget {
-  final Task task;
+  final DailyTask task;
 
   const ExpTaskCard({
     super.key,
@@ -20,10 +22,10 @@ class ExpTaskCard extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 6.0), // 调整底部间距
       decoration: BoxDecoration(
         // 使用 task.style 获取颜色
-        color: task.style.color.withSafeOpacity(0.08), // 背景透明度调整
+        color: task.backgroundColor.withSafeOpacity(0.08), // 背景透明度调整
         borderRadius: BorderRadius.circular(10), // 圆角调整
         border: Border.all(
-          color: task.style.color.withSafeOpacity(0.25), // 边框透明度调整
+          color: task.backgroundColor.withSafeOpacity(0.25), // 边框透明度调整
           width: 1,
         ),
       ),
@@ -38,13 +40,13 @@ class ExpTaskCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center, // 垂直居中对齐
             children: [
               // 任务标题 (内部已用 AppText)
-              _buildTaskTitle(task.style, task.name, task.completed),
+              _buildTaskTitle(task.name, task.enrichType),
               // 计数 (使用 AppText)
               AppText(
                 task.countText, // 使用 Task getter
                 fontWeight: FontWeight.bold,
                 fontSize: 14,
-                color: task.style.color.withSafeOpacity(0.9), // 调整颜色透明度
+                color: task.backgroundColor.withSafeOpacity(0.9), // 调整颜色透明度
               ),
             ],
           ),
@@ -52,7 +54,7 @@ class ExpTaskCard extends StatelessWidget {
 
           // --- 进度条 ---
           // 使用 Task getter 获取进度值
-          _buildTaskProgressBar(task.style.color, task.progress),
+          _buildTaskProgressBar(task.backgroundColor, task.progress),
           const SizedBox(height: 8), // 调整间距
 
           // --- 描述和每次任务经验值 ---
@@ -78,7 +80,7 @@ class ExpTaskCard extends StatelessWidget {
                 task.expPerTaskText, // 使用 Task getter
                 fontSize: 11,
                 fontWeight: FontWeight.w500,
-                color: task.style.color, // 使用任务颜色
+                color: task.backgroundColor, // 使用任务颜色
               ),
             ],
           ),
@@ -88,28 +90,29 @@ class ExpTaskCard extends StatelessWidget {
   }
 
   // 构建任务标题 (内部使用 AppText)
-  Widget _buildTaskTitle(TaskStyle taskStyle, String name, bool completed) {
+  Widget _buildTaskTitle(String taskName, EnrichTaskType enrichType) {
     return Flexible(
       // 使用 Flexible 防止标题过长导致溢出
       child: Row(
         mainAxisSize: MainAxisSize.min, // Row 只占用必要宽度
         children: [
-          Icon(taskStyle.icon, size: 16, color: taskStyle.color),
+          Icon(enrichType.iconData,
+              size: 16, color: enrichType.backgroundColor),
           const SizedBox(width: 8),
           Flexible(
             // 文本也用 Flexible
             child: AppText(
               // **** 使用 AppText ****
-              name,
+              taskName,
               fontSize: 14,
               fontWeight: FontWeight.w500,
-              // **** 使用更清晰的方式设置颜色 ****
-              color: completed ? Colors.grey.shade600 : Colors.black87,
+              color:
+                  enrichType.completed ? Colors.grey.shade600 : Colors.black87,
               maxLines: 1, // 标题通常只显示一行
               overflow: TextOverflow.ellipsis, // 超长时省略
             ),
           ),
-          if (completed)
+          if (enrichType.completed)
             Padding(
               padding: const EdgeInsets.only(left: 6.0), // 调整图标间距
               child: Icon(

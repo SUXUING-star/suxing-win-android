@@ -1,7 +1,7 @@
 // lib/widgets/components/screen/profile/layout/desktop/profile_desktop_account_card.dart
 import 'package:flutter/material.dart';
-import 'package:suxingchahui/models/user/daily_progress.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/task/daily_progress_data.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/services/common/upload/rate_limited_file_upload.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/components/screen/profile/experience/exp_progress_badge.dart';

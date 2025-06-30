@@ -1,11 +1,12 @@
 // lib/widgets/components/screen/history/post_history_layout.dart
 import 'package:flutter/material.dart';
 import 'package:suxingchahui/models/post/post.dart';
-import 'package:suxingchahui/models/user/user.dart';
+import 'package:suxingchahui/models/user/user/user.dart';
 import 'package:suxingchahui/models/common/pagination.dart';
 import 'package:suxingchahui/services/main/user/user_info_service.dart';
 import 'package:suxingchahui/providers/windows/window_state_provider.dart';
 import 'package:suxingchahui/services/main/user/user_follow_service.dart';
+import 'package:suxingchahui/utils/datetime/date_time_extension.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_item.dart';
 import 'package:suxingchahui/widgets/ui/animation/fade_in_slide_up_item.dart';
 import 'package:suxingchahui/widgets/ui/buttons/functional_text_button.dart';
@@ -14,7 +15,6 @@ import 'package:suxingchahui/widgets/ui/common/loading_widget.dart';
 import 'package:suxingchahui/widgets/components/screen/history/history_post_grid_view.dart';
 import 'package:suxingchahui/utils/device/device_utils.dart';
 import 'package:suxingchahui/widgets/ui/dart/color_extensions.dart';
-import 'package:suxingchahui/utils/datetime/date_time_formatter.dart';
 import 'package:suxingchahui/widgets/ui/dart/lazy_layout_builder.dart'; // 引入 LazyLayoutBuilder
 
 class PostHistoryLayout extends StatefulWidget {
@@ -206,7 +206,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
                   icon: Icons.calendar_today_outlined,
                   title: '最早浏览',
                   value: earliestViewTime != null
-                      ? DateTimeFormatter.formatShort(earliestViewTime)
+                      ? earliestViewTime.formatShort()
                       : '无记录',
                   color: Colors.orangeAccent),
               const Divider(height: 20, thickness: 0.5),
@@ -215,7 +215,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
                   icon: Icons.access_time_outlined,
                   title: '最近浏览',
                   value: latestViewTime != null
-                      ? DateTimeFormatter.formatShort(latestViewTime)
+                      ? latestViewTime.formatShort()
                       : '无记录',
                   color: Colors.green),
             ],
@@ -263,7 +263,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
                 icon: Icons.calendar_today_outlined,
                 title: '最早浏览',
                 value: earliestViewTime != null
-                    ? DateTimeFormatter.formatShort(earliestViewTime)
+                    ? earliestViewTime.formatShort()
                     : '无记录',
                 color: Colors.orangeAccent),
             const Divider(height: 12, thickness: 0.3),
@@ -272,7 +272,7 @@ class _PostHistoryLayoutState extends State<PostHistoryLayout>
                 icon: Icons.access_time_outlined,
                 title: '最近浏览',
                 value: latestViewTime != null
-                    ? DateTimeFormatter.formatShort(latestViewTime)
+                    ? latestViewTime.formatShort()
                     : '无记录',
                 color: Colors.green),
           ],

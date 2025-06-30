@@ -25,28 +25,34 @@ class MaintenanceDisplay extends StatelessWidget {
             children: [
               Icon(Icons.construction, size: 64, color: Colors.amber),
               SizedBox(height: 16),
-              Text('系统维护中', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              Text('系统维护中',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               SizedBox(height: 8),
-              Text('正在获取详细信息，请稍候...', textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
+              Text('正在获取详细信息，请稍候...',
+                  textAlign: TextAlign.center, style: TextStyle(fontSize: 16)),
             ],
           ),
         ),
       );
     }
 
-    // 有 info，构建详细维护界面
-    final visuals = MaintenanceInfo.getMaintenanceVisuals(maintenanceInfo!.maintenanceType);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(visuals['icon'], size: 64, color: visuals['color']),
+            Icon(
+              maintenanceInfo!.iconData,
+              color: maintenanceInfo!.iconColor,
+            ),
             const SizedBox(height: 20),
             Text(
-              MaintenanceInfo.getMaintenanceTitle(maintenanceInfo!.maintenanceType),
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+              maintenanceInfo!.label,
+              style: Theme.of(context)
+                  .textTheme
+                  .headlineSmall
+                  ?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             Text(
@@ -55,15 +61,20 @@ class MaintenanceDisplay extends StatelessWidget {
               style: Theme.of(context).textTheme.bodyLarge,
             ),
             const SizedBox(height: 24),
-            _buildTimeInfo(context, "预计结束时间:", DateTimeFormatter.formatStandard(maintenanceInfo!.endTime)),
+            _buildTimeInfo(context, "预计结束时间:",
+                DateTimeFormatter.formatStandard(maintenanceInfo!.endTime)),
             if (remainingMinutes > 0) ...[
               const SizedBox(height: 8),
-              _buildTimeInfo(context, "预计剩余时间:",MaintenanceInfo.formatRemainingTime(remainingMinutes)),
+              _buildTimeInfo(context, "预计剩余时间:",
+                  MaintenanceInfo.formatRemainingTime(remainingMinutes)),
             ],
             const SizedBox(height: 30),
             Text(
               "给您带来不便，敬请谅解。",
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(color: Colors.grey),
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: Colors.grey),
             ),
           ],
         ),
@@ -77,7 +88,10 @@ class MaintenanceDisplay extends StatelessWidget {
       children: [
         Text(
           label,
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+          style: Theme.of(context)
+              .textTheme
+              .bodyMedium
+              ?.copyWith(fontWeight: FontWeight.w600),
         ),
         const SizedBox(width: 8),
         Text(
@@ -87,6 +101,4 @@ class MaintenanceDisplay extends StatelessWidget {
       ],
     );
   }
-
-
 }
